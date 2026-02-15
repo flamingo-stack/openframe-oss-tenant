@@ -1,0 +1,6 @@
+flowchart TD
+    DeleteRequest["Delete User Request"] --> ValidateSelf["Is Self?"]
+    ValidateSelf -->|Yes| Reject1["Throw UserSelfDeleteNotAllowed"]
+    ValidateSelf -->|No| ValidateOwner["Is OWNER Role?"]
+    ValidateOwner -->|Yes| Reject2["Throw OperationNotAllowed"]
+    ValidateOwner -->|No| SoftDelete["Set Status = DELETED"]

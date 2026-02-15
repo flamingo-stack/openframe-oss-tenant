@@ -1,0 +1,13 @@
+flowchart LR
+    UI["React Chat UI"] --> DebugCtx["Debug Mode Context"]
+    UI --> DialogSvc["Dialog GraphQL Service"]
+    UI --> MockSvc["Mock Chat Service"]
+    UI --> ModelsSvc["Supported Models Service"]
+
+    DialogSvc --> TokenSvc["Token Service"]
+    ModelsSvc --> TokenSvc
+
+    TokenSvc --> Tauri["Tauri Runtime"]
+    DialogSvc --> Backend["Gateway + API Services"]
+
+    Backend --> DialogSvc

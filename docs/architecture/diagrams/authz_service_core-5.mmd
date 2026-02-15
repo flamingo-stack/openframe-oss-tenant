@@ -1,0 +1,8 @@
+flowchart TD
+    User["User"] --> Login["Login Page"]
+    Login -->|"Username / Password"| LocalAuth["DaoAuthenticationProvider"]
+    Login -->|"Google"| GoogleSSO["Google OIDC"]
+    Login -->|"Microsoft"| MicrosoftSSO["Microsoft OIDC"]
+    GoogleSSO --> OidcService["OIDC User Service"]
+    MicrosoftSSO --> OidcService
+    OidcService --> Provision["Auto Provisioning Logic"]

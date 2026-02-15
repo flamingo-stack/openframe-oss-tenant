@@ -1,0 +1,4 @@
+flowchart LR
+    SwaggerUI["Swagger UI"] -->|"ApiKeyAuth"| OpenApiConfig["OpenApiConfig"]
+    OpenApiConfig --> SecurityScheme["API Key in Header"]
+    SecurityScheme --> Header["X-API-Key"]

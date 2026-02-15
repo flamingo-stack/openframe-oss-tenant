@@ -1,0 +1,11 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> API["API Service Core"]
+    Gateway --> Authz["Authz Service Core"]
+
+    API --> DataLayer["Data Layer Mongo"]
+    Authz --> DataLayer
+    Client["Client Service Core"] --> DataLayer
+    Management["Management Service Core"] --> DataLayer
+    Stream["Stream Processing Core"] --> DataLayer
+
+    DataLayer --> MongoDB[("MongoDB Cluster")]

@@ -1,0 +1,5 @@
+flowchart TD
+    AppStart["App Boot"] --> useDeployment
+    useDeployment --> Detect["detectDeployment()"]
+    Detect --> Store["Zustand Store"]
+    Store --> Components["UI Components"]

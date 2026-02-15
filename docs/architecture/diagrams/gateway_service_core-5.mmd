@@ -1,0 +1,7 @@
+flowchart TD
+    WsReq["WebSocket Request"] --> RouteMatch["RouteLocator"]
+    RouteMatch --> ToolFilter["ToolApiWebSocketProxyUrlFilter"]
+    RouteMatch --> AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    ToolFilter --> ResolveUrl["ProxyUrlResolver"]
+    AgentFilter --> ResolveUrl
+    ResolveUrl --> Target["Tool WebSocket Endpoint"]

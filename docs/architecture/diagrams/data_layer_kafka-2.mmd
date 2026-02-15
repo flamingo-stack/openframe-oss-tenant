@@ -1,0 +1,13 @@
+classDiagram
+    class KafkaTopicProperties {
+        +boolean autoCreate
+        +Map inbound
+    }
+
+    class TopicConfig {
+        +String name
+        +int partitions
+        +short replicationFactor
+    }
+
+    KafkaTopicProperties --> TopicConfig

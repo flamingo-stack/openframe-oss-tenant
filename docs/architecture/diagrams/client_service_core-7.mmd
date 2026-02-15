@@ -1,0 +1,5 @@
+flowchart TD
+    Message["Incoming JetStream Message"] --> Process["Process Business Logic"]
+    Process -->|"success"| Ack["message.ack()"]
+    Process -->|"failure"| NoAck["No Ack"]
+    NoAck --> Redeliver["Redelivery"]

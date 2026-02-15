@@ -1,0 +1,7 @@
+flowchart LR
+    Client -->|"cursor + limit"| Controller
+    Controller -->|"CursorPaginationCriteria"| Service
+    Service -->|"Query"| Repository
+    Repository -->|"Next Cursor"| Service
+    Service --> Controller
+    Controller --> Client

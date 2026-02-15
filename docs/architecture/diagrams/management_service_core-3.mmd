@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> SecretInit["AgentRegistrationSecretInitializer"]
+    Startup --> ToolAgentInit["IntegratedToolAgentInitializer"]
+    Startup --> ClientConfigInit["OpenFrameClientConfigurationInitializer"]
+    Startup --> NatsInit["NatsStreamConfigurationInitializer"]
+    Startup --> DebeziumInit["DebeziumConnectorInitializer"]

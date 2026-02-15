@@ -1,0 +1,6 @@
+flowchart TD
+    LogRequest["Log Query Request"] --> Builder["PinotQueryBuilder"]
+    Builder --> SQL["Generated SQL"]
+    SQL --> ExecuteQuery["Execute via Pinot Connection"]
+    ExecuteQuery --> MapResult["Map to LogProjection"]
+    MapResult --> Response["Return Log Results"]

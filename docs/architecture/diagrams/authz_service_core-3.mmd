@@ -1,0 +1,5 @@
+flowchart TD
+    Config["AuthorizationServerConfig"] --> OIDC["OIDC Enabled"]
+    Config --> JWT["JWT Encoder / Decoder"]
+    Config --> Customizer["OAuth2TokenCustomizer"]
+    Config --> AuthManager["AuthenticationManager"]

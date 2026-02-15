@@ -1,0 +1,6 @@
+flowchart TD
+    Input["Fleet UUID"] --> Lookup["FleetMdmClient.searchHosts()"]
+    Lookup --> Filter["Filter exact UUID and OS data"]
+    Filter -->|"match"| Transform["Return host ID"]
+    Filter -->|"no match and retry"| Error["Throw exception"]
+    Filter -->|"last attempt"| Fallback["Return original UUID"]

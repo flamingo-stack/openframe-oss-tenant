@@ -1,0 +1,8 @@
+flowchart TD
+    Req["External API Request"] --> CheckKey["Check X-API-Key"]
+    CheckKey -->|"missing"| Unauthorized["401 UNAUTHORIZED"]
+    CheckKey -->|"present"| ValidateKey["ApiKeyValidationService"]
+    ValidateKey -->|"invalid"| Unauthorized
+    ValidateKey -->|"valid"| RateCheck["RateLimitService"]
+    RateCheck -->|"exceeded"| TooMany["429 TOO_MANY_REQUESTS"]
+    RateCheck -->|"allowed"| Forward["Forward to External API Service"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Authz["Authz Service Core"] --> KeyService["TenantKeyService"]
+    KeyService --> Generator["RSA Key Pair Generator"]
+    KeyService --> Encrypt["EncryptionService"]
+    KeyService --> Mongo["TenantKeyRepository"]
+    KeyService --> JWK["Tenant RSA JWK"]

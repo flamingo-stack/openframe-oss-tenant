@@ -1,0 +1,13 @@
+flowchart TD
+    Connection["MessagesConnection"] --> Edges["edges[]"]
+    Connection --> PageInfo["pageInfo"]
+
+    Edges --> Message["Message"]
+    Message --> Owner["owner.type"]
+    Message --> Data["messageData union"]
+
+    Data --> Text["TextData"]
+    Data --> Exec["ExecutingToolData"]
+    Data --> Done["ExecutedToolData"]
+    Data --> Approval["ApprovalRequestData"]
+    Data --> Error["ErrorData"]

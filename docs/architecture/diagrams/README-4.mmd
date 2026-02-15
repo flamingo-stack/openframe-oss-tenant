@@ -1,0 +1,8 @@
+flowchart TD
+    Tenant["Tenant Context"] --> Authz["Authorization Server"]
+    Tenant --> Gateway["Gateway"]
+    Tenant --> API["API Service"]
+    Tenant --> Mongo["MongoDB"]
+
+    Authz --> Keys["Tenant RSA Keys"]
+    Mongo --> TenantScopedDocs["Tenant-Scoped Documents"]

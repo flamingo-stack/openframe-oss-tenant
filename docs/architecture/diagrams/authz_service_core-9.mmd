@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Authz as Authz Service Core
+    participant Gateway
+    participant API as API Service Core
+
+    User->>Authz: Authorization Request
+    Authz->>User: Access Token (JWT)
+    User->>Gateway: API Call with JWT
+    Gateway->>API: Forward Request
+    API->>Gateway: Response
+    Gateway->>User: Response

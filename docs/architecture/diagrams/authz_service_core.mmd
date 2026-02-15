@@ -1,0 +1,10 @@
+flowchart TD
+    User["End User"] --> Browser["Browser / Frontend"]
+    Browser --> Authz["Authz Service Core"]
+    Authz --> Mongo["MongoDB"]
+    Authz --> Gateway["Gateway Service Core"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> Client["Client Service Core"]
+
+    Authz -->|"Issues JWT"| Gateway
+    Gateway -->|"Validates JWT"| Api

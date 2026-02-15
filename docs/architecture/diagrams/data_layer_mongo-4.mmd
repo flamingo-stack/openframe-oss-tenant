@@ -1,0 +1,6 @@
+flowchart TD
+    Service["Service Layer"] --> Repository["Custom Repository"]
+    Repository --> BuildQuery["Build Query with Criteria"]
+    BuildQuery --> ApplySearch["Apply Regex Search"]
+    ApplySearch --> ApplyCursor["Apply Cursor Pagination"]
+    ApplyCursor --> Execute["mongoTemplate.find()"]

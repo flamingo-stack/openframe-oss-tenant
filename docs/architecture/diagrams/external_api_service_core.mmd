@@ -1,0 +1,18 @@
+flowchart LR
+    ExternalClient["External Client or Integration"] -->|"X-API-Key"| Gateway["Gateway Service"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> DeviceService["Device Service"]
+    ExternalApi --> EventService["Event Service"]
+    ExternalApi --> LogService["Log Service"]
+    ExternalApi --> OrganizationService["Organization Service"]
+    ExternalApi --> ToolService["Tool Service"]
+
+    ExternalApi --> RestProxy["Rest Proxy Service"]
+    RestProxy --> IntegratedTool["Integrated Tool API"]
+
+    DeviceService --> MongoDB[("MongoDB")]
+    EventService --> MongoDB
+    LogService --> MongoDB
+    OrganizationService --> MongoDB
+    ToolService --> MongoDB

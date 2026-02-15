@@ -1,0 +1,6 @@
+flowchart TD
+    Agent["Machine Agent"] -->|"POST register"| AgentController
+    AgentController --> AgentRegistrationService
+    AgentRegistrationService --> Processor["AgentRegistrationProcessor"]
+    Processor --> DataStore["Persist Machine"]
+    DataStore --> Response["AgentRegistrationResponse"]

@@ -1,0 +1,7 @@
+flowchart LR
+    Config["Configuration"] --> Documents["Domain Documents"]
+    Documents --> Repositories["Repositories"]
+    Repositories --> CustomImpl["Custom Query Implementations"]
+
+    CustomImpl --> MongoTemplate["MongoTemplate"]
+    Repositories --> SpringData["Spring Data Mongo"]

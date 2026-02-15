@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Gateway
+    participant Authz
+    participant API
+    participant Mongo
+
+    User->>Frontend: Login
+    Frontend->>Authz: OAuth2 + PKCE
+    Authz-->>Frontend: JWT
+
+    Frontend->>Gateway: API Request (Bearer JWT)
+    Gateway->>API: Forward Request
+    API->>Mongo: Query / Update
+    Mongo-->>API: Result
+    API-->>Gateway: JSON Response
+    Gateway-->>Frontend: Response

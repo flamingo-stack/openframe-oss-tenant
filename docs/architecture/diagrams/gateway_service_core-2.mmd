@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Incoming Request"] --> OriginFilter["OriginSanitizerFilter"]
+    OriginFilter --> AuthHeader["AddAuthorizationHeaderFilter"]
+    AuthHeader --> ApiKeyFilter["ApiKeyAuthenticationFilter"]
+    ApiKeyFilter --> JwtValidation["OAuth2 Resource Server"]
+    JwtValidation --> Routing["Route or Proxy"]
+    Routing --> EndNode["Response"]

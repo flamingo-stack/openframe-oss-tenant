@@ -1,0 +1,6 @@
+flowchart LR
+    Agent["Machine Agent"] -->|"register / heartbeat / tool events"| ClientService["Client Service Core"]
+    ClientService -->|"persist state"| DataLayer["Data Layer Mongo"]
+    ClientService -->|"consume events"| Nats["NATS / JetStream"]
+    ClientService -->|"tool sync"| IntegratedTools["Integrated Tools"]
+    ClientService -->|"security integration"| Authz["Authorization Service Core"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Machines["Machine List"] --> DataLoader
+    DataLoader --> BatchFetch["Batch Repository Call"]
+    BatchFetch --> MappedResult["Mapped Back to Request Order"]

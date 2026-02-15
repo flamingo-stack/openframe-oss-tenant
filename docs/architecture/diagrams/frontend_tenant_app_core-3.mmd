@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Fleet UI"] --> FleetClient["FleetApiClient"]
+    FleetClient --> ApiClient
+    ApiClient --> Gateway["Gateway Service Core"]
+    Gateway --> FleetBackend["Fleet MDM Server"]

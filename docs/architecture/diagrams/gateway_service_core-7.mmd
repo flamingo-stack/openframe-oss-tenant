@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ApiKeyFilter
+    participant ExternalService
+
+    Client->>Gateway: GET /external-api/devices
+    Gateway->>ApiKeyFilter: Validate X-API-Key
+    ApiKeyFilter->>Gateway: Rate limit check
+    Gateway->>ExternalService: Forward request
+    ExternalService-->>Gateway: Response
+    Gateway-->>Client: Response with rate headers

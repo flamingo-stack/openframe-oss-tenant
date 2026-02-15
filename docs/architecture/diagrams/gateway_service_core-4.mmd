@@ -1,0 +1,6 @@
+flowchart LR
+    Token["JWT Token"] --> IssuerResolver["JwtIssuerReactiveAuthenticationManagerResolver"]
+    IssuerResolver --> Cache["Caffeine Issuer Cache"]
+    Cache --> JwtDecoder["NimbusReactiveJwtDecoder"]
+    JwtDecoder --> Converter["ReactiveJwtAuthenticationConverter"]
+    Converter --> AuthResult["Authenticated Principal"]

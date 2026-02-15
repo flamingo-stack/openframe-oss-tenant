@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Client Request"] --> Controller["Device Controller"]
+    Controller --> FilterCriteria["DeviceFilterCriteria"]
+    Controller --> Pagination["PaginationCriteria"]
+    Controller --> SortCriteria["SortCriteria"]
+    Controller --> DeviceService["Device Service"]
+    DeviceService --> Result["Paged Result"]
+    Result --> Mapper["Device Mapper"]
+    Mapper --> Response["DevicesResponse"]

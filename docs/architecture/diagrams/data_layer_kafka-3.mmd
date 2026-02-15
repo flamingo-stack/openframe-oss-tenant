@@ -1,0 +1,7 @@
+flowchart TD
+    Properties["OssTenantKafkaProperties"] --> ProducerFactory["ProducerFactory<String,Object>"]
+    Properties --> ConsumerFactory["ConsumerFactory<Object,Object>"]
+    ProducerFactory --> KafkaTemplate["KafkaTemplate<String,Object>"]
+    ConsumerFactory --> ListenerFactory["KafkaListenerContainerFactory"]
+    Properties --> KafkaAdmin["KafkaAdmin"]
+    TopicProps["KafkaTopicProperties"] --> TopicCreation["KafkaAdmin.NewTopics"]

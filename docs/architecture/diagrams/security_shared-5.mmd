@@ -1,0 +1,10 @@
+flowchart TD
+    Frontend["Frontend Apps"] --> Gateway["Gateway Service"]
+    Gateway --> AuthServer["Authorization Service"]
+    Gateway --> ApiService["API Service"]
+
+    AuthServer -->|"issues JWT"| JwtSecurity
+    ApiService -->|"validates JWT"| JwtSecurity
+    Gateway -->|"validates JWT"| JwtSecurity
+
+    JwtSecurity["Security Shared"]

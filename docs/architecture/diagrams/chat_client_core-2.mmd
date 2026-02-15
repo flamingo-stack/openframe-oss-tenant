@@ -1,0 +1,4 @@
+flowchart TD
+    Mount["Component Mount"] --> Invoke["invoke get_debug_mode"]
+    Invoke --> Success["Set debugMode state"]
+    Invoke --> Error["Fallback to false"]

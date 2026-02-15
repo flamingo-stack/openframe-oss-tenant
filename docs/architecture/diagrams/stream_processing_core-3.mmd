@@ -1,0 +1,6 @@
+flowchart TD
+    RawMessage["Common Debezium Message"] --> ExtractFields["Extract After Payload"]
+    ExtractFields --> AgentId["Resolve Agent ID"]
+    ExtractFields --> SourceType["Extract Source Event Type"]
+    SourceType --> UnifiedType["Map to Unified Event Type"]
+    UnifiedType --> Output["Deserialized Debezium Message"]

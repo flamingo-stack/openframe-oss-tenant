@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Device Filter Request"] --> BuildWhere["Build WHERE Clause"]
+    BuildWhere --> Execute["Execute Pinot Query"]
+    Execute --> Parse["Parse ResultSet"]
+    Parse --> Return["Return Aggregated Map"]

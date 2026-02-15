@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend Tenant App"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+
+    ApiService --> Authz["Authz Service Core"]
+    ApiService --> DataMongo["Data Layer Mongo"]
+    ApiService --> DataKafka["Data Layer Kafka"]
+    ApiService --> StreamCore["Stream Processing Core"]
+
+    ApiService --> SecurityShared["Security Shared"]

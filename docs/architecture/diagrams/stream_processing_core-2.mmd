@@ -1,0 +1,6 @@
+flowchart TD
+    AppName["Application Name"] --> ClusterCheck["Cluster ID Present?"]
+    ClusterCheck -->|Yes| NamespacedId["applicationName-clusterId"]
+    ClusterCheck -->|No| DefaultId["applicationName"]
+    NamespacedId --> StreamsConfig["Kafka Streams Configuration"]
+    DefaultId --> StreamsConfig

@@ -1,0 +1,12 @@
+flowchart LR
+    ApiApp["API Application"] --> ApiPkg["com.openframe.api"]
+    ApiApp --> DataPkg["com.openframe.data"]
+
+    AuthApp["Authorization Application"] --> AuthPkg["com.openframe.authz"]
+    AuthApp --> DataPkg
+
+    GatewayApp["Gateway Application"] --> GatewayPkg["com.openframe.gateway"]
+    GatewayApp --> SecurityPkg["com.openframe.security"]
+
+    StreamApp["Stream Application"] --> StreamPkg["com.openframe.stream"]
+    StreamApp --> KafkaPkg["com.openframe.kafka.producer"]

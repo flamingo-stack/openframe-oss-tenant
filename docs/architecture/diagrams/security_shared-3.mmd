@@ -1,0 +1,6 @@
+flowchart TD
+    PemString["PEM Private Key"] --> Strip["Strip header/footer"]
+    Strip --> Decode["Base64 Decode"]
+    Decode --> KeySpec["PKCS8EncodedKeySpec"]
+    KeySpec --> KeyFactory["KeyFactory RSA"]
+    KeyFactory --> RSAPrivate["RSAPrivateKey"]

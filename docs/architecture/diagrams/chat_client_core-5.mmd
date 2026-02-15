@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI as "Chat UI"
+    participant Dialog as "DialogGraphQLService"
+    participant Token as "TokenService"
+    participant Backend as "Chat GraphQL API"
+
+    UI->>Dialog: getDialogMessages(dialogId)
+    Dialog->>Token: ensureTokenReady()
+    Token-->>Dialog: token + apiUrl
+    Dialog->>Backend: POST /chat/graphql
+    Backend-->>Dialog: MessagesConnection
+    Dialog-->>UI: Aggregated messages

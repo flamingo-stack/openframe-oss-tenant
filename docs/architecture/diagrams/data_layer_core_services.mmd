@@ -1,0 +1,5 @@
+flowchart TD
+    ServiceLayer["Service Layer"] -->|"uses"| DataLayerCore["Data Layer Core Services"]
+    DataLayerCore -->|"configures"| Cassandra["Cassandra Repositories"]
+    DataLayerCore -->|"queries"| Pinot["Apache Pinot"]
+    DataLayerCore -->|"shares models"| ToolModel["Integrated Tool Models"]

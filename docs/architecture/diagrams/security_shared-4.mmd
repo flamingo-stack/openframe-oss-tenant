@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as "Authorization Server"
+
+    Client->>Client: generateCodeVerifier()
+    Client->>Client: generateCodeChallenge(verifier)
+    Client->>AuthServer: Authorization Request with challenge
+    AuthServer->>Client: Authorization Code
+    Client->>AuthServer: Token Request with verifier
+    AuthServer->>AuthServer: SHA256(verifier) == challenge
+    AuthServer->>Client: Access Token

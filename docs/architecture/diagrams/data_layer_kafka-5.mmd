@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant App as Application
+    participant AutoConfig as OssTenantKafkaAutoConfiguration
+    participant Admin as KafkaAdmin
+    participant Cluster as Kafka Cluster
+
+    App->>AutoConfig: Start context
+    AutoConfig->>Admin: Create KafkaAdmin
+    AutoConfig->>Admin: Register topics
+    Admin->>Cluster: Create topics if missing
+    AutoConfig->>App: Provide Producer/Consumer beans

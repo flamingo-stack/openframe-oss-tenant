@@ -1,0 +1,8 @@
+flowchart TD
+    Tenant["Tenant Context"] --> AuthUserDoc["AuthUser tenantId"]
+    Tenant --> SSO["SSOPerTenantConfig"]
+    Tenant --> Org["Organization"]
+
+    AuthUserDoc --> MongoDB[("MongoDB")]
+    SSO --> MongoDB
+    Org --> MongoDB

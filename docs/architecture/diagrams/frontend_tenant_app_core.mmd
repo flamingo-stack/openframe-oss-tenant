@@ -1,0 +1,16 @@
+flowchart TD
+    UI["React UI Components"] --> Hooks["Hooks and State"]
+    Hooks --> ApiClient["ApiClient"]
+    Hooks --> AuthApiClient["AuthApiClient"]
+    Hooks --> FleetApiClient["FleetApiClient"]
+    Hooks --> TacticalApiClient["TacticalApiClient"]
+
+    ApiClient --> Gateway["Gateway Service Core"]
+    AuthApiClient --> Authz["Authorization Service Core"]
+    FleetApiClient --> Gateway
+    TacticalApiClient --> Gateway
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+
+    ApiService --> DataLayer["Data Layer Modules"]

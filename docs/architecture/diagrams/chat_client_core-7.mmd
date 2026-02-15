@@ -1,0 +1,6 @@
+flowchart TD
+    Call["loadSupportedModels()"] --> LoadedCheck["Already loaded?"]
+    LoadedCheck -->|"No"| Fetch["Fetch from backend"]
+    Fetch --> Parse["Parse provider groups"]
+    Parse --> Store["Store in Map"]
+    Store --> Ready["Models ready"]

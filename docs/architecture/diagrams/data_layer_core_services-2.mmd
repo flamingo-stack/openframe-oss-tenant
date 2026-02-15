@@ -1,0 +1,4 @@
+flowchart TD
+    AppStart["Application Startup"] --> CheckProp{"spring.data.cassandra.enabled?"}
+    CheckProp -->|"true"| EnableCass["Enable Cassandra Repositories"]
+    CheckProp -->|"false"| SkipCass["Skip Cassandra Configuration"]

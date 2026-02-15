@@ -1,0 +1,6 @@
+flowchart TD
+    User["New User"] --> TenantReg["Tenant Registration"]
+    TenantReg --> SSOStart["Start SSO"]
+    SSOStart --> OAuthRedirect["Redirect to Provider"]
+    OAuthRedirect --> Callback["AuthSuccessHandler"]
+    Callback --> TenantCreate["Create Tenant and Admin User"]

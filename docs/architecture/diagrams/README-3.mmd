@@ -1,0 +1,10 @@
+flowchart TD
+    Tools["Integrated Tools"] --> Debezium["Debezium CDC"]
+    Debezium --> Kafka["Kafka Topics"]
+    Kafka --> StreamCore["Stream Processing Core"]
+
+    StreamCore --> Cassandra["Cassandra Logs"]
+    StreamCore --> Pinot["Pinot Analytics"]
+    StreamCore --> OutboundKafka["Outbound Tool Events"]
+
+    OutboundKafka --> ApiService["API Service Core"]

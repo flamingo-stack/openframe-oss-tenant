@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant Nats
+    participant Listener as "MachineHeartbeatListener"
+    participant StatusService as "MachineStatusService"
+
+    Nats->>Listener: machine.X.heartbeat
+    Listener->>StatusService: processHeartbeat(machineId, timestamp)

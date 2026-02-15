@@ -1,0 +1,5 @@
+flowchart TD
+    Existing["Existing Agent"] --> Compare["Compare Versions"]
+    New["New Agent"] --> Compare
+    Compare -->|"unchanged"| Skip["Skip Publish"]
+    Compare -->|"changed"| Publish["ToolAgentUpdatePublisher"]

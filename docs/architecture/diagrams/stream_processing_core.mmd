@@ -1,0 +1,15 @@
+flowchart LR
+    KafkaTopics["Inbound Kafka Topics"] --> JsonListener["Json Kafka Listener"]
+    JsonListener --> Processor["Generic JSON Message Processor"]
+    Processor --> Deserializers["Tool-Specific Deserializers"]
+    Deserializers --> Mapper["Event Type Mapper"]
+    Mapper --> Enrichment["Integrated Tool Data Enrichment"]
+    Enrichment --> Handlers["Debezium Message Handlers"]
+    Handlers --> CassandraDest["Cassandra Destination"]
+    Handlers --> KafkaDest["Outbound Kafka Topic"]
+
+    subgraph Streams["Kafka Streams Enrichment"]
+        ActivityTopic["Fleet Activity Topic"] --> ActivityJoin
+        HostActivityTopic["Fleet Host Activity Topic"] --> ActivityJoin
+        ActivityJoin["Windowed Left Join"] --> EnrichedTopic["Enriched Fleet Events Topic"]
+    end

@@ -1,0 +1,5 @@
+flowchart LR
+    Event["Deserialized Event"] --> AgentId["Extract Agent ID"]
+    AgentId --> CacheLookup["Redis Machine Cache Lookup"]
+    CacheLookup --> OrgLookup["Organization Cache Lookup"]
+    OrgLookup --> Enriched["Integrated Tool Enriched Data"]

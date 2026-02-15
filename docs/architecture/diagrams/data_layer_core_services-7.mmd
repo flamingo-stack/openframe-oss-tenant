@@ -1,0 +1,4 @@
+flowchart LR
+    InputField["Requested Sort Field"] --> Validate{"Is Sortable?"}
+    Validate -->|"yes"| Apply["Apply Sort"]
+    Validate -->|"no"| Default["Use Default Sort"]

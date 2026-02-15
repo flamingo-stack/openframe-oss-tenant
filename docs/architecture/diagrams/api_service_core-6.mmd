@@ -1,0 +1,5 @@
+flowchart TD
+    AdminRequest["Save SSO Config"] --> ValidateDomains
+    ValidateDomains --> EncryptSecret
+    EncryptSecret --> SaveRepo["SSOConfigRepository"]
+    SaveRepo --> PostProcess["SSOConfigProcessor"]

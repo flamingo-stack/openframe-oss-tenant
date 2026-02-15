@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Filter["TenantContextFilter"]
+    Filter --> Context["TenantContext"]
+    Context --> AuthServer["AuthorizationServerConfig"]
+    AuthServer --> KeyService["TenantKeyService"]
+    KeyService --> Repo["TenantKeyRepository (Mongo)"]

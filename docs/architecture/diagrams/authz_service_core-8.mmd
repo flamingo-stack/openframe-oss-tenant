@@ -1,0 +1,5 @@
+flowchart TD
+    AuthzServer["Authorization Server"] --> Service["MongoAuthorizationService"]
+    Service --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> MongoDoc["MongoOAuth2Authorization"]
+    MongoDoc --> MongoDB["MongoDB"]

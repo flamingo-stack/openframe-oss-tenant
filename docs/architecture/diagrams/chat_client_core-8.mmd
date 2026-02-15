@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant User
+    participant UI as "Chat UI"
+    participant Dialog as "DialogGraphQLService"
+    participant Token as "TokenService"
+    participant Gateway as "Gateway Service"
+    participant API as "API Service"
+
+    User->>UI: Send message
+    UI->>Dialog: Submit message query
+    Dialog->>Token: ensureTokenReady()
+    Dialog->>Gateway: Authenticated request
+    Gateway->>API: Forward to chat backend
+    API-->>Gateway: Streamed response
+    Gateway-->>Dialog: GraphQL response
+    Dialog-->>UI: Render messages

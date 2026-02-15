@@ -1,0 +1,6 @@
+flowchart LR
+    Admin["Admin"] --> Gateway
+    Gateway --> IntegrationController["IntegrationController"]
+    IntegrationController --> IntegrationService["IntegrationService"]
+    IntegrationController --> RestProxyService["RestProxyService"]
+    RestProxyService --> ToolBackend["Tool REST API"]

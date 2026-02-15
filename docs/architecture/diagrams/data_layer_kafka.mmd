@@ -1,0 +1,5 @@
+flowchart LR
+    Services["Application Services"] -->|"publish/consume events"| DataKafka["Data Layer Kafka"]
+    DataKafka -->|"producer/consumer config"| KafkaCluster[("Kafka Cluster")]
+    KafkaCluster -->|"streams"| StreamProcessing["Stream Processing Core"]
+    KafkaCluster -->|"CDC events"| Debezium["Debezium Connector"]

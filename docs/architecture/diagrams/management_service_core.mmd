@@ -1,0 +1,15 @@
+flowchart TD
+    ManagementCore["Management Service Core"]
+    MongoLayer["Mongo Data Layer"]
+    RedisLayer["Redis"]
+    Nats["NATS Streams"]
+    Debezium["Debezium Connectors"]
+    UpdatePublishers["Update Publishers"]
+    Agents["Integrated Tool Agents"]
+
+    ManagementCore -->|"reads/writes"| MongoLayer
+    ManagementCore -->|"distributed locks"| RedisLayer
+    ManagementCore -->|"creates streams"| Nats
+    ManagementCore -->|"manages connectors"| Debezium
+    ManagementCore -->|"publishes version updates"| UpdatePublishers
+    UpdatePublishers --> Agents

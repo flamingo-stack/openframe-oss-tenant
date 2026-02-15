@@ -1,0 +1,11 @@
+flowchart TD
+    Services["Platform Services"] -->|"use"| JwtSecurityConfig["JwtSecurityConfig"]
+    Services -->|"use"| JwtConfig["JwtConfig"]
+    Services -->|"use"| PKCEUtils["PKCEUtils"]
+    Services -->|"use"| SecurityConstants["SecurityConstants"]
+
+    JwtSecurityConfig -->|"creates"| JwtEncoder["JwtEncoder"]
+    JwtSecurityConfig -->|"creates"| JwtDecoder["JwtDecoder"]
+
+    JwtSecurityConfig -->|"loads keys from"| JwtConfig
+    JwtConfig -->|"parses RSA"| RsaKeys["RSA Public/Private Keys"]

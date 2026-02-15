@@ -1,0 +1,8 @@
+flowchart TD
+    Request["POST Tool Request"] --> Controller["IntegratedToolController"]
+    Controller --> Service["IntegratedToolService"]
+    Service --> Mongo["Mongo Repository"]
+    Service --> Controller
+    Controller --> DebeziumService["DebeziumService"]
+    Controller --> Hooks["IntegratedToolPostSaveHook"]
+    Hooks --> SideEffects["Service-specific Side Effects"]

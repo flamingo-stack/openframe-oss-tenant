@@ -1,0 +1,7 @@
+flowchart TD
+    UserMsg["User Message"] --> Decide["Show Tool Execution?"]
+    Decide -->|"Yes"| ToolStart["EXECUTING_TOOL event"]
+    ToolStart --> ToolDone["EXECUTED_TOOL event"]
+    ToolDone --> FinalText["Text follow-up"]
+
+    Decide -->|"No"| TextStream["Character chunk streaming"]

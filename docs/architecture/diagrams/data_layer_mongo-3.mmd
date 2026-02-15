@@ -1,0 +1,4 @@
+flowchart TD
+    AppType{"Web Application Type"}
+    AppType -->|"Servlet"| Blocking["Enable MongoRepositories"]
+    AppType -->|"Reactive"| Reactive["Enable ReactiveMongoRepositories"]

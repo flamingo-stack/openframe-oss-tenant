@@ -1,0 +1,13 @@
+flowchart TD
+    OpenApiConfig["OpenApiConfig"]
+
+    DeviceController["Device Controller"]
+    EventController["Event Controller"]
+    LogController["Log Controller"]
+    OrganizationController["Organization Controller"]
+    ToolController["Tool Controller"]
+    IntegrationController["Integration Controller"]
+
+    RestProxyService["Rest Proxy Service"]
+
+    IntegrationController --> RestProxyService

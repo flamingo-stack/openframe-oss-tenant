@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant FE as Frontend
+    participant GW as Gateway
+    participant API as Api Service Core
+    participant DS as DeviceService
+    participant DB as MongoDB
+
+    FE->>GW: GraphQL Query devices
+    GW->>API: Forward with JWT
+    API->>DS: queryDevices()
+    DS->>DB: find with filters
+    DB-->>DS: result set
+    DS-->>API: CountedGenericQueryResult
+    API-->>GW: GraphQL response
+    GW-->>FE: JSON payload

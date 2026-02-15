@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Dev as Developer
+    participant CI as CI Pipeline
+    participant Registry as Container Registry
+    participant Cluster as Kubernetes Cluster
+
+    Dev->>CI: Push code
+    CI->>CI: Build service image
+    CI->>Registry: Push image
+    Registry->>Cluster: Pull image
+    Cluster->>Cluster: Start Spring Boot app

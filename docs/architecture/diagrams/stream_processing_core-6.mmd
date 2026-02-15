@@ -1,0 +1,8 @@
+flowchart LR
+    Tools["Integrated Tools"] --> Debezium["Debezium CDC"]
+    Debezium --> Kafka["Kafka Topics"]
+    Kafka --> StreamCore["Stream Processing Core"]
+    StreamCore --> Cassandra["Cassandra Logs"]
+    StreamCore --> OutboundKafka["Outbound Tool Events"]
+    OutboundKafka --> ApiCore["API Service Core"]
+    ApiCore --> Frontend["Frontend Tenant App Core"]

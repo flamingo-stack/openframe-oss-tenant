@@ -1,0 +1,7 @@
+flowchart LR
+    ActivityTopic["Fleet Activities"] --> ReKey1["Re-key by Activity ID"]
+    HostTopic["Fleet Host Activities"] --> ReKey2["Re-key by Activity ID"]
+    ReKey1 --> Join["Left Join Window 5s"]
+    ReKey2 --> Join
+    Join --> HeaderAdd["Add MessageType Header"]
+    HeaderAdd --> OutputTopic["Enriched Fleet Events Topic"]

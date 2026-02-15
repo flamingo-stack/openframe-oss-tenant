@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Admin
+    participant Management
+    participant Mongo
+    participant Debezium
+    participant Publisher
+
+    Admin->>Management: POST /v1/tools/{id}
+    Management->>Mongo: Save Tool
+    Management->>Debezium: Create/Update Connectors
+    Management->>Publisher: Publish Agent Update (if version change)
+    Management->>Admin: Return Success

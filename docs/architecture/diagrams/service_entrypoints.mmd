@@ -1,0 +1,24 @@
+flowchart TD
+    ConfigServer["Config Server"]
+    Gateway["Gateway Service"]
+    Authz["Authorization Server"]
+    Api["API Service"]
+    ExternalApi["External API Service"]
+    Client["Client Service"]
+    Management["Management Service"]
+    Stream["Stream Processing Service"]
+    DataLayer["Data Layer Modules"]
+    Kafka["Kafka"]
+
+    Gateway -->|"Routes requests"| Api
+    Gateway -->|"OAuth2 / OIDC"| Authz
+    Api -->|"Reads / Writes"| DataLayer
+    ExternalApi -->|"Delegates to"| Api
+    Client -->|"Publishes events"| Kafka
+    Stream -->|"Consumes events"| Kafka
+    Stream -->|"Persists"| DataLayer
+    Management -->|"Initializes / Schedules"| DataLayer
+    Authz -->|"Stores tokens"| DataLayer
+    ConfigServer -->|"Provides config"| Gateway
+    ConfigServer -->|"Provides config"| Api
+    ConfigServer -->|"Provides config"| Authz

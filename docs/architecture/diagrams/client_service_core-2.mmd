@@ -1,0 +1,28 @@
+flowchart TD
+    subgraph api_layer["API Layer"]
+        AgentAuthController["AgentAuthController"]
+        AgentController["AgentController"]
+        ToolAgentFileController["ToolAgentFileController"]
+    end
+
+    subgraph listener_layer["Event Listener Layer"]
+        ClientConnectionListener["ClientConnectionListener"]
+        MachineHeartbeatListener["MachineHeartbeatListener"]
+        InstalledAgentListener["InstalledAgentListener"]
+        ToolConnectionListener["ToolConnectionListener"]
+    end
+
+    subgraph service_layer["Service & Processing Layer"]
+        DefaultAgentRegistrationProcessor["DefaultAgentRegistrationProcessor"]
+        FleetTransformer["FleetMdmAgentIdTransformer"]
+        MeshTransformer["MeshCentralAgentIdTransformer"]
+    end
+
+    subgraph config_layer["Configuration"]
+        PasswordEncoderConfig["PasswordEncoderConfig"]
+    end
+
+    AgentAuthController --> DefaultAgentRegistrationProcessor
+    AgentController --> DefaultAgentRegistrationProcessor
+    InstalledAgentListener --> FleetTransformer
+    ToolConnectionListener --> MeshTransformer

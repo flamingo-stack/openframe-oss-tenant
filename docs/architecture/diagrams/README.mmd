@@ -1,0 +1,23 @@
+flowchart LR
+    Frontend["Frontend Tenant App"] --> Gateway["Gateway Service"]
+    ChatClient["OpenFrame Chat Client"] --> Gateway
+
+    Gateway --> Authz["Authorization Service"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientSvc["Client Service"]
+
+    Authz --> Mongo["MongoDB"]
+    Api --> Mongo
+    ClientSvc --> Mongo
+    Management --> Mongo
+
+    ClientSvc --> Nats["NATS"]
+    Stream --> Kafka["Kafka"]
+    Kafka --> Stream["Stream Processing Service"]
+
+    Stream --> Cassandra["Cassandra"]
+    Stream --> Pinot["Apache Pinot"]
+
+    Management["Management Service"] --> Kafka
+    Management --> Nats

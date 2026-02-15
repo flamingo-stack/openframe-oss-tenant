@@ -1,0 +1,8 @@
+flowchart TD
+    Entity["Entity"] --> HasState{"PublishState null?"}
+    HasState -->|"yes"| Publish
+    HasState -->|"no"| Published{"Already published?"}
+    Published -->|"yes"| Skip
+    Published -->|"no"| Attempts{"Attempts < max?"}
+    Attempts -->|"yes"| Publish
+    Attempts -->|"no"| Skip

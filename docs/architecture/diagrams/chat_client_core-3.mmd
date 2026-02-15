@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Application Start"] --> InitListener["Initialize token listener"]
+    InitListener --> Env["Load from env variables"]
+    Env --> WaitEvent["Wait for token-update event"]
+    WaitEvent --> SetToken["Store token"]
+    SetToken --> Notify["Notify subscribers"]

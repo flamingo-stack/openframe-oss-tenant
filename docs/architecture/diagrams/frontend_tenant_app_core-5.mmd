@@ -1,0 +1,7 @@
+flowchart TD
+    Frontend["Frontend Tenant App Core"] --> Gateway["Gateway Service Core"]
+    Gateway --> Authz["Authorization Service Core"]
+    Gateway --> ApiCore["API Service Core"]
+    Gateway --> Tools["Integrated Tools"]
+    ApiCore --> Mongo["Mongo Data Layer"]
+    ApiCore --> Kafka["Kafka Data Layer"]
