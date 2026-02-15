@@ -1,0 +1,4 @@
+flowchart TD
+    EnrichedMsg["Enriched Debezium Message"] --> CassandraHandler["DebeziumCassandraMessageHandler"]
+    CassandraHandler --> Unified["UnifiedLogEvent"]
+    Unified --> CassandraDB[("Cassandra")]

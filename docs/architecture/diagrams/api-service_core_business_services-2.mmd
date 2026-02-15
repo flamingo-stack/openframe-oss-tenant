@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Delete User Request"] --> LoadUser["Load User"]
+    LoadUser --> CheckSelf["Is requester deleting self?"]
+    CheckSelf -->|"Yes"| RejectSelf["Throw UserSelfDeleteNotAllowedException"]
+    CheckSelf -->|"No"| CheckOwner["Is user OWNER?"]
+    CheckOwner -->|"Yes"| RejectOwner["Throw OperationNotAllowedException"]
+    CheckOwner -->|"No"| SoftDelete["Set status = DELETED"]
+    SoftDelete --> SaveUser["Persist via UserRepository"]
+    SaveUser --> PostProcess["UserProcessor.postProcessUserDeleted"]

@@ -1,0 +1,24 @@
+flowchart LR
+    Agent["Client Agent"] -->|"POST /api/agents/register"| AgentController
+    Agent -->|"POST /oauth/token"| AgentAuthController
+    Agent -->|"GET /tool-agent/{assetId}"| ToolAgentFileController
+
+    AgentController --> AgentRegistrationService
+    AgentAuthController --> AgentAuthService
+
+    Agent -->|"machine.*.heartbeat"| NatsBroker
+    Agent -->|"machine.*.installed-agent"| NatsBroker
+    Agent -->|"machine.*.tool-connection"| NatsBroker
+
+    NatsBroker --> MachineHeartbeatListener
+    NatsBroker --> InstalledAgentListener
+    NatsBroker --> ToolConnectionListener
+
+    MachineHeartbeatListener --> MachineStatusService
+    InstalledAgentListener --> InstalledAgentService
+    ToolConnectionListener --> ToolConnectionService
+
+    AgentRegistrationService --> MongoDB[("Mongo Database")]
+    MachineStatusService --> MongoDB
+    InstalledAgentService --> MongoDB
+    ToolConnectionService --> MongoDB

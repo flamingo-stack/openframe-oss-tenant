@@ -1,0 +1,13 @@
+flowchart LR
+    UI["React UI"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+
+    ApiClient --> BackendAPI["API Service"]
+    ApiClient --> ChatAPI["Chat REST & GraphQL"]
+    ApiClient --> FleetProxy["Fleet Proxy"]
+    ApiClient --> TacticalProxy["Tactical Proxy"]
+
+    AuthApiClient --> AuthServer["Authorization Server"]
+
+    FleetProxy --> FleetService["Fleet MDM"]
+    TacticalProxy --> TacticalService["Tactical RMM"]

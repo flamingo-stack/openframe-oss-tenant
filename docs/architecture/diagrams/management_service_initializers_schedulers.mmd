@@ -1,0 +1,24 @@
+flowchart TD
+    AppStart["Management Application Startup"] --> Init["Initializers"]
+    AppStart --> Schedulers["Schedulers"]
+    AppStart --> Controllers["Management REST Controllers"]
+
+    Init --> Pinot["PinotConfigInitializer"]
+    Init --> AgentSecret["AgentRegistrationSecretInitializer"]
+    Init --> ToolAgentInit["IntegratedToolAgentInitializer"]
+    Init --> NatsInit["NatsStreamConfigurationInitializer"]
+    Init --> ClientConfigInit["OpenFrameClientConfigurationInitializer"]
+    Init --> TacticalInit["TacticalRmmScriptsInitializer"]
+    Init --> DebeziumInit["DebeziumConnectorInitializer"]
+
+    Schedulers --> ApiKeyScheduler["ApiKeyStatsSyncScheduler"]
+    Schedulers --> DebeziumScheduler["DebeziumHealthCheckScheduler"]
+    Schedulers --> AgentFallback["AgentVersionUpdatePublishFallbackScheduler"]
+
+    Controllers --> ToolController["IntegratedToolController"]
+    Controllers --> ReleaseController["ReleaseVersionController"]
+
+    ToolController --> DebeziumService
+    AgentFallback --> PublishServices["Publishers"]
+    ApiKeyScheduler --> RedisMongoSync["Redis → Mongo Sync"]
+    DebeziumScheduler --> DebeziumService

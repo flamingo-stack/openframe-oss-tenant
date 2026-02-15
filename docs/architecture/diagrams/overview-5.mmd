@@ -1,0 +1,8 @@
+flowchart TD
+    Agent --> Register["POST /agents/register"]
+    Agent --> OAuthToken
+    Agent --> NATS
+
+    NATS --> HeartbeatListener
+    NATS --> InstalledAgentListener
+    NATS --> ToolConnectionListener

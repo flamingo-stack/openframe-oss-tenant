@@ -1,0 +1,6 @@
+flowchart LR
+    Query["GraphQL Query"] --> Filter["Filter Input"]
+    Filter --> Service["Business Service"]
+    Service --> Repo["Repository Query"]
+    Repo --> Connection["CountedGenericConnection"]
+    Connection --> Client["Frontend"]

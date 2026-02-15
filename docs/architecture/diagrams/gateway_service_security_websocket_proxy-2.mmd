@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming JWT"] --> ExtractIssuer["Extract iss claim"]
+    ExtractIssuer --> CacheCheck["Check issuer cache"]
+    CacheCheck -->|Hit| Manager["ReactiveAuthenticationManager"]
+    CacheCheck -->|Miss| CreateManager["Create JWT Decoder"]
+    CreateManager --> ValidateIssuer["Strict issuer validation"]
+    ValidateIssuer --> Manager
+    Manager --> Authenticated["Authenticated Principal"]

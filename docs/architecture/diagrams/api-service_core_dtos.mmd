@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Frontend / External Client"] -->|"HTTP / GraphQL"| Controller["API Controllers"]
+    Controller -->|"Request DTOs"| Service["Business Services"]
+    Service -->|"Domain Models"| Repository["Data Repositories"]
+    Service -->|"Response DTOs"| Controller
+    Controller -->|"JSON / GraphQL"| Client

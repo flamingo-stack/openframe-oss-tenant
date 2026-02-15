@@ -1,0 +1,29 @@
+flowchart TD
+    Browser["Frontend (React + Mingo)"] --> Gateway["Gateway Service"]
+    Browser --> AuthBFF["Security OAuth JWT BFF"]
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> AuthServer["Authorization Server"]
+
+    AuthBFF --> AuthServer
+
+    ClientService --> NATS["NATS / JetStream"]
+    ClientService --> Mongo["MongoDB"]
+
+    ApiService --> Mongo
+    ApiService --> Redis["Redis"]
+    ApiService --> Kafka["Kafka"]
+
+    ExternalApi --> ApiService
+
+    Kafka --> StreamService["Stream Service"]
+    StreamService --> Cassandra["Cassandra"]
+    StreamService --> Pinot["Apache Pinot"]
+
+    ManagementService["Management Service"] --> Mongo
+    ManagementService --> Kafka
+    ManagementService --> NATS
+
+    AuthServer --> Mongo

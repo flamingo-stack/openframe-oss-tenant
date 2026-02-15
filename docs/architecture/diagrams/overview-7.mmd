@@ -1,0 +1,6 @@
+flowchart TD
+    UI --> ApiClient
+    ApiClient --> Gateway
+    UI --> MingoApiService
+    MingoApiService --> ChatBackend
+    ChatBackend --> AIModels

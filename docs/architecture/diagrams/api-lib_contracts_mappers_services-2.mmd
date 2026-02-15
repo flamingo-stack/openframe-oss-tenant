@@ -1,0 +1,5 @@
+flowchart LR
+    DTOs["DTO Contracts"] --> Filters["Filter Models"]
+    Filters --> Pagination["Pagination"]
+    DTOs --> Mappers["Entity Mappers"]
+    DTOs --> Services["Shared Services"]

@@ -1,0 +1,7 @@
+flowchart TD
+    A["Agent"] -->|"Register Request"| B["AgentController"]
+    B --> C["AgentRegistrationService"]
+    C --> D["Persist Machine"]
+    C --> E["AgentRegistrationProcessor"]
+    E --> F["DefaultAgentRegistrationProcessor"]
+    D --> G["Return Registration Response"]

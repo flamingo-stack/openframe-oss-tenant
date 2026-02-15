@@ -1,0 +1,4 @@
+flowchart TD
+    Rust["Tauri Rust Layer"] -->|invoke get_debug_mode| DebugProvider["DebugModeProvider"]
+    DebugProvider --> ReactContext["DebugModeContext"]
+    ReactContext --> Components["Chat Components"]

@@ -1,0 +1,5 @@
+flowchart TD
+    ClientWS["Client WebSocket Request"] --> ExtractTool["Extract toolId from path"]
+    ExtractTool --> LookupTool["Find tool configuration"]
+    LookupTool --> ResolveUrl["Resolve target WebSocket URL"]
+    ResolveUrl --> ProxyWS["Proxy connection to tool backend"]

@@ -1,0 +1,16 @@
+flowchart LR
+    Client["Frontend / Gateway"] --> REST["REST Controllers"]
+    Client --> GraphQL["GraphQL DGS Layer"]
+
+    REST --> Services["Business Services"]
+    GraphQL --> Services
+
+    GraphQL --> DataLoaders["DGS DataLoaders"]
+    DataLoaders --> Services
+
+    Services --> DataLayer["Mongo / Cassandra / Pinot"]
+    Services --> StreamLayer["Kafka / Debezium"]
+    Services --> CacheLayer["Redis Cache"]
+
+    REST --> Security["OAuth2 Resource Server"]
+    GraphQL --> Security

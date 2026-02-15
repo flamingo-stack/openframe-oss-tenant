@@ -1,0 +1,9 @@
+flowchart TD
+    A["UUID from Agent"] --> B["FleetMdmAgentIdTransformer"]
+    B --> C["IntegratedToolService"]
+    B --> D["ToolUrlService"]
+    B --> E["FleetMdmClient.searchHosts"]
+    E --> F{"Matching Host?"}
+    F -->|"Yes"| G["Return Host ID"]
+    F -->|"No & Not Last"| H["Throw Error"]
+    F -->|"No & Last"| I["Return UUID"]

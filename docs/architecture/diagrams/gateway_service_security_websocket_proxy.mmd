@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Frontend or Agent"] --> Gateway["Gateway Service Security Websocket Proxy"]
+    Gateway --> ApiService["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> ToolBackends["Integrated Tool Backends"]
+    Gateway --> AuthServer["Authorization Server"]
+    Gateway --> Nats["NATS WebSocket"]

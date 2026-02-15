@@ -1,0 +1,10 @@
+flowchart LR
+    Client --> REST["REST Controllers"]
+    Client --> GraphQL["GraphQL DGS"]
+
+    REST --> Services["Business Services"]
+    GraphQL --> Services
+
+    Services --> Mongo
+    Services --> Redis
+    Services --> Kafka

@@ -1,0 +1,9 @@
+flowchart TD
+    ClientService["Client Service Agent Ingest"] --> Kafka
+    StreamService["Stream Service Kafka Debezium Enrichment"] --> Kafka
+    ManagementService["Management Service"] --> Kafka
+
+    Kafka[("OSS Kafka Cluster")]
+
+    Kafka --> StreamService
+    Kafka --> Analytics["Pinot / Cassandra"]

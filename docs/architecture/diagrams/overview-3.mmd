@@ -1,0 +1,6 @@
+flowchart TD
+    Browser --> AuthServer
+    AuthServer --> TenantContext["TenantContextFilter"]
+    TenantContext --> OAuthFlow["OAuth2 + OIDC"]
+    OAuthFlow --> JwtSigner["Per-Tenant RSA Key"]
+    JwtSigner --> JWT["Signed JWT"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant RestProxy
+    participant ToolBackend
+
+    Client->>Gateway: Request /tools/{toolId}/endpoint
+    Gateway->>RestProxy: proxyApiRequest()
+    RestProxy->>ToolBackend: Forward HTTP request
+    ToolBackend-->>RestProxy: Response
+    RestProxy-->>Gateway: ResponseEntity
+    Gateway-->>Client: HTTP response

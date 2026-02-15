@@ -1,0 +1,5 @@
+flowchart TD
+    A["Request Asset"] --> B{"OS Type"}
+    B -->|"mac"| C["Return raw asset"]
+    B -->|"windows"| D["Append .exe"]
+    B -->|"unknown"| E["Throw Error"]

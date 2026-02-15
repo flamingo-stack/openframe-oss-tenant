@@ -1,0 +1,4 @@
+flowchart TD
+    SendFailure["Producer Send Failure"] --> RetryExhausted["Retries Exhausted"]
+    RetryExhausted --> RecoveryHandler["KafkaRecoveryHandlerImpl.enqueue()"]
+    RecoveryHandler --> LogError["Structured Error Log"]

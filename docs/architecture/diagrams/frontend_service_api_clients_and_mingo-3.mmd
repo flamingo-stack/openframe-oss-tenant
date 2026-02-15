@@ -1,0 +1,5 @@
+flowchart TD
+    FleetApiClient["FleetApiClient"] --> ApiClient
+    ApiClient --> Gateway["Gateway Service"]
+    Gateway --> FleetProxy["/tools/fleetmdm-server"]
+    FleetProxy --> FleetBackend["Fleet MDM"]

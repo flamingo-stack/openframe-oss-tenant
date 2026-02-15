@@ -1,0 +1,16 @@
+flowchart TD
+    App["Spring Boot Application"] --> AutoConfig["OssTenantKafkaAutoConfiguration"]
+    AutoConfig --> ProducerFactory["ProducerFactory<String,Object>"]
+    AutoConfig --> KafkaTemplate["KafkaTemplate<String,Object>"]
+    AutoConfig --> ConsumerFactory["ConsumerFactory<Object,Object>"]
+    AutoConfig --> ListenerFactory["ConcurrentKafkaListenerContainerFactory"]
+    AutoConfig --> KafkaAdmin["KafkaAdmin"]
+    AutoConfig --> Topics["KafkaTopicProperties"]
+
+    KafkaTemplate --> Producer["OssTenantKafkaProducer"]
+    Producer --> KafkaCluster[("OSS Kafka Cluster")]
+
+    ListenerFactory --> Consumers["@KafkaListener Consumers"]
+    Consumers --> KafkaCluster
+
+    Topics --> KafkaAdmin

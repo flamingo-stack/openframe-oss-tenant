@@ -1,0 +1,5 @@
+flowchart TD
+    A["Heartbeat Message"] --> B["MachineHeartbeatListener"]
+    B --> C["Extract machineId"]
+    B --> D["MachineStatusService"]
+    D --> E["Update lastSeen timestamp"]

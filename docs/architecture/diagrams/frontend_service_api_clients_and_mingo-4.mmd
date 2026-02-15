@@ -1,0 +1,5 @@
+flowchart TD
+    TacticalApiClient["TacticalApiClient"] --> ApiClient
+    ApiClient --> Gateway
+    Gateway --> TacticalProxy["/tools/tactical-rmm"]
+    TacticalProxy --> TacticalBackend["Tactical RMM"]

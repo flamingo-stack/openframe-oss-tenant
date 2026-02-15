@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI
+    participant Hook
+    participant ApiClient
+    participant ChatAPI
+
+    UI->>Hook: sendMessage(content)
+    Hook->>Hook: ensure dialog exists
+    Hook->>ApiClient: POST /chat/api/v1/messages
+    ApiClient->>ChatAPI: request
+    ChatAPI-->>ApiClient: response
+    ApiClient-->>Hook: ApiResponse

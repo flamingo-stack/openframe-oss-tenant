@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Browser
+    participant AuthServer
+    participant Provider
+
+    Browser->>AuthServer: /oauth2/authorization/google
+    AuthServer->>Provider: Redirect
+    Provider->>AuthServer: ID Token
+    AuthServer->>AuthServer: Auto-provision if enabled
+    AuthServer->>Browser: Success + Session

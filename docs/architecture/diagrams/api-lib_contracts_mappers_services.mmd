@@ -1,0 +1,7 @@
+flowchart TD
+    Frontend["Frontend & API Clients"] --> ApiCore["API Service Core\nGraphQL & REST"]
+    ExternalApi["External API Service"] --> ApiCore
+    ApiCore --> ApiLib["Api-Lib Contracts\nMappers Services"]
+    ApiLib --> DataMongo["Mongo Documents & Repositories"]
+    ApiLib --> DataCore["Core Data Models\nCassandra & Pinot"]
+    ApiCore --> BusinessServices["Business Services"]

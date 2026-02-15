@@ -1,0 +1,7 @@
+flowchart TD
+    ApiService["API Service Core GraphQL REST"] -->|"uses"| MongoModule["Data Mongo Documents And Repositories"]
+    AuthServer["Authorization Server Core Tenant SSO Registration"] -->|"uses"| MongoModule
+    ManagementService["Management Service Initializers Schedulers"] -->|"uses"| MongoModule
+    StreamService["Stream Service Kafka Debezium Enrichment"] -->|"persists events"| MongoModule
+
+    MongoModule -->|"stores"| MongoDB[("MongoDB")]

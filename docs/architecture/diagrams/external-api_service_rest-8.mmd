@@ -1,0 +1,10 @@
+flowchart TD
+    ExternalClients["External Systems"] --> ExternalApi["External-Api Service Rest"]
+    Frontend --> Gateway
+    Gateway --> ApiCore["Core API Service"]
+
+    ExternalApi --> ApiCore
+    ApiCore --> DataLayer
+    DataLayer --> Storage[("Mongo / Pinot / Cassandra")]
+
+    ExternalApi --> IntegratedTools

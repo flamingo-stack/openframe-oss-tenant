@@ -1,0 +1,5 @@
+flowchart LR
+    ClientApplication --> ClientServiceAgentIngest
+    ClientServiceAgentIngest --> NATS
+    ClientServiceAgentIngest --> Mongo
+    ClientServiceAgentIngest --> ToolServices

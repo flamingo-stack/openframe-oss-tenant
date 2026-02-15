@@ -1,0 +1,4 @@
+flowchart TD
+    OrgFilter["OrganizationQueryFilter"] --> CustomRepo["CustomOrganizationRepositoryImpl"]
+    CustomRepo --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB[("MongoDB organizations collection")]

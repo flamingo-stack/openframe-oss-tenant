@@ -1,0 +1,5 @@
+flowchart LR
+    Service["@Cacheable Service"] --> CacheAbstraction["Spring Cache Abstraction"]
+    CacheAbstraction --> CacheManager["RedisCacheManager"]
+    CacheManager --> Prefix["Tenant-Aware Prefix"]
+    Prefix --> RedisServer[("Redis Server")]

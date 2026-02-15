@@ -1,0 +1,4 @@
+flowchart LR
+    Props["OpenframeRedisProperties"] --> KeyConfig["OpenframeRedisKeyConfiguration"]
+    KeyConfig --> KeyBuilder["OpenframeRedisKeyBuilder"]
+    KeyBuilder --> CacheConfig["CacheConfig"]

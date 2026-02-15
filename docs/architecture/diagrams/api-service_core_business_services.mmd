@@ -1,0 +1,7 @@
+flowchart TD
+    Controllers["GraphQL & REST Controllers"] --> Services["Api-Service Core Business Services"]
+    Services --> Repositories["Mongo Repositories"]
+    Services --> Processors["Domain Processors"]
+    Services --> Encryption["Encryption Service"]
+    Services --> DomainValidation["Domain Validation Service"]
+    Repositories --> Mongo[("MongoDB")]

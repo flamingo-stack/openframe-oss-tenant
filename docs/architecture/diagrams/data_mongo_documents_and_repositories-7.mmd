@@ -1,0 +1,6 @@
+flowchart LR
+    AuthServer["Authorization Server"] --> OAuthRepo["OAuthTokenRepository"]
+    OAuthRepo --> OAuthTokens[("oauth_tokens collection")]
+
+    AuthServer --> ClientRepo["ReactiveOAuthClientRepository"]
+    ClientRepo --> Clients[("oauth_registered_clients collection")]

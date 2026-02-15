@@ -1,0 +1,12 @@
+flowchart TD
+    App["Spring Boot Application"] --> RedisConfig["RedisConfig"]
+    App --> CacheConfig["CacheConfig"]
+    App --> KeyConfig["OpenframeRedisKeyConfiguration"]
+
+    RedisConfig --> Templates["RedisTemplate / ReactiveRedisTemplate"]
+    CacheConfig --> CacheManager["RedisCacheManager"]
+    KeyConfig --> KeyBuilder["OpenframeRedisKeyBuilder"]
+
+    CacheManager --> RedisServer[("Redis Server")]
+    Templates --> RedisServer
+    KeyBuilder --> CacheManager

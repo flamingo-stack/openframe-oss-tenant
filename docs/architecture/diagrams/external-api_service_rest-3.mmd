@@ -1,0 +1,15 @@
+flowchart TD
+    Client --> DeviceController
+    DeviceController --> FilterCriteria["DeviceFilterCriteria"]
+    DeviceController --> Pagination["PaginationCriteria"]
+    DeviceController --> Sort["SortCriteria"]
+
+    DeviceController --> DeviceService
+    DeviceService --> RepositoryLayer["Device Repository"]
+    RepositoryLayer --> Mongo
+
+    DeviceController --> TagService
+    TagService --> Mongo
+
+    DeviceController --> DeviceMapper
+    DeviceMapper --> DevicesResponse

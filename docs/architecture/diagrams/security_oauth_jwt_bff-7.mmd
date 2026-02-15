@@ -1,0 +1,6 @@
+flowchart TD
+    Bff -->|"createTicket(tokens)"| Store
+    Store -->|"UUID"| TicketId
+    Browser -->|"GET /dev-exchange?ticket=id"| Bff
+    Bff -->|"consumeTicket(id)"| Store
+    Store -->|"Return Tokens"| Bff

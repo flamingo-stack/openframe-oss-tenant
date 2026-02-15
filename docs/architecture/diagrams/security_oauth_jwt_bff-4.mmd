@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant Bff as OAuthBffController
+    participant Authz as Authorization Server
+
+    Browser->>Bff: GET /oauth/login
+    Bff->>Authz: Redirect with PKCE + state
+    Authz->>Browser: Login UI
+    Authz->>Bff: Redirect with code + state
+    Bff->>Authz: Exchange code for tokens
+    Authz->>Bff: Access + Refresh tokens
+    Bff->>Browser: Set HttpOnly cookies + redirect

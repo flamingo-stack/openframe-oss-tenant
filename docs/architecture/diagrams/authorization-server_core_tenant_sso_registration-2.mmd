@@ -1,0 +1,4 @@
+flowchart LR
+    Request["HTTP Request /{tenant}/oauth2/authorize"] --> Filter["TenantContextFilter"]
+    Filter --> Context["TenantContext ThreadLocal"]
+    Context --> AuthLogic["Authorization + User Lookup"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Browser -->|"GET /oauth/logout"| Bff
+    Bff -->|"Revoke Refresh Token"| Authz
+    Bff -->|"Clear Cookies"| Browser

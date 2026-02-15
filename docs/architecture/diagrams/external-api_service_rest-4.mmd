@@ -1,0 +1,7 @@
+flowchart TD
+    Client --> EventController
+    EventController --> EventFilter["EventFilterCriteria"]
+    EventController --> EventService
+    EventService --> EventRepository
+    EventController --> EventMapper
+    EventMapper --> EventsResponse

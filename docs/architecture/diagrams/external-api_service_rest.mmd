@@ -1,0 +1,13 @@
+flowchart TD
+    Client["External Client / Integration"] -->|"X-API-Key"| ExternalApi["External-Api Service Rest"]
+
+    ExternalApi --> Controllers["REST Controllers"]
+    Controllers --> Services["Core API Services"]
+    Services --> DataLayer["Data Layer"]
+
+    DataLayer --> Mongo[("MongoDB")]
+    DataLayer --> Pinot[("Apache Pinot")]
+    DataLayer --> Cassandra[("Cassandra")]
+
+    Controllers --> Proxy["RestProxyService"]
+    Proxy --> IntegratedTool["Integrated Tool API"]

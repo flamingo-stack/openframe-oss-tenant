@@ -1,0 +1,7 @@
+flowchart TD
+    JwtConfigBean["JwtConfig"] -->|"loadPublicKey()"| Encoder
+    JwtConfigBean -->|"loadPrivateKey()"| Encoder
+    Encoder["NimbusJwtEncoder"] -->|"Sign JWT"| AccessToken
+
+    JwtConfigBean -->|"loadPublicKey()"| Decoder
+    Decoder["NimbusJwtDecoder"] -->|"Verify Signature"| ValidatedToken

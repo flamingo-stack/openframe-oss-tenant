@@ -1,0 +1,4 @@
+flowchart LR
+    DeviceFilter["MachineQueryFilter"] --> CustomMachineRepo["CustomMachineRepositoryImpl"]
+    CustomMachineRepo --> Query["Mongo Query"]
+    Query --> Devices[("devices collection")]

@@ -1,0 +1,6 @@
+flowchart TD
+    UI["Chat Settings UI"] --> ModelsService["SupportedModelsService"]
+    ModelsService -->|ensure token| TokenService
+    ModelsService --> Backend["AI Configuration Endpoint"]
+    Backend --> ModelsService
+    ModelsService --> Cache["In-memory Map Cache"]

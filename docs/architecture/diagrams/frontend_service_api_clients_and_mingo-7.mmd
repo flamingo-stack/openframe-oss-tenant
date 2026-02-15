@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Store
+    participant ApiClient
+    participant ChatGraphQL
+
+    Store->>ApiClient: POST /chat/graphql
+    ApiClient->>ChatGraphQL: GraphQL Query
+    ChatGraphQL-->>ApiClient: DialogConnection
+    ApiClient-->>Store: ApiResponse

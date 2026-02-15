@@ -1,0 +1,4 @@
+flowchart TD
+    Service["Business Service"] --> Processor["Domain Processor Interface"]
+    Processor --> DefaultImpl["Default Implementation"]
+    Processor --> CustomImpl["Custom Tenant Override"]

@@ -1,0 +1,19 @@
+classDiagram
+    class DebeziumMessage~T~ {
+        Payload~T~ payload
+    }
+
+    class Payload~T~ {
+        T before
+        T after
+        Source source
+        String operation
+        Long timestamp
+    }
+
+    class Source {
+        String connector
+        String database
+        String table
+        String collection
+    }

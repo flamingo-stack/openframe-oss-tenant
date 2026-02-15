@@ -1,0 +1,5 @@
+flowchart TD
+    Admin["Admin User"] -->|"Submit SSOConfigRequest"| Api
+    Api["SSO Controller"] --> Service["SSO Service"]
+    Service --> Storage["Tenant SSO Config"]
+    Service -->|"SSOConfigResponse"| Api

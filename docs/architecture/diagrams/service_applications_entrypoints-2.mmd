@@ -1,0 +1,5 @@
+flowchart TD
+    Main["main() method"] --> Boot["SpringApplication.run()"]
+    Boot --> Scan["Component Scan"]
+    Scan --> Beans["Bean Initialization"]
+    Beans --> Ready["Service Ready"]

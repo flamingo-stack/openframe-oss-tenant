@@ -1,0 +1,6 @@
+flowchart TD
+    InviteLink["Invitation Link"] --> StartAccept["SsoInvitationService.startAccept"]
+    StartAccept --> Cookie["Set of_sso_invite Cookie"]
+    Cookie --> OAuthLogin["OAuth2 Login"]
+    OAuthLogin --> InviteHandler["InviteSsoHandler"]
+    InviteHandler --> RegisterUser["InvitationRegistrationService.registerByInvitation"]

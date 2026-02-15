@@ -1,0 +1,13 @@
+flowchart LR
+    API["API Services"] -->|"persist devices"| Mongo[("MongoDB")]
+    API -->|"persist events"| Cassandra[("Cassandra")]
+
+    Mongo -->|"MachineTagEventAspect"| Aspect["Machine Tag Aspect"]
+    Aspect --> Service["MachineTagEventServiceImpl"]
+    Service -->|"MachinePinotMessage"| Kafka[("Kafka")]
+
+    Kafka --> Stream["Stream Service"]
+    Stream --> Pinot[("Apache Pinot")]
+
+    API -->|"analytics queries"| PinotRepo["Pinot Repositories"]
+    PinotRepo --> Pinot

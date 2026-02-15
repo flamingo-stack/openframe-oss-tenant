@@ -1,0 +1,8 @@
+flowchart TD
+    Client --> IntegrationController
+    IntegrationController --> RestProxyService
+    RestProxyService --> ToolRepository
+    RestProxyService --> ToolUrlService
+    RestProxyService --> ProxyUrlResolver
+    RestProxyService --> HttpClient
+    HttpClient --> ExternalTool["Integrated Tool API"]

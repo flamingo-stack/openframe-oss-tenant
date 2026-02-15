@@ -1,0 +1,4 @@
+flowchart LR
+    Client["Client"] -->|"limit + cursor"| ApiLayer["API Layer"]
+    ApiLayer --> Repository["Repository"]
+    Repository --> Result["CountedGenericQueryResult"]

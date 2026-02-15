@@ -1,0 +1,21 @@
+flowchart LR
+    Tools["Integrated Tools<br/>Fleet MDM<br/>Tactical RMM<br/>MeshCentral"] --> Debezium["Debezium CDC"]
+    Debezium --> KafkaInbound["Kafka Inbound Topics"]
+
+    KafkaInbound --> Listener["JsonKafkaListener"]
+    Listener --> Processor["GenericJsonMessageProcessor"]
+
+    Processor --> Deserializers["Tool-Specific Deserializers"]
+    Deserializers --> Mapper["EventTypeMapper"]
+    Mapper --> Enrichment["IntegratedToolDataEnrichmentService"]
+
+    Enrichment --> Handlers["DebeziumMessageHandlers"]
+
+    Handlers --> Cassandra["Cassandra<br/>UnifiedLogEvent"]
+    Handlers --> KafkaOutbound["Outbound Kafka<br/>IntegratedToolEvent"]
+
+    subgraph streams_layer["Kafka Streams Layer"]
+        ActivityTopic["fleet-mdm-activities"] --> Joiner["ActivityEnrichmentService"]
+        HostActivityTopic["fleet-mdm-host-activities"] --> Joiner
+        Joiner --> EnrichedTopic["fleet-mdm-events"]
+    end

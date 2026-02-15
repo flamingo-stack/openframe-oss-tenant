@@ -1,0 +1,8 @@
+flowchart TD
+    RSA["RSA Key Pair"] --> Sign["JwtEncoder"]
+    Sign --> AccessToken
+    AccessToken --> Validate["JwtDecoder"]
+
+    PKCE["PKCE"] --> AuthFlow["OAuth Authorization Code"]
+    AuthFlow --> Cookies["HttpOnly Secure Cookies"]
+    Cookies --> Gateway

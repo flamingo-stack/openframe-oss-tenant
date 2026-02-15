@@ -1,0 +1,9 @@
+flowchart TD
+    AdminRequest["Admin Upsert Config"] --> Validate["validateAutoProvision()"]
+    Validate --> Normalize["Normalize Domains"]
+    Normalize --> DomainCheck1["validateGenericPublicDomain()"]
+    DomainCheck1 --> DomainCheck2["validateExists()"]
+    DomainCheck2 --> Encrypt["Encrypt Client Secret"]
+    Encrypt --> Save["Save via SSOConfigRepository"]
+    Save --> Processor["SSOConfigProcessor.postProcessConfigSaved"]
+    Processor --> Response["Return SSOConfigResponse"]

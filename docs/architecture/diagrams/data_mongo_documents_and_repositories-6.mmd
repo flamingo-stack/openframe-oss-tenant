@@ -1,0 +1,4 @@
+flowchart TD
+    EventFilter["EventQueryFilter"] --> CustomEventRepo["CustomEventRepositoryImpl"]
+    CustomEventRepo --> MongoTemplate
+    MongoTemplate --> Events[("events collection")]

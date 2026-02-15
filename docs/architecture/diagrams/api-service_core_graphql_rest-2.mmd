@@ -1,0 +1,5 @@
+flowchart TD
+    Request --> ResourceServer["OAuth2 Resource Server"]
+    ResourceServer --> IssuerResolver["JwtIssuerAuthenticationManagerResolver"]
+    IssuerResolver --> Cache["Caffeine JWT Provider Cache"]
+    Cache --> JwtDecoder["JwtDecoder per Issuer"]

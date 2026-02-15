@@ -1,0 +1,4 @@
+flowchart TD
+    Principal["Authenticated Principal"] --> Lookup["UserService.findActiveByEmailAndTenant"]
+    Lookup --> Claims["Add tenant_id, userId, roles"]
+    Claims --> JWT["Signed JWT"]

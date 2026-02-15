@@ -1,0 +1,5 @@
+flowchart TD
+    Raw["Debezium JSON"] --> FleetDeserializer["FleetEventDeserializer"]
+    FleetDeserializer --> Extract["Extract agentId<br/>activity_type<br/>created_at"]
+    Extract --> Map["EventTypeMapper"]
+    Map --> Unified["UnifiedEventType"]

@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming Request"] --> OriginFilter["OriginSanitizerFilter"]
+    OriginFilter --> AddAuth["AddAuthorizationHeaderFilter"]
+    AddAuth --> Security["JWT Authentication"]
+    Security --> ApiKey["API Key Filter if /external-api"]
+    ApiKey --> Routing["Route to REST or WebSocket"]
+    Routing --> Proxy["Proxy to Target Service"]
+    Proxy --> Response["Return Response"]

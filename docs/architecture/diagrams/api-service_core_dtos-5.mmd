@@ -1,0 +1,6 @@
+flowchart TD
+    Frontend["Frontend"] --> Api["API Service"]
+    Api --> Dtos["Api-Service Core Dtos"]
+    Dtos --> Services["Business Services"]
+    Services --> Data["Mongo / Cassandra / Pinot"]
+    Api --> Auth["Authorization Server"]

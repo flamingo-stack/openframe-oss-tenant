@@ -1,0 +1,18 @@
+flowchart TD
+    Gateway["Gateway Service"] -->|"Routes requests"| Api["API Service"]
+    Gateway -->|"Routes external traffic"| ExternalApi["External API Service"]
+    Gateway -->|"Auth redirect"| Auth["Authorization Server"]
+
+    Api -->|"Reads/Writes"| Mongo["Mongo Data Layer"]
+    Api -->|"Publishes events"| Kafka["Kafka"]
+
+    Stream["Stream Service"] -->|"Consumes events"| Kafka
+    Stream -->|"Enriches"| Cassandra["Cassandra / Pinot"]
+
+    Client["Client Service"] -->|"Agent ingest"| Kafka
+
+    Management["Management Service"] -->|"Initializers & Schedulers"| Mongo
+
+    Config["Config Server"] -->|"Provides config"| Gateway
+    Config --> Api
+    Config --> Auth

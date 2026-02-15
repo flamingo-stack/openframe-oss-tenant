@@ -1,0 +1,6 @@
+flowchart LR
+    MachineChange["Machine Change"] --> Enrich["Fetch Tags"]
+    Enrich --> Build["Build MachinePinotMessage"]
+    Build --> Publish["Kafka Publish"]
+    Publish --> Stream["Stream Processing"]
+    Stream --> Pinot["Pinot Update"]

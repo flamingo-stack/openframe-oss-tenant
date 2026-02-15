@@ -1,0 +1,7 @@
+flowchart TD
+    A["InstalledAgentMessage"] --> B["InstalledAgentListener"]
+    B --> C["Extract machineId"]
+    B --> D["InstalledAgentService.addInstalledAgent"]
+    D --> E{"Success?"}
+    E -->|"Yes"| F["message.ack()"]
+    E -->|"No"| G["Redelivery"]

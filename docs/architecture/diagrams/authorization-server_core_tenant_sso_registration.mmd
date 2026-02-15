@@ -1,0 +1,21 @@
+flowchart TD
+    Browser["User Browser"] --> Gateway["Gateway Service"]
+    Gateway --> AuthServer["Authorization-Server Core Tenant Sso Registration"]
+
+    subgraph authz_core["Authorization Server Core"]
+        TenantFilter["TenantContextFilter"]
+        ASConfig["AuthorizationServerConfig"]
+        SecConfig["SecurityConfig"]
+        TokenService["MongoAuthorizationService"]
+        KeyService["TenantKeyService"]
+        ClientRepo["MongoRegisteredClientRepository"]
+    end
+
+    AuthServer --> TenantFilter
+    TenantFilter --> ASConfig
+    ASConfig --> KeyService
+    ASConfig --> TokenService
+    SecConfig --> ClientRepo
+
+    TokenService --> Mongo[("MongoDB")]
+    KeyService --> Mongo

@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Start Registration"] --> ClearState["AuthStateUtils.clearAuthState"]
+    ClearState --> SetCookie["Set of_sso_reg Cookie"]
+    SetCookie --> RedirectToSSO["Redirect to OAuth2 Authorization"]
+    AfterLogin --> Handler["TenantRegSsoHandler"]
+    Handler --> CreateTenant["TenantRegistrationService.registerTenant"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Client --> LogController
+    LogController --> LogFilter["LogFilterCriteria"]
+    LogController --> LogService
+    LogService --> PinotRepository
+    LogController --> LogMapper
+    LogMapper --> LogsResponse

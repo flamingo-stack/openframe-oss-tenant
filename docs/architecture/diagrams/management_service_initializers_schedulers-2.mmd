@@ -1,0 +1,6 @@
+flowchart TD
+    Ready["ApplicationReadyEvent"] --> LoadConfig["Load JSON Resources"]
+    LoadConfig --> Resolve["Resolve Placeholders"]
+    Resolve --> DeploySchema["POST /schemas"]
+    DeploySchema --> DeployTable["PUT or POST /tables"]
+    DeployTable --> Success["Deployment Complete"]

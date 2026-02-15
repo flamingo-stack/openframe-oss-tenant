@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["Frontend Browser"] -->|"GET /oauth/login"| Bff["OAuthBffController"]
+    Bff -->|"Authorize Redirect"| Authz["Authorization Server"]
+    Authz -->|"Authorization Code"| Bff
+    Bff -->|"Token Exchange"| Authz
+    Authz -->|"Access + Refresh Tokens"| Bff
+    Bff -->|"HttpOnly Cookies"| Browser
+
+    Browser -->|"API Request"| Gateway["Gateway Service"]
+    Gateway -->|"Validate JWT"| JwtDecoder["JwtDecoder"]

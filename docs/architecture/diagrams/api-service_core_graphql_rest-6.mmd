@@ -1,0 +1,5 @@
+flowchart LR
+    Browser --> Gateway
+    Gateway --> ApiService["Api-Service Core Graphql Rest"]
+    ApiService --> DataLayer
+    ApiService --> StreamLayer

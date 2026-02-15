@@ -1,0 +1,5 @@
+flowchart TD
+    Repo["MachineRepository.save"] --> Aspect["MachineTagEventAspect"]
+    Aspect --> Service["MachineTagEventServiceImpl"]
+    Service --> KafkaProducer["OssTenantRetryingKafkaProducer"]
+    KafkaProducer --> Topic["devices-topic"]

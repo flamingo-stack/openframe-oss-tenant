@@ -1,0 +1,7 @@
+flowchart TD
+    Controller["API Layer"] --> Repo["PinotClientLogRepository"]
+    Repo --> Builder["PinotQueryBuilder"]
+    Builder --> Query["SQL Query"]
+    Query --> Broker["Pinot Broker"]
+    Broker --> Result["ResultSet"]
+    Result --> Projection["LogProjection Mapping"]

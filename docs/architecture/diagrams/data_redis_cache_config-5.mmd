@@ -1,0 +1,7 @@
+flowchart TD
+    API["API Service"] --> RedisModule["Data Redis Cache Config"]
+    Auth["Authorization Service"] --> RedisModule
+    Gateway["Gateway Service"] --> RedisModule
+    Stream["Stream Service"] --> RedisModule
+
+    RedisModule --> RedisServer[("Redis Cluster")]

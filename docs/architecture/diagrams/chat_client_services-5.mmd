@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant UI
+    participant MockService
+
+    UI->>MockService: streamResponse(message)
+    MockService-->>UI: text segment
+    MockService-->>UI: EXECUTING_TOOL
+    MockService-->>UI: EXECUTED_TOOL
+    MockService-->>UI: text segment

@@ -1,0 +1,9 @@
+flowchart TD
+    Tool --> Debezium
+    Debezium --> Kafka
+    Kafka --> StreamService
+    StreamService --> Enrichment
+    Enrichment --> Cassandra
+    Enrichment --> KafkaOutbound
+    KafkaOutbound --> API
+    API --> Frontend

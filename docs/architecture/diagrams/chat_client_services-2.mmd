@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI
+    participant DialogService as DialogGraphQLService
+    participant TokenService
+    participant Backend as Chat GraphQL API
+
+    UI->>DialogService: getDialogMessages(dialogId)
+    DialogService->>TokenService: ensureTokenReady()
+    TokenService-->>DialogService: Token + API URL
+    DialogService->>Backend: GraphQL query (messages)
+    Backend-->>DialogService: MessagesConnection
+    DialogService-->>UI: Aggregated messages

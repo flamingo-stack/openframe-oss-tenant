@@ -1,0 +1,5 @@
+flowchart LR
+    FilterCriteria --> ServiceQuery
+    ServiceQuery --> DomainResult
+    DomainResult --> Mapper
+    Mapper --> ResponseDTO

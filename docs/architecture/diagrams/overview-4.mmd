@@ -1,0 +1,7 @@
+flowchart TD
+    Request --> OriginFilter
+    OriginFilter --> AddAuthHeader
+    AddAuthHeader --> JWTValidation
+    JWTValidation --> ApiKeyFilter
+    ApiKeyFilter --> Route
+    Route --> TargetService

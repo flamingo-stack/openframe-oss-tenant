@@ -1,0 +1,7 @@
+flowchart TD
+    Debezium --> KafkaInbound
+    KafkaInbound --> Deserializer
+    Deserializer --> EventTypeMapper
+    EventTypeMapper --> Enrichment
+    Enrichment --> Cassandra
+    Enrichment --> KafkaOutbound

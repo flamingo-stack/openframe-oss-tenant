@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant Api as "API Service"
+    participant Auth as "Authorization Server"
+
+    Browser->>Api: Request login
+    Api->>Auth: Redirect to provider
+    Auth->>Api: Return code
+    Api->>Auth: Exchange code for token
+    Auth->>Api: TokenResponse
+    Api->>Browser: Session established

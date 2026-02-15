@@ -1,0 +1,4 @@
+flowchart LR
+    OAuthFlow["OAuth2 Login"] --> ClientRepo["DynamicClientRegistrationRepository"]
+    ClientRepo --> DynamicService["DynamicClientRegistrationService"]
+    DynamicService --> SSOCfg["SSOConfigService"]

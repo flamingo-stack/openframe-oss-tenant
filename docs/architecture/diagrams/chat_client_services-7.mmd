@@ -1,0 +1,9 @@
+flowchart LR
+    TokenService --> DialogGraphQLService
+    TokenService --> SupportedModelsService
+
+    DialogGraphQLService --> ChatBackend
+    SupportedModelsService --> ChatBackend
+
+    MockChatService --> ChatUI
+    DebugModeContext --> ChatUI

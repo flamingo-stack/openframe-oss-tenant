@@ -1,0 +1,5 @@
+flowchart LR
+    Config["KafkaTopicProperties"] --> Loop["Iterate inbound topics"]
+    Loop --> Validate["Name not blank?"]
+    Validate -->|"Yes"| Build["TopicBuilder.name()"]
+    Build --> Register["KafkaAdmin.NewTopics"]

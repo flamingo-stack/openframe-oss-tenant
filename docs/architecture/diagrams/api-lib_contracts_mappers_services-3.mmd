@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client Filters"] --> LogFilterOptions["LogFilterOptions"]
+    LogFilterOptions --> QueryLayer["Repository / Query Engine"]
+    QueryLayer --> LogEvent["LogEvent List"]
+    QueryLayer --> LogFilters["Available Filter Values"]

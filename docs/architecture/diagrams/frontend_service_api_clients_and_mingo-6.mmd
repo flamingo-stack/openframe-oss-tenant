@@ -1,0 +1,5 @@
+flowchart TD
+    StreamingEvent["Streaming Segment"] --> Accumulator
+    Accumulator --> ProcessedSegments
+    ProcessedSegments --> StoreUpdate
+    StoreUpdate --> UI

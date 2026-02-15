@@ -1,0 +1,4 @@
+flowchart TD
+    EnrichedMsg["Enriched Debezium Message"] --> KafkaHandler["DebeziumKafkaMessageHandler"]
+    KafkaHandler --> OutEvent["IntegratedToolEvent"]
+    OutEvent --> KafkaOut[("Outbound Kafka Topic")]

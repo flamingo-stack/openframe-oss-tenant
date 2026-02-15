@@ -1,0 +1,8 @@
+flowchart TD
+    Rust["Tauri Rust Backend"] -->|token-update event| TokenService
+    TokenService --> Listeners["Token Subscribers"]
+
+    TokenService -->|invoke get_token| Rust
+    TokenService -->|invoke get_server_url| Rust
+
+    TokenService --> Services["DialogGraphQLService & SupportedModelsService"]

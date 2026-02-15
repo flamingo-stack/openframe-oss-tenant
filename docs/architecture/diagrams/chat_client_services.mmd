@@ -1,0 +1,13 @@
+flowchart TD
+    UI["Chat UI Components"] --> DialogService["DialogGraphQLService"]
+    UI --> ModelsService["SupportedModelsService"]
+    UI --> DebugContext["DebugModeContext"]
+
+    DialogService --> TokenService["TokenService"]
+    ModelsService --> TokenService
+
+    TokenService --> TauriRust["Tauri Rust Layer"]
+    DialogService --> BackendGraphQL["/chat/graphql"]
+    ModelsService --> BackendREST["/chat/api/v1/ai-configuration/supported-models"]
+
+    MockService["MockChatService"] --> UI

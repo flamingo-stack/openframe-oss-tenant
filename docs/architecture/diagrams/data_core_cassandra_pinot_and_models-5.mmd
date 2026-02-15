@@ -1,0 +1,5 @@
+flowchart TD
+    Service["Secret Retriever"] --> ToolService["IntegratedToolService"]
+    ToolService --> UrlService["ToolUrlService"]
+    UrlService --> Client["External SDK Client"]
+    Client --> Secret["Agent Registration Secret"]

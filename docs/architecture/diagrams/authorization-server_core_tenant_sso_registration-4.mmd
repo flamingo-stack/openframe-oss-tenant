@@ -1,0 +1,6 @@
+flowchart TD
+    RequestJWKS["JWKS Request"] --> ResolveTenant["TenantContext.getTenantId()"]
+    ResolveTenant --> KeyLookup["TenantKeyRepository"]
+    KeyLookup -->|None Found| Generate["RsaAuthenticationKeyPairGenerator"]
+    Generate --> Store["Encrypted Private Key"]
+    Store --> ReturnKey["RSAKey (JWK)"]

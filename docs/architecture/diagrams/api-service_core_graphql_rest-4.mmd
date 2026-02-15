@@ -1,0 +1,6 @@
+flowchart TD
+    Query["GraphQL Query"] --> DataFetcher
+    DataFetcher --> Mapper
+    Mapper --> Service
+    Service --> Repository
+    Repository --> Database

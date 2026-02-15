@@ -1,0 +1,6 @@
+flowchart LR
+    Activity["ActivityMessage"] --> Join["Left Join (5s)"]
+    HostActivity["HostActivityMessage"] --> Join
+    Join --> Enriched["Activity with hostId"]
+    Enriched --> Header["HeaderAdderFixedKey"]
+    Header --> Output["fleet-mdm-events"]

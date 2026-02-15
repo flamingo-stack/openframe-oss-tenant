@@ -1,0 +1,5 @@
+flowchart TD
+    BaseInterface["Base Repository Interface"] --> SpringRepo["MongoRepository or ReactiveMongoRepository"]
+    SpringRepo --> CustomImpl["Custom*RepositoryImpl"]
+    CustomImpl --> MongoTemplate
+    MongoTemplate --> MongoDB[("MongoDB")]

@@ -1,0 +1,5 @@
+flowchart TD
+    Browser -->|"POST /oauth/refresh"| Bff
+    Bff -->|"Validate Refresh Token"| Authz
+    Authz -->|"New Tokens"| Bff
+    Bff -->|"Update Cookies"| Browser
