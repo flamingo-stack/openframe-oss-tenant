@@ -1,0 +1,18 @@
+flowchart TD
+    Request["Incoming HTTP or WS Request"] --> PathCheck["Path Matching"]
+
+    PathCheck --> AddAuthHeader["AddAuthorizationHeaderFilter"]
+    AddAuthHeader --> JwtResolve["JWT Issuer Resolver"]
+    JwtResolve --> JwtValidate["JWT Validation"]
+
+    JwtValidate --> ApiKeyCheck{"External API Path?"}
+
+    ApiKeyCheck -->|"Yes"| ApiKeyAuth["API Key Authentication Filter"]
+    ApiKeyAuth --> RateLimitCheck["Rate Limit Check"]
+    RateLimitCheck --> ProxyExternal["Forward to External API Service"]
+
+    ApiKeyCheck -->|"No"| RouteByRole["Role Based Authorization"]
+    RouteByRole --> RouteTarget["Route to Target Service"]
+
+    RouteTarget --> Response["Reactive Response"]
+    ProxyExternal --> Response

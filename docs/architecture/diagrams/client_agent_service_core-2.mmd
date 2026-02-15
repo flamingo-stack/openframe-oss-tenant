@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Agent
+    participant ClientCore as Client Agent Service Core
+    participant AuthService as AgentAuthService
+
+    Agent->>ClientCore: POST /oauth/token
+    ClientCore->>AuthService: issueClientToken()
+    AuthService-->>ClientCore: AgentTokenResponse
+    ClientCore-->>Agent: JSON token response

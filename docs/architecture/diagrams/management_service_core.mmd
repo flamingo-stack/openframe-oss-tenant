@@ -1,0 +1,27 @@
+flowchart TD
+    ManagementApp["Management Service Core"]
+
+    subgraph Initialization["Startup Initializers"]
+        AgentSecretInit["Agent Registration Secret Initializer"]
+        ToolAgentInit["Integrated Tool Agent Initializer"]
+        ClientConfigInit["OpenFrame Client Configuration Initializer"]
+        NatsInit["NATS Stream Configuration Initializer"]
+        TacticalInit["Tactical RMM Scripts Initializer"]
+        PinotInit["Pinot Config Initializer"]
+        DebeziumInit["Debezium Connector Initializer"]
+    end
+
+    subgraph Scheduling["Schedulers"]
+        ApiKeyScheduler["API Key Stats Sync Scheduler"]
+        DebeziumScheduler["Debezium Health Check Scheduler"]
+        AgentFallbackScheduler["Agent Version Publish Fallback Scheduler"]
+    end
+
+    subgraph Controllers["REST Controllers"]
+        ToolController["Integrated Tool Controller"]
+        ReleaseController["Release Version Controller"]
+    end
+
+    ManagementApp --> Initialization
+    ManagementApp --> Scheduling
+    ManagementApp --> Controllers

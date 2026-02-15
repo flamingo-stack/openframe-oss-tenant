@@ -1,0 +1,5 @@
+flowchart LR
+    Raw["Debezium Message"] --> Extract["Extract Operation"]
+    Extract --> MapOp["Map to OperationType"]
+    MapOp --> Transform["Transform to Domain Model"]
+    Transform --> Publish["Publish Enriched Event"]

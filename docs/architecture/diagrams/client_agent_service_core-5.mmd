@@ -1,0 +1,5 @@
+flowchart TD
+    JetStream["JetStream Stream"] --> Listener["InstalledAgentListener"]
+    Listener --> Extractor["MachineIdExtractor"]
+    Listener --> Service["InstalledAgentService"]
+    Service --> DB[("MongoDB")]

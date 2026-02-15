@@ -1,0 +1,4 @@
+flowchart TD
+    CassandraConfigNode["CassandraConfig"] --> EnsureKeyspace["Ensure Keyspace Exists"]
+    EnsureKeyspace --> Session["CqlSessionFactoryBean"]
+    Session --> Health["CassandraHealthIndicator"]

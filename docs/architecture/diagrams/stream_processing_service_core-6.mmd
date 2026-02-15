@@ -1,0 +1,6 @@
+flowchart TD
+    Event["Debezium Message"] --> Agent["Extract agentId"]
+    Agent --> Redis["MachineIdCacheService"]
+    Redis --> Machine["CachedMachineInfo"]
+    Machine --> Org["CachedOrganizationInfo"]
+    Org --> Enriched["IntegratedToolEnrichedData"]

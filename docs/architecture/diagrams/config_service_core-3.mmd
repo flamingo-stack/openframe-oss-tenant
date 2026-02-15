@@ -1,0 +1,7 @@
+flowchart LR
+    MainApp["ConfigServerApplication"] --> ConfigAnnotation["@EnableConfigServer"]
+    ConfigAnnotation --> ConfigServerEngine["Spring Cloud Config Engine"]
+
+    ConfigServerEngine --> Repo[("Config Backend Repository")]
+
+    LoggingController["LoggingConfigController"] --> ClasspathDir["logging/ Resources"]

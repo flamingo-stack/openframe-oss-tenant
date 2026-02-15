@@ -1,0 +1,11 @@
+flowchart TD
+    User["User Sends Message"] --> UI["Chat UI"]
+    UI --> DialogService["DialogGraphQLService"]
+    DialogService --> TokenService["TokenService ensureTokenReady"]
+    TokenService --> Gateway["Gateway Service"]
+    Gateway --> API["API Service"]
+    API --> DataLayer["Data Persistence & Messaging Core"]
+    DataLayer --> API
+    API --> Gateway
+    Gateway --> DialogService
+    DialogService --> UI

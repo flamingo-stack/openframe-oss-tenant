@@ -1,0 +1,12 @@
+flowchart TD
+    JwtToken["JWT Token"] --> ExtractIssuer["Extract iss claim"]
+    ExtractIssuer --> CacheLookup["Issuer Manager Cache"]
+
+    CacheLookup -->|"Cached"| UseManager["Use Existing Manager"]
+    CacheLookup -->|"Not Cached"| CreateManager["Create JWT Decoder"]
+
+    CreateManager --> ValidateIssuer["Strict Issuer Validation"]
+    ValidateIssuer --> StoreCache["Store in Caffeine Cache"]
+
+    UseManager --> Authenticated["Authenticated Principal"]
+    StoreCache --> Authenticated

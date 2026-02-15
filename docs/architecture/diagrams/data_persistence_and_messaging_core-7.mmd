@@ -1,0 +1,5 @@
+flowchart TD
+    ServiceLayer["Service Layer"] --> PinotRepo["Pinot Repository"]
+    PinotRepo --> QueryBuilder["PinotQueryBuilder"]
+    QueryBuilder --> PinotBroker["Pinot Broker"]
+    PinotBroker --> ResultSet["ResultSet Mapping"]

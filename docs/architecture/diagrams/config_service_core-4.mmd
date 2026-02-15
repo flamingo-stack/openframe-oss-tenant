@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigService["Config Service Core"] --> ApiService["API Service Core"]
+    ConfigService --> AuthService["Authorization Server Core"]
+    ConfigService --> GatewayService["Gateway Service Core"]
+    ConfigService --> ManagementService["Management Service Core"]
+    ConfigService --> StreamService["Stream Processing Service Core"]
+    ConfigService --> ClientService["Client Agent Service Core"]
+    ConfigService --> ExternalApiService["External API Service Core"]

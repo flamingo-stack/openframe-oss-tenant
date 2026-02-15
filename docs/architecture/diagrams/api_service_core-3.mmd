@@ -1,0 +1,6 @@
+flowchart TD
+    User["Authenticated User"] --> Controller["ApiKeyController"]
+    Controller --> Service["ApiKeyService"]
+    Service --> Repo["BaseApiKeyRepository"]
+    Repo --> Mongo[("MongoDB")]
+    Service --> Processor["Post Processing Logic"]

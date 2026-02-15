@@ -1,0 +1,5 @@
+flowchart TD
+    Browser["User Browser"] --> AuthServer["Authorization Server"]
+    AuthServer --> Mongo["MongoDB"]
+    AuthServer --> TenantKeys["TenantKeyService"]
+    TenantKeys --> Mongo

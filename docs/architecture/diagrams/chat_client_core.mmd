@@ -1,0 +1,13 @@
+flowchart LR
+    UI["Chat UI Components"] --> DebugContext["DebugModeContext"]
+    UI --> DialogService["DialogGraphQLService"]
+    UI --> ModelsService["SupportedModelsService"]
+
+    DialogService --> TokenService["TokenService"]
+    ModelsService --> TokenService
+
+    TokenService -->|"Bearer Token"| Gateway["Gateway Service Core"]
+    Gateway --> API["API Service Core"]
+    API --> GraphQL["Chat GraphQL Endpoint"]
+
+    Auth["Authorization Server Core"] -->|"OAuth2 / JWT"| TokenService

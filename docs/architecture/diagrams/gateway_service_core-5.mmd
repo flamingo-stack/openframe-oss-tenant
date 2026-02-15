@@ -1,0 +1,8 @@
+flowchart LR
+    ClientWS["WebSocket Client"] --> GatewayWS["Gateway WS Route"]
+
+    GatewayWS --> ToolApi["Tool API WebSocket"]
+    GatewayWS --> ToolAgent["Tool Agent WebSocket"]
+    GatewayWS --> NatsWS["NATS WebSocket"]
+
+    GatewayWS --> Decorator["WebSocket Security Decorator"]

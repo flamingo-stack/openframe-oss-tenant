@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway as Gateway Service Core
+    participant Api as Api Service Core
+    participant Authz as Authorization Server Core
+
+    Client->>Gateway: HTTP Request with JWT
+    Gateway->>Gateway: Validate JWT
+    Gateway->>Api: Forward request
+    Api->>Api: Resolve AuthPrincipal
+    Api->>Authz: Resolve issuer if needed
+    Api-->>Gateway: Response
+    Gateway-->>Client: Final response

@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Frontend GraphQL Client"] --> DGS["DGS DataFetcher"]
+    DGS --> Mapper["GraphQL Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Mongo or Pinot Repository"]
+    Repository --> Service
+    Service --> Mapper
+    Mapper --> DGS

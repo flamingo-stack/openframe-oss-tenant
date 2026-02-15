@@ -1,0 +1,21 @@
+flowchart TD
+    Client["Frontend Tenant App or Internal Client"] --> Gateway["Gateway Service Core"]
+    Gateway --> Api["Api Service Core"]
+    Api --> Authz["Authorization Server Core"]
+    Api --> Data["Data Persistence and Messaging Core"]
+    Api --> Stream["Stream Processing Service Core"]
+
+    subgraph ApiInternal["Api Service Core - Internal Layers"]
+        Controllers["REST Controllers"]
+        GraphQL["GraphQL DataFetchers"]
+        Services["Domain Services"]
+        DataLoaders["DataLoaders"]
+        Config["Security and Configuration"]
+    end
+
+    Api --> Controllers
+    Api --> GraphQL
+    Controllers --> Services
+    GraphQL --> Services
+    GraphQL --> DataLoaders
+    Services --> Data

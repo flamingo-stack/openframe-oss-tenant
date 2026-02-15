@@ -1,0 +1,5 @@
+flowchart TD
+    RequestReset["Reset Request"] --> Service["PasswordResetService"]
+    Service --> Token["Generate Secure Token"]
+    Confirm["Confirm Reset"] --> Service
+    Service --> UpdatePassword["Update Password (BCrypt)"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Rust
+    participant TokenService
+    participant DialogService
+
+    Rust->>TokenService: token-update event
+    TokenService->>TokenService: setToken(token)
+
+    DialogService->>TokenService: ensureTokenReady()
+    TokenService->>Rust: invoke get_token (if missing)
+    Rust-->>TokenService: return token
+    TokenService-->>DialogService: token ready

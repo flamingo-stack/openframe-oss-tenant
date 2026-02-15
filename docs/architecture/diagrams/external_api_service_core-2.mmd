@@ -1,0 +1,7 @@
+flowchart LR
+    Client["External Client"] --> Controller["DeviceController"]
+    Controller --> Mapper["DeviceMapper"]
+    Mapper --> Service["DeviceService"]
+    Service --> Repo["Mongo Repository"]
+    Service --> TagService["TagService"]
+    Controller --> Response["DevicesResponse DTO"]

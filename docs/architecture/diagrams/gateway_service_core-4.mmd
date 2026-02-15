@@ -1,0 +1,13 @@
+flowchart TD
+    ExternalRequest["Request to external-api path"] --> ExtractKey["Extract X-API-Key Header"]
+
+    ExtractKey -->|"Missing"| Reject401["Return 401 Unauthorized"]
+    ExtractKey -->|"Present"| ValidateKey["Validate API Key"]
+
+    ValidateKey -->|"Invalid"| Reject401
+    ValidateKey -->|"Valid"| RateCheck["Check Rate Limits"]
+
+    RateCheck -->|"Exceeded"| Reject429["Return 429 Too Many Requests"]
+    RateCheck -->|"Allowed"| AddHeaders["Inject X-User-Id and X-Api-Key-Id"]
+
+    AddHeaders --> ForwardExternal["Forward to External API Service"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Agent["Endpoint Agent"] --> ClientCore["Client Agent Service"]
+    ClientCore --> Mongo["MongoDB"]
+    ClientCore --> NATS["NATS JetStream"]

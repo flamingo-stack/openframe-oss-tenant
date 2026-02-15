@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["User Browser"] -->|"/tenant/{id}/oauth2/authorize"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"Load User"| UserService["User Service"]
+    AuthServer -->|"Load Client"| ClientRepo["MongoRegisteredClientRepository"]
+    AuthServer -->|"Persist Authorization"| AuthzService["MongoAuthorizationService"]
+    AuthServer -->|"Sign JWT"| TenantKeyService["TenantKeyService"]
+    TenantKeyService -->|"Read/Write"| Mongo["MongoDB (Tenant Keys)"]
+    AuthzService -->|"Read/Write"| Mongo
+    ClientRepo -->|"Read/Write"| Mongo
+    AuthServer -->|"Access Token (JWT)"| Browser

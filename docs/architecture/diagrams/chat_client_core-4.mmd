@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Call getDialogMessages"] --> Fetch["Fetch Page"]
+    Fetch --> Append["Append edges"]
+    Append --> CheckNext["hasNextPage?"]
+    CheckNext -->|"Yes"| Fetch
+    CheckNext -->|"No"| End["Return Aggregated Messages"]

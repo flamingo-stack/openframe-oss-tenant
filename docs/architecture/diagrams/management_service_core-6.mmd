@@ -1,0 +1,5 @@
+flowchart TD
+    Scheduler["Fallback Scheduler"] --> CheckClient["Check Client Publish State"]
+    Scheduler --> CheckAgent["Check Tool Agent Publish State"]
+    CheckClient -->|"retry"| PublishClient["Publish Client Update"]
+    CheckAgent -->|"retry"| PublishAgent["Publish Tool Update"]

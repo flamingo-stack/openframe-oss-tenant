@@ -1,0 +1,5 @@
+flowchart TD
+    Query["devices query"] --> DeviceFetcher["DeviceDataFetcher"]
+    DeviceFetcher --> Loader["OrganizationDataLoader"]
+    Loader --> Repo["OrganizationRepository"]
+    Repo --> Mongo[("MongoDB")]

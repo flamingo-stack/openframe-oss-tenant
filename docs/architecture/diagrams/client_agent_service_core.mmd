@@ -1,0 +1,11 @@
+flowchart LR
+    Agent["Endpoint Agent"] -->|"/oauth/token"| ClientCore["Client Agent Service Core"]
+    Agent -->|"/api/agents/register"| ClientCore
+    Agent -->|"NATS events"| NATS["NATS / JetStream"]
+
+    NATS --> ClientCore
+
+    ClientCore --> DataLayer["Data Persistence and Messaging Core"]
+    ClientCore --> APICore["API Service Core"]
+    ClientCore --> StreamCore["Stream Processing Service Core"]
+    ClientCore --> Gateway["Gateway Service Core"]

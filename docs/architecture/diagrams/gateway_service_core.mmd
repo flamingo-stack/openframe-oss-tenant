@@ -1,0 +1,18 @@
+flowchart TD
+    Client["Browser or Agent"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> AuthServer["Authorization Server Core"]
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientService["Client Agent Service Core"]
+    Gateway --> ToolBackend["Integrated Tool Backend"]
+    Gateway --> Nats["NATS WebSocket"]
+
+    subgraph security_layer["Security and Filtering Layer"]
+        AddAuth["Add Authorization Header Filter"]
+        JwtAuth["JWT Authentication"]
+        ApiKeyFilter["API Key Authentication Filter"]
+        RateLimit["Rate Limit Service"]
+    end
+
+    Gateway --> security_layer

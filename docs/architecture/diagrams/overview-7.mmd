@@ -1,0 +1,4 @@
+flowchart TD
+    Debezium["Debezium CDC"] --> Kafka["Kafka Topics"]
+    Kafka --> StreamCore["Stream Processing"]
+    StreamCore --> Enriched["Unified Events"]

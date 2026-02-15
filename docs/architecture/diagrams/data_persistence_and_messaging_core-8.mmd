@@ -1,0 +1,5 @@
+flowchart TD
+    ClientRequest["Client Request with Cursor"] --> Repository["Repository"]
+    Repository --> ApplyCursor["Apply _id or Primary Key Constraint"]
+    ApplyCursor --> Limit["Apply Limit"]
+    Limit --> ReturnPage["Return Page + Next Cursor"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant ConfigService as Config Service Core
+    participant LoggingController
+    participant Classpath
+
+    Client->>ConfigService: GET /logging/logback.xml
+    ConfigService->>LoggingController: Route request
+    LoggingController->>Classpath: Load logging/logback.xml
+    Classpath-->>LoggingController: XML content
+    LoggingController->>LoggingController: Replace resource URLs
+    LoggingController-->>Client: Return modified XML

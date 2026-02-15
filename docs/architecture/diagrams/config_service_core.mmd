@@ -1,0 +1,7 @@
+flowchart TD
+    ClientService["Platform Service<br/>API, Gateway, Auth, etc."] -->|"Fetch configuration"| ConfigServer["Config Service Core"]
+    ConfigServer -->|"Reads configuration"| ConfigSource[("Config Repository")]
+
+    AdminOrService["Service or Admin"] -->|"GET /logging/{filename}"| LoggingController["LoggingConfigController"]
+    LoggingController -->|"Load resource"| Classpath["Classpath logging/ directory"]
+    LoggingController -->|"Return XML"| AdminOrService

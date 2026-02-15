@@ -1,0 +1,7 @@
+flowchart TD
+    JwksRequest["JWKS Request"] --> JwkSource["JWKSource Bean"]
+    JwkSource --> TenantKeyService
+    TenantKeyService -->|"Find Active Key"| Repo["TenantKeyRepository"]
+    Repo -->|"None Found"| Generate["Generate RSA Key"]
+    Generate --> Repo
+    TenantKeyService --> RSAKey["RSAKey (Nimbus)"]

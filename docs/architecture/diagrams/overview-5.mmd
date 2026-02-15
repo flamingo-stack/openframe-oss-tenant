@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client"] --> Filters["Security Filters"]
+    Filters --> JwtValidation["JWT Validation"]
+    Filters --> ApiKeyFilter["API Key Filter"]
+    Filters --> Routing["Route to Target Service"]

@@ -1,0 +1,53 @@
+flowchart TD
+    subgraph Frontend
+        TenantApp["Frontend Tenant App Core"]
+        ChatClient["Chat Client Core (Tauri)"]
+    end
+
+    subgraph Edge
+        Gateway["Gateway Service Core"]
+    end
+
+    subgraph Identity
+        AuthServer["Authorization Server Core"]
+    end
+
+    subgraph ApiLayer
+        ApiService["API Service Core"]
+        ExternalApi["External API Service Core"]
+    end
+
+    subgraph Agents
+        ClientAgent["Client Agent Service Core"]
+    end
+
+    subgraph Streaming
+        StreamCore["Stream Processing Service Core"]
+    end
+
+    subgraph Management
+        ManagementCore["Management Service Core"]
+        ConfigCore["Config Service Core"]
+    end
+
+    subgraph Infrastructure
+        DataCore["Data Persistence and Messaging Core"]
+    end
+
+    TenantApp --> Gateway
+    ChatClient --> Gateway
+    Gateway --> ApiService
+    Gateway --> ExternalApi
+    Gateway --> ClientAgent
+    Gateway --> AuthServer
+
+    ApiService --> DataCore
+    ExternalApi --> DataCore
+    ClientAgent --> DataCore
+    AuthServer --> DataCore
+    StreamCore --> DataCore
+    ManagementCore --> DataCore
+
+    ManagementCore --> StreamCore
+    ClientAgent --> StreamCore
+    StreamCore --> ApiService

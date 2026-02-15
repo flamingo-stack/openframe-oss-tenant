@@ -1,0 +1,6 @@
+flowchart LR
+    UI["Chat UI"] --> DialogService["DialogGraphQLService"]
+    UI --> ModelsService["SupportedModelsService"]
+    DialogService --> TokenService["TokenService"]
+    ModelsService --> TokenService
+    TokenService --> Gateway["Gateway Service Core"]

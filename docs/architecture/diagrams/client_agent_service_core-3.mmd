@@ -1,0 +1,6 @@
+flowchart TD
+    Agent["Endpoint Agent"] -->|"POST /api/agents/register"| Controller["AgentController"]
+    Controller --> Service["AgentRegistrationService"]
+    Service --> Processor["AgentRegistrationProcessor"]
+    Processor --> Machine["Machine Entity"]
+    Machine --> DB[("MongoDB")]

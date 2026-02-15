@@ -1,0 +1,6 @@
+flowchart LR
+    Main["OpenFrameAuthorizationServerApplication"] --> Boot["Spring Boot"]
+    Boot --> Security["SecurityConfig"]
+    Boot --> AuthzConfig["AuthorizationServerConfig"]
+    Boot --> Controllers["Auth Controllers"]
+    Boot --> Services["Auth Services"]

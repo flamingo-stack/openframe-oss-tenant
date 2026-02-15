@@ -1,0 +1,41 @@
+flowchart TD
+    Client["External Client / Integration"] -->|"X-API-Key"| ExternalAPI["External Api Service Core"]
+
+    subgraph external_layer["External Layer"]
+        Controllers["REST Controllers"]
+        ProxyService["RestProxyService"]
+        OpenApi["OpenApiConfig"]
+    end
+
+    subgraph internal_services["Internal Domain Services"]
+        DeviceService["DeviceService"]
+        EventService["EventService"]
+        LogService["LogService"]
+        OrganizationService["Organization Services"]
+        ToolService["ToolService"]
+    end
+
+    subgraph data_layer["Data & Infrastructure"]
+        Mongo["MongoDB"]
+        Redis["Redis Cache"]
+        Kafka["Kafka"]
+    end
+
+    Client --> Controllers
+    Controllers --> DeviceService
+    Controllers --> EventService
+    Controllers --> LogService
+    Controllers --> OrganizationService
+    Controllers --> ToolService
+
+    Controllers --> ProxyService
+    ProxyService -->|"HTTP"| IntegratedTools["Integrated Tools APIs"]
+
+    DeviceService --> Mongo
+    EventService --> Mongo
+    LogService --> Mongo
+    ToolService --> Mongo
+    OrganizationService --> Mongo
+
+    DeviceService --> Redis
+    EventService --> Kafka

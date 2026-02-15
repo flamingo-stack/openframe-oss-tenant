@@ -1,0 +1,6 @@
+flowchart LR
+    Activity["Activity Stream"] --> Join
+    HostActivity["HostActivity Stream"] --> Join
+    Join --> Enriched["Enriched Activity"]
+    Enriched --> Header["Add MESSAGE_TYPE_HEADER"]
+    Header --> Output["Publish to Enriched Topic"]

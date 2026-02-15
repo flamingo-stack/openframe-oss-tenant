@@ -1,0 +1,18 @@
+flowchart TD
+    ClientApps["Client Applications"] --> ApiLayer["API & Gateway Services"]
+    ApiLayer --> BusinessServices["Business Services"]
+    BusinessServices --> DataCore["Data Persistence And Messaging Core"]
+
+    subgraph data_layer["Infrastructure Provided By This Module"]
+        Mongo["MongoDB"]
+        Kafka["Kafka"]
+        Redis["Redis Cache"]
+        Cassandra["Cassandra"]
+        Pinot["Apache Pinot"]
+    end
+
+    DataCore --> Mongo
+    DataCore --> Kafka
+    DataCore --> Redis
+    DataCore --> Cassandra
+    DataCore --> Pinot

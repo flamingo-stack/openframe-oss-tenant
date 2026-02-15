@@ -1,0 +1,7 @@
+flowchart TD
+    App["Application Name"] --> Cluster["Cluster ID"]
+    Cluster --> BuildId["application.id = name-cluster"]
+    BuildId --> StreamsConfig["Kafka Streams Configuration"]
+    StreamsConfig --> Serdes["Custom JSON SerDes"]
+    StreamsConfig --> Processing["AT_LEAST_ONCE"]
+    StreamsConfig --> StateDir["State Store /tmp/kafka-streams"]

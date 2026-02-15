@@ -1,0 +1,6 @@
+flowchart TD
+    Services["Platform Services"] --> DataCore["Data Core"]
+    DataCore --> Mongo["MongoDB"]
+    DataCore --> Kafka["Kafka"]
+    DataCore --> Redis["Redis"]
+    DataCore --> Pinot["Apache Pinot"]

@@ -1,0 +1,5 @@
+flowchart LR
+    QueryFilter["Query Filter"] --> BuildQuery["Build Mongo Query"]
+    BuildQuery --> CursorLogic["Apply Cursor Criteria"]
+    CursorLogic --> SortLogic["Apply Sorting"]
+    SortLogic --> MongoTemplate["MongoTemplate.find()"]

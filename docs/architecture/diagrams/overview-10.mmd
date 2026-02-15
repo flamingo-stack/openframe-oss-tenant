@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant AuthServer
+    participant ApiService
+    participant StreamCore
+    participant Mongo
+
+    Browser->>AuthServer: OAuth2 Login
+    AuthServer-->>Browser: JWT
+    Browser->>Gateway: API Request with JWT
+    Gateway->>ApiService: Forward Request
+    ApiService->>Mongo: Query Data
+    Mongo-->>ApiService: Result
+    ApiService-->>Browser: JSON Response
+
+    StreamCore->>Mongo: Enriched Event Stored

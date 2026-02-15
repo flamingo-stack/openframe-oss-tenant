@@ -1,0 +1,7 @@
+flowchart TD
+    User["New User"] --> Invite["/invitations/accept"]
+    User --> TenantReg["/oauth/register"]
+    TenantReg --> TenantService["TenantRegistrationService"]
+    Invite --> InvitationService["InvitationRegistrationService"]
+    TenantService --> Mongo
+    InvitationService --> Mongo

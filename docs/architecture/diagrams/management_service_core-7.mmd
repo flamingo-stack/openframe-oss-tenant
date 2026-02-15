@@ -1,0 +1,6 @@
+flowchart LR
+    Management["Management Service Core"] --> Data["Data Persistence and Messaging Core"]
+    Management --> Stream["Stream Processing Service Core"]
+    Management --> Client["Client Agent Service Core"]
+    Management --> Api["API Service Core"]
+    Management --> External["External API Service Core"]

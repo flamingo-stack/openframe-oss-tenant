@@ -1,0 +1,10 @@
+flowchart TD
+    Init["initializeClient()"] --> Check["Has Client & Endpoint?"]
+    Check -->|"Yes"| UpdateHeaders["Update Authorization Header"]
+    Check -->|"No"| CreateClient["Create GraphQLClient"]
+
+    CreateClient --> SetEndpoint["Store Endpoint"]
+    UpdateHeaders --> Request
+    SetEndpoint --> Request
+
+    Request["request(document, variables)"] --> GraphQLAPI["/chat/graphql"]

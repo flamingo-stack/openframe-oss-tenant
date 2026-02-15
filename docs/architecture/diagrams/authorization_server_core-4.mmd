@@ -1,0 +1,5 @@
+flowchart TD
+    AuthenticatedUser["Authenticated Principal"] --> Customizer["OAuth2TokenCustomizer"]
+    Customizer -->|"Load AuthUser"| UserService
+    Customizer --> Claims["Add Claims"]
+    Claims --> JWT["Signed JWT"]

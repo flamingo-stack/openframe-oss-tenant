@@ -1,0 +1,5 @@
+flowchart TD
+    Resource["Agent Config JSON"] --> Parser["ObjectMapper"]
+    Parser --> AgentService["IntegratedToolAgentService"]
+    AgentService --> VersionCheck["Version Comparison"]
+    VersionCheck --> Publisher["Tool Agent Update Publisher"]

@@ -1,0 +1,5 @@
+flowchart TD
+    ToolRequest["Request to tools path"] --> IntegrationController
+    IntegrationController --> RestProxy["RestProxyService"]
+    RestProxy --> ToolBackend["External Tool Service"]
+    ToolBackend --> Response

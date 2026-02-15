@@ -1,0 +1,4 @@
+flowchart TD
+    CacheManager["RedisCacheManager"] --> KeyBuilder["Tenant Key Prefix"]
+    CacheManager --> TTL["Entry TTL 6h"]
+    CacheManager --> Serializer["JSON Serialization"]

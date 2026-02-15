@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant UI
+    participant Store
+    participant ApiClient
+    participant ChatService
+
+    UI->>Store: fetchMessages(dialogId)
+    Store->>ApiClient: POST /chat/graphql
+    ApiClient->>ChatService: GraphQL Query
+    ChatService-->>ApiClient: MessageConnection
+    ApiClient-->>Store: GraphQLResponse
+    Store-->>UI: Updated State

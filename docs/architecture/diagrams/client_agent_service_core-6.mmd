@@ -1,0 +1,5 @@
+flowchart TD
+    JetStream["JetStream"] --> ToolListener["ToolConnectionListener"]
+    ToolListener --> Extractor["MachineIdExtractor"]
+    ToolListener --> ToolService["ToolConnectionService"]
+    ToolService --> DB[("MongoDB")]

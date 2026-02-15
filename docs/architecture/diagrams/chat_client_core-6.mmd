@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant UI
+    participant DebugProvider
+    participant Rust
+
+    UI->>DebugProvider: Mount
+    DebugProvider->>Rust: invoke get_debug_mode
+    Rust-->>DebugProvider: boolean
+    DebugProvider->>UI: Provide debugMode state

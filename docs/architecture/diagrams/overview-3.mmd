@@ -1,0 +1,4 @@
+flowchart TD
+    Controllers["REST Controllers"] --> Services["Domain Services"]
+    DataFetchers["GraphQL DataFetchers"] --> Services
+    Services --> Repositories["Mongo / Pinot Repositories"]

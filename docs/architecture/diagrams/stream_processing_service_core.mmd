@@ -1,0 +1,34 @@
+flowchart LR
+    subgraph IntegratedTools["Integrated Tools"]
+        Mesh["MeshCentral"]
+        Tactical["Tactical RMM"]
+        Fleet["Fleet MDM"]
+    end
+
+    subgraph Messaging["Kafka & Debezium"]
+        Debezium["Debezium CDC"]
+        KafkaIn["Inbound Kafka Topics"]
+    end
+
+    subgraph StreamCore["Stream Processing Service Core"]
+        Listener["JsonKafkaListener"]
+        Handler["DebeziumMessageHandler"]
+        Enrichment["IntegratedToolDataEnrichmentService"]
+        ActivityStream["ActivityEnrichmentService"]
+        Mapper["EventTypeMapper"]
+    end
+
+    subgraph KafkaOut["Outbound Topics"]
+        Enriched["Unified Enriched Events"]
+    end
+
+    Mesh --> Debezium
+    Tactical --> Debezium
+    Fleet --> Debezium
+    Debezium --> KafkaIn
+    KafkaIn --> Listener
+    Listener --> Handler
+    Handler --> Enrichment
+    Handler --> Mapper
+    ActivityStream --> Enriched
+    Handler --> Enriched

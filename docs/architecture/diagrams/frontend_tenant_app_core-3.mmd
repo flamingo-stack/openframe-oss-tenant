@@ -1,0 +1,5 @@
+flowchart LR
+    Incoming["Incoming Segments"] --> Accumulator["MessageSegmentAccumulator"]
+    Accumulator --> Processed["Processed Segments"]
+    Processed --> Store["Zustand Store"]
+    Store --> UI["Chat UI"]

@@ -1,0 +1,10 @@
+classDiagram
+    class SupportedModelsService {
+        - Map~string, SupportedModel~ models
+        - boolean isLoaded
+        - Promise loadPromise
+        + loadSupportedModels()
+        + getModel()
+        + getAllModels()
+        + reset()
+    }

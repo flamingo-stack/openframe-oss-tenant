@@ -1,0 +1,5 @@
+flowchart TD
+    OidcLogin["OIDC Login"] --> OidcUserService
+    OidcUserService --> CheckConfig["Check SSO Config"]
+    CheckConfig -->|"AutoProvision Enabled"| CreateUser["registerOrReactivateFromSso"]
+    CreateUser --> PostProcess["RegistrationProcessor.postProcessAutoProvision"]

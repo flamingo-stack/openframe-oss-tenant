@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> Filter["TenantContextFilter"]
+    Filter -->|"Resolve tenantId"| Context["TenantContext.setTenantId()"]
+    Context --> SecurityLayer["Spring Security"]
+    SecurityLayer --> Controller["Controller / Endpoint"]
+    Controller --> Clear["TenantContext.clear()"]

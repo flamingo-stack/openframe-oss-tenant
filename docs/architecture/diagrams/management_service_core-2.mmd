@@ -1,0 +1,3 @@
+flowchart LR
+    Scheduler["Scheduled Job"] --> LockProvider["Redis Lock Provider"]
+    LockProvider --> Redis["Redis"]
