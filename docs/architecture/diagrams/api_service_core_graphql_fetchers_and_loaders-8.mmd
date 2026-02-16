@@ -1,0 +1,5 @@
+flowchart TD
+    Keys["organizationIds"] --> Dedup["Remove Nulls + Deduplicate"]
+    Dedup --> Repo["OrganizationRepository.findByOrganizationIdIn"]
+    Repo --> Map["Map by organizationId"]
+    Map --> Ordered["Return in Input Order"]

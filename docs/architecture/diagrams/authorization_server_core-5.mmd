@@ -1,0 +1,8 @@
+flowchart TD
+    InviteLink["Invitation Link"] --> Accept["/invitations/accept"]
+    Accept --> Service["InvitationRegistrationService"]
+    Service --> User["AuthUser Created"]
+
+    InviteSso["/invitations/accept/sso"] --> Cookie["HMAC Cookie"]
+    Cookie --> OAuth2Login["oauth2Login Flow"]
+    OAuth2Login --> InviteHandler["InviteSsoHandler"]

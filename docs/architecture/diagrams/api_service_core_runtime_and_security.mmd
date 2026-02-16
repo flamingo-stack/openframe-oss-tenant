@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client Application"] --> Gateway["Gateway Service"]
+    Gateway -->|"JWT + Headers"| ApiService["API Service"]
+    ApiService -->|"Uses"| RuntimeSecurity["Api Service Core Runtime And Security"]
+    ApiService --> DataLayer["Data Layer Modules"]
+    Gateway --> AuthServer["Authorization Server"]

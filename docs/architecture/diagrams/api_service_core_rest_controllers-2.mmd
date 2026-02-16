@@ -1,0 +1,4 @@
+flowchart LR
+    Admin["Admin User"] --> Controller["AgentRegistrationSecretController"]
+    Controller --> Service["AgentRegistrationSecretService"]
+    Service --> Store[("Secret Storage")]

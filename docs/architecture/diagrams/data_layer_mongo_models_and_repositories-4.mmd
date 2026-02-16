@@ -1,0 +1,19 @@
+classDiagram
+    class User {
+        id
+        email
+        roles
+        status
+        createdAt
+        updatedAt
+    }
+
+    class AuthUser {
+        tenantId
+        passwordHash
+        loginProvider
+        externalUserId
+        lastLogin
+    }
+
+    User <|-- AuthUser

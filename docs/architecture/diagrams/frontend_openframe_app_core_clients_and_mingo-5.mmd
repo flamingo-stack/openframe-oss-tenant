@@ -1,0 +1,5 @@
+flowchart TD
+    Segments["Incoming Message Segments"] --> Accumulator["Message Segment Accumulator"]
+    Accumulator --> ProcessedSegments["Normalized Segments"]
+    ProcessedSegments --> UpdateStore["Update Zustand Store"]
+    UpdateStore --> UI["React Components Render"]

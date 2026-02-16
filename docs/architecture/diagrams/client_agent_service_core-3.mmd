@@ -1,0 +1,5 @@
+flowchart TD
+    NatsHB["NATS Heartbeat Message"] --> Extractor["Machine Id Extractor"]
+    Extractor --> HeartbeatListener
+    HeartbeatListener --> StatusService["Machine Status Service"]
+    StatusService --> OnlineState["Update Last Seen / Online"]

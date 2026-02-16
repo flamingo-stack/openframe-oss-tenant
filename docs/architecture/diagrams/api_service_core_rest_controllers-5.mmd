@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Organization Mutation"] --> Controller["OrganizationController"]
+    Controller --> CommandService["OrganizationCommandService"]
+    CommandService --> Repo[("Organization Repository")]
+    Repo --> DB[("MongoDB")]

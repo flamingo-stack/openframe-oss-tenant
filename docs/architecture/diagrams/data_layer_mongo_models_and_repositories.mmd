@@ -1,0 +1,10 @@
+flowchart TD
+    Controllers["REST and GraphQL Controllers"] --> Services["Domain Services"]
+    Services --> Repositories["Mongo Repositories"]
+    Repositories --> MongoTemplate["MongoTemplate and ReactiveMongoRepository"]
+    MongoTemplate --> MongoDB[("MongoDB Database")]
+
+    subgraph data_layer["Data Layer Mongo Models And Repositories"]
+        Repositories
+        MongoTemplate
+    end

@@ -1,0 +1,8 @@
+flowchart TD
+    OAuthFlow["OAuth2 Flow"] --> Save["MongoAuthorizationService.save()"]
+    Save --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> MongoAuth[("MongoOAuth2Authorization")]
+    MongoAuth --> Mongo[("MongoDB")]
+
+    TokenLookup["Token Validation"] --> Find["findByToken()"]
+    Find --> Mapper

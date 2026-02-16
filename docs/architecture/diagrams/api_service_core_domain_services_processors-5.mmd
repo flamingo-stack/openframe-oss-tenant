@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Admin Saves SSO Config"] --> Service["SSOConfigService"]
+    Service --> Encrypt["EncryptionService Encrypt Secret"]
+    Encrypt --> Mongo["Persist Encrypted Secret"]
+    Mongo --> Service
+    Service --> Decrypt["Decrypt When Editing"]
+    Decrypt --> Response["Return Plain Secret to Admin"]

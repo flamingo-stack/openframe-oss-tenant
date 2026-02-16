@@ -1,0 +1,9 @@
+flowchart TD
+    Start["Application Ready"] --> AgentSecret["Agent Registration Secret"]
+    AgentSecret --> ToolAgents["Integrated Tool Agent Init"]
+    ToolAgents --> ClientConfig["Client Config Init"]
+    ClientConfig --> Nats["NATS Streams Init"]
+    Nats --> Pinot["Pinot Schema & Tables"]
+    Pinot --> DebeziumInit["Debezium Connectors"]
+    DebeziumInit --> Tactical["Tactical RMM Scripts"]
+    Tactical --> End["Initialization Complete"]

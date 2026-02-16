@@ -1,0 +1,4 @@
+flowchart LR
+    Service["Domain Service"] --> DefaultProcessor["Default Processor"]
+    DefaultProcessor --> Log["Log Only"]
+    CustomProcessor["Custom Processor"] -. Overrides .-> DefaultProcessor

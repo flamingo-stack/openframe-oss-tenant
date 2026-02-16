@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Controller Request"] --> Fetch["Load User from Repository"]
+    Fetch --> Validate["Validate Business Rules"]
+    Validate --> Save["Persist Changes"]
+    Save --> Processor["UserProcessor Hook"]
+    Processor --> Response["Return DTO"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Controllers["REST Controllers<br/>GraphQL Fetchers"] --> Services["Domain Services"]
+    Services --> Repositories["Mongo Repositories"]
+    Services --> Processors["Post Processors"]
+    Services --> Security["Encryption & Validation"]
+
+    subgraph api_layer["API Service Core"]
+        Services
+        Processors
+    end

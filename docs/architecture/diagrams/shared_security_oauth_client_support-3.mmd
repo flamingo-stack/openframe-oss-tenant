@@ -1,0 +1,10 @@
+flowchart TD
+    Config["Application Properties"] --> JwtConfig["JwtConfig"]
+
+    JwtConfig --> PublicKey["KeyConfig.toRSAPublicKey()"]
+    JwtConfig --> PrivatePem["Private Key PEM String"]
+
+    PrivatePem --> StripPem["Remove PEM Headers"]
+    StripPem --> Decode["Base64 Decode"]
+    Decode --> KeyFactory["RSA KeyFactory"]
+    KeyFactory --> RSAPrivate["RSAPrivateKey"]

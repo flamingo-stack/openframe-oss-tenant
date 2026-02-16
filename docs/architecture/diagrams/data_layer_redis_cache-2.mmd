@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Service
+    participant Cache as "Spring Cache"
+    participant Manager as "RedisCacheManager"
+    participant Redis
+
+    Service->>Cache: Call @Cacheable method
+    Cache->>Manager: Resolve cache
+    Manager->>Redis: GET prefixed:key
+    Redis-->>Manager: Cached value or null
+    Manager-->>Cache: Return value
+    Cache-->>Service: Return result

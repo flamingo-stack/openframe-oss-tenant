@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant MingoService as MingoApiService
+    participant ApiClient
+    participant ChatAPI
+
+    User->>UI: Send message
+    UI->>MingoService: trigger mutation
+    MingoService->>ApiClient: POST /chat/api/v1/messages
+    ApiClient->>ChatAPI: Authenticated request
+    ChatAPI-->>ApiClient: Response
+    ApiClient-->>MingoService: ApiResponse
+    MingoService-->>UI: Mutation success

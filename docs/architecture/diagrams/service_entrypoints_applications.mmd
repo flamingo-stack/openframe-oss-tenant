@@ -1,0 +1,11 @@
+flowchart TD
+    Client["Clients (Frontend, Agents, External Systems)"] --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Api --> DataLayer["Data Layer (Mongo, Kafka, Cassandra, Redis)"]
+    Stream["Stream Service"] --> DataLayer
+    Management["Management Service"] --> DataLayer
+    Authz["Authorization Server"] --> DataLayer
+    Config["Config Server"] --> Gateway
+    Config --> Api
+    Config --> Authz

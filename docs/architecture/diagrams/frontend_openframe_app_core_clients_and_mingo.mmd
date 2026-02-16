@@ -1,0 +1,12 @@
+flowchart LR
+    UI["React UI Components"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+    UI --> FleetApiClient["FleetApiClient"]
+    UI --> TacticalApiClient["TacticalApiClient"]
+    UI --> MingoApiService["MingoApiService"]
+
+    ApiClient --> BackendAPI["API Service"]
+    AuthApiClient --> AuthServer["Authorization Server"]
+    FleetApiClient --> FleetService["Fleet MDM Integration"]
+    TacticalApiClient --> TacticalService["Tactical RMM Integration"]
+    MingoApiService --> ChatAPI["Chat Service"]

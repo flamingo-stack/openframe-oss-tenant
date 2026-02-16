@@ -1,0 +1,8 @@
+flowchart TD
+    Token["Incoming JWT"] --> ExtractIssuer["Extract Issuer"]
+    ExtractIssuer --> Cache{"Provider in Cache?"}
+    Cache -->|"Yes"| UseProvider["Use Cached Provider"]
+    Cache -->|"No"| CreateProvider["Create JwtDecoder + Provider"]
+    CreateProvider --> Store["Store in Cache"]
+    UseProvider --> Authenticate["Authenticate Token"]
+    Store --> Authenticate

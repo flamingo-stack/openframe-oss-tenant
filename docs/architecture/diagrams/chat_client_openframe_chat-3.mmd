@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI
+    participant TokenService
+    participant Tauri
+
+    UI->>TokenService: ensureTokenReady()
+    TokenService->>TokenService: getCurrentToken()
+    TokenService->>Tauri: invoke get_token
+    Tauri-->>TokenService: token
+    TokenService->>TokenService: setToken()
+    TokenService-->>UI: token ready

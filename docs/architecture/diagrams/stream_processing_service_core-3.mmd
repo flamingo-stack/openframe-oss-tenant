@@ -1,0 +1,7 @@
+flowchart TD
+    Raw["CommonDebeziumMessage"] --> ToolDeserializer["IntegratedToolEventDeserializer"]
+    ToolDeserializer --> AgentId["Extract Agent ID"]
+    ToolDeserializer --> SourceType["Extract Source Event Type"]
+    ToolDeserializer --> Timestamp["Parse Timestamp"]
+    ToolDeserializer --> Message["Build Message"]
+    SourceType --> Mapper["EventTypeMapper"]

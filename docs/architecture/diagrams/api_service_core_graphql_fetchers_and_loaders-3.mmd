@@ -1,0 +1,10 @@
+flowchart TD
+    Machine["Machine"] --> Tags["tags()"]
+    Machine --> Tools["toolConnections()"]
+    Machine --> Agents["installedAgents()"]
+    Machine --> Org["organization()"]
+
+    Tags --> TagLoader["tagDataLoader"]
+    Tools --> ToolLoader["toolConnectionDataLoader"]
+    Agents --> AgentLoader["installedAgentDataLoader"]
+    Org --> OrgLoader["organizationDataLoader"]

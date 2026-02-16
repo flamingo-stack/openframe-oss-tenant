@@ -1,0 +1,13 @@
+flowchart LR
+    User["User"] --> UI["Chat UI (React)"]
+    UI --> TokenService["Token Service"]
+    UI --> DialogService["Dialog GraphQL Service"]
+    UI --> ModelsService["Supported Models Service"]
+    UI --> DebugContext["Debug Mode Context"]
+
+    TokenService --> TauriRuntime["Tauri Rust Runtime"]
+    DialogService --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service Core"]
+    ApiService --> ChatBackend["Chat GraphQL Resolver"]
+
+    ModelsService --> ApiService

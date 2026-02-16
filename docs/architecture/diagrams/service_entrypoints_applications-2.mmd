@@ -1,0 +1,8 @@
+flowchart LR
+    Gateway["Gateway Service"] --> Api["API Application"]
+    Api --> Controllers["REST Controllers"]
+    Api --> GraphQL["GraphQL Fetchers"]
+    Controllers --> Services["Domain Services"]
+    GraphQL --> Services
+    Services --> Mongo["Mongo Repositories"]
+    Services --> Kafka["Kafka Producers"]

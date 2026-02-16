@@ -1,0 +1,5 @@
+flowchart TD
+    Controllers["REST Controllers"] --> Contracts["Api Contracts Dtos And Mappers"]
+    GraphQL["GraphQL Layer"] --> Contracts
+    Contracts --> Domain["Domain Services"]
+    Domain --> DataLayer["Mongo / Pinot / Kafka"]

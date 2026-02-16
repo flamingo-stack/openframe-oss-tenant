@@ -1,0 +1,12 @@
+flowchart LR
+    AppService["Application Service"] -->|"publish()"| KafkaProducer["OssTenantKafkaProducer"]
+    KafkaProducer --> KafkaTemplate["KafkaTemplate<String,Object>"]
+    KafkaTemplate --> KafkaCluster["OSS Kafka Cluster"]
+
+    KafkaCluster --> KafkaListener["Kafka Listener Container"]
+    KafkaListener --> StreamService["Stream Processing Service"]
+
+    KafkaCluster --> DebeziumConsumer["Debezium Consumer"]
+    DebeziumConsumer --> DomainProcessor["Domain Processor"]
+
+    KafkaCluster --> PinotIngestion["Pinot / Analytics"]

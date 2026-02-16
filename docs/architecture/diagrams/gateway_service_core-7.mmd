@@ -1,0 +1,10 @@
+flowchart TD
+    Req["External API Request"] --> CheckPath["Is External API Path"]
+    CheckPath --> ApiKey["Extract X API Key"]
+    ApiKey --> Validate["Validate API Key"]
+    Validate --> RateCheck["RateLimitService isAllowed"]
+    RateCheck --> Allowed["Allowed Request"]
+    RateCheck --> Blocked["Rate Limit Exceeded"]
+    Allowed --> AddHeaders["Add Rate Limit Headers"]
+    AddHeaders --> Proxy["Forward to External API"]
+    Blocked --> Error["429 Response"]

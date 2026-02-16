@@ -1,0 +1,6 @@
+flowchart TD
+    Token["JWT Token"] --> Resolver["Issuer Resolver"]
+    Resolver --> Cache["Issuer Manager Cache"]
+    Cache --> Decoder["Nimbus JWT Decoder"]
+    Decoder --> Validator["Strict Issuer Validator"]
+    Validator --> AuthManager["Reactive Auth Manager"]

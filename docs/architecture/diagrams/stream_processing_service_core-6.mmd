@@ -1,0 +1,8 @@
+flowchart LR
+    Activities["Fleet Activities Topic"] --> AStream["ActivityMessage Stream"]
+    HostActivities["Fleet Host Activities Topic"] --> HStream["HostActivityMessage Stream"]
+    AStream --> Join["Left Join (5s Window)"]
+    HStream --> Join
+    Join --> Enriched["Set hostId + agentId"]
+    Enriched --> HeaderAdder["Add MessageType Header"]
+    HeaderAdder --> Output["Enriched Fleet Events Topic"]

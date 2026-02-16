@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Registration Request"] --> Controller["Agent Controller"]
+    Controller --> Service["Agent Registration Service"]
+    Service --> Machine["Machine Entity Creation"]
+    Service --> Processor["Post Registration Processor"]
+    Processor --> Done["Registration Complete"]

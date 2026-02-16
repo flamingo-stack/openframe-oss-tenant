@@ -1,0 +1,4 @@
+flowchart LR
+    Config["WebClientConfig"] --> HttpClient["Reactor Netty HttpClient"]
+    HttpClient --> Timeouts["Connect and Read Write Timeouts"]
+    Config --> Builder["WebClient Builder Bean"]

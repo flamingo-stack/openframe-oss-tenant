@@ -1,0 +1,55 @@
+flowchart TD
+    subgraph Clients["Clients"]
+        WebUI["Web Frontend"]
+        ChatClient["Desktop Chat Client (Tauri)"]
+        Agent["Installed Client Agent"]
+        External["External Integrations"]
+    end
+
+    subgraph Edge["Edge Layer"]
+        Gateway["Gateway Service"]
+    end
+
+    subgraph Core["Core Services"]
+        Api["API Service"]
+        Authz["Authorization Server"]
+        ExternalApi["External API Service"]
+        Stream["Stream Service"]
+        Management["Management Service"]
+        ClientSvc["Client Agent Service"]
+    end
+
+    subgraph Data["Data Layer"]
+        Mongo["MongoDB"]
+        Cassandra["Cassandra"]
+        Pinot["Apache Pinot"]
+        Redis["Redis"]
+        Kafka["Kafka"]
+        Nats["NATS JetStream"]
+    end
+
+    WebUI --> Gateway
+    ChatClient --> Gateway
+    External --> Gateway
+    Agent --> ClientSvc
+
+    Gateway --> Api
+    Gateway --> Authz
+    Gateway --> ExternalApi
+
+    Api --> Mongo
+    Api --> Redis
+    Api --> Kafka
+
+    Stream --> Kafka
+    Stream --> Cassandra
+    Stream --> Pinot
+
+    Management --> Mongo
+    Management --> Kafka
+    Management --> Pinot
+
+    ClientSvc --> Nats
+    ClientSvc --> Mongo
+
+    Kafka --> Stream

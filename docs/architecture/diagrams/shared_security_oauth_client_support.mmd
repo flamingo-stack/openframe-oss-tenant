@@ -1,0 +1,11 @@
+flowchart TD
+    Frontend["Frontend Clients"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    Gateway --> AuthServer["Authorization Server"]
+
+    AuthServer --> JwtSupport["Shared Security Oauth Client Support"]
+    ApiService --> JwtSupport
+    Gateway --> JwtSupport
+
+    JwtSupport --> Keys["RSA Keys"]
+    JwtSupport --> Pkce["PKCE Utilities"]

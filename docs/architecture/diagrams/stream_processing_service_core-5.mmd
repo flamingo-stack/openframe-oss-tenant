@@ -1,0 +1,3 @@
+flowchart TD
+    Handler["DebeziumCassandraMessageHandler"] --> Transform["Build UnifiedLogEvent"]
+    Transform --> Cassandra["CassandraRepository.save()"]

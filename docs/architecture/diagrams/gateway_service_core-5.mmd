@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> Origin["OriginSanitizerFilter"]
+    Origin --> AuthHeader["AddAuthorizationHeaderFilter"]
+    AuthHeader --> Jwt["JWT Authentication"]
+    Jwt --> Authorization["Role and Path Authorization"]
+    Authorization --> Controller["Downstream Route"]

@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant TokenService
+    participant DialogService
+    participant Backend
+
+    User->>UI: Send message
+    UI->>TokenService: ensureTokenReady()
+    UI->>DialogService: getDialogMessages()
+    DialogService->>Backend: GraphQL query
+    Backend-->>DialogService: Message edges
+    DialogService-->>UI: Aggregated messages
+    UI-->>User: Render conversation

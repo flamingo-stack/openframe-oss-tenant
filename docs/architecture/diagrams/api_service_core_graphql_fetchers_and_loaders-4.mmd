@@ -1,0 +1,8 @@
+flowchart TD
+    Query["events Query"] --> MapA["GraphQLEventMapper"]
+    MapA --> EventService
+    EventService --> QueryResult
+    QueryResult --> Connection
+
+    Mutation["createEvent / updateEvent"] --> Build["Build Event Entity"]
+    Build --> EventService

@@ -1,0 +1,4 @@
+flowchart LR
+    GraphQLInput["GraphQL Query Input"] --> Scalar["Date / Instant Scalar"]
+    Scalar --> JavaType["LocalDate / Instant"]
+    JavaType --> ServiceLayer["Domain Services"]

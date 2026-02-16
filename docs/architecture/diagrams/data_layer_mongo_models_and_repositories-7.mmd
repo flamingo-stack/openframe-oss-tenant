@@ -1,0 +1,5 @@
+flowchart LR
+    ClientRequest["Client Request with cursor"] --> ValidateSort["Validate Sort Field"]
+    ValidateSort --> AddCursor["Apply _id cursor filter"]
+    AddCursor --> ApplyLimit["Apply limit"]
+    ApplyLimit --> Execute["MongoTemplate.find()"]

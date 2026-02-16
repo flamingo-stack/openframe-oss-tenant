@@ -1,0 +1,19 @@
+flowchart TD
+    subgraph WritePath["Operational Write Path"]
+        Repo["Mongo/Cassandra Repositories"] --> Aspect["MachineTagEventAspect"]
+        Aspect --> Service["MachineTagEventServiceImpl"]
+        Service --> Kafka["OssTenantRetryingKafkaProducer"]
+    end
+
+    subgraph StreamLayer["Streaming & Enrichment"]
+        Kafka --> Stream["Stream Processing Service Core"]
+    end
+
+    subgraph Analytics["Analytical Storage"]
+        Stream --> PinotIngest["Pinot Tables"]
+        PinotIngest --> PinotRepo["Pinot Client Repositories"]
+    end
+
+    subgraph QueryLayer["Query Consumers"]
+        PinotRepo --> Api["API / GraphQL Services"]
+    end

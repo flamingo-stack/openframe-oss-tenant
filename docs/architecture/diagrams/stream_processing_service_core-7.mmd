@@ -1,0 +1,10 @@
+flowchart TD
+    Tool["Integrated Tool DB"] --> Debezium["Debezium CDC"]
+    Debezium --> KafkaIn["Kafka Inbound"]
+    KafkaIn --> Listener
+    Listener --> Deserializer
+    Deserializer --> Enrichment
+    Enrichment --> TypeMapping
+    TypeMapping --> Handler
+    Handler -->|"CASSANDRA"| CassandraDB
+    Handler -->|"KAFKA"| KafkaOut

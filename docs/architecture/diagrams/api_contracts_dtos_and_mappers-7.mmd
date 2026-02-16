@@ -1,0 +1,9 @@
+flowchart TD
+    Client["REST or GraphQL Client"] --> Controller["Controller"]
+    Controller --> Mapper["OrganizationMapper"]
+    Mapper --> Entity["Organization Entity"]
+    Entity --> Repository["Mongo Repository"]
+    Repository --> Entity
+    Entity --> Mapper
+    Mapper --> Response["OrganizationResponse"]
+    Response --> Client

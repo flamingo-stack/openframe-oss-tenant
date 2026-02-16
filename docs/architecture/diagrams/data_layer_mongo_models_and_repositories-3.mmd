@@ -1,0 +1,5 @@
+flowchart TD
+    Startup["Application Startup"] --> PostConstruct["@PostConstruct initIndexes()"]
+    PostConstruct --> IndexOps["MongoTemplate.indexOps()"]
+    IndexOps --> EnsureIndex1["userId + timestamp"]
+    IndexOps --> EnsureIndex2["type + metadata.tags"]

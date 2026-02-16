@@ -1,0 +1,5 @@
+flowchart LR
+    OrgQuery["organizations Query"] --> MapOrg["GraphQLOrganizationMapper"]
+    MapOrg --> OrgQueryService["OrganizationQueryService"]
+    OrgQueryService --> ResultOrg
+    ResultOrg --> OrgConnection

@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Security["Security Filter Chain"]
+    Security --> Context["Security Context"]
+    Context --> Resolver["AuthPrincipalArgumentResolver"]
+    Resolver --> Controller["Controller Method"]

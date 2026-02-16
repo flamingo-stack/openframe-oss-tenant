@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["Browser / Frontend"] -->|"/tenant/oauth2/authorize"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"JWT access token"| ClientApp["Client Application"]
+    ClientApp -->|"Bearer token"| ApiService["API Service Core"]
+    ApiService -->|"JWT validation"| AuthServer
+
+    AuthServer --> MongoDB[("MongoDB")]
+    AuthServer --> KeyStore["Tenant Key Service"]
+
+    KeyStore --> MongoDB

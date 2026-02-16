@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Authenticated Client"] --> Security["Spring Security Filter Chain"]
+    Security --> Controller["REST Controller"]
+    Controller --> Service["Domain Service Layer"]
+    Service --> Repository["Data Repositories"]
+    Repository --> Database[("MongoDB / Other Stores")]
+    Service --> Eventing["Kafka / Stream Processing"]

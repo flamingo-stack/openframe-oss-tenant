@@ -1,0 +1,6 @@
+flowchart LR
+    KafkaTopic["Kafka Topic"] --> Listener["Kafka Listener"]
+    Listener --> Handler["Message Handler"]
+    Handler --> Enrichment["Enrichment Service"]
+    Enrichment --> Mongo["Mongo"]
+    Enrichment --> Pinot["Pinot Analytics"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Browser["Browser Client"] --> Gateway["Gateway"]
+    Gateway --> AuthHeader["Resolve Bearer Token"]
+    AuthHeader --> JwtValidation["Validate JWT"]
+    JwtValidation --> RoleCheck["Check ROLE ADMIN"]
+    RoleCheck --> ApiService["Forward to API Service"]

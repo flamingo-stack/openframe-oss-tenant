@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Startup"] --> ReadEnv["Read OAuth Properties"]
+    ReadEnv --> CheckRepo{"Client Exists?"}
+    CheckRepo -->|"Yes"| CompareSecret["Secret Matches?"]
+    CompareSecret -->|"No"| Update["Update Secret"]
+    CompareSecret -->|"Yes"| Noop["No Change"]
+    CheckRepo -->|"No"| Create["Create OAuth Client"]

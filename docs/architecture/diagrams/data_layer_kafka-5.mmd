@@ -1,0 +1,6 @@
+flowchart TD
+    MongoDB["MongoDB"] --> Debezium
+    Debezium --> KafkaCluster
+    KafkaCluster --> StreamProcessor
+    StreamProcessor --> Pinot
+    KafkaCluster --> DomainConsumers

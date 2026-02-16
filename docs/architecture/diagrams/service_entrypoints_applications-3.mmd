@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant Authz as "Authorization Server"
+    participant Mongo
+
+    Browser->>Gateway: Access protected resource
+    Gateway->>Authz: Redirect to login
+    Authz->>Mongo: Load user and client
+    Authz->>Browser: Issue authorization code
+    Browser->>Authz: Exchange code for token
+    Authz->>Mongo: Persist token
+    Authz->>Browser: Return access token

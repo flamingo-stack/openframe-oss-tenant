@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> Cors["CORS Filter"]
+    Cors --> Auth["JWT / API Key Filter"]
+    Auth --> Routing["Route Resolution"]
+    Routing --> Target["Target Service"]

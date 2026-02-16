@@ -1,0 +1,5 @@
+flowchart TD
+    Message["Installed Agent Message"] --> Parse["Deserialize JSON"]
+    Parse --> Extract["Extract Machine Id"]
+    Extract --> Process["Installed Agent Service"]
+    Process --> Ack["Acknowledge Message"]

@@ -1,0 +1,8 @@
+flowchart TD
+    TokenRequest["Token Request"] --> JwkSource["JWKSource"]
+    JwkSource --> TenantKeyService["TenantKeyService"]
+    TenantKeyService -->|"find active key"| Repo["TenantKeyRepository"]
+    Repo --> Mongo[("MongoDB")]
+
+    TenantKeyService -->|"generate if missing"| Generator["RsaAuthenticationKeyPairGenerator"]
+    Generator --> PemUtil["PemUtil"]

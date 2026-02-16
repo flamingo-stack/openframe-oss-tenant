@@ -1,0 +1,5 @@
+flowchart TD
+    Client["WebSocket Client"] --> Route["RouteLocator"]
+    Route --> AgentRoute["Agent Tool WS Route"]
+    Route --> ApiRoute["API Tool WS Route"]
+    Route --> NatsRoute["NATS WS Route"]

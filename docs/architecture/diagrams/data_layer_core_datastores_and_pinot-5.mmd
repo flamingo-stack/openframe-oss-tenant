@@ -1,0 +1,6 @@
+flowchart LR
+    Mongo["Mongo Data Layer"] --> Aspect["MachineTagEventAspect"]
+    Aspect --> Kafka["Data Layer Kafka"]
+    Kafka --> Stream["Stream Processing Service Core"]
+    Stream --> Pinot["Apache Pinot"]
+    Pinot --> Api["API Service Core"]

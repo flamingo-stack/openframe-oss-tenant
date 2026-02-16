@@ -1,0 +1,9 @@
+flowchart TD
+    Boot["Spring Boot Startup"] --> LoadConfig["Load Configuration Classes"]
+    LoadConfig --> RegisterBeans["Register Beans"]
+    RegisterBeans --> InitData["Run DataInitializer"]
+    RegisterBeans --> SetupSecurity["Build Security Filter Chain"]
+    RegisterBeans --> RegisterScalars["Register GraphQL Scalars"]
+    InitData --> Ready["API Service Ready"]
+    SetupSecurity --> Ready
+    RegisterScalars --> Ready

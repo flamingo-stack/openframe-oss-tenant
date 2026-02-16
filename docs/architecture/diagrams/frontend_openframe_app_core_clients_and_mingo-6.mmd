@@ -1,0 +1,7 @@
+flowchart TD
+    FetchDialog["Fetch Dialog"] --> ApiClientCall["POST /chat/graphql"]
+    ApiClientCall --> GraphQLResponse["GraphQL Response"]
+    GraphQLResponse --> UpdateDialogState["Update Store"]
+
+    FetchMessages["Fetch Messages"] --> ApiClientCall
+    ApiClientCall --> UpdateMessages["Update Message Arrays"]

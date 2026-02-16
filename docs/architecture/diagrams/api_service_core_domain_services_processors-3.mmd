@@ -1,0 +1,7 @@
+flowchart TD
+    AdminRequest["Admin Config Request"] --> Normalize["Normalize Domains"]
+    Normalize --> Validate["Validate Domains & AutoProvision"]
+    Validate --> Encrypt["Encrypt Client Secret"]
+    Encrypt --> Persist["Save to Repository"]
+    Persist --> PostProcess["SSOConfigProcessor Hook"]
+    PostProcess --> Response["Return Config DTO"]

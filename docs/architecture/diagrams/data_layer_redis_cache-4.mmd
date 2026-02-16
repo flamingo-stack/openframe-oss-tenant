@@ -1,0 +1,11 @@
+flowchart TD
+    Controller["Controllers / Fetchers"] --> Domain["Domain Services"]
+    Domain --> Cache["Redis Cache"]
+    Domain --> Mongo["MongoDB"]
+    Domain --> Cassandra["Cassandra"]
+    Domain --> Pinot["Pinot"]
+
+    Cache --> Redis[("Redis")]
+    Mongo --> MongoDB[("MongoDB")]
+    Cassandra --> CassandraDB[("Cassandra")]
+    Pinot --> PinotDB[("Pinot")]

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant API as API Service
+    participant Repo as PinotClientLogRepository
+    participant Pinot as Pinot Broker
+
+    API->>Repo: findLogs(filters, sort, limit)
+    Repo->>Pinot: Execute SQL
+    Pinot-->>Repo: ResultSet
+    Repo-->>API: List<LogProjection>

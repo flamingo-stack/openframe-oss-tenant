@@ -1,0 +1,4 @@
+flowchart TD
+    User["Authenticated User"] --> Controller["ApiKeyController"]
+    Controller --> ApiKeyService["ApiKeyService"]
+    ApiKeyService --> ApiKeyRepo[("API Key Repository")]

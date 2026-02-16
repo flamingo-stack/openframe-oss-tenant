@@ -1,0 +1,8 @@
+flowchart LR
+    Controllers["REST Controllers"] --> DTOs["DTO Contracts"]
+    GraphQL["GraphQL Fetchers"] --> DTOs
+    DTOs --> Mappers["Mappers"]
+    Mappers --> Entities["Domain Entities"]
+    Entities --> DataLayer["Mongo Repositories"]
+
+    Services["Domain Services"] --> Mappers

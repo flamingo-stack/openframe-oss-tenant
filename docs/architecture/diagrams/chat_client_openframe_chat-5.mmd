@@ -1,0 +1,6 @@
+flowchart TD
+    LoadCall["loadSupportedModels()"] --> AlreadyLoaded{"isLoaded?"}
+    AlreadyLoaded -->|Yes| Return
+    AlreadyLoaded -->|No| FetchModels["fetchModels()"]
+    FetchModels --> ParseResponse["Store models in Map"]
+    ParseResponse --> MarkLoaded["isLoaded = true"]

@@ -1,0 +1,5 @@
+flowchart LR
+    AppConfig["Application Configuration"] --> MongoConfig["MongoConfig"]
+    MongoConfig --> Converter["MappingMongoConverter"]
+    Converter --> Auditing["Mongo Auditing"]
+    MongoConfig --> RepoScan["EnableMongoRepositories"]

@@ -1,0 +1,9 @@
+flowchart TD
+    Client["GraphQL Client"] -->|"Query / Mutation"| DGS["DGS Runtime"]
+    DGS --> Fetchers["Data Fetchers"]
+    Fetchers --> Services["Domain Services"]
+    Services --> Repositories["Repositories"]
+    Repositories --> Datastore[("MongoDB / Pinot / Other Stores")]
+
+    Fetchers --> DataLoaders["DataLoaders"]
+    DataLoaders --> Services

@@ -1,0 +1,4 @@
+flowchart LR
+    Admin["Admin UI"] --> Controller["SSOConfigController"]
+    Controller --> SSOService["SSOConfigService"]
+    SSOService --> ConfigStore[("Tenant SSO Config Store")]

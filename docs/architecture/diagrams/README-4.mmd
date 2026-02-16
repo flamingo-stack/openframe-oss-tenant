@@ -1,0 +1,7 @@
+flowchart TD
+    MongoChange["Mongo Save"] --> Aspect["AOP Event Interceptor"]
+    Aspect --> Kafka
+    Kafka --> Stream
+    Stream --> Cassandra
+    Stream --> Pinot
+    Pinot --> ApiQueries["API / GraphQL Queries"]

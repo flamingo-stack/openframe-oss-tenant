@@ -1,0 +1,8 @@
+flowchart TD
+    AuthRequest["Auth Request"] --> Unauthorized{"401?"}
+    Unauthorized -->|No| ReturnAuthResponse["Return Response"]
+    Unauthorized -->|Yes| RefreshToken["Call /oauth/refresh"]
+    RefreshToken --> RefreshResult{"Success?"}
+    RefreshResult -->|Yes| RetryAuthRequest["Retry Request"]
+    RefreshResult -->|No| ForceLogout["Force Logout"]
+    RetryAuthRequest --> ReturnAuthResponse

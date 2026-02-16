@@ -1,0 +1,15 @@
+flowchart LR
+    subgraph SecurityLayer["Security Layer"]
+        JwtConfigNode["JwtConfig"]
+        JwtSecurityNode["JwtSecurityConfig"]
+        PkceNode["PKCEUtils"]
+        ConstantsNode["SecurityConstants"]
+    end
+
+    AuthServer["Authorization Server"] --> JwtSecurityNode
+    AuthServer --> PkceNode
+
+    Gateway["Gateway Service"] --> JwtSecurityNode
+    ApiService["API Service"] --> JwtSecurityNode
+
+    Frontend["Frontend Clients"] --> PkceNode

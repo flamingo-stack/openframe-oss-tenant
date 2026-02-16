@@ -1,0 +1,5 @@
+flowchart LR
+    MongoChange["Mongo Change Event"] --> Mapper
+    Mapper --> MachinePinotMessage
+    MachinePinotMessage --> KafkaTopic
+    KafkaTopic --> PinotConsumer

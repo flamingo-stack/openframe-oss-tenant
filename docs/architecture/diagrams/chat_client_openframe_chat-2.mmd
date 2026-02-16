@@ -1,0 +1,5 @@
+flowchart TD
+    AppStart["Application Start"] --> ProviderInit["DebugModeProvider Mount"]
+    ProviderInit --> InvokeRust["invoke get_debug_mode"]
+    InvokeRust --> SetState["setDebugMode(value)"]
+    SetState --> ContextReady["Context Available to UI"]

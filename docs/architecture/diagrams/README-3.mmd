@@ -1,0 +1,9 @@
+flowchart TD
+    User["User Login"] --> Authz["Authorization Server"]
+    Authz --> JWT["JWT (tenant_id claim)"]
+    JWT --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service"]
+    Api --> Domain["Domain Services"]
+
+    Authz --> RSA["Per-Tenant RSA Keys"]
+    RSA --> Mongo

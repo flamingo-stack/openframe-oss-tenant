@@ -1,0 +1,5 @@
+flowchart TD
+    Filter["EventQueryFilter"] --> BuildQuery["buildEventQuery()"]
+    BuildQuery --> Criteria["Mongo Criteria"]
+    Criteria --> QueryExec["mongoTemplate.find()"]
+    QueryExec --> Result["List of Events"]

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer
+
+    Client->>Client: Generate state
+    Client->>Client: Generate code_verifier
+    Client->>Client: Derive code_challenge (SHA-256)
+
+    Client->>AuthServer: Authorization request with code_challenge
+    AuthServer-->>Client: Authorization code
+
+    Client->>AuthServer: Token request with code_verifier
+    AuthServer-->>Client: Access token

@@ -1,0 +1,5 @@
+flowchart LR
+    Query["logDetails Query"] --> LogService
+    LogService --> Optional
+    Optional -->|"Present"| LogDetails
+    Optional -->|"Empty"| Null

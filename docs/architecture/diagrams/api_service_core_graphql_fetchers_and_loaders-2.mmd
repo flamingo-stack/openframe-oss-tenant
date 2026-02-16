@@ -1,0 +1,6 @@
+flowchart LR
+    Q["devices Query"] --> Map1["GraphQLDeviceMapper"]
+    Map1 --> Service1["DeviceService"]
+    Service1 --> Result1["CountedGenericQueryResult"]
+    Result1 --> Map2["toDeviceConnection()"]
+    Map2 --> Conn["GraphQL Connection"]

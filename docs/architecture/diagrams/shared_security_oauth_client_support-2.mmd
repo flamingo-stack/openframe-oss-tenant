@@ -1,0 +1,11 @@
+flowchart TD
+    JwtConfigBean["JwtConfig Bean"] --> LoadPublic["loadPublicKey()"]
+    JwtConfigBean --> LoadPrivate["loadPrivateKey()"]
+
+    LoadPublic --> BuildRSA["RSAKey Builder"]
+    LoadPrivate --> BuildRSA
+
+    BuildRSA --> JwkSet["ImmutableJWKSet"]
+    JwkSet --> Encoder["NimbusJwtEncoder"]
+
+    LoadPublic --> Decoder["NimbusJwtDecoder"]

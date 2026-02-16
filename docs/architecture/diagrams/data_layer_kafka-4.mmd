@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Service
+    participant Producer
+    participant KafkaCluster
+    participant RecoveryHandler
+
+    Service->>Producer: publish(message)
+    Producer->>KafkaCluster: send()
+    KafkaCluster-->>Producer: failure
+    Producer->>RecoveryHandler: enqueue(error, topic, key, payload)
+    RecoveryHandler->>RecoveryHandler: structured logging

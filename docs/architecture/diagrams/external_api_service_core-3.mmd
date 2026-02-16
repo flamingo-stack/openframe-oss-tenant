@@ -1,0 +1,4 @@
+flowchart LR
+    Client --> EventController
+    EventController --> EventService
+    EventService --> EventRepository["Event Repository / Data Layer"]

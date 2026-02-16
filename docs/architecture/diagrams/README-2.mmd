@@ -1,0 +1,7 @@
+flowchart LR
+    Debezium["Debezium CDC"] --> KafkaIn["Kafka Topics"]
+    KafkaIn --> Deserializer["Tool Deserializers"]
+    Deserializer --> Enrichment["Enrichment Service"]
+    Enrichment --> Mapper["EventTypeMapper"]
+    Mapper --> CassandraHandler["Cassandra Handler"]
+    Mapper --> KafkaHandler["Kafka Handler"]

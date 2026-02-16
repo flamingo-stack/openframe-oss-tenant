@@ -1,0 +1,5 @@
+flowchart TD
+    Input["UUID from Agent"] --> Query["Query Fleet MDM API"]
+    Query --> Match["Find Matching Host"]
+    Match --> Convert["Convert UUID to Host Id"]
+    Convert --> Output["Canonical Agent Tool Id"]

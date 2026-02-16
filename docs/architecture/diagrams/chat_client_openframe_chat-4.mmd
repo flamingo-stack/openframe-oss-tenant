@@ -1,0 +1,7 @@
+flowchart TD
+    Request["getDialogMessages()"] --> EnsureToken["ensureTokenReady()"]
+    EnsureToken --> InitClient["initializeClient()"]
+    InitClient --> ExecuteQuery["GraphQL request"]
+    ExecuteQuery --> PageLoop{"hasNextPage?"}
+    PageLoop -->|Yes| ExecuteQuery
+    PageLoop -->|No| ReturnConnection["Return MessagesConnection"]

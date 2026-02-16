@@ -1,0 +1,5 @@
+flowchart LR
+    App["Application"] --> BrokerConn["Pinot Broker Connection"]
+    App --> ControllerConn["Pinot Controller Connection"]
+    BrokerConn --> Broker["Pinot Broker"]
+    ControllerConn --> Controller["Pinot Controller"]

@@ -1,0 +1,8 @@
+flowchart TD
+    UserMessage["User Message"] --> DecideMode{"Show Tool Execution?"}
+    DecideMode -->|Yes| StreamTool["Yield EXECUTING_TOOL"]
+    StreamTool --> WaitExec["Simulate delay"]
+    WaitExec --> StreamResult["Yield EXECUTED_TOOL"]
+    StreamResult --> FinalText["Yield explanation text"]
+
+    DecideMode -->|No| StreamText["Stream text chunks"]

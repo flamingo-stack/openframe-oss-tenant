@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph EdgeLayer["Edge Layer"]
+        Gateway
+        ExternalApi
+    end
+
+    subgraph CoreLayer["Core Services"]
+        Api
+        Authz
+        Management
+        Stream
+        Client
+    end
+
+    subgraph InfraLayer["Infrastructure"]
+        Mongo
+        Kafka
+        Cassandra
+        Redis
+        Pinot
+    end
+
+    Gateway --> Api
+    Gateway --> Authz
+    ExternalApi --> Api
+    Api --> Mongo
+    Stream --> Kafka
+    Stream --> Mongo
+    Management --> Mongo
+    Authz --> Mongo

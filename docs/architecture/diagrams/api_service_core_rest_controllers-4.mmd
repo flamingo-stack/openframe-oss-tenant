@@ -1,0 +1,8 @@
+flowchart TD
+    Admin["Admin Request"] --> Controller["ForceAgentController"]
+    Controller --> InstallSvc["ForceToolInstallationService"]
+    Controller --> ClientUpdateSvc["ForceClientUpdateService"]
+    Controller --> ToolUpdateSvc["ForceToolAgentUpdateService"]
+    InstallSvc --> Agents["Tool Agents"]
+    ClientUpdateSvc --> Clients["OpenFrame Clients"]
+    ToolUpdateSvc --> Agents
