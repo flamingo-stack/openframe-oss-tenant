@@ -1,12 +1,3 @@
-//! Configuration reader for macOS preferences.
-//!
-//! Reads app configuration from `~/Library/Preferences/com.openframe.chat.plist`
-//! which is written by the openframe-client daemon before launching the app.
-//!
-//! This allows the app to receive configuration even when launched from
-//! Spotlight or Dock (where CLI arguments are not available).
-
-/// Application configuration read from preferences.
 #[derive(Debug, Clone, Default)]
 pub struct AppConfig {
     pub token_path: Option<String>,
