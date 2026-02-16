@@ -1,0 +1,3 @@
+flowchart LR
+    Scheduler["DebeziumHealthCheckScheduler"] --> DebeziumService["DebeziumService"]
+    DebeziumService --> KafkaConnect["Kafka Connect REST API"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> Filter["TenantContextFilter"]
+    Filter -->|"Extract tenantId"| ThreadLocal["TenantContext"]
+    ThreadLocal --> Security["Spring Security / OAuth2"]
+    Security --> Services["UserService / KeyService"]

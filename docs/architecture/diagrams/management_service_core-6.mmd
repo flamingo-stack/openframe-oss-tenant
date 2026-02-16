@@ -1,0 +1,7 @@
+flowchart TD
+    Init["PostConstruct"] --> Load["Load Agent JSON"]
+    Load --> Exists{"Exists?"}
+    Exists -->|Yes| Update["Update Agent"]
+    Exists -->|No| Create["Create Agent"]
+    Update --> VersionCheck["Version Changed?"]
+    VersionCheck -->|Yes| Publish["Publish Update Event"]

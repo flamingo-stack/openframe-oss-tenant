@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service
+    participant Cache
+    participant Redis
+
+    Service->>Cache: @Cacheable("devices")
+    Cache->>Redis: GET tenant:devices::key
+    Redis-->>Cache: Cached value or null
+    Cache-->>Service: Return cached or compute and store

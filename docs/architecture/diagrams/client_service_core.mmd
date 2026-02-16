@@ -1,0 +1,26 @@
+flowchart LR
+    Agents["Machine Agents"] -->|"HTTP Registration"| AgentController["Agent Controller"]
+    Agents -->|"OAuth Token"| AgentAuthController["Agent Auth Controller"]
+
+    AgentController --> AgentRegistrationService["Agent Registration Service"]
+    AgentRegistrationService --> Processor["Agent Registration Processor"]
+
+    Agents -->|"NATS Events"| NatsLayer["NATS / JetStream"]
+
+    NatsLayer --> HeartbeatListener["Machine Heartbeat Listener"]
+    NatsLayer --> InstalledAgentListener["Installed Agent Listener"]
+    NatsLayer --> ToolConnectionListener["Tool Connection Listener"]
+    NatsLayer --> ClientConnectionListener["Client Connection Listener"]
+
+    HeartbeatListener --> MachineStatusService["Machine Status Service"]
+    ClientConnectionListener --> MachineStatusService
+
+    InstalledAgentListener --> InstalledAgentService["Installed Agent Service"]
+    ToolConnectionListener --> ToolConnectionService["Tool Connection Service"]
+
+    AgentRegistrationService --> MongoLayer["Mongo Repositories"]
+    InstalledAgentService --> MongoLayer
+    ToolConnectionService --> MongoLayer
+    MachineStatusService --> MongoLayer
+
+    MongoLayer --> DataMongo["Data Persistence Mongo"]

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Authz as Authorization Server
+    participant Gateway
+    participant API
+
+    User->>Frontend: Login
+    Frontend->>Authz: OAuth2 / OIDC Redirect
+    Authz-->>Frontend: Authorization Code
+    Frontend->>Authz: Token Exchange
+    Authz-->>Frontend: JWT Access Token
+    Frontend->>Gateway: API Request (Bearer JWT)
+    Gateway->>API: Forward Request
+    API-->>Frontend: JSON Response

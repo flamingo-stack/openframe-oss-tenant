@@ -1,0 +1,12 @@
+flowchart TD
+    Browser["Browser / Frontend App"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"Redirect with PKCE + state"| AuthServer["Authorization Server"]
+    AuthServer -->|"Authorization Code"| BFF
+    BFF -->|"Token Exchange"| AuthServer
+    AuthServer -->|"JWT Access + Refresh Tokens"| BFF
+    BFF -->|"HTTP-Only Cookies"| Browser
+
+    Browser -->|"API Request with Cookie"| Gateway["Gateway Service"]
+    Gateway -->|"JWT Validation"| JwtDecoder["Jwt Decoder"]
+    JwtDecoder --> Gateway
+    Gateway --> Api["Downstream API Service"]

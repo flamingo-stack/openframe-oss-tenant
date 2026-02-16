@@ -1,0 +1,5 @@
+flowchart LR
+    Query["GraphQL Query"] --> Field["Nested Field"]
+    Field --> Loader["DataLoader"]
+    Loader --> Batch["Batch Load IDs"]
+    Batch --> Repository

@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Frontend Filter UI"] --> DeviceFilterOptions
+    DeviceFilterOptions --> QueryEngine["Repository Layer"]
+    QueryEngine --> DeviceFilters
+    DeviceFilters --> UI

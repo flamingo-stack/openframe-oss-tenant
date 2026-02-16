@@ -1,0 +1,5 @@
+flowchart TD
+    RedisConfig --> RedisTemplateBean["RedisTemplate<String, String>"]
+    RedisConfig --> ReactiveStringTemplate["ReactiveStringRedisTemplate"]
+    RedisConfig --> ReactiveTemplate["ReactiveRedisTemplate<String, String>"]
+    RedisConfig --> RedisRepositories["@EnableRedisRepositories"]

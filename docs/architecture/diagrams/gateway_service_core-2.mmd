@@ -1,0 +1,6 @@
+flowchart TD
+    A["Incoming HTTP Request"] --> B["OriginSanitizerFilter"]
+    B --> C["AddAuthorizationHeaderFilter"]
+    C --> D["Spring Security (JWT Resource Server)"]
+    D --> E["Route Matching"]
+    E --> F["Downstream Service"]

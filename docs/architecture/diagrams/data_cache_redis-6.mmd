@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant Service
+    participant RedisTemplate
+    participant Redis
+
+    Service->>RedisTemplate: opsForValue().set(key, value)
+    RedisTemplate->>Redis: SET key value
+    Redis-->>RedisTemplate: OK

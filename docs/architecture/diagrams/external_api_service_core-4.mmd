@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client"] --> LogController["Log Controller"]
+    LogController --> LogMapper["Log Mapper"]
+    LogMapper --> LogService["Log Service"]
+    LogService --> Pinot[("Pinot / Log Store")]

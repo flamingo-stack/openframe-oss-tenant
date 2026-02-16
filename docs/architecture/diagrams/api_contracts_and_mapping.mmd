@@ -1,0 +1,11 @@
+flowchart TD
+    Frontend["Frontend Clients"] --> ApiService["Api Service Core"]
+    Frontend --> ExternalApi["External Api Service Core"]
+
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    ExternalApi --> Contracts
+
+    Contracts --> Mongo["Data Persistence Mongo"]
+    Contracts --> Platform["Data Platform Core"]
+
+    Stream["Stream Processing Service Core"] --> Mongo

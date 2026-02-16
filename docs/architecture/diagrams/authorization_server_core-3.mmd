@@ -1,0 +1,5 @@
+flowchart LR
+    HTTP["HTTP Request"] --> Chain1["Auth Server Filter Chain (Order 1)"]
+    Chain1 -->|"/oauth2/**"| OAuthEndpoints["OAuth2 + OIDC Endpoints"]
+    HTTP --> Chain2["Default Security Chain (Order 2)"]
+    Chain2 -->|"/login, /tenant/**"| AppEndpoints["App Controllers"]

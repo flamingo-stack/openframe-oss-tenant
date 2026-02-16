@@ -1,0 +1,12 @@
+flowchart LR
+    KafkaInbound["Kafka Inbound Topics"] --> JsonListener["JsonKafkaListener"]
+    JsonListener --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Deserializer["Integrated Tool Deserializers"]
+    Deserializer --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> HandlerRouter["Message Handlers"]
+
+    HandlerRouter --> CassandraHandler["DebeziumCassandraMessageHandler"]
+    HandlerRouter --> KafkaHandler["DebeziumKafkaMessageHandler"]
+
+    CassandraHandler --> CassandraDB[("Cassandra")]
+    KafkaHandler --> KafkaOutbound["Outbound Kafka Topic"]

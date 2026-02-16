@@ -1,0 +1,8 @@
+flowchart LR
+    AppService["Application Service"] --> KafkaTemplate["KafkaTemplate"]
+    KafkaTemplate --> ProducerFactory["ProducerFactory"]
+    ProducerFactory --> KafkaCluster[("Kafka Cluster")]
+
+    KafkaCluster --> ConsumerFactory["ConsumerFactory"]
+    ConsumerFactory --> ListenerFactory["KafkaListenerContainerFactory"]
+    ListenerFactory --> KafkaListener["@KafkaListener"]

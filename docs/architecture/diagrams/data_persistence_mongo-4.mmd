@@ -1,0 +1,5 @@
+flowchart TD
+    Client["API Client"] --> EventService["Event Service"]
+    EventService --> CustomEventRepo["CustomEventRepositoryImpl"]
+    CustomEventRepo --> MongoTemplate
+    MongoTemplate --> MongoDB[("MongoDB events collection")]

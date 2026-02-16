@@ -1,0 +1,4 @@
+flowchart LR
+    Scheduler["ApiKeyStatsSyncScheduler"] --> SyncService["ApiKeyStatsSyncService"]
+    SyncService --> Redis["Redis"]
+    SyncService --> Mongo["MongoDB"]

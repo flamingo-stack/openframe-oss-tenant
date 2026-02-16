@@ -1,0 +1,4 @@
+flowchart LR
+    OAuthFlow["OAuth2 Flow"] --> AuthorizationService["MongoAuthorizationService"]
+    AuthorizationService --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> Mongo[("MongoOAuth2Authorization")]

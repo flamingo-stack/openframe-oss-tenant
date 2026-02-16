@@ -1,0 +1,10 @@
+flowchart LR
+    Client["Frontend / Agent / External Client"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientService["Client Service Core"]
+    Gateway --> Tools["Integrated Tools"]
+    Gateway --> Nats["NATS WebSocket"]
+
+    Gateway --> Authz["Authorization Server Core"]

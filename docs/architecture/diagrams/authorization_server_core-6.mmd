@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant AuthServer
+    participant IdP as "OIDC Provider"
+    participant UserService
+
+    Browser->>AuthServer: /oauth2/authorization/google
+    AuthServer->>IdP: Redirect
+    IdP->>AuthServer: ID Token
+    AuthServer->>UserService: Check existing user
+    UserService-->>AuthServer: Not found
+    AuthServer->>UserService: Auto-provision user

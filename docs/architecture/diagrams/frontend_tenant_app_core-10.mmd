@@ -1,0 +1,9 @@
+flowchart TD
+    User["Tenant User"] --> UI["React UI"]
+    UI --> Clients["API Clients"]
+    Clients --> Gateway["Gateway Service"]
+    Gateway --> Backend["Backend Services"]
+    Backend --> Data["Mongo / Kafka / Stream"]
+    Data --> Backend
+    Backend --> Gateway
+    Gateway --> UI

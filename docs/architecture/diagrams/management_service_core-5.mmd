@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Admin Request"] --> Controller["IntegratedToolController"]
+    Controller --> ToolService["IntegratedToolService"]
+    Controller --> Debezium["DebeziumService"]
+    Controller --> Hooks["IntegratedToolPostSaveHook"]
+    ToolService --> Mongo["MongoDB"]
+    Debezium --> Kafka["Kafka Connect"]

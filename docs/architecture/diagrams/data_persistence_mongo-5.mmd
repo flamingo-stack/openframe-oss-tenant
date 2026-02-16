@@ -1,0 +1,5 @@
+flowchart LR
+    Filter["Query Filter DTO"] --> BuildQuery["buildQuery()"]
+    BuildQuery --> MongoTemplate
+    MongoTemplate --> MongoDB[("MongoDB")]
+    MongoDB --> Results["Domain Documents"]

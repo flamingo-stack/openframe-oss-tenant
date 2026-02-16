@@ -1,0 +1,5 @@
+flowchart TD
+    Event["DeserializedDebeziumMessage"] --> Lookup["MachineIdCacheService"]
+    Lookup --> Machine["CachedMachineInfo"]
+    Machine --> Org["CachedOrganizationInfo"]
+    Org --> Enriched["IntegratedToolEnrichedData"]

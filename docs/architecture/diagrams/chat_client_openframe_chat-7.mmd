@@ -1,0 +1,5 @@
+flowchart LR
+    Desktop["Desktop App"] --> ChatClient["Chat Client Openframe Chat"]
+    ChatClient --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    ApiService --> DataLayer["Mongo Cassandra Kafka"]

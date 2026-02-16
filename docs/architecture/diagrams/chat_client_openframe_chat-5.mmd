@@ -1,0 +1,5 @@
+flowchart TD
+    Load["loadSupportedModels()"] --> CheckLoaded["isLoaded?"]
+    CheckLoaded -->|No| Fetch["fetchModels()"]
+    Fetch --> Store["Store in Map"]
+    Store --> Mark["Set isLoaded true"]

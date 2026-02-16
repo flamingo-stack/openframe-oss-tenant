@@ -1,0 +1,17 @@
+flowchart TD
+    Browser["Tenant User Browser"] --> App["Frontend Tenant App Core"]
+
+    App --> AuthClient["AuthApiClient"]
+    App --> ApiClient["ApiClient"]
+    App --> FleetClient["FleetApiClient"]
+    App --> TacticalClient["TacticalApiClient"]
+    App --> MeshDesktop["MeshDesktop"]
+
+    AuthClient --> AuthServer["Authorization Server"]
+    ApiClient --> Gateway["Gateway Service"]
+    FleetClient --> FleetTool["Fleet MDM Tool"]
+    TacticalClient --> TacticalTool["Tactical RMM Tool"]
+    MeshDesktop --> MeshServer["MeshCentral Server"]
+
+    Gateway --> ApiService["API Service Core"]
+    ApiService --> DataLayer["Data & Stream Services"]

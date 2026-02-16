@@ -1,0 +1,6 @@
+flowchart TD
+    GraphQLClient["Frontend / External API"] --> DGS["DGS DataFetcher"]
+    DGS --> ServiceLayer["Domain Service"]
+    ServiceLayer --> Repository
+    DGS --> DataLoader["Batch DataLoader"]
+    DataLoader --> Repository

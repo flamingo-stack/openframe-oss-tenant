@@ -1,0 +1,6 @@
+flowchart LR
+    Gateway["Gateway Service Core"] -->|"Forwards Requests"| ApiCore["Api Service Core"]
+    ApiCore -->|"Reads/Writes"| Mongo["Mongo Data Persistence"]
+    ApiCore -->|"Queries"| DataPlatform["Data Platform Core"]
+    ApiCore -->|"Publishes/Consumes"| Stream["Stream Processing Service Core"]
+    ApiCore -->|"Validates JWT Issuer"| AuthServer["Authorization Server Core"]

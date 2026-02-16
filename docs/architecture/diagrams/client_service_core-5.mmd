@@ -1,0 +1,7 @@
+flowchart TD
+    Input["Agent Tool UUID"] --> Search["Search Fleet Hosts"]
+    Search --> Match{"Matching Host Found"}
+    Match -->|"Yes"| Transform["Return Host ID"]
+    Match -->|"No"| LastAttempt{"Last Delivery Attempt"}
+    LastAttempt -->|"No"| Error["Throw Exception"]
+    LastAttempt -->|"Yes"| Fallback["Return Original UUID"]

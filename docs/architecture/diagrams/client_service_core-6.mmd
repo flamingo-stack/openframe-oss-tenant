@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend Tenant App"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["API Service Core"]
+
+    Agents["Machine Agents"] --> ClientService["Client Service Core"]
+
+    ClientService --> Mongo["Mongo Persistence"]
+    ClientService --> Nats["NATS Messaging"]
+
+    Stream["Stream Processing Service"] --> Mongo

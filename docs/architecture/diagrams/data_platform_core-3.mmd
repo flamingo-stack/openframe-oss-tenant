@@ -1,0 +1,7 @@
+flowchart TD
+    ApiLayer["API / Service Layer"] --> PinotRepository["Pinot Client Repository"]
+    PinotRepository --> QueryBuilder["Dynamic Query Builder"]
+    QueryBuilder --> PinotBroker["Pinot Broker"]
+    PinotBroker --> ResultSet["ResultSetGroup"]
+    ResultSet --> Projection["Projection Mapping"]
+    Projection --> ApiLayer

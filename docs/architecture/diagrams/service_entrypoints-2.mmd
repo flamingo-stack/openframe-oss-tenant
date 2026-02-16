@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz as Authorization Server
+    participant Api as API Service
+    participant Mongo
+
+    User->>Gateway: HTTP Request with JWT
+    Gateway->>Authz: Validate token
+    Authz->>Gateway: Token valid
+    Gateway->>Api: Forward request
+    Api->>Mongo: Query data
+    Mongo->>Api: Return result
+    Api->>Gateway: JSON response
+    Gateway->>User: HTTP response

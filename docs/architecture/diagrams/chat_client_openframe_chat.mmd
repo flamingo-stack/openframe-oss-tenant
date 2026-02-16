@@ -1,0 +1,13 @@
+flowchart TD
+    UI["React UI Components"] --> Context["DebugModeContext"]
+    UI --> DialogService["DialogGraphQLService"]
+    UI --> ModelService["SupportedModelsService"]
+
+    DialogService --> TokenService["TokenService"]
+    ModelService --> TokenService
+
+    TokenService --> TauriInvoke["Tauri invoke get_token get_server_url"]
+    TokenService --> TauriEvent["Tauri event token-update"]
+
+    DialogService --> BackendGraphQL["Backend /chat/graphql"]
+    ModelService --> BackendREST["Backend /chat/api/v1/ai-configuration/supported-models"]

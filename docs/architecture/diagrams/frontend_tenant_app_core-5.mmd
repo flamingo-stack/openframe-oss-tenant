@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant Api as "ApiClient"
+    participant Chat as "Chat Service"
+
+    User->>UI: Send message
+    UI->>Api: POST /chat/api/v1/messages
+    Api->>Chat: Forward message
+    Chat-->>Api: Stream segments
+    Api-->>UI: Message segments

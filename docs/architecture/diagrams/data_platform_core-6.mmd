@@ -1,0 +1,8 @@
+flowchart TD
+    PropertyCheck["Application Properties"] --> CassandraEnabled{"Cassandra Enabled?"}
+    CassandraEnabled -->|Yes| CassandraBeans["Cassandra Beans Loaded"]
+    CassandraEnabled -->|No| SkipCassandra["Skip Cassandra Config"]
+
+    PropertyCheck --> IntegrationEnabled{"Tool Integration Enabled?"}
+    IntegrationEnabled -->|Yes| SecretBeans["Secret Retrievers Loaded"]
+    IntegrationEnabled -->|No| SkipIntegration["Skip Integration Beans"]

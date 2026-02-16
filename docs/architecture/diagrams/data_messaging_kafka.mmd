@@ -1,0 +1,6 @@
+flowchart LR
+    ServiceA["API Service Core"] -->|"produce event"| KafkaLayer["Data Messaging Kafka"]
+    ServiceB["Stream Processing Service Core"] -->|"consume event"| KafkaLayer
+    ServiceC["Management Service Core"] -->|"admin & topics"| KafkaLayer
+
+    KafkaLayer -->|"bootstrap servers"| KafkaCluster[("Kafka Cluster")]

@@ -1,0 +1,4 @@
+flowchart TD
+    AppStart["Service Startup"] --> EnableKafka["@EnableKafka"]
+    EnableKafka --> ExcludeDefault["Exclude KafkaAutoConfiguration"]
+    ExcludeDefault --> CustomConfig["OssTenantKafkaAutoConfiguration"]

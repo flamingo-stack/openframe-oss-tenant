@@ -1,0 +1,8 @@
+flowchart TD
+    ToolDB["Integrated Tool DB"] --> Debezium["Debezium CDC"]
+    Debezium --> KafkaIn["Kafka Inbound Topic"]
+    KafkaIn --> Stream["Stream Processing Service Core"]
+    Stream --> Enrich["Data Enrichment"]
+    Enrich --> Cassandra["Cassandra Logs"]
+    Enrich --> KafkaOut["Outbound Kafka Events"]
+    KafkaOut --> Pinot["Pinot Analytics"]

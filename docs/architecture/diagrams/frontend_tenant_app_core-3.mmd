@@ -1,0 +1,4 @@
+flowchart LR
+    Hook["useDeployment"] --> Store["Zustand Deployment Store"]
+    Store --> Detector["detectDeployment()"]
+    Detector --> Result["DeploymentInfo"]

@@ -1,0 +1,18 @@
+flowchart TD
+    Gateway["Gateway Service"] --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+
+    Api --> Mongo["Mongo Data Layer"]
+    Api --> Kafka["Kafka Messaging"]
+
+    ExternalApi --> Mongo
+
+    Authz["Authorization Server"] --> Mongo
+
+    Client["Client Service"] --> Kafka
+    Stream["Stream Processing Service"] --> Kafka
+    Stream --> Cassandra["Cassandra / Pinot"]
+
+    Management["Management Service"] --> Mongo
+
+    Config["Config Server"] --> All["All Services"]

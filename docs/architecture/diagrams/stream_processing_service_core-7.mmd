@@ -1,0 +1,10 @@
+flowchart TD
+    ToolDB["Tool Database"] --> Debezium["Debezium CDC"]
+    Debezium --> KafkaIn["Kafka Inbound Topic"]
+    KafkaIn --> Listener["JsonKafkaListener"]
+    Listener --> Deserialize["Tool Deserializer"]
+    Deserialize --> Map["EventTypeMapper"]
+    Map --> Enrich["IntegratedToolDataEnrichmentService"]
+    Enrich --> Handler["Message Handler"]
+    Handler --> Cassandra[("Cassandra Logs")]
+    Handler --> KafkaOut["Outbound Kafka Events"]

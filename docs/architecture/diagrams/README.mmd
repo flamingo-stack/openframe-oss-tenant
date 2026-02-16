@@ -1,0 +1,34 @@
+flowchart TD
+    User["Tenant User (Browser)"] --> Frontend["Frontend Tenant App Core"]
+    Desktop["Desktop Chat Client"] --> Gateway
+
+    Frontend --> Gateway["Gateway Service Core"]
+    Desktop --> Gateway
+
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientService["Client Service Core"]
+    Gateway --> Authz["Authorization Server Core"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Kafka["Kafka"]
+
+    ExternalApi --> Mongo
+
+    ClientService --> NATS["NATS JetStream"]
+    ClientService --> Mongo
+
+    Stream["Stream Processing Service Core"] --> Kafka
+    Stream --> Cassandra["Cassandra"]
+    Stream --> Pinot["Apache Pinot"]
+
+    Management["Management Service Core"] --> Mongo
+    Management --> Kafka
+    Management --> NATS
+    Management --> Pinot
+
+    Authz --> Mongo
+    Authz --> JWT["Per-Tenant RSA Keys"]
+
+    Redis["Redis Cache"] --> Api
+    Redis --> Gateway

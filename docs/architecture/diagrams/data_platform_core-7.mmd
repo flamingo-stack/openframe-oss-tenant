@@ -1,0 +1,8 @@
+flowchart TD
+    Frontend["Frontend / Clients"] --> API["API Services"]
+    API --> DataPlatform["Data Platform Core"]
+    DataPlatform --> Mongo[("MongoDB")]
+    DataPlatform --> Cassandra[("Cassandra")]
+    DataPlatform --> Pinot[("Pinot")]
+    DataPlatform --> Kafka[("Kafka")]
+    DataPlatform --> ExternalTools["Integrated Tools"]

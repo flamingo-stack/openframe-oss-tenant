@@ -1,0 +1,6 @@
+flowchart TD
+    Auth["Authorization Server Core"] --> Gateway["Gateway Service Core"]
+    Auth --> Api["API Service Core"]
+    Auth --> External["External API Service Core"]
+    Auth --> Client["Client Service Core"]
+    Auth --> Frontend["Frontend Tenant App"]

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant User
+    participant App as "Frontend App"
+    participant Auth as "AuthApiClient"
+    participant Server as "Authorization Server"
+
+    User->>App: Enter email
+    App->>Auth: discoverTenants(email)
+    Auth->>Server: GET /sas/tenant/discover
+    Server-->>Auth: TenantDiscoveryResponse
+    Auth-->>App: Providers + tenantId
+    User->>App: Login with SSO
+    App->>Auth: Redirect to /oauth/login
+    Server-->>User: OAuth callback
+    App->>Server: /api/me
+    Server-->>App: Authenticated user

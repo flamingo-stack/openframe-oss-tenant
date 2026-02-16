@@ -1,0 +1,4 @@
+flowchart LR
+    Hook["useDialogsQuery"] --> Api["ApiClient"]
+    Api --> GraphQL["/chat/graphql"]
+    GraphQL --> DialogConnection["DialogConnection"]

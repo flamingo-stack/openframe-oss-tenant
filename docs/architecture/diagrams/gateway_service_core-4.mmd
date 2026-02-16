@@ -1,0 +1,5 @@
+flowchart LR
+    Client["WebSocket Client"] --> Route["RouteLocator"]
+    Route --> ToolApiFilter["ToolApiWebSocketProxyUrlFilter"]
+    Route --> ToolAgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    Route --> NatsRoute["NATS WS Route"]

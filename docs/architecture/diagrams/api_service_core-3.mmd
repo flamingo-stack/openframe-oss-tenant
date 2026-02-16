@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Gateway or Internal Service"] --> Controller["REST Controller"]
+    Controller --> Service["Domain Service"]
+    Service --> Repository["Repository Layer"]
+    Repository --> Database["Mongo / Data Platform"]

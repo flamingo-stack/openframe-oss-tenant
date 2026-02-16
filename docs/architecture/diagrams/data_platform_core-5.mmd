@@ -1,0 +1,8 @@
+flowchart TD
+    SecretRetriever["Secret Retriever"] --> IntegratedToolService
+    IntegratedToolService --> ToolConfig["Integrated Tool Config"]
+    ToolConfig --> ToolUrlService
+    ToolUrlService --> ToolUrl["Tool API URL"]
+    SecretRetriever --> ExternalClient["FleetMdmClient / TacticalRmmClient"]
+    ExternalClient --> ExternalAPI["External Tool API"]
+    ExternalAPI --> Secret["Enrollment Secret"]

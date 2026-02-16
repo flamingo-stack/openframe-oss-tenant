@@ -1,0 +1,6 @@
+flowchart TD
+    Activity["Activity Stream"] --> Join["Left Join (5s window)"]
+    HostActivity["HostActivity Stream"] --> Join
+    Join --> Enriched["Enriched ActivityMessage"]
+    Enriched --> HeaderAdder["Add Kafka Headers"]
+    HeaderAdder --> Output["fleet-mdm-events Topic"]

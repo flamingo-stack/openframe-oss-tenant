@@ -1,0 +1,26 @@
+flowchart TD
+    subgraph ServiceLayer["Service Layer"]
+        ApiService["API Service Core"]
+        AuthService["Authorization Server Core"]
+        MgmtService["Management Service Core"]
+        StreamService["Stream Processing Service Core"]
+    end
+
+    subgraph PersistenceLayer["Data Persistence Mongo"]
+        Documents["Mongo Documents"]
+        Repositories["Spring Data Repositories"]
+        CustomRepos["Custom Repository Implementations"]
+        Config["Mongo Configuration"]
+    end
+
+    MongoDB[("MongoDB")]
+
+    ApiService --> Repositories
+    AuthService --> Repositories
+    MgmtService --> Repositories
+    StreamService --> Repositories
+
+    Repositories --> Documents
+    Repositories --> CustomRepos
+    Repositories --> MongoDB
+    Config --> MongoDB

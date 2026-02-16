@@ -1,0 +1,4 @@
+flowchart LR
+    Tokens["TokenResponse"] -->|"createTicket"| Store["In-Memory Map"]
+    Client["Dev Client"] -->|"/dev-exchange"| Store
+    Store -->|"consumeTicket"| Tokens

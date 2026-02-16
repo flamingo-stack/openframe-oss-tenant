@@ -1,0 +1,19 @@
+flowchart TD
+    Services["Platform Services"] --> CassandraConfig["Cassandra Configuration"]
+    Services --> PinotConfig["Pinot Configuration"]
+    Services --> EventService["Machine Tag Event Service"]
+    Services --> SecretRetrievers["Tool Secret Retrievers"]
+
+    CassandraConfig --> CassandraCluster[("Cassandra Cluster")]
+    PinotConfig --> PinotBroker[("Pinot Broker")]
+    EventService --> Kafka[("Kafka")]
+    SecretRetrievers --> IntegratedTools["Integrated Tool APIs"]
+
+    subgraph storage_layer["Storage Layer"]
+        CassandraCluster
+        PinotBroker
+    end
+
+    subgraph messaging_layer["Messaging Layer"]
+        Kafka
+    end

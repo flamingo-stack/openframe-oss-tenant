@@ -1,0 +1,6 @@
+flowchart TD
+    Frontend["Frontend Tenant App Core"] --> Fleet["FleetApiClient"]
+    Frontend --> Tactical["TacticalApiClient"]
+
+    Fleet --> FleetServer["Fleet MDM Backend"]
+    Tactical --> TacticalServer["Tactical RMM Backend"]

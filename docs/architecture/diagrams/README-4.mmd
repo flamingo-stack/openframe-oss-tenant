@@ -1,0 +1,7 @@
+flowchart TD
+    Agent["Machine Agent"] --> ClientService["Client Service Core"]
+    ClientService --> Mongo
+    Agent --> NATS["Heartbeat / InstalledAgent"]
+    NATS --> ClientService
+    ClientService --> MachineStatus["Machine Status Update"]
+    MachineStatus --> Mongo

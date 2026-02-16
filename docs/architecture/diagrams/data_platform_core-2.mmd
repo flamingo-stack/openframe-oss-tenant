@@ -1,0 +1,6 @@
+flowchart LR
+    ConfigServer["Spring Cloud Config"] --> Env["Environment Properties"]
+    Env --> Normalizer["CassandraKeyspaceNormalizer"]
+    Normalizer -->|"Replace '-' with '_'"| NormalizedKeyspace["Normalized Keyspace Name"]
+    NormalizedKeyspace --> CassandraConfig["CassandraConfig"]
+    CassandraConfig --> CassandraCluster["Cassandra Cluster"]

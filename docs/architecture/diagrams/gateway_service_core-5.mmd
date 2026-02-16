@@ -1,0 +1,5 @@
+flowchart TD
+    A["Incoming JWT"] --> B["JwtIssuerReactiveAuthenticationManagerResolver"]
+    B --> C["Caffeine Cache"]
+    C --> D["ReactiveAuthenticationManager"]
+    D --> E["Strict Issuer Validator"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client"] --> EventController["Event Controller"]
+    EventController --> EventMapper["Event Mapper"]
+    EventMapper --> EventService["Event Service"]
+    EventService --> MongoDB[("MongoDB")]

@@ -1,0 +1,6 @@
+flowchart TD
+    CacheConfig --> CacheManager["RedisCacheManager"]
+    CacheManager --> TTL["TTL: 6 Hours"]
+    CacheManager --> KeySerialization["StringRedisSerializer"]
+    CacheManager --> ValueSerialization["GenericJackson2JsonRedisSerializer"]
+    CacheManager --> PrefixStrategy["Tenant-Aware Prefix"]

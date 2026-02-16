@@ -1,0 +1,9 @@
+flowchart TD
+    Frontend["Frontend Tenant App"] --> Gateway["Gateway Service Core"]
+    Chat["Chat Client"] --> Gateway
+    External["External Integrations"] --> Gateway
+
+    Gateway --> ApiCore["API Service Core"]
+    Gateway --> ExternalCore["External API Service Core"]
+    Gateway --> ClientCore["Client Service Core"]
+    Gateway --> AuthzCore["Authorization Server Core"]

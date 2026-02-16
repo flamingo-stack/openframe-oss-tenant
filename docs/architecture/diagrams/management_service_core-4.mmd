@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant App as Management Service
+    participant Pinot as Pinot Controller
+
+    App->>Pinot: POST /schemas
+    App->>Pinot: PUT /tables/{table}
+    Pinot-->>App: 200 OK

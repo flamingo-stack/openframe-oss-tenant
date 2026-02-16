@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant UI
+    participant TokenService
+    participant Tauri
+
+    UI->>TokenService: ensureTokenReady()
+    TokenService->>TokenService: getCurrentToken()
+    alt No token
+        TokenService->>Tauri: invoke get_token
+        Tauri-->>TokenService: token
+    end
+
+    TokenService->>TokenService: getCurrentApiBaseUrl()
+    alt No API URL
+        TokenService->>Tauri: invoke get_server_url
+        Tauri-->>TokenService: serverUrl
+    end
+
+    TokenService-->>UI: Ready

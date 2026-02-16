@@ -1,0 +1,8 @@
+flowchart TD
+    Handle["handle()"] --> Validate["isValidMessage()"]
+    Validate --> Transform["transform()"]
+    Transform --> Operation["getOperationType()"]
+    Operation --> Push["pushData()"]
+    Push --> Create["handleCreate()"]
+    Push --> Update["handleUpdate()"]
+    Push --> Delete["handleDelete()"]

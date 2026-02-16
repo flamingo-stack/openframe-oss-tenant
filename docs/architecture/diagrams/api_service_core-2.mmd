@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> Resolver["Issuer Resolver"]
+    Resolver --> Cache["JWT Provider Cache"]
+    Cache -->|"Create If Missing"| Decoder["JwtDecoder.fromIssuerLocation"]
+    Decoder --> Provider["JwtAuthenticationProvider"]
+    Provider --> Principal["AuthPrincipal Injection"]

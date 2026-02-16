@@ -1,0 +1,14 @@
+flowchart TD
+    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> DeviceService["Device Service"]
+    ExternalApi --> EventService["Event Service"]
+    ExternalApi --> LogService["Log Service"]
+    ExternalApi --> OrganizationService["Organization Services"]
+    ExternalApi --> ToolService["Tool Service"]
+
+    ToolService --> ToolRepo["Integrated Tool Repository"]
+    DeviceService --> MongoDB[("MongoDB")]
+    EventService --> MongoDB
+    LogService --> Pinot[("Pinot / Log Store")]

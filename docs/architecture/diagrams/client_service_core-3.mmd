@@ -1,0 +1,4 @@
+flowchart LR
+    Event["Client Connection Event"] --> Parse["Deserialize JSON"]
+    Parse --> Extract["Extract Machine ID"]
+    Extract --> Update["Update Machine Status"]

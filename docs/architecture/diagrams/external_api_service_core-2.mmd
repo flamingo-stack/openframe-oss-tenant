@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Client"] --> Controller["Device Controller"]
+    Controller --> Mapper["Device Mapper"]
+    Mapper --> Service["Device Service"]
+    Service --> Repo[("Mongo Repository")]
+    Service --> TagService["Tag Service"]
+    TagService --> Repo
+    Service --> Controller
+    Controller --> Client

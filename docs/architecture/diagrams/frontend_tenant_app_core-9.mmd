@@ -1,0 +1,5 @@
+flowchart TD
+    WebSocket["Binary WebSocket"] --> Decoder["Frame Parser"]
+    Decoder --> TileQueue["Tile Queue"]
+    TileQueue --> Bitmap["ImageBitmap Decode"]
+    Bitmap --> Canvas["Canvas Render"]

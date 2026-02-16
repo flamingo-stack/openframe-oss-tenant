@@ -1,0 +1,6 @@
+flowchart TD
+    Request["SSOConfigRequest"] --> Normalize["Normalize Domains"]
+    Normalize --> Validate["Domain Validation Service"]
+    Validate --> Encrypt["Encrypt Secret"]
+    Encrypt --> Save["Persist SSOConfig"]
+    Save --> PostProcess["SSOConfigProcessor"]

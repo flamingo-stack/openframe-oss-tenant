@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service
+    participant KafkaProducer
+    participant RecoveryHandler
+
+    Service->>KafkaProducer: send(message)
+    KafkaProducer-->>Service: exception
+    KafkaProducer->>RecoveryHandler: enqueue(ex, topic, key, payload)
+    RecoveryHandler->>RecoveryHandler: log structured error

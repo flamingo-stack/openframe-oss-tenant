@@ -1,0 +1,9 @@
+flowchart TD
+    Scheduler["Scheduled Task"] --> ClientConfig["OpenFrameClientConfiguration"]
+    Scheduler --> ToolAgents["IntegratedToolAgent List"]
+
+    ClientConfig --> Check1{"Published?"}
+    ToolAgents --> Check2{"Published?"}
+
+    Check1 -->|No| PublishClient["Publish Client Update"]
+    Check2 -->|No| PublishAgent["Publish Tool Agent Update"]

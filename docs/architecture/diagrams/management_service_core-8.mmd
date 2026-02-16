@@ -1,0 +1,5 @@
+flowchart TD
+    Startup["ApplicationRunner"] --> LoadScript["Load Script File"]
+    LoadScript --> CheckExist["Script Exists?"]
+    CheckExist -->|No| CreateScript["Create via TacticalRmmClient"]
+    CheckExist -->|Yes| UpdateScript["Update via TacticalRmmClient"]

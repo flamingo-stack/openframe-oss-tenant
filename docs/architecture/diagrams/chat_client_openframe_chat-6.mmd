@@ -1,0 +1,4 @@
+flowchart TD
+    Provider["DebugModeProvider"] --> Invoke["invoke get_debug_mode"]
+    Invoke --> SetState["setDebugMode(enabled)"]
+    SetState --> Children["Render children"]

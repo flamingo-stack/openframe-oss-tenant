@@ -1,0 +1,5 @@
+flowchart TD
+    UI["Chat UI"] --> Store["MingoMessagesStore"]
+    Store --> Streaming["Streaming Messages"]
+    Store --> Accumulator["Segment Accumulator"]
+    Store --> Unread["Unread Counters"]

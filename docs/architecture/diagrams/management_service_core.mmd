@@ -1,0 +1,20 @@
+flowchart TD
+    ManagementApp["ManagementApplication"] --> MgmtCore["Management Service Core"]
+
+    MgmtCore --> Mongo["MongoDB"]
+    MgmtCore --> Redis["Redis"]
+    MgmtCore --> NATS["NATS JetStream"]
+    MgmtCore --> Kafka["Kafka / Debezium"]
+    MgmtCore --> Pinot["Apache Pinot Controller"]
+    MgmtCore --> Tactical["Tactical RMM API"]
+
+    MgmtCore --> Agents["Integrated Tool Agents"]
+    MgmtCore --> ClientConfig["OpenFrame Client Configuration"]
+
+    subgraph Infrastructure["Infrastructure Dependencies"]
+        Mongo
+        Redis
+        NATS
+        Kafka
+        Pinot
+    end

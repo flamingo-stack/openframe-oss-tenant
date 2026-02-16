@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> AdminEnabled{"Admin Enabled?"}
+    AdminEnabled -->|"Yes"| ReadTopics["Read KafkaTopicProperties"]
+    ReadTopics --> BuildTopics["Build NewTopic Objects"]
+    BuildTopics --> Register["Register via KafkaAdmin"]
+    AdminEnabled -->|"No"| Skip["Skip Topic Creation"]

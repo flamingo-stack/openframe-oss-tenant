@@ -1,0 +1,7 @@
+flowchart LR
+    Start["Initial Cursor"] --> Request["Request messages"]
+    Request --> Append["Append edges"]
+    Append --> Check["hasNextPage?"]
+    Check -->|Yes| Next["Use endCursor"]
+    Next --> Request
+    Check -->|No| Done["Return aggregated result"]

@@ -1,0 +1,5 @@
+flowchart TD
+    GetDialog["getResumableDialog()"] --> EnsureToken["ensureTokenReady()"]
+    EnsureToken --> InitClient["initializeClient()"]
+    InitClient --> GraphQLClient["GraphQLClient with Bearer token"]
+    GraphQLClient --> Backend["/chat/graphql"]

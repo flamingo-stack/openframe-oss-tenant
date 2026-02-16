@@ -1,0 +1,8 @@
+flowchart TD
+    Client["External Client"] -->|"X-API-Key"| Controller["REST Controller"]
+    Controller --> Criteria["Build Filter Criteria"]
+    Criteria --> Service["Domain Service"]
+    Service --> DataLayer["Data Layer"]
+    DataLayer --> Service
+    Service --> Mapper["Map To Response DTO"]
+    Mapper --> Client

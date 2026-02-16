@@ -1,0 +1,6 @@
+flowchart TD
+    MongoRepo["Mongo Repositories"] --> EventService["MachineTagEventServiceImpl"]
+    EventService --> BuildMessage["MachinePinotMessage"]
+    BuildMessage --> KafkaProducer["OssTenantRetryingKafkaProducer"]
+    KafkaProducer --> KafkaTopic["Devices Topic"]
+    KafkaTopic --> Downstream["Stream Processing / Pinot"]

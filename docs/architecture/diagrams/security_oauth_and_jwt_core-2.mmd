@@ -1,0 +1,6 @@
+flowchart LR
+    JwtConfig["JwtConfig"] -->|"loadPublicKey()"| JwtSecurityConfig
+    JwtConfig -->|"loadPrivateKey()"| JwtSecurityConfig
+    JwtSecurityConfig -->|"build RSAKey"| JWKSet["JWK Set"]
+    JWKSet --> JwtEncoder["Nimbus JwtEncoder"]
+    JwtSecurityConfig --> JwtDecoder["Nimbus JwtDecoder"]
