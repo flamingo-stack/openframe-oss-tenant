@@ -45,8 +45,6 @@ export class MeshControlClient {
       url: buildUrl, // Use function to get fresh token on reconnect
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
-      maxReconnectAttempts: 10,
-      reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
       refreshTokenBeforeReconnect: false, // Disable for MeshCentral
       
       onStateChange: (state) => {

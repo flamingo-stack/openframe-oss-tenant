@@ -18,6 +18,7 @@ export type DesktopInputHandlers = {
   switchDisplay?(displayId: number): void
   getDisplayList?(): DisplayInfo[]
   onDisplayListChange?(callback: (displays: DisplayInfo[]) => void): void
+  onFirstFrame?(callback: () => void): void
 }
 
 export class MeshDesktop implements DesktopInputHandlers {
@@ -46,6 +47,8 @@ export class MeshDesktop implements DesktopInputHandlers {
   private displayList: DisplayInfo[] = []
   private currentDisplay = 0
   private onDisplayListCallback: ((displays: DisplayInfo[]) => void) | null = null
+  private firstFrameDrawn = false
+  private onFirstFrameCallback: (() => void) | null = null
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -165,6 +168,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     this.activeDecodes = 0
     this.accum = null
     this.accumOffset = 0
+    this.firstFrameDrawn = false
     for (const off of this.listeners) off()
     this.listeners = []
     this.canvas = null
@@ -525,6 +529,10 @@ export class MeshDesktop implements DesktopInputHandlers {
   onDisplayListChange(callback: (displays: DisplayInfo[]) => void) {
     this.onDisplayListCallback = callback
   }
+
+  onFirstFrame(callback: () => void) {
+    this.onFirstFrameCallback = callback
+  }
   
   sendKeyCombo(combo: string) {
     const sequences: Record<string, Array<{ action: number; keyCode: number; extended: boolean }>> = {
@@ -795,6 +803,10 @@ export class MeshDesktop implements DesktopInputHandlers {
         const it = this.drawQueue.shift()!
         try {
           this.ctx!.drawImage(it.bitmap as any, it.x, it.y)
+          if (!this.firstFrameDrawn) {
+            this.firstFrameDrawn = true
+            this.onFirstFrameCallback?.()
+          }
         } catch {}
         if ('close' in it.bitmap && typeof (it.bitmap as any).close === 'function') {
           try { (it.bitmap as any).close() } catch {}

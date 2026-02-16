@@ -33,7 +33,7 @@ export function processHistoricalMessages(
     onReject,
   })
 
-  return processed.map(msg => ({
+  return processed.messages.map(msg => ({
     id: msg.id,
     role: msg.role,
     name: msg.name,

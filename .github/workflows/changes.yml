@@ -19,6 +19,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-management }}
       openframe-stream: 
         value: ${{ jobs.changes.outputs.openframe-stream }}
+      openframe-test:
+        value: ${{ jobs.changes.outputs.openframe-test }}
       openframe-frontend: 
         value: ${{ jobs.changes.outputs.openframe-frontend }}
       authentik-postgresql: 
@@ -61,6 +63,7 @@ jobs:
       openframe-gateway: ${{ steps.filter.outputs.openframe-gateway }}
       openframe-management: ${{ steps.filter.outputs.openframe-management }}
       openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
+      openframe-test: ${{ steps.filter.outputs.openframe-test }}
       openframe-frontend: ${{ steps.filter.outputs.openframe-frontend }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       fleetmdm: ${{ steps.filter.outputs.fleetmdm }}
@@ -116,6 +119,9 @@ jobs:
             openframe-stream:
               - './pom.xml'
               - './openframe/services/openframe-stream/**'
+            openframe-test:
+              - './pom.xml'
+              - './openframe/services/openframe-test/**'
             openframe-frontend:
               - './openframe/services/openframe-frontend/**'
             authentik-postgresql:

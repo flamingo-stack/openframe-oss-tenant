@@ -45,28 +45,24 @@ interface DeviceActionsDropdownProps {
   context: 'table' | 'detail'
   onActionComplete?: () => void
   // Handlers for actions (used to integrate with parent component modals)
-  onRemoteControl?: () => void
   onRunScript?: () => void
-  onRemoteShell?: (type: 'cmd' | 'powershell' | 'bash') => void
 }
 
 export function DeviceActionsDropdown({
   device,
   context,
   onActionComplete,
-  onRemoteControl,
-  onRunScript,
-  onRemoteShell
+  onRunScript
 }: DeviceActionsDropdownProps) {
   const router = useRouter()
   const { toast } = useToast()
   const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions()
-  const { releaseVersion } = useReleaseVersion()
 
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showUninstallDialog, setShowUninstallDialog] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen })
 
   const deviceName = device.displayName || device.hostname || 'this device'
   const deviceId = device.machineId || device.id
@@ -77,11 +73,10 @@ export function DeviceActionsDropdown({
     [device.platform, device.osType, device.operating_system]
   )
 
-  // Build the uninstall command
-  const uninstallCommand = useMemo(() =>
-    buildUninstallCommand({ platform: devicePlatform, releaseVersion }),
-    [devicePlatform, releaseVersion]
-  )
+  const uninstallCommand = useMemo(() => {
+    if (!dropdownOpen && !showUninstallDialog) return ''
+    return buildUninstallCommand({ platform: devicePlatform, releaseVersion })
+  }, [devicePlatform, releaseVersion, dropdownOpen, showUninstallDialog])
 
   // Copy uninstall command to clipboard
   const copyUninstallCommand = useCallback(async () => {
@@ -115,9 +110,7 @@ export function DeviceActionsDropdown({
   // Action handlers - always use machineId for URL routing
   const handleRemoteControl = () => {
     setDropdownOpen(false)
-    if (onRemoteControl) {
-      onRemoteControl()
-    } else if (actionAvailability.meshcentralAgentId) {
+    if (actionAvailability.meshcentralAgentId) {
       // Simple URL with just the OpenFrame machineId - remote desktop page fetches the rest
       router.push(`/devices/details/${deviceId}/remote-desktop`)
     }
@@ -135,11 +128,8 @@ export function DeviceActionsDropdown({
 
   const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash') => {
     setDropdownOpen(false)
-    if (onRemoteShell) {
-      onRemoteShell(type)
-    } else {
-      // Navigate to device details with action param to auto-open remote shell
-      router.push(`/devices/details/${deviceId}?action=remoteShell&shellType=${type}`)
+    if (actionAvailability.meshcentralAgentId) {
+      router.push(`/devices/details/${deviceId}/remote-shell?shellType=${type}`)
     }
   }
 
@@ -195,7 +185,8 @@ export function DeviceActionsDropdown({
       // Use unified config for action buttons
       actionItems.push(
         toActionsMenuItem(actionButtons.remoteShell, deviceId, {
-          onShellSelect: handleRemoteShell
+          onShellSelect: handleRemoteShell,
+          onClick: () => handleRemoteShell('bash')
         })
       )
 

@@ -247,7 +247,6 @@ echo "OpenFrame client installation complete!"
         title="New Device"
         backButton={{ label: 'Back to Devices', onClick: () => router.push('/devices') }}
         padding='none'
-        className='pt-6'
       >
         <div className="flex flex-col gap-6">
           {/* Top row: Organization and Platform */}

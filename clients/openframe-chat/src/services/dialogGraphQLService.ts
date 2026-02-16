@@ -201,7 +201,7 @@ export class DialogGraphQLService {
   async getDialogMessages(
     dialogId: string,
     cursor?: string | null,
-    limit: number = 5
+    limit: number = 100
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady()

@@ -2,15 +2,13 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AppLayout } from '../components/app-layout'
-import { 
-  ChatMessageList, 
+import {
+  ChatMessageList,
   ContentPageContainer,
   MingoIcon,
-  type ChunkData,
-  type NatsMessageType,
 } from '@flamingo-stack/openframe-frontend-core'
 import {
   ChatSidebar,
@@ -27,12 +25,14 @@ import { useMingoMessagesStore } from './stores/mingo-messages-store'
 export default function Mingo() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
+  const [isDraftChat, setIsDraftChat] = useState(false)
+
   const {
     activeDialogId,
     setActiveDialogId,
     resetUnread,
-    incrementUnread,
+    addMessage,
   } = useMingoMessagesStore()
 
   const {
@@ -64,41 +64,53 @@ export default function Mingo() {
     createDialog,
     sendMessage,
     approvals: pendingApprovals,
-    processChunk,
     isCreatingDialog,
     isTyping,
     assistantType
-  } = useMingoChat(activeDialogId, {
-    handleApprove,
-    handleReject,
-    approvalStatuses
-  })
+  } = useMingoChat(activeDialogId)
 
   const {
     subscribeToDialog,
     subscribedDialogs
   } = useMingoRealtimeSubscription(activeDialogId)
 
-  const createDialogChunkProcessor = useCallback((targetDialogId: string, chunk: ChunkData, messageType: NatsMessageType) => {
-    if (targetDialogId !== activeDialogId) {
-      incrementUnread(targetDialogId)
+  const draftWelcomeMessages = useMemo(() => [{
+    id: 'welcome-draft',
+    role: 'assistant' as const,
+    name: 'Mingo',
+    content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+    assistantType: 'mingo' as const,
+    timestamp: new Date(),
+  }], [])
+
+  const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog
+
+  const displayMessages = useMemo(() => {
+    if (isDraftChat) return draftWelcomeMessages
+
+    if (activeDialogId && processedMessages.length === 0 && !isAnyLoading) {
+      return draftWelcomeMessages
     }
-    
-    processChunk(targetDialogId, chunk, messageType)
-  }, [activeDialogId, incrementUnread, processChunk])
+
+    return processedMessages
+  }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && activeDialogId) {
-        const currentUrl = new URL(window.location.href)
-        currentUrl.searchParams.delete('dialogId')
-        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+      if (event.key === 'Escape') {
+        if (isDraftChat) {
+          setIsDraftChat(false)
+        } else if (activeDialogId) {
+          const currentUrl = new URL(window.location.href)
+          currentUrl.searchParams.delete('dialogId')
+          router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeDialogId, router])
+  }, [activeDialogId, isDraftChat, router])
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -110,22 +122,25 @@ export default function Mingo() {
   const handleDialogSelect = useCallback(async (dialogId: string) => {
     if (dialogId === activeDialogId) return
 
+    setIsDraftChat(false)
+
     const currentUrl = new URL(window.location.href)
     currentUrl.searchParams.set('dialogId', dialogId)
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
-    
+
     setActiveDialogId(dialogId)
     resetUnread(dialogId)
     subscribeToDialog(dialogId)
-    
+
     selectDialog(dialogId)
   }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
 
   useEffect(() => {
     const urlDialogId = searchParams.get('dialogId')
-    
+
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
+        setIsDraftChat(false)
         setActiveDialogId(urlDialogId)
         resetUnread(urlDialogId)
         subscribeToDialog(urlDialogId)
@@ -136,22 +151,55 @@ export default function Mingo() {
     }
   }, [searchParams])
 
-  const handleNewChat = useCallback(async () => {
+  const handleNewChat = useCallback(() => {
     resetDialog()
-    const newDialogId = await createDialog()
-    if (newDialogId) {
-      handleDialogSelect(newDialogId)
-    }
-  }, [resetDialog, createDialog, handleDialogSelect])
+    setActiveDialogId(null)
+    setIsDraftChat(true)
+
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.delete('dialogId')
+    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+  }, [resetDialog, setActiveDialogId, router])
 
   const handleSendMessage = useCallback(async (message: string) => {
-    if (!activeDialogId || !message.trim()) return
-    
+    if (!message.trim()) return
+
+    if (isDraftChat) {
+      const newDialogId = await createDialog()
+      if (!newDialogId) return
+
+      addMessage(newDialogId, {
+        id: `welcome-${newDialogId}`,
+        role: 'assistant',
+        name: 'Mingo',
+        timestamp: new Date(),
+        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+        assistantType: 'mingo',
+      })
+
+      setIsDraftChat(false)
+      setActiveDialogId(newDialogId)
+      resetUnread(newDialogId)
+      subscribeToDialog(newDialogId)
+
+      const currentUrl = new URL(window.location.href)
+      currentUrl.searchParams.set('dialogId', newDialogId)
+      router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+
+      const success = await sendMessage(message.trim(), newDialogId)
+      if (!success) {
+        console.warn('[Mingo] Failed to send message')
+      }
+      return
+    }
+
+    if (!activeDialogId) return
+
     const success = await sendMessage(message.trim())
     if (!success) {
       console.warn('[Mingo] Failed to send message')
     }
-  }, [activeDialogId, sendMessage])
+  }, [isDraftChat, activeDialogId, createDialog, sendMessage, setActiveDialogId, resetUnread, subscribeToDialog, router, addMessage])
 
   if (!isSaasTenantMode()) {
     return null
@@ -166,20 +214,16 @@ export default function Mingo() {
         contentClassName="h-full flex flex-col"
       >
         {/* 
-          Simplified NATS Subscriptions with multi-topic support
-          
-          Key improvements:
-          1. Single DialogSubscription component per subscribed dialog
-          2. Multi-topic support (message + admin-message)
-          3. Automatic connection sharing via core hooks
-          4. Proper background dialog handling with unread counts
+          NATS Subscriptions and per-dialog message processor
         */}
         {Array.from(subscribedDialogs).map(dialogId => (
           <DialogSubscription
             key={dialogId}
             dialogId={dialogId}
             isActive={dialogId === activeDialogId}
-            processChunk={createDialogChunkProcessor}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            approvalStatuses={approvalStatuses}
           />
         ))}
 
@@ -201,24 +245,24 @@ export default function Mingo() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-              {activeDialogId ? (
+              {(activeDialogId || isDraftChat) ? (
                 <ChatMessageList
-                  messages={processedMessages}
-                  dialogId={activeDialogId}
-                  isTyping={isTyping}
-                  isLoading={isLoadingDialog || isLoadingMessages || isSelectingDialog}
+                  messages={displayMessages}
+                  dialogId={activeDialogId || 'draft'}
+                  isTyping={isDraftChat ? false : isTyping}
+                  isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
                   assistantType={assistantType}
-                  pendingApprovals={pendingApprovals}
+                  pendingApprovals={isDraftChat ? [] : pendingApprovals}
                   showAvatars={false}
                   autoScroll={true}
                 />
               ) : (
-                /* Welcome message when no dialog is selected */
+                /* Empty state when no dialog is selected */
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center space-y-6">
                     <div className="space-y-4">
                       <div className="flex justify-center">
-                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)'/>
+                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)' />
                       </div>
                       <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">
                         Hi! I'm Mingo AI
@@ -232,16 +276,15 @@ export default function Mingo() {
               )}
             </div>
 
-            {/* Message Input - Only show when dialog is selected */}
-            {activeDialogId && (
+            {/* Message Input */}
+            {(activeDialogId || isDraftChat) && (
               <div className="flex-shrink-0 px-6 pb-4">
                 <ChatInput
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  sending={isTyping}
-                  disabled={isCreatingDialog || isSelectingDialog}
-                  autoFocus={false}
+                  sending={isTyping || isCreatingDialog || isSelectingDialog}
+                  autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
               </div>
