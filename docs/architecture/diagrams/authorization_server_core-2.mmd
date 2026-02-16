@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> ParsePath["Extract Tenant from Path"]
+    ParsePath -->|"Found"| SetContext["Set TenantContext"]
+    ParsePath -->|"Not Found"| QueryParam["Check Query Param"]
+    QueryParam -->|"Found"| SetContext
+    QueryParam -->|"Not Found"| SessionCheck["Check Session"]
+    SessionCheck --> SetContext
+    SetContext --> Continue["Continue Filter Chain"]

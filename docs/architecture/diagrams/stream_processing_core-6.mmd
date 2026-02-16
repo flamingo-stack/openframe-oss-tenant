@@ -1,0 +1,6 @@
+flowchart LR
+    Tools --> Kafka
+    Kafka --> StreamCore["Stream Processing Core"]
+    StreamCore --> Mongo
+    StreamCore --> API
+    StreamCore --> Analytics

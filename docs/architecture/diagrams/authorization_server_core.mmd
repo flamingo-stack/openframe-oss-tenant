@@ -1,0 +1,10 @@
+flowchart TD
+    Browser["User Browser"] -->|"Login / OAuth2 Request"| TenantFilter["TenantContextFilter"]
+    TenantFilter --> AuthzServer["OAuth2 Authorization Server"]
+    AuthzServer -->|"Load User"| UserService["UserService"]
+    AuthzServer -->|"Load Client"| ClientRepo["MongoRegisteredClientRepository"]
+    AuthzServer -->|"Persist Auth"| AuthService["MongoAuthorizationService"]
+    AuthzServer -->|"Sign JWT"| KeyService["TenantKeyService"]
+    KeyService --> Mongo[("MongoDB")]
+    AuthService --> Mongo
+    ClientRepo --> Mongo

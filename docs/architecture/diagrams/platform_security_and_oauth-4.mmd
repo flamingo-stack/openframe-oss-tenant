@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant BFF as "OAuth BFF Controller"
+    participant Auth as "Authorization Server"
+
+    Browser->>Gateway: GET /oauth/login?tenantId=xyz
+    Gateway->>BFF: Forward request
+    BFF->>Auth: Redirect to /authorize (with PKCE + state)
+    Auth->>Browser: Login + consent
+    Auth->>BFF: Redirect with code + state
+    BFF->>Auth: Exchange code for tokens
+    BFF->>Browser: Set cookies + redirect

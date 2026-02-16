@@ -1,0 +1,7 @@
+flowchart LR
+    Tools["Integrated Tools"] --> Kafka["Kafka Topics"]
+    Kafka --> Listener["JsonKafkaListener"]
+    Listener --> Handler["DebeziumMessageHandler"]
+    Handler --> Enrichment["Data Enrichment"]
+    Enrichment --> Unified["UnifiedEventType Mapping"]
+    Unified --> Outbound["Kafka Enriched Topics"]

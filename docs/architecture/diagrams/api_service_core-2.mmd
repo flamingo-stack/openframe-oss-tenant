@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> Gateway["Gateway Validates JWT"]
+    Gateway --> Api["Api Service Core"]
+    Api --> Resolver["JwtIssuerAuthenticationManagerResolver"]
+    Resolver --> Cache["Caffeine JWT Provider Cache"]
+    Cache --> Decoder["JwtDecoder per Issuer"]

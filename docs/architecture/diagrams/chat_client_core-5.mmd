@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Load Supported Models"] --> Loaded{"Already Loaded?"}
+    Loaded -->|"Yes"| Exit["Return Immediately"]
+    Loaded -->|"No"| Promise{"Load In Progress?"}
+    Promise -->|"Yes"| Await["Await Existing Promise"]
+    Promise -->|"No"| Fetch["Fetch From API"]
+    Fetch --> Cache["Populate Map by modelName"]
+    Cache --> Mark["Set isLoaded True"]

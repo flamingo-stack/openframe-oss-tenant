@@ -1,0 +1,15 @@
+flowchart TD
+    Client["Frontend or External Client"] --> Gateway["Gateway Service"]
+    Gateway --> API["API Service"]
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> ExternalAPI["External API Service"]
+
+    API --> Mongo["Mongo Persistence"]
+    API --> Kafka["Kafka Infrastructure"]
+
+    Stream["Stream Service"] --> Kafka
+    Stream --> Mongo
+
+    Management["Management Service"] --> Mongo
+
+    Config["Config Server"] --> All["All Services"]

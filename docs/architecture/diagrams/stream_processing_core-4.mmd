@@ -1,0 +1,5 @@
+flowchart TD
+    Message["DeserializedDebeziumMessage"] --> Agent["Extract agentId"]
+    Agent --> RedisMachine["MachineIdCacheService.getMachine()"]
+    RedisMachine --> RedisOrg["MachineIdCacheService.getOrganization()"]
+    RedisOrg --> Enriched["IntegratedToolEnrichedData"]

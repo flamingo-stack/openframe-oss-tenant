@@ -1,0 +1,25 @@
+flowchart TD
+    User["User / Frontend App"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> Auth["Authorization Server Core"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> External["External API Service Core"]
+
+    Api --> Contracts["API Contracts & Mapping"]
+    Api --> Mongo["Data Persistence Mongo"]
+    Api --> KafkaInfra["Data Infrastructure Kafka"]
+
+    External --> Mongo
+    External --> KafkaInfra
+
+    Stream["Stream Processing Core"] --> KafkaInfra
+    Stream --> Mongo
+
+    Management["Management Service Core"] --> Mongo
+    Management --> KafkaInfra
+
+    Auth --> Mongo
+    Auth --> Security["Platform Security & OAuth"]
+
+    FrontendClients["Frontend App Core Clients"] --> Gateway
+    ChatClient["Chat Client Core"] --> Gateway

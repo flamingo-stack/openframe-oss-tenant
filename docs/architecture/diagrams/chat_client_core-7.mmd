@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Chat Client Core"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiCore["API Service Core"]
+    ApiCore --> Persistence["Data Persistence Mongo"]
+    ApiCore --> Stream["Stream Processing Core"]
+
+    Gateway --> Authz["Authorization Server Core"]
+    Authz --> Security["Platform Security and OAuth"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Main["main() Method"] --> SpringRun["SpringApplication.run()"]
+    SpringRun --> Scan["Component Scan"]
+    Scan --> Context["Application Context Initialization"]
+    Context --> Infra["Infrastructure Beans"]
+    Infra --> Controllers["Controllers and Listeners"]
+    Controllers --> Ready["Service Ready"]

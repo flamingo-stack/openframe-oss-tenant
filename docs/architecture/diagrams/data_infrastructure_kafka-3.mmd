@@ -1,0 +1,7 @@
+flowchart TD
+    TopicProps["KafkaTopicProperties"] --> AutoCreate["autoCreate flag"]
+    TopicProps --> Inbound["inbound map"]
+    Inbound --> TopicConfig["TopicConfig"]
+    TopicConfig --> Name["name"]
+    TopicConfig --> Partitions["partitions"]
+    TopicConfig --> Replication["replicationFactor"]

@@ -1,0 +1,11 @@
+flowchart TD
+    Request["Outgoing Request"] --> DevMode{"Dev Ticket Enabled?"}
+
+    DevMode -->|Yes| LocalStorage["Read Access Token from localStorage"]
+    DevMode -->|No| CookieAuth["Rely on Cookies"]
+
+    LocalStorage --> AddHeader["Add Authorization: Bearer token"]
+    CookieAuth --> IncludeCookies["credentials: include"]
+
+    AddHeader --> FetchCall["fetch()"]
+    IncludeCookies --> FetchCall

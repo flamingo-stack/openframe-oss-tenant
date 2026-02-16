@@ -1,0 +1,6 @@
+flowchart TD
+    Request["POST Tool Config"] --> Validate["Set ID and Enable"]
+    Validate --> Save["IntegratedToolService.saveTool()"]
+    Save --> Debezium["DebeziumService.createOrUpdate"]
+    Debezium --> Hooks["Execute Post Save Hooks"]
+    Hooks --> Response["Return Success"]

@@ -1,0 +1,7 @@
+flowchart TD
+    User["User"] --> Frontend
+    Frontend --> Gateway
+    Gateway --> AuthServer
+    AuthServer --> Gateway
+    Gateway --> Api
+    Api --> Mongo["Mongo Persistence"]

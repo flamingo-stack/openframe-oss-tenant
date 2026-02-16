@@ -1,0 +1,5 @@
+flowchart TD
+    OAuth2Login["OAuth2 Login Request"] --> ClientRepo["DynamicClientRegistrationRepository"]
+    ClientRepo --> Strategy["Provider Strategy"]
+    Strategy --> SSOConfig["SSOConfigService"]
+    SSOConfig --> TenantConfig[("Tenant SSO Config")]

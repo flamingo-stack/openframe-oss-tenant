@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Tool
+    participant Kafka
+    participant Stream
+    participant Mongo
+    participant API
+
+    Tool->>Kafka: Publish event
+    Kafka->>Stream: Consume
+    Stream->>Stream: Enrich + Normalize
+    Stream->>Kafka: Publish enriched event
+    Stream->>Mongo: Persist
+    API->>Mongo: Query unified events

@@ -1,0 +1,5 @@
+flowchart TD
+    ClientReq["Client Request"] --> Criteria["Build EventFilterCriteria"]
+    Criteria --> Service["EventService"]
+    Service --> Mapper["EventMapper"]
+    Mapper --> EventsResponse["EventsResponse DTO"]

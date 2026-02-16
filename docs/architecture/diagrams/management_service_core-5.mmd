@@ -1,0 +1,3 @@
+flowchart LR
+    Startup["Application Startup"] --> Configs["Predefined Stream Configurations"]
+    Configs --> NatsService["NatsStreamManagementService.save()"]

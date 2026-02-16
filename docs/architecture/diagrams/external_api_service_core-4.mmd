@@ -1,0 +1,4 @@
+flowchart TD
+    DeleteReq["DELETE /organizations/{id}"] --> CommandService["OrganizationCommandService.deleteOrganization()"]
+    CommandService -->|"Has machines"| Conflict["409 Conflict"]
+    CommandService -->|"Success"| NoContent["204 No Content"]

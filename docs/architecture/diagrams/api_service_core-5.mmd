@@ -1,0 +1,5 @@
+flowchart TD
+    GraphQL["GraphQL Field Resolution"] --> DataLoader["BatchLoader"]
+    DataLoader --> Repository["Mongo Repository"]
+    Repository --> DataLoader
+    DataLoader --> Response["Resolved Nested Fields"]

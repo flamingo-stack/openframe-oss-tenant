@@ -1,0 +1,4 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["DataInitializer"]
+    Init --> Repo["OAuthClientRepository"]
+    Repo --> Mongo["Mongo Database"]

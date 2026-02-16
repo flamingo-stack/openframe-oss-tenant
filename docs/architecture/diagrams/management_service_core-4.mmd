@@ -1,0 +1,7 @@
+flowchart TD
+    Load["Load Agent Config"] --> Exists{"Agent Exists?"}
+    Exists -->|"No"| Create["Save New Agent"]
+    Exists -->|"Yes"| Compare["Compare Versions"]
+    Compare -->|"Release Version"| Preserve["Preserve Version"]
+    Compare -->|"Version Changed"| Publish["Publish Update Event"]
+    Publish --> Save["Save Agent"]

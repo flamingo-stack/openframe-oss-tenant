@@ -1,0 +1,20 @@
+flowchart TD
+    ManagementApp["Management Service"] --> Config["ManagementConfiguration"]
+    ManagementApp --> ToolController["IntegratedToolController"]
+    ManagementApp --> Initializers["Platform Initializers"]
+    ManagementApp --> ShedLock["ShedLockConfig"]
+
+    ToolController --> ToolService["IntegratedToolService"]
+    ToolController --> DebeziumService["DebeziumService"]
+    ToolController --> PostHooks["Post Save Hooks"]
+
+    Initializers --> AgentSecretInit["AgentRegistrationSecretInitializer"]
+    Initializers --> ToolAgentInit["IntegratedToolAgentInitializer"]
+    Initializers --> ClientConfigInit["OpenFrameClientConfigurationInitializer"]
+    Initializers --> NatsInit["NatsStreamConfigurationInitializer"]
+    Initializers --> DebeziumInit["DebeziumConnectorInitializer"]
+
+    NatsInit --> NatsService["NatsStreamManagementService"]
+    DebeziumInit --> DebeziumService
+
+    ShedLock --> Redis["Redis Lock Provider"]

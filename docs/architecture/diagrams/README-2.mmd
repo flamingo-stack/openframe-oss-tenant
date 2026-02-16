@@ -1,0 +1,6 @@
+flowchart LR
+    UI["React UI"] --> DialogSvc["Dialog GraphQL Service"]
+    UI --> ModelsSvc["Supported Models Service"]
+    DialogSvc --> TokenSvc["Token Service"]
+    ModelsSvc --> TokenSvc
+    TokenSvc --> Gateway["Gateway Service Core"]

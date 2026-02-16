@@ -1,0 +1,7 @@
+flowchart TD
+    Login["User Login"] --> ResolveTenant["Resolve Tenant"]
+    ResolveTenant --> Authenticate["Authenticate (Form or SSO)"]
+    Authenticate --> IssueCode["Issue Authorization Code"]
+    IssueCode --> Exchange["Exchange for Token"]
+    Exchange --> Sign["Sign JWT with Tenant Key"]
+    Sign --> Return["Return Access Token"]

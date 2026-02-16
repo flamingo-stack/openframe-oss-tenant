@@ -1,0 +1,8 @@
+flowchart LR
+    Query["GraphQL Query"] --> DataFetcher["DgsDataFetcher"]
+    DataFetcher --> Mapper["GraphQL Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Mongo Repository"]
+    Repository --> Service
+    Service --> Mapper
+    Mapper --> Connection["Connection / Edge Model"]

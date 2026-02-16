@@ -1,0 +1,5 @@
+flowchart TD
+    AppReady["Application Ready Event"] --> Check["List Existing Connectors"]
+    Check -->|"Exists"| Skip["Skip Initialization"]
+    Check -->|"None"| LoadTools["Load Integrated Tools"]
+    LoadTools --> Create["Create Connectors from Config"]

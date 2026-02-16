@@ -1,0 +1,7 @@
+flowchart LR
+    Client["External Client"] -->|"X-API-Key"| ExternalApi["External Api Service Core"]
+    ExternalApi --> ApiServices["Internal API Services"]
+    ApiServices --> DataLayer["Mongo Repositories"]
+    ApiServices --> StreamLayer["Kafka / Stream Processing"]
+    ExternalApi --> ProxyService["Rest Proxy Service"]
+    ProxyService --> IntegratedTools["Integrated Tools"]

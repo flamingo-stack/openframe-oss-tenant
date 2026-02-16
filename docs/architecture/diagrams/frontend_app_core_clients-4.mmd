@@ -1,0 +1,6 @@
+flowchart TD
+    LoginRequest["User Clicks Login"] --> BuildUrl["loginUrl()"]
+    BuildUrl --> Redirect["Redirect to /oauth/login"]
+    Redirect --> AuthServer["Authorization Server Core"]
+    AuthServer --> Callback["Redirect Back with Session"]
+    Callback --> Frontend["Frontend App"]

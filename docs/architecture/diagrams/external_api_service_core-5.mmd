@@ -1,0 +1,8 @@
+flowchart LR
+    Client["External Client"] --> ExternalApi["External Api Controller"]
+    ExternalApi --> ProxyService["RestProxyService"]
+    ProxyService --> ToolRepo["IntegratedToolRepository"]
+    ProxyService --> UrlResolver["ProxyUrlResolver"]
+    ProxyService --> TargetTool["External Tool API"]
+    TargetTool --> ProxyService
+    ProxyService --> Client

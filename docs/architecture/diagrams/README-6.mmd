@@ -1,0 +1,6 @@
+flowchart TD
+    Browser["Browser"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> OAuthServer["Authorization Server"]
+    OAuthServer --> KeyService["TenantKeyService"]
+    OAuthServer --> Mongo["MongoDB"]
+    OAuthServer --> JWT["RS256 Signed JWT"]

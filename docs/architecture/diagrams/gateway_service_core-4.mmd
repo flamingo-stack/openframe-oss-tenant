@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Incoming Request"] --> ExtractIssuer["Extract JWT Issuer"]
+    ExtractIssuer --> Cache["Issuer Manager Cache"]
+
+    Cache -->|Hit| AuthManager["Reactive Authentication Manager"]
+    Cache -->|Miss| BuildManager["Build JwtReactiveAuthenticationManager"]
+
+    BuildManager --> ValidateIssuer["Strict Issuer Validation"]
+    ValidateIssuer --> AuthManager
+    AuthManager --> SecurityChain["Security Filter Chain"]

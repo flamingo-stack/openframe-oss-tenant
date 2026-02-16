@@ -1,0 +1,14 @@
+flowchart LR
+    Client["Frontend / External Client"] --> Gateway["Gateway Service Core"]
+    Gateway --> Api["Api Service Core"]
+
+    Api --> GraphQL["GraphQL DataFetchers"]
+    Api --> Rest["REST Controllers"]
+
+    GraphQL --> Services["Application Services"]
+    Rest --> Services
+
+    Services --> Mongo["Mongo Persistence Layer"]
+    Services --> Kafka["Kafka / Stream Processing"]
+
+    Gateway --> Authz["Authorization Server Core"]

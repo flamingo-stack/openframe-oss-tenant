@@ -1,0 +1,12 @@
+flowchart LR
+    Frontend["Frontend Clients"] --> Gateway
+    Gateway --> Auth
+    Gateway --> API
+    Gateway --> External
+
+    API --> Stream
+    Stream --> Mongo
+    API --> Mongo
+
+    Auth --> Mongo
+    Management --> Mongo

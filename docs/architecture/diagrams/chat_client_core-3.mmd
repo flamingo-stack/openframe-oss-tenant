@@ -1,0 +1,5 @@
+flowchart TD
+    UIReq["UI Requests Dialog"] --> Ensure["Ensure Token Ready"]
+    Ensure --> Init["Initialize GraphQL Client"]
+    Init --> Query["Execute GetDialog Query"]
+    Query --> Return["Return ResumableDialog or Null"]

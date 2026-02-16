@@ -1,0 +1,9 @@
+flowchart LR
+    GatewayApp["GatewayApplication"] --> GatewayCore
+    ApiApp["ApiApplication"] --> ApiCore
+    AuthApp["AuthorizationServerApplication"] --> AuthCore
+    ExternalApp["ExternalApiApplication"] --> ExternalCore
+    ManagementApp["ManagementApplication"] --> ManagementCore
+    StreamApp["StreamApplication"] --> StreamCore
+    ConfigApp["ConfigServerApplication"]
+    ClientApp["ClientApplication"]

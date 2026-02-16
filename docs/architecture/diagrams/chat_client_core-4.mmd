@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Start Fetch Messages"] --> Loop["While hasNextPage"]
+    Loop --> Query["Execute Messages Query"]
+    Query --> Append["Append Edges"]
+    Append --> Update["Update Cursor and PageInfo"]
+    Update --> Check["hasNextPage?"]
+    Check -->|"Yes"| Loop
+    Check -->|"No"| Done["Return Aggregated Connection"]

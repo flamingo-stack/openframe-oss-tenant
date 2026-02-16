@@ -1,0 +1,5 @@
+flowchart TD
+    Verifier["Code Verifier (random 256-bit)"] -->|"SHA-256"| Hash["Hash"]
+    Hash -->|"Base64URL"| Challenge["Code Challenge"]
+
+    State["Random State (128-bit)"] --> Browser["Stored in Cookie"]

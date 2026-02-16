@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Application Mount"] --> Fetch["Invoke get_debug_mode"]
+    Fetch --> Success["Set debugMode State"]
+    Fetch --> Error["Log Error and Set False"]
+    Success --> Provide["Provide Context to Children"]
+    Error --> Provide

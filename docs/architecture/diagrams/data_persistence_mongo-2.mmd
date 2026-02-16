@@ -1,0 +1,6 @@
+flowchart TD
+    SpringBoot["Spring Boot"] --> MongoConfig
+    MongoConfig --> MongoRepositories["EnableMongoRepositories"]
+    MongoConfig --> Auditing["EnableMongoAuditing"]
+    MongoConfig --> Converter["MappingMongoConverter"]
+    Converter --> DotReplacement["MapKeyDotReplacement = __dot__"]

@@ -1,0 +1,5 @@
+flowchart TD
+    UI["Run Script Button"] --> TacticalClient["runScript()"]
+    TacticalClient --> ApiClient
+    ApiClient --> Gateway
+    Gateway --> TacticalBackend["Tactical RMM Service"]

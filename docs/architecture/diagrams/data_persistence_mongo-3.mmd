@@ -1,0 +1,4 @@
+flowchart TD
+    AppStart["Application Startup"] --> MongoIndexConfig
+    MongoIndexConfig --> EnsureIndex1["userId + timestamp"]
+    MongoIndexConfig --> EnsureIndex2["type + metadata.tags"]

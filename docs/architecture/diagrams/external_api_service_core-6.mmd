@@ -1,0 +1,5 @@
+flowchart LR
+    Client -->|"limit + cursor"| Controller
+    Controller --> Service
+    Service -->|"items + nextCursor"| Controller
+    Controller --> Client

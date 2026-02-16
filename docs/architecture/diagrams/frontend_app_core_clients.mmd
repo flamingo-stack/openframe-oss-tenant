@@ -1,0 +1,14 @@
+flowchart LR
+    UI["Frontend UI Components"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+    UI --> FleetClient["FleetApiClient"]
+    UI --> TacticalClient["TacticalApiClient"]
+
+    FleetClient --> ApiClient
+    TacticalClient --> ApiClient
+
+    ApiClient --> Gateway["Gateway Service Core"]
+    AuthApiClient --> AuthServer["Authorization Server Core"]
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]

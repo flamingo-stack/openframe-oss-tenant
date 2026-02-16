@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant RestProxy
+    participant Tool
+
+    Client->>Gateway: GET /tools/{toolId}/health
+    Gateway->>RestProxy: testIntegrationConnection(toolId)
+    RestProxy->>Tool: Forward request
+    Tool-->>RestProxy: Response
+    RestProxy-->>Gateway: Result
+    Gateway-->>Client: HTTP Response

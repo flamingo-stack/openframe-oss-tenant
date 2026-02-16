@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Producer
+    participant Kafka
+    participant Recovery as KafkaRecoveryHandlerImpl
+
+    Producer->>Kafka: Send message
+    Kafka-->>Producer: Exception
+    Producer->>Recovery: enqueue(exception, topic, key, payload)
+    Recovery->>Recovery: Log structured error

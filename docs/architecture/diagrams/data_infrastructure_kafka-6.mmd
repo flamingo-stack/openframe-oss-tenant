@@ -1,0 +1,6 @@
+flowchart TD
+    AppConfig["application.yml"] --> OssTenantProps["OssTenantKafkaProperties"]
+    AppConfig --> TopicProps["KafkaTopicProperties"]
+    OssTenantProps --> AutoConfig["OssTenantKafkaAutoConfiguration"]
+    TopicProps --> AutoConfig
+    AutoConfig --> KafkaInfra["Kafka Infrastructure Beans"]

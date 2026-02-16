@@ -1,0 +1,13 @@
+flowchart TD
+    ClientWS["WebSocket Client"] --> RouteMatch["Route Locator"]
+
+    RouteMatch --> AgentRoute["/ws/tools/agent/{toolId}"]
+    RouteMatch --> ApiRoute["/ws/tools/{toolId}"]
+    RouteMatch --> NatsRoute["/ws/nats"]
+
+    AgentRoute --> AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    ApiRoute --> ApiFilter["ToolApiWebSocketProxyUrlFilter"]
+
+    AgentFilter --> ToolBackend["Resolved Tool Agent Backend"]
+    ApiFilter --> ToolBackend
+    NatsRoute --> NatsBackend["NATS WS URL"]

@@ -1,0 +1,15 @@
+flowchart LR
+    UI["React UI Components"] --> DebugCtx["Debug Mode Context"]
+    UI --> DialogSvc["Dialog GraphQL Service"]
+    UI --> ModelsSvc["Supported Models Service"]
+
+    DialogSvc --> TokenSvc["Token Service"]
+    ModelsSvc --> TokenSvc
+
+    TokenSvc --> Tauri["Tauri Rust Layer"]
+
+    DialogSvc --> Gateway["Gateway Service Core"]
+    ModelsSvc --> ApiSvc["API Service Core"]
+
+    Gateway --> Authz["Authorization Server Core"]
+    ApiSvc --> DataLayer["Data Persistence Mongo"]

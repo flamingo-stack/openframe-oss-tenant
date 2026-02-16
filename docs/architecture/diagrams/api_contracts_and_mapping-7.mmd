@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Client"] --> Controller["Controller / DataFetcher"]
+    Controller --> DTOIn["Filter DTO"]
+    DTOIn --> Service["Service Layer"]
+    Service --> Repository["Mongo Repository"]
+    Repository --> Entity["Domain Entity"]
+    Entity --> Mapper["Mapper"]
+    Mapper --> DTOOut["Response DTO"]
+    DTOOut --> Client

@@ -1,0 +1,18 @@
+flowchart LR
+    Tools["Integrated Tools<br/>MeshCentral · Tactical · Fleet"] --> KafkaIn["Kafka Inbound Topics"]
+
+    KafkaIn --> JsonListener["JsonKafkaListener"]
+    JsonListener --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Handler["GenericMessageHandler / DebeziumMessageHandler"]
+
+    Handler --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> UnifiedMapper["EventTypeMapper"]
+
+    UnifiedMapper --> KafkaOut["Kafka Enriched Topics"]
+
+    subgraph streams_layer["Kafka Streams Layer"]
+        ActivityService["ActivityEnrichmentService"]
+    end
+
+    KafkaIn --> ActivityService
+    ActivityService --> KafkaOut

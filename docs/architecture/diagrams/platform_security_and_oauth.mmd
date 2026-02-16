@@ -1,0 +1,17 @@
+flowchart LR
+    Frontend["Frontend App"] -->|"/oauth/login"| Gateway["Gateway Service"]
+    Gateway -->|"Delegates OAuth Flow"| Bff["OAuth BFF Controller"]
+    Bff -->|"Authorize Redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"JWT (RS256)"| Gateway
+    Gateway -->|"Validated JWT"| Api["API Service"]
+
+    subgraph security_core["Platform Security And Oauth"]
+        JwtConfig["JwtConfig"]
+        JwtSecurityConfig["JwtSecurityConfig"]
+        PKCE["PKCEUtils"]
+        Constants["SecurityConstants"]
+        OAuthController["OAuthBffController"]
+    end
+
+    AuthServer -->|"Uses RSA Keys"| JwtSecurityConfig
+    Gateway -->|"Validates JWT"| JwtSecurityConfig

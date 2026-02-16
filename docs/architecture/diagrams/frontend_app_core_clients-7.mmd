@@ -1,0 +1,8 @@
+flowchart TD
+    R1["Request A"] --> CheckRefresh{"Refreshing?"}
+    R2["Request B"] --> CheckRefresh
+
+    CheckRefresh -->|Yes| Queue["Queue Request"]
+    CheckRefresh -->|No| Refresh["Refresh Token"]
+
+    Refresh --> Replay["Replay Queued Requests"]

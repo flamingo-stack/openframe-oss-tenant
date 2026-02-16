@@ -1,0 +1,5 @@
+flowchart LR
+    AppServices["Application Services"] -->|"produce events"| KafkaInfra["Data Infrastructure Kafka"]
+    KafkaInfra -->|"publishes to"| KafkaCluster[("Kafka Cluster")]
+    KafkaCluster -->|"consumed by"| StreamProcessing["Stream Processing Core"]
+    KafkaCluster -->|"consumed by"| ManagementServices["Management Service Core"]

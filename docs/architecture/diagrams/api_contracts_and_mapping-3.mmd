@@ -1,0 +1,4 @@
+flowchart TD
+    DeviceFilterOptions["DeviceFilterOptions"] --> QueryEngine["Repository Query"]
+    QueryEngine --> DeviceFilters["DeviceFilters"]
+    DeviceFilters --> Client["Client UI"]

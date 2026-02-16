@@ -1,0 +1,6 @@
+flowchart TD
+    APIService["API Service Core"] -->|"uses repositories"| DataMongo["Data Persistence Mongo"]
+    AuthService["Authorization Server Core"] -->|"auth users & clients"| DataMongo
+    ManagementService["Management Service Core"] -->|"manages tools & config"| DataMongo
+    StreamService["Stream Processing Core"] -->|"persists events"| DataMongo
+    DataMongo --> MongoDB[("MongoDB Database")]

@@ -1,0 +1,6 @@
+flowchart LR
+    TokenRequest["Token Encoding"] --> JwkSource["Tenant JWKSource"]
+    JwkSource -->|"tenantId"| TenantKeyService
+    TenantKeyService -->|"Load or Create Key"| MongoDB[("TenantKey Collection")]
+    TenantKeyService --> RSAKey["RSAKey"]
+    RSAKey --> JwtEncoder["NimbusJwtEncoder"]

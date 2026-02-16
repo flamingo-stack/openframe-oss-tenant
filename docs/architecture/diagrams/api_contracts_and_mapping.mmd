@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Frontend / External Client"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    Contracts --> DataMongo["Data Persistence Mongo"]
+    ApiService --> StreamCore["Stream Processing Core"]
+    ApiService --> AuthServer["Authorization Server Core"]

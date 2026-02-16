@@ -1,0 +1,18 @@
+flowchart LR
+    Client["Frontend / Agent / External Client"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> ToolBackend["Integrated Tool Backends"]
+    Gateway --> Nats["NATS WebSocket Endpoint"]
+
+    subgraph security_layer["Security & Filters"]
+        JwtAuth["JWT Validation"]
+        ApiKeyAuth["API Key Filter"]
+        AddAuthHeader["Add Authorization Header Filter"]
+        Cors["CORS Filter"]
+    end
+
+    Client --> security_layer
+    security_layer --> Gateway

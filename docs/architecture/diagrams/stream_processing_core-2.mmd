@@ -1,0 +1,4 @@
+flowchart TD
+    Base["MessageHandler Interface"] --> Generic["GenericMessageHandler"]
+    Generic --> Debezium["DebeziumMessageHandler"]
+    Debezium --> Concrete["Tool-specific Handlers"]

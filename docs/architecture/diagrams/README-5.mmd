@@ -1,0 +1,6 @@
+flowchart TD
+    Gateway --> ApiCore["API Service Core"]
+    ApiCore --> GraphQL["GraphQL DataFetchers"]
+    ApiCore --> Rest["REST Controllers"]
+    GraphQL --> Services["Domain Services"]
+    Services --> Mongo["MongoDB"]

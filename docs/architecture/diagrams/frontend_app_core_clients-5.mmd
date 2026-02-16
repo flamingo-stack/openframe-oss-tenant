@@ -1,0 +1,5 @@
+flowchart LR
+    UI["Device Page"] --> FleetClient["FleetApiClient.getHosts()"]
+    FleetClient --> ApiClient
+    ApiClient --> Gateway
+    Gateway --> FleetBackend["Fleet MDM Service"]

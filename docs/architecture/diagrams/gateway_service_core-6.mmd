@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Client Request"] --> PreAuth["AddAuthorizationHeaderFilter"]
+    PreAuth --> JwtValidation["JWT Validation (if applicable)"]
+    JwtValidation --> ApiKeyCheck["API Key Filter (external-api only)"]
+    ApiKeyCheck --> Route["Spring Cloud Gateway Routing"]
+    Route --> ProxyOrService["Proxy to Tool or Internal Service"]
+    ProxyOrService --> Response["Response to Client"]

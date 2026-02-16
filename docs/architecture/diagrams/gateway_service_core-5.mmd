@@ -1,0 +1,13 @@
+flowchart TD
+    Req["Request to /external-api/**"] --> CheckKey["Check X-API-Key Header"]
+    CheckKey -->|Missing| Unauthorized["401 UNAUTHORIZED"]
+
+    CheckKey --> Validate["ApiKeyValidationService"]
+    Validate -->|Invalid| Unauthorized
+    Validate -->|Valid| RateLimit["RateLimitService"]
+
+    RateLimit -->|Exceeded| TooMany["429 RATE_LIMIT_EXCEEDED"]
+    RateLimit -->|Allowed| AddHeaders["Add Rate Limit Headers"]
+
+    AddHeaders --> Enrich["Add X-API-KEY-ID and X-USER-ID"]
+    Enrich --> Forward["Forward to External API Service"]

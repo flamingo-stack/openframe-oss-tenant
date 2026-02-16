@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client"] -->|"Cursor + Limit"| Controller["Controller"]
+    Controller --> Service["Service Layer"]
+    Service --> Repository["Mongo Repository"]
+    Repository -->|"Paged Data"| Service
+    Service -->|"CountedGenericQueryResult"| Controller

@@ -1,0 +1,4 @@
+flowchart TD
+    Controller["REST Controller"] --> Service["Domain Service"]
+    Service --> Repository["Mongo Repository"]
+    Service --> Processor["Post-Processing Hooks"]

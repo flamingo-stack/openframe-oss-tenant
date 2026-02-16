@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Start"] --> Config
+    Config --> SecretInit["Agent Secret Init"]
+    SecretInit --> AgentInit["Tool Agent Init"]
+    AgentInit --> ClientInit["Client Config Init"]
+    ClientInit --> NatsInit
+    NatsInit --> AppReady["Application Ready"]
+    AppReady --> DebeziumInit

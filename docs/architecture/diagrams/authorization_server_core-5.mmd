@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant Authz as "Authorization Server"
+    participant Provider as "SSO Provider"
+
+    Browser->>Authz: GET /oauth/register/sso
+    Authz->>Browser: Set SSO cookie + Redirect
+    Browser->>Provider: OIDC Authorization
+    Provider->>Authz: Callback with Code
+    Authz->>Authz: TenantRegSsoHandler
+    Authz->>Browser: Redirect to Tenant Context

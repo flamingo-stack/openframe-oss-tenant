@@ -1,0 +1,4 @@
+flowchart LR
+    Scheduler["Scheduled Task"] --> LockProvider["RedisLockProvider"]
+    LockProvider --> Redis["Redis"]
+    LockProvider --> KeyBuilder["OpenframeRedisKeyBuilder"]
