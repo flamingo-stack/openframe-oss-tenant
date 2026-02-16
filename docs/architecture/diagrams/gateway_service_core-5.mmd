@@ -1,0 +1,9 @@
+flowchart TD
+    WsClient["WebSocket Client"] --> GatewayWs["Spring Cloud Gateway Route"]
+
+    GatewayWs -->|"/ws/tools/{toolId}/**"| ApiWsFilter["ToolApiWebSocketProxyUrlFilter"]
+    GatewayWs -->|"/ws/tools/agent/{toolId}/**"| AgentWsFilter["ToolAgentWebSocketProxyUrlFilter"]
+    GatewayWs -->|"/ws/nats"| NatsWs["NATS WebSocket"]
+
+    ApiWsFilter --> ToolApiBackend["Tool API WebSocket Backend"]
+    AgentWsFilter --> ToolAgentBackend["Tool Agent WebSocket Backend"]

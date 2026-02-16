@@ -1,0 +1,8 @@
+flowchart TD
+    Kafka["Kafka CDC Event"] --> Listener["JsonKafkaListener"]
+    Listener --> Deserialize["Tool Deserializer"]
+    Deserialize --> MapType["EventTypeMapper"]
+    MapType --> Enrich["IntegratedToolDataEnrichmentService"]
+    Enrich --> Handler["DebeziumMessageHandler"]
+    Handler --> Cassandra["Cassandra Storage"]
+    Handler --> Outbound["Outbound Kafka"]

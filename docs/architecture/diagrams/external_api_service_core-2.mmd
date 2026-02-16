@@ -1,0 +1,9 @@
+flowchart TD
+    Request["GET /api/v1/devices"] --> BuildCriteria["Build DeviceFilterCriteria"]
+    BuildCriteria --> MapOptions["Map to Domain FilterOptions"]
+    MapOptions --> Query["DeviceService.queryDevices()"]
+    Query --> OptionalTags{"includeTags?"}
+    OptionalTags -->|"Yes"| LoadTags["TagService.getTagsForMachines()"]
+    OptionalTags -->|"No"| MapResponse["Map to DevicesResponse"]
+    LoadTags --> MapResponse
+    MapResponse --> Response["DevicesResponse"]

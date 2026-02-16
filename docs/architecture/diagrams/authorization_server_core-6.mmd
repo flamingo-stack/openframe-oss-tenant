@@ -1,0 +1,5 @@
+flowchart LR
+    OAuthLogin --> ClientRepo["DynamicClientRegistrationRepository"]
+    ClientRepo --> TenantContext
+    TenantContext --> DynamicService
+    DynamicService --> ClientRegistration

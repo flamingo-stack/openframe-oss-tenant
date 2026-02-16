@@ -1,0 +1,9 @@
+flowchart LR
+    Browser["User Browser"] --> Gateway["Gateway Service"]
+    Gateway --> Authz["Authorization Server Core"]
+    Gateway --> Api["API Service Core"]
+
+    Authz --> Mongo["MongoDB"]
+    Authz --> Jwt["JWT Access Tokens"]
+
+    Jwt --> Api

@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client"] --> Save["Save Tool"]
+    Save --> Persist["IntegratedToolService.save"]
+    Persist --> Debezium["DebeziumService.createOrUpdate"]
+    Debezium --> Hooks["IntegratedToolPostSaveHook"]
+    Hooks --> Response["Success Response"]

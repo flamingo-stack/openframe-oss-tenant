@@ -1,0 +1,8 @@
+flowchart TD
+    KafkaEvent["Kafka Event"] --> DebeziumWrapper["DebeziumMessage<T>"]
+    DebeziumWrapper --> Payload["Payload"]
+    Payload --> Before["before"]
+    Payload --> After["after"]
+    Payload --> Source["source metadata"]
+    Payload --> Operation["op"]
+    Payload --> Timestamp["ts_ms"]

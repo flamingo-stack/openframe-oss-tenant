@@ -1,0 +1,4 @@
+flowchart TD
+    DataMongo["Data Mongo Documents Repositories"] --> ApiLib["Api Lib Dtos Mappers Domain Services"]
+    ApiLib --> ApiService["Api Service Core Rest GraphQL"]
+    ApiService --> Gateway["Gateway Service Core"]

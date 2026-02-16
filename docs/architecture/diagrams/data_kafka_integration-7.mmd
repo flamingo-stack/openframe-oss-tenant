@@ -1,0 +1,5 @@
+flowchart TD
+    Send["Producer Send"] --> Failure{"Exception?"}
+    Failure -->|Yes| Recovery["KafkaRecoveryHandler.enqueue()"]
+    Recovery --> Log["Structured Error Log"]
+    Failure -->|No| Success["Message Delivered"]

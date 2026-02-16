@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph api_layer["API & External Services"]
+        ApiService["API Service Core"]
+        ExternalApi["External API Service Core"]
+        Management["Management Service Core"]
+    end
+
+    subgraph data_platform["Data Platform Config Pinot Cassandra And Repos"]
+        CassandraConfigNode["Cassandra Configuration"]
+        PinotConfigNode["Pinot Configuration"]
+        PinotRepos["Pinot Repositories"]
+        EventService["MachineTagEventServiceImpl"]
+    end
+
+    subgraph infrastructure["Infrastructure"]
+        CassandraDB[("Cassandra")]
+        PinotCluster[("Apache Pinot")]
+        Kafka[("Kafka")]
+        Mongo[("MongoDB")]
+    end
+
+    ApiService --> PinotRepos
+    ExternalApi --> PinotRepos
+    Management --> CassandraConfigNode
+
+    PinotRepos --> PinotCluster
+    CassandraConfigNode --> CassandraDB
+    EventService --> Kafka
+    EventService --> Mongo

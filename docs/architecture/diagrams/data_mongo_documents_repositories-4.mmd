@@ -1,0 +1,6 @@
+flowchart TD
+    EventQueryFilter --> BuildQuery["buildEventQuery()"]
+    BuildQuery --> Query["Mongo Query"]
+    Query --> CursorLogic["Cursor Pagination"]
+    CursorLogic --> MongoTemplate
+    MongoTemplate --> MongoDB[("MongoDB")]

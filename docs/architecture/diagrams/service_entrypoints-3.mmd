@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz as "Authorization Server"
+
+    User->>Gateway: Login request
+    Gateway->>Authz: Redirect to /oauth2/authorize
+    Authz->>User: Authentication page or SSO redirect
+    Authz->>Gateway: Authorization code
+    Gateway->>Authz: Exchange code for token
+    Authz->>Gateway: JWT Access Token

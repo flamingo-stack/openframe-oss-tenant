@@ -1,0 +1,14 @@
+flowchart TD
+    UI["React UI Components"] --> Hooks["Feature Hooks"]
+    Hooks --> CoreClient["ApiClient"]
+    Hooks --> AuthClient["AuthApiClient"]
+    Hooks --> FleetClient["FleetApiClient"]
+    Hooks --> TacticalClient["TacticalApiClient"]
+
+    CoreClient --> BackendAPI["API / GraphQL / Chat Endpoints"]
+    AuthClient --> AuthServer["Authorization Server"]
+    FleetClient --> FleetTool["Fleet MDM Tool"]
+    TacticalClient --> TacticalTool["Tactical RMM Tool"]
+
+    Hooks --> Stores["Zustand Stores"]
+    Stores --> UI

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz as Authorization Server
+    participant Api
+
+    User->>Gateway: Login
+    Gateway->>Authz: Redirect to OAuth
+    Authz->>Gateway: JWT
+    Gateway->>Api: Forward with validated JWT
+    Api->>Gateway: Response
+    Gateway->>User: Response

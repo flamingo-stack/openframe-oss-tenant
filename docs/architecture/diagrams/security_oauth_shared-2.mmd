@@ -1,0 +1,5 @@
+flowchart LR
+    JwtConfig["Jwt Config"] -->|"load public key"| JwtSecurityConfig
+    JwtConfig -->|"load private key"| JwtSecurityConfig
+    JwtSecurityConfig -->|"build JWKSet"| JwtEncoder
+    JwtSecurityConfig -->|"withPublicKey"| JwtDecoder

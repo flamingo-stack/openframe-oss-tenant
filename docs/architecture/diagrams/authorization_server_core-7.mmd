@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant AuthServer as Authorization Server Core
+    participant IdP as External IdP
+
+    User->>AuthServer: /oauth2/authorization/{provider}
+    AuthServer->>IdP: Redirect
+    IdP->>AuthServer: Authorization Code
+    AuthServer->>IdP: Token Exchange
+    AuthServer->>User: Authenticated Session

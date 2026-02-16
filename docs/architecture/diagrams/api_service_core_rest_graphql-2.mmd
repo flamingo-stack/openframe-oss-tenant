@@ -1,0 +1,4 @@
+flowchart LR
+    Gateway["Gateway Service Core"] -->|"Validates JWT"| ApiService["Api Service Core Rest Graphql"]
+    ApiService -->|"JwtIssuerAuthenticationManagerResolver"| Cache["Caffeine JWT Provider Cache"]
+    Cache --> Decoder["JwtDecoder per Issuer"]

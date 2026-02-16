@@ -1,0 +1,6 @@
+flowchart TD
+    AdminReq["Admin or Agent Request"] --> Controller["IntegrationController"]
+    Controller --> RestProxy["RestProxyService"]
+    RestProxy --> ToolUrl["Resolve Tool URL"]
+    ToolUrl --> ForwardReq["Forward HTTP Request"]
+    ForwardReq --> ToolBackend["Integrated Tool Backend"]

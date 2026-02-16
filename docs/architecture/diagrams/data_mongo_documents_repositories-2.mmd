@@ -1,0 +1,5 @@
+flowchart LR
+    MongoConfig["MongoConfig"] --> BlockingConfig["MongoConfiguration"]
+    MongoConfig --> ReactiveConfig["ReactiveMongoConfiguration"]
+    BlockingConfig --> Repositories["com.openframe.data.repository.*"]
+    ReactiveConfig --> ReactiveRepos["com.openframe.data.reactive.repository.*"]

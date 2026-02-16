@@ -1,0 +1,4 @@
+flowchart TD
+    ToolConnection["Tool Connection Event"] --> ToolTypeResolver["Resolve Tool Type"]
+    ToolTypeResolver --> Fleet["Fleet MDM Transformer"]
+    ToolTypeResolver --> Mesh["MeshCentral Transformer"]

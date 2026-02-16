@@ -1,0 +1,20 @@
+flowchart TD
+    App["ManagementApplication"] --> Config["ManagementConfiguration"]
+    App --> Initializers["Initializers"]
+    App --> Schedulers["Schedulers"]
+    App --> Controllers["Management Controllers"]
+
+    Initializers --> PinotInit["PinotConfigInitializer"]
+    Initializers --> NatsInit["NatsStreamConfigurationInitializer"]
+    Initializers --> AgentInit["IntegratedToolAgentInitializer"]
+    Initializers --> ClientInit["OpenFrameClientConfigurationInitializer"]
+    Initializers --> SecretInit["AgentRegistrationSecretInitializer"]
+    Initializers --> TacticalInit["TacticalRmmScriptsInitializer"]
+    Initializers --> DebeziumInit["DebeziumConnectorInitializer"]
+
+    Schedulers --> ApiKeySched["ApiKeyStatsSyncScheduler"]
+    Schedulers --> DebeziumSched["DebeziumHealthCheckScheduler"]
+    Schedulers --> FallbackSched["AgentVersionUpdatePublishFallbackScheduler"]
+
+    Controllers --> ToolCtrl["IntegratedToolController"]
+    Controllers --> ReleaseCtrl["ReleaseVersionController"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> Api["Api Service Core Rest Graphql"]
+    Api --> Authz["Authorization Server Core"]
+    Api --> Mongo["Data Mongo"]
+    Api --> Pinot["Pinot / Cassandra"]
+    Api --> Stream["Stream Processing Core"]

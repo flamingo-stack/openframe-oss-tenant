@@ -1,0 +1,6 @@
+flowchart LR
+    Devices["Query Devices"] --> Machine["Machine Nodes"]
+    Machine -->|"organizationId"| OrgLoader["OrganizationDataLoader"]
+    Machine -->|"machineId"| TagLoader["TagDataLoader"]
+    Machine -->|"machineId"| ToolLoader["ToolConnectionDataLoader"]
+    Machine -->|"machineId"| AgentLoader["InstalledAgentDataLoader"]

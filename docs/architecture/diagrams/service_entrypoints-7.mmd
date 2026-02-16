@@ -1,0 +1,17 @@
+flowchart TD
+    subgraph entrypoints["Service Entrypoints"]
+        ApiApp["API Service"]
+        AuthzApp["Authorization Server"]
+        GatewayApp["Gateway Service"]
+        ExternalApp["External API"]
+        ClientApp["Client Service"]
+        MgmtApp["Management Service"]
+        StreamApp["Stream Service"]
+        ConfigApp["Config Server"]
+    end
+
+    ApiApp --> Data["Data Modules"]
+    AuthzApp --> Security["Security Modules"]
+    StreamApp --> KafkaCore["Kafka Integration"]
+    MgmtApp --> Scheduling["Scheduling and Initialization"]
+    GatewayApp --> Security

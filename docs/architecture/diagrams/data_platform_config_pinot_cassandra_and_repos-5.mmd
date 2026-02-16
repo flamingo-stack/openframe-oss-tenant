@@ -1,0 +1,5 @@
+flowchart TD
+    SaveEvent["Mongo Repository Save"] --> EventService["MachineTagEventServiceImpl"]
+    EventService --> FetchData["Fetch Machine + Tags"]
+    FetchData --> BuildMsg["Build MachinePinotMessage"]
+    BuildMsg --> Publish["Kafka Publish"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Request --> Gateway
+    Gateway --> JwtValidation
+    JwtValidation --> TenantId
+    TenantId --> DownstreamServices

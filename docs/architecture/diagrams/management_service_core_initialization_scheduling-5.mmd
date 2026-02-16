@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant App as ManagementApplication
+    participant Init as Initializers
+    participant Sched as Schedulers
+    participant Ext as External Systems
+
+    App->>Init: Startup
+    Init->>Ext: Configure Pinot
+    Init->>Ext: Create NATS Streams
+    Init->>Ext: Sync Tactical Scripts
+    Init->>Ext: Initialize Debezium
+
+    App->>Sched: Enable Scheduled Jobs
+    Sched->>Ext: Health Checks & Syncs

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuth Bff Controller"
+    participant Service as "OAuth Bff Service"
+    participant Auth as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login
+    BFF->>Service: buildAuthorizeRedirect
+    Service->>Service: generate state + PKCE
+    BFF->>Browser: 302 Redirect to Auth
+    Auth->>Browser: Redirect with code + state
+    Browser->>BFF: GET /oauth/callback
+    BFF->>Service: handleCallback
+    Service->>Auth: Exchange code for tokens
+    BFF->>Browser: Set auth cookies + redirect

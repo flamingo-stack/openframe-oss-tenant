@@ -1,0 +1,14 @@
+flowchart TD
+    Client["Frontend / Gateway"] --> REST["REST Controllers"]
+    Client --> GQL["GraphQL DataFetchers"]
+
+    REST --> Services["Application Services"]
+    GQL --> Services
+
+    Services --> Processors["Processors (Hooks)"]
+    Services --> Repos["Repositories"]
+
+    Repos --> Mongo["Mongo Documents & Repositories"]
+    Services --> Pinot["Pinot / Analytics"]
+    Services --> Stream["Stream Processing Core"]
+    Services --> Authz["Authorization Server Core"]

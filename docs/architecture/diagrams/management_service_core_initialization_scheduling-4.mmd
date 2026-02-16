@@ -1,0 +1,5 @@
+flowchart TD
+    Tick["Scheduled Trigger"] --> CheckClient["Check Client PublishState"]
+    CheckClient --> RetryClient["Publish If Needed"]
+    Tick --> CheckAgents["Check Tool Agents"]
+    CheckAgents --> RetryAgents["Publish If Needed"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> ASChain["Authorization Server Filter Chain (Order 1)"]
+    Request --> DefaultChain["Default Security Filter Chain (Order 2)"]
+
+    ASChain --> OAuthEndpoints["/oauth2/*, /.well-known/*"]
+    DefaultChain --> AppEndpoints["/login, /password-reset, /tenant/*"]

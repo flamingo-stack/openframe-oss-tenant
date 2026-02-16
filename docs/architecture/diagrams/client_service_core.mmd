@@ -1,0 +1,23 @@
+flowchart TD
+    Agent["Machine Agent"] -->|"POST /api/agents/register"| AgentController["Agent Controller"]
+    Agent -->|"POST /oauth/token"| AgentAuthController["Agent Auth Controller"]
+
+    AgentController --> AgentRegistrationService["Agent Registration Service"]
+    AgentRegistrationService --> AgentRegistrationProcessor["Agent Registration Processor"]
+    AgentRegistrationService --> DeviceStore["Mongo Device Repository"]
+
+    AgentAuthController --> AgentAuthService["Agent Auth Service"]
+    AgentAuthService --> PasswordEncoder["BCrypt Password Encoder"]
+
+    Nats[("NATS JetStream")]
+    Nats --> InstalledAgentListener["Installed Agent Listener"]
+    Nats --> ToolConnectionListener["Tool Connection Listener"]
+    Nats --> MachineHeartbeatListener["Machine Heartbeat Listener"]
+    Nats --> ClientConnectionListener["Client Connection Listener"]
+
+    InstalledAgentListener --> InstalledAgentService["Installed Agent Service"]
+    ToolConnectionListener --> ToolConnectionService["Tool Connection Service"]
+    MachineHeartbeatListener --> MachineStatusService["Machine Status Service"]
+    ClientConnectionListener --> MachineStatusService
+
+    ToolConnectionService --> ToolAgentIdTransformer["Tool Agent ID Transformers"]

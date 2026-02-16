@@ -1,0 +1,5 @@
+flowchart TD
+    Listener["JsonKafkaListener"] --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Deserializer["IntegratedToolEventDeserializer"]
+    Deserializer --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> Handler["DebeziumMessageHandler"]

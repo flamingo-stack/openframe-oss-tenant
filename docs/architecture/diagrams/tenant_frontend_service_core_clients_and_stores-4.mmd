@@ -1,0 +1,6 @@
+flowchart TD
+    Mount["Component Mount"] --> CheckMe["Call /api/me"]
+    CheckMe --> Valid{"Authenticated?"}
+    Valid -->|Yes| StoreUser["Update Auth Store"]
+    Valid -->|No| Clear["Clear Tokens"]
+    StoreUser --> Periodic["Periodic Auth Check"]

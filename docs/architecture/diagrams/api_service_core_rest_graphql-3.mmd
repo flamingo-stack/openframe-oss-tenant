@@ -1,0 +1,6 @@
+flowchart TD
+    Query["GraphQL Query"] --> DataFetcher["DgsDataFetcher"]
+    DataFetcher --> Mapper["GraphQL Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Repository Layer"]
+    DataFetcher --> DataLoader["Batch DataLoader"]

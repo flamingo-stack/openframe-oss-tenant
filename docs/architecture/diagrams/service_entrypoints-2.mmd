@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Start"] --> Boot["Spring Boot Auto Configuration"]
+    Boot --> Scan["Component Scan: api, data, core"]
+    Scan --> InitSecurity["Security Configuration"]
+    Scan --> InitControllers["REST and GraphQL Controllers"]
+    Scan --> InitKafka["Kafka Producers"]
+    InitControllers --> Ready["API Ready"]

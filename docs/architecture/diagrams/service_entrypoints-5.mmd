@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Application Startup"] --> Init["Initializers"]
+    Init --> Schedulers["Scheduled Jobs"]
+    Schedulers --> Health["Health Checks"]
+    Schedulers --> Sync["Stats and Version Sync"]

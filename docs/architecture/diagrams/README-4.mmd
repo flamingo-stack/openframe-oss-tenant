@@ -1,0 +1,6 @@
+flowchart LR
+    ExternalClient --> Gateway
+    Gateway --> ExternalAPI
+    ExternalAPI --> DomainServices
+    DomainServices --> Mongo
+    DomainServices --> Pinot

@@ -1,0 +1,6 @@
+flowchart LR
+    Event["DeserializedDebeziumMessage"] --> CacheLookup["MachineIdCacheService"]
+    CacheLookup --> MachineInfo["CachedMachineInfo"]
+    CacheLookup --> OrgInfo["CachedOrganizationInfo"]
+    MachineInfo --> Enriched["IntegratedToolEnrichedData"]
+    OrgInfo --> Enriched

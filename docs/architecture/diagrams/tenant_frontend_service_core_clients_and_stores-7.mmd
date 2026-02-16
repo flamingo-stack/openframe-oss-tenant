@@ -1,0 +1,7 @@
+flowchart LR
+    Frontend["Tenant Frontend"] --> Clients["Clients & Stores Layer"]
+    Clients --> Gateway["Gateway Service"]
+    Gateway --> API["API Service"]
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Tools["Fleet / Tactical"]
+    Gateway --> Chat["Chat Service"]

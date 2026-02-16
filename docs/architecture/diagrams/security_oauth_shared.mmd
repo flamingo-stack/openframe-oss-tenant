@@ -1,0 +1,12 @@
+flowchart TD
+    Frontend["Frontend Application"] -->|"/oauth/login"| BffController["OAuth Bff Controller"]
+    BffController -->|"build authorize URL"| OAuthService["OAuth Bff Service"]
+    OAuthService -->|"PKCE + state"| PKCE["PKCE Utils"]
+    OAuthService -->|"redirect"| AuthServer["Authorization Server"]
+
+    AuthServer -->|"code + state"| BffController
+    BffController -->|"exchange code"| OAuthService
+    OAuthService -->|"issue tokens"| JwtEncoder["JWT Encoder"]
+
+    JwtEncoder -->|"signed token"| Frontend
+    JwtDecoder["JWT Decoder"] -->|"verify token"| Downstream["Gateway / API Services"]

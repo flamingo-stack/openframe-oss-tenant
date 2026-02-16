@@ -1,0 +1,12 @@
+flowchart TD
+    ExtReq["/external-api/** Request"] --> HeaderCheck["Check X-API-Key Header"]
+    HeaderCheck --> Validate["ApiKeyValidationService.validateApiKey()"]
+    Validate --> Valid{"Valid?"}
+
+    Valid -->|No| Unauthorized["Return 401"]
+    Valid -->|Yes| RateCheck["RateLimitService.isAllowed()"]
+
+    RateCheck --> Allowed{"Allowed?"}
+    Allowed -->|No| TooMany["Return 429"]
+    Allowed -->|Yes| AddHeaders["Add Rate Limit Headers"]
+    AddHeaders --> Forward["Forward to External API"]

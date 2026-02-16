@@ -1,0 +1,4 @@
+flowchart TD
+    HttpRequest["HTTP Request"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> ThreadLocal["TenantContext ThreadLocal"]
+    ThreadLocal --> Services["UserService, TokenCustomizer, KeyService"]

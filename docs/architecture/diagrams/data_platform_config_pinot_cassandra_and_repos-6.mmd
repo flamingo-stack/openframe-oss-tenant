@@ -1,0 +1,13 @@
+flowchart LR
+    MongoDB[("MongoDB")]
+    Cassandra[("Cassandra")]
+    Kafka[("Kafka")]
+    Pinot[("Pinot")]
+
+    MongoDB --> EventService
+    EventService --> Kafka
+    Kafka --> StreamProcessing["Stream Processing Core"]
+    StreamProcessing --> Pinot
+
+    ApiService --> Pinot
+    ApiService --> Cassandra

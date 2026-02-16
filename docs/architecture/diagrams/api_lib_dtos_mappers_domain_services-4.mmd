@@ -1,0 +1,5 @@
+flowchart TD
+    Request["GraphQL Request"] --> DataLoader
+    DataLoader --> Service["InstalledAgentService"]
+    Service --> Repository["InstalledAgentRepository"]
+    Repository --> Database[("MongoDB")]

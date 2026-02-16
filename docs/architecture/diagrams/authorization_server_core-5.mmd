@@ -1,0 +1,8 @@
+flowchart TD
+    OAuthFlow["OAuth2 Flow"] --> Save["MongoAuthorizationService.save()"]
+    Save --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> MongoEntity["MongoOAuth2Authorization"]
+    MongoEntity --> MongoDB
+
+    MongoDB --> Load["findByToken()"]
+    Load --> Domain["OAuth2Authorization Domain Object"]

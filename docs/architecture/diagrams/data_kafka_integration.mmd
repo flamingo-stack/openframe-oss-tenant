@@ -1,0 +1,5 @@
+flowchart TD
+    Services["Application Services<br/>Stream / Management / Client"] --> KafkaIntegration["Data Kafka Integration"]
+    KafkaIntegration --> KafkaCluster[("Kafka Cluster")]
+    KafkaCluster --> Downstream["Stream Processing Core"]
+    KafkaCluster --> Analytics["Data Platform (Pinot / Cassandra)"]

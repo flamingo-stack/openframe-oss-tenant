@@ -1,0 +1,5 @@
+flowchart TD
+    IncomingMsg["Realtime Message"] --> Exists{"Already Exists?"}
+    Exists -->|Yes| Ignore["Ignore"]
+    Exists -->|No| AppendOrMerge["Append or Merge Text"]
+    AppendOrMerge --> UpdateState["Update Store"]

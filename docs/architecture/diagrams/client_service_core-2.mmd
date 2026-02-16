@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Registration Request"] --> ValidateKey["Validate X-Initial-Key"]
+    ValidateKey --> CreateOrUpdate["Create or Update Machine"]
+    CreateOrUpdate --> PostProcess["Agent Registration Processor"]
+    PostProcess --> Response["Agent Registration Response"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Incoming["Streaming Segments"] --> Accumulator["MessageSegmentAccumulator"]
+    Accumulator --> Processed["Processed Segments"]
+    Processed --> StoreUpdate["Update MingoMessagesStore"]
+    StoreUpdate --> UI["Re-render UI"]

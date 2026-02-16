@@ -1,0 +1,5 @@
+flowchart LR
+    User["User"] --> AuthHook["useAuth"]
+    AuthHook --> AuthClient["AuthApiClient"]
+    AuthClient --> OAuth["/oauth/* Endpoints"]
+    AuthClient --> SAS["/sas/* Endpoints"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Frontend"] --> GQL["GraphQL DataFetcher"]
+    GQL --> Service["Domain Service"]
+    Service --> Repo["Mongo / Pinot"]
+    GQL --> DataLoader["Batch DataLoader"]

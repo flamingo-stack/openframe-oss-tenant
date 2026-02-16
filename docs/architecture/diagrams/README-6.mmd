@@ -1,0 +1,6 @@
+flowchart TD
+    Kafka --> Listener
+    Listener --> Deserialize
+    Deserialize --> Enrich
+    Enrich --> PersistCassandra
+    Enrich --> PublishKafka

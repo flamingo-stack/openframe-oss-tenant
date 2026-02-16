@@ -1,0 +1,5 @@
+flowchart TD
+    Accept["GET /invitations/accept/sso"] --> SetCookie["Set SSO Invite Cookie"]
+    SetCookie --> OAuthRedirect["Redirect to OAuth2"]
+    OAuthRedirect --> InviteHandler["InviteSsoHandler"]
+    InviteHandler --> UserCreation["InvitationRegistrationService"]

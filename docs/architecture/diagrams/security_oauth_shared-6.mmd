@@ -1,0 +1,5 @@
+flowchart LR
+    Tokens["Token Response"] --> Cookies["Auth Cookies"]
+    Cookies --> Browser
+    Browser -->|"subsequent requests"| Gateway
+    Gateway -->|"JWT validation"| JwtDecoder

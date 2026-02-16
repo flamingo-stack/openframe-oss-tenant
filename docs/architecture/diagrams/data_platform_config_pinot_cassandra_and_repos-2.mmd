@@ -1,0 +1,14 @@
+flowchart TD
+    AppStart["Application Start"] --> KeyspaceNorm["CassandraKeyspaceNormalizer"]
+    KeyspaceNorm --> CassandraCfg["CassandraConfig"]
+    CassandraCfg --> EnsureKS["Ensure Keyspace Exists"]
+    EnsureKS --> SessionInit["CqlSessionFactoryBean"]
+
+    AppStart --> PinotCfg["PinotConfig"]
+    PinotCfg --> BrokerConn["Broker Connection"]
+    PinotCfg --> ControllerConn["Controller Connection"]
+
+    BrokerConn --> DeviceRepo["PinotClientDeviceRepository"]
+    BrokerConn --> LogRepo["PinotClientLogRepository"]
+
+    MachineEvent["MachineTagEventServiceImpl"] --> KafkaPub["Kafka Producer"]

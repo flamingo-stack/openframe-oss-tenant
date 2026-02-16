@@ -1,0 +1,8 @@
+flowchart TD
+    AppService["Application Service"] --> Repo["Repository Interface"]
+    Repo --> CustomImpl["Custom Repository Implementation"]
+    Repo --> SpringData["Spring Data Mongo Repository"]
+    CustomImpl --> MongoTemplate["MongoTemplate"]
+    SpringData --> MongoDriver["MongoDB Driver"]
+    MongoTemplate --> MongoDriver
+    MongoDriver --> MongoDB[("MongoDB")]

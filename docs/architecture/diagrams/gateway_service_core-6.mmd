@@ -1,0 +1,7 @@
+flowchart TD
+    Incoming["Incoming HTTP/WebSocket Request"] --> Origin["OriginSanitizerFilter"]
+    Origin --> AddAuthHeader["AddAuthorizationHeaderFilter"]
+    AddAuthHeader --> ApiKeyFilter["ApiKeyAuthenticationFilter (if external-api)"]
+    ApiKeyFilter --> JwtAuth["JWT Resource Server"]
+    JwtAuth --> Route["Spring Cloud Gateway Routing"]
+    Route --> Backend["Downstream Service or Tool"]

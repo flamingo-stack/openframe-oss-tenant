@@ -1,0 +1,5 @@
+flowchart TD
+    Kafka["Kafka Topic"] --> Listener["Kafka Listener"]
+    Listener --> Deserialize["Event Deserializer"]
+    Deserialize --> Enrich["Activity Enrichment"]
+    Enrich --> Persist["Persist to Data Stores"]

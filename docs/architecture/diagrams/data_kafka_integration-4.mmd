@@ -1,0 +1,4 @@
+flowchart LR
+    Service["Application Service"] --> Template["KafkaTemplate<String, Object>"]
+    Template --> ProducerFactory["ProducerFactory"]
+    ProducerFactory --> Kafka[("Kafka Cluster")]

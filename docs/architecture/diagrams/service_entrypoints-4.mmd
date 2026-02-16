@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> AuthFilter["JWT or API Key Filter"]
+    AuthFilter --> RateLimit["Rate Limiter"]
+    RateLimit --> Route["Route to Target Service"]
+    Route --> Response["Return Response"]

@@ -1,0 +1,28 @@
+flowchart TD
+    Frontend["Tenant Frontend (React)"] --> Gateway["Gateway Service"]
+
+    Gateway --> Authz["Authorization Server"]
+    Gateway --> Api["API Service (REST + GraphQL)"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> Management["Management Service"]
+
+    ExternalClients["External Integrations"] --> Gateway
+    Agents["Machine Agents"] --> Gateway
+
+    Api --> Mongo["MongoDB"]
+    Api --> Pinot["Pinot Analytics"]
+    Api --> Kafka["Kafka"]
+
+    Stream["Stream Processing Service"] --> Kafka
+    Stream --> Cassandra["Cassandra"]
+    Stream --> Pinot
+
+    Management --> Kafka
+    Management --> Pinot
+    Management --> Mongo
+
+    ClientService --> Kafka
+
+    Authz --> Mongo
+    Authz --> Jwt["Tenant RSA Keys"]

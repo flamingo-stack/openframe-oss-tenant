@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Boot"] --> EnableKafka["@EnableKafka"]
+    EnableKafka --> DisableDefault["Exclude KafkaAutoConfiguration"]
+    DisableDefault --> LoadProps["Load OssTenantKafkaProperties"]
+    LoadProps --> CreateFactories["Create Producer & Consumer Factories"]
+    CreateFactories --> CreateTemplate["Create KafkaTemplate"]
+    CreateTemplate --> Ready["Kafka Ready"]

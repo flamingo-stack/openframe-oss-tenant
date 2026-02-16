@@ -1,0 +1,4 @@
+flowchart TD
+    Listener["@KafkaListener"] --> ContainerFactory["ConcurrentKafkaListenerContainerFactory"]
+    ContainerFactory --> ConsumerFactory["ConsumerFactory"]
+    ConsumerFactory --> Kafka[("Kafka Cluster")]

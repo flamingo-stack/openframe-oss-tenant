@@ -1,0 +1,4 @@
+flowchart TD
+    Service["Domain Service"] --> Processor["Processor Interface"]
+    Processor --> DefaultImpl["Default Implementation"]
+    Processor --> CustomImpl["Custom Bean (Optional)"]

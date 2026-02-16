@@ -1,0 +1,19 @@
+flowchart LR
+    Client["Frontend / Agents / External Systems"] --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> Authz["Authorization Server"]
+
+    Api --> Mongo[("MongoDB")]
+    Api --> Kafka[("Kafka")]
+
+    Stream["Stream Service"] --> Kafka
+    Stream --> Pinot[("Pinot")]
+    Stream --> Cassandra[("Cassandra")]
+
+    Management["Management Service"] --> Mongo
+    ClientService["Client Service"] --> Kafka
+
+    Config["Config Server"] -.-> Gateway
+    Config -.-> Api
+    Config -.-> Stream

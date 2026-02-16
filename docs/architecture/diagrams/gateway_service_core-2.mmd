@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Incoming Request"] --> AddAuth["AddAuthorizationHeaderFilter"]
+    AddAuth --> JwtResolver["JwtIssuerAuthenticationManagerResolver"]
+    JwtResolver --> Cache["Issuer Managers Cache (Caffeine)"]
+    Cache --> Decoder["Reactive JWT Decoder"]
+    Decoder --> Validator["Issuer & Default Validators"]
+    Validator --> Authenticated["Security Context Established"]

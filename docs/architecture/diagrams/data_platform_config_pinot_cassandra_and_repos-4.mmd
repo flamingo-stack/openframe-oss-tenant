@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Log Query Request"] --> QueryBuilder["PinotQueryBuilder"]
+    QueryBuilder --> SQL["Generated SQL"]
+    SQL --> Execute["Pinot Broker Execute"]
+    Execute --> MapResult["Map ResultSet to Projection"]
+    MapResult --> Response["Return List"]

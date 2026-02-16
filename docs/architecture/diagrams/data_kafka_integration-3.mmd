@@ -1,0 +1,5 @@
+flowchart TD
+    Config["KafkaTopicProperties"] --> Iterate["Iterate inbound topics"]
+    Iterate --> Validate["Validate topic name"]
+    Validate --> Build["Build NewTopic"]
+    Build --> Register["Register via KafkaAdmin"]

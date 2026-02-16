@@ -1,0 +1,5 @@
+flowchart LR
+    Gateway["Gateway Service"] --> ExternalApi["External Api Service Core"]
+    ExternalApi --> CoreApi["Api Service Core"]
+    ExternalApi --> DataLayer["Mongo / Pinot / Kafka"]
+    ExternalApi --> Tools["Integrated Tools"]

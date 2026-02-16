@@ -1,0 +1,7 @@
+flowchart LR
+    Nats[("NATS")]
+
+    Nats -->|"machine.*.installed-agent"| InstalledAgentListener
+    Nats -->|"machine.*.tool-connection"| ToolConnectionListener
+    Nats -->|"machine.*.heartbeat"| MachineHeartbeatListener
+    Nats -->|"machine.*.connected/disconnected"| ClientConnectionListener

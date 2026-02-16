@@ -1,0 +1,5 @@
+flowchart LR
+    DataLayer["Data Layer<br/>Mongo Repositories"] --> DomainServices["Domain Services"]
+    DomainServices --> Mappers["Mappers"]
+    Mappers --> Dtos["DTOs"]
+    Dtos --> ApiLayer["REST & GraphQL APIs"]

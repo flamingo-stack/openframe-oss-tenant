@@ -1,0 +1,8 @@
+flowchart TD
+    Request["API Request"] --> ResponseCheck["Response 401?"]
+    ResponseCheck -->|No| Return["Return Response"]
+    ResponseCheck -->|Yes| Refresh["Refresh Access Token"]
+    Refresh --> Success{"Refresh Success?"}
+    Success -->|Yes| Retry["Retry Original Request"]
+    Success -->|No| Logout["Force Logout"]
+    Retry --> Return

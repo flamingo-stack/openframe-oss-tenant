@@ -1,0 +1,19 @@
+classDiagram
+    class User {
+        String id
+        String email
+        List roles
+        boolean emailVerified
+        UserStatus status
+        createdAt
+        updatedAt
+    }
+
+    class AuthUser {
+        String tenantId
+        String passwordHash
+        String loginProvider
+        Instant lastLogin
+    }
+
+    User <|-- AuthUser

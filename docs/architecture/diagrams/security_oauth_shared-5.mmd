@@ -1,0 +1,5 @@
+flowchart TD
+    Requested["Requested Redirect"] -->|"if present"| Target
+    Requested -->|"missing"| Referer["HTTP Referer"]
+    Referer -->|"if present"| Target
+    Referer -->|"missing"| Root["/"]
