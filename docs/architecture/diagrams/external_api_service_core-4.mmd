@@ -1,0 +1,13 @@
+flowchart TD
+    Request["Incoming Proxy Request"]
+    FindTool["Lookup IntegratedTool"]
+    ResolveURL["Resolve ToolUrl"]
+    BuildHeaders["Inject Credentials"]
+    Execute["Execute HTTP Request"]
+    Return["Return ResponseEntity"]
+
+    Request --> FindTool
+    FindTool --> ResolveURL
+    ResolveURL --> BuildHeaders
+    BuildHeaders --> Execute
+    Execute --> Return

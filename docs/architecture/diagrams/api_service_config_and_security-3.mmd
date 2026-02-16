@@ -1,0 +1,13 @@
+flowchart TD
+    Start["Application Startup"] --> ReadEnv["Read OAuth properties"]
+    ReadEnv --> Lookup["Find client by ID"]
+
+    Lookup -->|"Exists"| Compare["Compare client secret"]
+    Compare -->|"Different"| Update["Update secret"]
+    Compare -->|"Same"| Skip["No change"]
+
+    Lookup -->|"Not found"| Create["Create new OAuth client"]
+
+    Update --> Finish["Initialization Complete"]
+    Skip --> Finish
+    Create --> Finish

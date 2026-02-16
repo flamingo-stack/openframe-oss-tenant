@@ -1,0 +1,11 @@
+flowchart TD
+    AppLayer["Application Services"] --> EmailService["EmailService Interface"]
+
+    EmailService --> HubspotImpl["HubspotApiEmailService"]
+    EmailService --> SmtpImpl["SmtpEmailService"]
+
+    HubspotImpl --> HubspotAPI["HubSpot Marketing API"]
+    SmtpImpl --> SmtpServer["SMTP Server"]
+
+    Config["Spring Configuration Properties"] --> HubspotImpl
+    Config --> SmtpImpl

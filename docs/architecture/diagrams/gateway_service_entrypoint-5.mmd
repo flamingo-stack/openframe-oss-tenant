@@ -1,0 +1,4 @@
+flowchart LR
+    Internet["Internet"] --> LB["Load Balancer"]
+    LB --> Gateway["Gateway Service"]
+    Gateway --> Internal["Internal Microservices"]

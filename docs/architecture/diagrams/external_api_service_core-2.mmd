@@ -1,0 +1,14 @@
+flowchart TD
+    Devices["DeviceController"]
+    Events["EventController"]
+    Logs["LogController"]
+    Orgs["OrganizationController"]
+    Tools["ToolController"]
+    Integration["IntegrationController"]
+
+    Devices --> DeviceService["DeviceService"]
+    Events --> EventService["EventService"]
+    Logs --> LogService["LogService"]
+    Orgs --> OrganizationServices["Organization Services"]
+    Tools --> ToolService["ToolService"]
+    Integration --> RestProxy["RestProxyService"]

@@ -1,0 +1,10 @@
+flowchart TD
+    Frontend["Frontend / Clients"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["Api Service"]
+    Gateway --> ExternalApi["External API Service"]
+
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    ExternalApi --> Contracts
+
+    Contracts --> Domain["Domain Services"]
+    Domain --> Persistence["Mongo / Pinot / Cassandra"]

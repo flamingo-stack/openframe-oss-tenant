@@ -1,0 +1,8 @@
+flowchart TD
+    ServiceLayer["Platform Services"] -->|"uses"| PageResponse["PageResponse<T>"]
+    ServiceLayer -->|"uses"| SlugUtil["SlugUtil"]
+    ServiceLayer -->|"uses"| ValidEmailValidator["ValidEmailValidator"]
+
+    PageResponse -->|"standardizes"| PaginationContract["Pagination Contract"]
+    SlugUtil -->|"normalizes"| SlugValues["URL Safe Slugs"]
+    ValidEmailValidator -->|"validates"| EmailInput["Email Inputs"]

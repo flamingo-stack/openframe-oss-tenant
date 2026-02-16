@@ -1,0 +1,4 @@
+flowchart LR
+    DomainService["Domain Service"] --> ProcessorInterface["Processor Interface"]
+    ProcessorInterface --> DefaultImpl["Default Implementation"]
+    ProcessorInterface --> CustomImpl["Custom Tenant Implementation"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Services["Service Layer\n(API, Auth Server, Management)"] --> Repos["Mongo Repositories"]
+    Repos --> CustomImpl["Custom Repository Implementations"]
+    CustomImpl --> Template["MongoTemplate"]
+    Repos --> ReactiveRepos["Reactive Repositories"]
+    Template --> MongoDB[("MongoDB")]
+    ReactiveRepos --> MongoDB

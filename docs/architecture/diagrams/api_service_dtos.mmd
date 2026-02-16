@@ -1,0 +1,9 @@
+flowchart LR
+    Client["Client Applications"] -->|"HTTP / GraphQL"| Controllers["API Controllers"]
+    Controllers -->|"Uses"| Dtos["Api Service Dtos"]
+    Controllers -->|"Delegates to"| Domain["Domain Services"]
+    Domain -->|"Maps to"| Persistence["Data Persistence"]
+
+    Dtos -->|"Input validation"| Controllers
+    Domain -->|"Returns domain models"| Controllers
+    Controllers -->|"Maps to response DTOs"| Dtos

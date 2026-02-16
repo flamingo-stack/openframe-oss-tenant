@@ -1,0 +1,6 @@
+flowchart LR
+    Entry["Client Service Entrypoint"] --> Core["Client Service Core"]
+    Entry --> Mongo["Mongo Data Module"]
+    Entry --> Kafka["Kafka Transport Module"]
+    Entry --> Security["Shared Security Module"]
+    Entry --> CoreUtils["Shared Core Utilities"]

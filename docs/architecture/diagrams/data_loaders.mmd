@@ -1,0 +1,11 @@
+flowchart TD
+    Client["GraphQL Client"] -->|"Query"| DataFetcher["Data Fetcher"]
+    DataFetcher -->|"load(keys)"| DataLoader["Data Loader"]
+    DataLoader -->|"Batch Request"| Service["Domain Service"]
+    Service -->|"Query"| Repository["Mongo Repository"]
+    Repository --> Database["MongoDB"]
+    Database --> Repository
+    Repository --> Service
+    Service --> DataLoader
+    DataLoader --> DataFetcher
+    DataFetcher --> Client

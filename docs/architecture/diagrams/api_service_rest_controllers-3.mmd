@@ -1,0 +1,5 @@
+flowchart TD
+    User["Authenticated User"] --> ApiKeyController
+    ApiKeyController --> ApiKeyService
+    ApiKeyService --> ApiKeyRepository["Mongo Repository"]
+    ApiKeyService --> Crypto["Key Generator / Hasher"]

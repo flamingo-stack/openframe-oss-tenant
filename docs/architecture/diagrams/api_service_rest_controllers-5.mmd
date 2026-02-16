@@ -1,0 +1,9 @@
+flowchart TD
+    Admin["Admin Action"] --> ForceAgentController
+    ForceAgentController --> InstallationService["ForceToolInstallationService"]
+    ForceAgentController --> UpdateService["ForceToolAgentUpdateService"]
+    ForceAgentController --> ClientService["ForceClientUpdateService"]
+
+    InstallationService --> EventBus["Kafka / Messaging"]
+    UpdateService --> EventBus
+    ClientService --> EventBus

@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Agent
+    participant Controller as AgentController
+    participant Service as AgentRegistrationService
+    participant Processor as AgentRegistrationProcessor
+    participant DB as MongoDB
+
+    Agent->>Controller: POST /api/agents/register
+    Controller->>Service: register(initialKey, request)
+    Service->>Processor: postProcessAgentRegistration()
+    Service->>DB: Persist Machine
+    DB-->>Service: Machine saved
+    Service-->>Controller: AgentRegistrationResponse
+    Controller-->>Agent: 200 OK

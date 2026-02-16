@@ -1,0 +1,9 @@
+flowchart TD
+    Query["logs query"] --> Mapper["GraphQLLogMapper"]
+    Mapper --> FilterOptions["LogFilterOptions"]
+    Mapper --> PaginationCriteria["CursorPaginationCriteria"]
+    FilterOptions --> Service["LogService.queryLogs()"]
+    PaginationCriteria --> Service
+    Service --> Result["Query Result"]
+    Result --> Mapper
+    Mapper --> Connection["GenericConnection"]

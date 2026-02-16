@@ -1,0 +1,6 @@
+flowchart TD
+    Issue["Issue Authorization Code"] --> Map["Map to Mongo Entity"]
+    Map --> Save[("MongoOAuth2Authorization")]
+    Save --> Load["Load for Token Exchange"]
+    Load --> Rehydrate["Rebuild OAuth2Authorization"]
+    Rehydrate --> ValidatePKCE["Validate code_challenge"]

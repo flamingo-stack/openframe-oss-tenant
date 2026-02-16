@@ -1,0 +1,9 @@
+flowchart TD
+    MainMethod["main() method"] --> SpringRun["SpringApplication.run()"]
+    SpringRun --> ComponentScan["Component Scanning"]
+    ComponentScan --> ManagementBeans["Management Beans"]
+    ComponentScan --> DataBeans["Data Beans"]
+    ComponentScan --> CoreBeans["Core Utilities"]
+    ManagementBeans --> Initializers["Initializers"]
+    ManagementBeans --> Schedulers["Schedulers"]
+    ManagementBeans --> Controllers["Controllers"]

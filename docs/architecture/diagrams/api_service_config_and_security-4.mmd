@@ -1,0 +1,5 @@
+flowchart LR
+    Client["GraphQL Client"] -->|"Date or Instant string"| Parser["Scalar Coercing"]
+    Parser -->|"Validated Java Time Object"| DataFetcher["Data Fetcher"]
+    DataFetcher -->|"LocalDate or Instant"| Serializer["Scalar Serialize"]
+    Serializer --> Client

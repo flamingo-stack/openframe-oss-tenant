@@ -1,0 +1,6 @@
+flowchart TD
+    Producers["External Systems / CDC / Agents"] --> Kafka["Kafka Cluster"]
+    Kafka --> StreamService["Stream Service Entrypoint"]
+    StreamService --> Processing["Stream Processing Core"]
+    Processing --> DataStores["Mongo / Cassandra / Pinot"]
+    Processing --> Downstream["Analytics / Other Services"]

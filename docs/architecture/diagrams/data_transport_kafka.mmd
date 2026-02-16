@@ -1,0 +1,9 @@
+flowchart LR
+    MongoDB["MongoDB"] -->|"CDC via Debezium"| KafkaCluster["Kafka Cluster"]
+    ManagementService["Management Service"] -->|"Publishes Events"| KafkaCluster
+    ClientService["Client Service"] -->|"Publishes Metrics"| KafkaCluster
+
+    KafkaCluster -->|"Consumes"| StreamProcessing["Stream Processing Core"]
+    KafkaCluster -->|"Consumes"| AnalyticsLayer["Pinot / Cassandra"]
+
+    DataTransportKafka["Data Transport Kafka Module"] -.->|"Provides Config & Models"| KafkaCluster

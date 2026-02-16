@@ -1,0 +1,5 @@
+flowchart TD
+    AppStart["Application Start"] --> Provider["DebugModeProvider Mount"]
+    Provider --> InvokeCmd["invoke get_debug_mode"]
+    InvokeCmd --> Success["Set debugMode state"]
+    InvokeCmd --> Error["Fallback to false"]

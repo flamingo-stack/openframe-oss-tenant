@@ -1,0 +1,4 @@
+flowchart TD
+    Save["Machine or Tag Save"] --> Fetch["Fetch Machine + Tags"]
+    Fetch --> Build["Build MachinePinotMessage"]
+    Build --> Publish["OssTenantRetryingKafkaProducer.publish"]

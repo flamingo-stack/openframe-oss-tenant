@@ -1,0 +1,21 @@
+flowchart TD
+    Agent["Client Agent"] -->|"POST /api/agents/register"| AgentController["AgentController"]
+    Agent -->|"POST /oauth/token"| AgentAuthController["AgentAuthController"]
+
+    AgentController --> AgentRegistrationService["AgentRegistrationService"]
+    AgentRegistrationService --> Processor["AgentRegistrationProcessor"]
+    Processor --> Mongo["MongoDB Persistence"]
+
+    Nats["NATS JetStream"] --> HeartbeatListener["MachineHeartbeatListener"]
+    Nats --> InstalledAgentListener["InstalledAgentListener"]
+    Nats --> ToolConnectionListener["ToolConnectionListener"]
+    Nats --> ConnectionListener["ClientConnectionListener"]
+
+    HeartbeatListener --> MachineStatusService["MachineStatusService"]
+    InstalledAgentListener --> InstalledAgentService["InstalledAgentService"]
+    ToolConnectionListener --> ToolConnectionService["ToolConnectionService"]
+    ConnectionListener --> MachineStatusService
+
+    AgentController --> Transformer["ToolAgentIdTransformer"]
+    Transformer --> FleetTransformer["FleetMdmAgentIdTransformer"]
+    Transformer --> MeshTransformer["MeshCentralAgentIdTransformer"]

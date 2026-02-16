@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Fetcher
+    participant DataLoader
+    participant Repository
+
+    Client->>Fetcher: Query devices with tags
+    Fetcher->>DataLoader: load(machineId1)
+    Fetcher->>DataLoader: load(machineId2)
+    DataLoader->>Repository: batchLoad([id1, id2])
+    Repository-->>DataLoader: Results
+    DataLoader-->>Fetcher: Individual tag lists

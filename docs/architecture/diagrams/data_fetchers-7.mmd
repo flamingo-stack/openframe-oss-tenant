@@ -1,0 +1,9 @@
+flowchart TD
+    Query["organizations query"] --> Mapper["GraphQLOrganizationMapper"]
+    Mapper --> FilterOptions["OrganizationFilterOptions"]
+    Mapper --> PaginationCriteria["CursorPaginationCriteria"]
+    FilterOptions --> Service["OrganizationQueryService.queryOrganizations()"]
+    PaginationCriteria --> Service
+    Service --> Result["CountedGenericQueryResult"]
+    Result --> Mapper
+    Mapper --> Connection["CountedGenericConnection"]

@@ -1,0 +1,7 @@
+flowchart LR
+    Mongo["MongoDB"] --> Aspect["AOP Aspect"]
+    Aspect --> Service["MachineTagEventServiceImpl"]
+    Service --> Kafka["Kafka"]
+    Kafka --> Stream["Stream Service"]
+    Stream --> Pinot["Pinot Tables"]
+    Pinot --> Api["API Queries"]

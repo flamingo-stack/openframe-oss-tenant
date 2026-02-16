@@ -1,0 +1,9 @@
+flowchart TD
+    ConfigServerApp["Config Server Application"] --> SpringContext["Spring Boot Context"]
+    SpringContext --> ConfigCore["Config Service Core"]
+
+    ApiService["API Service"] -->|"Fetch Config"| ConfigServerApp
+    GatewayService["Gateway Service"] -->|"Fetch Config"| ConfigServerApp
+    AuthService["Authorization Server"] -->|"Fetch Config"| ConfigServerApp
+    ManagementService["Management Service"] -->|"Fetch Config"| ConfigServerApp
+    StreamService["Stream Service"] -->|"Fetch Config"| ConfigServerApp

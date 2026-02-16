@@ -1,0 +1,7 @@
+flowchart TD
+    LoadCall["loadSupportedModels()"] --> AlreadyLoaded["isLoaded?"]
+    AlreadyLoaded -->|"Yes"| Exit["Return Immediately"]
+    AlreadyLoaded -->|"No"| Fetch["Fetch from REST API"]
+    Fetch --> Parse["Parse Provider Groups"]
+    Parse --> Cache["Store in Map by modelName"]
+    Cache --> MarkLoaded["Set isLoaded true"]

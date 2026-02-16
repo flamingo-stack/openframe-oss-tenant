@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant BFF
+    participant AuthServer
+
+    User->>Gateway: /oauth/login
+    Gateway->>BFF: OAuth BFF flow
+    BFF->>AuthServer: Authorization Code + PKCE
+    AuthServer-->>BFF: Tokens
+    BFF-->>User: Secure Cookies

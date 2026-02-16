@@ -1,0 +1,5 @@
+flowchart LR
+    Admin["Admin User"] -->|"Configure SSO"| SSORequest["SSOConfigRequest"]
+    SSORequest --> Service["SSOConfigService"]
+    Service --> Response["SSOConfigResponse"]
+    Response --> Admin

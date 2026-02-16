@@ -1,0 +1,5 @@
+flowchart LR
+    Admin["Admin"] --> Command["Force*Request DTO"]
+    Command --> Controller["Controller"]
+    Controller --> Service["Domain Service"]
+    Service --> Messaging["Stream / Kafka"]

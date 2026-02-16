@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Startup"] --> LoadTool["Load Tactical Tool Config"]
+    LoadTool --> Fetch["Fetch Existing Scripts"]
+    Fetch --> Process["Process Script Config"]
+    Process --> Exists{"Script Exists?"}
+    Exists -->|No| Create["Create Script"]
+    Exists -->|Yes| Update["Update Script"]

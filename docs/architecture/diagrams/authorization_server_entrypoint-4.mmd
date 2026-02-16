@@ -1,0 +1,7 @@
+flowchart TD
+    Gateway["Gateway Service"] --> AuthServer["Authorization Server"]
+    ApiService["API Service"] --> AuthServer
+    ExternalApi["External API Service"] --> AuthServer
+
+    AuthServer --> Mongo["MongoDB"]
+    AuthServer --> Redis["Redis"]

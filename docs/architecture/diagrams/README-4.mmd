@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Agent
+    participant ClientService
+    participant NATS
+    participant Mongo
+
+    Agent->>ClientService: Register
+    ClientService->>Mongo: Save machine
+    Agent->>NATS: Heartbeat
+    NATS->>ClientService: Heartbeat event
+    ClientService->>Mongo: Update status

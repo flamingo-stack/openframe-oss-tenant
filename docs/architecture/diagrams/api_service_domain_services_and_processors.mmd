@@ -1,0 +1,10 @@
+flowchart TD
+    Controllers["REST Controllers"] --> DomainServices["Domain Services"]
+    GraphQL["GraphQL Data Fetchers"] --> DomainServices
+
+    DomainServices --> Repositories["Mongo Repositories"]
+    DomainServices --> Mappers["DTO Mappers"]
+    DomainServices --> Processors["Domain Processors"]
+    DomainServices --> InfraServices["Encryption & Validation Services"]
+
+    Repositories --> Mongo[("MongoDB")]

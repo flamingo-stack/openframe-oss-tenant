@@ -1,0 +1,5 @@
+flowchart TD
+    Request["POST /v1/tools/{id}"] --> Save["Save Tool"]
+    Save --> Debezium["Create/Update Debezium Connectors"]
+    Debezium --> Hooks["Execute Post Save Hooks"]
+    Hooks --> Response["Return Success"]

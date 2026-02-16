@@ -1,0 +1,5 @@
+flowchart LR
+    Builder["PinotQueryBuilder"] --> SQL["Generated Query"]
+    SQL --> Execute["Connection.execute"]
+    Execute --> Result["ResultSet"]
+    Result --> Projection["LogProjection Mapping"]

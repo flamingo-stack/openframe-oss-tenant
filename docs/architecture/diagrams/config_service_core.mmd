@@ -1,0 +1,7 @@
+flowchart TD
+    ClientService["Platform Services<br/>API, Gateway, Auth, etc."] -->|"fetch configuration"| ConfigServer["Config Service Core"]
+    ConfigServer -->|"reads from configured backend"| ConfigBackend[("Git / File System / Vault")]
+
+    AdminOrAgent["Agent or External Client"] -->|"GET /logging/{filename}"| LoggingController["LoggingConfigController"]
+    LoggingController -->|"load resource"| ClasspathLogging[("classpath:logging/*")]
+    LoggingController -->|"return XML"| AdminOrAgent

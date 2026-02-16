@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Filter["Tenant Context Filter"]
+    Filter -->|"Extract tenant from path /{tenant}/..."| Resolve["Resolve Tenant ID"]
+    Resolve --> Context["TenantContext.setTenantId()"]
+    Context --> App["Authorization + Security Layers"]
+    App --> Clear["TenantContext.clear()"]

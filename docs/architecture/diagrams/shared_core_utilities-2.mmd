@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Controller
+    participant Service
+    participant Repository
+
+    Client->>Controller: GET /users?page=0&size=20
+    Controller->>Service: fetchUsers(page, size)
+    Service->>Repository: query pageable data
+    Repository-->>Service: Page<User>
+    Service-->>Controller: PageResponse<User>
+    Controller-->>Client: JSON response

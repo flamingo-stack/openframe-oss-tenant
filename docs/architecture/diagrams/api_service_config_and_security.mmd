@@ -1,0 +1,15 @@
+flowchart LR
+    Client["Client Application"] --> Gateway["Gateway Service"]
+    Gateway -->|"Forward request with Authorization header"| ApiService["API Service"]
+
+    subgraph api_config["Api Service Config And Security"]
+        SecurityConfig["SecurityConfig"]
+        AuthConfig["AuthenticationConfig"]
+        Scalars["GraphQL Scalars"]
+        DataInit["DataInitializer"]
+    end
+
+    ApiService --> SecurityConfig
+    ApiService --> AuthConfig
+    ApiService --> Scalars
+    ApiService --> DataInit

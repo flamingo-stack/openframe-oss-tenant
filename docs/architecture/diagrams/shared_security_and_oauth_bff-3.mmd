@@ -1,0 +1,4 @@
+flowchart LR
+    JwtConfigNode["JwtConfig"] -->|"Load RSA Keys"| JwtSecurityConfigNode["JwtSecurityConfig"]
+    JwtSecurityConfigNode --> Encoder["NimbusJwtEncoder"]
+    JwtSecurityConfigNode --> Decoder["NimbusJwtDecoder"]

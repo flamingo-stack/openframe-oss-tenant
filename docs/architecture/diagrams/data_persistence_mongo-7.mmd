@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Request with cursor"] --> Parse["Parse ObjectId"]
+    Parse --> AddCriteria["Add _id < or >"]
+    AddCriteria --> Limit["Apply limit"]
+    Limit --> Sort["Apply sort field + _id fallback"]
+    Sort --> Result["Return page"]

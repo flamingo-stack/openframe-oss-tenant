@@ -1,0 +1,3 @@
+flowchart LR
+    DF["Device Data Fetcher"] -->|"machineIds"| TCDL["ToolConnectionDataLoader"]
+    TCDL -->|"getToolConnectionsForMachines()"| TCS["ToolConnectionService"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Input["List of Organization IDs"] --> FilterNulls["Remove null values"]
+    FilterNulls --> Deduplicate["Convert to Set"]
+    Deduplicate --> Query["Batch Query Repository"]
+    Query --> MapResults["Map by organizationId"]
+    MapResults --> Reorder["Return in original order"]

@@ -1,0 +1,4 @@
+flowchart LR
+    StreamService["Stream Service Entrypoint"] --> StreamPkg["com.openframe.stream"]
+    StreamService --> DataPkg["com.openframe.data"]
+    StreamService --> KafkaPkg["com.openframe.kafka.producer"]

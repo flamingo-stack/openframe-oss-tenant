@@ -1,0 +1,8 @@
+flowchart TD
+    JWKS["JWKS Request"] --> GetTenant["Resolve Tenant ID"]
+    GetTenant --> CheckKey["Find Active TenantKey"]
+    CheckKey -->|"Not Found"| Generate["Generate RSA Key Pair"]
+    Generate --> Store["Store Encrypted Private Key"]
+    CheckKey --> Build["Build RSAKey with kid"]
+    Store --> Build
+    Build --> Return["Return JWKSet"]

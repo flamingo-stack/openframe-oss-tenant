@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant JVM
+    participant ApiApplication
+    participant SpringBoot
+    participant Context
+
+    JVM->>ApiApplication: main(args)
+    ApiApplication->>SpringBoot: run()
+    SpringBoot->>Context: Initialize ApplicationContext
+    Context->>Context: Scan Components
+    Context->>Context: Create Beans
+    Context->>Context: Apply Security Config
+    Context->>Context: Start Embedded Server

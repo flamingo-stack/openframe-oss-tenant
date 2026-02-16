@@ -1,0 +1,6 @@
+flowchart LR
+    Entrypoint["External Api Service Entrypoint"] --> ExternalCore["External Api Service Core"]
+    Entrypoint --> DataMongo["Mongo Persistence"]
+    Entrypoint --> DataPlatform["Pinot & Cassandra"]
+    Entrypoint --> KafkaIntegration["Kafka Transport"]
+    Entrypoint --> SharedCore["Shared Core Utilities"]

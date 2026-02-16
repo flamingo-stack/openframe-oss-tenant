@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Frontend / External Client"] --> Gateway["Gateway Service Entrypoint"]
+    Gateway --> Core["Gateway Service Core"]
+    Core --> Api["API Service"]
+    Core --> Auth["Authorization Server"]
+    Core --> External["External API Service"]
+    Core --> ClientSvc["Client Service"]
+    Core --> Stream["Stream Service"]

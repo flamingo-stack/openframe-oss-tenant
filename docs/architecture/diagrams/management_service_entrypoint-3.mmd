@@ -1,0 +1,10 @@
+flowchart TD
+    Entrypoint["Management Service Entrypoint"] --> ManagementPkg["com.openframe.management"]
+    Entrypoint --> DataPkg["com.openframe.data"]
+    Entrypoint --> CorePkg["com.openframe.core"]
+
+    DataPkg --> MongoLayer["Mongo Repositories"]
+    DataPkg --> KafkaLayer["Kafka Integration"]
+    DataPkg --> PinotLayer["Pinot Integration"]
+
+    Entrypoint -. "exclude" .-> CassandraHealth["CassandraHealthIndicator"]

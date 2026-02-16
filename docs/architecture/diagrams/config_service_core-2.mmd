@@ -1,0 +1,4 @@
+flowchart LR
+    ApplicationStart["Application Startup"] --> EnableConfig["@EnableConfigServer"]
+    EnableConfig --> RegisterEndpoints["Register Config Endpoints"]
+    RegisterEndpoints --> ServeProperties["Serve application-{profile}.yml"]

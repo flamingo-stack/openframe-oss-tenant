@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant AuthServer as "Authorization Server Core"
+    participant Provider as "OIDC Provider"
+
+    Browser->>AuthServer: GET /oauth/register/sso
+    AuthServer->>Browser: Set of_sso_reg cookie
+    Browser->>Provider: Authenticate
+    Provider->>AuthServer: Return ID token
+    AuthServer->>AuthServer: Create Tenant + User
+    AuthServer->>Browser: Redirect to tenant context

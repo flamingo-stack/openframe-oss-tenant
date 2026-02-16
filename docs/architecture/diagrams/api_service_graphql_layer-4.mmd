@@ -1,0 +1,6 @@
+flowchart TD
+    Input["GraphQL Input"] --> Mapper["GraphQL Mapper"]
+    Mapper --> FilterOptions["Filter Options"]
+    FilterOptions --> Service["Domain Service"]
+    Service --> Result["Query Result"]
+    Result --> Connection["Connection Mapping"]

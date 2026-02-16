@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant JVM
+    participant SpringBoot
+    participant GatewayApp
+    participant Context
+    participant Filters
+
+    JVM->>SpringBoot: Launch main()
+    SpringBoot->>GatewayApp: Initialize Application
+    GatewayApp->>Context: Component Scan
+    Context->>Filters: Register Security & Proxy Filters
+    Context->>Context: Auto-configure Beans
+    SpringBoot->>JVM: Start Embedded Server

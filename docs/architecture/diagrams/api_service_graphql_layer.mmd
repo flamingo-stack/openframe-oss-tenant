@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Frontend / Gateway"] -->|"GraphQL Query"| GraphQL["Api Service Graphql Layer"]
+    GraphQL -->|"Calls"| Domain["Domain Services"]
+    Domain -->|"Uses"| Repos["Mongo Repositories"]
+    GraphQL -->|"Uses"| Loaders["DataLoaders"]
+    Loaders -->|"Batch Fetch"| Repos

@@ -1,0 +1,16 @@
+sequenceDiagram
+    participant Kafka
+    participant Listener
+    participant Deserializer
+    participant Mapper
+    participant Enrichment
+    participant Handler
+    participant Destination
+
+    Kafka->>Listener: Debezium CDC Event
+    Listener->>Deserializer: route by MessageType
+    Deserializer->>Mapper: sourceEventType
+    Mapper->>Deserializer: UnifiedEventType
+    Deserializer->>Enrichment: agentId
+    Enrichment->>Handler: Enriched Data
+    Handler->>Destination: Kafka or Cassandra

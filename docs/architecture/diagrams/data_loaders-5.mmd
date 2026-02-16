@@ -1,0 +1,3 @@
+flowchart LR
+    DF["Device Data Fetcher"] -->|"machineIds"| TDL["TagDataLoader"]
+    TDL -->|"getTagsForMachines()"| TS["TagService"]

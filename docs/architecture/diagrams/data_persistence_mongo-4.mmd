@@ -1,0 +1,8 @@
+flowchart TD
+    Root["Mongo Documents"] --> UserDoc["User & AuthUser"]
+    Root --> OrgDoc["Organization"]
+    Root --> DeviceDoc["Device & MachineTag"]
+    Root --> EventDoc["CoreEvent & ExternalApplicationEvent"]
+    Root --> OAuthDoc["OAuthToken & MongoRegisteredClient"]
+    Root --> ToolDoc["Tag & ToolAgentAsset"]
+    Root --> TenantDoc["SSOPerTenantConfig"]

@@ -1,0 +1,4 @@
+flowchart LR
+    DF["Device Data Fetcher"] -->|"organizationIds"| ODL["OrganizationDataLoader"]
+    ODL -->|"findByOrganizationIdIn()"| OR["OrganizationRepository"]
+    OR --> DB["MongoDB"]

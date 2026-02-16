@@ -1,0 +1,6 @@
+flowchart LR
+    Properties["OssTenantKafkaProperties"] --> ProducerFactory
+    Properties --> ConsumerFactory
+    ProducerFactory --> KafkaTemplate
+    ConsumerFactory --> ListenerFactory["KafkaListenerContainerFactory"]
+    KafkaTemplate --> OssProducer["OssTenantKafkaProducer"]

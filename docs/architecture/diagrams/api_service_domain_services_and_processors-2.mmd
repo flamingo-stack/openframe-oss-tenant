@@ -1,0 +1,8 @@
+flowchart TD
+    Request["User Delete Request"] --> Service["UserService.softDeleteUser()"]
+    Service --> SelfCheck["Check self delete"]
+    Service --> OwnerCheck["Check OWNER role"]
+    Service --> StatusUpdate["Set status = DELETED"]
+    StatusUpdate --> Save["UserRepository.save()"]
+    Save --> Processor["UserProcessor.postProcessUserDeleted()"]
+    Processor --> End["End"]

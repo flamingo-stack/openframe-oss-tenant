@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant DF as Data Fetcher
+    participant DL as Data Loader
+    participant S as Service
+    participant R as Repository
+
+    DF->>DL: load(keys)
+    DL->>S: batch request
+    S->>R: query by keys
+    R-->>S: results
+    S-->>DL: mapped results
+    DL-->>DF: ordered response

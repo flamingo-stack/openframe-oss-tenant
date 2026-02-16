@@ -1,0 +1,26 @@
+flowchart TD
+    User["Frontend / Admin UI"] --> Gateway["Gateway Service"]
+
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientSvc["Client Service"]
+    Gateway --> StreamSvc["Stream Service"]
+    Gateway --> ManagementSvc["Management Service"]
+
+    Auth --> Mongo["MongoDB"]
+    Api --> Mongo
+    ExternalApi --> Mongo
+    ClientSvc --> Mongo
+    ManagementSvc --> Mongo
+
+    ClientSvc --> NATS["NATS JetStream"]
+    ManagementSvc --> NATS
+
+    Mongo --> Kafka["Kafka"]
+    Kafka --> StreamSvc
+    StreamSvc --> Pinot["Apache Pinot"]
+    StreamSvc --> Cassandra["Cassandra"]
+
+    Api --> Redis["Redis Cache"]
+    Gateway --> Redis

@@ -1,0 +1,9 @@
+flowchart TD
+    MongoConfig --> MongoConfiguration["MongoConfiguration"]
+    MongoConfig --> ReactiveMongoConfiguration["ReactiveMongoConfiguration"]
+
+    MongoConfiguration --> EnableRepos["@EnableMongoRepositories"]
+    MongoConfiguration --> Auditing["@EnableMongoAuditing"]
+    MongoConfiguration --> Converter["MappingMongoConverter"]
+
+    ReactiveMongoConfiguration --> EnableReactive["@EnableReactiveMongoRepositories"]

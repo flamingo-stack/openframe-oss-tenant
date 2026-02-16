@@ -1,0 +1,11 @@
+flowchart TD
+    Admin["Admin Request"] --> Service["SSOConfigService.upsertConfig()"]
+    Service --> Validate["validateAutoProvision()"]
+    Validate --> Normalize["Normalize Domains"]
+    Validate --> DomainCheck["DomainValidationService"]
+
+    Service --> Encrypt["EncryptionService"]
+    Encrypt --> Save["SSOConfigRepository.save()"]
+
+    Save --> Processor["SSOConfigProcessor.postProcessConfigSaved()"]
+    Processor --> End["End"]

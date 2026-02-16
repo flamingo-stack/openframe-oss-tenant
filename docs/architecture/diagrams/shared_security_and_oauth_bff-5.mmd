@@ -1,0 +1,4 @@
+flowchart TD
+    Verifier["Code Verifier"] --> Hash["SHA-256"]
+    Hash --> Encode["Base64URL"]
+    Encode --> Challenge["Code Challenge"]

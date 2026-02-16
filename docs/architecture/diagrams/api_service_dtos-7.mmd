@@ -1,0 +1,6 @@
+flowchart TD
+    Edge["GenericEdge<T>"] --> Node["Node"]
+    Edge --> Cursor["Cursor"]
+
+    Connection["CountedGenericConnection<T>"] --> Edge
+    Connection --> Count["filteredCount"]

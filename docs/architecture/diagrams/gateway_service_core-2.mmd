@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming Request"] --> OriginFilter["OriginSanitizerFilter"]
+    OriginFilter --> AddAuthHeader["AddAuthorizationHeaderFilter"]
+    AddAuthHeader --> ApiKeyFilter["ApiKeyAuthenticationFilter"]
+    ApiKeyFilter --> JwtResolver["JwtIssuerReactiveAuthenticationManagerResolver"]
+    JwtResolver --> JwtManager["ReactiveAuthenticationManager"]
+    JwtManager --> Authz["Role-Based Authorization Rules"]
+    Authz --> Routed["Routed to Downstream Service"]

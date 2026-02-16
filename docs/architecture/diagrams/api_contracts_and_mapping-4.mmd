@@ -1,0 +1,5 @@
+flowchart TD
+    RawData["Device Collection"] --> Aggregate["Aggregation Query"]
+    Aggregate --> Options["DeviceFilterOptions"]
+    Aggregate --> Filters["DeviceFilters with counts"]
+    Filters --> UI["Filter Sidebar"]

@@ -1,0 +1,4 @@
+flowchart LR
+    BFF["OAuth BFF"] -->|"createTicket"| DevStore["InMemory Store"]
+    Browser["Browser"] -->|"/oauth/dev-exchange"| BFF
+    BFF -->|"consumeTicket"| DevStore

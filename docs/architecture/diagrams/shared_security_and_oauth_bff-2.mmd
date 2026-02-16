@@ -1,0 +1,12 @@
+flowchart TD
+    JwtConfigNode["JwtConfig"] --> JwtSecurityConfigNode["JwtSecurityConfig"]
+    JwtSecurityConfigNode --> JwtEncoder["JwtEncoder Bean"]
+    JwtSecurityConfigNode --> JwtDecoder["JwtDecoder Bean"]
+
+    OAuthController["OAuthBffController"] --> OAuthService["OAuthBffService"]
+    OAuthController --> DevTicketStore["OAuthDevTicketStore"]
+    OAuthController --> CookieServiceNode["CookieService"]
+
+    PKCE["PKCEUtils"] --> OAuthService
+    RedirectResolver["DefaultRedirectTargetResolver"] --> OAuthService
+    ForwardedHeaders["ForwardedHeadersContributor"] --> OAuthService

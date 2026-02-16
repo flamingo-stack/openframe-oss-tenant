@@ -1,0 +1,4 @@
+flowchart LR
+    Client --> MeController
+    MeController --> SecurityContext["AuthPrincipal"]
+    SecurityContext --> MeController

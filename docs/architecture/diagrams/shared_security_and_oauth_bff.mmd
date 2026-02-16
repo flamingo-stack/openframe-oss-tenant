@@ -1,0 +1,9 @@
+flowchart LR
+    Frontend["Frontend Application"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"Authorize Redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"code + state"| BFF
+    BFF -->|"Set Auth Cookies"| Frontend
+
+    BFF -->|"JWT Encode/Decode"| JwtLayer["JWT Security Config"]
+    BFF -->|"PKCE + State"| Pkce["PKCE Utils"]
+    BFF -->|"Dev Ticket"| DevStore["OAuth Dev Ticket Store"]

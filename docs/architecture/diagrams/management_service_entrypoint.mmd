@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend Clients"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    Gateway --> ManagementService["Management Service"]
+    Gateway --> ExternalApi["External API Service"]
+
+    ManagementService --> Mongo["MongoDB"]
+    ManagementService --> Kafka["Kafka"]
+    ManagementService --> Redis["Redis"]
+    ManagementService --> Pinot["Pinot"]

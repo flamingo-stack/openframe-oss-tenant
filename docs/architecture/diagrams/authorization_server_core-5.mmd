@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant AuthServer as "Authorization Server Core"
+    participant Provider as "OIDC Provider"
+
+    Browser->>AuthServer: GET /login
+    Browser->>AuthServer: GET /oauth2/authorization/google
+    AuthServer->>Provider: Redirect to provider
+    Provider->>AuthServer: Return ID token + code
+    AuthServer->>AuthServer: Validate issuer + claims
+    AuthServer->>AuthServer: Auto-provision if needed
+    AuthServer->>Browser: Redirect with session

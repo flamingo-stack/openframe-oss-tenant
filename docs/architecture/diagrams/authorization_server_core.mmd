@@ -1,0 +1,11 @@
+flowchart TD
+    Browser["Browser / SPA Client"] -->|"OAuth2 / OIDC"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"Uses"| SecurityCfg["Security Configuration"]
+    AuthServer -->|"Uses"| TenantLayer["Tenant Context Layer"]
+    AuthServer -->|"Uses"| KeyService["Tenant Key Service"]
+    AuthServer -->|"Uses"| AuthzService["Mongo Authorization Service"]
+    AuthServer -->|"Uses"| ClientRepo["Registered Client Repository"]
+
+    KeyService --> MongoKeys[("MongoDB TenantKey")]
+    AuthzService --> MongoAuth[("MongoDB OAuth2Authorization")]
+    ClientRepo --> MongoClients[("MongoDB RegisteredClient")]

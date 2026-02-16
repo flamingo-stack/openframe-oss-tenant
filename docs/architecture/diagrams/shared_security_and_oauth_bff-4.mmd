@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuth BFF"
+    participant Auth as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login
+    BFF->>Auth: Redirect with code_challenge + state
+    Auth->>Browser: Redirect to /oauth/callback
+    Browser->>BFF: GET /oauth/callback?code=...&state=...
+    BFF->>Auth: Token Exchange
+    BFF->>Browser: Set-Cookie access_token + refresh_token

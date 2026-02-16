@@ -1,0 +1,19 @@
+flowchart TD
+    ExternalClients["External Clients"] -->|"HTTP REST"| ExternalApiService["External Api Service"]
+
+    subgraph ExternalApiRuntime["External Api Runtime"]
+        Controllers["External Controllers"]
+        Dtos["External DTOs"]
+        RestProxyService["RestProxy Service"]
+    end
+
+    ExternalApiService --> Controllers
+    Controllers --> RestProxyService
+    Controllers --> Dtos
+
+    RestProxyService --> DataLayer["Shared Data Layer"]
+    RestProxyService --> KafkaLayer["Kafka Integration"]
+
+    DataLayer --> Mongo["MongoDB"]
+    DataLayer --> Pinot["Pinot"]
+    DataLayer --> Cassandra["Cassandra"]

@@ -1,0 +1,7 @@
+flowchart TD
+    SharedCore["Shared Core Utilities"]
+
+    ApiService["API Service"] --> SharedCore
+    ExternalApi["External API Service"] --> SharedCore
+    ManagementService["Management Service"] --> SharedCore
+    AuthServer["Authorization Server"] --> SharedCore

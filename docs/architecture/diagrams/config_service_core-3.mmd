@@ -1,0 +1,9 @@
+flowchart TD
+    Request["GET /logging/{filename}"] --> LogDebug["Log request"]
+    LogDebug --> LoadResource["Load classpath:logging/{filename}"]
+    LoadResource --> Exists{"Resource exists?"}
+    Exists -->|"No"| NotFound["Return 404"]
+    Exists -->|"Yes"| ReadContent["Read XML content"]
+    ReadContent --> BuildUrl["Construct server URL from request"]
+    BuildUrl --> ReplaceRefs["Replace resource= with url="]
+    ReplaceRefs --> ReturnXml["Return modified XML"]

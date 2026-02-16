@@ -1,0 +1,7 @@
+flowchart TD
+    Call["getDialogMessages(dialogId)"] --> EnsureAuth["tokenService.ensureTokenReady()"]
+    EnsureAuth --> InitClient["Initialize GraphQLClient"]
+    InitClient --> Query["Execute GetAllMessages Query"]
+    Query --> HasNext["hasNextPage?"]
+    HasNext -->|"Yes"| NextCursor["Update Cursor and Repeat"]
+    HasNext -->|"No"| ReturnAll["Return Aggregated Messages"]

@@ -1,0 +1,4 @@
+flowchart LR
+    DF["Device Data Fetcher"] -->|"machineIds"| IADL["InstalledAgentDataLoader"]
+    IADL -->|"getInstalledAgentsForMachines()"| IAS["InstalledAgentService"]
+    IAS --> Repo["InstalledAgent Repository"]

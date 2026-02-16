@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service as HubspotApiEmailService
+    participant HubSpot as HubSpot API
+
+    Service->>Service: Build link from template
+    Service->>Service: Create JSON payload
+    Service->>HubSpot: POST /marketing/v4/email/single-send
+    HubSpot-->>Service: 2xx or error response
+    Service->>Service: Log result or throw error

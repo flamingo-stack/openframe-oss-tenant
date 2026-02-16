@@ -1,0 +1,9 @@
+flowchart TD
+    Query["events query"] --> Mapper["GraphQLEventMapper"]
+    Mapper --> FilterOptions["EventFilterOptions"]
+    Mapper --> PaginationCriteria["CursorPaginationCriteria"]
+    FilterOptions --> Service["EventService.queryEvents()"]
+    PaginationCriteria --> Service
+    Service --> Result["GenericQueryResult"]
+    Result --> Mapper
+    Mapper --> Connection["GenericConnection"]

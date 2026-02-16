@@ -1,0 +1,4 @@
+flowchart TD
+    Mutation["createEvent"] --> Builder["Event.builder()"]
+    Builder --> Service["EventService.createEvent()"]
+    Service --> Persisted["Event Document"]

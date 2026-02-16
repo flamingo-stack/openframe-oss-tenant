@@ -1,0 +1,4 @@
+flowchart LR
+    Entrypoint["Config Service Entrypoint"] -->|"Bootstraps"| CoreModule["Config Service Core"]
+    CoreModule --> LoggingController["Logging Config Controller"]
+    CoreModule --> ServerConfiguration["Config Server Configuration"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Input["CursorPaginationInput"] --> Criteria["CursorPaginationCriteria"]
+    Criteria --> Service["Query Service"]
+    Service --> QueryResult["GenericQueryResult"]
+    QueryResult --> Connection["GenericConnection or CountedGenericConnection"]

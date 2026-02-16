@@ -1,0 +1,6 @@
+flowchart TD
+    API["API Layer"] --> Repo["Custom Repository"]
+    Repo --> BuildQuery["Build Query from Filter"]
+    BuildQuery --> ApplyCursor["Apply Cursor Criteria"]
+    ApplyCursor --> ApplySort["Apply Sorting"]
+    ApplySort --> Execute["MongoTemplate.find()"]

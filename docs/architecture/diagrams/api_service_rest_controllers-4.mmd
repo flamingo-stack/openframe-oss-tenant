@@ -1,0 +1,4 @@
+flowchart LR
+    InternalService["Internal System"] --> DeviceController
+    DeviceController --> DeviceService
+    DeviceService --> DeviceDocument["Device Document (Mongo)"]

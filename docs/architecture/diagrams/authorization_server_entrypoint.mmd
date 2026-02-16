@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Client Applications"] --> AuthServer["Authorization Server Entrypoint"]
+
+    AuthServer --> Core["Authorization Server Core"]
+    AuthServer --> DataLayer["Data Persistence Mongo"]
+    AuthServer --> CacheLayer["Redis Cache"]
+    AuthServer --> MailLayer["Notification Mail"]
+    AuthServer --> SharedSecurity["Shared Security And OAuth BFF"]

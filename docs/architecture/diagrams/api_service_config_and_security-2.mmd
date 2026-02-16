@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> JwtFilter["OAuth2 Resource Server"]
+    JwtFilter --> Principal["AuthPrincipal"]
+    Principal --> Resolver["AuthPrincipalArgumentResolver"]
+    Resolver --> Controller["Controller Method Parameter"]

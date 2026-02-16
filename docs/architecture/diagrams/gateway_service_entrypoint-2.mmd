@@ -1,0 +1,10 @@
+flowchart TD
+    App["GatewayApplication"] --> ScanGateway["com.openframe.gateway"]
+    App --> ScanCore["com.openframe.core"]
+    App --> ScanData["com.openframe.data"]
+    App --> ScanSecurity["com.openframe.security"]
+
+    ScanGateway --> GatewayCore["Gateway Service Core Beans"]
+    ScanSecurity --> SharedSecurity["JWT & OAuth Security"]
+    ScanData --> DataLayer["Mongo / Redis Config"]
+    ScanCore --> Utilities["Shared Core Utilities"]

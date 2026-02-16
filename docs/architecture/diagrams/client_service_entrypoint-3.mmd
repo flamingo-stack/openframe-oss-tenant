@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant JVM
+    participant ClientApplication
+    participant SpringContext
+    participant Beans
+
+    JVM->>ClientApplication: main()
+    ClientApplication->>SpringContext: SpringApplication.run()
+    SpringContext->>SpringContext: Auto-configuration
+    SpringContext->>Beans: Component scanning
+    Beans-->>SpringContext: Bean registration complete
+    SpringContext-->>JVM: Application started

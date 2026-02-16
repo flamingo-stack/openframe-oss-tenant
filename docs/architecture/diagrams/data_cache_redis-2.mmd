@@ -1,0 +1,5 @@
+flowchart LR
+    Service["Service Method"] -->|"@Cacheable"| CacheAbstraction["Spring Cache"]
+    CacheAbstraction --> CacheManager["RedisCacheManager"]
+    CacheManager --> PrefixBuilder["OpenframeRedisKeyBuilder"]
+    CacheManager --> Redis[("Redis")]

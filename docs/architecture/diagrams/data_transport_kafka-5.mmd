@@ -1,0 +1,4 @@
+flowchart TD
+    MachineUpdate["Machine / Tag Update"] --> KafkaMessage["MachinePinotMessage"]
+    KafkaMessage --> KafkaCluster["Kafka Topic"]
+    KafkaCluster --> PinotConsumer["Pinot Consumer"]

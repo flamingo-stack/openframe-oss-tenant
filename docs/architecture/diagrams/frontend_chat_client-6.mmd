@@ -1,0 +1,7 @@
+flowchart TD
+    User["User Opens Chat"] --> InitToken["TokenService Initializes"]
+    InitToken --> InitUrl["API URL Initialized"]
+    InitUrl --> LoadModels["SupportedModelsService.loadSupportedModels()"]
+    LoadModels --> LoadDialog["DialogGraphQLService.getResumableDialog()"]
+    LoadDialog --> LoadMessages["DialogGraphQLService.getDialogMessages()"]
+    LoadMessages --> Render["UI Renders Message History"]

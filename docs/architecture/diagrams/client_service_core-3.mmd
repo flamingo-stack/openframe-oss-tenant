@@ -1,0 +1,5 @@
+flowchart LR
+    NatsMsg["InstalledAgentMessage"] --> Extract["Extract machineId"]
+    Extract --> Parse["Deserialize JSON"]
+    Parse --> Service["InstalledAgentService.addInstalledAgent()"]
+    Service --> Ack["message.ack()"]

@@ -1,0 +1,6 @@
+flowchart TD
+    MainClass["StreamApplication"] -->|"Bootstraps"| SpringContext["Spring Application Context"]
+    SpringContext -->|"Scans"| StreamCore["Stream Processing Core"]
+    SpringContext -->|"Imports"| DataModules["Shared Data Modules"]
+    SpringContext -->|"Enables"| KafkaInfra["Kafka Infrastructure"]
+    KafkaInfra -->|"Consumes"| KafkaTopics["Kafka Topics"]

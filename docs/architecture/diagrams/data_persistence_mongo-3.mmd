@@ -1,0 +1,3 @@
+flowchart LR
+    Init["@PostConstruct initIndexes()"] --> EventsIdx1["application_events\nuserId + timestamp"]
+    Init --> EventsIdx2["application_events\ntype + metadata.tags"]

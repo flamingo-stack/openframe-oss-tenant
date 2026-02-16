@@ -1,0 +1,6 @@
+flowchart TD
+    Admin["Admin User"] --> Gateway
+    Gateway --> IntegrationController
+    IntegrationController --> IntegrationService
+    IntegrationController --> RestProxyService
+    RestProxyService --> ToolBackend

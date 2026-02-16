@@ -1,0 +1,7 @@
+flowchart TD
+    Frontend["Frontend Clients"] --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service"]
+    ApiService --> GraphQLLayer["GraphQL Layer"]
+    GraphQLLayer --> DataFetchers["Data Fetchers"]
+    DataFetchers --> DomainServices["Domain Services"]
+    DomainServices --> DataLayer["Mongo / Pinot / Cassandra"]

@@ -1,0 +1,13 @@
+flowchart LR
+    Browser["Frontend / Admin UI"] --> Gateway["Gateway Service Core"]
+    Agent["Tool Agent / Client"] --> Gateway
+    ExternalClient["External API Consumer"] --> Gateway
+
+    Gateway --> ApiService["API Service"]
+    Gateway --> ExternalApiService["External API Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> ToolBackend["Integrated Tool Backend"]
+    Gateway --> NatsWs["NATS WebSocket"]
+
+    Gateway --> AuthServer["Authorization Server"]
+    Gateway --> Mongo["Mongo (Tenants / API Keys)"]

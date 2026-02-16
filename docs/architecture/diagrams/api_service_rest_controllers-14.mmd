@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Admin
+    participant Gateway
+    participant Controller as ForceAgentController
+    participant Service as ForceToolAgentUpdateService
+    participant Kafka
+    participant Agent
+
+    Admin->>Gateway: POST /force/tool-agent/update/all
+    Gateway->>Controller: Forward request
+    Controller->>Service: processAll(toolAgentId)
+    Service->>Kafka: Publish update command
+    Kafka->>Agent: Deliver update event
+    Controller-->>Admin: 200 OK

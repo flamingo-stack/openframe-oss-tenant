@@ -1,0 +1,4 @@
+flowchart LR
+    Query["Filtered Query"] --> Result["GenericQueryResult<T>"]
+    Result --> Counted["CountedGenericQueryResult<T>"]
+    Counted --> Client["Client UI"]

@@ -1,0 +1,5 @@
+flowchart TD
+    ConfigChange["Config or Agent Version Change"] --> Publish["Publisher"]
+    Publish --> Stream["NATS Stream"]
+    Stream --> Client["Client Service"]
+    Client --> Agent["Machine Agent"]

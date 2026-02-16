@@ -1,0 +1,4 @@
+flowchart TD
+    Input["Email Field Input"] --> Validator["ValidEmailValidator"]
+    Validator -->|"matches regex"| Valid["Valid"]
+    Validator -->|"does not match"| Invalid["Constraint Violation"]

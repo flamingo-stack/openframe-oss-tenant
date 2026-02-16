@@ -1,0 +1,9 @@
+flowchart TD
+    UIRequest["Service Needs Token"] --> CheckToken["Token Available?"]
+    CheckToken -->|"Yes"| UseToken["Use Current Token"]
+    CheckToken -->|"No"| InvokeToken["invoke get_token"]
+    InvokeToken --> SetToken["Store Token and Notify Listeners"]
+
+    UIRequest --> CheckApiUrl["API URL Available?"]
+    CheckApiUrl -->|"No"| InvokeUrl["invoke get_server_url"]
+    InvokeUrl --> SetUrl["Store API Base URL"]

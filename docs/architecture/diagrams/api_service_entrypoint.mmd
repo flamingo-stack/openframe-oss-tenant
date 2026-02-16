@@ -1,0 +1,25 @@
+flowchart TD
+    ApiApp["Api Service Entrypoint"]
+    Config["Api Service Config And Security"]
+    RestLayer["Api Service Rest Controllers"]
+    GraphQL["Api Service GraphQL Layer"]
+    Domain["Api Service Domain Services And Processors"]
+    DTOs["Api Service Dtos"]
+    Contracts["Api Contracts And Mapping"]
+    Data["Data Persistence Mongo"]
+    Cache["Data Cache Redis"]
+    Platform["Data Platform And Pinot Cassandra"]
+    Kafka["Data Transport Kafka"]
+    Security["Shared Security And OAuth Bff"]
+
+    ApiApp --> Config
+    ApiApp --> RestLayer
+    ApiApp --> GraphQL
+    ApiApp --> Domain
+    ApiApp --> DTOs
+    ApiApp --> Contracts
+    ApiApp --> Data
+    ApiApp --> Cache
+    ApiApp --> Platform
+    ApiApp --> Kafka
+    ApiApp --> Security

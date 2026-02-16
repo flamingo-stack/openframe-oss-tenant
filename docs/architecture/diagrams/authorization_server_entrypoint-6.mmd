@@ -1,0 +1,5 @@
+flowchart TD
+    User["User Or External Client"] --> Gateway
+    Gateway --> AuthServer["Authorization Server"]
+    AuthServer --> ApiService["API Service"]
+    ApiService --> DataStores["Platform Data Stores"]

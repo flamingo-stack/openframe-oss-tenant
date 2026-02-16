@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Mongo
+    participant Aspect
+    participant Kafka
+    participant Stream
+    participant Pinot
+
+    Mongo->>Aspect: Machine saved
+    Aspect->>Kafka: MachinePinotMessage
+    Kafka->>Stream: Consume
+    Stream->>Pinot: Update analytics table

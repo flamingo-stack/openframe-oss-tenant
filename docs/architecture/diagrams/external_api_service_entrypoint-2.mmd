@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant JVM
+    participant SpringBoot
+    participant ExternalApiApplication
+    participant ApplicationContext
+    participant Controllers
+    participant DataRepositories
+
+    JVM->>SpringBoot: Start Application
+    SpringBoot->>ExternalApiApplication: Invoke main()
+    ExternalApiApplication->>ApplicationContext: Bootstrap context
+    ApplicationContext->>Controllers: Instantiate beans
+    ApplicationContext->>DataRepositories: Instantiate repositories
+    ApplicationContext->>ApplicationContext: Apply auto-configuration

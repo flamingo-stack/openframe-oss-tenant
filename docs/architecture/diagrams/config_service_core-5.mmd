@@ -1,0 +1,13 @@
+flowchart TD
+    ConfigService["Config Service Core"]
+    APIService["API Service"]
+    GatewayService["Gateway Service"]
+    AuthService["Authorization Service"]
+    ManagementService["Management Service"]
+    StreamService["Stream Service"]
+
+    APIService -->|"bootstrap config"| ConfigService
+    GatewayService -->|"bootstrap config"| ConfigService
+    AuthService -->|"bootstrap config"| ConfigService
+    ManagementService -->|"bootstrap config"| ConfigService
+    StreamService -->|"bootstrap config"| ConfigService

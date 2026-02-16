@@ -1,0 +1,4 @@
+flowchart LR
+    Request["Incoming Request"] --> Validation["Bean Validation"]
+    Validation -->|"Valid"| Controller
+    Validation -->|"Invalid"| Error["400 Bad Request"]

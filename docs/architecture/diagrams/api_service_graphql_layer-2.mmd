@@ -1,0 +1,11 @@
+flowchart LR
+    Fetchers["Data Fetchers"] --> Devices["Device"]
+    Fetchers --> Events["Event"]
+    Fetchers --> Logs["Log"]
+    Fetchers --> Orgs["Organization"]
+    Fetchers --> Tools["Tool"]
+
+    Loaders["Data Loaders"] --> Tags["Tag Loader"]
+    Loaders --> ToolConn["Tool Connection Loader"]
+    Loaders --> Installed["Installed Agent Loader"]
+    Loaders --> OrgLoader["Organization Loader"]

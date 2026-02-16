@@ -1,0 +1,20 @@
+flowchart TD
+    App["Management Service Application"] --> Config["Management Configuration"]
+    App --> Init["Initializers"]
+    App --> Schedulers["Schedulers"]
+    App --> Controllers["REST Controllers"]
+
+    Controllers --> ToolService["IntegratedToolService"]
+    Controllers --> DebeziumService["DebeziumService"]
+
+    Init --> Mongo["MongoDB"]
+    Init --> Nats["NATS Streams"]
+    Init --> Pinot["Pinot Controller"]
+    Init --> ExternalTools["External Tool APIs"]
+
+    Schedulers --> Redis["Redis"]
+    Schedulers --> DebeziumService
+    Schedulers --> Publish["Update Publishers"]
+
+    DebeziumService --> Kafka["Kafka / Debezium Connect"]
+    Publish --> Agents["Agents & Clients"]

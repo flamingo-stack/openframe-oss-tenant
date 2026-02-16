@@ -1,0 +1,5 @@
+flowchart TD
+    Source["Source Code"] --> Build["Build (Maven/Gradle)"]
+    Build --> Jar["Executable JAR"]
+    Jar --> Container["Container Image"]
+    Container --> Runtime["Kubernetes / VM Runtime"]

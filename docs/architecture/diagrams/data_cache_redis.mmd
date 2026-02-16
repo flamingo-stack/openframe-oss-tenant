@@ -1,0 +1,13 @@
+flowchart TD
+    AppServices["Application Services"] -->|"@Cacheable / @CacheEvict"| SpringCache["Spring Cache Abstraction"]
+    SpringCache --> CacheManager["Redis CacheManager"]
+    CacheManager --> RedisConnectionFactory["RedisConnectionFactory"]
+    RedisConnectionFactory --> RedisServer[("Redis Server")]
+
+    RedisKeyBuilder["OpenframeRedisKeyBuilder"] -->|"computePrefixWith()"| CacheManager
+
+    ReactiveServices["Reactive Services"] --> ReactiveTemplate["ReactiveRedisTemplate"]
+    ReactiveTemplate --> RedisServer
+
+    BlockingServices["Blocking Services"] --> RedisTemplate["RedisTemplate"]
+    RedisTemplate --> RedisServer

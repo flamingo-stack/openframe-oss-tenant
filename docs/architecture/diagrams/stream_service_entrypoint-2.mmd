@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant JVM
+    participant Main as StreamApplication
+    participant Spring as SpringContext
+    participant Kafka as KafkaInfrastructure
+    participant Listeners as KafkaListeners
+
+    JVM->>Main: main(args)
+    Main->>Spring: SpringApplication.run()
+    Spring->>Spring: Auto-configuration
+    Spring->>Kafka: Enable Kafka
+    Kafka->>Listeners: Register @KafkaListener beans

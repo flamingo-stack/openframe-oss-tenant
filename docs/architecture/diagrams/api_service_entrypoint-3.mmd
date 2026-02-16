@@ -1,0 +1,6 @@
+flowchart TD
+    Gateway["Gateway Service"] --> Api["Api Service Entrypoint"]
+    Api --> Mongo["Mongo"]
+    Api --> Kafka["Kafka"]
+    Kafka --> Stream["Stream Service"]
+    Api --> AuthServer["Authorization Server"]

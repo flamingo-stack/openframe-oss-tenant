@@ -1,0 +1,5 @@
+flowchart TD
+    AppStartup["Application Startup"] --> KafkaAdminBean["KafkaAdmin Bean"]
+    KafkaAdminBean --> TopicBuilder["TopicBuilder"]
+    TopicBuilder --> NewTopic["NewTopic Objects"]
+    NewTopic --> KafkaCluster["Kafka Cluster"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Query["integratedTools query"] --> Mapper["GraphQLToolMapper"]
+    Mapper --> FilterOptions["ToolFilterOptions"]
+    FilterOptions --> Service["ToolService.queryTools()"]
+    Service --> Result["ToolList"]

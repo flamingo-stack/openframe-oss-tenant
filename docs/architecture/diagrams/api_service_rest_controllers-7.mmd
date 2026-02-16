@@ -1,0 +1,5 @@
+flowchart TD
+    Admin --> InvitationController
+    InvitationController --> InvitationService
+    InvitationService --> UserDomain
+    InvitationService --> EmailService["Mail Notification Service"]

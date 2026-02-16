@@ -1,0 +1,4 @@
+flowchart LR
+    ClientApp --> ClientConfigurationController
+    ClientConfigurationController --> QueryService
+    QueryService --> DownloadConfiguration["Mongo Document"]

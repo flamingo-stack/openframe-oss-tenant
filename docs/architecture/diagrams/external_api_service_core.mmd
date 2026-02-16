@@ -1,0 +1,11 @@
+flowchart LR
+    Client["External Client"] --> Gateway["Gateway Service"]
+    Gateway --> ExternalAPI["External Api Service Core"]
+
+    ExternalAPI --> DomainServices["Internal Domain Services"]
+    DomainServices --> Mongo["MongoDB"]
+    DomainServices --> Pinot["Pinot"]
+    DomainServices --> Cassandra["Cassandra"]
+
+    ExternalAPI --> ToolProxy["RestProxyService"]
+    ToolProxy --> IntegratedTool["Integrated Tool API"]

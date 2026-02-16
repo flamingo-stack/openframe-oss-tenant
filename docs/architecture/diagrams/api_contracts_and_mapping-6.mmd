@@ -1,0 +1,4 @@
+flowchart LR
+    MachineIds["List of Machine IDs"] --> Service["InstalledAgentService"]
+    Service --> Grouped["Grouped by Machine ID"]
+    Grouped --> DataLoader["GraphQL DataLoader"]

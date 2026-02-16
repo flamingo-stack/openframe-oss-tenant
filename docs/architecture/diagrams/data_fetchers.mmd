@@ -1,0 +1,7 @@
+flowchart TD
+    Client["GraphQL Client"] --> Schema["GraphQL Schema"]
+    Schema --> Fetcher["Data Fetchers"]
+    Fetcher --> Mapper["GraphQL Mappers"]
+    Fetcher --> Service["Domain Services"]
+    Service --> Persistence["Mongo Repositories / Pinot / Cassandra"]
+    Fetcher --> DataLoaderLayer["Data Loaders"]

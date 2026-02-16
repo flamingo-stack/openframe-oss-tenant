@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Frontend / Admin UI"] --> Gateway["Gateway Service"]
+    Gateway --> ApiControllers["Api Service Rest Controllers"]
+
+    ApiControllers --> DomainServices["Domain Services Layer"]
+    DomainServices --> Mongo["Mongo Persistence"]
+    DomainServices --> Kafka["Kafka / Event Transport"]
+    DomainServices --> ExternalSystems["External Integrations"]
+
+    ApiControllers --> Security["Security & Auth Context"]

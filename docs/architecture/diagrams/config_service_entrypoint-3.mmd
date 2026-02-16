@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant JVM as JVM
+    participant Main as ConfigServerApplication
+    participant Spring as SpringApplication
+    participant Context as ApplicationContext
+
+    JVM->>Main: Invoke main()
+    Main->>Spring: run(ConfigServerApplication)
+    Spring->>Context: Initialize Spring Context
+    Context->>Context: Component Scan
+    Context->>Context: Load Auto Configuration
+    Context-->>Spring: Application Ready

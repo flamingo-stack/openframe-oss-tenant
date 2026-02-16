@@ -1,0 +1,4 @@
+flowchart TD
+    SSOService["SSOConfigService"] --> DomainValidationService
+    DomainValidationService --> DomainExistenceValidator
+    DomainExistenceValidator --> DefaultImpl["DefaultDomainExistenceValidator"]

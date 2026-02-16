@@ -1,0 +1,13 @@
+flowchart LR
+    MongoDB["MongoDB Repositories"] --> Aspect["MachineTagEventAspect"]
+    Aspect --> Service["MachineTagEventServiceImpl"]
+    Service --> Kafka["Kafka Producer"]
+    Kafka --> Stream["Stream Processing"]
+    Stream --> Pinot["Apache Pinot"]
+
+    Pinot --> DeviceRepo["PinotClientDeviceRepository"]
+    Pinot --> LogRepo["PinotClientLogRepository"]
+
+    CassandraConfig["CassandraConfig"] --> Cassandra["Cassandra Cluster"]
+
+    Config["ConfigurationLogger"] --> App["Application Runtime"]

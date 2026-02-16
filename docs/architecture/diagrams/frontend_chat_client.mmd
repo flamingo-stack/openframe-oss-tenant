@@ -1,0 +1,12 @@
+flowchart TD
+    User["User"] --> UI["React UI Components"]
+    UI --> DebugContext["DebugModeContext"]
+    UI --> DialogService["DialogGraphQLService"]
+    UI --> ModelsService["SupportedModelsService"]
+
+    DialogService --> TokenService["TokenService"]
+    ModelsService --> TokenService
+
+    TokenService --> TauriLayer["Tauri Native Layer"]
+    DialogService --> ChatAPI["Chat GraphQL API"]
+    ModelsService --> RestAPI["AI Configuration REST API"]

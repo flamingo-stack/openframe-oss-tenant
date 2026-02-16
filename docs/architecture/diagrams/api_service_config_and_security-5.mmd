@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ApiService as "API Service"
+    participant JwtCache as "JWT Provider Cache"
+
+    Client->>Gateway: HTTP Request with Cookie
+    Gateway->>Gateway: Extract JWT
+    Gateway->>ApiService: Forward with Authorization header
+    ApiService->>JwtCache: Resolve provider by issuer
+    JwtCache-->>ApiService: JwtAuthenticationProvider
+    ApiService->>ApiService: Validate JWT
+    ApiService->>ApiService: Create AuthPrincipal
+    ApiService-->>Gateway: Response
+    Gateway-->>Client: Final Response

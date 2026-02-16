@@ -1,0 +1,4 @@
+flowchart TD
+    TenantContext["Tenant Context"] --> KeyBuilder["OpenframeRedisKeyBuilder"]
+    KeyBuilder --> GeneratedKey["tenant:cacheName::key"]
+    GeneratedKey --> Redis[("Redis")]

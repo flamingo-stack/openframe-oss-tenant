@@ -1,0 +1,4 @@
+flowchart TD
+    SpringBoot["Spring Boot"] --> DefaultKafkaAutoConfig["KafkaAutoConfiguration"]
+    OssKafkaConfig["OssKafkaConfig"] -->|"Excludes"| DefaultKafkaAutoConfig
+    OssKafkaConfig -->|"@EnableKafka"| KafkaInfra["Kafka Infrastructure"]

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant JVM
+    participant SpringBoot
+    participant ComponentScan
+    participant AuthorizationCore
+    participant DataLayer
+
+    JVM->>SpringBoot: Run Application
+    SpringBoot->>ComponentScan: Scan Base Packages
+    ComponentScan->>AuthorizationCore: Register Controllers and Config
+    ComponentScan->>DataLayer: Register Repositories and Documents
+    SpringBoot->>SpringBoot: Initialize Security Filter Chain
+    SpringBoot->>SpringBoot: Start Embedded Server

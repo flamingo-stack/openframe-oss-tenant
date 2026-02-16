@@ -1,0 +1,6 @@
+flowchart TD
+    Input["Filter Inputs"] --> WhereBuilder["Build WHERE Clause"]
+    WhereBuilder --> Query["Generate SQL"]
+    Query --> Execute["Pinot Execute"]
+    Execute --> Map["Map ResultSet"]
+    Map --> Output["Filter Options Map"]

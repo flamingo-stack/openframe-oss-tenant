@@ -1,0 +1,4 @@
+flowchart LR
+    Request["Incoming Request"] --> TenantFilter["Tenant Context Filter"]
+    TenantFilter --> TenantContext["Tenant Context"]
+    TenantContext --> AuthLogic["Authorization Logic"]

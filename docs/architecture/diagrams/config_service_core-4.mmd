@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Service as Platform Service
+    participant Config as Config Service Core
+    participant Backend as Config Backend
+
+    Service->>Config: Request configuration on startup
+    Config->>Backend: Fetch environment properties
+    Backend-->>Config: Return property files
+    Config-->>Service: Return resolved configuration

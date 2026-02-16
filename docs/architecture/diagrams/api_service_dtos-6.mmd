@@ -1,0 +1,4 @@
+flowchart LR
+    Client["Client Query"] --> FilterInput["FilterInput DTO"]
+    FilterInput --> Processor["Domain Processor"]
+    Processor --> Repository["Repository Layer"]

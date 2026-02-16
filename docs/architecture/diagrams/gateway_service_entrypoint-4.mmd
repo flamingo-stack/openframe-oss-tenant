@@ -1,0 +1,6 @@
+flowchart TD
+    Gateway["Gateway Service"] --> Api["API Service Entrypoint"]
+    Gateway --> Auth["Authorization Server Entrypoint"]
+    Gateway --> External["External API Service Entrypoint"]
+    Gateway --> ClientSvc["Client Service Entrypoint"]
+    Gateway --> StreamSvc["Stream Service Entrypoint"]

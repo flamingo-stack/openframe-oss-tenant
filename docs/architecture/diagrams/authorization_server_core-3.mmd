@@ -1,0 +1,4 @@
+flowchart TD
+    Request["HTTP Request"] --> Match{"Authorization Endpoint?"}
+    Match -->|"Yes"| ASChain["Authorization Server Filter Chain"]
+    Match -->|"No"| DefaultChain["Default Security Filter Chain"]

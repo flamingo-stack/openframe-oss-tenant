@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Controller as "DeviceController"
+    participant Service as "DeviceService"
+    participant TagService
+
+    Client->>Controller: GET /api/v1/devices
+    Controller->>Service: queryDevices(filter, pagination, sort)
+    Service-->>Controller: PagedResult<Machine>
+    Controller->>TagService: getTagsForMachines()
+    Controller-->>Client: DevicesResponse

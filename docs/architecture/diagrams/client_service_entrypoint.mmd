@@ -1,0 +1,6 @@
+flowchart TD
+    Boot["ClientApplication"] --> Context["Spring Application Context"]
+    Context --> ClientCore["Client Service Core"]
+    Context --> DataLayer["Data Modules"]
+    Context --> SecurityLayer["Security Modules"]
+    Context --> KafkaLayer["Kafka Producer Modules"]

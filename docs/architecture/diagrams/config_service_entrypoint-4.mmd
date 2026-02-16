@@ -1,0 +1,18 @@
+flowchart TD
+    ConfigService["Configuration Service"]
+
+    subgraph PlatformServices["Platform Services"]
+        Api["API Service"]
+        Gateway["Gateway Service"]
+        Auth["Authorization Server"]
+        Management["Management Service"]
+        Stream["Stream Service"]
+        Client["Client Service"]
+    end
+
+    Api -->|"Remote Config"| ConfigService
+    Gateway -->|"Remote Config"| ConfigService
+    Auth -->|"Remote Config"| ConfigService
+    Management -->|"Remote Config"| ConfigService
+    Stream -->|"Remote Config"| ConfigService
+    Client -->|"Remote Config"| ConfigService

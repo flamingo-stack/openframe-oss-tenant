@@ -1,0 +1,8 @@
+flowchart TD
+    Start["ApplicationReadyEvent"] --> Enabled{"Pinot Enabled?"}
+    Enabled -->|No| Skip["Skip Deployment"]
+    Enabled -->|Yes| Load["Load Schema & Table JSON"]
+    Load --> Resolve["Resolve Placeholders"]
+    Resolve --> DeploySchema["Deploy Schema"]
+    DeploySchema --> DeployTable["Deploy Table Config"]
+    DeployTable --> Done["Deployment Complete"]

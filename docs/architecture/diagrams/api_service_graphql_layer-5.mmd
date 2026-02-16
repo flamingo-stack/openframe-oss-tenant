@@ -1,0 +1,4 @@
+flowchart TD
+    Machines["Machine List"] --> Resolver["@DgsData Resolver"]
+    Resolver --> DataLoader["BatchLoader"]
+    DataLoader --> Repository["Repository"]

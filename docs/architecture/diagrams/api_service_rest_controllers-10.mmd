@@ -1,0 +1,5 @@
+flowchart TD
+    Admin --> OrganizationController
+    OrganizationController --> OrganizationCommandService
+    OrganizationCommandService --> OrganizationRepository
+    OrganizationController --> OrganizationMapper

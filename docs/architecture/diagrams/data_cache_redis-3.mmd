@@ -1,0 +1,8 @@
+flowchart TD
+    RedisConfig["RedisConfig"] --> BlockingTemplate["RedisTemplate"]
+    RedisConfig --> ReactiveStringTemplate["ReactiveStringRedisTemplate"]
+    RedisConfig --> ReactiveTemplate["ReactiveRedisTemplate"]
+
+    BlockingTemplate --> RedisServer[("Redis Server")]
+    ReactiveStringTemplate --> RedisServer
+    ReactiveTemplate --> RedisServer

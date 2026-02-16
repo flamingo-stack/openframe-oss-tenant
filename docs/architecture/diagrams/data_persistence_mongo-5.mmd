@@ -1,0 +1,5 @@
+flowchart TD
+    BaseInterfaces["Base Repository Interfaces"] --> BlockingRepos["MongoRepository"]
+    BaseInterfaces --> ReactiveRepos["ReactiveMongoRepository"]
+    BlockingRepos --> CustomImpls["Custom *RepositoryImpl"]
+    CustomImpls --> MongoTemplate

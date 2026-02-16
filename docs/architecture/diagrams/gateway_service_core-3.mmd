@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ApiKeyService
+    participant RateLimitService
+    participant Downstream
+
+    Client->>Gateway: Request with X-API-Key
+    Gateway->>ApiKeyService: validateApiKey()
+    ApiKeyService-->>Gateway: ApiKeyValidationResult
+    Gateway->>RateLimitService: isAllowed(keyId)
+    RateLimitService-->>Gateway: allowed / denied
+    Gateway->>Downstream: Forward with user headers

@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant GraphQL as "GraphQL Resolver"
+    participant Service as "DeviceService"
+    participant Loader as "TagDataLoader"
+    participant DB as "MongoDB"
+
+    Client->>GraphQL: devices(filter, pagination)
+    GraphQL->>Service: queryDevices(...)
+    Service->>DB: Fetch Machines
+    DB-->>Service: Machines
+    Service-->>GraphQL: QueryResult
+    GraphQL->>Loader: load(machineIds)
+    Loader->>DB: Batch Fetch Tags
+    DB-->>Loader: Tags
+    Loader-->>GraphQL: Tag Lists
+    GraphQL-->>Client: GraphQL Response

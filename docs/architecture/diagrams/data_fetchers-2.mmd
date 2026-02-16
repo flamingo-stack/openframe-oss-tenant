@@ -1,0 +1,9 @@
+flowchart TD
+    Query["devices query"] --> Mapper["GraphQLDeviceMapper"]
+    Mapper --> FilterOptions["DeviceFilterOptions"]
+    Mapper --> PaginationCriteria["CursorPaginationCriteria"]
+    FilterOptions --> Service["DeviceService.queryDevices()"]
+    PaginationCriteria --> Service
+    Service --> Result["CountedGenericQueryResult"]
+    Result --> Mapper
+    Mapper --> Connection["CountedGenericConnection"]

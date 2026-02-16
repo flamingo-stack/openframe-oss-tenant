@@ -1,0 +1,5 @@
+flowchart TD
+    Admin --> SSOConfigController
+    SSOConfigController --> SSOConfigService
+    SSOConfigService --> SSOPerTenantConfig["Mongo Document"]
+    SSOConfigService --> StrategyLayer["Provider Strategies"]

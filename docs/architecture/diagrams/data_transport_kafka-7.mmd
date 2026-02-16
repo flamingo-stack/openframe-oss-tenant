@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant DB as MongoDB
+    participant Debezium
+    participant Kafka
+    participant Stream as Stream Processing
+
+    DB->>Debezium: Data change
+    Debezium->>Kafka: DebeziumMessage<T>
+    Kafka->>Stream: Consume event
+    Stream->>Stream: Deserialize and enrich

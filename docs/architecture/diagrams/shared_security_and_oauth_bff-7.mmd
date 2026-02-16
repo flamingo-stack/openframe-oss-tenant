@@ -1,0 +1,5 @@
+flowchart LR
+    Frontend --> Gateway["Gateway Service"]
+    Gateway --> BFF["Shared Security And Oauth Bff"]
+    BFF --> AuthServer["Authorization Server"]
+    AuthServer --> Mongo["Mongo Persistence"]
