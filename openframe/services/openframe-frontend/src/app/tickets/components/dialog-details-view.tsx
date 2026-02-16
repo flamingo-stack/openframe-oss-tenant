@@ -198,46 +198,42 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog, isUpdating, resolve, dialogId, updateDialogStatus])
 
-  const handleApprove = useCallback((requestId?: string) => {
+  const handleApprove = useCallback(async (requestId?: string) => {
     if (!requestId) return
-    
-    handleApproveRequest(requestId, {
-      onSuccess: (status) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: status
-        }))
-      },
-      onError: (error) => {
-        toast({
-          title: "Approval Failed",
-          description: error.message || "Unable to approve request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await handleApproveRequest(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.APPROVED
+      }))
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Unable to approve request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [handleApproveRequest, toast])
 
-  const handleReject = useCallback((requestId?: string) => {
+  const handleReject = useCallback(async (requestId?: string) => {
     if (!requestId) return
-    
-    handleRejectRequest(requestId, {
-      onSuccess: (status) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: status
-        }))
-      },
-      onError: (error) => {
-        toast({
-          title: "Rejection Failed",
-          description: error.message || "Unable to reject request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await handleRejectRequest(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.REJECTED
+      }))
+    } catch (error) {
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "Unable to reject request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [handleRejectRequest, toast])
 
   const handleSendAdminMessage = useCallback(async (message: string) => {

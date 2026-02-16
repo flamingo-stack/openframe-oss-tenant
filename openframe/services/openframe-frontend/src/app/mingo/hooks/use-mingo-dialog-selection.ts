@@ -33,50 +33,44 @@ export function useMingoDialogSelection() {
   const approveRequestMutation = MingoApiService.approveRequestMutation()
   const rejectRequestMutation = MingoApiService.rejectRequestMutation()
   
-  const handleApprove = useCallback((requestId?: string) => {
+  const handleApprove = useCallback(async (requestId?: string) => {
     if (!requestId || !activeDialogId) return
-    
-    approveRequestMutation.mutate(requestId, {
-      onSuccess: () => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.APPROVED
-        }))
-        
-        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED)
-      },
-      onError: (error) => {
-        toast({
-          title: "Approval Failed",
-          description: error instanceof Error ? error.message : "Unable to approve request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await approveRequestMutation.mutateAsync(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.APPROVED
+      }))
+      updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED)
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Unable to approve request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [approveRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
   
-  const handleReject = useCallback((requestId?: string) => {
+  const handleReject = useCallback(async (requestId?: string) => {
     if (!requestId || !activeDialogId) return
-    
-    rejectRequestMutation.mutate(requestId, {
-      onSuccess: () => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.REJECTED
-        }))
-        
-        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED)
-      },
-      onError: (error) => {
-        toast({
-          title: "Rejection Failed",
-          description: error instanceof Error ? error.message : "Unable to reject request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await rejectRequestMutation.mutateAsync(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.REJECTED
+      }))
+      updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED)
+    } catch (error) {
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "Unable to reject request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [rejectRequestMutation, toast, activeDialogId, updateApprovalStatusInMessages])
 
   const dialogQuery = useQuery({
