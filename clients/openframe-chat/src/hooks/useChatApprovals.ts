@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { tokenService } from '../services/tokenService'
-import { Message, MessageSegment } from '../types/chat.types'
+import { type Message, type MessageSegment } from '@flamingo-stack/openframe-frontend-core'
 
 interface ApprovalData {
   command: string
@@ -68,7 +68,7 @@ export function useChatApprovals() {
   ): Message[] => {
     return messages.map(message => {
       if (message.role === 'assistant' && Array.isArray(message.content)) {
-        const updatedContent = message.content.map(segment => {
+        const updatedContent = (message.content as MessageSegment[]).map((segment: MessageSegment) => {
           if (segment.type === 'approval_request' && segment.data.requestId === requestId) {
             return { 
               ...segment, 

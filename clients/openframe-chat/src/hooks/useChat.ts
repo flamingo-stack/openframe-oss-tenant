@@ -20,7 +20,6 @@ import { useChatApprovals } from './useChatApprovals'
 import faeAvatar from '../assets/fae-avatar.png'
 
 interface UseChatOptions {
-  useMock?: boolean
   useApi?: boolean
   apiToken?: string
   apiBaseUrl?: string

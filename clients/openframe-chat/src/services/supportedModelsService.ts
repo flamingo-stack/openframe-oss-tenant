@@ -52,8 +52,8 @@ class SupportedModelsService {
       
       this.models.clear()
 
-      Object.values(data).forEach(providerModels => {
-        providerModels.forEach(model => {
+      Object.values(data).forEach((providerModels: SupportedModel[]) => {
+        providerModels.forEach((model: SupportedModel) => {
           this.models.set(model.modelName, model)
         })
       })
