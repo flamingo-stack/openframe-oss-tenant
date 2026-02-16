@@ -217,6 +217,7 @@ pub fn run() {
                 RunEvent::Ready => {
                     println!("[INFO] Application ready");
                 }
+                #[cfg(target_os = "macos")]
                 RunEvent::Reopen { .. } => {
                     // User clicked the app icon in Dock or launched from Spotlight
                     // while the app is already running (hidden in tray)
