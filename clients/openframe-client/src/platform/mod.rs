@@ -1,4 +1,5 @@
 pub mod directories;
+pub mod dmg_extractor;
 pub mod file_lock;
 pub mod permissions;
 pub mod uninstall;
@@ -13,6 +14,7 @@ pub mod powershell;
 
 // Re-export commonly used items
 pub use directories::{DirectoryError, DirectoryManager};
+pub use dmg_extractor::DmgExtractor;
 #[cfg(target_os = "windows")]
 pub use file_lock::{format_locking_processes, get_locking_processes, is_file_in_use_error, log_file_lock_info, LockingProcess};
 pub use permissions::{Capability, PermissionError, PermissionUtils, Permissions};

@@ -197,6 +197,11 @@ impl ToolKillService {
         false
     }
 
+    pub async fn stop_tool_by_path(&self, executable_path: &str) -> Result<()> {
+        let pattern = executable_path.to_lowercase();
+        self.stop_processes_by_pattern(&pattern, &format!("path: {}", executable_path)).await
+    }
+
     /// Build the command pattern to match for a given tool ID
     /// Pattern: {tool}\agent (Windows) or {tool}/agent (Unix)
     fn build_tool_cmd_pattern(tool_id: &str) -> String {

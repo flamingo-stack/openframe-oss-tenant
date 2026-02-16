@@ -19,11 +19,12 @@ use std::os::unix::fs::PermissionsExt;
 #[derive(Clone)]
 pub struct GithubDownloadService {
     http_client: Client,
+    dmg_extractor: crate::platform::DmgExtractor,
 }
 
 impl GithubDownloadService {
-    pub fn new(http_client: Client) -> Self {
-        Self { http_client }
+    pub fn new(http_client: Client, dmg_extractor: crate::platform::DmgExtractor) -> Self {
+        Self { http_client, dmg_extractor }
     }
 
     /// Downloads and extracts agent binary from the given download configuration
@@ -57,6 +58,11 @@ impl GithubDownloadService {
             info!("Detected tar.gz format, extracting...");
             self.extract_from_tar_gz(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from tar.gz archive")?
+        } else if config.file_name.ends_with(".dmg") {
+            info!("Detected DMG format, mounting and extracting...");
+            self.dmg_extractor.extract(archive_bytes, &config.target_file_name)
+                .await
+                .with_context(|| "Failed to extract from DMG")?
         } else {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
         };
@@ -324,8 +330,16 @@ impl GithubDownloadService {
         if config.file_name.ends_with(".tar.gz") || config.file_name.ends_with(".tgz") {
             self.extract_all_from_tar_gz(archive_bytes, target_dir)
                 .with_context(|| "Failed to extract tar.gz archive")?;
+        } else if config.file_name.ends_with(".dmg") {
+            let source_path = std::path::Path::new(&config.target_file_name)
+                .components()
+                .next()
+                .map(|c| c.as_os_str().to_string_lossy().to_string());
+            self.dmg_extractor.extract_all(archive_bytes, target_dir, source_path.as_deref())
+                .await
+                .with_context(|| "Failed to extract DMG")?;
         } else {
-            return Err(anyhow!("Unsupported archive format for macOS: {}. Expected .tar.gz", config.file_name));
+            return Err(anyhow!("Unsupported archive format for macOS: {}. Expected .tar.gz or .dmg", config.file_name));
         }
 
         info!("Archive extracted to {}", target_dir.display());

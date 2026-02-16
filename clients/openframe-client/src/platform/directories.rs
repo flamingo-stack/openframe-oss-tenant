@@ -243,17 +243,10 @@ pub fn set_secured_directory_permissions(path: &Path) -> io::Result<()> {
     #[cfg(target_os = "macos")]
     {
         info!(
-            "Setting macOS secured directory permissions for: {}",
+            "macOS secured directory created with default permissions: {}",
             path.display()
         );
-
-        // Set ownership to root:wheel and 700 permissions (owner only)
-        let _ = Command::new("chown")
-            .args(["-R", "root:wheel", path.to_str().unwrap()])
-            .status();
-        let _ = Command::new("chmod")
-            .args(["-R", "700", path.to_str().unwrap()])
-            .status();
+        // No explicit permission setting - files will be readable by user processes
     }
 
     #[cfg(target_os = "linux")]
@@ -575,8 +568,21 @@ impl DirectoryManager {
             return Ok(());
         }
 
-        // Check admin-only permissions on Unix systems (production mode only)
-        #[cfg(unix)]
+        #[cfg(target_os = "macos")]
+        {
+            if let Ok(metadata) = fs::metadata(path) {
+                use std::os::unix::fs::MetadataExt;
+                if metadata.uid() != 0 {
+                    return Err(DirectoryError::ValidationFailed(
+                        path.to_path_buf(),
+                        "Secured directory should be owned by root".to_string(),
+                    ));
+                }
+            }
+            return Ok(());
+        }
+
+        #[cfg(all(unix, not(target_os = "macos")))]
         {
             if let Ok(current) = Permissions::from_path(path) {
                 // For secured directory, we expect 700 permissions (owner only)
@@ -609,23 +615,26 @@ impl DirectoryManager {
             path.exists()
         }
 
-        #[cfg(unix)]
+        #[cfg(target_os = "macos")]
         {
-            // Check if the directory has 700 permissions and is owned by root
+            // On macOS, we only check that the directory is owned by root
+            // We use default permissions to allow user processes to read files
             if let Ok(metadata) = fs::metadata(path) {
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::MetadataExt;
-                    let mode = metadata.permissions().mode() & 0o777;
-                    let uid = metadata.uid();
-                    
-                    // Directory should have 700 permissions and be owned by root (uid 0)
-                    mode == 0o700 && uid == 0
-                }
-                #[cfg(not(unix))]
-                {
-                    true
-                }
+                use std::os::unix::fs::MetadataExt;
+                metadata.uid() == 0
+            } else {
+                false
+            }
+        }
+
+        #[cfg(all(unix, not(target_os = "macos")))]
+        {
+            if let Ok(metadata) = fs::metadata(path) {
+                use std::os::unix::fs::MetadataExt;
+                let mode = metadata.permissions().mode() & 0o777;
+                let uid = metadata.uid();
+
+                mode == 0o700 && uid == 0
             } else {
                 false
             }
@@ -741,15 +750,14 @@ impl DirectoryManager {
     }
 
     /// Returns the path to the agent executable for a specific tool.
-    /// If executable_path is provided, uses it relative to tool folder.
     /// Otherwise uses default agent name.
     pub fn get_tool_executable_path(&self, tool_agent_id: &str, executable_path: Option<&str>) -> PathBuf {
-        let base = self.app_support_dir().join(tool_agent_id);
         match executable_path {
-            Some(path) => base.join(path),
+            Some(path) if Path::new(path).is_absolute() => PathBuf::from(path),
+            Some(path) => self.app_support_dir().join(tool_agent_id).join(path),
             None => {
                 let agent_name = if cfg!(target_os = "windows") { "agent.exe" } else { "agent" };
-                base.join(agent_name)
+                self.app_support_dir().join(tool_agent_id).join(agent_name)
             }
         }
     }
