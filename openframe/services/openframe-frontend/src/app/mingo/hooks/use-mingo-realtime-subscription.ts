@@ -163,8 +163,8 @@ export function useMingoRealtimeSubscription(
 
 // Per-dialog chunk processing hook
 interface UseDialogChunkProcessorOptions {
-  onApprove?: (requestId?: string) => void
-  onReject?: (requestId?: string) => void
+  onApprove?: (requestId?: string) => void | Promise<void>
+  onReject?: (requestId?: string) => void | Promise<void>
   approvalStatuses?: Record<string, any>
 }
 

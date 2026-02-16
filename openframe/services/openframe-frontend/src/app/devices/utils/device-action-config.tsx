@@ -70,7 +70,7 @@ export function getWindowsShellSubmenu(): ShellSubmenuItem[] {
  * Get shell submenu href for a given shell type
  */
 export function getShellHref(deviceId: string, shellType: 'cmd' | 'powershell' | 'bash'): string {
-  return `/devices/details/${deviceId}?action=remoteShell&shellType=${shellType}`
+  return `/devices/details/${deviceId}/remote-shell?shellType=${shellType}`
 }
 
 /**
@@ -101,7 +101,7 @@ export function getDeviceActionButtons(
           label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           disabled: !availability.remoteShellEnabled,
-          href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
+          href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
           showExternalLinkOnHover: true,
           type: 'submenu',
           submenu: getWindowsShellSubmenu()
@@ -111,7 +111,7 @@ export function getDeviceActionButtons(
           label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           disabled: !availability.remoteShellEnabled,
-          href: `/devices/details/${deviceId}?action=remoteShell&shellType=bash`,
+          href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
           showExternalLinkOnHover: true,
           type: 'button'
         },
@@ -153,7 +153,7 @@ export function toActionsMenuItem(
         id: item.id,
         label: item.label,
         icon: item.icon,
-        href: `/devices/details/${deviceId}?action=remoteShell&shellType=${item.id}`,
+        href: `/devices/details/${deviceId}/remote-shell?shellType=${item.id}`,
         showExternalLinkOnHover: true,
         onClick: () => handlers?.onShellSelect?.(item.id)
       }))

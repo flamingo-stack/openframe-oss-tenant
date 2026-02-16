@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { StatusTag, DetailPageContainer, Button, DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, ActionsMenu, normalizeOSType } from '@flamingo-stack/openframe-frontend-core'
 import { RemoteControlIcon, ShellIcon, CmdIcon, PowerShellIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
 import { ChevronDown, Folder } from 'lucide-react'
-import { RemoteShellModal } from './remote-shell-modal'
 import { useDeviceDetails } from '../hooks/use-device-details'
 import { DeviceInfoSection } from './device-info-section'
 import { CardLoader, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
@@ -28,8 +27,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const { deviceDetails, isLoading, error, fetchDeviceById, lastUpdated } = useDeviceDetails()
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false)
-  const [isRemoteShellOpen, setIsRemoteShellOpen] = useState(false)
-  const [shellType, setShellType] = useState<'cmd' | 'powershell'>('cmd')
   const [shellDropdownOpen, setShellDropdownOpen] = useState(false)
   const [, forceUpdate] = useState({})
 
@@ -59,16 +56,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       const newParams = new URLSearchParams(searchParams.toString())
       newParams.delete('action')
       router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`)
-    } else if (action === 'remoteShell') {
-      const shellTypeParam = searchParams.get('shellType') as 'cmd' | 'powershell' | 'bash' | null
-      // Map 'bash' to 'cmd' for the shell modal
-      setShellType(shellTypeParam === 'powershell' ? 'powershell' : 'cmd')
-      setIsRemoteShellOpen(true)
-      // Clear the action params to avoid re-triggering
-      const newParams = new URLSearchParams(searchParams.toString())
-      newParams.delete('action')
-      newParams.delete('shellType')
-      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`)
     }
   }, [searchParams, isLoading, deviceId, router])
 
@@ -90,12 +77,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId)
-  }
-
-  const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash' = 'cmd') => {
-    // Map 'bash' to 'cmd' for the shell modal (uses same handler)
-    setShellType(type === 'bash' ? 'cmd' : type)
-    setIsRemoteShellOpen(true)
   }
 
   const handleDeviceLogs = () => {
@@ -159,22 +140,22 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                     id: 'cmd',
                     label: 'CMD',
                     icon: <CmdIcon className="w-6 h-6" />,
-                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=cmd`,
+                    href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
                     showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
-                      handleRemoteShell('cmd')
+                      router.push(`/devices/details/${deviceId}/remote-shell?shellType=cmd`)
                     }
                   },
                   {
                     id: 'powershell',
                     label: 'PowerShell',
                     icon: <PowerShellIcon className="w-6 h-6" />,
-                    href: `/devices/details/${deviceId}?action=remoteShell&shellType=powershell`,
+                    href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
                     showExternalLinkOnHover: true,
                     onClick: () => {
                       setShellDropdownOpen(false)
-                      handleRemoteShell('powershell')
+                      router.push(`/devices/details/${deviceId}/remote-shell?shellType=powershell`)
                     }
                   }
                 ]
@@ -187,7 +168,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         <Button
           variant="device-action"
           leftIcon={<ShellIcon className="h-5 w-5" />}
-          onClick={() => handleRemoteShell('bash')}
+          navigateUrl={`/devices/details/${deviceId}/remote-shell?shellType=bash`}
+          showExternalLinkOnHover
           disabled={!actionAvailability?.remoteShellEnabled}
         >
           Remote Shell
@@ -215,77 +197,66 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   )
 
   return (
-    <div className={`relative ${isRemoteShellOpen ? 'overflow-hidden' : ''}`}>
-      <DetailPageContainer
-        title={normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'}
-        backButton={{
-          label: 'Back to Devices',
-          onClick: handleBack
-        }}
-        subtitle={
-          <div className={`flex gap-3 items-center ${isRemoteShellOpen ? 'hidden' : ''}`}>
-            {normalizedDevice?.status && (() => {
-              const statusConfig = getDeviceStatusConfig(normalizedDevice.status)
-              return (
-                <StatusTag
-                  label={statusConfig.label}
-                  variant={statusConfig.variant}
-                  className="px-2 py-1 text-[12px] leading-[16px]"
-                />
-              )
-            })()}
-            {lastUpdated && (
-              <span className="text-ods-text-secondary text-xs">
-                Updated {formatRelativeTime(lastUpdated)}
-              </span>
+    <DetailPageContainer
+      title={normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'}
+      backButton={{
+        label: 'Back to Devices',
+        onClick: handleBack
+      }}
+      subtitle={
+        <div className="flex gap-3 items-center">
+          {normalizedDevice?.status && (() => {
+            const statusConfig = getDeviceStatusConfig(normalizedDevice.status)
+            return (
+              <StatusTag
+                label={statusConfig.label}
+                variant={statusConfig.variant}
+                className="px-2 py-1 text-[12px] leading-[16px]"
+              />
+            )
+          })()}
+          {lastUpdated && (
+            <span className="text-ods-text-secondary text-xs">
+              Updated {formatRelativeTime(lastUpdated)}
+            </span>
+          )}
+        </div>}
+      headerActions={headerActions}
+      padding='none'
+    >
+
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto">
+        <DeviceInfoSection device={normalizedDevice} />
+
+        {/* Tab Navigation */}
+        <div className="mt-6">
+          <TabNavigation
+            tabs={DEVICE_TABS}
+            defaultTab="hardware"
+            urlSync={true}
+          >
+            {(activeTab) => (
+              <TabContent
+                activeTab={activeTab}
+                TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
+                componentProps={{ device: normalizedDevice }}
+              />
             )}
-          </div>}
-        headerActions={headerActions}
-        padding='none'
-        className='pt-6'
-      >
-
-
-        {/* Main Content */}
-        <div className={`${isRemoteShellOpen ? 'invisible pointer-events-none' : 'flex-1 overflow-auto'}`}>
-          <DeviceInfoSection device={normalizedDevice} />
-
-          {/* Tab Navigation */}
-          <div className="mt-6">
-            <TabNavigation
-              tabs={DEVICE_TABS}
-              defaultTab="hardware"
-              urlSync={true}
-            >
-              {(activeTab) => (
-                <TabContent
-                  activeTab={activeTab}
-                  TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
-                  componentProps={{ device: normalizedDevice }}
-                />
-              )}
-            </TabNavigation>
-          </div>
+          </TabNavigation>
         </div>
+      </div>
 
-        {/* Scripts Modal */}
-        <ScriptsModal
-          isOpen={isScriptsModalOpen}
-          onClose={() => setIsScriptsModalOpen(false)}
-          deviceId={actionAvailability?.tacticalAgentId || deviceId}
-          device={normalizedDevice}
-          onRunScripts={handleRunScripts}
-          onDeviceLogs={handleDeviceLogs}
-        />
-      </DetailPageContainer>
-
-      <RemoteShellModal
-        isOpen={isRemoteShellOpen}
-        onClose={() => setIsRemoteShellOpen(false)}
-        deviceId={actionAvailability?.meshcentralAgentId || deviceId}
-        deviceLabel={normalizedDevice?.displayName || normalizedDevice?.hostname}
-        shellType={shellType}
+      {/* Scripts Modal */}
+      <ScriptsModal
+        isOpen={isScriptsModalOpen}
+        onClose={() => setIsScriptsModalOpen(false)}
+        deviceId={actionAvailability?.tacticalAgentId || deviceId}
+        device={normalizedDevice}
+        onRunScripts={handleRunScripts}
+        onDeviceLogs={handleDeviceLogs}
       />
-    </div>
+    </DetailPageContainer>
   )
 }

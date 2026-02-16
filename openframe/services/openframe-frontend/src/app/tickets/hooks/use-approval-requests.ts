@@ -31,44 +31,36 @@ export function useApprovalRequests() {
       approveRequest(requestId, approve),
   })
 
-  const handleApproveRequest = (
+  const handleApproveRequest = async (
     requestId: string,
     options?: {
       onSuccess?: (status: ApprovalStatus) => void
       onError?: (error: Error) => void
     }
   ) => {
-    approvalMutation.mutate(
-      { requestId, approve: true },
-      {
-        onSuccess: () => {
-          options?.onSuccess?.(APPROVAL_STATUS.APPROVED)
-        },
-        onError: (error) => {
-          options?.onError?.(error as Error)
-        },
-      }
-    )
+    try {
+      await approvalMutation.mutateAsync({ requestId, approve: true })
+      options?.onSuccess?.(APPROVAL_STATUS.APPROVED)
+    } catch (error) {
+      options?.onError?.(error as Error)
+      throw error
+    }
   }
 
-  const handleRejectRequest = (
+  const handleRejectRequest = async (
     requestId: string,
     options?: {
       onSuccess?: (status: ApprovalStatus) => void
       onError?: (error: Error) => void
     }
   ) => {
-    approvalMutation.mutate(
-      { requestId, approve: false },
-      {
-        onSuccess: () => {
-          options?.onSuccess?.(APPROVAL_STATUS.REJECTED)
-        },
-        onError: (error) => {
-          options?.onError?.(error as Error)
-        },
-      }
-    )
+    try {
+      await approvalMutation.mutateAsync({ requestId, approve: false })
+      options?.onSuccess?.(APPROVAL_STATUS.REJECTED)
+    } catch (error) {
+      options?.onError?.(error as Error)
+      throw error
+    }
   }
 
   return {

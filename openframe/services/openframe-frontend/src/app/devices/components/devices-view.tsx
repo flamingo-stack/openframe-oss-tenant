@@ -152,7 +152,6 @@ export function DevicesView() {
       onSearch={setSearchInput}
       error={error}
       padding="none"
-      className="pt-6"
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       currentMobileFilters={tableFilters}

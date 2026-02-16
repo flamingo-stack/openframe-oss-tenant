@@ -9,6 +9,7 @@ import { PencilIcon } from 'lucide-react'
 import { useDeleteOrganization } from '../hooks/use-delete-organization'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { featureFlags } from '@lib/feature-flags'
+import { getFullImageUrl } from '@/src/lib/image-url'
 
 interface OrganizationDetailsViewProps {
   id: string
@@ -90,7 +91,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           <div className="flex items-center gap-3">
             {featureFlags.organizationImages.displayEnabled() && (
               <OrganizationIcon
-                imageUrl={organization?.imageUrl}
+                imageUrl={getFullImageUrl(organization?.imageUrl)}
                 organizationName={organization?.name || 'Organization'}
                 size="lg"
               />

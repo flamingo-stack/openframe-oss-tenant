@@ -45,18 +45,14 @@ interface DeviceActionsDropdownProps {
   context: 'table' | 'detail'
   onActionComplete?: () => void
   // Handlers for actions (used to integrate with parent component modals)
-  onRemoteControl?: () => void
   onRunScript?: () => void
-  onRemoteShell?: (type: 'cmd' | 'powershell' | 'bash') => void
 }
 
 export function DeviceActionsDropdown({
   device,
   context,
   onActionComplete,
-  onRemoteControl,
-  onRunScript,
-  onRemoteShell
+  onRunScript
 }: DeviceActionsDropdownProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -114,9 +110,7 @@ export function DeviceActionsDropdown({
   // Action handlers - always use machineId for URL routing
   const handleRemoteControl = () => {
     setDropdownOpen(false)
-    if (onRemoteControl) {
-      onRemoteControl()
-    } else if (actionAvailability.meshcentralAgentId) {
+    if (actionAvailability.meshcentralAgentId) {
       // Simple URL with just the OpenFrame machineId - remote desktop page fetches the rest
       router.push(`/devices/details/${deviceId}/remote-desktop`)
     }
@@ -134,11 +128,8 @@ export function DeviceActionsDropdown({
 
   const handleRemoteShell = (type: 'cmd' | 'powershell' | 'bash') => {
     setDropdownOpen(false)
-    if (onRemoteShell) {
-      onRemoteShell(type)
-    } else {
-      // Navigate to device details with action param to auto-open remote shell
-      router.push(`/devices/details/${deviceId}?action=remoteShell&shellType=${type}`)
+    if (actionAvailability.meshcentralAgentId) {
+      router.push(`/devices/details/${deviceId}/remote-shell?shellType=${type}`)
     }
   }
 
@@ -194,7 +185,8 @@ export function DeviceActionsDropdown({
       // Use unified config for action buttons
       actionItems.push(
         toActionsMenuItem(actionButtons.remoteShell, deviceId, {
-          onShellSelect: handleRemoteShell
+          onShellSelect: handleRemoteShell,
+          onClick: () => handleRemoteShell('bash')
         })
       )
 
