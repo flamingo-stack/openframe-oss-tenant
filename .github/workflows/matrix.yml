@@ -267,7 +267,7 @@ jobs:
               "name": "openframe-chat",
               "path": "./clients/openframe-chat",
               "os": "macos",
-              "target": "universal-apple-darwin",
+              "target": "aarch64-apple-darwin,x86_64-apple-darwin",
               "target_path": "./clients/openframe-chat/src-tauri/target",
               "type": "tauri",
               "artifact_name": "fae_chat_universal.dmg"
