@@ -16,7 +16,6 @@ impl DmgExtractor {
         Self
     }
 
-    /// Extracts a specific file from a DMG image.
     #[cfg(target_os = "macos")]
     pub async fn extract(&self, dmg_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
         info!("[DMG] extract: target_filename='{}', dmg size={} bytes", target_filename, dmg_bytes.len());
@@ -28,16 +27,13 @@ impl DmgExtractor {
 
         info!("[DMG] temp dmg_path={}, mount_point={}", dmg_path.display(), mount_point.display());
 
-        // Write DMG to temp file
         fs::write(&dmg_path, &dmg_bytes).await
             .with_context(|| format!("Failed to write DMG to temp file: {}", dmg_path.display()))?;
         info!("[DMG] DMG written to temp file ({} bytes)", dmg_bytes.len());
 
-        // Mount DMG
         self.mount(&dmg_path, &mount_point).await
             .with_context(|| "Failed to mount DMG")?;
 
-        // Read target file
         let target_path = mount_point.join(target_filename);
         info!("[DMG] Reading target file: {}", target_path.display());
         let result = fs::read(&target_path).await
@@ -48,7 +44,6 @@ impl DmgExtractor {
             Err(e) => warn!("[DMG] Failed to read target file: {:#}", e),
         }
 
-        // Always unmount and cleanup, even if read failed
         if let Err(e) = self.unmount(&mount_point).await {
             warn!("[DMG] Failed to unmount: {:#}", e);
         }
@@ -64,7 +59,6 @@ impl DmgExtractor {
         Err(anyhow!("DMG extraction is only supported on macOS. Target: {}", target_filename))
     }
 
-    /// Extracts all contents from a DMG image to a target directory.
     #[cfg(target_os = "macos")]
     pub async fn extract_all(&self, dmg_bytes: Bytes, target_dir: &Path, source_path: Option<&str>) -> Result<()> {
         info!("[DMG] extract_all: target_dir={}, source_path={:?}, dmg size={} bytes",
@@ -77,16 +71,13 @@ impl DmgExtractor {
 
         info!("[DMG] temp dmg_path={}, mount_point={}", dmg_path.display(), mount_point.display());
 
-        // Write DMG to temp file
         fs::write(&dmg_path, &dmg_bytes).await
             .with_context(|| format!("Failed to write DMG to temp file: {}", dmg_path.display()))?;
         info!("[DMG] DMG written to temp file ({} bytes)", dmg_bytes.len());
 
-        // Mount DMG
         self.mount(&dmg_path, &mount_point).await
             .with_context(|| "Failed to mount DMG")?;
 
-        // Copy contents
         let source = match source_path {
             Some(path) => {
                 let s = mount_point.join(path);
@@ -99,7 +90,6 @@ impl DmgExtractor {
             },
         };
 
-        // Remove existing target if it's a symlink or existing .app (clean reinstall)
         if let Some(name) = source.file_name() {
             let dest = target_dir.join(name);
             if dest.is_symlink() {
@@ -121,7 +111,6 @@ impl DmgExtractor {
             Err(e) => warn!("[DMG] Copy failed: {:#}", e),
         }
 
-        // Always unmount and cleanup
         if let Err(e) = self.unmount(&mount_point).await {
             warn!("[DMG] Failed to unmount: {:#}", e);
         }
@@ -129,9 +118,7 @@ impl DmgExtractor {
             warn!("[DMG] Failed to remove temp DMG file: {:#}", e);
         }
 
-        // Verify extraction result
         if result.is_ok() {
-            // Only log the copied item, not the entire target_dir (e.g. /Applications would be huge)
             if let Some(name) = source.file_name() {
                 let copied = target_dir.join(name);
                 info!("[DMG] Verifying copied item: {}, exists={}", copied.display(), copied.exists());
