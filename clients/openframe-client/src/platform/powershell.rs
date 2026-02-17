@@ -1,12 +1,20 @@
 use std::path::PathBuf;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 /// Get PowerShell path - tries PATH first, then known locations
 /// Returns ready-to-use path string
 #[cfg(windows)]
 pub fn get_powershell_path() -> Result<String, &'static str> {
     // Try powershell.exe from PATH first
-    if let Ok(mut child) = Command::new("powershell.exe").arg("-?").spawn() {
+    if let Ok(mut child) = Command::new("powershell.exe")
+        .arg("-NoProfile")
+        .arg("-Command")
+        .arg("exit 0")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+    {
         let _ = child.wait();
         return Ok("powershell.exe".to_string());
     }
