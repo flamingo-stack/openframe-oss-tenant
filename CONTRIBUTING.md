@@ -1,507 +1,442 @@
 # Contributing to OpenFrame
 
-Welcome to the OpenFrame contributing guidelines! We're excited that you're interested in contributing to the future of MSP platforms. This document outlines how to get involved, the development workflow, and our community standards.
+Welcome to the OpenFrame community! We're excited that you're interested in contributing to the unified AI-powered MSP platform. This guide will help you understand how to contribute effectively to OpenFrame.
 
-## 🌟 Getting Started
+## 🤝 Code of Conduct
 
-### Prerequisites
+OpenFrame is committed to providing a welcoming and inclusive environment. We expect all contributors to:
 
-Before contributing, ensure you have:
-- **Java 21+** - Required for backend development
-- **Node.js 18+** - For frontend development and tooling
-- **Maven 3.8+** - Build tool for Java services
-- **Docker & Docker Compose** - For running infrastructure services
-- **Git** - Version control
+- **Be Respectful**: Treat all community members with respect and professionalism
+- **Be Collaborative**: Work together constructively and accept feedback gracefully
+- **Be Inclusive**: Welcome newcomers and help them get started
+- **Be Patient**: Remember that everyone has different experience levels
 
-### Development Environment Setup
+## 🚀 Getting Started
+
+### 1. Join Our Community
+
+Connect with the OpenFrame community before contributing:
+
+- **OpenMSP Slack**: Join our active community at https://www.openmsp.ai/
+- **Direct Invite**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Introduce Yourself**: Share your background in the `#introductions` channel
+
+> **Important**: We don't use GitHub Issues or GitHub Discussions. All support, feature requests, and community interaction happens through our OpenMSP Slack community.
+
+### 2. Set Up Your Development Environment
+
+Follow our development guides to get started:
+
+1. **[Environment Setup](./docs/development/setup/environment.md)** - Install required tools and configure your IDE
+2. **[Local Development](./docs/development/setup/local-development.md)** - Run OpenFrame locally
+3. **[Architecture Overview](./docs/development/architecture/README.md)** - Understand the system design
+
+## 📋 Types of Contributions
+
+We welcome various types of contributions:
+
+### 🐛 **Bug Reports**
+- Search existing discussions in Slack before reporting
+- Provide clear reproduction steps
+- Include environment details (Java version, OS, etc.)
+- Share relevant logs or screenshots
+
+### ✨ **Feature Requests**
+- Discuss ideas in the `#feature-requests` Slack channel
+- Explain the use case and problem being solved
+- Consider alternative approaches
+- Get community feedback before implementation
+
+### 🔧 **Code Contributions**
+- Bug fixes and improvements
+- New feature implementations
+- Performance optimizations
+- Test coverage improvements
+- Documentation enhancements
+
+### 📚 **Documentation**
+- API documentation improvements
+- User guide enhancements
+- Developer documentation updates
+- Code comment improvements
+
+## 🛠 Development Workflow
+
+### Branch Strategy
+
+OpenFrame uses a structured branching approach:
+
+```bash
+main                    # Production-ready code
+├── develop            # Integration branch
+├── feature/OF-123     # Feature branches
+├── bugfix/OF-456      # Bug fix branches
+└── hotfix/OF-789      # Critical fixes
+```
+
+### Making Changes
 
 1. **Fork and Clone**
    ```bash
-   # Fork the repository on GitHub
-   git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
+   git clone https://github.com/your-username/openframe-oss-tenant.git
    cd openframe-oss-tenant
-   
-   # Add upstream remote
-   git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
    ```
 
-2. **Set Up Local Environment**
+2. **Create Feature Branch**
    ```bash
-   # Initialize development configuration
-   ./clients/openframe-client/scripts/setup_dev_init_config.sh
-   
-   # Start infrastructure services
-   docker-compose up -d mongodb kafka redis nats cassandra
-   
-   # Verify services are running
-   docker-compose ps
+   git checkout -b feature/OF-123-your-feature-name
    ```
 
-3. **Build and Test**
+3. **Make Your Changes**
+   - Follow the coding standards below
+   - Write comprehensive tests
+   - Update documentation as needed
+
+4. **Test Your Changes**
    ```bash
-   # Build all modules
-   mvn clean install
-   
-   # Run tests
+   # Run all tests
    mvn test
    
-   # Start development services (see Quick Start guide)
+   # Run integration tests
+   mvn test -Pintegration
+   
+   # Check test coverage
+   mvn test jacoco:report
    ```
 
-For detailed setup instructions, see the [Development Documentation](./docs/README.md#development).
+5. **Commit Your Changes**
+   ```bash
+   git commit -m "feat(devices): add device status filtering
+   
+   - Add DeviceStatusFilter enum
+   - Implement filtering in DeviceService  
+   - Add corresponding tests
+   - Update API documentation
+   
+   Closes #123"
+   ```
 
-## 🔄 Development Workflow
+## 📝 Code Standards
 
-### 1. Create Feature Branch
+### Java Code Style
 
-```bash
-# Sync with upstream
-git checkout main
-git pull upstream main
+We follow Google Java Style with OpenFrame-specific conventions:
 
-# Create feature branch
-git checkout -b feature/your-feature-name
-# Or for bug fixes: git checkout -b fix/issue-description
-# Or for docs: git checkout -b docs/documentation-improvement
-```
-
-### 2. Make Changes
-
-Follow our coding standards:
-- **Backend (Java/Spring Boot)**: Google Java Style, proper layering (Controller → Service → Repository)
-- **Frontend (TypeScript)**: Prettier formatting, proper component structure
-- **Database**: Proper indexing, multi-tenant aware queries
-- **Security**: Input validation, authentication/authorization checks
-
-### 3. Test Your Changes
-
-```bash
-# Run unit tests
-mvn test
-
-# Run integration tests
-mvn verify
-
-# Test specific module
-mvn test -pl openframe/services/openframe-api
-
-# Frontend tests
-cd openframe/services/openframe-frontend
-npm test
-```
-
-### 4. Commit Your Changes
-
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
-
-```bash
-git commit -m "feat(auth): add multi-factor authentication support
-
-Add support for TOTP-based MFA using authenticator apps.
-Includes user enrollment, verification, and recovery codes.
-
-Closes #123"
-```
-
-**Commit Types:**
-- `feat`: New feature
-- `fix`: Bug fix  
-- `docs`: Documentation changes
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `ci`: CI/CD changes
-- `chore`: Maintenance tasks
-
-### 5. Submit Pull Request
-
-```bash
-# Push your changes
-git push origin feature/your-feature-name
-
-# Create pull request on GitHub
-```
-
-## 📋 Pull Request Guidelines
-
-### PR Checklist
-
-Before submitting, ensure:
-- [ ] **Code Quality**: Follows style guidelines and patterns
-- [ ] **Tests**: All tests pass and new tests added for changes
-- [ ] **Documentation**: Updated relevant documentation
-- [ ] **Security**: No security vulnerabilities introduced
-- [ ] **Performance**: No performance regressions
-- [ ] **Breaking Changes**: Clearly documented if any
-
-### PR Template
-
-Use this template for your pull requests:
-
-```markdown
-## Description
-Brief description of what this PR does.
-
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-
-## Related Issues
-Closes #123
-Fixes #456
-
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-- [ ] New tests added for changes
-
-## Screenshots (if applicable)
-[Add screenshots for UI changes]
-
-## Checklist
-- [ ] My code follows the style guidelines
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-```
-
-## 🎯 Contributing Areas
-
-We welcome contributions in several areas:
-
-### 🚨 High Priority
-- **Bug Fixes**: Issues labeled `bug` and `high-priority`
-- **Security Improvements**: Authentication, authorization, input validation
-- **Performance Optimization**: Database queries, API response times, memory usage
-- **Test Coverage**: Areas with low test coverage, integration tests
-
-### 🔧 Medium Priority  
-- **Feature Enhancements**: New functionality for existing features
-- **Developer Experience**: Tooling, build process, debugging improvements
-- **Code Quality**: Refactoring, cleanup, pattern consistency
-- **Documentation**: API docs, developer guides, architecture documentation
-
-### 🌟 Great for Beginners
-- **Documentation Fixes**: Typos, clarity improvements, missing examples
-- **Test Additions**: Unit tests for uncovered methods
-- **UI/UX Polish**: Frontend improvements, accessibility enhancements
-- **Good First Issues**: Look for issues labeled `good-first-issue`
-
-## 💻 Code Standards
-
-### Backend (Java/Spring Boot)
-
-**Architecture Patterns:**
 ```java
-// Controller Layer - Thin, validation only
-@RestController
-@RequestMapping("/api/users")
-@PreAuthorize("hasRole('USER')")
-public class UserController {
-    
-    private final UserService userService;
-    
-    @PostMapping
-    public ResponseEntity<UserResponse> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        UserResponse user = userService.createUser(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(user);
-    }
-}
-
-// Service Layer - Business logic
 @Service
-@Transactional
-public class UserService {
+@RequiredArgsConstructor
+@Slf4j
+public class DeviceService {
     
-    public UserResponse createUser(CreateUserRequest request) {
-        validateCreateUserRequest(request);
+    private final DeviceRepository deviceRepository;
+    private final EventPublisher eventPublisher;
+    
+    /**
+     * Creates a new device for the authenticated tenant.
+     * 
+     * @param request the device creation request
+     * @param principal the authenticated user principal
+     * @return the created device with generated metadata
+     * @throws ValidationException if the request is invalid
+     */
+    @Transactional
+    public Device createDevice(CreateDeviceRequest request, AuthPrincipal principal) {
+        log.info("Creating device: {} for tenant: {}", request.getName(), principal.getTenantId());
         
-        User user = userMapper.toEntity(request);
-        user.setTenantId(tenantContext.getCurrentTenant());
+        validateRequest(request);
         
-        User savedUser = userRepository.save(user);
-        return userMapper.toResponse(savedUser);
+        Device device = Device.builder()
+            .name(request.getName())
+            .type(request.getType())
+            .tenantId(principal.getTenantId())
+            .status(DeviceStatus.PENDING)
+            .createdAt(Instant.now())
+            .build();
+            
+        Device savedDevice = deviceRepository.save(device);
+        eventPublisher.publishEvent(new DeviceCreatedEvent(savedDevice));
+        
+        return savedDevice;
+    }
+    
+    private void validateRequest(CreateDeviceRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new ValidationException("Device name is required");
+        }
     }
 }
-
-// Repository Layer - Data access
-@Repository
-public interface UserRepository extends MongoRepository<User, String> {
-    Optional<User> findByEmailAndTenantId(String email, String tenantId);
-}
 ```
 
-**Security Requirements:**
-- Always validate input at controller level
-- Use `@PreAuthorize` for method-level security  
-- Implement tenant isolation in all queries
-- Never log sensitive information (passwords, tokens)
+### Testing Standards
 
-### Frontend (TypeScript/React)
-
-**Component Structure:**
-```typescript
-// Component with proper error handling
-interface UserProfileProps {
-  userId: string;
-  onUpdateSuccess?: () => void;
-}
-
-export const UserProfile: React.FC<UserProfileProps> = ({
-  userId,
-  onUpdateSuccess,
-}) => {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => apiClient.getUser(userId),
-    enabled: !!userId,
-  });
-
-  if (isLoading) return <LoadingSpinner />;
-  if (error) return <ErrorMessage error={error} />;
-  if (!user) return <div>User not found</div>;
-
-  return (
-    <Card>
-      <CardContent>
-        {/* Component content */}
-      </CardContent>
-    </Card>
-  );
-};
-```
-
-**State Management:**
-- Use React Query for server state
-- Use React hooks for local state
-- Implement proper loading and error states
-- Follow accessibility best practices
-
-### Database Design
-
-**Multi-Tenancy:**
-```java
-// All entities must include tenant isolation
-@Document(collection = "users")
-public class User {
-    @Id
-    private String id;
-    
-    @Indexed  // Always index tenant fields
-    private String tenantId;
-    
-    private String email;
-    // ... other fields
-}
-
-// Repository queries must include tenant filtering
-public interface UserRepository extends MongoRepository<User, String> {
-    // ✅ Good: Includes tenant isolation
-    Optional<User> findByEmailAndTenantId(String email, String tenantId);
-    
-    // ❌ Bad: Missing tenant isolation
-    // Optional<User> findByEmail(String email);
-}
-```
-
-**Performance:**
-- Add appropriate indexes for all query patterns
-- Use projection for large documents
-- Implement cursor-based pagination for lists
-- Consider read/write patterns when designing schemas
-
-## 🧪 Testing Standards
-
-### Unit Tests
+Write comprehensive tests for all new code:
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class UserServiceTest {
+@DisplayName("DeviceService")
+class DeviceServiceTest {
     
     @Mock
-    private UserRepository userRepository;
+    private DeviceRepository deviceRepository;
     
-    @Mock  
-    private TenantContext tenantContext;
+    @Mock
+    private EventPublisher eventPublisher;
     
     @InjectMocks
-    private UserService userService;
+    private DeviceService deviceService;
     
-    @Test
-    void shouldCreateUserWithValidRequest() {
-        // Given
-        String tenantId = "tenant-123";
-        CreateUserRequest request = new CreateUserRequest("test@example.com", "password");
+    @Nested
+    @DisplayName("createDevice")
+    class CreateDevice {
         
-        when(tenantContext.getCurrentTenant()).thenReturn(tenantId);
-        when(userRepository.save(any(User.class))).thenAnswer(i -> i.getArgument(0));
-        
-        // When
-        UserResponse result = userService.createUser(request);
-        
-        // Then
-        assertThat(result.getEmail()).isEqualTo("test@example.com");
-        
-        verify(userRepository).save(argThat(user -> 
-            user.getEmail().equals("test@example.com") &&
-            user.getTenantId().equals(tenantId)
-        ));
+        @Test
+        @DisplayName("should create device with valid request")
+        void shouldCreateDeviceWithValidRequest() {
+            // Given
+            CreateDeviceRequest request = CreateDeviceRequest.builder()
+                .name("Test Device")
+                .type(DeviceType.DESKTOP)
+                .build();
+                
+            AuthPrincipal principal = AuthPrincipal.builder()
+                .tenantId("test-tenant")
+                .build();
+                
+            Device expectedDevice = Device.builder()
+                .name("Test Device")
+                .tenantId("test-tenant")
+                .status(DeviceStatus.PENDING)
+                .build();
+                
+            when(deviceRepository.save(any(Device.class))).thenReturn(expectedDevice);
+            
+            // When
+            Device result = deviceService.createDevice(request, principal);
+            
+            // Then
+            assertThat(result)
+                .isNotNull()
+                .hasFieldOrPropertyWithValue("name", "Test Device")
+                .hasFieldOrPropertyWithValue("tenantId", "test-tenant")
+                .hasFieldOrPropertyWithValue("status", DeviceStatus.PENDING);
+                
+            verify(eventPublisher).publishEvent(any(DeviceCreatedEvent.class));
+        }
     }
 }
 ```
 
-### Integration Tests
+## 💬 Commit Message Format
 
-```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class UserControllerIntegrationTest {
-    
-    @Container
-    static MongoDBContainer mongodb = new MongoDBContainer("mongo:5.0")
-            .withExposedPorts(27017);
-    
-    @Autowired
-    private TestRestTemplate restTemplate;
-    
-    @Test
-    void shouldCreateUserViaAPI() {
-        CreateUserRequest request = new CreateUserRequest("test@example.com", "password");
-        
-        ResponseEntity<UserResponse> response = restTemplate.postForEntity(
-            "/api/users", request, UserResponse.class);
-        
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody().getEmail()).isEqualTo("test@example.com");
-    }
-}
+Use Conventional Commits for consistent commit messages:
+
+### Format
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
 ```
 
-## 🔒 Security Guidelines
+### Types
+- **feat**: New feature
+- **fix**: Bug fix
+- **docs**: Documentation changes
+- **style**: Code formatting (no logic changes)
+- **refactor**: Code refactoring
+- **test**: Adding or updating tests
+- **chore**: Maintenance tasks
 
-### Input Validation
-- Validate all input at API boundaries using Bean Validation
-- Sanitize user input to prevent XSS
-- Use parameterized queries to prevent injection
-- Implement rate limiting for public endpoints
+### Examples
+```bash
+# Feature
+feat(auth): add multi-tenant JWT validation
 
-### Authentication & Authorization
-- Never bypass authentication checks
-- Implement proper RBAC with `@PreAuthorize`
-- Use JWT tokens with appropriate expiration
-- Implement tenant isolation at all levels
+Implement tenant-aware JWT issuer resolution for secure
+multi-tenant authentication across all services.
 
-### Data Protection
-- Never log sensitive data (passwords, tokens, PII)
-- Use HTTPS for all communications
-- Implement proper session management
-- Follow OWASP security guidelines
+Closes #456
 
-## 📖 Documentation Standards
+# Bug fix
+fix(gateway): resolve request timeout issues
 
-### Code Documentation
+Fix edge case where long-running requests were timing out
+due to incorrect gateway configuration.
 
-```java
-/**
- * Creates a new user in the specified tenant context.
- * 
- * @param request the user creation request containing email and password
- * @return the created user response with generated ID
- * @throws UserAlreadyExistsException if user with email already exists
- * @throws ValidationException if request validation fails
- */
-public UserResponse createUser(CreateUserRequest request) {
-    // Implementation
-}
+Fixes #789
+
+# Breaking change
+feat(api)!: change device creation endpoint structure
+
+BREAKING CHANGE: Device creation now requires 'organizationId' field.
+Update client applications to include organization context.
+
+See MIGRATION.md for upgrade instructions.
 ```
 
-### API Documentation
+## 🔍 Pull Request Process
 
-Use OpenAPI/Swagger annotations:
+### 1. Before Submitting
 
-```java
-@Operation(summary = "Create a new user", description = "Creates a new user in the current tenant")
-@ApiResponses({
-    @ApiResponse(responseCode = "201", description = "User created successfully"),
-    @ApiResponse(responseCode = "400", description = "Invalid request data"),
-    @ApiResponse(responseCode = "409", description = "User already exists")
-})
-@PostMapping
-public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
-    // Implementation
-}
-```
+- [ ] Code follows style guidelines
+- [ ] All tests pass locally
+- [ ] Documentation updated for new features
+- [ ] Self-review completed
+- [ ] Breaking changes documented
 
-## 🤝 Community Guidelines
+### 2. Pull Request Template
 
-### Communication
+Use this template when creating pull requests:
 
-- **Be Respectful**: Treat all community members with respect and courtesy
-- **Be Constructive**: Provide helpful feedback and suggestions
-- **Be Patient**: Remember that contributors have varying experience levels
-- **Be Inclusive**: Welcome newcomers and help them get started
-
-### Where to Get Help
-
-- **Slack Community**: Join [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-  - `#general` - General discussions
-  - `#development` - Technical development questions  
-  - `#help` - Getting help with setup and usage
-- **GitHub Discussions**: For technical design discussions
-- **GitHub Issues**: For bug reports and feature requests (not general support)
-
-### Code Review Process
-
-**For Contributors:**
-1. Submit PRs with clear descriptions and proper testing
-2. Be responsive to reviewer feedback
-3. Keep PRs focused and reasonably sized
-4. Update documentation as needed
-
-**For Reviewers:**
-- Review for functionality, security, performance, and maintainability
-- Provide constructive feedback with specific suggestions
-- Test changes locally when possible
-- Approve when ready, request changes when needed
-
-Example review comments:
 ```markdown
-**Suggestion**: Consider using `Optional.ofNullable()` here for better null safety.
+## Description
+Brief description of changes and why they're needed.
 
-**Issue**: This method is missing input validation for the email parameter.
+## Type of Change
+- [ ] Bug fix (non-breaking change fixing an issue)
+- [ ] New feature (non-breaking change adding functionality)  
+- [ ] Breaking change (fix/feature causing existing functionality to break)
+- [ ] Documentation update
+- [ ] Performance improvement
 
-**Question**: Why was this approach chosen over the existing UserMapper pattern?
+## Related Issues
+Discuss in OpenMSP Slack: [Link to thread]
 
-**Approval**: LGTM! Great work on the comprehensive test coverage.
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests added/updated  
+- [ ] Manual testing completed
+- [ ] All tests pass locally
+
+## Checklist
+- [ ] Code follows project style guidelines
+- [ ] Self-review of code completed
+- [ ] Code is commented for complex logic
+- [ ] Documentation updated
+- [ ] No new warnings introduced
 ```
 
-## 🎉 Recognition
+### 3. Review Process
 
-We value all contributions and recognize contributors through:
+#### Getting Reviews
+- Request review from maintainers
+- Address feedback promptly
+- Be open to suggestions and changes
+- Test reviewer suggestions before implementing
 
-- **Contributor List**: Featured in README and release notes
-- **Community Highlights**: Showcased in community updates  
-- **Maintainer Path**: Outstanding contributors can become project maintainers
-- **Swag & Rewards**: Special recognition for significant contributions
+#### Review Criteria
+Reviewers will check for:
+- **Code Quality**: Clean, readable, maintainable code
+- **Security**: No security vulnerabilities introduced
+- **Performance**: Acceptable performance impact
+- **Tests**: Comprehensive test coverage
+- **Documentation**: Updated for new features
 
-## 🚀 Next Steps
+## 🏗 Architecture Guidelines
 
-Ready to contribute? Here's how to get started:
+### Multi-Tenant Design
+All new features must support multi-tenancy:
 
-1. **Choose Your First Issue**: Look for [`good-first-issue`](https://github.com/flamingo-stack/openframe-oss-tenant/labels/good-first-issue) labels
-2. **Set Up Development Environment**: Follow the [Development Guide](./docs/README.md#development)
-3. **Join the Community**: Connect with us on [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-4. **Read the Architecture**: Understand the system design in [Architecture Documentation](./docs/README.md#reference)
+```java
+// Always include tenant context
+public Device getDevice(String deviceId, String tenantId) {
+    return deviceRepository.findByIdAndTenantId(deviceId, tenantId)
+        .orElseThrow(() -> new DeviceNotFoundException(deviceId));
+}
+
+// Use tenant-aware queries
+@Query("SELECT d FROM Device d WHERE d.tenantId = :tenantId AND d.status = :status")
+List<Device> findByTenantAndStatus(String tenantId, DeviceStatus status);
+```
+
+### Security Best Practices
+- Always validate tenant access
+- Use parameterized queries
+- Sanitize user inputs
+- Implement proper authentication checks
+- Follow principle of least privilege
+
+### Performance Considerations
+- Use pagination for large datasets
+- Implement proper caching strategies
+- Avoid N+1 query problems
+- Use async processing for heavy operations
+
+## 📊 Quality Metrics
+
+We maintain high quality standards:
+
+### Code Coverage
+- Minimum 80% line coverage for new code
+- 90%+ coverage for critical business logic
+- Tests should cover happy path and edge cases
+
+### Performance Benchmarks
+- API response times < 200ms for 95th percentile
+- Database queries optimized with proper indexes
+- Memory usage monitored and optimized
+
+### Security Standards
+- All endpoints properly authenticated
+- Input validation on all user data
+- SQL injection prevention
+- XSS protection implemented
+
+## 🏆 Recognition
+
+We appreciate our contributors:
+
+### Monthly Recognition
+- **Contributor Spotlight**: Featured in community newsletter
+- **Special Badges**: Recognition in Slack and GitHub
+- **Swag**: OpenFrame merchandise for significant contributions
+
+### Long-term Opportunities
+- **Speaking Opportunities**: Present at OpenMSP events
+- **Mentorship Roles**: Help guide new contributors
+- **Architecture Input**: Influence platform direction
+
+## 📚 Resources
+
+### Development Resources
+- **[Environment Setup Guide](./docs/development/setup/environment.md)**
+- **[Local Development Guide](./docs/development/setup/local-development.md)**
+- **[Architecture Documentation](./docs/architecture/README.md)**
+- **[Security Guidelines](./docs/development/security/README.md)**
+
+### External Resources
+- **Spring Boot**: https://spring.io/projects/spring-boot
+- **Spring Security**: https://spring.io/projects/spring-security
+- **MongoDB**: https://docs.mongodb.com/
+- **Apache Kafka**: https://kafka.apache.org/documentation/
+
+### Community Resources
+- **OpenFrame Website**: https://openframe.ai
+- **Flamingo Platform**: https://www.flamingo.run/openframe
+- **OpenMSP Community**: https://www.openmsp.ai/
+
+## 🆘 Getting Help
+
+### Where to Ask
+- **General Questions**: `#general` channel in Slack
+- **Development Help**: `#development` channel in Slack
+- **Architecture Discussions**: `#architecture` channel in Slack
+- **Feature Ideas**: `#feature-requests` channel in Slack
+
+### Mentorship Program
+New contributors can request mentorship:
+1. Join the OpenMSP Slack community
+2. Express interest in the `#development` channel
+3. Get matched with an experienced contributor
+4. Start with guided contributions
 
 ## 📄 License
 
-By contributing to OpenFrame, you agree that your contributions will be licensed under the same [Flamingo AI Unified License v1.0](LICENSE.md) as the project.
+By contributing to OpenFrame, you agree that your contributions will be licensed under the Flamingo AI Unified License v1.0, the same license that covers the project.
 
 ---
 
-Thank you for contributing to OpenFrame! Your efforts help build a better MSP platform for the community. Together, we're revolutionizing how managed service providers operate with AI-powered automation and open-source innovation. 🚀
+Thank you for contributing to OpenFrame! Your contributions help build the future of open-source MSP automation. Together, we're creating powerful, accessible technology for managed service providers worldwide. 🚀
+
+**Questions?** Join our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) and connect with our development team!
