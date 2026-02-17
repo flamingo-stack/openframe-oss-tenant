@@ -269,7 +269,6 @@ jobs:
               "os": "macos",
               "target": "aarch64-apple-darwin,x86_64-apple-darwin",
               "target_path": "./clients/openframe-chat/src-tauri/target",
-              "type": "tauri",
               "artifact_name": "fae_chat_universal.dmg"
             },
             {
@@ -278,7 +277,6 @@ jobs:
               "os": "windows",
               "target": "x86_64-pc-windows-msvc",
               "target_path": "./clients/openframe-chat/src-tauri/target",
-              "type": "tauri"
             }
           ]'
 

@@ -259,13 +259,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.type }}" == "tauri" && "${{ matrix.os }}" == "macos" ]]; then
-            # Tauri app on macOS - build universal DMG
-            make build-dmg
-          elif [[ "${{ matrix.type }}" == "tauri" ]]; then
-            # Tauri app on Windows - regular build
-            make build TARGET="${{ matrix.target }}"
-          elif [[ "${{ matrix.os }}" == "macos" ]]; then
+          if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -286,7 +280,7 @@ jobs:
           compression-level: 9
 
       - name: Create macOS universal package
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type != 'tauri'
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.name == 'openframe-client'
         shell: bash
         run: |
           mkdir -p artifacts
@@ -301,23 +295,21 @@ jobs:
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
           file ./artifacts/${{ env.BINARY_NAME }}
 
-      - name: Prepare Tauri macOS DMG artifact
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type == 'tauri'
-        shell: bash
-        run: |
-          mkdir -p artifacts
-          # Find the generated .dmg file
-          DMG_FILE=$(find ${{ matrix.target_path }}/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
-          if [[ -z "$DMG_FILE" ]]; then
-            echo "Error: No .dmg file found"
-            exit 1
-          fi
-          # Copy and rename to final artifact name
-          cp "$DMG_FILE" "./artifacts/${{ matrix.artifact_name }}"
-          echo "Created artifact: ${{ matrix.artifact_name }}"
-          ls -lh ./artifacts/
+      - name: Sign macOS package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        uses: ./.github/steps/sign-macos-package
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          binary_name: ${{ matrix.artifact_name && '' || env.BINARY_NAME }}
+          target_path: ${{ matrix.artifact_name && matrix.target_path || '' }}
+          dmg_name: ${{ matrix.artifact_name || '' }}
+          dmg_volume_name: ${{ matrix.artifact_name && 'Fae Chat' || '' }}
 
-      - name: Upload macOS artifact
+      - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
