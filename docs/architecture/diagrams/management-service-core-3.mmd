@@ -1,0 +1,5 @@
+flowchart TD
+    AppReady["Application Ready"] --> Check["List Existing Connectors"]
+    Check -->|"None"| LoadTools["Load Integrated Tools"]
+    LoadTools --> Create["Create Debezium Connectors"]
+    Check -->|"Exists"| Skip["Skip Initialization"]

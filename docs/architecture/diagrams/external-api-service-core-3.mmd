@@ -1,0 +1,9 @@
+flowchart TD
+    Req["Incoming /tools/{toolId}/**"] --> Lookup["Find IntegratedTool"]
+    Lookup --> Enabled{"Tool Enabled?"}
+    Enabled -->|No| Reject["400 Response"]
+    Enabled -->|Yes| Resolve["Resolve Target URL"]
+    Resolve --> BuildReq["Create HttpRequest"]
+    BuildReq --> AddHeaders["Inject Credentials"]
+    AddHeaders --> Execute["Execute via HttpClient"]
+    Execute --> Return["Return ResponseEntity"]

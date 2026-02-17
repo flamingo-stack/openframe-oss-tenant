@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Api
+    participant Service
+    participant Repo
+
+    Client->>Gateway: PATCH /devices/{machineId}
+    Gateway->>Api: Forward with JWT
+    Api->>Service: updateStatusByMachineId()
+    Service->>Repo: Save updated device
+    Repo-->>Service: Persisted
+    Service-->>Api: Success
+    Api-->>Client: 204 No Content

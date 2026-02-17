@@ -71,8 +71,6 @@ export class MeshTunnel {
       url: buildUrl,
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
-      maxReconnectAttempts: 10,
-      reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
       refreshTokenBeforeReconnect: true,
       
       onStateChange: (wsState) => {

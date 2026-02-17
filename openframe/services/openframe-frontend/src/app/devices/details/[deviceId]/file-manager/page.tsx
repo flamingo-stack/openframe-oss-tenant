@@ -93,7 +93,7 @@ interface FileManagerPageSkeletonProps {
 function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
     <AppLayout>
-      <div className="flex flex-col h-full gap-6 pt-6">
+      <div className="flex flex-col h-full gap-2">
         <div className="flex flex-col gap-2">
           <Button
             variant="ghost"

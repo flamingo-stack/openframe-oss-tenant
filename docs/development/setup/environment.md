@@ -1,249 +1,494 @@
-# Development Setup Guide
+# Development Environment Setup
 
-This guide will help you set up your development environment for OpenFrame's Java Spring Boot backend and Vue.js frontend.
+This guide will help you set up a complete development environment for OpenFrame. We'll configure your IDE, install necessary tools, set up debugging capabilities, and optimize your workflow for productive development.
 
-## Prerequisites
+## IDE Recommendations and Setup
 
-### Backend Requirements
-- OpenJDK 21.0.1+
-- Maven 3.9.6+
-- Docker 24.0+ and Docker Compose 2.23+
-- Git 2.42+
+### IntelliJ IDEA (Recommended for Java Development)
 
-### Frontend Requirements
-- Node.js 18.0.0+
-- npm 9.0.0+
+IntelliJ IDEA provides excellent support for Spring Boot and the OpenFrame tech stack.
 
-### Rust Client Requirements
-- Rust 1.70+ with Cargo
-- Platform-specific dependencies (automatically handled)
-
-## Backend Setup
-
-### 1. Clone the Repository
-
+#### Installation
 ```bash
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-cd openframe
+# Install via snap (Linux)
+sudo snap install intellij-idea-ultimate --classic
+
+# Or download from JetBrains website
+# https://www.jetbrains.com/idea/download/
 ```
 
-### 2. Set Up Java Environment
+#### Essential Plugins
+Install these plugins for optimal OpenFrame development:
 
-```bash
-# Install OpenJDK 21 (macOS)
-brew install openjdk@21
+```text
+Required Plugins:
+├── Spring Boot Support (built-in)
+├── Database Navigator (database management)
+├── Docker Integration (container management)  
+├── Kubernetes (if deploying to K8s)
+├── .env File Support (environment variables)
+└── GraphQL (for API development)
 
-# Set JAVA_HOME
-echo 'export JAVA_HOME=$(/usr/libexec/java_home -v 21)' >> ~/.zshrc
-source ~/.zshrc
-
-# Verify Java installation
-java -version
+Optional but Recommended:
+├── SonarLint (code quality)
+├── GitToolBox (enhanced Git integration)
+├── Rainbow Brackets (code readability)
+├── String Manipulation (text utilities)
+└── Key Promoter X (shortcut learning)
 ```
 
-### 3. Build Backend Services
+#### IDE Configuration
 
-```bash
-# Build all services
-mvn clean install
+**Project Structure Setup:**
+1. **Open the openframe-oss-tenant project**
+2. **Configure Project SDK**: File → Project Structure → SDKs → Add JDK 21
+3. **Set Language Level**: Project Settings → Project → Language Level: 21
+4. **Configure Maven**: Build Tools → Maven → Use Maven from SDK
 
-# Build individual service
-cd services/openframe-api
-mvn clean install
-```
+**Code Style Configuration:**
+1. **Import code style**: File → Settings → Code Style → Import Scheme
+2. **Configure Checkstyle**: Settings → Tools → Checkstyle → Add OpenFrame rules
+3. **Set up formatting**: Editor → Code Style → Java → Set from predefined style
 
-### 4. Configure Backend Services
+### VS Code (Alternative/Frontend Development)
 
-```yaml
-# services/openframe-api/src/main/resources/application.yml
-spring:
-  application:
-    name: openframe-api
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/openframe
-    cassandra:
-      keyspace-name: openframe
-      contact-points: localhost
-  kafka:
-    bootstrap-servers: localhost:9092
-```
+For TypeScript/frontend development or if you prefer a lightweight editor:
 
-## Frontend Setup
-
-### 1. Install Node.js Dependencies
-
-```bash
-# Navigate to UI service
-cd services/openframe-frontend
-
-# Install dependencies
-npm install
-
-# Install Vue CLI globally
-npm install -g @vue/cli
-```
-
-### 2. Configure Frontend Environment
-
-```env
-# services/openframe-frontend/.env
-VUE_APP_API_URL=http://localhost:8080
-VUE_APP_WS_URL=ws://localhost:8080/ws
-```
-
-### 3. Start Development Server
-
-```bash
-# Use platform-specific startup script (recommended)
-./scripts/run-mac.sh              # macOS
-./scripts/run-linux.sh            # Linux
-./scripts/run-windows.ps1         # Windows
-
-# Or start services individually:
-# Start backend services
-cd openframe/services/openframe-api
-mvn spring-boot:run
-
-# Start frontend development server (separate terminal)
-cd openframe/services/openframe-frontend
-npm run dev
-
-# Build Rust client agent
-cd client
-cargo build --release
-```
-
-## Development Tools
-
-### 1. IDE Setup
-
-#### IntelliJ IDEA (Recommended for Backend)
-- Install IntelliJ IDEA Ultimate Edition
-- Install plugins:
-  - Spring Boot
-  - Lombok
-  - Maven
-  - Git
-  - Docker
-
-#### VS Code (Recommended for Frontend and Rust)
-- Install VS Code
-- Install extensions:
-  - Volar (Vue 3)
-  - ESLint
-  - Prettier
-  - GitLens
-  - Docker
-  - rust-analyzer (for Rust client development)
-
-### 2. Code Style
-
-#### Backend
-```xml
-<!-- .idea/codeStyles/Project.xml -->
-<component name="ProjectCodeStyleConfiguration">
-    <code_scheme name="Project" version="173">
-        <JavaCodeStyleSettings>
-            <option name="CLASS_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
-            <option name="NAMES_COUNT_TO_USE_IMPORT_ON_DEMAND" value="999" />
-        </JavaCodeStyleSettings>
-    </code_scheme>
-</component>
-```
-
-#### Frontend
+#### Essential Extensions
 ```json
-// .prettierrc
 {
-  "semi": false,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "trailingComma": "es5"
+  "recommendations": [
+    "ms-vscode.vscode-java-pack",
+    "vscjava.vscode-spring-boot-dashboard",
+    "ms-python.python",
+    "bradlc.vscode-tailwindcss",
+    "GraphQL.vscode-graphql",
+    "ms-vscode.vscode-docker",
+    "ms-kubernetes-tools.vscode-kubernetes-tools"
+  ]
 }
 ```
 
-## Local Development
-
-### 1. Running Services Locally
-
-```bash
-# Start required infrastructure
-docker-compose up -d
-
-# Start backend services
-cd services/openframe-api
-mvn spring-boot:run
-
-# Start frontend development server
-cd openframe/services/openframe-frontend
-npm run dev
+#### VS Code Settings
+Create `.vscode/settings.json` in project root:
+```json
+{
+  "java.home": "/usr/lib/jvm/java-21-openjdk-amd64",
+  "java.configuration.maven.userSettings": "~/.m2/settings.xml",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  }
+}
 ```
 
-### 2. Accessing Services
+## Required Development Tools
 
-- **Frontend UI**: http://localhost:8080
-- **GraphQL API**: http://localhost:8080/graphql
-- **Configuration Server**: http://localhost:8888
-- **GraphQL Playground**: http://localhost:8080/graphiql (if enabled)
-- **Grafana Dashboard**: Available via integrated tools setup
+### Java Development Environment
 
-### 3. Development Workflow
-
-1. Create a new branch
+#### Java 21 Installation
 ```bash
-git checkout -b feature/your-feature-name
+# Ubuntu/Debian
+sudo apt update
+sudo apt install openjdk-21-jdk
+
+# macOS (using Homebrew)
+brew install openjdk@21
+
+# Verify installation
+java --version
+javac --version
 ```
 
-2. Make changes and commit
-```bash
-git add .
-git commit -m "feat: add new feature"
+#### Maven Configuration
+Create or update `~/.m2/settings.xml`:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <profiles>
+    <profile>
+      <id>openframe-dev</id>
+      <properties>
+        <spring.profiles.active>local</spring.profiles.active>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+      </properties>
+    </profile>
+  </profiles>
+  
+  <activeProfiles>
+    <activeProfile>openframe-dev</activeProfile>
+  </activeProfiles>
+</settings>
 ```
 
-3. Push changes
+### Frontend Development Tools
+
+#### Node.js and Package Managers
 ```bash
-git push origin feature/your-feature-name
+# Install Node.js 18+ (using nvm - recommended)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18
+nvm use 18
+
+# Verify installation
+node --version  # v18.x.x
+npm --version   # 9.x.x
+
+# Optional: Install Yarn
+npm install -g yarn
 ```
 
-4. Create pull request on GitHub
+### Database Tools
 
-## Troubleshooting
-
-### Common Issues
-
-1. Port Conflicts
+#### MongoDB Compass (GUI)
 ```bash
-# Check for running processes
-lsof -i :8080
-lsof -i :3000
+# Download from MongoDB website
+wget https://downloads.mongodb.com/compass/mongodb-compass_1.40.4_amd64.deb
+sudo dpkg -i mongodb-compass_1.40.4_amd64.deb
 
-# Kill process if needed
-kill -9 <PID>
+# Or install via snap
+sudo snap install mongodb-compass
 ```
 
-2. Database Connection Issues
+#### Redis CLI Tools
 ```bash
-# Check MongoDB status
-docker ps | grep mongo
+# Ubuntu/Debian
+sudo apt install redis-tools
 
-# Check Cassandra status
-docker ps | grep cassandra
+# macOS
+brew install redis
+
+# Test connection
+redis-cli ping
 ```
 
-3. Build Issues
-```bash
-# Clean and rebuild
-mvn clean install -U
+### Container and Orchestration Tools
 
-# Clear npm cache
-npm cache clean --force
+#### Docker and Docker Compose
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add user to docker group
+sudo usermod -aG docker $USER
+
+# Install Docker Compose v2
+sudo apt install docker-compose-plugin
+
+# Verify installation
+docker --version
+docker compose version
+```
+
+#### Kubernetes Tools (Optional)
+```bash
+# kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# minikube (for local K8s development)
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+```
+
+## Environment Variables Configuration
+
+### Development Environment File
+
+Create `.env.development` in project root:
+```bash
+# Database Configuration
+MONGODB_URI=mongodb://localhost:27017/openframe_dev
+CASSANDRA_CONTACT_POINTS=localhost:9042
+REDIS_URL=redis://localhost:6379
+
+# Message Queues
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+NATS_URL=nats://localhost:4222
+
+# Security Configuration  
+JWT_SIGNING_KEY=development-key-change-in-production
+OAUTH2_CLIENT_ID=openframe-dev-client
+OAUTH2_CLIENT_SECRET=dev-secret
+
+# API Configuration
+API_BASE_URL=http://localhost:8080
+FRONTEND_URL=http://localhost:3000
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+
+# AI Services (Optional - for Mingo development)
+ANTHROPIC_API_KEY=your-anthropic-key-here
+OPENAI_API_KEY=your-openai-key-here
+
+# Logging
+LOG_LEVEL=DEBUG
+ROOT_LOG_LEVEL=INFO
+
+# Development Features
+SPRING_DEVTOOLS_RESTART_ENABLED=true
+SPRING_JPA_SHOW_SQL=true
+```
+
+### IDE Environment Configuration
+
+#### IntelliJ IDEA Run Configurations
+Create run configurations for each service:
+
+1. **API Service Configuration:**
+   ```text
+   Name: OpenFrame API Service
+   Main Class: com.openframe.api.ApiApplication
+   VM Options: -Dspring.profiles.active=local
+   Environment Variables: Load from .env.development
+   Working Directory: $PROJECT_DIR$
+   ```
+
+2. **Authorization Server Configuration:**
+   ```text
+   Name: OpenFrame Auth Server
+   Main Class: com.openframe.authz.OpenFrameAuthorizationServerApplication
+   VM Options: -Dspring.profiles.active=local
+   Program Arguments: --server.port=8081
+   ```
+
+3. **Gateway Service Configuration:**
+   ```text
+   Name: OpenFrame Gateway
+   Main Class: com.openframe.gateway.GatewayApplication
+   VM Options: -Dspring.profiles.active=local
+   Program Arguments: --server.port=8080
+   ```
+
+### Shell Environment Setup
+
+Add to your `~/.bashrc` or `~/.zshrc`:
+```bash
+# OpenFrame Development Environment
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export MAVEN_HOME=/usr/share/maven
+export PATH=$JAVA_HOME/bin:$MAVEN_HOME/bin:$PATH
+
+# Development aliases
+alias of-build='mvn clean install -DskipTests'
+alias of-test='mvn test'
+alias of-services='docker-compose up -d mongodb kafka redis nats cassandra'
+alias of-logs='docker-compose logs -f'
+
+# Node.js environment
+export NODE_OPTIONS="--max-old-space-size=4096"
+```
+
+## Editor Extensions and Plugins
+
+### IntelliJ IDEA Extensions
+
+#### Code Quality & Analysis
+```text
+SonarLint Configuration:
+1. Install SonarLint plugin
+2. Connect to SonarQube server (if available)
+3. Configure rule sets for OpenFrame standards
+4. Enable real-time analysis
+```
+
+#### Database Integration
+```text
+Database Navigator Setup:
+1. Install Database Navigator plugin
+2. Configure MongoDB connection:
+   - Host: localhost:27017
+   - Database: openframe_dev
+   - Authentication: None (for local dev)
+3. Configure Redis connection:
+   - Host: localhost:6379
+```
+
+### VS Code Extensions Configuration
+
+#### Java Development
+```json
+{
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.saveActions.organizeImports": true,
+  "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
+  "sonarlint.rules": {
+    "java:S1135": "off",
+    "java:S1075": "off"
+  }
+}
+```
+
+#### TypeScript/Frontend
+```json
+{
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "eslint.workingDirectories": ["openframe/services/openframe-frontend"],
+  "prettier.configPath": "./openframe/services/openframe-frontend/.prettierrc"
+}
+```
+
+## Debugging Configuration
+
+### Backend Debugging (Java)
+
+#### IntelliJ IDEA Debug Setup
+1. **Remote Debug Configuration:**
+   ```text
+   Configuration Type: Remote JVM Debug
+   Name: OpenFrame Remote Debug
+   Host: localhost
+   Port: 5005
+   Command line arguments: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+   ```
+
+2. **Spring Boot Debug:**
+   ```text
+   Enable Spring Boot DevTools in pom.xml:
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-devtools</artifactId>
+       <scope>runtime</scope>
+   </dependency>
+   ```
+
+#### Debug Environment Variables
+```bash
+# Add to service startup
+JAVA_OPTS="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
+```
+
+### Frontend Debugging
+
+#### Browser DevTools Integration
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Debug OpenFrame Frontend",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/openframe/services/openframe-frontend/src"
+    }
+  ]
+}
+```
+
+## Development Workflow Optimization
+
+### Git Configuration
+
+```bash
+# Configure Git for OpenFrame development
+git config --global user.name "Your Name"
+git config --global user.email "your.email@company.com"
+
+# Useful Git aliases
+git config --global alias.co checkout
+git config --global alias.br branch
+git config --global alias.ci commit
+git config --global alias.st status
+git config --global alias.unstage 'reset HEAD --'
+```
+
+### Pre-commit Hooks
+
+Create `.pre-commit-config.yaml`:
+```yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-json
+      - id: check-yaml
+      
+  - repo: local
+    hooks:
+      - id: maven-test
+        name: Maven Test
+        entry: mvn test
+        language: system
+        pass_filenames: false
+```
+
+### Performance Optimization
+
+#### JVM Tuning for Development
+```bash
+# Add to IDE VM options or environment
+-Xmx4g
+-Xms2g
+-XX:+UseG1GC
+-XX:+UseStringDeduplication
+-XX:+OptimizeStringConcat
+```
+
+#### Docker Development Optimization
+```yaml
+# docker-compose.override.yml for development
+version: '3.8'
+services:
+  mongodb:
+    volumes:
+      - ./data/mongodb:/data/db
+    
+  kafka:
+    environment:
+      - KAFKA_LOG_RETENTION_HOURS=1
+      - KAFKA_LOG_SEGMENT_BYTES=536870912
+```
+
+## Verification and Testing
+
+### Environment Verification Script
+
+Create `scripts/verify-dev-env.sh`:
+```bash
+#!/bin/bash
+echo "🔍 Verifying OpenFrame Development Environment..."
+
+# Check Java
+echo "☕ Java Version:"
+java --version
+
+# Check Maven  
+echo "📦 Maven Version:"
+mvn --version
+
+# Check Node.js
+echo "📦 Node.js Version:"
+node --version
+
+# Check Docker
+echo "🐳 Docker Version:"
+docker --version
+
+# Check Database Connections
+echo "🗄️ Testing Database Connections..."
+mongo --eval "db.adminCommand('ismaster')" || echo "❌ MongoDB not running"
+redis-cli ping || echo "❌ Redis not running"
+
+echo "✅ Environment verification complete!"
+```
+
+Make it executable and run:
+```bash
+chmod +x scripts/verify-dev-env.sh
+./scripts/verify-dev-env.sh
 ```
 
 ## Next Steps
 
-- [Architecture Overview](architecture.md)
-- [API Documentation](../api/overview.md)
-- [Contributing Guidelines](contributing.md)
-- [Testing Guide](testing.md)
-- [Code Style Guide](code-style.md) 
+With your development environment configured:
+
+1. **Proceed to [Local Development](./local-development.md)** to learn how to run OpenFrame locally
+2. **Review [Architecture Overview](../architecture/README.md)** to understand the system design
+3. **Check [Contributing Guidelines](../contributing/guidelines.md)** for development workflows
+
+Your OpenFrame development environment is now ready! You have all the tools and configuration needed to contribute effectively to the platform. 🎉

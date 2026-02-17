@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Start"] --> Secret["Initialize Agent Secret"]
+    Secret --> AgentInit["Initialize Tool Agents"]
+    AgentInit --> ClientConfig["Initialize Client Config"]
+    ClientConfig --> NatsInit["Provision NATS Streams"]
+    NatsInit --> Ready["Application Ready"]
+    Ready --> DebeziumInit["Initialize Debezium Connectors"]

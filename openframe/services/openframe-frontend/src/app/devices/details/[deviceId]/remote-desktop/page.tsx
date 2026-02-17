@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useRef, useState, use, useMemo } from 'react'
+import { useEffect, useRef, useState, use, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Monitor, MoreHorizontal, Settings, ChevronLeft } from 'lucide-react'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup, ContentLoader } from '@flamingo-stack/openframe-frontend-core'
+import { Monitor, MoreHorizontal, Settings, ChevronLeft, Loader2 } from 'lucide-react'
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { AppLayout } from '@app/components/app-layout'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
@@ -98,6 +98,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const [displays, setDisplays] = useState<DisplayInfo[]>([])
   const [currentDisplay, setCurrentDisplay] = useState(0)
+  const [firstFrameReceived, setFirstFrameReceived] = useState(false)
 
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings
@@ -116,6 +117,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
     const desktop = new MeshDesktop()
     desktopRef.current = desktop
+    
+    desktop.onFirstFrame?.(() => setFirstFrameReceived(true))
 
     // Set up display list change callback
     desktop.onDisplayListChange?.((newDisplays) => {
@@ -141,6 +144,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     if (!isPageReady || !meshcentralAgentId || initializingRef.current) return
 
     initializingRef.current = true
+    setFirstFrameReceived(false)
     let control: MeshControlClient | undefined
     ;(async () => {
       setConnecting(true)
@@ -577,7 +581,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
         {/* Remote Desktop Canvas */}
         <div className="flex-1 min-h-0 pb-4">
-          <div className="h-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="h-full bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
             <canvas
               ref={canvasRef}
               className="block max-w-full max-h-full"
@@ -585,6 +589,14 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                 e.preventDefault()
               }}
             />
+            {!firstFrameReceived && state >= 1 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+                <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
+                <span className="text-ods-text-secondary text-sm">
+                  {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

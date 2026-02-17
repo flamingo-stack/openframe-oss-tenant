@@ -79,6 +79,9 @@ REDIS_HOST = '${REDIS_HOST}'
 REDIS_PORT = 6379
 REDIS_DB = 0
 
+# Openframe extensions
+OPENFRAME_MODE = '${OPENFRAME_MODE}' == 'True'
+
 # Swagger and Beta API
 SWAGGER_ENABLED = True
 BETA_API_ENABLED = True 

@@ -17,7 +17,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core'
 import { Button } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { DetailLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { DetailLoader, ProcessedMessage } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
 import { useDialogStatus } from '../hooks/use-dialog-status'
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription'
@@ -198,46 +198,42 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog, isUpdating, resolve, dialogId, updateDialogStatus])
 
-  const handleApprove = useCallback((requestId?: string) => {
+  const handleApprove = useCallback(async (requestId?: string) => {
     if (!requestId) return
-    
-    handleApproveRequest(requestId, {
-      onSuccess: (status) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: status
-        }))
-      },
-      onError: (error) => {
-        toast({
-          title: "Approval Failed",
-          description: error.message || "Unable to approve request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await handleApproveRequest(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.APPROVED
+      }))
+    } catch (error) {
+      toast({
+        title: "Approval Failed",
+        description: error instanceof Error ? error.message : "Unable to approve request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [handleApproveRequest, toast])
 
-  const handleReject = useCallback((requestId?: string) => {
+  const handleReject = useCallback(async (requestId?: string) => {
     if (!requestId) return
-    
-    handleRejectRequest(requestId, {
-      onSuccess: (status) => {
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: status
-        }))
-      },
-      onError: (error) => {
-        toast({
-          title: "Rejection Failed",
-          description: error.message || "Unable to reject request",
-          variant: "destructive",
-          duration: 5000
-        })
-      }
-    })
+
+    try {
+      await handleRejectRequest(requestId)
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.REJECTED
+      }))
+    } catch (error) {
+      toast({
+        title: "Rejection Failed",
+        description: error instanceof Error ? error.message : "Unable to reject request",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
   }, [handleRejectRequest, toast])
 
   const handleSendAdminMessage = useCallback(async (message: string) => {
@@ -276,7 +272,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       messageData: msg.messageData,
     }))
 
-    const processed = processHistoricalMessagesWithErrors(historicalMessages, {
+    const { messages: processed } = processHistoricalMessagesWithErrors(historicalMessages, {
       assistantName,
       assistantType,
       chatTypeFilter: expectedChatType,
@@ -288,9 +284,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     })
 
     const pendingApprovalSegments: MessageSegment[] = []
-    const filteredMessages = processed.filter(msg => {
+    const filteredMessages = processed.filter((msg: ProcessedMessage) => {
       if (msg.id.startsWith('pending-approvals-') && Array.isArray(msg.content)) {
-        msg.content.forEach(segment => {
+        msg.content.forEach((segment: MessageSegment) => {
           if (segment.type === 'approval_request' && segment.status === 'pending') {
             pendingApprovalSegments.push(segment as MessageSegment)
           }
@@ -300,7 +296,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       return true
     })
 
-    const processedMessages = filteredMessages.map(msg => ({
+    const processedMessages = filteredMessages.map((msg: ProcessedMessage) => ({
       id: msg.id,
       content: msg.content as string | MessageSegment[],
       role: msg.role as 'user' | 'assistant' | 'error',
@@ -319,13 +315,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages])
   const adminChatData = useMemo(() => processMessages(adminMessages, CHAT_TYPE.ADMIN), [adminMessages, processMessages])
-
-  // Auto-scroll logic
-  const shouldAutoScroll = useMemo(() => {
-    const shouldScroll = messages.length > prevMessageLength.current
-    prevMessageLength.current = messages.length
-    return shouldScroll
-  }, [messages.length])
 
   const headerActions = useMemo(() => {
     if (!dialog) return null
@@ -405,7 +394,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
             <ChatMessageList
               messages={chatData.messages}
-              autoScroll={shouldAutoScroll}
+              autoScroll={true}
               showAvatars={false}
               isTyping={isClientChatTyping}
               pendingApprovals={chatData.pendingApprovals}

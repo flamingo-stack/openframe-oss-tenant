@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> AddAuth["AddAuthorizationHeaderFilter"]
+    AddAuth --> JwtResolver["JWT Issuer Resolver"]
+    JwtResolver --> AuthManager["Reactive Authentication Manager"]
+    AuthManager --> RoleCheck["Path-based Role Check"]
+    RoleCheck --> Controller["Downstream Route"]

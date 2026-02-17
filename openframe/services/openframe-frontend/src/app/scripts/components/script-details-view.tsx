@@ -7,6 +7,7 @@ import React, { useCallback, useRef } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { ScheduledRunsSection } from './scheduled-runs-section'
 import { ScriptInfoSection } from './script-info-section'
+import { featureFlags } from '@lib/feature-flags'
 
 interface ScriptDetailsViewProps {
   scriptId: string
@@ -54,20 +55,24 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     return <NotFoundError message="Script not found" />
   }
 
+  const isScheduleEnabled = featureFlags.scriptSchedule.enabled()
+
+  const moreActionsItems = [
+    {
+      label: 'Edit Script',
+      icon: <Edit2 size={20} />,
+      onClick: handleEditScript,
+    },
+    ...(isScheduleEnabled ? [{
+      label: 'Schedule Script',
+      icon: <Calendar size={20} />,
+      onClick: handleScheduleScript,
+    }] : [])
+  ]
+
   const headerActions = (
     <>
-      <MoreActionsMenu
-        items={[{
-          label: 'Edit Script',
-          icon: <Edit2 size={20} />,
-          onClick: handleEditScript,
-        },
-        {
-          label: 'Schedule Script',
-          icon: <Calendar size={20} />,
-          onClick: handleScheduleScript,
-        }]}
-      />
+      <MoreActionsMenu items={moreActionsItems} />
       <Button
         variant="primary"
         onClick={handleRunScript}
@@ -158,7 +163,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         )}
 
         {/* Scheduled Runs Section */}
-        <ScheduledRunsSection scriptId={scriptId} />
+        {isScheduleEnabled && <ScheduledRunsSection scriptId={scriptId} />}
       </div>
     </DetailPageContainer>
   )

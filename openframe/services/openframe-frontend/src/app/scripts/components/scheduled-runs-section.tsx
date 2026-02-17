@@ -52,10 +52,6 @@ export function ScheduledRunsSection({ scriptId }: ScheduledRunsSectionProps) {
   const router = useRouter()
   const { scheduledTasks, isLoading, error } = useScheduledTasks(scriptId)
 
-  const handleEditTask = (taskId: number) => {
-    router.push(`/scripts/details/${scriptId}/schedule/${taskId}`)
-  }
-
   const tableData: ScheduledTaskRow[] = useMemo(() => {
     return scheduledTasks.map((task) => {
       const { date, time } = formatDate(task.run_time_date)

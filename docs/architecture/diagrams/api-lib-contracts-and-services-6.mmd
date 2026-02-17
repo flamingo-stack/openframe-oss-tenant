@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Client
+    participant ApiService as "API Service Core"
+    participant ApiLib as "Api Lib Contracts And Services"
+
+    Client->>ApiService: Query with CursorPaginationInput
+    ApiService->>ApiLib: Apply limit and cursor
+    ApiLib-->>ApiService: Paginated result
+    ApiService-->>Client: Result + next cursor

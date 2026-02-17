@@ -1,0 +1,8 @@
+flowchart TD
+    ConfigProps["Application Properties"] --> JwtConfigNode["JwtConfig"]
+    JwtConfigNode -->|"loadPublicKey()"| PublicKey["RSAPublicKey"]
+    JwtConfigNode -->|"loadPrivateKey()"| PrivateKey["RSAPrivateKey"]
+
+    PublicKey --> JwtEncoderNode["NimbusJwtEncoder"]
+    PrivateKey --> JwtEncoderNode
+    PublicKey --> JwtDecoderNode["NimbusJwtDecoder"]

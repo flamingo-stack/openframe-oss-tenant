@@ -4,13 +4,6 @@ description: Setup JDK, install Telepresence, connect to cluster, and setup port
 runs:
   using: composite
   steps:
-    - name: Set up JDK 21 for E2E tests
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: 'maven'
-
     - name: Install Telepresence
       shell: bash
       run: |

@@ -1,5 +1,5 @@
 export { useMingoDialog } from './use-mingo-dialog'
 export { useMingoDialogs } from './use-mingo-dialogs'
 export { useMingoDialogSelection } from './use-mingo-dialog-selection'
-export { useProcessedMessages } from './use-processed-messages'
-export { useChunkCatchup } from './use-chunk-catchup'
+export { useMingoChat } from './use-mingo-chat'
+export { useMingoRealtimeSubscription } from './use-mingo-realtime-subscription'

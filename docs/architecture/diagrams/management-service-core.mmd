@@ -1,0 +1,11 @@
+flowchart TD
+    ManagementApp["Management Application"] --> MgmtCore["Management Service Core"]
+
+    MgmtCore --> Mongo["Data Access Mongo"]
+    MgmtCore --> Kafka["Data Access Kafka"]
+    MgmtCore --> Nats["NATS Streams"]
+    MgmtCore --> Debezium["Debezium Connectors"]
+
+    MgmtCore --> StreamCore["Stream Service Core"]
+    MgmtCore --> ClientCore["Client Service Core"]
+    MgmtCore --> ApiCore["API Service Core"]

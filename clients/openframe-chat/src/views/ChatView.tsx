@@ -46,8 +46,7 @@ export function ChatView() {
     awaitingTechnicianResponse,
     isLoadingHistory
   } = useChat({ 
-    useApi: true, 
-    useMock: false,
+    useApi: true,
     useNats: features.nats,
     onMetadataUpdate: handleMetadataUpdate
   })

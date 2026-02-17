@@ -1,10 +1,28 @@
 'use client'
 
-import { DashboardInfoCard } from '@flamingo-stack/openframe-frontend-core'
+import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
 import { useChatsOverview } from '../hooks/use-dashboard-stats'
 
 export function ChatsOverviewSection() {
   const chats = useChatsOverview()
+
+  if (chats.isLoading) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
+          Chats Overview
+        </h2>
+        <Skeleton className="h-5 w-48" />
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -21,7 +39,6 @@ export function ChatsOverviewSection() {
           value={chats.active}
           percentage={chats.activePercentage}
           showProgress
-          progressColor="#5ea62e"
           href="/mingo"
         />
         <DashboardInfoCard

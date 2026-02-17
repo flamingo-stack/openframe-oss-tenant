@@ -1,0 +1,6 @@
+flowchart LR
+    User["User"] --> LoginPage["/login"]
+    LoginPage --> FormLogin["Form Authentication"]
+    LoginPage --> OAuthLogin["OAuth2 Login (Google/Microsoft)"]
+    OAuthLogin --> OidcUserService["Custom OIDC User Service"]
+    OidcUserService --> AutoProvision["Auto Provision Logic"]

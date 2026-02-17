@@ -27,11 +27,12 @@ export class WebSocketManager {
   private isDisposed = false
   private lastConnectTime = 0
   private lastRefreshAttempt = 0
+  private browserListenersAttached = false
   private options: Required<Omit<WebSocketManagerOptions, 'protocols'>> & Pick<WebSocketManagerOptions, 'protocols'>
 
   constructor(options: WebSocketManagerOptions) {
     this.options = {
-      maxReconnectAttempts: 5,
+      maxReconnectAttempts: 10,
       reconnectBackoff: [1000, 2000, 4000, 8000, 16000, 30000],
       onStateChange: () => {},
       onMessage: () => {},
@@ -102,11 +103,12 @@ export class WebSocketManager {
     }
 
     this.cleanup()
+    this.attachBrowserListeners()
     this.setState('connecting')
 
     try {
       const url = this.getUrl()
-      
+
       this.socket = new WebSocket(url, this.options.protocols)
       this.socket.binaryType = this.options.binaryType
       this.setupEventHandlers()
@@ -170,22 +172,22 @@ export class WebSocketManager {
     }
 
     const backoffIndex = Math.min(this.reconnectAttempt, this.options.reconnectBackoff.length - 1)
-    const delay = this.options.reconnectBackoff[backoffIndex]
+    const baseDelay = this.options.reconnectBackoff[backoffIndex]
+    const jitter = baseDelay * 0.25 * (Math.random() * 2 - 1) // +-25% jitter
+    const delay = Math.max(500, Math.round(baseDelay + jitter))
     
     this.setState('reconnecting')
     
     this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null
+
       if (this.isDisposed) return
-      
+
       this.reconnectAttempt++
-      
+
       // If we somehow reconnected already, abort this scheduled attempt
       if (this.socket?.readyState === WebSocket.OPEN) {
         this.setState('connected')
-        if (this.reconnectTimer) {
-          clearTimeout(this.reconnectTimer)
-          this.reconnectTimer = null
-        }
         return
       }
 
@@ -194,7 +196,7 @@ export class WebSocketManager {
         this.setState('failed')
         return
       }
-      
+
       await this.connect()
     }, delay)
   }
@@ -220,7 +222,7 @@ export class WebSocketManager {
           return false
         }
         this.reconnectAttempt = 0
-        this.connect()
+        this.scheduleReconnect(false)
       }
       
       return false
@@ -244,6 +246,7 @@ export class WebSocketManager {
   }
 
   reconnect() {
+    this.isDisposed = false
     this.reconnectAttempt = 0
     this.cleanup()
     this.connect()
@@ -253,6 +256,49 @@ export class WebSocketManager {
     this.isDisposed = true
     this.cleanup()
     this.setState('disconnected')
+  }
+
+  private handleVisibilityChange = () => {
+    if (typeof document === 'undefined') return
+    if (document.hidden) {
+      // Tab hidden: pause reconnection attempts but keep live connections
+      return
+    }
+    // Tab visible again — if we're in a bad state, reconnect immediately
+    if (!this.isDisposed && (this.state === 'failed' || this.state === 'disconnected')) {
+      this.reconnectAttempt = 0
+      this.connect()
+    }
+  }
+
+  private handleOnline = () => {
+    if (!this.isDisposed && (this.state === 'disconnected' || this.state === 'failed' || this.state === 'reconnecting')) {
+      this.reconnectAttempt = 0
+      this.connect()
+    }
+  }
+
+  private handleOffline = () => {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+  }
+
+  private attachBrowserListeners() {
+    if (this.browserListenersAttached || typeof window === 'undefined') return
+    this.browserListenersAttached = true
+    document.addEventListener('visibilitychange', this.handleVisibilityChange)
+    window.addEventListener('online', this.handleOnline)
+    window.addEventListener('offline', this.handleOffline)
+  }
+
+  private detachBrowserListeners() {
+    if (!this.browserListenersAttached || typeof window === 'undefined') return
+    this.browserListenersAttached = false
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange)
+    window.removeEventListener('online', this.handleOnline)
+    window.removeEventListener('offline', this.handleOffline)
   }
 
   private cleanup() {
@@ -293,6 +339,7 @@ export class WebSocketManager {
 
   dispose() {
     this.disconnect()
+    this.detachBrowserListeners()
     this.messageQueue = []
   }
 }

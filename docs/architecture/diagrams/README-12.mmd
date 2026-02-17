@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant AuthServer
+    participant ApiService
+    participant Mongo
+
+    Browser->>Gateway: API Request
+    Gateway->>AuthServer: Validate JWT
+    Gateway->>ApiService: Forward Request
+    ApiService->>Mongo: Query Data
+    Mongo-->>ApiService: Result
+    ApiService-->>Gateway: Response
+    Gateway-->>Browser: JSON Response

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
 
@@ -8,49 +8,59 @@ type ReleaseVersionResponse = {
   releaseVersion?: string
 }
 
-const DEFAULT_RELEASE_VERSION = 'latest'
+export const releaseVersionQueryKeys = {
+  all: ['releaseVersion'] as const,
+  detail: () => [...releaseVersionQueryKeys.all, 'detail'] as const,
+}
 
-export function useReleaseVersion() {
+async function fetchReleaseVersion(): Promise<string> {
+  const response = await apiClient.get<ReleaseVersionResponse>('/api/release-version')
+  
+  if (!response.ok) {
+    throw new Error(response.error || `Request failed with status ${response.status}`)
+  }
+
+  return response.data?.releaseVersion?.trim() || 'latest'
+}
+
+interface UseReleaseVersionOptions {
+  /**
+   * When false, the query is disabled until manually enabled.
+   */
+  enabled?: boolean
+}
+
+export function useReleaseVersion(options: UseReleaseVersionOptions = {}) {
   const { toast } = useToast()
-  const [releaseVersion, setReleaseVersion] = useState<string>(DEFAULT_RELEASE_VERSION)
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
+  const { enabled = true } = options
 
-  const fetchReleaseVersion = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const query = useQuery({
+    queryKey: releaseVersionQueryKeys.detail(),
+    queryFn: fetchReleaseVersion,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: 1000,
+  })
 
-    try {
-      const response = await apiClient.get<ReleaseVersionResponse>('/api/release-version')
-
-      if (!response.ok) {
-        throw new Error(response.error || `Request failed with status ${response.status}`)
-      }
-
-      const version = response.data?.releaseVersion?.trim()
-      setReleaseVersion(version || DEFAULT_RELEASE_VERSION)
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch release version'
-      setError(message)
-      setReleaseVersion(DEFAULT_RELEASE_VERSION)
-      toast({
-        title: 'Failed to load release version',
-        description: message,
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [toast])
-
-  useEffect(() => {
-    fetchReleaseVersion()
-  }, [fetchReleaseVersion])
+  if (query.error && enabled) {
+    toast({
+      title: 'Failed to load release version',
+      description: query.error.message,
+      variant: 'destructive',
+    })
+  }
 
   return {
-    releaseVersion,
-    isLoading,
-    error,
-    refetch: fetchReleaseVersion,
+    releaseVersion: query.data ?? 'latest',
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+    
+    isSuccess: query.isSuccess,
+    isFetching: query.isFetching,
+    
+    query,
   }
 }

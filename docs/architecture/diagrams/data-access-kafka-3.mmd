@@ -1,0 +1,10 @@
+flowchart LR
+    Auto["OssTenantKafkaAutoConfiguration"]
+
+    Auto --> PF["ProducerFactory"]
+    Auto --> KT["KafkaTemplate"]
+    Auto --> CF["ConsumerFactory"]
+    Auto --> LF["ListenerContainerFactory"]
+    Auto --> KP["OssTenantKafkaProducer"]
+    Auto --> KA["KafkaAdmin"]
+    Auto --> NT["KafkaAdmin.NewTopics"]
