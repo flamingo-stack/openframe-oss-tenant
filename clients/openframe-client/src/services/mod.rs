@@ -31,9 +31,6 @@ pub mod update_state_service;
 pub mod update_cleanup_service;
 pub mod update_handler_service;
 
-#[cfg(target_os = "macos")]
-pub mod preferences_writer;
-
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
 pub use initial_configuration_service::InitialConfigurationService;

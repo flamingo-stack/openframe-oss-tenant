@@ -7,6 +7,8 @@ pub mod update_scripts;
 pub mod updater_launcher;
 pub mod user_session;
 
+#[cfg(target_os = "macos")]
+pub mod preferences_writer;
 #[cfg(target_os = "windows")]
 pub mod windows_cleanup;
 #[cfg(target_os = "windows")]

@@ -10,6 +10,8 @@ use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
+#[allow(unused_imports)]
+use crate::models::InstalledTool;
 
 #[derive(Clone)]
 pub struct ToolUninstallService {
@@ -149,18 +151,8 @@ impl ToolUninstallService {
         Ok(())
     }
 
-    async fn stop_tool_process(&self, tool: &crate::models::InstalledTool) -> Result<()> {
-        match tool.installation_type {
-            InstallationType::GuiApp => {
-                let exec_path = tool.executable_path.as_deref()
-                    .context("GUI app has no executable path")?;
-                info!("Stopping GUI app by executable path: {}", exec_path);
-                self.tool_kill_service.stop_tool_by_path(exec_path).await
-            }
-            InstallationType::Standard => {
-                self.tool_kill_service.stop_tool(&tool.tool_agent_id).await
-            }
-        }
+    async fn stop_tool_process(&self, tool: &InstalledTool) -> Result<()> {
+        self.tool_kill_service.stop_installed_tool(tool).await
     }
 
     async fn cleanup_gui_app_bundle(&self, tool: &crate::models::InstalledTool) {
