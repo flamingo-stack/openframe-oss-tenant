@@ -262,9 +262,12 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.type }}" == "tauri" ]]; then
-            # Tauri app - build with bundling (creates .app and .dmg on macOS)
+          if [[ "${{ matrix.type }}" == "tauri" && "${{ matrix.os }}" == "macos" ]]; then
+            # Tauri app on macOS - build universal DMG
             make build-dmg
+          elif [[ "${{ matrix.type }}" == "tauri" ]]; then
+            # Tauri app on Windows - regular build
+            make build TARGET="${{ matrix.target }}"
           elif [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
