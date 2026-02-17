@@ -1,5 +1,0 @@
-flowchart TD
-    WebClientBuilder["WebClient.Builder Bean"] --> HttpClient["Reactor Netty HttpClient"]
-    HttpClient --> ConnectTimeout["Connect Timeout 30s"]
-    HttpClient --> ReadTimeout["Read Timeout 30s"]
-    HttpClient --> WriteTimeout["Write Timeout 30s"]

@@ -1,5 +1,0 @@
-flowchart TD
-    Provider["DebugModeProvider"] --> Invoke["Tauri invoke get_debug_mode"]
-    Invoke --> Rust["Rust Backend"]
-    Rust --> Provider
-    Provider --> Consumer["React Components"]

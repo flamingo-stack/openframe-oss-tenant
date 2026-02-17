@@ -1,4 +1,0 @@
-flowchart LR
-    NATS["machine.*.heartbeat"] --> HeartbeatListener["MachineHeartbeatListener"]
-    HeartbeatListener --> MachineStatusService["MachineStatusService"]
-    MachineStatusService --> Mongo["Device / Machine Status"]

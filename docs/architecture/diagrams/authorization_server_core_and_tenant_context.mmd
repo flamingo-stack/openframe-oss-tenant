@@ -1,6 +1,0 @@
-flowchart TD
-    Browser["Browser / Frontend App"] -->|"OAuth2 Authorization Code"| AuthServer["Authorization Server Core And Tenant Context"]
-    AuthServer -->|"JWT Access Token"| Gateway["Gateway Service"]
-    Gateway --> API["API Service Core"]
-    AuthServer --> Mongo["MongoDB"]
-    AuthServer -->|"OIDC Redirect"| IdP["External IdP (Google / Microsoft)"]

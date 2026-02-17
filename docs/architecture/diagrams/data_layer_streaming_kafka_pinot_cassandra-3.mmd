@@ -1,4 +1,0 @@
-flowchart TD
-    SaveCall["Repository.save()"] --> Aspect["MachineTagEventAspect"]
-    Aspect --> EventService["MachineTagEventServiceImpl"]
-    EventService --> KafkaPublish["publish(topic, key, message)"]

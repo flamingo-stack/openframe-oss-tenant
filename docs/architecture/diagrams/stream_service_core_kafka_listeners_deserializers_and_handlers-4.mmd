@@ -1,5 +1,0 @@
-flowchart TD
-    Message["DeserializedDebeziumMessage"] --> EnrichmentService
-    EnrichmentService --> MachineCache["MachineIdCacheService"]
-    MachineCache --> OrgCache["Organization Cache"]
-    EnrichmentService --> EnrichedData["IntegratedToolEnrichedData"]

@@ -1,8 +1,0 @@
-flowchart TD
-    Http["HTTP Request"] --> Security
-    Security --> Controller["@RestController"]
-    Controller --> Service["Domain Service"]
-    Service --> Repository["Mongo Repository"]
-    Repository --> Mongo[("MongoDB")]
-    Service --> Mapper["DTO Mapper"]
-    Mapper --> Response["JSON Response"]

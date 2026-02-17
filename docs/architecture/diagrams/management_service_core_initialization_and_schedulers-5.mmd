@@ -1,7 +1,0 @@
-flowchart TD
-    SchedulerRun["Scheduled Execution"] --> FetchClient["Load Client Config"]
-    SchedulerRun --> FetchAgents["Load Enabled Tool Agents"]
-    FetchClient --> CheckClient["Should Retry?"]
-    FetchAgents --> CheckAgent["Should Retry?"]
-    CheckClient -->|Yes| PublishClient["Publish Client Update"]
-    CheckAgent -->|Yes| PublishAgent["Publish Tool Agent Update"]
