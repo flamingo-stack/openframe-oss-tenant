@@ -7,7 +7,7 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    /// Reads configuration from system preferences (macOS) or returns default (other platforms).
+    /// Reads configuration from system preferences (macOS) or CLI arguments (other platforms).
     pub fn from_preferences() -> Self {
         #[cfg(target_os = "macos")]
         {
@@ -21,7 +21,37 @@ impl AppConfig {
 
         #[cfg(not(target_os = "macos"))]
         {
-            Self::default()
+            Self::from_cli_args()
+        }
+    }
+
+    /// Parses configuration from command line arguments (for Windows/Linux).
+    #[cfg(not(target_os = "macos"))]
+    fn from_cli_args() -> Self {
+        let args: Vec<String> = std::env::args().collect();
+
+        let mut token_path: Option<String> = None;
+        let mut secret: Option<String> = None;
+        let mut server_url: Option<String> = None;
+        let mut debug_mode = false;
+
+        for i in 0..args.len() {
+            if args[i] == "--openframe-token-path" && i + 1 < args.len() {
+                token_path = Some(args[i + 1].clone());
+            } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
+                secret = Some(args[i + 1].clone());
+            } else if args[i] == "--serverUrl" && i + 1 < args.len() {
+                server_url = Some(args[i + 1].clone());
+            } else if args[i] == "--devMode" {
+                debug_mode = true;
+            }
+        }
+
+        Self {
+            token_path,
+            secret,
+            server_url,
+            debug_mode,
         }
     }
 
