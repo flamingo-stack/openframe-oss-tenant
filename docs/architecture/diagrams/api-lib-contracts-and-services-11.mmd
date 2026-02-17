@@ -1,6 +1,0 @@
-flowchart TD
-    Gateway["Gateway Service Core"] --> ApiService
-    ApiService --> ApiLib
-    ExternalApi --> ApiLib
-    ApiLib --> DataAccess
-    DataAccess --> MongoDB[("MongoDB")]
