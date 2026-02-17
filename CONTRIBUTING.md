@@ -1,532 +1,473 @@
-# Contributing to OpenFrame
+# Contributing to OpenFrame OSS Tenant
 
-Welcome to the OpenFrame project! This guide covers everything you need to know about contributing to the platform, from coding standards to the pull request process.
+Thank you for your interest in contributing to OpenFrame OSS Tenant! This guide will help you get started with contributing to our open-source MSP automation platform.
+
+## 🌟 Ways to Contribute
+
+### Code Contributions
+- **Bug Fixes**: Help us identify and fix issues
+- **Feature Development**: Implement new MSP automation capabilities
+- **Performance Improvements**: Optimize service performance and resource usage
+- **Security Enhancements**: Strengthen authentication, authorization, and data protection
+- **Integration Development**: Add support for new MSP tools and services
+
+### Documentation & Community
+- **Documentation Improvements**: Enhance guides, API docs, and tutorials
+- **Example Applications**: Create sample integrations and use cases
+- **Testing**: Expand test coverage and quality assurance
+- **Community Support**: Help other developers in our Slack community
 
 ## 🚀 Getting Started
 
-### Prerequisites for Contributors
+### Prerequisites
 
 Before contributing, ensure you have:
 
-1. ✅ **Development Environment** - [Environment Setup](./docs/development/setup/environment.md) completed
-2. ✅ **Local Development** - [Local Development](./docs/development/setup/local-development.md) working
-3. ✅ **OpenMSP Slack Access** - [Join our community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-4. ✅ **GitHub Account** - With SSH key configured
-5. ✅ **Basic Knowledge** - Spring Boot, React/Next.js, TypeScript
+- **Java 21+** - OpenJDK or Oracle JDK
+- **Node.js 18+** - For tooling layer development
+- **Maven 3.8+** - For building Spring Boot services
+- **Docker & Docker Compose** - For local infrastructure
+- **Git** - Version control
 
-### First-Time Contributor Setup
+### Development Environment Setup
 
-```bash
-# Fork the repository on GitHub
-# Then clone your fork
-git clone git@github.com:YOUR_USERNAME/openframe-oss-tenant.git
-cd openframe-oss-tenant
+1. **Fork and Clone the Repository**
+   ```bash
+   # Fork the repo on GitHub, then clone your fork
+   git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
+   cd openframe-oss-tenant
+   
+   # Add upstream remote
+   git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
+   ```
 
-# Add upstream remote
-git remote add upstream git@github.com:flamingo-stack/openframe-oss-tenant.git
+2. **Set Up Local Development Environment**
+   ```bash
+   # Start infrastructure services
+   docker-compose up -d mongodb kafka redis cassandra nats
+   
+   # Install Node.js dependencies
+   npm install
+   
+   # Build Spring Boot services
+   mvn clean install -DskipTests
+   ```
 
-# Verify remotes
-git remote -v
-# origin    git@github.com:YOUR_USERNAME/openframe-oss-tenant.git (fetch)
-# origin    git@github.com:YOUR_USERNAME/openframe-oss-tenant.git (push)
-# upstream  git@github.com:flamingo-stack/openframe-oss-tenant.git (fetch)
-# upstream  git@github.com:flamingo-stack/openframe-oss-tenant.git (push)
+3. **Verify Setup**
+   ```bash
+   # Start core services
+   ./start-dev-services.sh
+   
+   # Test API health
+   curl http://localhost:8080/actuator/health
+   ```
+
+## 🏗️ Architecture Understanding
+
+### Core Services Overview
+
+OpenFrame follows a microservices architecture with these key components:
+
+```mermaid
+flowchart TD
+    subgraph CoreLibraries[Core Libraries - deps/openframe-oss-lib/]
+        ApiCore[API Service Core]
+        GatewayCore[Gateway Service Core]
+        AuthCore[Authorization Service Core]
+        DataCore[Data Mongo Core]
+        SecurityCore[Security OAuth Core]
+    end
+
+    subgraph Services[Services - openframe/services/]
+        ApiService[API Service]
+        GatewayService[Gateway Service]  
+        AuthService[Authorization Service]
+        StreamService[Stream Service]
+        ManagementService[Management Service]
+        ClientService[Client Service]
+        ExternalApiService[External API Service]
+    end
+
+    Services --> CoreLibraries
 ```
 
-## 📋 Code Standards
+### Development Principles
 
-### Java/Spring Boot Standards
+- **Multi-Tenant First**: Every component supports tenant isolation
+- **Event-Driven Architecture**: Services communicate via Kafka events
+- **Security by Design**: OAuth2/OIDC with JWT tokens and API key authentication
+- **Observability**: Comprehensive logging, metrics, and health checks
+- **Modular Design**: Reusable core libraries with deployable applications
 
-**Code Style:**
-- **Google Java Style Guide** with minor modifications
-- **4-space indentation**
-- **120-character line limit**
-- **Comprehensive Javadoc** for public APIs
+## 🔧 Development Workflow
 
-**Service Layer Example:**
-```java
-/**
- * Service for managing device lifecycle operations.
- * 
- * <p>This service handles device registration, monitoring, and decommissioning
- * within the multi-tenant OpenFrame platform. All operations are tenant-aware
- * and enforce proper security boundaries.
- * 
- * @author OpenFrame Team
- * @since 1.0.0
- */
-@Service
-@Slf4j
-@Transactional(readOnly = true)
-public class DeviceService {
-    
-    private final DeviceRepository deviceRepository;
-    private final OrganizationService organizationService;
-    private final AuditService auditService;
-    
-    /**
-     * Creates a new device within the specified organization.
-     * 
-     * @param request the device creation request containing device details
-     * @return the created device with generated ID and metadata
-     * @throws OrganizationNotFoundException if the organization doesn't exist
-     * @throws DuplicateDeviceException if a device with the same name exists
-     */
-    @Transactional
-    public Device createDevice(CreateDeviceRequest request) {
-        log.debug("Creating device: {} for organization: {}", 
-                 request.getDeviceName(), request.getOrganizationId());
-        
-        // Validate organization exists and user has access
-        Organization organization = organizationService.findById(request.getOrganizationId());
-        
-        // Check for duplicate device names within organization
-        if (deviceRepository.existsByTenantIdAndOrganizationIdAndDeviceName(
-                TenantContext.getCurrentTenant(),
-                request.getOrganizationId(),
-                request.getDeviceName())) {
-            throw new DuplicateDeviceException(
-                "Device with name '" + request.getDeviceName() + "' already exists");
-        }
-        
-        Device device = Device.builder()
-            .id(UUID.randomUUID().toString())
-            .tenantId(TenantContext.getCurrentTenant())
-            .organizationId(request.getOrganizationId())
-            .deviceName(request.getDeviceName())
-            .deviceType(request.getDeviceType())
-            .status(DeviceStatus.PENDING)
-            .createdAt(Instant.now())
-            .createdBy(SecurityContextHolder.getContext().getAuthentication().getName())
-            .build();
-            
-        Device savedDevice = deviceRepository.save(device);
-        auditService.logDeviceCreation(savedDevice);
-        
-        log.info("Successfully created device: {} with ID: {}", 
-                savedDevice.getDeviceName(), savedDevice.getId());
-        
-        return savedDevice;
-    }
-}
-```
+### Branch Strategy
 
-### TypeScript/React Standards
+We use a simplified GitHub Flow:
 
-**Code Style:**
-- **Prettier** for code formatting
-- **ESLint** for code quality
-- **2-space indentation** for frontend code
-- **PascalCase** for React components
-- **camelCase** for functions and variables
+1. **Create Feature Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
 
-**Component Structure:**
-```typescript
-// DeviceCard.tsx
-import React from 'react';
-import { Device, DeviceStatus } from '@/types/device';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { useDeviceActions } from '@/hooks/useDeviceActions';
+2. **Make Changes**
+   - Write clean, well-documented code
+   - Follow existing code style and patterns
+   - Add tests for new functionality
 
-interface DeviceCardProps {
-  device: Device;
-  onDeviceUpdate?: (deviceId: string, action: string) => void;
-}
+3. **Test Locally**
+   ```bash
+   # Run unit tests
+   mvn test
+   
+   # Run integration tests
+   mvn verify -Pintegration-tests
+   
+   # Test specific service
+   mvn test -pl openframe/services/openframe-api
+   ```
 
-/**
- * DeviceCard displays device information in a card format.
- * 
- * Supports device actions like restart, update, and removal based on
- * user permissions and device status.
- */
-export const DeviceCard: React.FC<DeviceCardProps> = ({
-  device,
-  onDeviceUpdate,
-}) => {
-  const { executeAction, isLoading } = useDeviceActions();
+4. **Commit Changes**
+   ```bash
+   git add .
+   git commit -m "feat: add new MSP tool integration"
+   ```
 
-  const handleAction = async (action: string) => {
-    try {
-      await executeAction(device.id, action);
-      onDeviceUpdate?.(device.id, action);
-    } catch (error) {
-      console.error('Failed to execute device action:', error);
-    }
-  };
-
-  const getStatusColor = (status: DeviceStatus): string => {
-    switch (status) {
-      case DeviceStatus.ONLINE:
-        return 'bg-green-100 text-green-800';
-      case DeviceStatus.OFFLINE:
-        return 'bg-red-100 text-red-800';
-      case DeviceStatus.PENDING:
-        return 'bg-yellow-100 text-yellow-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  return (
-    <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {device.deviceName}
-          </h3>
-          
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>Type: {device.deviceType}</span>
-            <span>IP: {device.ipAddress}</span>
-            <span>OS: {device.operatingSystem}</span>
-          </div>
-          
-          <div className="mt-3">
-            <Badge 
-              className={getStatusColor(device.status)}
-              data-testid="device-status"
-            >
-              {device.status}
-            </Badge>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAction('restart')}
-            disabled={isLoading || device.status === DeviceStatus.OFFLINE}
-            data-testid="restart-device-button"
-          >
-            {isLoading ? 'Processing...' : 'Restart'}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-```
-
-## 🧪 Testing Standards
-
-### Backend Testing Requirements
-
-**Test Coverage Requirements:**
-- **Service Layer**: 90% line coverage minimum
-- **Repository Layer**: 85% line coverage minimum
-- **Controller Layer**: 80% line coverage minimum
-- **Critical Business Logic**: 100% coverage
-
-**Test Structure:**
-```java
-@ExtendWith(MockitoExtension.class)
-@DisplayName("DeviceService Tests")
-class DeviceServiceTest {
-    
-    @Mock private DeviceRepository deviceRepository;
-    @Mock private OrganizationService organizationService;
-    @Mock private AuditService auditService;
-    
-    @InjectMocks private DeviceService deviceService;
-    
-    @Test
-    @DisplayName("Should create device successfully with valid request")
-    void shouldCreateDeviceSuccessfullyWithValidRequest() {
-        // Given
-        CreateDeviceRequest request = createValidDeviceRequest();
-        Organization organization = createTestOrganization();
-        when(organizationService.findById(any())).thenReturn(organization);
-        when(deviceRepository.existsByTenantIdAndOrganizationIdAndDeviceName(any(), any(), any()))
-            .thenReturn(false);
-        when(deviceRepository.save(any(Device.class))).thenAnswer(invocation -> {
-            Device device = invocation.getArgument(0);
-            device.setId("generated-id");
-            return device;
-        });
-        
-        // When
-        Device result = deviceService.createDevice(request);
-        
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo("generated-id");
-        assertThat(result.getDeviceName()).isEqualTo(request.getDeviceName());
-        
-        verify(deviceRepository).save(argThat(device ->
-            device.getTenantId().equals(TenantContext.getCurrentTenant()) &&
-            device.getStatus() == DeviceStatus.PENDING
-        ));
-        verify(auditService).logDeviceCreation(result);
-    }
-}
-```
-
-### Frontend Testing Requirements
-
-**Test Coverage Requirements:**
-- **Components**: 80% line coverage minimum
-- **Custom Hooks**: 90% line coverage minimum
-- **Utility Functions**: 95% line coverage minimum
-- **Critical User Flows**: E2E tests required
-
-## 🔄 Git Workflow
-
-### Branch Naming Convention
-
-```text
-Feature Branches:     feature/[issue-number]-brief-description
-Bug Fixes:           bugfix/[issue-number]-brief-description  
-Hotfixes:            hotfix/[issue-number]-brief-description
-Documentation:       docs/[topic]-brief-description
-Refactoring:         refactor/[component]-brief-description
-
-Examples:
-feature/123-device-status-monitoring
-bugfix/456-device-card-rendering-issue
-hotfix/789-critical-security-patch
-docs/api-documentation-update
-refactor/device-service-cleanup
-```
+5. **Push and Create PR**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+   
+   Then create a Pull Request on GitHub.
 
 ### Commit Message Convention
 
-We follow **Conventional Commits** specification:
+We follow conventional commits:
 
-```text
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `test:` - Adding or updating tests
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvements
+- `build:` - Build system changes
 
 **Examples:**
-```text
-feat(devices): add device restart functionality
-
-- Implement device restart API endpoint
-- Add restart button to device card component
-- Include audit logging for restart actions
-
-Closes #123
-
-fix(auth): resolve JWT token expiration handling
-
-The token refresh mechanism was not properly handling expired tokens,
-causing users to be logged out unexpectedly.
-
-- Fix token refresh logic in AuthService
-- Add proper error handling for expired tokens
-- Update token refresh tests
-
-Fixes #456
+```
+feat: add ConnectWise integration for ticket management
+fix: resolve JWT token validation in multi-tenant context
+docs: update API service architecture documentation
+test: add integration tests for stream service event processing
 ```
 
-### Pull Request Process
+## 📝 Code Style Guidelines
 
-#### 1. Before Creating PR
+### Java (Spring Boot Services)
 
-```bash
-# Ensure you're on the latest main branch
-git checkout main
-git pull upstream main
+- **Code Formatting**: Follow Google Java Style Guide
+- **Package Structure**: Organize by feature, not layer
+- **Naming**: Use descriptive names for classes, methods, and variables
+- **Documentation**: Add Javadoc for public APIs
+- **Testing**: Write unit tests with JUnit 5 and integration tests with Testcontainers
 
-# Create and checkout your feature branch
-git checkout -b feature/123-device-status-monitoring
-
-# Make your changes and commit
-git add .
-git commit -m "feat(devices): add device status monitoring"
-
-# Push to your fork
-git push origin feature/123-device-status-monitoring
-```
-
-#### 2. PR Template
-
-When creating a pull request, use this template:
-
-```markdown
-## Description
-Brief description of the changes and their purpose.
-
-## Related Issue
-Closes #[issue-number]
-
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Performance improvement
-- [ ] Code refactoring
-
-## How Has This Been Tested?
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-- [ ] E2E tests pass
-
-## Checklist
-- [ ] My code follows the project's style guidelines
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-```
-
-#### 3. PR Review Process
-
-**Approval Requirements:**
-- ✅ **2 approvals** from maintainers for major features
-- ✅ **1 approval** from maintainer for bug fixes and minor changes
-- ✅ **All automated checks** must pass
-
-## 📖 Documentation Standards
-
-### Code Documentation
-
-**Javadoc Requirements:**
+**Example Service Structure:**
 ```java
-/**
- * Service for managing device lifecycle operations within the OpenFrame platform.
- * 
- * <p>This service provides comprehensive device management functionality including
- * registration, monitoring, configuration, and decommissioning. All operations
- * are tenant-aware and enforce proper security boundaries.
- * 
- * <h2>Security Considerations</h2>
- * <ul>
- *   <li>All operations require valid tenant context</li>
- *   <li>Cross-tenant access is prevented at the service layer</li>
- *   <li>Device access is restricted by organization membership</li>
- * </ul>
- * 
- * @author OpenFrame Team
- * @since 1.0.0
- * @see Device
- * @see DeviceRepository
- */
-@Service
-@Transactional(readOnly = true)
-public class DeviceService {
-    // Implementation
+@RestController
+@RequestMapping("/api/organizations")
+@Validated
+public class OrganizationController {
+    
+    private final OrganizationService organizationService;
+    
+    public OrganizationController(OrganizationService organizationService) {
+        this.organizationService = organizationService;
+    }
+    
+    @GetMapping
+    public ResponseEntity<Page<OrganizationDTO>> getOrganizations(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @Valid OrganizationFilterOptions filterOptions) {
+        // Implementation
+    }
 }
 ```
 
-## 🚀 Release and Deployment
+### Node.js (Tooling Layer)
 
-### Semantic Versioning
+- **TypeScript**: Use TypeScript for type safety
+- **ESLint**: Follow project ESLint configuration
+- **Code Organization**: Organize by feature modules
+- **Error Handling**: Use proper error handling with try/catch
+- **Documentation**: Add JSDoc comments for public functions
 
-OpenFrame follows **Semantic Versioning (SemVer)**:
-
-```text
-MAJOR.MINOR.PATCH
-
-MAJOR: Incompatible API changes
-MINOR: Backward-compatible functionality additions  
-PATCH: Backward-compatible bug fixes
-
-Examples:
-1.0.0 - Initial release
-1.1.0 - New device monitoring features
-1.1.1 - Bug fix for device status updates
-2.0.0 - Breaking changes to device API
+**Example Function:**
+```typescript
+/**
+ * Process MSP tool events and enrich with organizational context
+ * @param event - Raw tool event
+ * @param tenantId - Tenant identifier for context
+ * @returns Enriched event with additional metadata
+ */
+export async function enrichToolEvent(
+  event: RawToolEvent,
+  tenantId: string
+): Promise<EnrichedEvent> {
+  // Implementation
+}
 ```
 
-## 🌐 Community Guidelines
+## 🧪 Testing Guidelines
+
+### Testing Strategy
+
+We maintain high test coverage across all services:
+
+- **Unit Tests**: Test individual components in isolation
+- **Integration Tests**: Test service interactions with databases and messaging
+- **API Tests**: Test REST and GraphQL endpoints
+- **Contract Tests**: Validate service interfaces
+
+### Writing Tests
+
+**Unit Test Example:**
+```java
+@ExtendWith(MockitoExtension.class)
+class UserServiceTest {
+    
+    @Mock
+    private UserRepository userRepository;
+    
+    @InjectMocks
+    private UserService userService;
+    
+    @Test
+    void shouldCreateUserSuccessfully() {
+        // Given
+        CreateUserRequest request = new CreateUserRequest("test@example.com");
+        User savedUser = new User("test@example.com");
+        when(userRepository.save(any(User.class))).thenReturn(savedUser);
+        
+        // When
+        User result = userService.createUser(request);
+        
+        // Then
+        assertThat(result.getEmail()).isEqualTo("test@example.com");
+    }
+}
+```
+
+**Integration Test Example:**
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@TestPropertySource(locations = "classpath:application-test.properties")
+class OrganizationControllerIntegrationTest {
+    
+    @Autowired
+    private TestRestTemplate restTemplate;
+    
+    @Test
+    void shouldReturnOrganizationsForAuthenticatedUser() {
+        // Test implementation with real HTTP calls
+    }
+}
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+mvn test
+
+# Run tests for specific service
+mvn test -pl openframe/services/openframe-api
+
+# Run integration tests
+mvn verify -Pintegration-tests
+
+# Run tests with coverage
+mvn test jacoco:report
+```
+
+## 🔍 Code Review Process
+
+### Pull Request Requirements
+
+Before submitting a PR, ensure:
+
+- [ ] **Code compiles** without warnings
+- [ ] **All tests pass** locally
+- [ ] **New features have tests** with adequate coverage
+- [ ] **Documentation is updated** for public APIs
+- [ ] **Commit messages** follow conventional format
+- [ ] **No sensitive information** in code or commit history
+
+### Review Checklist
+
+Reviewers will check:
+
+- **Functionality**: Does the code solve the problem correctly?
+- **Architecture**: Does it fit the existing system design?
+- **Security**: Are there any security vulnerabilities?
+- **Performance**: Are there any performance concerns?
+- **Testing**: Is test coverage adequate?
+- **Documentation**: Are changes properly documented?
+
+## 🛡️ Security Considerations
+
+### Security Guidelines
+
+- **Never commit secrets**: Use environment variables or secure vaults
+- **Validate input**: Always validate and sanitize user input
+- **Use parameterized queries**: Prevent SQL injection attacks
+- **JWT validation**: Ensure proper token validation in all services
+- **API authentication**: Require authentication for all non-public endpoints
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please:
+
+1. **DO NOT** open a GitHub issue
+2. **Email us privately** at security@flamingo.run
+3. **Provide detailed information** about the vulnerability
+4. **Allow time for response** before public disclosure
+
+## 📚 Documentation Standards
+
+### Code Documentation
+
+- **Javadoc**: Document all public classes and methods
+- **README files**: Each service should have a README
+- **API Documentation**: Use OpenAPI/Swagger for REST APIs
+- **Architecture Decisions**: Document significant design decisions
+
+### Writing Guidelines
+
+- **Clear and concise**: Write for developers at all skill levels  
+- **Include examples**: Provide code examples and usage patterns
+- **Keep updated**: Update docs when changing functionality
+- **Test documentation**: Ensure examples work correctly
+
+## 🚀 Feature Development Guide
+
+### Adding New MSP Tool Integration
+
+1. **Research the Tool API**
+   - Study API documentation and authentication methods
+   - Understand data models and event structures
+   - Identify integration points with OpenFrame
+
+2. **Create Integration Module**
+   ```bash
+   # Create new integration in integrated-tools/
+   mkdir integrated-tools/your-tool-name
+   cd integrated-tools/your-tool-name
+   ```
+
+3. **Implement Core Components**
+   - **SDK Wrapper**: Java client for the tool's API
+   - **Event Mappers**: Transform tool events to OpenFrame format  
+   - **Stream Processors**: Handle event enrichment and routing
+   - **Configuration**: Tool-specific settings and credentials
+
+4. **Add Tests and Documentation**
+   - Unit tests for all components
+   - Integration tests with tool APIs
+   - Setup documentation and troubleshooting guide
+
+### Extending Core Services
+
+1. **Identify Extension Point**
+   - Review existing service architecture
+   - Identify where new functionality fits
+   - Consider impact on other services
+
+2. **Follow Service Patterns**
+   - Use existing controller/service/repository patterns
+   - Implement proper error handling and validation
+   - Add appropriate logging and metrics
+
+3. **Update GraphQL Schema** (if applicable)
+   ```graphql
+   extend type Query {
+       newFeature(input: NewFeatureInput!): NewFeatureResult
+   }
+   
+   input NewFeatureInput {
+       parameter: String!
+   }
+   
+   type NewFeatureResult {
+       success: Boolean!
+       data: String
+   }
+   ```
+
+## 🌍 Community Guidelines
 
 ### Communication
 
-**OpenMSP Slack Community:**
-- **#general** - General discussions
-- **#development** - Development questions and discussions
-- **#bug-reports** - Bug reports and issue discussions
-- **#feature-requests** - Feature suggestions and discussions
+- **Be respectful**: Treat all contributors with respect
+- **Be inclusive**: Welcome contributors from all backgrounds
+- **Be constructive**: Provide helpful feedback and suggestions
+- **Be patient**: Remember that contributors have different experience levels
 
-**Communication Guidelines:**
-- ✅ **Be respectful** and inclusive
-- ✅ **Search existing discussions** before asking questions
-- ✅ **Provide context** when asking for help
-- ✅ **Share knowledge** and help other contributors
-- ❌ **Don't spam** or post off-topic content
-- ❌ **Don't share sensitive information** in public channels
+### Getting Help
 
-### Issue Reporting
+- **OpenMSP Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Discussions**: Start discussions for questions and ideas
+- **Documentation**: Check existing docs before asking questions
+- **Code Examples**: Refer to existing service implementations
 
-**Bug Reports:**
-```markdown
-## Bug Description
-Brief description of the bug
+### Channels in OpenMSP Slack
 
-## Steps to Reproduce
-1. Go to...
-2. Click on...
-3. See error
+- `#general` - General discussions and announcements
+- `#development` - Development questions and technical discussions  
+- `#integrations` - MSP tool integration development
+- `#help` - Get help with setup and configuration
 
-## Expected Behavior
-What should happen instead
+## 📄 Legal & Licensing
 
-## Environment
-- OpenFrame Version: [e.g. 1.2.0]
-- Browser: [e.g. Chrome 120.0]
-- OS: [e.g. Windows 11]
-- Java Version: [e.g. 21.0.1]
-- Node.js Version: [e.g. 18.19.0]
-```
+### Contributor License Agreement
 
-## 🤝 Getting Help
+By contributing to OpenFrame OSS Tenant, you agree that:
 
-### Resources
+- Your contributions are your original work
+- You grant Flamingo Stack rights to use your contributions
+- Your contributions will be licensed under the Flamingo AI Unified License v1.0
 
-1. **Documentation** - Start with our comprehensive guides
-2. **[OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)** - Ask questions and get real-time help
-3. **Code Reviews** - Learn from feedback on your contributions
-4. **Mentorship** - Senior contributors available for guidance
+### License Compliance
 
-### Troubleshooting
+- Ensure all dependencies are compatible with our license
+- Do not include GPL or AGPL licensed code
+- Add license headers to new files when required
 
-**Common Issues:**
+## ✅ Checklist for Contributors
 
-```bash
-# Build fails with dependency issues
-mvn clean install -U
+Before submitting your first contribution:
 
-# Frontend tests failing
-cd openframe/services/openframe-frontend
-rm -rf node_modules package-lock.json
-npm install
+- [ ] Read this contributing guide completely
+- [ ] Set up local development environment
+- [ ] Join the OpenMSP Slack community
+- [ ] Review existing code to understand patterns
+- [ ] Start with a small bug fix or documentation improvement
+- [ ] Ensure tests pass locally
+- [ ] Create well-structured commits with clear messages
 
-# Code style errors
-mvn spotless:apply  # Backend
-npm run format     # Frontend
-```
+## 🎉 Recognition
 
-## 🎯 Next Steps
+We appreciate all contributions to OpenFrame OSS Tenant! Contributors will be:
 
-Ready to contribute? Here's your path:
+- **Listed in CONTRIBUTORS.md** - Recognition for your contributions  
+- **Mentioned in release notes** - Credit for significant features
+- **Invited to community events** - Special access to OpenFrame webinars
+- **Given priority support** - Faster response in community channels
 
-1. ✅ **Set up development environment** - [Environment Setup](./docs/development/setup/environment.md)
-2. ✅ **Pick an issue** - Look for "good first issue" labels
-3. ✅ **Join Slack community** - [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-4. ✅ **Create your first PR** - Follow this guide
-5. ✅ **Engage with the community** - Help others and share knowledge
+## 📞 Contact
 
-Welcome to the OpenFrame community! We're excited to have you contribute to the future of open-source MSP platforms. 🚀
+- **Community Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Website**: https://www.flamingo.run/openframe
+- **General Inquiries**: https://flamingo.run
 
 ---
 
-For more detailed information, see our [Development Documentation](./docs/development/) and [Architecture Reference](./docs/architecture/).
+Thank you for contributing to OpenFrame OSS Tenant! Together, we're building the future of AI-powered MSP automation. 🚀
