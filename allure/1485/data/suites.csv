@@ -1,4 +1,4 @@
 "Status","Start Time","Stop Time","Duration in ms","Parent Suite","Suite","Sub Suite","Test Class","Test Method","Name","Description"
-"failed","Tue Feb 17 15:19:43 UTC 2026","Tue Feb 17 15:19:47 UTC 2026","3464","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testRegisterNewUser","Register Owner user",""
-"passed","Tue Feb 17 15:19:52 UTC 2026","Tue Feb 17 15:19:53 UTC 2026","1275","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testDefaultOrganizationCreated","Check that default organization is created",""
-"passed","Tue Feb 17 15:19:47 UTC 2026","Tue Feb 17 15:19:52 UTC 2026","5146","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testLoginNewUser","Login Owner user",""
+"passed","Tue Feb 17 15:36:59 UTC 2026","Tue Feb 17 15:37:00 UTC 2026","1371","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testDefaultOrganizationCreated","Check that default organization is created",""
+"passed","Tue Feb 17 15:36:52 UTC 2026","Tue Feb 17 15:36:59 UTC 2026","6311","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testLoginNewUser","Login Owner user",""
+"failed","Tue Feb 17 15:36:48 UTC 2026","Tue Feb 17 15:36:52 UTC 2026","4119","","Owner registration","","com.openframe.test.tests.OwnerRegistrationTest","testRegisterNewUser","Register Owner user",""
