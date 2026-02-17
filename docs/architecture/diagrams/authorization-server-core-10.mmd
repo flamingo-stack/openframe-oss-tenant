@@ -1,7 +1,0 @@
-flowchart TD
-    TokenIssue["Issue Token"] --> TenantKeyService
-    TenantKeyService --> Check["Active Key Exists?"]
-    Check -->|No| Generate["Generate RSA 2048 Key Pair"]
-    Check -->|Yes| Load["Load Active Key"]
-    Generate --> Encrypt["Encrypt Private Key"]
-    Encrypt --> Store["Store in Mongo"]
