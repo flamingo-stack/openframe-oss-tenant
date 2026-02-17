@@ -1,0 +1,7 @@
+flowchart LR
+    Mgmt["Management Service Core"] --> SaveStream["NatsStreamManagementService.save"]
+    SaveStream --> ToolInstall["TOOL_INSTALLATION"]
+    SaveStream --> ClientUpdate["CLIENT_UPDATE"]
+    SaveStream --> ToolUpdate["TOOL_UPDATE"]
+    SaveStream --> ToolConn["TOOL_CONNECTIONS"]
+    SaveStream --> Installed["INSTALLED_AGENTS"]

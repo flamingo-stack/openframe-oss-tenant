@@ -1,0 +1,7 @@
+flowchart LR
+    DebeziumMsg["DeserializedDebeziumMessage"] --> AgentId["agentId"]
+    AgentId --> CacheLookup["MachineIdCacheService"]
+    CacheLookup --> Machine["CachedMachineInfo"]
+    CacheLookup --> Org["CachedOrganizationInfo"]
+    Machine --> Enriched["IntegratedToolEnrichedData"]
+    Org --> Enriched

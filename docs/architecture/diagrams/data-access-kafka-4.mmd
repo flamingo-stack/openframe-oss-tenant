@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Application Startup"] --> AdminEnabled["Admin Enabled?"]
+    AdminEnabled -->|"Yes"| LoadTopics["Load KafkaTopicProperties"]
+    LoadTopics --> BuildTopics["Create NewTopic Objects"]
+    BuildTopics --> Register["KafkaAdmin.NewTopics"]
+    Register --> End["Topics Created/Validated"]

@@ -1,0 +1,5 @@
+flowchart TD
+    A["User Click Login"] --> B["/oauth/login"]
+    B --> C["Generate State + PKCE"]
+    C --> D["Set OAuth State Cookie"]
+    D --> E["Redirect to Authorization Server"]

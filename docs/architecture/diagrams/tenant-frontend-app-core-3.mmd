@@ -1,0 +1,6 @@
+flowchart LR
+    Mode["Runtime Mode"] --> CookieMode["Cookie Based Auth"]
+    Mode --> HeaderMode["Header Based Auth"]
+
+    CookieMode --> IncludeCookies["credentials include"]
+    HeaderMode --> InjectHeader["Authorization Bearer Token"]

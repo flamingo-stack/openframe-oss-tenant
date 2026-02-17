@@ -1,0 +1,3 @@
+flowchart TD
+    Base["DebeziumMessageHandler<T>"] --> KafkaImpl["DebeziumKafkaMessageHandler"]
+    Base --> CassandraImpl["DebeziumCassandraMessageHandler"]

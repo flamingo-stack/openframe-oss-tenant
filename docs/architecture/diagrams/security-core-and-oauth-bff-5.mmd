@@ -1,0 +1,6 @@
+flowchart TD
+    Code["Authorization Code"] --> Callback["/oauth/callback"]
+    Callback --> ValidateState["Validate State Cookie"]
+    ValidateState --> Exchange["Exchange Code for Tokens"]
+    Exchange --> SetCookies["Set Access + Refresh Cookies"]
+    SetCookies --> RedirectUser["Redirect to Target"]

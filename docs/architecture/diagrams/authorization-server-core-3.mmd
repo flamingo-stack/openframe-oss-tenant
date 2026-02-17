@@ -1,0 +1,4 @@
+flowchart TD
+    AS["Authorization Server Endpoints"] --> Authenticated["Require Authentication"]
+    Authenticated --> JwtResource["JWT Resource Server Enabled"]
+    JwtResource --> OIDC["OIDC Enabled"]

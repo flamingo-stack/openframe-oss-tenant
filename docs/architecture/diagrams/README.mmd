@@ -1,0 +1,24 @@
+flowchart TD
+    Browser["Tenant Frontend (Browser)"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> AuthZ["Authorization Server Core"]
+    Gateway --> ApiCore["API Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> ClientCore["Client Service Core"]
+
+    ClientAgent["Installed Agent"] --> ClientCore
+    ClientAgent --> NATS["NATS JetStream"]
+
+    NATS --> ClientCore
+    ClientCore --> Kafka["Kafka"]
+
+    Kafka --> StreamCore["Stream Service Core"]
+    StreamCore --> Cassandra["Cassandra (Audit Storage)"]
+    StreamCore --> Kafka
+
+    ApiCore --> Mongo["MongoDB"]
+    AuthZ --> Mongo
+    Management --> Mongo
+
+    Management["Management Service Core"] --> NATS
+    Management --> Kafka

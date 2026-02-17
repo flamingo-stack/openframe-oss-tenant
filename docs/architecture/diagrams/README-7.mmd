@@ -1,0 +1,5 @@
+flowchart TD
+    Agent --> ClientService
+    Agent --> NATS
+    NATS --> Listeners
+    Listeners --> Mongo

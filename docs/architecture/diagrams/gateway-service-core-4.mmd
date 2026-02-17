@@ -1,0 +1,7 @@
+flowchart TD
+    Jwt["Incoming JWT"] --> ExtractIssuer["Extract iss Claim"]
+    ExtractIssuer --> Cache["Issuer Manager Cache"]
+    Cache -->|"cache miss"| BuildManager["Build JwtReactiveAuthenticationManager"]
+    Cache -->|"cache hit"| UseManager["Reuse Manager"]
+    BuildManager --> Validate["Strict Issuer Validation"]
+    UseManager --> Validate

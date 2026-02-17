@@ -1,0 +1,6 @@
+flowchart LR
+    Request["Incoming Request"] --> JwtResolver["JwtIssuerAuthenticationManagerResolver"]
+    JwtResolver --> Cache["Caffeine Jwt Provider Cache"]
+    Cache --> JwtDecoder["JwtDecoder per Issuer"]
+    JwtDecoder --> Principal["AuthPrincipal"]
+    Principal --> Controller["Controller or DataFetcher"]
