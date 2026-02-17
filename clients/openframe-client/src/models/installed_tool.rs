@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use crate::models::SessionType;
+use crate::models::download_configuration::InstallationType;
 
 /// Installation status of the tool on the endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -29,6 +30,10 @@ pub struct InstalledTool {
     /// Path to executable relative to tool folder
     #[serde(skip_serializing_if = "Option::is_none")]
     pub executable_path: Option<String>,
+    #[serde(default)]
+    pub installation_type: InstallationType,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bundle_id: Option<String>,
 }
 
 impl Default for InstalledTool {
@@ -44,6 +49,8 @@ impl Default for InstalledTool {
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
             executable_path: None,
+            installation_type: InstallationType::default(),
+            bundle_id: None,
         }
     }
 }

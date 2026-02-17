@@ -1,0 +1,4 @@
+flowchart TD
+    RegistrationService["Agent Registration Service"] --> Processor["Agent Registration Processor"]
+    Processor -->|"Default"| DefaultProcessor["Default Agent Registration Processor"]
+    Processor -->|"Custom Override"| CustomProcessor["Custom Implementation"]

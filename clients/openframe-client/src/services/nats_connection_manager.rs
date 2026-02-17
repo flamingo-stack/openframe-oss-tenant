@@ -54,7 +54,7 @@ impl NatsConnectionManager {
         
         // TODO: token fallback and connection retry
         let mut connect_options = async_nats::ConnectOptions::new()
-            .name(machine_id)
+            .name(machine_id.clone())
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
             .retry_on_initial_connect()
             .reconnect_delay_callback(|attempt| {
@@ -75,7 +75,8 @@ impl NatsConnectionManager {
                         Self::perform_reauthentication_and_build_url(auth_service, config_service, nats_server_url).await
                     }
                 }
-            );
+            )
+            .custom_header("X-MACHINE-ID", &machine_id);
 
         // Only add TLS config in development mode
         if self.initial_configuration_service.is_local_mode()? {

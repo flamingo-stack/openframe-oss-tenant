@@ -572,52 +572,61 @@ impl ToolRunManager {
                 #[cfg(target_os = "macos")]
                 {
                     use crate::models::SessionType;
-                    use crate::platform::user_session::{get_console_user, launch_as_user};
+                    use crate::platform::user_session::{get_console_user, launch_as_user, is_process_running};
 
                     match tool.session_type {
                         SessionType::User => {
-                            info!(tool_id = %tool.tool_agent_id, "Launching as USER session (GUI) on macOS");
+                            info!(tool_id = %tool.tool_agent_id, "Launching as USER session (GUI) on macOS - single launch, no restart");
+
+                            // Check if already running
+                            if is_process_running(&command_path).await {
+                                info!(tool_id = %tool.tool_agent_id, "Already running, skipping launch");
+                                return;
+                            }
 
                             let Some(user) = get_console_user() else {
-                                error!(tool_id = %tool.tool_agent_id, "No console user - retrying in {}s", RETRY_DELAY_SECONDS);
-                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                continue;
+                                error!(tool_id = %tool.tool_agent_id, "No console user, cannot launch USER session tool");
+                                return;
                             };
 
-                            match launch_as_user(&command_path, &processed_args, &user).await {
+                            // For GUI apps with bundle_id: write config to preferences and launch without args
+                            let launch_args = match &tool.bundle_id {
+                                Some(bundle_id) => {
+                                    let prefs = crate::platform::preferences_writer::args_to_pairs(&processed_args);
+                                    if let Err(e) = crate::platform::preferences_writer::write(bundle_id, prefs) {
+                                        error!(tool_id = %tool.tool_agent_id, "Failed to write preferences: {:#}", e);
+                                    }
+                                    vec![]
+                                }
+                                None => processed_args.clone(),
+                            };
+
+                            match launch_as_user(&command_path, &launch_args, &user).await {
                                 Ok(mut child) => {
                                     info!(tool_id = %tool.tool_agent_id, "Launched as user {}, PID: {:?}", user.username, child.id());
 
-                                    // Capture stdout/stderr
+                                    // Drain stdout/stderr to prevent pipe buffer blocking
                                     if let Some(stdout) = child.stdout.take() {
-                                        let tid = tool.tool_agent_id.clone();
                                         tokio::spawn(async move {
                                             let mut lines = BufReader::new(stdout).lines();
-                                            while let Ok(Some(line)) = lines.next_line().await {
-                                                info!(tool_id = %tid, "[STDOUT] {}", line);
-                                            }
+                                            while let Ok(Some(_)) = lines.next_line().await {}
                                         });
                                     }
                                     if let Some(stderr) = child.stderr.take() {
-                                        let tid = tool.tool_agent_id.clone();
                                         tokio::spawn(async move {
                                             let mut lines = BufReader::new(stderr).lines();
-                                            while let Ok(Some(line)) = lines.next_line().await {
-                                                warn!(tool_id = %tid, "[STDERR] {}", line);
-                                            }
+                                            while let Ok(Some(_)) = lines.next_line().await {}
                                         });
                                     }
 
-                                    let status = child.wait().await;
-                                    warn!(tool_id = %tool.tool_agent_id, "Exited: {:?}, restarting in {}s", status, RETRY_DELAY_SECONDS);
+                                    info!(tool_id = %tool.tool_agent_id, "USER session tool launched - no lifecycle monitoring");
                                 }
                                 Err(e) => {
                                     error!(tool_id = %tool.tool_agent_id, "Failed to launch as user: {:#}", e);
                                 }
                             }
 
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                            continue;
+                            return;
                         }
                         SessionType::Console => {
                             info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");

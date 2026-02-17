@@ -1,6 +1,14 @@
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum InstallationType {
+    #[default]
+    Standard,
+    GuiApp,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DownloadConfiguration {
@@ -9,6 +17,10 @@ pub struct DownloadConfiguration {
     #[serde(alias = "agentFileName", alias = "assetFileName")]
     pub target_file_name: String,
     pub link: String,
+    #[serde(default)]
+    pub installation_type: InstallationType,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub bundle_id: Option<String>,
 }
 
 impl DownloadConfiguration {

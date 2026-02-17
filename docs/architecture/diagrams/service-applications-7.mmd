@@ -1,0 +1,9 @@
+flowchart LR
+    User["User"] --> Gateway
+    Gateway --> API
+    API --> Kafka
+    Kafka --> Stream
+    API --> Mongo
+    AuthZ --> Mongo
+    Client --> Kafka
+    Management --> Mongo

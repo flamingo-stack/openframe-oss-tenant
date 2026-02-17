@@ -1,0 +1,28 @@
+flowchart LR
+    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service"]
+    Gateway --> ExternalAPI["External Api Service Core"]
+
+    subgraph controllers["REST Controllers"]
+        DeviceCtrl["Device Controller"]
+        EventCtrl["Event Controller"]
+        LogCtrl["Log Controller"]
+        OrgCtrl["Organization Controller"]
+        ToolCtrl["Tool Controller"]
+        IntegrationCtrl["Integration Controller"]
+    end
+
+    ExternalAPI --> DeviceCtrl
+    ExternalAPI --> EventCtrl
+    ExternalAPI --> LogCtrl
+    ExternalAPI --> OrgCtrl
+    ExternalAPI --> ToolCtrl
+    ExternalAPI --> IntegrationCtrl
+
+    DeviceCtrl --> DomainServices["Domain Services"]
+    EventCtrl --> DomainServices
+    LogCtrl --> DomainServices
+    OrgCtrl --> DomainServices
+    ToolCtrl --> DomainServices
+
+    DomainServices --> Mongo["MongoDB"]
+    DomainServices --> Kafka["Kafka / Streams"]

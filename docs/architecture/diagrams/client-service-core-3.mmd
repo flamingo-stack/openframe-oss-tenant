@@ -1,0 +1,5 @@
+flowchart LR
+    Agent["Agent"] -->|"Heartbeat"| NATS["NATS"]
+    NATS --> HeartbeatListener["Machine Heartbeat Listener"]
+    HeartbeatListener --> MachineStatusService["Machine Status Service"]
+    MachineStatusService --> Mongo[("MongoDB")]

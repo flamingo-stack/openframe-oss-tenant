@@ -1,7 +1,9 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 use sysinfo::{System, Signal, Pid};
 use tokio::time::{sleep, Duration};
+use crate::models::InstalledTool;
+use crate::models::download_configuration::InstallationType;
 
 /// Service responsible for stopping/killing tool processes
 #[derive(Clone)]
@@ -195,6 +197,25 @@ impl ToolKillService {
         }
 
         false
+    }
+
+    pub async fn stop_tool_by_path(&self, executable_path: &str) -> Result<()> {
+        let pattern = executable_path.to_lowercase();
+        self.stop_processes_by_pattern(&pattern, &format!("path: {}", executable_path)).await
+    }
+
+    pub async fn stop_installed_tool(&self, tool: &InstalledTool) -> Result<()> {
+        match tool.installation_type {
+            InstallationType::GuiApp => {
+                let exec_path = tool.executable_path.as_deref()
+                    .context("GUI app has no executable path")?;
+                info!("Stopping GUI app by executable path: {}", exec_path);
+                self.stop_tool_by_path(exec_path).await
+            }
+            InstallationType::Standard => {
+                self.stop_tool(&tool.tool_agent_id).await
+            }
+        }
     }
 
     /// Build the command pattern to match for a given tool ID

@@ -1,0 +1,11 @@
+flowchart TD
+    App["Service Application"] --> AutoConfig["OssTenantKafkaAutoConfiguration"]
+    AutoConfig --> ProducerFactory["ProducerFactory<String,Object>"]
+    AutoConfig --> ConsumerFactory["ConsumerFactory<Object,Object>"]
+    AutoConfig --> Template["KafkaTemplate<String,Object>"]
+    AutoConfig --> ListenerFactory["KafkaListenerContainerFactory"]
+    AutoConfig --> Admin["KafkaAdmin"]
+    AutoConfig --> Topics["Auto Topic Registration"]
+
+    Properties["OssTenantKafkaProperties"] --> AutoConfig
+    TopicProps["KafkaTopicProperties"] --> Topics

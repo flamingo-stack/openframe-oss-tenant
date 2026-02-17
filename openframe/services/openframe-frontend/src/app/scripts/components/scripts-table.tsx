@@ -12,7 +12,7 @@ import {
 import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { getOSLabel, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
 import { useRouter } from "next/navigation"
-import React, { useCallback, useEffect, useMemo, useState } from "react"
+import React, { useCallback, useMemo, useState, useEffect } from "react"
 import { useScripts } from "../hooks/use-scripts"
 
 interface UIScriptEntry {
@@ -43,12 +43,6 @@ export function ScriptsTable() {
   })
   const pageSize = 10
 
-  const [isInitialized, setIsInitialized] = useState(false)
-  const prevFilterKeyRef = React.useRef<string | null>(null)
-
-  // Track last search to detect actual changes (not mount)
-  const lastSearchRef = React.useRef(params.search)
-
   // Local state for debounced input
   const [searchInput, setSearchInput] = useState(params.search)
   const debouncedSearchInput = useDebounce(searchInput, 300)
@@ -60,14 +54,7 @@ export function ScriptsTable() {
     }
   }, [debouncedSearchInput, params.search, setParam])
 
-  // Backend filters from URL params (for useScripts hook)
-  const filters = useMemo(() => ({
-    shellType: params.shellType,
-    addedBy: params.addedBy,
-    category: params.category
-  }), [params.shellType, params.addedBy, params.category])
-
-  const { scripts, isLoading, error, searchScripts, refreshScripts } = useScripts(filters)
+  const { scripts, isLoading, error } = useScripts()
 
   const transformedScripts: UIScriptEntry[] = useMemo(() => {
     return scripts.map((script) => ({
@@ -266,36 +253,30 @@ export function ScriptsTable() {
     )
   }, [])
 
+  // Reset page when search changes
+  const lastSearchRef = React.useRef(params.search)
   useEffect(() => {
-    if (!isInitialized) {
-      searchScripts('')
-      setIsInitialized(true)
-    }
-  }, [isInitialized, searchScripts])
-
-  useEffect(() => {
-    if (isInitialized && params.search !== lastSearchRef.current) {
+    if (params.search !== lastSearchRef.current) {
       lastSearchRef.current = params.search
       setParam('page', 1)
     }
-  }, [params.search, isInitialized, setParam])
+  }, [params.search, setParam])
 
+  // Reset page when filters change
+  const prevFilterKeyRef = React.useRef<string | null>(null)
   useEffect(() => {
-    if (isInitialized) {
-      const filterKey = JSON.stringify({
-        shellType: params.shellType?.sort() || [],
-        addedBy: params.addedBy?.sort() || [],
-        category: params.category?.sort() || [],
-        supportedPlatforms: params.supportedPlatforms?.sort() || [],
-      })
+    const filterKey = JSON.stringify({
+      shellType: params.shellType?.sort() || [],
+      addedBy: params.addedBy?.sort() || [],
+      category: params.category?.sort() || [],
+      supportedPlatforms: params.supportedPlatforms?.sort() || [],
+    })
 
-      if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
-        refreshScripts()
-        setParam('page', 1)
-      }
-      prevFilterKeyRef.current = filterKey
+    if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
+      setParam('page', 1)
     }
-  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms, refreshScripts, isInitialized, setParam])
+    prevFilterKeyRef.current = filterKey
+  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms, setParam])
 
   const handleRowClick = (script: UIScriptEntry) => {
     router.push(`/scripts/details/${script.id}`)

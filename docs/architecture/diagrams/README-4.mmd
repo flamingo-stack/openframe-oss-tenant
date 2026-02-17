@@ -1,0 +1,5 @@
+flowchart TD
+    Browser --> AuthServer
+    AuthServer --> Mongo
+    AuthServer --> TenantKeyService["Tenant Key Service"]
+    TenantKeyService --> RSA["Per-Tenant RSA Keys"]

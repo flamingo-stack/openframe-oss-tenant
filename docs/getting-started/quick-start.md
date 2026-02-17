@@ -1,105 +1,252 @@
 # Quick Start Guide
 
-This guide will help you get OpenFrame up and running quickly on Kubernetes.
+Get OpenFrame running locally in 5 minutes! This guide will have you up and running with a development instance of the OpenFrame platform using shell scripts and local development setup.
 
-## Prerequisites
+## TL;DR - 5 Minute Setup
 
-- Kubernetes cluster (version 1.20 or later)
-- Helm 3.x installed
-- `kubectl` configured to access your cluster
-- Sufficient cluster resources:
-  - Minimum 4 nodes
-  - 16GB RAM per node
-  - 100GB storage per node
-- A modern web browser
+```bash
+# 1. Clone the repository
+git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+cd openframe-oss-tenant
 
-## Quick Installation
+# 2. Run development setup script
+./clients/openframe-client/scripts/setup_dev_init_config.sh
 
-1. Add the OpenFrame Helm repository:
-   ```bash
-   helm repo add openframe https://your-org.github.io/openframe/charts
-   helm repo update
-   ```
+# 3. Start infrastructure services
+docker-compose up -d mongodb kafka redis nats cassandra
 
-2. Create a namespace for OpenFrame:
-   ```bash
-   kubectl create namespace openframe
-   ```
+# 4. Build and run backend services
+mvn clean install -DskipTests
+mvn spring-boot:run -pl openframe/services/openframe-gateway &
+mvn spring-boot:run -pl openframe/services/openframe-authorization-server &
+mvn spring-boot:run -pl openframe/services/openframe-api &
 
-3. Deploy OpenFrame using Helm:
-   ```bash
-   helm install openframe openframe/openframe \
-     --namespace openframe \
-     --set global.domain=your-domain.com \
-     --set global.storageClass=standard
-   ```
+# 5. Start frontend
+cd openframe/services/openframe-frontend
+npm install
+npm run dev
 
-4. Access the web interface:
-   - Get the service URL:
-     ```bash
-     kubectl get ingress -n openframe
-     ```
-   - Default credentials:
-     - Username: `admin`
-     - Password: `admin` (change this immediately)
+# Access at http://localhost:3000
+```
 
-## Initial Configuration
+[![OpenFrame v0.3.0 - Remote File Manager &amp; Unified Authentication Architecture](https://img.youtube.com/vi/mibUHvcVIHs/maxresdefault.jpg)](https://www.youtube.com/watch?v=mibUHvcVIHs)
 
-1. Change the default admin password
-2. Configure your first monitoring target
-3. Set up basic alerts
+## Detailed Setup Steps
 
-## Basic Usage
+### Step 1: Clone and Setup
 
-### Adding a Device
+Clone the OpenFrame repository:
 
-1. Navigate to the Devices section
-2. Click "Add New Device"
-3. Follow the wizard to add your first device
+```bash
+git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+cd openframe-oss-tenant
+```
 
-### Setting Up Monitoring
+Run the development initialization script:
 
-1. Select a device
-2. Choose monitoring metrics
-3. Configure alert thresholds
+```bash
+./clients/openframe-client/scripts/setup_dev_init_config.sh
+```
 
-### Creating Reports
+This script will:
+- Configure initial client settings
+- Set up development environment variables
+- Initialize local certificates and keys
 
-1. Go to the Reports section
-2. Select a report template
-3. Configure report parameters
-4. Generate your first report
+### Step 2: Start Infrastructure Services
+
+OpenFrame requires several infrastructure services. Start them using Docker Compose:
+
+```bash
+# Start core infrastructure
+docker-compose up -d mongodb
+docker-compose up -d kafka
+docker-compose up -d redis
+docker-compose up -d nats
+docker-compose up -d cassandra
+
+# Verify services are running
+docker-compose ps
+```
+
+Expected output:
+```text
+NAME                  COMMAND                  SERVICE             STATUS              PORTS
+openframe-mongodb     "docker-entrypoint.s…"   mongodb             running             0.0.0.0:27017->27017/tcp
+openframe-kafka       "/etc/confluent/dock…"   kafka               running             0.0.0.0:9092->9092/tcp
+openframe-redis       "redis-server"           redis               running             0.0.0.0:6379->6379/tcp
+openframe-nats        "/nats-server -c /et…"   nats                running             0.0.0.0:4222->4222/tcp
+openframe-cassandra   "docker-entrypoint.s…"   cassandra           running             0.0.0.0:9042->9042/tcp
+```
+
+### Step 3: Build Backend Services
+
+Build the entire project:
+
+```bash
+# Build all modules (skip tests for faster startup)
+mvn clean install -DskipTests
+```
+
+This compiles:
+- Spring Boot 3.3.0 backend services
+- Java 21 microservices architecture
+- All OpenFrame OSS libraries
+
+### Step 4: Start Backend Services
+
+Start the core backend services in the correct order:
+
+```bash
+# Start Authorization Server (OAuth2/OIDC provider)
+mvn spring-boot:run -pl openframe/services/openframe-authorization-server &
+
+# Start API Gateway (routing and security)
+mvn spring-boot:run -pl openframe/services/openframe-gateway &
+
+# Start API Service (main backend APIs)
+mvn spring-boot:run -pl openframe/services/openframe-api &
+
+# Start Client Service (agent management)
+mvn spring-boot:run -pl openframe/services/openframe-client &
+
+# Start Management Service (operational control)
+mvn spring-boot:run -pl openframe/services/openframe-management &
+```
+
+Wait for all services to start (look for "Started Application in X seconds" messages).
+
+### Step 5: Start Frontend Application
+
+Navigate to the frontend directory and start the development server:
+
+```bash
+cd openframe/services/openframe-frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The frontend uses:
+- VoltAgent core for AI agent functionality
+- Anthropic SDK for AI integration
+- Zod for validation
+- Glob for file operations
+
+### Step 6: Access OpenFrame
+
+1. **Open your browser** to [http://localhost:3000](http://localhost:3000)
+2. **Create your first tenant** by registering an admin account
+3. **Explore the platform** with the initial setup wizard
+
+## Service Endpoints
+
+Once running, these endpoints are available:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| **Frontend** | http://localhost:3000 | Main application UI |
+| **API Gateway** | http://localhost:8080 | API routing and security |
+| **Auth Server** | http://localhost:8081 | OAuth2/OIDC authentication |
+| **API Service** | http://localhost:8082 | REST and GraphQL APIs |
+| **Management** | http://localhost:8083 | Operational control |
+
+## Expected Results
+
+After successful setup, you should see:
+
+### 1. Welcome Screen
+The OpenFrame tenant registration page where you can create your first organization and admin user.
+
+### 2. Dashboard
+A clean, modern dashboard showing:
+- Device overview (initially empty)
+- Organization summary
+- Quick action tiles
+- AI assistant (Mingo) integration
+
+### 3. Navigation Menu
+- Dashboard
+- Devices
+- Organizations  
+- Users & Settings
+- Logs & Events
+- Policies & Queries
+- Scripts
+
+## Common Issues & Quick Fixes
+
+### Port Conflicts
+```bash
+# Check if ports are in use
+lsof -i :3000  # Frontend
+lsof -i :8080  # Gateway
+lsof -i :8081  # Auth Server
+
+# Kill conflicting processes
+sudo kill -9 <PID>
+```
+
+### Maven Build Failures
+```bash
+# Clean and rebuild
+mvn clean
+mvn install -DskipTests -U
+
+# Check Java version
+java --version  # Should be Java 21
+```
+
+### Docker Services Not Starting
+```bash
+# Check Docker daemon
+sudo systemctl status docker
+
+# Restart Docker services
+docker-compose down
+docker-compose up -d
+
+# Check service logs
+docker-compose logs mongodb
+```
+
+### Frontend Build Issues
+```bash
+# Clear node modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
+
+# Check Node.js version
+node --version  # Should be 18+
+```
 
 ## Next Steps
 
-- Review the [Installation Guide](installation.md) for detailed setup instructions
-- Check the [Configuration Guide](configuration.md) for advanced settings
-- Read the [System Architecture](architecture/system-architecture.md) to understand the platform better
-- Review the [Kubernetes Deployment Guide](../deployment/kubernetes.md)
+Now that OpenFrame is running:
 
-## Troubleshooting
+1. **Follow the [First Steps Guide](./first-steps.md)** to explore key features
+2. **Set up your first organization and users**
+3. **Install the OpenFrame agent on test devices**
+4. **Configure integrations and tools**
+5. **Explore the AI assistant capabilities**
 
-If you encounter issues:
+## Development Notes
 
-1. Check pod status:
-   ```bash
-   kubectl get pods -n openframe
-   ```
+This quick start sets up OpenFrame in development mode with:
+- Hot reloading for frontend changes
+- Debug logging enabled
+- Test databases with sample data
+- Local authentication (no external SSO required)
 
-2. View logs:
-   ```bash
-   kubectl logs -f deployment/api-gateway -n openframe
-   ```
+For production deployment, refer to the development section for proper configuration, security hardening, and infrastructure setup.
 
-3. Check service status:
-   ```bash
-   kubectl get services -n openframe
-   ```
+## Need Help?
 
-4. Review the [Troubleshooting Guide](../operations/troubleshooting.md)
+- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Documentation**: Continue with [First Steps](./first-steps.md)
+- **Issues**: GitHub Issues (for bug reports only)
 
-## Getting Help
-
-- Check our [GitHub Issues](https://github.com/your-org/openframe/issues)
-- Join our community discussions
-- Contact support 
+Congratulations! You now have OpenFrame running locally. Time to explore what this powerful MSP platform can do! 🎉

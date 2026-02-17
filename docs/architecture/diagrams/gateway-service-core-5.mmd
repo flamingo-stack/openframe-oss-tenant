@@ -1,0 +1,12 @@
+flowchart TD
+    Request["External API Request"] --> CheckPrefix["Path starts with /external-api"]
+    CheckPrefix -->|"no"| Continue["Continue Filter Chain"]
+    CheckPrefix -->|"yes"| CheckHeader["Read X-API-Key Header"]
+    CheckHeader -->|"missing"| Unauthorized["Return 401"]
+    CheckHeader --> ValidateKey["Validate API Key"]
+    ValidateKey -->|"invalid"| Unauthorized
+    ValidateKey --> RateLimit["Check Rate Limit"]
+    RateLimit -->|"exceeded"| TooMany["Return 429"]
+    RateLimit --> AddHeaders["Add Rate Limit Headers"]
+    AddHeaders --> InjectContext["Add X-API-Key-ID and X-User-ID"]
+    InjectContext --> Continue

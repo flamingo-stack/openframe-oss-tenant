@@ -188,7 +188,13 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.os }}" == "macos" ]]; then
+          if [[ "${{ matrix.type }}" == "tauri" && "${{ matrix.os }}" == "macos" ]]; then
+            # Tauri app on macOS - build universal DMG
+            make build-dmg
+          elif [[ "${{ matrix.type }}" == "tauri" ]]; then
+            # Tauri app on Windows - regular build
+            make build TARGET="${{ matrix.target }}"
+          elif [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -221,7 +227,7 @@ jobs:
           compression-level: 9
 
       - name: Create macOS universal package
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type != 'tauri'
         shell: bash
         run: |
           mkdir -p artifacts
@@ -231,13 +237,13 @@ jobs:
           RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
           RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
           lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
-          
+
           echo "Verify macOS openframe universal package"
           lipo -info ./artifacts/${{ env.BINARY_NAME }}
           file ./artifacts/${{ env.BINARY_NAME }}
 
       - name: Sign MacOS package
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type != 'tauri'
         uses: ./.github/steps/sign-macos-package
         with:
           apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
@@ -247,6 +253,28 @@ jobs:
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
           binary_name: ${{ env.BINARY_NAME }}
+
+      - name: Find Tauri App Path
+        id: find_app
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type == 'tauri'
+        shell: bash
+        run: |
+          APP_PATH=$(find ${{ matrix.target_path }}/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
+          echo "app_path=$APP_PATH" >> $GITHUB_OUTPUT
+
+      - name: Sign Tauri macOS App and DMG
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type == 'tauri'
+        uses: ./.github/steps/sign-macos-tauri-app
+        with:
+          apple_certificate_p12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          apple_developer_id: ${{ secrets.APPLE_DEVELOPER_ID }}
+          apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
+          apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
+          apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
+          app_path: ${{ steps.find_app.outputs.app_path }}
+          dmg_name: ${{ matrix.artifact_name }}
+          dmg_volume_name: "Fae Chat"
 
       - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
@@ -308,12 +336,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --dir final-artifacts/clients || true
+          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
+            CLIENT_TYPE=$(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r --arg name "$client" '.[] | select(.name == $name and .os == "macos") | .type // "binary"')
+
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
-              tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
-                -C "release-artifacts/${client}-macos" .
+              if [ "$CLIENT_TYPE" == "tauri" ]; then
+                # Tauri app - copy .dmg directly
+                cp release-artifacts/${client}-macos/*.dmg final-artifacts/clients/ 2>/dev/null || true
+              else
+                # Regular binary - create tar.gz
+                tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
+                  -C "release-artifacts/${client}-macos" .
+              fi
             fi
             # Windows
             if [ -d "release-artifacts/${client}-windows" ]; then
@@ -334,7 +370,9 @@ jobs:
           ## OpenFrame Clients
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
-          - **macOS** (Universal): \`openframe-chat_macos.tar.gz\`
+
+          ## Fae Chat
+          - **macOS** (Universal): \`fae_chat_universal.dmg\`
           - **Windows** (x64): \`openframe-chat_windows.zip\`
 
           ## Helm Chart
@@ -360,3 +398,4 @@ jobs:
           files: |
             final-artifacts/clients/*.zip
             final-artifacts/clients/*.tar.gz
+            final-artifacts/clients/*.dmg

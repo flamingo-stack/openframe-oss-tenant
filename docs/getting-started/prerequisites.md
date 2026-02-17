@@ -1,167 +1,248 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your system meets the following requirements:
+Before setting up OpenFrame, ensure your environment meets the following requirements. This guide covers system requirements, software dependencies, and account prerequisites for a successful deployment.
 
 ## System Requirements
 
-### Minimum Hardware
-- **CPU**: 4 cores (2.4 GHz or higher)
-- **RAM**: 8 GB minimum, 16 GB recommended
-- **Storage**: 50 GB available disk space
-- **Network**: Stable internet connection for downloading dependencies
+### Backend Services (Java/Spring Boot)
 
-### Recommended Hardware (Production)
-- **CPU**: 8+ cores (3.0 GHz or higher)
-- **RAM**: 32 GB or more
-- **Storage**: 200 GB+ SSD storage
-- **Network**: High-bandwidth connection (1 Gbps+)
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **CPU** | 2 cores | 4+ cores |
+| **RAM** | 4 GB | 8+ GB |
+| **Storage** | 20 GB | 50+ GB SSD |
+| **Java Version** | Java 21 | Java 21+ |
+| **OS** | Linux, macOS, Windows | Linux (Ubuntu 20.04+) |
 
-## Development Environment
+### Frontend Application (Node.js/TypeScript)
 
-### Required Software
+| Component | Requirement |
+|-----------|-------------|
+| **Node.js** | 18+ |
+| **npm/yarn** | Latest stable |
+| **Browser Support** | Chrome 90+, Firefox 88+, Safari 14+ |
 
-#### Java Development
-- **OpenJDK 21.0.1+** - Required for Spring Boot services
-- **Maven 3.9.6+** - Build and dependency management
-- **IDE**: IntelliJ IDEA, Eclipse, or VSCode with Java extensions
+### Client Agent (Rust)
 
-#### Frontend Development  
-- **Node.js 18+** with npm - Required for Vue.js frontend
-- **Modern Browser** - Chrome, Firefox, Safari, or Edge (latest versions)
+| Platform | Support Level |
+|----------|---------------|
+| **Windows** | ✅ Full support (Windows 10+) |
+| **macOS** | ✅ Full support (macOS 10.15+) |
+| **Linux** | ✅ Full support (Ubuntu 18.04+, CentOS 7+) |
 
-#### Rust Development (for client agent)
-- **Rust 1.70+** with Cargo - Cross-platform agent development
-- **Platform-specific tools**:
-  - Windows: Visual Studio Build Tools or Visual Studio
-  - macOS: Xcode Command Line Tools
-  - Linux: GCC and essential build tools
+## Software Dependencies
 
-#### Containerization
-- **Docker 24.0+** - Container runtime
-- **Docker Compose 2.23+** - Multi-container orchestration
+### Required Infrastructure Components
 
-#### Version Control
-- **Git 2.42+** - Source code management
+#### Database Systems
+- **MongoDB** 5.0+ (primary data store)
+- **Apache Cassandra** 4.0+ (audit/event storage)
+- **Redis** 6.0+ (caching and enrichment)
 
-### Optional Tools
+#### Messaging & Streaming
+- **Apache Kafka** 3.6.0+ (event streaming)
+- **NATS JetStream** 2.9+ (real-time messaging)
 
-#### Production Deployment
-- **Kubernetes 1.28+** - Container orchestration (for production)
-- **kubectl** - Kubernetes command-line tool
-- **Helm 3.0+** - Kubernetes package manager
+#### Build Tools
+- **Maven** 3.8+ (Java backend build)
+- **Node.js** 18+ with npm/yarn (frontend build)
+- **Rust** 1.70+ (client agent build)
 
-#### Development Tools
-- **Postman** or **Insomnia** - API testing
-- **MongoDB Compass** - Database GUI (optional)
-- **Redis CLI** - Cache inspection (optional)
+### Development Tools
 
-## Authentication Requirements
+| Tool | Purpose | Version |
+|------|---------|---------|
+| **Docker** | Containerization | 20.10+ |
+| **Docker Compose** | Local orchestration | 2.0+ |
+| **Git** | Version control | 2.30+ |
+| **curl** | API testing | Latest |
 
-### GitHub Access
-You'll need a **GitHub Personal Access Token (Classic)** with the following permissions:
-- `repo` - Full control of private repositories
-- `read:packages` - Read access to GitHub packages
-- `write:packages` - Write access to GitHub packages
+## Environment Variables
 
-#### Creating a GitHub Token
-1. Go to GitHub Settings → Developer settings → Personal access tokens → Tokens (classic)
-2. Click "Generate new token (classic)"
-3. Select the required permissions listed above
-4. Set an appropriate expiration date
-5. Copy the generated token securely
+### Backend Configuration
 
-## Network Configuration
-
-### Required Ports
-Ensure the following ports are available:
-
-#### Development Environment
-- `8080` - Main application UI
-- `8888` - Configuration server
-- `5432` - PostgreSQL (if using)
-- `27017` - MongoDB
-- `6379` - Redis
-- `9092` - Kafka
-- `8086` - InfluxDB (if using)
-
-#### Production Environment
-- `80/443` - HTTP/HTTPS traffic
-- `6443` - Kubernetes API server
-- Additional ports based on your specific configuration
-
-### Firewall Considerations
-- Allow outbound connections to GitHub for package downloads
-- Allow inbound connections on the specified ports
-- Consider corporate firewall/proxy settings
-
-## Platform-Specific Notes
-
-### Windows
-- Enable WSL2 for better Docker performance
-- Consider using Git Bash or PowerShell Core
-- Ensure Windows Defender exclusions for development directories
-
-### macOS
-- Install Homebrew for easier package management
-- Ensure Xcode Command Line Tools are installed
-- Consider using Docker Desktop for Mac
-
-### Linux
-- Ensure your user is in the `docker` group
-- Install development packages: `build-essential`, `curl`, `git`
-- Consider using your distribution's package manager for tool installation
-
-## Verification Steps
-
-After installing the prerequisites, verify your setup:
+Set these environment variables for backend services:
 
 ```bash
-# Check Java version
-java -version
+# Database Connections
+MONGODB_URI=mongodb://localhost:27017/openframe
+CASSANDRA_CONTACT_POINTS=localhost:9042
+REDIS_URL=redis://localhost:6379
 
-# Check Maven version
-mvn -version
+# Messaging
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+NATS_URL=nats://localhost:4222
 
-# Check Node.js and npm versions
-node --version
-npm --version
+# Security
+JWT_ISSUER_URI=http://localhost:8080/auth/realms/openframe
+SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_ISSUER_URI=https://accounts.google.com
 
-# Check Rust version (if applicable)
-rustc --version
-cargo --version
-
-# Check Docker version
-docker --version
-docker-compose --version
-
-# Check Git version
-git --version
+# Application
+SERVER_PORT=8080
+SPRING_PROFILES_ACTIVE=local
 ```
 
-## Next Steps
+### Frontend Configuration
 
-Once all prerequisites are met, proceed to:
-1. [Quick Start Guide](quick-start.md) for a rapid setup
-2. [Introduction](introduction.md) for a detailed overview
-3. [Development Setup](../development/setup/environment.md) for development environment configuration
+Create a `.env.local` file:
 
-## Troubleshooting
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8080
+NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8080
+NEXT_PUBLIC_AUTH_URL=http://localhost:8081
+```
+
+## Account Requirements
+
+### Third-Party Service Accounts
+
+#### OAuth Providers (Optional, for SSO)
+- **Google OAuth2**: Client ID and Client Secret
+- **Microsoft Azure AD**: Application ID and Client Secret
+
+#### AI Services (for Mingo AI)
+- **Anthropic API**: API key for Claude integration
+- **OpenAI API**: API key for GPT integration (alternative)
+
+### Development Access
+
+- **GitHub Account**: For accessing repositories and CI/CD
+- **Docker Hub Account**: For pulling container images (optional)
+
+## Network Requirements
+
+### Ports Configuration
+
+Ensure these ports are available:
+
+| Service | Port | Protocol | Purpose |
+|---------|------|----------|---------|
+| **Gateway** | 8080 | HTTP/HTTPS | Main API gateway |
+| **Auth Server** | 8081 | HTTP | OAuth2/OIDC provider |
+| **Frontend** | 3000 | HTTP | React application (dev) |
+| **MongoDB** | 27017 | TCP | Database connection |
+| **Cassandra** | 9042 | TCP | Audit storage |
+| **Redis** | 6379 | TCP | Caching |
+| **Kafka** | 9092 | TCP | Event streaming |
+| **NATS** | 4222 | TCP | Real-time messaging |
+
+### Firewall Rules
+
+For production deployments:
+
+```bash
+# Allow inbound HTTP/HTTPS
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Allow agent connections
+ufw allow 8080/tcp
+
+# Internal service communication (restrict to internal network)
+ufw allow from 10.0.0.0/8 to any port 27017
+ufw allow from 10.0.0.0/8 to any port 9042
+ufw allow from 10.0.0.0/8 to any port 6379
+```
+
+## Verification Commands
+
+Run these commands to verify your environment:
+
+### Java Environment
+```bash
+java --version
+# Expected: openjdk 21.x.x
+
+mvn --version
+# Expected: Apache Maven 3.8.x
+```
+
+### Node.js Environment
+```bash
+node --version
+# Expected: v18.x.x or higher
+
+npm --version
+# Expected: 9.x.x or higher
+```
+
+### Rust Environment (for client development)
+```bash
+rustc --version
+# Expected: rustc 1.70.x or higher
+
+cargo --version
+# Expected: cargo 1.70.x or higher
+```
+
+### Docker Environment
+```bash
+docker --version
+# Expected: Docker version 20.10.x
+
+docker-compose --version
+# Expected: docker-compose version 2.x.x
+```
+
+## Security Considerations
+
+### SSL/TLS Certificates
+- Development: Self-signed certificates are acceptable
+- Production: Use valid SSL certificates from a trusted CA
+- Let's Encrypt recommended for cost-effective SSL
+
+### API Keys and Secrets
+- Store sensitive values in environment variables
+- Use secrets management in production (HashiCorp Vault, AWS Secrets Manager)
+- Rotate keys regularly
+
+### Network Security
+- Enable firewall on all systems
+- Use VPN for remote access to infrastructure
+- Implement network segmentation for production
+
+## Ready to Proceed?
+
+Once you've verified all prerequisites are met:
+
+1. ✅ System requirements satisfied
+2. ✅ Required software installed
+3. ✅ Environment variables configured
+4. ✅ Network ports available
+5. ✅ Accounts and API keys obtained
+
+You're ready to proceed with the [Quick Start Guide](./quick-start.md)!
+
+## Troubleshooting Prerequisites
 
 ### Common Issues
 
-#### Java Installation Issues
-- Ensure JAVA_HOME is properly set
-- Verify PATH includes Java binaries
-- Use `alternatives` (Linux) or `java_home` (macOS) for version management
+**Java Version Mismatch**
+```bash
+# Check multiple Java installations
+update-alternatives --config java
 
-#### Docker Issues
-- Ensure Docker daemon is running
-- Check Docker Desktop settings on Windows/macOS
-- Verify user permissions on Linux
+# Set JAVA_HOME explicitly
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+```
 
-#### Network Issues
-- Check corporate proxy settings
-- Verify firewall configuration
-- Test connectivity to GitHub and other required services
+**Node.js Version Issues**
+```bash
+# Install Node Version Manager (nvm)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 
-If you encounter issues not covered here, see our [Troubleshooting Guide](../operations/troubleshooting/common-issues.md).
+# Install and use Node.js 18
+nvm install 18
+nvm use 18
+```
+
+**Port Conflicts**
+```bash
+# Check what's using a port
+lsof -i :8080
+
+# Kill process using port
+sudo kill -9 <PID>
+```
+
+For additional help, join our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) where our community can assist with environment setup questions.

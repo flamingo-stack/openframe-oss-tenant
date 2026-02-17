@@ -1,0 +1,8 @@
+flowchart LR
+    Client["GraphQL Query"] --> DataFetcher
+    DataFetcher --> Mapper
+    Mapper --> Criteria["CursorPaginationCriteria"]
+    Criteria --> Service
+    Service --> Result["QueryResult"]
+    Result --> Connection["GraphQL Connection"]
+    Connection --> Client
