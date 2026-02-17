@@ -1,5 +1,0 @@
-flowchart LR
-    Client -->|cursor + limit| Controller
-    Controller -->|PaginationCriteria| Service
-    Service -->|CursorPaginationCriteria| DataLayer
-    DataLayer --> PageInfo

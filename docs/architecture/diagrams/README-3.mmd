@@ -1,6 +1,0 @@
-flowchart TD
-    Incoming["Incoming Request"] --> JwtValidation["JWT Validation"]
-    JwtValidation --> RoleCheck["Role Authorization"]
-    RoleCheck --> ApiKey["API Key Filter"]
-    ApiKey --> Route["Route Resolution"]
-    Route --> Downstream["Backend Service"]

@@ -1,7 +1,0 @@
-flowchart TD
-    ProxyReq["/tools/{toolId}/path"] --> ValidateTool["Load IntegratedTool"]
-    ValidateTool --> CheckEnabled["Tool Enabled?"]
-    CheckEnabled --> ResolveUrl["ProxyUrlResolver.resolve()"]
-    ResolveUrl --> BuildHeaders["Inject Tool Credentials"]
-    BuildHeaders --> Execute["Apache HttpClient"]
-    Execute --> Return["Return Status + Body"]

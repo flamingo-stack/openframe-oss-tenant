@@ -1,5 +1,0 @@
-flowchart TD
-    LogsReq["GET /api/v1/logs"] --> BuildCriteria["LogFilterCriteria"]
-    BuildCriteria --> QueryLogs["LogService.queryLogs()"]
-    QueryLogs --> MapLogs["LogMapper"]
-    MapLogs --> LogsResponse

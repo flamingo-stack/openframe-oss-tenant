@@ -1,6 +1,0 @@
-flowchart TD
-    Startup["Application Startup"] --> LoadTool["Load Tactical Tool"]
-    LoadTool --> FetchScripts["Fetch Existing Scripts"]
-    FetchScripts --> CheckScript["Script Exists?"]
-    CheckScript -->|No| CreateScript["Create Script via API"]
-    CheckScript -->|Yes| UpdateScript["Update Script via API"]

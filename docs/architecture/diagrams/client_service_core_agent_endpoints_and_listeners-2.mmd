@@ -1,6 +1,0 @@
-flowchart TD
-    Agent["Agent"] -->|"X-Initial-Key Header"| AgentController["AgentController"]
-    AgentController --> RegistrationService["AgentRegistrationService"]
-    RegistrationService --> Processor["AgentRegistrationProcessor"]
-    Processor --> MachineDoc["Machine Document"]
-    MachineDoc --> Mongo["MongoDB"]

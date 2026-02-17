@@ -1,6 +1,0 @@
-flowchart TD
-    LoadConfig["Load Agent Config"] --> ExistsCheck["Exists in Mongo?"]
-    ExistsCheck -->|No| CreateAgent["Save New Agent"]
-    ExistsCheck -->|Yes| CompareVersion["Compare Versions"]
-    CompareVersion -->|Changed| PublishUpdate["Publish ToolAgent Update"]
-    CompareVersion -->|Same| SkipUpdate["No Action"]

@@ -1,6 +1,0 @@
-flowchart TD
-    Start["User Sends Message"] --> CheckDialog["Has Dialog?"]
-    CheckDialog -->|"No"| CreateDialog["POST /chat/api/v1/dialogs"]
-    CheckDialog -->|"Yes"| SendMessage
-    CreateDialog --> SendMessage["POST /chat/api/v1/messages"]
-    SendMessage --> Store["Update MingoMessagesStore"]
