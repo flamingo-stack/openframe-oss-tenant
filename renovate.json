@@ -48,7 +48,6 @@
       "labels": ["dependencies", "openframe-libs"],
       "prPriority": 10,
       "enabled": true,
-      "registryUrls": ["https://npm.pkg.github.com"],
       "ignoreUnstable": true
     },
     {
@@ -69,11 +68,6 @@
       "hostType": "maven",
       "matchHost": "maven.pkg.github.com",
       "description": "GitHub Packages Maven registry"
-    },
-    {
-      "hostType": "npm",
-      "matchHost": "npm.pkg.github.com",
-      "description": "GitHub Packages npm registry"
     }
   ],
 

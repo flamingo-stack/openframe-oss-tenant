@@ -262,6 +262,15 @@ class ApiClient {
         ok: response.ok,
       }
     } catch (error) {
+      // Aborted requests should never trigger auth refresh or logout
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return {
+          error: 'Request aborted',
+          status: 0,
+          ok: false,
+        }
+      }
+
       // Check if this might be a 401 error masquerading as a network error
       // This can happen in localhost deployments where fetch fails completely on 401
       if (!skipAuth && !isRetry) {

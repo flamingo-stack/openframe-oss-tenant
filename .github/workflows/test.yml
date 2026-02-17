@@ -167,9 +167,6 @@ jobs:
           changes: ${{ toJSON(needs.changes.outputs) }}
           commit-sha: ${{ needs.changes.outputs.test_commit_sha }}
           branch-name: ${{ github.head_ref }}
-          docker-username: ${{ secrets.DOCKER_USERNAME }}
-          docker-password: ${{ secrets.DOCKER_PASSWORD }}
-          docker-email: "dmtkov@flamingo.cx"
 
       - name: Set up JDK 21 for E2E tests
         uses: actions/setup-java@v4

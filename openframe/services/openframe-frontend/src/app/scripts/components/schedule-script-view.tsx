@@ -2,49 +2,38 @@
 
 import {
   DetailPageContainer,
-  DeviceType,
   LoadError,
   NotFoundError,
   ScriptArguments,
   ScriptInfoSection,
-  SelectableDeviceCard,
-  useSmUp,
-  type ScriptArgument
 } from '@flamingo-stack/openframe-frontend-core'
-import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import {
-  Autocomplete,
-  Button,
   CheckboxBlock,
   DatePickerInputSimple,
   Input,
   Label,
-  ListLoader
 } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
-import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
+import { getTacticalAgentId } from '../../devices/utils/device-action-utils'
+import { useDeviceFilter } from '../hooks/use-device-filter'
+import { useDeviceSelection } from '../hooks/use-device-selection'
 import { useRunScriptData } from '../hooks/use-run-script-data'
+import { scriptArgumentSchema } from '../types/edit-script.types'
+import { getDevicePrimaryId, normalizeOsOrNull } from '../utils/device-helpers'
+import { parseKeyValues, serializeKeyValues } from '../utils/script-key-values'
+import { DeviceSelectionPanel } from './device-selection-panel'
 import { ScheduleScriptLoader } from './schedule-script-loader'
 
 interface ScheduleScriptViewProps {
   scriptId: string
 }
 
-// Zod schema for script argument
-const scriptArgumentSchema = z.object({
-  id: z.string(),
-  key: z.string(),
-  value: z.string(),
-})
-
-// Main form validation schema
 const scheduleFormSchema = z.object({
   timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
   scriptArgs: z.array(scriptArgumentSchema),
@@ -55,21 +44,6 @@ const scheduleFormSchema = z.object({
 })
 
 type ScheduleFormData = z.infer<typeof scheduleFormSchema>
-
-function parseKeyValues(arr: string[] | undefined): ScriptArgument[] {
-  if (!arr || arr.length === 0) return []
-  return arr.map((item, index) => {
-    const idx = item.indexOf('=')
-    if (idx === -1) return { id: `arg-${index}`, key: item, value: '' }
-    return { id: `arg-${index}`, key: item.substring(0, idx), value: item.substring(idx + 1) }
-  })
-}
-
-function serializeKeyValues(pairs: ScriptArgument[]): string[] {
-  return pairs
-    .filter(p => p.key.trim() !== '')
-    .map(p => (p.value ? `${p.key}=${p.value}` : p.key))
-}
 
 export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
   const router = useRouter()
@@ -84,7 +58,18 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
     devicesError,
   } = useRunScriptData({ scriptId })
 
-  // React Hook Form setup
+  const {
+    searchTerm, setSearchTerm,
+    selectedOrgIds, setSelectedOrgIds,
+    organizationOptions,
+    filteredDevices,
+  } = useDeviceFilter({ devices: allDevices })
+
+  const {
+    selectedIds, selectedCount,
+    toggleSelect, selectAllDisplayed, clearSelection,
+  } = useDeviceSelection()
+
   const {
     control,
     handleSubmit,
@@ -102,17 +87,6 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
     },
   })
 
-  // Device search (client-side)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-
-  const isSmUp = useSmUp()
-
-  // Organization filter
-  const { items: allOrganizations, fetch: fetchOrgs } = useOrganizationsMin()
-  const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([])
-
-  // Initialize form from script details
   useEffect(() => {
     if (scriptDetails) {
       reset({
@@ -126,60 +100,9 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
     }
   }, [scriptDetails, reset])
 
-  // Load organizations once
-  useEffect(() => {
-    fetchOrgs('')
-  }, [fetchOrgs])
-
-  // Organization options for Autocomplete
-  const organizationOptions = useMemo(() => {
-    return allOrganizations.map(org => ({
-      label: org.name,
-      value: org.organizationId,
-    }))
-  }, [allOrganizations])
-
-  // Client-side filtered devices (by search term + selected orgs)
-  const devices = useMemo(() => {
-    let filtered = allDevices
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(d => {
-        const name = (d.displayName || d.hostname || '').toLowerCase()
-        const os = (d.osType || d.operating_system || '').toLowerCase()
-        return name.includes(term) || os.includes(term)
-      })
-    }
-    if (selectedOrgIds.length > 0) {
-      filtered = filtered.filter(d => d.organizationId && selectedOrgIds.includes(d.organizationId))
-    }
-    return filtered
-  }, [allDevices, searchTerm, selectedOrgIds])
-
   const handleBack = useCallback(() => {
     router.push(`/scripts/details/${scriptId}`)
   }, [router, scriptId])
-
-  // Device selection
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
-
-  const selectAllDisplayed = useCallback(() => {
-    const ids = devices.map(d => d.machineId || d.agent_id || d.id)
-    setSelectedIds(new Set(ids as string[]))
-  }, [devices])
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
-
-  const selectedCount = selectedIds.size
 
   const onSubmit = useCallback(async (data: ScheduleFormData) => {
     if (selectedCount === 0) {
@@ -188,9 +111,9 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
     }
 
     try {
-      const selectedDevices = devices.filter(d => selectedIds.has((d.machineId || d.agent_id || d.id) || ''))
+      const selectedDevices = filteredDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)))
       const selectedAgentIds = selectedDevices
-        .map(d => d.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId)
+        .map(d => getTacticalAgentId(d))
         .filter((id): id is string => !!id)
 
       if (selectedAgentIds.length === 0) {
@@ -200,16 +123,9 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
 
       const runTimeDate = data.scheduledDate.toISOString()
 
-      const normalizeOs = (os?: string): string | null => {
-        const o = (os || '').toLowerCase()
-        if (o.includes('win')) return 'windows'
-        if (o.includes('mac') || o.includes('darwin') || o.includes('osx')) return 'darwin'
-        if (o.includes('linux') || o.includes('ubuntu') || o.includes('debian') || o.includes('centos') || o.includes('redhat')) return 'linux'
-        return null
-      }
       const platforms = selectedDevices
-        .map(d => normalizeOs(d.osType || d.operating_system))
-        .filter((v): v is string => v !== null)
+        .map(d => normalizeOsOrNull(d.osType || d.operating_system))
+        .filter((v): v is 'windows' | 'linux' | 'darwin' => v !== null)
       const uniquePlatforms = [...new Set(platforms)]
 
       const taskData = {
@@ -274,7 +190,7 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
       const msg = e instanceof Error ? e.message : 'Failed to create schedule'
       toast({ title: 'Schedule failed', description: msg, variant: 'destructive' })
     }
-  }, [selectedCount, devices, selectedIds, scriptDetails, toast, router, scriptId])
+  }, [selectedCount, filteredDevices, selectedIds, scriptDetails, toast, router, scriptId])
 
   const onFormError = useCallback((formErrors: Record<string, { message?: string }>) => {
     const firstError = Object.values(formErrors)[0]
@@ -312,7 +228,6 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
       actions={actions}
     >
       <div className="flex-1 overflow-auto">
-        {/* Script Info Section */}
         <ScriptInfoSection
           headline={scriptDetails.name || 'Untitled Script'}
           subheadline={scriptDetails.description}
@@ -341,7 +256,6 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
 
         {/* Script Arguments & Environment Vars */}
         <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Script Arguments */}
           <Controller
             name="scriptArgs"
             control={control}
@@ -356,8 +270,6 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
               />
             )}
           />
-
-          {/* Environment Variables */}
           <Controller
             name="envVars"
             control={control}
@@ -418,82 +330,21 @@ export function ScheduleScriptView({ scriptId }: ScheduleScriptViewProps) {
           </div>
         </div>
 
-        {/* Search by Device & Organization */}
-        <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-3">
-            <div className="text-ods-text-primary font-semibold text-lg">Search by Device</div>
-            <Input
-              startAdornment={<SearchIcon size={20} />}
-              placeholder="Search for Devices"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex-col gap-3 hidden md:flex">
-            <div className="text-ods-text-primary font-semibold text-lg">Filter by Organization</div>
-            <div className="w-full">
-              <Autocomplete
-                placeholder="Select Organization"
-                options={organizationOptions}
-                value={selectedOrgIds}
-                onChange={setSelectedOrgIds}
-                limitTags={2}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Select All / Clear */}
-        <div className="pt-4 flex justify-between">
-          <div>
-            {selectedCount > 0 && (
-              <Button variant="ghost" onClick={clearSelection} className="text-ods-text-secondary hover:text-ods-text-primary" noPadding>
-                Clear Selection ({selectedCount})
-              </Button>
-            )}
-          </div>
-          <div>
-            <Button
-              onClick={selectAllDisplayed}
-              variant="link"
-              className="text-ods-accent hover:text-ods-accent-hover"
-              noPadding
-            >
-              {isSmUp ? 'Select All Displayed Devices' :'Select All'}
-            </Button>
-          </div>
-        </div>
-
-        {/* Device Grid */}
-        <div className="pt-2">
-          {isLoadingDevices ? (
-            <ListLoader />
-          ) : devicesError ? (
-            <LoadError message={`Failed to load devices: ${devicesError}`} />
-          ) : devices.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-              <p className="text-ods-text-secondary">No devices found. Try adjusting your search.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {devices.map((device) => {
-                const id = device.machineId || device.agent_id || device.id
-                const deviceType = device.type?.toLowerCase() as DeviceType
-                const isSelected = selectedIds.has(id || '')
-                return (
-                  <SelectableDeviceCard
-                    key={id}
-                    title={device.displayName || device.hostname}
-                    type={deviceType}
-                    subtitle={getDeviceOperatingSystem(device.osType)}
-                    selected={isSelected}
-                    onSelect={() => toggleSelect(id || '')}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </div>
+        <DeviceSelectionPanel
+          devices={filteredDevices}
+          isLoading={isLoadingDevices}
+          error={devicesError}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          organizationOptions={organizationOptions}
+          selectedOrgIds={selectedOrgIds}
+          onOrgIdsChange={setSelectedOrgIds}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSelectAll={() => selectAllDisplayed(filteredDevices)}
+          onClearSelection={clearSelection}
+          selectedCount={selectedCount}
+        />
       </div>
     </DetailPageContainer>
   )
