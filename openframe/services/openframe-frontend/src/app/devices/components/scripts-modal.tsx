@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Search, Check } from 'lucide-react'
 import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
@@ -94,14 +94,8 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   const [isExecuting, setIsExecuting] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
 
-  const { scripts, isLoading, error, fetchScripts } = useScripts()
+  const { scripts, isLoading, error } = useScripts()
   const { toast } = useToast()
-
-  useEffect(() => {
-    if (isOpen && scripts.length === 0) {
-      fetchScripts('', {})
-    }
-  }, [isOpen, scripts.length, fetchScripts])
 
   const platformCompatibleScripts = device 
     ? filterScriptsByPlatform(scripts, device.plat || '')
