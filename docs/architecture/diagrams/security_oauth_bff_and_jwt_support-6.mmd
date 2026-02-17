@@ -1,0 +1,18 @@
+flowchart TD
+    subgraph BrowserLayer["Browser"]
+        Cookies["HttpOnly Cookies"]
+    end
+
+    subgraph BFFLayer["OAuth BFF"]
+        PKCE["PKCE Utils"]
+        State["State JWT"]
+    end
+
+    subgraph TokenLayer["JWT Infrastructure"]
+        Encoder["JwtEncoder"]
+        Decoder["JwtDecoder"]
+    end
+
+    Cookies -->|"access_token"| Decoder
+    PKCE --> State
+    Encoder --> Cookies

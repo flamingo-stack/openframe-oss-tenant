@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant IntegrationService
+    participant RestProxyService
+    participant ToolBackend
+
+    Client->>Gateway: REST call
+    Gateway->>IntegrationService: Health or test
+    Gateway->>RestProxyService: Proxy request
+    RestProxyService->>ToolBackend: Forward HTTP
+    ToolBackend->>Gateway: Response
+    Gateway->>Client: Return response

@@ -1,0 +1,10 @@
+flowchart TD
+    InboundKafka["Inbound Kafka Topic"]
+    InboundKafka --> Listener
+    Listener --> Deserializer
+    Deserializer --> Mapper
+    Mapper --> Enrichment
+    Enrichment --> Handler
+
+    Handler -->|Cassandra| Cassandra
+    Handler -->|Kafka| OutboundKafka

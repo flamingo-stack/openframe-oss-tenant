@@ -1,0 +1,4 @@
+flowchart LR
+    Tokens["TokenResponse"] -->|"createTicket()"| Store["InMemory Store"]
+    DevClient["Dev Client"] -->|"/oauth/dev-exchange"| Store
+    Store -->|"consumeTicket()"| DevClient

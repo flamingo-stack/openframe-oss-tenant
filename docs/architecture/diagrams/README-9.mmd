@@ -1,0 +1,12 @@
+flowchart TD
+    Browser["Frontend App"] --> Gateway["Gateway"]
+    Gateway --> Api["API Service"]
+    Api --> Mongo["MongoDB"]
+
+    Api --> Kafka["Kafka"]
+    Kafka --> Stream["Stream Service"]
+    Stream --> Cassandra["Cassandra"]
+    Stream --> Pinot["Pinot"]
+
+    Api --> Response["JSON Response"]
+    Response --> Browser

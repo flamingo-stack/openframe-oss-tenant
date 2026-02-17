@@ -1,0 +1,7 @@
+flowchart TD
+    AppStart["Application Start"] --> InitToken["Initialize Token Service"]
+    InitToken --> ListenEvents["Listen for token-update"]
+    ListenEvents --> LoadUI["Render UI"]
+    LoadUI --> FetchDialog["Fetch Resumable Dialog"]
+    FetchDialog --> FetchMessages["Fetch Messages"]
+    FetchMessages --> LoadModels["Load Supported Models"]

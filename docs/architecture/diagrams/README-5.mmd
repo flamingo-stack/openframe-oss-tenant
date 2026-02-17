@@ -1,0 +1,5 @@
+flowchart TD
+    Service["Service Layer"] --> Repo["Repository"]
+    Repo --> CustomImpl["Custom Repository"]
+    CustomImpl --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB["MongoDB"]

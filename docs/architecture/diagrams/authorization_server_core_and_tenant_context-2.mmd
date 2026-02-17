@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Extract["Extract Tenant From URL / Param / Session"]
+    Extract --> Validate["Validate Context Switch"]
+    Validate --> SetCtx["Set TenantContext"]
+    SetCtx --> StoreSession["Store TENANT_ID in Session"]
+    StoreSession --> Continue["Continue Filter Chain"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["API Request"] --> Response["Response"]
+    Response -->|"200 OK"| Success["Return Data"]
+    Response -->|"401"| Refresh["Refresh Access Token"]
+    Refresh -->|"Success"| Retry["Retry Original Request"]
+    Refresh -->|"Failure"| Logout["Force Logout"]

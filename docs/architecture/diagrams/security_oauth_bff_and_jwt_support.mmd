@@ -1,0 +1,9 @@
+flowchart LR
+    Frontend["Frontend Tenant App"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"Authorization Code + PKCE"| AuthServer["Authorization Server"]
+    AuthServer -->|"JWT Tokens"| BFF
+    BFF -->|"HttpOnly Cookies"| Browser["User Browser"]
+
+    Browser -->|"Access Token Cookie"| Gateway["Gateway Service"]
+    Gateway -->|"JWT Validation"| JwtConfig["JWT Security Config"]
+    JwtConfig -->|"RSA Public Key"| Services["API Services"]

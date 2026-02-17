@@ -1,0 +1,7 @@
+flowchart TD
+    Controller["@RestController"] --> Service["Domain Service"]
+    Service --> Repository["Mongo Repository"]
+    Repository --> MongoDB["MongoDB"]
+
+    GraphQL["@DgsQuery"] --> DataLoader["DataLoader"]
+    DataLoader --> Repository

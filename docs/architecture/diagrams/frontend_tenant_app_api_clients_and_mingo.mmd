@@ -1,0 +1,15 @@
+flowchart LR
+    Browser["User Browser"] --> Frontend["Frontend Tenant App"]
+
+    Frontend --> AuthClient["AuthApiClient"]
+    Frontend --> ApiClient["ApiClient"]
+    Frontend --> FleetClient["FleetApiClient"]
+    Frontend --> TacticalClient["TacticalApiClient"]
+
+    AuthClient --> AuthServer["Authorization Server"]
+    ApiClient --> Gateway["Gateway Service"]
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ChatService["Chat / Mingo Backend"]
+
+    FleetClient --> FleetTool["Fleet Tool Proxy"]
+    TacticalClient --> TacticalTool["Tactical RMM Proxy"]

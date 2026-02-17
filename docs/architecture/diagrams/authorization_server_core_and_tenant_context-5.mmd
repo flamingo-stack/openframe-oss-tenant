@@ -1,0 +1,7 @@
+flowchart TD
+    Init["Start SSO Registration"] --> Cookie["Set of_sso_reg Cookie"]
+    Cookie --> Redirect["Redirect to IdP"]
+    Redirect --> Callback["OIDC Callback"]
+    Callback --> Handler["TenantRegSsoHandler"]
+    Handler --> Create["Create Tenant + Admin User"]
+    Create --> RedirectApp["Redirect to App"]

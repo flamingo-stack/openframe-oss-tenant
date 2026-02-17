@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Client Request with Cursor"] --> Repo["Custom Repository"]
+    Repo --> Criteria["Apply ObjectId Cursor Criteria"]
+    Criteria --> Sort["Apply Dynamic Sort"]
+    Sort --> Limit["Apply Limit"]
+    Limit --> Mongo[("MongoDB")]

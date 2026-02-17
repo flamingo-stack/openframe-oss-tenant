@@ -1,0 +1,6 @@
+flowchart TD
+    MainMethod["main(String[] args)"] --> SpringRun["SpringApplication.run()"]
+    SpringRun --> ComponentScan["Component Scan"]
+    ComponentScan --> AutoConfig["Spring Auto-Configuration"]
+    AutoConfig --> Beans["Bean Initialization"]
+    Beans --> Ready["Service Ready"]

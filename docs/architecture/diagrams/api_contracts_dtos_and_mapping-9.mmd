@@ -1,0 +1,10 @@
+flowchart TD
+    Controller["API Controller"] --> Mapper
+    Mapper --> Entity["Domain Entity"]
+    Entity --> Repository["Repository"]
+    Repository --> Database[("MongoDB")]
+
+    Repository --> Entity
+    Entity --> Mapper
+    Mapper --> Response["DTO Response"]
+    Response --> Client

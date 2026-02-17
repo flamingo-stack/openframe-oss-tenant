@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthApi as "AuthApiClient"
+    participant AuthServer
+
+    User->>Frontend: Enter email
+    Frontend->>AuthApi: discoverTenants(email)
+    AuthApi->>AuthServer: GET /sas/tenant/discover
+    AuthServer-->>AuthApi: TenantDiscoveryResponse
+    AuthApi-->>Frontend: providers + tenantId
+
+    User->>Frontend: Login (SSO or password)
+    Frontend->>AuthServer: Redirect to /oauth/login
+    AuthServer-->>Frontend: Cookie + tokens
+
+    Frontend->>Frontend: handleAuthenticationSuccess()

@@ -1,0 +1,7 @@
+flowchart TD
+    AdminRequest["Admin Configures SSO"] --> Controller
+    Controller --> Service
+    Service --> Validate["Domain Validation"]
+    Validate --> Encrypt["Encrypt Secret"]
+    Encrypt --> Repository
+    Repository --> Processor["Post Process Hook"]

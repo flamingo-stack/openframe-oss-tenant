@@ -1,0 +1,10 @@
+flowchart TD
+    Services["Service Layer Modules"] --> Repos["Repository Interfaces"]
+    Repos --> CustomImpl["Custom Repository Implementations"]
+    CustomImpl --> MongoTemplate["MongoTemplate"]
+    Repos --> SpringData["Spring Data Mongo Repositories"]
+    SpringData --> MongoDB[("MongoDB")]
+    MongoTemplate --> MongoDB
+
+    Docs["Mongo Documents"] --> SpringData
+    Filters["Query Filters"] --> CustomImpl

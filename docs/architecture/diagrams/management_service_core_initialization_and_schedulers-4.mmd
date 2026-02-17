@@ -1,0 +1,4 @@
+flowchart TD
+    Request["Save Tool Request"] --> SaveMongo["Save Tool in Mongo"]
+    SaveMongo --> DebeziumUpdate["Create/Update Debezium Connector"]
+    DebeziumUpdate --> Hooks["Execute Post Save Hooks"]

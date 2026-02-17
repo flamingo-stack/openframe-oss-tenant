@@ -1,0 +1,17 @@
+flowchart LR
+    Client["Dashboard UI / Agents / External Clients"] --> Gateway["Gateway Service Core Edge Security And Ws Proxy"]
+
+    Gateway --> ApiService["API Service"]
+    Gateway --> ClientService["Client Service"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ToolApi["Integrated Tool APIs"]
+    Gateway --> Nats["NATS WebSocket"]
+
+    subgraph SecurityLayer["Security & Enforcement"]
+        Jwt["JWT Validation"]
+        ApiKey["API Key Filter"]
+        RateLimit["Rate Limiting"]
+        Roles["Role Authorization"]
+    end
+
+    Gateway --> SecurityLayer

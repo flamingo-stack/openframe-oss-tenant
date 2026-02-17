@@ -1,0 +1,7 @@
+flowchart TD
+    Start["getDialogMessages()"] --> Ensure["ensureTokenReady()"]
+    Ensure --> InitClient["Initialize GraphQL Client"]
+    InitClient --> Query["Execute messages query"]
+    Query --> PageInfo["Check pageInfo.hasNextPage"]
+    PageInfo -->|"true"| Query
+    PageInfo -->|"false"| End["Return Aggregated Messages"]

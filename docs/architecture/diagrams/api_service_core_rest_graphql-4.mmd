@@ -1,0 +1,8 @@
+flowchart TD
+    GraphQLRequest["GraphQL Query"] --> DgsComponent["@DgsQuery / @DgsMutation"]
+    DgsComponent --> Mapper["GraphQL Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Mongo / Pinot"]
+    Repository --> Result["Query Result"]
+    Result --> Connection["Connection + Edges"]
+    Connection --> Response["GraphQL Response"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["HTTP Request"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> AuthServer["AuthorizationServerConfig"]
+    AuthServer --> KeyService["TenantKeyService"]
+    KeyService --> Mongo["MongoDB"]
+    AuthServer --> Jwt["JWT Issuance"]

@@ -1,0 +1,8 @@
+flowchart TD
+    User["User"] --> Login["/login"]
+    Login --> Form["Form Login"]
+    Login --> OAuth["OAuth2 Login"]
+    OAuth --> IdP["Google / Microsoft"]
+    IdP --> Callback["OIDC Callback"]
+    Callback --> Provision["Auto-Provision If Needed"]
+    Provision --> Success["AuthSuccessHandler"]

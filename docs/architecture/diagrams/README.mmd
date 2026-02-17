@@ -1,0 +1,22 @@
+flowchart LR
+    User["Frontend Tenant App"] --> Gateway["Gateway Service"]
+
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> Api["API Service Core"]
+    Gateway --> ExternalApi["External API Service"]
+    Gateway --> ClientSvc["Client Service"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Kafka["Kafka"]
+
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra["Cassandra"]
+    Stream --> Pinot["Apache Pinot"]
+
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+
+    Auth --> Mongo
+    ClientSvc --> NATS["NATS / JetStream"]
+
+    Api --> DataLayer["Data Layer Mongo"]

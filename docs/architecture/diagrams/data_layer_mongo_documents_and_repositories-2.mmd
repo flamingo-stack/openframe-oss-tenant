@@ -1,0 +1,5 @@
+flowchart TD
+    App["Spring Boot Application"] --> MongoConfig["MongoConfig"]
+    MongoConfig --> Blocking["EnableMongoRepositories"]
+    MongoConfig --> Reactive["EnableReactiveMongoRepositories"]
+    MongoConfig --> Auditing["EnableMongoAuditing"]

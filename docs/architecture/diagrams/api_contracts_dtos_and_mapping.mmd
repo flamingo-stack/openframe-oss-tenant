@@ -1,0 +1,7 @@
+flowchart LR
+    Client["Frontend / External Client"] --> ApiService["API Service Core"]
+    ApiService --> Dtos["Api Contracts Dtos And Mapping"]
+    Dtos --> DataLayer["Mongo Documents & Repositories"]
+    DataLayer --> Database[("MongoDB")]
+
+    Dtos --> ExternalApi["External API Service"]

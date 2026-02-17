@@ -1,0 +1,5 @@
+flowchart LR
+    Listener["ToolConnectionListener"] --> Transformer["FleetMdmAgentIdTransformer"]
+    Transformer --> FleetAPI["Fleet MDM API"]
+    FleetAPI --> Host["Host ID"]
+    Host --> ToolConnectionService["ToolConnectionService"]

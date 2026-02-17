@@ -1,0 +1,8 @@
+flowchart LR
+    Request["Incoming Request"] --> Gateway
+    Gateway --> Jwt["JWT Attached"]
+    Jwt --> ApiSecurity["SecurityFilterChain"]
+    ApiSecurity --> Resolver["Issuer Resolver"]
+    Resolver --> Cache["JWT Provider Cache"]
+    Cache --> Decoder["JwtDecoder"]
+    Decoder --> Controller["REST / GraphQL"]

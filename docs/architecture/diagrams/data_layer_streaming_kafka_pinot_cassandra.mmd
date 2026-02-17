@@ -1,0 +1,11 @@
+flowchart TD
+    MongoRepo["Mongo Repositories"] -->|"save()"| Aspect["MachineTagEventAspect"]
+    Aspect --> Service["MachineTagEventServiceImpl"]
+    Service --> Producer["OssTenantRetryingKafkaProducer"]
+    Producer --> Kafka["Kafka Cluster"]
+    Kafka --> StreamService["Stream Service"]
+    StreamService --> Pinot["Apache Pinot"]
+    StreamService --> Cassandra["Apache Cassandra"]
+
+    Cassandra --> Health["CassandraHealthIndicator"]
+    Pinot --> PinotRepo["Pinot Repositories"]

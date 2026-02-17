@@ -1,0 +1,14 @@
+flowchart TD
+    Incoming["Incoming Request"] --> OriginFilter["OriginSanitizerFilter"]
+    OriginFilter --> AuthHeaderFilter["AddAuthorizationHeaderFilter"]
+    AuthHeaderFilter --> JwtValidation["JWT Validation"]
+    JwtValidation --> RoleCheck["Role Authorization"]
+
+    RoleCheck --> ApiKeyCheck["API Key Filter if external"]
+    ApiKeyCheck --> Route["Route Resolution"]
+
+    Route --> RestProxy["REST Proxy"]
+    Route --> WsProxy["WebSocket Proxy"]
+
+    RestProxy --> Downstream["Backend Services"]
+    WsProxy --> Downstream

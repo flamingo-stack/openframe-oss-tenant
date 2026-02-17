@@ -1,0 +1,8 @@
+flowchart LR
+    Props["OssTenantKafkaProperties"] --> ProducerFactory
+    Props --> ConsumerFactory
+    Props --> ListenerFactory
+    TopicProps["KafkaTopicProperties"] --> KafkaAdmin
+    KafkaAdmin --> Topics["Auto Created Topics"]
+    ProducerFactory --> KafkaTemplate
+    KafkaTemplate --> Producer["OssTenantKafkaProducer"]

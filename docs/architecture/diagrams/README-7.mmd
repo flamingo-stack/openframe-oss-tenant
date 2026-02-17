@@ -1,0 +1,5 @@
+flowchart TD
+    KafkaInbound["Inbound Topic"] --> Listener["JsonKafkaListener"]
+    Listener --> Deserializer["Tool Deserializer"]
+    Deserializer --> Enrichment["Enrichment Service"]
+    Enrichment --> Handler["Cassandra / Kafka Handler"]

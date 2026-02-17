@@ -1,0 +1,25 @@
+flowchart LR
+    Client["External Client<br/>Integration / Script / SaaS"] -->|"X-API-Key"| Gateway["Gateway Service Core"]
+    Gateway --> ExternalApi["External Api Service Core Rest Proxy"]
+
+    subgraph rest_layer["REST Controllers"]
+        DeviceCtrl["Device Controller"]
+        EventCtrl["Event Controller"]
+        LogCtrl["Log Controller"]
+        OrgCtrl["Organization Controller"]
+        ToolCtrl["Tool Controller"]
+        IntegrationCtrl["Integration Controller"]
+    end
+
+    ExternalApi --> rest_layer
+
+    DeviceCtrl --> ApiCore["API Service Core"]
+    EventCtrl --> ApiCore
+    LogCtrl --> ApiCore
+    OrgCtrl --> ApiCore
+    ToolCtrl --> ApiCore
+
+    IntegrationCtrl --> RestProxy["Rest Proxy Service"]
+    RestProxy --> Tools["Integrated Tools"]
+
+    ApiCore --> DataLayer["Mongo / Pinot / Cassandra"]

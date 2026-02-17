@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Incoming Request"] --> MatchPath["Path Matcher"]
+
+    MatchPath --> Admin["Role ADMIN Required"]
+    MatchPath --> Agent["Role AGENT Required"]
+    MatchPath --> Public["Permit All"]
+
+    Admin --> Decision["Access Decision"]
+    Agent --> Decision
+    Public --> Decision

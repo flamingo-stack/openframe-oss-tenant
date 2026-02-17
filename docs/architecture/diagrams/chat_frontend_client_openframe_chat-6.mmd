@@ -1,0 +1,5 @@
+flowchart LR
+    AuthServer["Authorization Server"] -->|"JWT"| RustLayer["Rust Layer"]
+    RustLayer -->|"token-update event"| TokenService
+    TokenService -->|"Authorization Header"| Gateway
+    Gateway --> Backend["Backend Services"]

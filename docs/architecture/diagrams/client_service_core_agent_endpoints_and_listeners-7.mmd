@@ -1,0 +1,8 @@
+flowchart TD
+    Install["Agent Installed"] --> Register["POST /api/agents/register"]
+    Register --> Token["POST /oauth/token"]
+    Token --> Connected["machine.*.connected"]
+    Connected --> Heartbeat["machine.*.heartbeat"]
+    Heartbeat --> ToolConn["machine.*.tool-connection"]
+    ToolConn --> InstalledAgent["machine.*.installed-agent"]
+    InstalledAgent --> Stable["Machine Fully Integrated"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Load["loadSupportedModels()"] --> Fetch["HTTP GET supported-models"]
+    Fetch --> Parse["Parse JSON by provider"]
+    Parse --> MapStore["Store in Map by modelName"]
+    MapStore --> Ready["isLoaded = true"]

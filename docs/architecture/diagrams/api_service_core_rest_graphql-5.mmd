@@ -1,0 +1,10 @@
+flowchart LR
+    Query["devices query"] --> Machine
+    Machine --> Tags
+    Machine --> Organization
+
+    Tags --> TagLoader["TagDataLoader"]
+    Organization --> OrgLoader["OrganizationDataLoader"]
+
+    TagLoader --> BatchQuery["Batch Repository Call"]
+    OrgLoader --> BatchQuery

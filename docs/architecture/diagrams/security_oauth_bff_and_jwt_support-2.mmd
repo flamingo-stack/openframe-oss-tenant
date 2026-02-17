@@ -1,0 +1,5 @@
+flowchart TD
+    JwtConfig["JwtConfig"] -->|"loadPublicKey()"| Decoder["JwtDecoder"]
+    JwtConfig -->|"loadPrivateKey()"| Encoder["JwtEncoder"]
+    Encoder -->|"sign JWT"| Token["Access Token"]
+    Decoder -->|"verify signature"| Validation["Token Validation"]

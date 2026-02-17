@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as OAuth BFF
+    participant Auth as Authorization Server
+
+    Browser->>BFF: GET /oauth/login?tenantId=abc
+    BFF->>Auth: Redirect with PKCE + state
+    Auth->>Browser: Redirect back with code + state
+    Browser->>BFF: GET /oauth/callback
+    BFF->>Auth: Exchange code for tokens
+    Auth->>BFF: access_token + refresh_token
+    BFF->>Browser: Set HttpOnly cookies

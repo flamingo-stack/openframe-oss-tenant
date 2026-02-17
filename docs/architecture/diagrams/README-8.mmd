@@ -1,0 +1,6 @@
+flowchart TD
+    Agent["Machine Agent"] --> Register["POST /agents/register"]
+    Register --> Mongo["MongoDB"]
+
+    NATS["machine.*.heartbeat"] --> HeartbeatListener
+    HeartbeatListener --> MachineStatusService

@@ -1,0 +1,8 @@
+flowchart TD
+    TokenRequest["Token Request"] --> JwkSource["JWKSource Bean"]
+    JwkSource --> TenantId["Resolve tenantId from TenantContext"]
+    TenantId --> Lookup["TenantKeyService.getOrCreateActiveKey()"]
+    Lookup --> Mongo["TenantKeyRepository"]
+    Lookup --> Generate["Generate RSA if none"]
+    Generate --> Encrypt["Encrypt Private Key"]
+    Lookup --> ReturnKey["Return RSAKey with kid"]

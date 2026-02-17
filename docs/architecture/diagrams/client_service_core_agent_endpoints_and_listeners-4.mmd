@@ -1,0 +1,6 @@
+flowchart TD
+    NATS["INSTALLED_AGENTS Stream"] --> Listener["InstalledAgentListener"]
+    Listener --> Extractor["NatsTopicMachineIdExtractor"]
+    Listener --> InstalledAgentService["InstalledAgentService"]
+    InstalledAgentService --> Mongo["Installed Agent Records"]
+    Listener --> Ack["message.ack()"]
