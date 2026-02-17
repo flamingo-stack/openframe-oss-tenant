@@ -101,7 +101,14 @@ export function normalizeDevicePlatform(
     return 'darwin'
   }
 
-  if (osValue.includes('linux')) {
+  if (
+    osValue.includes('linux') ||
+    osValue.includes('ubuntu') ||
+    osValue.includes('debian') ||
+    osValue.includes('centos') ||
+    osValue.includes('redhat') ||
+    osValue.includes('fedora')
+  ) {
     return 'linux'
   }
 

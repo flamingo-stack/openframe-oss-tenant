@@ -1,19 +1,45 @@
 'use client'
 
-import { DetailPageContainer, DeviceType, LoadError, NotFoundError, SelectableDeviceCard } from '@flamingo-stack/openframe-frontend-core'
-import { PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { Button, ListLoader, SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import {
+  DetailPageContainer,
+  LoadError,
+  NotFoundError,
+  ScriptArguments,
+  ScriptInfoSection,
+} from '@flamingo-stack/openframe-frontend-core'
+import {
+  Input,
+  Label,
+  ListLoader,
+} from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getDeviceOperatingSystem } from '../../devices/utils/device-status'
+import { Controller, useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { getTacticalAgentId } from '../../devices/utils/device-action-utils'
+import { useDeviceFilter } from '../hooks/use-device-filter'
+import { useDeviceSelection } from '../hooks/use-device-selection'
 import { useRunScriptData } from '../hooks/use-run-script-data'
-import { ScriptInfoSection } from './script-info-section'
+import { scriptArgumentSchema } from '../types/edit-script.types'
+import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../utils/device-helpers'
+import { parseKeyValues, serializeKeyValues } from '../utils/script-key-values'
+import { DeviceSelectionPanel } from './device-selection-panel'
+import { ExecutionStartedModal } from './execution-started-modal'
 
 interface RunScriptViewProps {
   scriptId: string
 }
+
+const runFormSchema = z.object({
+  timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
+  scriptArgs: z.array(scriptArgumentSchema),
+  envVars: z.array(scriptArgumentSchema),
+})
+
+type RunFormData = z.infer<typeof runFormSchema>
 
 export function RunScriptView({ scriptId }: RunScriptViewProps) {
   const router = useRouter()
@@ -23,52 +49,59 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     scriptDetails,
     isLoadingScript,
     scriptError,
-    devices,
+    devices: allDevices,
     isLoadingDevices,
     devicesError,
-    searchDevices
   } = useRunScriptData({ scriptId })
 
-  const [searchTerm, setSearchTerm] = useState('')
-  const debouncedSearch = useDebounce(searchTerm, 300)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const {
+    searchTerm, setSearchTerm,
+    selectedOrgIds, setSelectedOrgIds,
+    organizationOptions,
+    filteredDevices,
+  } = useDeviceFilter({ devices: allDevices })
+
+  const {
+    selectedIds, selectedCount,
+    toggleSelect, selectAllDisplayed, clearSelection,
+  } = useDeviceSelection()
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<RunFormData>({
+    resolver: zodResolver(runFormSchema),
+    defaultValues: { timeout: 90, scriptArgs: [], envVars: [] },
+  })
+
+  const [showExecutionModal, setShowExecutionModal] = useState(false)
 
   useEffect(() => {
-    if (debouncedSearch !== undefined) {
-      searchDevices(debouncedSearch)
+    if (scriptDetails) {
+      reset({
+        timeout: Number(scriptDetails.default_timeout) || 90,
+        scriptArgs: parseKeyValues(scriptDetails.args),
+        envVars: parseKeyValues(scriptDetails.env_vars),
+      })
     }
-  }, [debouncedSearch, searchDevices])
+  }, [scriptDetails, reset])
 
   const handleBack = useCallback(() => {
     router.push(`/scripts/details/${scriptId}`)
   }, [router, scriptId])
 
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }, [])
+  const onSubmit = useCallback(async (data: RunFormData) => {
+    if (selectedCount === 0) {
+      toast({ title: 'No devices selected', description: 'Please select at least one device.', variant: 'destructive' })
+      return
+    }
 
-  const selectAllDisplayed = useCallback(() => {
-    const ids = devices.map(d => d.machineId || d.agent_id || d.id)
-    setSelectedIds(new Set(ids as string[]))
-  }, [devices])
-
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
-
-  const selectedCount = selectedIds.size
-
-  const handleRunScript = useCallback(async () => {
-    if (selectedCount === 0) return
     try {
-      const selectedDevices = devices.filter(d => selectedIds.has((d.machineId || d.agent_id || d.id) || ''))
+      const selectedDevices = filteredDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)))
       const selectedAgentIds = selectedDevices
-        .map(d => d.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId)
+        .map(d => getTacticalAgentId(d))
         .filter((id): id is string => !!id)
 
       if (selectedAgentIds.length === 0) {
@@ -76,23 +109,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         return
       }
 
-      const normalizeOs = (os?: string) => {
-        const o = (os || '').toLowerCase()
-        if (o.includes('win')) return 'windows'
-        if (o.includes('mac') || o.includes('darwin') || o.includes('osx')) return 'darwin'
-        if (o.includes('linux') || o.includes('ubuntu') || o.includes('debian') || o.includes('centos') || o.includes('redhat')) return 'linux'
-        return null
-      }
-      const osTypesSet = new Set(
-        selectedDevices
-          .map(d => normalizeOs(d.osType || d.operating_system))
-          .filter((v): v is 'windows' | 'linux' | 'darwin' => v !== null)
-      )
-      const osType = osTypesSet.size === 1 ? Array.from(osTypesSet)[0] : 'all'
+      const osType = resolveOsTypeFromDevices(selectedDevices)
+      const shell = resolveShellForExecution(osType, scriptDetails?.shell)
 
-      const shell = osType === 'windows'
-        ? (scriptDetails?.shell === 'powershell' ? 'powershell' : 'cmd')
-        : '/bin/bash'
       const payload = {
         mode: 'script',
         target: 'agents',
@@ -110,9 +129,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         site: null,
         agents: selectedAgentIds,
         script: Number(scriptDetails?.id),
-        timeout: Number(scriptDetails?.default_timeout || 90),
-        args: scriptDetails?.args || [],
-        env_vars: scriptDetails?.env_vars || [],
+        timeout: data.timeout,
+        args: serializeKeyValues(data.scriptArgs),
+        env_vars: serializeKeyValues(data.envVars),
         run_as_user: Boolean(scriptDetails?.run_as_user) || false,
       }
 
@@ -121,22 +140,38 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         throw new Error(res.error || `Bulk action failed with status ${res.status}`)
       }
 
-      toast({ title: 'Scripts submitted', description: `${selectedAgentIds.length} agent(s) received the script.`, variant: 'success' })
+      setShowExecutionModal(true)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to submit script'
       toast({ title: 'Submission failed', description: msg, variant: 'destructive' })
     }
-  }, [selectedCount, devices, selectedIds, scriptDetails, toast])
+  }, [selectedCount, filteredDevices, selectedIds, scriptDetails, toast])
+
+  const handleCloseExecutionModal = useCallback(() => {
+    setShowExecutionModal(false)
+  }, [])
+
+  const handleViewLogs = useCallback(() => {
+    setShowExecutionModal(false)
+    router.push(`/logs-page`)
+  }, [router])
+
+  const onFormError = useCallback((formErrors: Record<string, { message?: string }>) => {
+    const firstError = Object.values(formErrors)[0]
+    if (firstError?.message) {
+      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' })
+    }
+  }, [toast])
 
   const actions = useMemo(() => [
     {
       label: 'Run Script',
-      icon: <PlayIcon size={20} />,
-      onClick: handleRunScript,
+      onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
       disabled: selectedCount === 0,
+      loading: isSubmitting,
     }
-  ], [handleRunScript, selectedCount])
+  ], [handleSubmit, onSubmit, onFormError, selectedCount, isSubmitting])
 
   if (isLoadingScript) {
     return <ListLoader />
@@ -156,72 +191,88 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
       backButton={{ label: 'Back to Script Details', onClick: handleBack }}
       actions={actions}
     >
-      {/* Script summary */}
       <div className="flex-1 overflow-auto">
-        <ScriptInfoSection script={scriptDetails} />
+        <ScriptInfoSection
+          headline={scriptDetails.name}
+          subheadline={scriptDetails.description}
+          shellType={scriptDetails.shell}
+          supportedPlatforms={scriptDetails.supported_platforms}
+          category={scriptDetails.category}
+        />
 
-        {/* Device selection */}
-        <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-3">
-            <div className="text-ods-text-primary font-semibold text-lg">Search by Device</div>
-            <div className="w-full md:w-[380px]">
-              <SearchBar
-                placeholder="Search for Devices"
-                value={searchTerm}
-                onSubmit={setSearchTerm}
+        {/* Timeout */}
+        <div className="pt-6">
+          <Label className="text-ods-text-primary font-semibold text-lg">Timeout</Label>
+          <Controller
+            name="timeout"
+            control={control}
+            render={({ field }) => (
+              <Input
+                type="number"
+                className="md:max-w-[320px] w-full"
+                value={field.value}
+                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
               />
-            </div>
-          </div>
-          <div className="flex items-end md:justify-end">
-            <Button
-              onClick={selectAllDisplayed}
-              variant="ghost"
-              className="text-ods-accent hover:text-ods-accent-hover"
-            >
-              Select All Displayed Devices
-            </Button>
-          </div>
-        </div>
-
-        <div className="pt-4">
-          <div className="flex items-center justify-between mb-3">
-            {selectedCount > 0 && (
-              <Button variant="ghost" onClick={clearSelection} className="text-ods-text-secondary hover:text-ods-text-primary">
-                Clear Selection
-              </Button>
             )}
-          </div>
-
-          {isLoadingDevices ? (
-            <ListLoader />
-          ) : devicesError ? (
-            <LoadError message={`Failed to load devices: ${devicesError}`} />
-          ) : devices.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-              <p className="text-ods-text-secondary">No devices found. Try adjusting your search.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {devices.map((device) => {
-                const id = device.machineId || device.agent_id || device.id
-                const deviceType = device.type?.toLowerCase() as DeviceType
-                const isSelected = selectedIds.has(id || '')
-                return (
-                  <SelectableDeviceCard
-                    key={id}
-                    title={device.displayName || device.hostname}
-                    type={deviceType}
-                    subtitle={getDeviceOperatingSystem(device.osType)}
-                    selected={isSelected}
-                    onSelect={() => toggleSelect(id || '')}
-                  />
-                )
-              })}
-            </div>
-          )}
+          />
         </div>
 
+        {/* Script Arguments & Environment Vars */}
+        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Controller
+            name="scriptArgs"
+            control={control}
+            render={({ field }) => (
+              <ScriptArguments
+                arguments={field.value}
+                onArgumentsChange={field.onChange}
+                keyPlaceholder="Key"
+                valuePlaceholder="Enter Value (empty=flag)"
+                addButtonLabel="Add Script Argument"
+                titleLabel="Script Arguments"
+              />
+            )}
+          />
+          <Controller
+            name="envVars"
+            control={control}
+            render={({ field }) => (
+              <ScriptArguments
+                arguments={field.value}
+                onArgumentsChange={field.onChange}
+                keyPlaceholder="Key"
+                valuePlaceholder="Enter Value"
+                addButtonLabel="Add Environment Var"
+                titleLabel="Environment Vars"
+              />
+            )}
+          />
+        </div>
+
+        <DeviceSelectionPanel
+          devices={filteredDevices}
+          isLoading={isLoadingDevices}
+          error={devicesError}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          organizationOptions={organizationOptions}
+          selectedOrgIds={selectedOrgIds}
+          onOrgIdsChange={setSelectedOrgIds}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onSelectAll={() => selectAllDisplayed(filteredDevices)}
+          onClearSelection={clearSelection}
+          selectedCount={selectedCount}
+        />
       </div>
+
+      <ExecutionStartedModal
+        isOpen={showExecutionModal}
+        onClose={handleCloseExecutionModal}
+        scriptName={scriptDetails.name || 'Script'}
+        onViewLogs={handleViewLogs}
+      />
     </DetailPageContainer>
   )
 }

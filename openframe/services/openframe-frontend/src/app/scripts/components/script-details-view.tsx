@@ -1,13 +1,14 @@
 'use client'
 
-import { Button, CardLoader, DetailPageContainer, InfoCard, LoadError, MoreActionsMenu, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { Calendar, Edit2, Play } from 'lucide-react'
+import { CardLoader, DetailPageContainer, LoadError, NotFoundError, ScriptInfoSection } from '@flamingo-stack/openframe-frontend-core'
+import { CalendarIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
+import { featureFlags } from '@lib/feature-flags'
 import { useRouter } from 'next/navigation'
-import React, { useCallback, useRef } from 'react'
+import { useMemo } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
 import { ScheduledRunsSection } from './scheduled-runs-section'
-import { ScriptInfoSection } from './script-info-section'
-import { featureFlags } from '@lib/feature-flags'
+import { ScriptArgumentsCard } from './script-arguments-card'
+import { ScriptEditor } from './script-editor'
 
 interface ScriptDetailsViewProps {
   scriptId: string
@@ -16,12 +17,6 @@ interface ScriptDetailsViewProps {
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const router = useRouter()
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId)
-  const lineNumbersRef = useRef<HTMLDivElement>(null)
-  const handleCodeScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    if (lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = (e.currentTarget as HTMLDivElement).scrollTop
-    }
-  }, [])
 
   const handleBack = () => {
     router.push('/scripts')
@@ -42,6 +37,29 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
       router.push(`/scripts/details/${scriptDetails.id}/schedule`)
     }
   }
+  const isScheduleEnabled = featureFlags.scriptSchedule.enabled()
+
+  const menuActions = useMemo(() => [
+    {
+      label: 'Edit Script',
+      icon: <PenEditIcon size={20} />,
+      onClick: handleEditScript,
+    },
+    ...(isScheduleEnabled ? [{
+      label: 'Schedule Script',
+      icon: <CalendarIcon size={20} />,
+      onClick: handleScheduleScript,
+    }] : [])
+  ], [handleEditScript, handleScheduleScript, isScheduleEnabled])
+
+  const actions = useMemo(() => [
+    {
+      label: 'Run Script',
+      icon: <PlayIcon size={20} />,
+      onClick: handleRunScript,
+      variant: 'primary' as const,
+    }
+  ], [handleRunScript])
 
   if (isLoading) {
     return <CardLoader items={4} />
@@ -55,33 +73,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     return <NotFoundError message="Script not found" />
   }
 
-  const isScheduleEnabled = featureFlags.scriptSchedule.enabled()
-
-  const moreActionsItems = [
-    {
-      label: 'Edit Script',
-      icon: <Edit2 size={20} />,
-      onClick: handleEditScript,
-    },
-    ...(isScheduleEnabled ? [{
-      label: 'Schedule Script',
-      icon: <Calendar size={20} />,
-      onClick: handleScheduleScript,
-    }] : [])
-  ]
-
-  const headerActions = (
-    <>
-      <MoreActionsMenu items={moreActionsItems} />
-      <Button
-        variant="primary"
-        onClick={handleRunScript}
-        leftIcon={<Play size={20} />}
-      >
-        Run Script
-      </Button>
-    </>
-  )
 
   return (
     <DetailPageContainer
@@ -90,40 +81,36 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         label: 'Back to Scripts',
         onClick: handleBack
       }}
-      headerActions={headerActions}
-      actionsVariant="primary-buttons"
+      actions={actions}
+      menuActions={menuActions}
+      actionsVariant="menu-primary"
     >
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <ScriptInfoSection script={scriptDetails} />
+      <div className="flex flex-col overflow-auto gap-6">
+        <ScriptInfoSection 
+          headline={scriptDetails.description}
+          subheadline={'Description'}
+          shellType={scriptDetails.shell}
+          supportedPlatforms={scriptDetails.supported_platforms}
+          category={scriptDetails.category} 
+        />
 
         {/* Script Arguments and Environment Variables */}
         {(scriptDetails.args?.length > 0 || scriptDetails.env_vars?.length > 0) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            {/* Script Arguments */}
-            {scriptDetails.args?.length > 0 && (
-              <InfoCard
-                data={{
-                  title: 'SCRIPT ARGUMENTS',
-                  items: scriptDetails.args.map((arg: string) => {
-                    const [key, value] = arg.includes('=') ? arg.split('=') : [arg, ''];
-                    return { label: key, value: value || '' };
-                  })
-                }}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {scriptDetails.args?.length > 0 ? (
+              <ScriptArgumentsCard
+                title="Default Script Arguments"
+                args={scriptDetails.args}
               />
+            ) : (
+              <div />
             )}
-
-            {/* Environment Variables */}
             {scriptDetails.env_vars?.length > 0 && (
-              <InfoCard
-                data={{
-                  title: 'ENVIRONMENT VARS',
-                  items: scriptDetails.env_vars.map((envVar: string) => {
-                    const [key, value] = envVar.includes('=') ? envVar.split('=') : [envVar, ''];
-                    return { label: key, value: value || '' };
-                  })
-                }}
+              <ScriptArgumentsCard
+                title="Environment Vars"
+                args={scriptDetails.env_vars}
               />
             )}
           </div>
@@ -131,34 +118,16 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
 
         {/* Script Syntax */}
         {scriptDetails.script_body && (
-          <div className="bg-ods-card border border-ods-border rounded-lg mt-6">
-            <div className="p-4 border-b border-ods-border">
-              <h3 className="text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">SYNTAX</h3>
+          <div className="flex flex-col gap-1">
+            <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
+              Syntax
             </div>
-            <div className="bg-ods-bg rounded-md border border-ods-border relative">
-              <div className="flex">
-                {/* Line numbers */}
-                <div className="w-12 bg-ods-bg py-3 px-2">
-                  <div ref={lineNumbersRef} className="h-[400px] overflow-y-auto">
-                    <div className="text-right text-ods-text-secondary text-lg font-['DM_Sans:Medium',_sans-serif] font-medium leading-6">
-                      {scriptDetails.script_body.split('\n').map((_, i) => (
-                        <div key={i}>{i + 1}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* Code content with synced scroll */}
-                <div className="flex-1 py-3 px-2">
-                  <div className="h-[400px] overflow-y-auto" onScroll={handleCodeScroll}>
-                    <pre className="text-ods-text-muted text-sm font-mono leading-relaxed whitespace-pre">
-                      <code className="language-bash">
-                        {scriptDetails.script_body}
-                      </code>
-                    </pre>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ScriptEditor
+              value={scriptDetails.script_body}
+              shell={scriptDetails.shell}
+              readOnly
+              height="400px"
+            />
           </div>
         )}
 
