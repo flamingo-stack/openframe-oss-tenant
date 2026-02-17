@@ -1,0 +1,5 @@
+flowchart LR
+    Client --> FilterOptions["FilterOptions DTO"]
+    FilterOptions --> Repository
+    Repository --> Results
+    Results --> Filters["Filters DTO"]

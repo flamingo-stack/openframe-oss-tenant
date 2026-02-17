@@ -1,0 +1,6 @@
+flowchart LR
+    JwtConfigNode["JwtConfig"] -->|"loadPublicKey()"| JwtDecoderNode["JwtDecoder"]
+    JwtConfigNode -->|"loadPublicKey()"| RsaKeyNode["RSAKey"]
+    JwtConfigNode -->|"loadPrivateKey()"| RsaKeyNode
+    RsaKeyNode --> JwkSetNode["JWKSet"]
+    JwkSetNode --> JwtEncoderNode["JwtEncoder"]

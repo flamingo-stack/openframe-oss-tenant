@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming HTTP Request"] --> Filter["TenantContextFilter"]
+    Filter --> Extract["Extract Tenant ID"]
+    Extract --> Context["TenantContext (ThreadLocal)"]
+    Context --> Security["Security & OAuth2 Layers"]

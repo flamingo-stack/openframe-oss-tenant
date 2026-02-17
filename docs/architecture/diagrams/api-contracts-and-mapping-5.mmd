@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Batch Machine IDs"] --> Service["InstalledAgentService"]
+    Service --> Repo["InstalledAgentRepository"]
+    Repo --> Mongo[("MongoDB")]
+    Service --> Grouped["Grouped by Machine ID"]

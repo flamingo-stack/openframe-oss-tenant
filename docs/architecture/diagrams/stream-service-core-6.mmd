@@ -1,0 +1,6 @@
+flowchart LR
+    ActivityTopic --> Join
+    HostActivityTopic --> Join
+    Join --> EnrichedActivity
+    EnrichedActivity --> AddHeaders
+    AddHeaders --> OutputTopic

@@ -1,0 +1,5 @@
+flowchart LR
+    Client["External Client"] --> Gateway
+    Gateway -->|"JWT Valid"| Api
+    Gateway -->|"Public API"| ExternalApi
+    Gateway -->|"Auth Flow"| Authz

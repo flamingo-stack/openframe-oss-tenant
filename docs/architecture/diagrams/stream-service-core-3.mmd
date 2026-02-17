@@ -1,0 +1,6 @@
+flowchart TD
+    RawDebezium["CommonDebeziumMessage"] --> ToolDeserializer
+    ToolDeserializer --> AgentId["Extract Agent ID"]
+    ToolDeserializer --> SourceType["Extract Source Event Type"]
+    ToolDeserializer --> Message["Extract Message"]
+    ToolDeserializer --> Timestamp["Parse ISO8601 Timestamp"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Login["Successful Authentication"] --> Customizer["OAuth2TokenCustomizer"]
+    Customizer --> Claims["Add Claims:<br/>tenant_id<br/>userId<br/>roles"]
+    Claims --> JWT["Signed JWT"]

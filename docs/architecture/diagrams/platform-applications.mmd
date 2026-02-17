@@ -1,0 +1,22 @@
+flowchart LR
+    Gateway["Gateway Application"] --> Api["API Application"]
+    Gateway --> ExternalApi["External API Application"]
+    Gateway --> Authz["Authorization Server Application"]
+
+    Api --> Data["Data Layer"]
+    ExternalApi --> Data
+    Authz --> Data
+    Client --> Data
+    Management --> Data
+    Stream --> Data
+
+    Stream --> Kafka["Kafka Cluster"]
+    Client --> Kafka
+    Api --> Kafka
+
+    Config["Config Server Application"] --> Gateway
+    Config --> Api
+    Config --> Authz
+    Config --> Client
+    Config --> Management
+    Config --> Stream

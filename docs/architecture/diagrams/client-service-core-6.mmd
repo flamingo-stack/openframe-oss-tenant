@@ -1,0 +1,4 @@
+flowchart LR
+    ToolConnectionService["Tool Connection Service"] --> Transformer["ToolAgentIdTransformer"]
+    Transformer --> Fleet["Fleet MDM Transformer"]
+    Transformer --> Mesh["MeshCentral Transformer"]

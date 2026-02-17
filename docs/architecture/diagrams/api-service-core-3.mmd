@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Gateway
+    Gateway --> ApiSecurity["OAuth2 Resource Server"]
+    ApiSecurity --> Principal["AuthPrincipal"]
+    Principal --> Controllers

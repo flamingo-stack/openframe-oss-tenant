@@ -1,0 +1,5 @@
+flowchart TD
+    Agent --> Register
+    Agent --> Heartbeat
+    Heartbeat --> Nats
+    Nats --> MachineStatusService

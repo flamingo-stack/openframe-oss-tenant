@@ -1,0 +1,4 @@
+flowchart TD
+    Request --> JwtResolver["JWT Resolver"]
+    JwtResolver --> AuthenticatedPrincipal
+    AuthenticatedPrincipal --> RouteForward

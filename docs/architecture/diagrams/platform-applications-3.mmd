@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Start"] --> Boot["Spring Boot Context"]
+    Boot --> Scan["Component Scan"]
+    Scan --> Controllers["API Controllers"]
+    Scan --> Services["Domain Services"]
+    Scan --> Repositories["Mongo Repositories"]
+    Scan --> Kafka
+    Kafka --> Ready["API Ready"]

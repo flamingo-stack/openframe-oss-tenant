@@ -1,0 +1,18 @@
+flowchart TD
+    App["ManagementApplication"] --> Config["Configuration Layer"]
+    App --> Init["Initializers"]
+    App --> Controllers["REST Controllers"]
+    App --> Schedulers["Schedulers"]
+    App --> Services["Management Services"]
+
+    Init --> Mongo[("MongoDB")]
+    Init --> Debezium["Debezium Connect"]
+    Init --> NATS["NATS JetStream"]
+    Init --> Pinot["Apache Pinot"]
+
+    Schedulers --> Redis[("Redis")]
+    Schedulers --> Mongo
+    Schedulers --> Debezium
+
+    Controllers --> Mongo
+    Controllers --> Debezium

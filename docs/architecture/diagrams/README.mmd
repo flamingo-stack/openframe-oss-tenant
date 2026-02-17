@@ -1,0 +1,48 @@
+flowchart TD
+    subgraph Edge
+        Gateway["Gateway Service"]
+    end
+
+    subgraph Identity
+        Authz["Authorization Service"]
+    end
+
+    subgraph API
+        Api["API Service"]
+        ExternalApi["External API Service"]
+    end
+
+    subgraph Runtime
+        Client["Client Service"]
+        Stream["Stream Service"]
+        Management["Management Service"]
+    end
+
+    subgraph Persistence
+        Mongo["MongoDB"]
+        Cassandra["Cassandra"]
+        Redis["Redis"]
+    end
+
+    subgraph Messaging
+        Kafka["Kafka"]
+        Nats["NATS JetStream"]
+    end
+
+    Gateway --> Api
+    Gateway --> ExternalApi
+    Gateway --> Authz
+
+    Api --> Mongo
+    ExternalApi --> Mongo
+    Authz --> Mongo
+    Client --> Mongo
+    Management --> Mongo
+    Stream --> Mongo
+
+    Stream --> Kafka
+    Client --> Nats
+    Management --> Kafka
+
+    Stream --> Cassandra
+    Management --> Redis

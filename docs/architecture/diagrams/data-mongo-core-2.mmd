@@ -1,0 +1,5 @@
+flowchart TD
+    Config["Configuration Layer"] --> Documents["Document Layer"]
+    Documents --> Repositories["Repository Interfaces"]
+    Repositories --> CustomImpl["Custom Repository Implementations"]
+    Repositories --> ReactiveRepos["Reactive Repositories"]

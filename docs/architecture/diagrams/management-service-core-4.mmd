@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Scheduled Execution"] --> Client["Check Client PublishState"]
+    Client --> Retry1{"Should Retry?"}
+    Retry1 -->|Yes| PublishClient["Publish Client Update"]
+
+    Start --> Agents["Get All Enabled Tool Agents"]
+    Agents --> Retry2{"Should Retry?"}
+    Retry2 -->|Yes| PublishAgent["Publish Tool Update"]

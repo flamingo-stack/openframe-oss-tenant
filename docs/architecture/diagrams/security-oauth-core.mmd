@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph Applications["Platform Applications"]
+        APIApp["API Application"]
+        AuthApp["Authorization Server Application"]
+        GatewayApp["Gateway Application"]
+    end
+
+    subgraph Services["Core Services"]
+        AuthService["Authorization Service Core"]
+        ApiService["API Service Core"]
+        GatewayService["Gateway Service Core"]
+    end
+
+    subgraph SecurityCore["Security Oauth Core"]
+        JwtSecurityConfigNode["JwtSecurityConfig"]
+        JwtConfigNode["JwtConfig"]
+        PkceUtilsNode["PKCEUtils"]
+        SecurityConstantsNode["SecurityConstants"]
+    end
+
+    APIApp --> ApiService
+    AuthApp --> AuthService
+    GatewayApp --> GatewayService
+
+    ApiService --> JwtSecurityConfigNode
+    AuthService --> JwtSecurityConfigNode
+    GatewayService --> JwtSecurityConfigNode
+
+    AuthService --> PkceUtilsNode
+    ApiService --> SecurityConstantsNode

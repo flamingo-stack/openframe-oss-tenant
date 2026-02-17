@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client Request"] --> BuildQuery["Build Criteria"]
+    BuildQuery --> ApplyCursor["Apply Cursor Filter"]
+    ApplyCursor --> ApplySort["Apply Sort"]
+    ApplySort --> MongoExec["MongoTemplate.find()"]

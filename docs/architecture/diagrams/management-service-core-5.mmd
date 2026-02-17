@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant App as ManagementApplication
+    participant Init as Initializers
+    participant Infra as Infrastructure Services
+
+    App->>Init: ApplicationReadyEvent
+    Init->>Infra: Deploy Pinot configs
+    Init->>Infra: Ensure NATS streams
+    Init->>Infra: Initialize Debezium connectors
+    Init->>Infra: Initialize client config
+    Init->>Infra: Initialize agents

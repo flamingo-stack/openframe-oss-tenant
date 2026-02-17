@@ -1,0 +1,12 @@
+flowchart TD
+    Browser["Browser / UI"] --> Gateway["Gateway Service Core"]
+    Agent["Installed Agent"] --> Gateway
+    ExternalClient["External API Client"] --> Gateway
+
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ClientService["Client Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+    Gateway --> Management["Management Service Core"]
+    Gateway --> Stream["Stream Service Core"]
+
+    Gateway --> Tools["Integrated Tools"]

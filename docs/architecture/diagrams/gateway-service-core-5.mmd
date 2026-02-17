@@ -1,0 +1,9 @@
+flowchart LR
+    ClientWS["WebSocket Client"] --> Route["RouteLocator"]
+    Route -->|"/ws/tools/{toolId}"| ToolApiFilter["ToolApiWebSocketProxyUrlFilter"]
+    Route -->|"/ws/tools/agent/{toolId}"| ToolAgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    Route -->|"/ws/nats"| Nats["NATS WebSocket URL"]
+
+    ToolApiFilter --> ProxyResolver["ProxyUrlResolver"]
+    ToolAgentFilter --> ProxyResolver
+    ProxyResolver --> TargetTool["Resolved Tool Endpoint"]

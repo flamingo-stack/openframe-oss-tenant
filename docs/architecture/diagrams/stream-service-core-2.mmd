@@ -1,0 +1,5 @@
+flowchart LR
+    AppName["spring.application.name"] --> BuildId
+    ClusterId["openframe.cluster-id"] --> BuildId
+    BuildId["buildStreamsApplicationId()"] --> StreamsConfig
+    StreamsConfig --> KafkaStreamsRuntime["Kafka Streams Runtime"]

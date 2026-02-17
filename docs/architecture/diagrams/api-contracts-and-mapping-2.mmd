@@ -1,0 +1,6 @@
+flowchart TD
+    ClientRequest["Client Filter Request"] --> FilterOptions["*FilterOptions DTO"]
+    FilterOptions --> QueryLayer["Repository / Query Engine"]
+    QueryLayer --> Results["Query Results"]
+    Results --> Filters["*Filters DTO"]
+    Filters --> ClientResponse["Client UI"]

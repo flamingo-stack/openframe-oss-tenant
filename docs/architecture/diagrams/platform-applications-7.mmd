@@ -1,0 +1,5 @@
+flowchart TD
+    KafkaTopic["Kafka Topic"] --> Listener["Kafka Listener"]
+    Listener --> Deserializer
+    Deserializer --> Enrichment
+    Enrichment --> Persistence

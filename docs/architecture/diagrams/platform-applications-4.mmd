@@ -1,0 +1,6 @@
+flowchart TD
+    User["User Login Request"] --> Authz["Authorization Server"]
+    Authz --> Tenant["Tenant Context Resolution"]
+    Tenant --> Identity["Identity Validation"]
+    Identity --> Token["JWT Issuance"]
+    Token --> Client["Client Application"]

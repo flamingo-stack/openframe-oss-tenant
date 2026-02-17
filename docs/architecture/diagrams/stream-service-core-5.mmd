@@ -1,0 +1,8 @@
+flowchart TD
+    Handle["handle(message)"] --> Validate
+    Validate --> Transform
+    Transform --> OperationType
+    OperationType --> PushData
+    PushData --> Create
+    PushData --> Update
+    PushData --> Delete

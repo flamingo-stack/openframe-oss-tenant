@@ -1,0 +1,8 @@
+flowchart TD
+    Token["Incoming JWT"] --> ExtractIssuer["Extract iss claim"]
+    ExtractIssuer --> Cache["Caffeine Issuer Cache"]
+    Cache -->|Miss| CreateManager["Create JwtReactiveAuthenticationManager"]
+    Cache -->|Hit| Manager["Reuse Cached Manager"]
+    CreateManager --> Manager
+    Manager --> Validate["Validate signature + issuer"]
+    Validate --> Result["Authenticated Principal"]

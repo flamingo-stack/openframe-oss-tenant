@@ -1,0 +1,7 @@
+flowchart TD
+    Browser --> Gateway
+    Gateway --> Authz["Authorization Service"]
+
+    Authz --> TenantContext["Tenant Context Filter"]
+    Authz --> JwtSigner["Tenant Key Service"]
+    Authz --> Mongo

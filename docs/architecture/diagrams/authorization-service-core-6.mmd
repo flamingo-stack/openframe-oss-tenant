@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant Authz as "Authorization Service Core"
+    participant IdP as "SSO Provider"
+
+    User->>Authz: Accept invitation (GET /invitations/accept/sso)
+    Authz->>User: Set secure invite cookie
+    Authz->>IdP: Redirect to provider
+    IdP->>Authz: Callback with ID token
+    Authz->>Authz: Create user from invitation
+    Authz->>User: Redirect to tenant context

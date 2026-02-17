@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Web UI / Internal Clients"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+
+    ApiService --> Authz["Authorization Service Core"]
+    ApiService --> Mongo["Data Mongo Core"]
+    ApiService --> Stream["Stream Service Core"]
+
+    Authz --> Mongo

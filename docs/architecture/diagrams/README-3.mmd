@@ -1,0 +1,11 @@
+flowchart TD
+    ToolDB["Integrated Tool Database"] --> Debezium
+    Debezium --> KafkaInbound["Kafka Inbound Topics"]
+
+    KafkaInbound --> Stream["Stream Service"]
+    Stream --> Deserializer["Tool Deserializers"]
+    Deserializer --> Mapper["Event Type Mapper"]
+    Mapper --> Enrichment["Data Enrichment Service"]
+
+    Enrichment --> KafkaOutbound["Kafka Outbound Topic"]
+    Enrichment --> Cassandra["Cassandra Unified Logs"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Query["GraphQL Query"] --> DeviceFetcher["DeviceDataFetcher"]
+    DeviceFetcher --> DeviceService
+    DeviceService --> MongoRepo["Mongo Repository"]
+    DeviceFetcher --> Mapper["GraphQLDeviceMapper"]
+    Mapper --> Response["Connection Response"]

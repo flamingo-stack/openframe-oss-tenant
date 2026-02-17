@@ -1,0 +1,6 @@
+flowchart TD
+    App["Spring Boot Application"] --> Core["Core Module"]
+    App --> Data["Data Mongo Core"]
+    App --> Security["Security OAuth Core"]
+    App --> Kafka["Stream / Kafka Core"]
+    App --> Feature["Service-Specific Core"]

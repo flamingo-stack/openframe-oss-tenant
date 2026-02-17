@@ -1,0 +1,7 @@
+flowchart TD
+    Config["Configuration Layer"] --> Controllers["REST Controllers"]
+    Controllers --> Services["Business Services"]
+    Services --> Repositories["Mongo Repositories"]
+
+    GraphQL["GraphQL DataFetchers"] --> Services
+    DataLoaders["GraphQL DataLoaders"] --> Services

@@ -1,0 +1,7 @@
+flowchart TD
+    Load["Load Agent JSON"] --> Exists{"Agent Exists?"}
+    Exists -->|No| Create["Save New Agent"]
+    Exists -->|Yes| Update["Update Existing Agent"]
+    Update --> Version{"Version Changed?"}
+    Version -->|Yes| Publish["ToolAgentUpdatePublisher.publish"]
+    Version -->|No| Skip["Skip Publish"]

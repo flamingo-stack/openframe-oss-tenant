@@ -1,0 +1,12 @@
+flowchart TD
+    Browser["Browser / Client App"] --> Gateway["Gateway Service Core"]
+    Gateway --> Authz["Authorization Service Core"]
+
+    Authz --> TenantCtx["Tenant Context Filter"]
+    Authz --> OAuth2["OAuth2 Authorization Server"]
+    Authz --> SSO["SSO Login (Google/Microsoft)"]
+    Authz --> KeyService["Tenant Key Service"]
+    Authz --> Mongo["MongoDB (OAuth + Users + Tenants)"]
+
+    OAuth2 --> Tokens["JWT Access / Refresh Tokens"]
+    KeyService --> JWKS["Per-Tenant JWKS"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Request["POST /v1/tools/{id}"] --> Save["IntegratedToolService.save"]
+    Save --> Debezium["DebeziumService.createOrUpdate"]
+    Debezium --> Hooks["IntegratedToolPostSaveHook[]"]
+    Hooks --> Response["HTTP 200"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as "Authorization Server"
+
+    Client->>Client: generateCodeVerifier()
+    Client->>Client: generateCodeChallenge(verifier)
+    Client->>Client: generateState()
+    Client->>AuthServer: /authorize?code_challenge=...&state=...
+    AuthServer->>Client: Redirect with authorization_code
+    Client->>AuthServer: /token with code + code_verifier
+    AuthServer->>AuthServer: Verify SHA256(verifier) matches challenge
+    AuthServer->>Client: access_token + refresh_token

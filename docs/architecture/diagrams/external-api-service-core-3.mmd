@@ -1,0 +1,11 @@
+flowchart TD
+    ClientReq["External Request"] --> IntegrationCtrl["Integration Controller"]
+    IntegrationCtrl --> ProxyService["Rest Proxy Service"]
+    ProxyService --> Repo["Integrated Tool Repository"]
+    ProxyService --> UrlService["Tool Url Service"]
+    ProxyService --> Resolver["Proxy Url Resolver"]
+    Resolver --> Target["Resolved Tool API URL"]
+    ProxyService --> HttpClient["Apache HttpClient"]
+    HttpClient --> Target
+    Target --> Response["Tool Response"]
+    Response --> ClientResp["External Response"]

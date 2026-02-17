@@ -1,0 +1,4 @@
+flowchart LR
+    OAuth2["Spring Authorization Server"] --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> Entity["MongoOAuth2Authorization"]
+    Entity --> Mongo["MongoDB"]

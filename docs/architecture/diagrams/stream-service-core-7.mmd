@@ -1,0 +1,10 @@
+flowchart TD
+    ToolDB["Tool Database"] --> Debezium
+    Debezium --> KafkaInbound
+    KafkaInbound --> JsonKafkaListener
+    JsonKafkaListener --> Deserializer
+    Deserializer --> EventTypeMapper
+    EventTypeMapper --> DataEnrichment
+    DataEnrichment --> Handler
+    Handler --> KafkaOutbound
+    Handler --> Cassandra

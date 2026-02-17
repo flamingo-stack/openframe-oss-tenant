@@ -1,0 +1,11 @@
+flowchart LR
+    Client["Client Applications"] --> ApiService["Api Service Core"]
+    Client --> ExternalApi["External Api Service Core"]
+
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    ExternalApi --> Contracts
+
+    Contracts --> DataMongo["Data Mongo Core"]
+    Contracts --> StreamCore["Stream Service Core"]
+
+    DataMongo --> Database[("MongoDB")]

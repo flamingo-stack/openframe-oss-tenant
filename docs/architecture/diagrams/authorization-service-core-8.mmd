@@ -1,0 +1,5 @@
+flowchart TD
+    ClientApp["Client Application"] --> Gateway
+    Gateway --> Authz
+    Authz --> ApiService["API Service Core"]
+    ApiService --> Data["Data Mongo Core"]

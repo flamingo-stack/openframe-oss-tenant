@@ -1,0 +1,8 @@
+flowchart TD
+    A["Request to /external-api/**"] --> B["ApiKeyAuthenticationFilter"]
+    B --> C["Validate API Key"]
+    C -->|Invalid| D["401 Unauthorized"]
+    C -->|Valid| E["Check Rate Limit"]
+    E -->|Exceeded| F["429 Too Many Requests"]
+    E -->|Allowed| G["Add User Context Headers"]
+    G --> H["Forward to External API Service"]

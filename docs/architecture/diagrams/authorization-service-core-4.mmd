@@ -1,0 +1,6 @@
+flowchart TD
+    TokenRequest["Token Request"] --> JwkSource["JWKSource"]
+    JwkSource --> TenantKeyService
+    TenantKeyService --> Repo["TenantKeyRepository"]
+    TenantKeyService --> RSA["RSAKey (Public + Private)"]
+    RSA --> Signed["Signed JWT"]

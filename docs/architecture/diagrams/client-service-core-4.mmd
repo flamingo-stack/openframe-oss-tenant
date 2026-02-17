@@ -1,0 +1,4 @@
+flowchart TD
+    NatsHeartbeat["machine.*.heartbeat"] --> Listener["Machine Heartbeat Listener"]
+    Listener --> StatusService["Machine Status Service"]
+    StatusService --> DataLayer["Mongo Data Layer"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Controllers["REST Controllers"] --> Services["Business Services"]
+    Services --> MongoRepos["Mongo Repositories"]
+    GraphQL["GraphQL DataFetchers"] --> Services
+    DataLoaders["DataLoaders"] --> Services

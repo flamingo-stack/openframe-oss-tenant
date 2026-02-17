@@ -1,0 +1,12 @@
+flowchart TD
+    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service Core"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> DeviceService["Device Service"]
+    ExternalApi --> EventService["Event Service"]
+    ExternalApi --> LogService["Log Service"]
+    ExternalApi --> OrganizationService["Organization Services"]
+    ExternalApi --> ToolService["Tool Service"]
+
+    ExternalApi --> Proxy["Rest Proxy Service"]
+    Proxy --> IntegratedTool["Integrated Tool API"]

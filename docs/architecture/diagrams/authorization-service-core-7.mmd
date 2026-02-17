@@ -1,0 +1,4 @@
+flowchart TD
+    Email["User Email"] --> Discovery["TenantDiscoveryService"]
+    Discovery --> Tenant["Resolved Tenant ID"]
+    Tenant --> Providers["Available Auth Providers"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant JwtResolver as "JWT Resolver"
+    participant Downstream
+
+    Client->>Gateway: HTTP Request
+    Gateway->>JwtResolver: Resolve issuer
+    JwtResolver-->>Gateway: AuthenticationManager
+    Gateway->>Gateway: Add Authorization header if needed
+    Gateway->>Downstream: Forward request
+    Downstream-->>Client: Response

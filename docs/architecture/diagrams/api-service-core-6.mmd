@@ -1,0 +1,5 @@
+flowchart TD
+    Startup["Application Startup"] --> DataInitializer
+    DataInitializer --> Env["Environment Properties"]
+    DataInitializer --> OAuthRepo["OAuthClientRepository"]
+    OAuthRepo --> CreateOrUpdate["Create or Update Client"]

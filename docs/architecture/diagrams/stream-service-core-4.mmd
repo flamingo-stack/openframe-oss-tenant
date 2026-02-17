@@ -1,0 +1,5 @@
+flowchart LR
+    AgentId --> RedisCache["MachineIdCacheService"]
+    RedisCache --> MachineInfo
+    MachineInfo --> OrganizationLookup
+    OrganizationLookup --> EnrichedData

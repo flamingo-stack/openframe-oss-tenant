@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz as "Authorization Service"
+    participant Api as "API Service"
+
+    User->>Gateway: Login Request
+    Gateway->>Authz: Redirect to OAuth2
+    Authz->>User: JWT Access Token
+    User->>Gateway: Authenticated Request
+    Gateway->>Api: Forward with validated JWT
+    Api-->>User: Protected Resource

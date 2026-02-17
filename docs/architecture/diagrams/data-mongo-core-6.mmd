@@ -1,0 +1,5 @@
+flowchart TD
+    ApiController["API Controller"] --> Service["Organization Service"]
+    Service --> CustomRepo["CustomOrganizationRepositoryImpl"]
+    CustomRepo --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB[("MongoDB")]

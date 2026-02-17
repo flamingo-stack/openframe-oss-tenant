@@ -1,0 +1,12 @@
+flowchart TD
+    Client["Client"] --> Api["Api Service Core"]
+    Api --> Mapper["OrganizationMapper"]
+    Mapper --> Entity["Organization Entity"]
+    Entity --> Repo["Repository"]
+    Repo --> Mongo[("MongoDB")]
+
+    Mongo --> Repo
+    Repo --> EntityLoaded["Organization Entity"]
+    EntityLoaded --> Mapper
+    Mapper --> Response["OrganizationResponse"]
+    Response --> Client

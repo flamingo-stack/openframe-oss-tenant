@@ -1,0 +1,5 @@
+flowchart TD
+    Message["InstalledAgentMessage"] --> ExtractMachine["Extract Machine ID"]
+    ExtractMachine --> Parse["Parse Payload"]
+    Parse --> Service["InstalledAgentService.addInstalledAgent()"]
+    Service --> Ack["message.ack()"]
