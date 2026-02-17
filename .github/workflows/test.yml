@@ -259,7 +259,13 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.os }}" == "macos" ]]; then
+          if [[ "${{ matrix.type }}" == "tauri" && "${{ matrix.os }}" == "macos" ]]; then
+            # Tauri app on macOS - build universal DMG
+            make build-dmg
+          elif [[ "${{ matrix.type }}" == "tauri" ]]; then
+            # Tauri app on Windows - regular build
+            make build TARGET="${{ matrix.target }}"
+          elif [[ "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -275,6 +281,48 @@ jobs:
         with:
           name: "${{ matrix.name }}-${{ matrix.os }}"
           path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}${{ matrix.os == 'windows' && '.exe' || '' }}"
+          if-no-files-found: warn
+          retention-days: 1
+          compression-level: 9
+
+      - name: Create macOS universal package
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type != 'tauri'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
+          RUST_TARGET_ARM64=${ARCHITECTURES[0]}
+          RUST_TARGET_x64=${ARCHITECTURES[1]}
+          RUST_TARGET_ARM64=$(echo "$RUST_TARGET_ARM64" | tr -d '[:space:]')
+          RUST_TARGET_x64=$(echo "$RUST_TARGET_x64" | tr -d '[:space:]')
+          lipo -create ${{ matrix.target_path }}/${RUST_TARGET_ARM64}/release/${{ env.BINARY_NAME }} ${{ matrix.target_path }}/${RUST_TARGET_x64}/release/${{ env.BINARY_NAME }} -output ./artifacts/${{ env.BINARY_NAME }}
+
+          echo "Verify macOS openframe universal package"
+          lipo -info ./artifacts/${{ env.BINARY_NAME }}
+          file ./artifacts/${{ env.BINARY_NAME }}
+
+      - name: Prepare Tauri macOS DMG artifact
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.type == 'tauri'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          # Find the generated .dmg file
+          DMG_FILE=$(find ${{ matrix.target_path }}/universal-apple-darwin/release/bundle/dmg -name "*.dmg" | head -1)
+          if [[ -z "$DMG_FILE" ]]; then
+            echo "Error: No .dmg file found"
+            exit 1
+          fi
+          # Copy and rename to final artifact name
+          cp "$DMG_FILE" "./artifacts/${{ matrix.artifact_name }}"
+          echo "Created artifact: ${{ matrix.artifact_name }}"
+          ls -lh ./artifacts/
+
+      - name: Upload macOS artifact
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ matrix.name }}-${{ matrix.os }}"
+          path: artifacts/
           if-no-files-found: warn
           retention-days: 1
           compression-level: 9

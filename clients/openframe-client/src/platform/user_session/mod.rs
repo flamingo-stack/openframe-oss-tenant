@@ -2,4 +2,4 @@
 mod macos;
 
 #[cfg(target_os = "macos")]
-pub use macos::{get_console_user, launch_as_user};
+pub use macos::{get_console_user, launch_as_user, is_process_running};

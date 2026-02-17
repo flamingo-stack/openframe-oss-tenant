@@ -1,0 +1,130 @@
+name: Sign MacOS Tauri App
+description: Sign and notarize Tauri macOS .app bundle and create signed DMG
+inputs:
+  apple_certificate_p12:
+    description: 'Base64 encoded Apple Developer certificate (.p12)'
+    required: true
+  apple_certificate_password:
+    description: 'Password for the .p12 certificate'
+    required: true
+  apple_developer_id:
+    description: 'Apple Developer ID string'
+    required: true
+  apple_id_username:
+    description: 'Apple ID username for notarization'
+    required: true
+  apple_id_password:
+    description: 'App-specific password for Apple ID'
+    required: true
+  apple_team_id:
+    description: 'Apple Developer ID'
+    required: true
+  app_path:
+    description: 'Path to the .app bundle'
+    required: true
+  dmg_name:
+    description: 'Name for the output DMG file'
+    required: true
+  dmg_volume_name:
+    description: 'Volume name for the DMG'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Apple Code Signing
+      shell: bash
+      run: |
+        CERTIFICATE_PATH="$HOME/certificate.p12"
+        KEYCHAIN_PATH="$HOME/signing.keychain-db"
+
+        # Decode certificate and create keychain
+        echo "${{ inputs.apple_certificate_p12 }}" | base64 --decode > "$CERTIFICATE_PATH"
+        security create-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+        security default-keychain -s "$KEYCHAIN_PATH"
+        security unlock-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+
+        # Import certificate and set key partition list
+        security import "$CERTIFICATE_PATH" -P "${{ inputs.apple_certificate_password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+        security set-key-partition-list -S apple-tool:,apple: -s -k "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
+
+        # Verify setup, cleanup initial cert and export path
+        security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+        rm "$CERTIFICATE_PATH"
+        echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
+
+        # Extract the signing identity from the keychain
+        SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+        if [[ -z "$SIGNING_IDENTITY" ]]; then
+          echo "Error: No Developer ID Application identity found in keychain"
+          exit 1
+        fi
+        echo "Found signing identity: $SIGNING_IDENTITY"
+        echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> $GITHUB_ENV
+
+    - name: Sign App Bundle
+      shell: bash
+      run: |
+        APP_PATH="${{ inputs.app_path }}"
+
+        # Sign the .app bundle with deep signing
+        codesign --sign "$SIGNING_IDENTITY" --timestamp --options runtime --deep --force "$APP_PATH"
+
+        # Verify signature
+        codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+        echo "App bundle signed successfully"
+
+    - name: Create and Sign DMG
+      shell: bash
+      run: |
+        APP_PATH="${{ inputs.app_path }}"
+        DMG_NAME="${{ inputs.dmg_name }}"
+        VOLUME_NAME="${{ inputs.dmg_volume_name }}"
+
+        mkdir -p ./artifacts
+
+        # Create DMG from signed app
+        hdiutil create -volname "$VOLUME_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "./artifacts/$DMG_NAME"
+
+        # Sign the DMG
+        codesign --sign "$SIGNING_IDENTITY" --timestamp "./artifacts/$DMG_NAME"
+
+        echo "DMG created and signed: ./artifacts/$DMG_NAME"
+
+    - name: Notarize DMG
+      shell: bash
+      run: |
+        DMG_NAME="${{ inputs.dmg_name }}"
+
+        echo "Submitting DMG for notarization..."
+        xcrun notarytool submit "./artifacts/$DMG_NAME" \
+          --apple-id "${{ inputs.apple_id_username }}" \
+          --password "${{ inputs.apple_id_password }}" \
+          --team-id "${{ inputs.apple_team_id }}" \
+          --wait \
+          --timeout 30m
+
+        # Staple notarization ticket to DMG
+        xcrun stapler staple "./artifacts/$DMG_NAME"
+
+        echo "DMG notarized and stapled successfully"
+
+    - name: Verify Final DMG
+      shell: bash
+      run: |
+        DMG_NAME="${{ inputs.dmg_name }}"
+
+        # Verify DMG signature
+        codesign --verify --verbose=2 "./artifacts/$DMG_NAME"
+        spctl --assess --type open --context context:primary-signature --verbose "./artifacts/$DMG_NAME" || true
+
+        echo "DMG is signed, notarized, and ready for distribution"
+        ls -lh ./artifacts/
+
+    - name: Cleanup Keychain
+      if: always()
+      shell: bash
+      run: |
+        if [[ -n "$KEYCHAIN_PATH" ]] && [[ -f "$KEYCHAIN_PATH" ]]; then
+          security delete-keychain "$KEYCHAIN_PATH"
+        fi
