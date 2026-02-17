@@ -589,14 +589,14 @@ impl ToolRunManager {
                                 return;
                             };
 
-                            // For GUI apps with bundle_id: write config to preferences and launch with --background
+                            // For GUI apps with bundle_id: write config to preferences and launch without args
                             let launch_args = match &tool.bundle_id {
                                 Some(bundle_id) => {
                                     let prefs = crate::services::preferences_writer::args_to_pairs(&processed_args);
                                     if let Err(e) = crate::services::preferences_writer::write(bundle_id, prefs) {
                                         error!(tool_id = %tool.tool_agent_id, "Failed to write preferences: {:#}", e);
                                     }
-                                    vec!["--background".to_string()]
+                                    vec![]
                                 }
                                 None => processed_args.clone(),
                             };

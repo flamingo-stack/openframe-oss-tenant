@@ -145,25 +145,8 @@ impl ToolInstallationService {
 
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
 
-        // TODO: TEMP hardcoded DMG config for testing openframe-chat - remove after backend provides proper config
-        let dmg_test_config = if tool_agent_id == "openframe-chat" && cfg!(target_os = "macos") {
-            let config = DownloadConfiguration {
-                os: "macos".to_string(),
-                file_name: "Fae_Chat_0.1.0_aarch64.dmg".to_string(),
-                target_file_name: "Fae Chat.app/Contents/MacOS/openframe-chat".to_string(),
-                link: "https://github.com/flamingo-stack/openframe-oss-tenant/releases/download/9.9.9/Fae_Chat_0.1.0_aarch64.dmg".to_string(),
-                installation_type: InstallationType::GuiApp,
-                bundle_id: Some("com.openframe.chat".to_string()),
-            };
-            info!("[TEST] Using hardcoded DMG config for openframe-chat: {:?}", config);
-            Some(vec![config])
-        } else {
-            None
-        };
-        let download_configs = dmg_test_config.as_ref().or(tool_installation_message.download_configurations.as_ref());
-
         // Download and install the tool
-        let (executable_path, installation_type, bundle_id) = match download_configs {
+        let (executable_path, installation_type, bundle_id) = match &tool_installation_message.download_configurations {
             Some(configs) => {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
