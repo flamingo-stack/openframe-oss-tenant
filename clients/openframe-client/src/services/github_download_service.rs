@@ -58,11 +58,6 @@ impl GithubDownloadService {
             info!("Detected tar.gz format, extracting...");
             self.extract_from_tar_gz(archive_bytes, &config.target_file_name)
                 .with_context(|| "Failed to extract from tar.gz archive")?
-        } else if config.file_name.ends_with(".dmg") {
-            info!("Detected DMG format, mounting and extracting...");
-            self.dmg_extractor.extract(archive_bytes, &config.target_file_name)
-                .await
-                .with_context(|| "Failed to extract from DMG")?
         } else {
             return Err(anyhow!("Unsupported archive format: {}", config.file_name));
         };

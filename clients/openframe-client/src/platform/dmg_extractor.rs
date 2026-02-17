@@ -17,49 +17,6 @@ impl DmgExtractor {
     }
 
     #[cfg(target_os = "macos")]
-    pub async fn extract(&self, dmg_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
-        info!("[DMG] extract: target_filename='{}', dmg size={} bytes", target_filename, dmg_bytes.len());
-
-        let temp_dir = std::env::temp_dir();
-        let dmg_id = uuid::Uuid::new_v4();
-        let dmg_path = temp_dir.join(format!("{}.dmg", dmg_id));
-        let mount_point = temp_dir.join(format!("mnt_{}", dmg_id));
-
-        info!("[DMG] temp dmg_path={}, mount_point={}", dmg_path.display(), mount_point.display());
-
-        fs::write(&dmg_path, &dmg_bytes).await
-            .with_context(|| format!("Failed to write DMG to temp file: {}", dmg_path.display()))?;
-        info!("[DMG] DMG written to temp file ({} bytes)", dmg_bytes.len());
-
-        self.mount(&dmg_path, &mount_point).await
-            .with_context(|| "Failed to mount DMG")?;
-
-        let target_path = mount_point.join(target_filename);
-        info!("[DMG] Reading target file: {}", target_path.display());
-        let result = fs::read(&target_path).await
-            .with_context(|| format!("Failed to read target file: {}", target_path.display()));
-
-        match &result {
-            Ok(bytes) => info!("[DMG] Successfully read target file: {} bytes", bytes.len()),
-            Err(e) => warn!("[DMG] Failed to read target file: {:#}", e),
-        }
-
-        if let Err(e) = self.unmount(&mount_point).await {
-            warn!("[DMG] Failed to unmount: {:#}", e);
-        }
-        if let Err(e) = fs::remove_file(&dmg_path).await {
-            warn!("[DMG] Failed to remove temp DMG file: {:#}", e);
-        }
-
-        Ok(Bytes::from(result?))
-    }
-
-    #[cfg(not(target_os = "macos"))]
-    pub async fn extract(&self, _dmg_bytes: Bytes, target_filename: &str) -> Result<Bytes> {
-        Err(anyhow!("DMG extraction is only supported on macOS. Target: {}", target_filename))
-    }
-
-    #[cfg(target_os = "macos")]
     pub async fn extract_all(&self, dmg_bytes: Bytes, target_dir: &Path, source_path: Option<&str>) -> Result<()> {
         info!("[DMG] extract_all: target_dir={}, source_path={:?}, dmg size={} bytes",
             target_dir.display(), source_path, dmg_bytes.len());
