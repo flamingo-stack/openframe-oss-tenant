@@ -1,0 +1,5 @@
+flowchart LR
+    SyncService["Blocking Service"] --> RedisTemplate
+    ReactiveService["Reactive Service"] --> ReactiveRedisTemplate
+    RedisTemplate --> Redis[("Redis")]
+    ReactiveRedisTemplate --> Redis

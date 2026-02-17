@@ -1,0 +1,5 @@
+flowchart TD
+    Nats["machine.*.heartbeat"] --> HeartbeatListener
+    HeartbeatListener --> Extractor["MachineId Extractor"]
+    HeartbeatListener --> MachineStatusService
+    MachineStatusService --> DataMongo["Machine Status Update"]

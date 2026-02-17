@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming OAuth Request"] --> CheckParam{"redirectTo provided?"}
+    CheckParam -->|"Yes"| UseParam["Use redirectTo"]
+    CheckParam -->|"No"| CheckReferer{"Referer header present?"}
+    CheckReferer -->|"Yes"| UseReferer["Use Referer"]
+    CheckReferer -->|"No"| UseRoot["Use '/' Root"]

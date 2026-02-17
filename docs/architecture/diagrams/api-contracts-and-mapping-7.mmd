@@ -1,0 +1,6 @@
+flowchart TD
+    Controllers["Controllers / DataFetchers"] --> DTOs["DTOs & Filters"]
+    DTOs --> Mappers["Mappers"]
+    Mappers --> Entities["Mongo Documents"]
+    Entities --> Repositories["Repositories"]
+    Repositories --> Database["MongoDB"]

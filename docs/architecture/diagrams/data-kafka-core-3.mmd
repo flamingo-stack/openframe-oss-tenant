@@ -1,0 +1,5 @@
+flowchart TD
+    Config["KafkaTopicProperties"] --> Iterate["Iterate inbound topics"]
+    Iterate --> Build["TopicBuilder.name()"]
+    Build --> Register["KafkaAdmin.NewTopics"]
+    Register --> KafkaCluster[("Kafka Cluster")]

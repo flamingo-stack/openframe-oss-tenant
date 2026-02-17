@@ -1,0 +1,5 @@
+flowchart TD
+    KafkaTopic["Kafka Topic"] --> Listener["JsonKafkaListener"]
+    Listener --> Handler["DebeziumMessageHandler"]
+    Handler --> Enrichment["ActivityEnrichmentService"]
+    Enrichment --> MongoWrite["MongoDB Write"]

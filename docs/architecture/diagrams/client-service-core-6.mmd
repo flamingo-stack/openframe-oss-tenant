@@ -1,0 +1,6 @@
+flowchart TD
+    ToolConnection["Tool Connection Event"] --> FleetTransformer
+    FleetTransformer --> IntegratedToolService
+    FleetTransformer --> FleetClient["Fleet MDM Client"]
+    FleetClient --> FleetTransformer
+    FleetTransformer --> ToolConnectionService

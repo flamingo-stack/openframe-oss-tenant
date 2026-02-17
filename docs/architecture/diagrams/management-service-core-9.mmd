@@ -1,0 +1,5 @@
+flowchart TD
+    AppReady["Application Ready"] --> ListConnectors
+    ListConnectors -->|Empty| LoadTools
+    LoadTools --> CreateConnectors
+    ListConnectors -->|Not Empty| Skip

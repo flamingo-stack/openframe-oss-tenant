@@ -1,0 +1,7 @@
+flowchart TD
+    Agent["Machine Agent"] -->|"Register"| AgentController
+    AgentController --> AgentRegistrationService
+    AgentRegistrationService --> Machine["Machine Document"]
+    AgentRegistrationService --> Processor["Agent Registration Processor"]
+    Processor --> AgentRegistrationService
+    AgentRegistrationService --> DataMongo["Data Mongo Core"]

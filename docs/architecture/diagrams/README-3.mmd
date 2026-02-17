@@ -1,0 +1,8 @@
+flowchart TD
+    Tool["Integrated Tool"] --> Debezium["Debezium CDC"]
+    Debezium --> Kafka["Kafka Inbound Topic"]
+    Kafka --> Stream["Stream Processing Core"]
+    Stream --> Enrichment["Redis Enrichment"]
+    Enrichment --> UnifiedEvent["Unified Event"]
+    UnifiedEvent --> KafkaOut["Outbound Topic"]
+    UnifiedEvent --> Mongo["MongoDB / Cassandra"]

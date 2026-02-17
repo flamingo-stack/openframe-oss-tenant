@@ -1,0 +1,5 @@
+flowchart LR
+    Client["WebSocket Client"] --> Gateway["Gateway WebSocket Route"]
+    Gateway -->|"Tool API"| ToolApi["Tool API WS"]
+    Gateway -->|"Tool Agent"| ToolAgent["Tool Agent WS"]
+    Gateway -->|"/ws/nats"| Nats["NATS WebSocket"]

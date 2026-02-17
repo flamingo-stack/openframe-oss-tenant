@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Browser / Agent / External Client"] --> Gateway["Gateway Service Core"]
+    Gateway -->|"JWT Auth"| AuthZ["Authorization Service"]
+    Gateway -->|"/api/**"| ApiService["API Service Core"]
+    Gateway -->|"/external-api/**"| ExternalApi["External API Service Core"]
+    Gateway -->|"/clients/**"| ClientService["Client Service Core"]
+    Gateway -->|"/tools/**"| ToolProxy["Tool Integrations"]

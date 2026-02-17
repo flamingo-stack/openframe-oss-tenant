@@ -1,0 +1,4 @@
+flowchart LR
+    Startup --> StreamConfig
+    StreamConfig --> NatsService
+    NatsService --> NATS["NATS Server"]

@@ -1,0 +1,32 @@
+flowchart TD
+    subgraph applications["Service Applications"]
+        ApiApp["API Application"]
+        AuthApp["Authorization Server"]
+        MgmtApp["Management Service"]
+        StreamApp["Stream Service"]
+    end
+
+    subgraph services["Service Core Modules"]
+        ApiCore["API Service Core"]
+        AuthCore["Authorization Service Core"]
+        MgmtCore["Management Service Core"]
+        StreamCore["Stream Processing Core"]
+    end
+
+    subgraph persistence["Data Layer"]
+        MongoCore["Data Mongo Core"]
+        KafkaCore["Data Kafka Core"]
+        RedisCore["Data Redis Cache"]
+    end
+
+    ApiApp --> ApiCore
+    AuthApp --> AuthCore
+    MgmtApp --> MgmtCore
+    StreamApp --> StreamCore
+
+    ApiCore --> MongoCore
+    AuthCore --> MongoCore
+    MgmtCore --> MongoCore
+    StreamCore --> MongoCore
+
+    MongoCore --> MongoDB[("MongoDB")]

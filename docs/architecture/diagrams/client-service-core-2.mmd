@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Agent
+    participant ClientService as "Client Service Core"
+    participant AuthService as "Authorization Service Core"
+
+    Agent->>ClientService: POST /oauth/token
+    ClientService->>AuthService: Validate credentials
+    AuthService-->>ClientService: Access token
+    ClientService-->>Agent: AgentTokenResponse

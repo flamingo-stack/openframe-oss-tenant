@@ -1,0 +1,4 @@
+flowchart TD
+    Scheduler["Scheduled Job"] --> ShedLock["ShedLock"]
+    ShedLock --> RedisLockProvider["Redis Lock Provider"]
+    RedisLockProvider --> Redis["Redis"]

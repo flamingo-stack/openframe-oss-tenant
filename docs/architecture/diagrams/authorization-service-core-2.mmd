@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Filter["TenantContextFilter"]
+    Filter --> Context["TenantContext (ThreadLocal)"]
+    Context --> Services["UserService / KeyService / TokenCustomizer"]
+    Services --> Clear["Context Cleared After Request"]

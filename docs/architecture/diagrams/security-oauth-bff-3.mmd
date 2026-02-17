@@ -1,0 +1,5 @@
+flowchart LR
+    Callback["OAuth Callback"] -->|"Create Ticket"| DevStore["InMemoryOAuthDevTicketStore"]
+    DevStore -->|"Store TokenResponse"| Memory[("In-Memory Map")]
+    DevExchange["/oauth/dev-exchange"] -->|"Consume Ticket"| DevStore
+    DevStore -->|"Return Tokens"| DevExchange

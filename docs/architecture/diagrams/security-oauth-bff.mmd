@@ -1,0 +1,7 @@
+flowchart TD
+    Browser["Frontend Browser"] -->|"GET /oauth/login"| BFF["Security Oauth Bff"]
+    BFF -->|"302 Redirect"| AuthServer["Authorization Service Core"]
+    AuthServer -->|"Authorization Code"| BFF
+    BFF -->|"Set Auth Cookies"| Browser
+    Browser -->|"API Calls with Cookies"| Gateway["Gateway Service Core"]
+    Gateway -->|"JWT Validation"| ApiService["API Service Core"]

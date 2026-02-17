@@ -1,0 +1,42 @@
+flowchart LR
+    subgraph Clients["Clients"]
+        Browser["Frontend / Browser"]
+        Agent["Installed Agent"]
+        External["External Systems"]
+    end
+
+    subgraph Edge["Edge Layer"]
+        Gateway["Gateway Service"]
+    end
+
+    subgraph Core["Core Services"]
+        ApiSvc["API Service"]
+        AuthSvc["Authorization Server"]
+        ExternalApi["External API Service"]
+        ClientSvc["Client Service"]
+        MgmtSvc["Management Service"]
+        StreamSvc["Stream Processing Service"]
+        ConfigSvc["Config Server"]
+    end
+
+    subgraph Infra["Infrastructure"]
+        Mongo["MongoDB"]
+        Kafka["Kafka"]
+        Redis["Redis"]
+    end
+
+    Browser --> Gateway
+    Agent --> Gateway
+    External --> Gateway
+
+    Gateway --> ApiSvc
+    Gateway --> AuthSvc
+    Gateway --> ExternalApi
+
+    ApiSvc --> Mongo
+    ApiSvc --> Kafka
+    AuthSvc --> Mongo
+    ClientSvc --> Kafka
+    StreamSvc --> Kafka
+    StreamSvc --> Mongo
+    MgmtSvc --> Mongo

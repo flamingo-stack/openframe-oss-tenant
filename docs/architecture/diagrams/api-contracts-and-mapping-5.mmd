@@ -1,0 +1,4 @@
+flowchart TD
+    DataLoader["InstalledAgentDataLoader"] --> Service["InstalledAgentService"]
+    Service --> Repo["InstalledAgentRepository"]
+    Repo --> Mongo["MongoDB"]

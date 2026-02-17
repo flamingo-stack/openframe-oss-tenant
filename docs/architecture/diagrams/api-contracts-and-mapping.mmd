@@ -1,0 +1,10 @@
+flowchart LR
+    Frontend["Frontend / API Clients"] --> ApiService["API Service Core"]
+    Frontend --> ExternalApi["External API Service Core"]
+
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    ExternalApi --> Contracts
+
+    Contracts --> DataMongo["Data Mongo Core"]
+    Contracts --> DataKafka["Data Kafka Core"]
+    Contracts --> DataRedis["Data Redis Cache"]

@@ -1,0 +1,10 @@
+flowchart TD
+    AuthRequest["Auth Request"] --> FetchAuth["fetch()"]
+    FetchAuth --> Check401{"401?"}
+
+    Check401 -->|"No"| ReturnResponse["Return Response"]
+    Check401 -->|"Yes"| RefreshToken["Refresh Access Token"]
+
+    RefreshToken --> Success{"Success?"}
+    Success -->|"Yes"| RetryAuth["Retry Auth Request"]
+    Success -->|"No"| Logout["Force Logout"]

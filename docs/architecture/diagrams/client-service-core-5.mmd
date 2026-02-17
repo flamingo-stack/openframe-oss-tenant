@@ -1,0 +1,6 @@
+flowchart TD
+    JetStream["INSTALLED_AGENTS Stream"] --> InstalledAgentListener
+    InstalledAgentListener --> Extractor["MachineId Extractor"]
+    InstalledAgentListener --> InstalledAgentService
+    InstalledAgentService --> DataMongo
+    InstalledAgentListener --> Ack["message.ack()"]

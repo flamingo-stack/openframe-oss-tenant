@@ -1,0 +1,4 @@
+flowchart LR
+    User["Admin User"] --> Gateway["IntegrationController"]
+    Gateway --> RestProxy["RestProxyService"]
+    RestProxy --> ExternalTool["External SaaS Tool API"]

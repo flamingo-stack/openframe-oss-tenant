@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer
+    participant MongoDB
+
+    Client->>AuthServer: Authorization Request (PKCE)
+    AuthServer->>MongoDB: Save Authorization (with PKCE)
+    Client->>AuthServer: Token Exchange
+    AuthServer->>MongoDB: Load Authorization
+    AuthServer-->>Client: Access Token

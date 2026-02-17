@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph auth_server["Authorization Layer"]
+        AuthServer["Authorization Service Core"]
+    end
+
+    subgraph security_core["Security Jwt Core"]
+        JwtSecurityConfig["JwtSecurityConfig"]
+        JwtConfig["JwtConfig"]
+        PKCEUtils["PKCEUtils"]
+        SecurityConstants["SecurityConstants"]
+    end
+
+    subgraph edge_layer["Edge Layer"]
+        Gateway["Gateway Service Core"]
+    end
+
+    AuthServer -->|"uses JwtEncoder"| JwtSecurityConfig
+    JwtSecurityConfig --> JwtConfig
+    Gateway -->|"uses JwtDecoder"| JwtSecurityConfig
+    AuthServer -->|"uses PKCE"| PKCEUtils

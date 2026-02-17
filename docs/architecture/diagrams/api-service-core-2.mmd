@@ -1,0 +1,18 @@
+flowchart TD
+    Config["Configuration Layer"]
+    Rest["REST Controllers"]
+    GraphQL["GraphQL DataFetchers"]
+    Loaders["DGS DataLoaders"]
+    Services["Application Services"]
+    Repos["Repositories (Mongo)"]
+
+    Config --> Rest
+    Config --> GraphQL
+
+    Rest --> Services
+    GraphQL --> Services
+
+    GraphQL --> Loaders
+    Loaders --> Services
+
+    Services --> Repos

@@ -1,0 +1,5 @@
+flowchart LR
+    OAuthLogin["/oauth2/authorization/{provider}"] --> DynamicRepo
+    DynamicRepo --> TenantContext
+    TenantContext --> SSOConfigService
+    SSOConfigService --> ClientRegistration

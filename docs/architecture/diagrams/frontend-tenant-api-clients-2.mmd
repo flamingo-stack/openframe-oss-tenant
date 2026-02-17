@@ -1,0 +1,16 @@
+flowchart TD
+    Start["Request Initiated"] --> BuildHeaders["Build Headers"]
+    BuildHeaders --> AddAuth["Add Auth Headers if Enabled"]
+    AddAuth --> FetchCall["Execute fetch()"]
+
+    FetchCall --> Check401{"Status 401?"}
+
+    Check401 -->|"No"| ParseResponse["Parse JSON and Return"]
+
+    Check401 -->|"Yes"| IsRetry{"Is Retry?"}
+    IsRetry -->|"Yes"| Return401["Return 401"]
+    IsRetry -->|"No"| Refresh["Refresh Access Token"]
+
+    Refresh --> RefreshSuccess{"Refresh Successful?"}
+    RefreshSuccess -->|"Yes"| RetryRequest["Retry Original Request"]
+    RefreshSuccess -->|"No"| ForceLogout["Force Logout"]

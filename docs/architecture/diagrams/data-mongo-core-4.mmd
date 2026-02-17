@@ -1,0 +1,4 @@
+flowchart TD
+    Tenant["Tenant Domain"] --> TenantRepo["Tenant Repository"]
+    TenantRepo --> AuthUser["AuthUser (tenantId + email)"]
+    AuthUser --> AuthorizationCore["Authorization Service Core"]

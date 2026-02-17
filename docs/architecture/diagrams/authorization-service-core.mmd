@@ -1,0 +1,19 @@
+flowchart TD
+    Browser["Browser / Frontend"] -->|"/tenant/discover"| TenantDiscovery["TenantDiscoveryController"]
+    Browser -->|"/login"| LoginController["LoginController"]
+    Browser -->|"/oauth2/authorize"| AuthServer["Authorization Server"]
+
+    subgraph auth_core["Authorization Service Core"]
+        AuthServer --> SecurityChain1["AuthorizationServerConfig"]
+        AuthServer --> SecurityChain2["SecurityConfig"]
+        SecurityChain1 --> JwtEncoder["JwtEncoder / JwtDecoder"]
+        SecurityChain1 --> TokenCustomizer["OAuth2TokenCustomizer"]
+        SecurityChain1 --> MongoAuthService["MongoAuthorizationService"]
+        SecurityChain2 --> OidcUserService["OIDC User Service"]
+    end
+
+    TokenCustomizer --> UserService["UserService"]
+    OidcUserService --> SSOConfigService["SSOConfigService"]
+    MongoAuthService --> MongoRepo["MongoOAuth2AuthorizationRepository"]
+    JwtEncoder --> TenantKeyService["TenantKeyService"]
+    TenantKeyService --> TenantKeyRepo["TenantKeyRepository"]

@@ -1,0 +1,9 @@
+flowchart TD
+    ActivityTopic["Fleet Activity Topic"] --> AStream["Activity Stream"]
+    HostTopic["Fleet Host Activity Topic"] --> HStream["Host Activity Stream"]
+
+    AStream --> Join["Left Join (5s window)"]
+    HStream --> Join
+
+    Join --> HeaderAdder["HeaderAdderFixedKey Processor"]
+    HeaderAdder --> OutTopic["Enriched Fleet Events Topic"]

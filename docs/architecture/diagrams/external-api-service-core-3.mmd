@@ -1,0 +1,5 @@
+flowchart LR
+    Controller["OrganizationController"] --> QueryService["OrganizationQueryService"]
+    Controller --> CommandService["OrganizationCommandService"]
+    QueryService --> DataService["OrganizationService"]
+    DataService --> Mongo["MongoDB"]

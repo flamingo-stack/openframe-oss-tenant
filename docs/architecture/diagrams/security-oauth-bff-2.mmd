@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "Security Oauth Bff"
+    participant Auth as "Authorization Service Core"
+
+    Browser->>BFF: GET /oauth/login?tenantId=...
+    BFF->>BFF: Build state + PKCE
+    BFF->>Browser: 302 Redirect to Auth Server
+    Browser->>Auth: Authorize Request
+    Auth->>Browser: Redirect with code
+    Browser->>BFF: GET /oauth/callback?code=...
+    BFF->>Auth: Exchange code for tokens
+    BFF->>Browser: Set-Cookie access + refresh

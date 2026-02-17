@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Admin Client"] --> SaveEndpoint["POST /v1/tools/{id}"]
+    SaveEndpoint --> ToolService["IntegratedToolService"]
+    ToolService --> Mongo["MongoDB"]
+    SaveEndpoint --> DebeziumService["DebeziumService"]
+    SaveEndpoint --> Hooks["Post Save Hooks"]

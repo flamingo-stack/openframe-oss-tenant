@@ -1,0 +1,3 @@
+flowchart LR
+    Message["Debezium Message"] --> Cache["MachineIdCacheService (Redis)"]
+    Cache --> Enriched["IntegratedToolEnrichedData"]

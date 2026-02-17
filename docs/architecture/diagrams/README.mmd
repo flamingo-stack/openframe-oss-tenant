@@ -1,0 +1,62 @@
+flowchart TD
+    subgraph Clients
+        Browser["Frontend (Tenant UI)"]
+        Agent["Installed Agent"]
+        External["External Integrations"]
+    end
+
+    subgraph Edge
+        Gateway["Gateway Service Core"]
+        BFF["Security OAuth BFF"]
+    end
+
+    subgraph Identity
+        Auth["Authorization Service Core"]
+        JwtCore["Security JWT Core"]
+    end
+
+    subgraph APIs
+        Api["API Service Core"]
+        ExternalApi["External API Service Core"]
+    end
+
+    subgraph Agents
+        ClientSvc["Client Service Core"]
+    end
+
+    subgraph Control
+        Mgmt["Management Service Core"]
+    end
+
+    subgraph Streaming
+        Stream["Stream Processing Core"]
+    end
+
+    subgraph Data
+        Mongo["Data Mongo Core"]
+        Kafka["Data Kafka Core"]
+        Redis["Data Redis Cache"]
+    end
+
+    Browser --> Gateway
+    Browser --> BFF
+    BFF --> Auth
+    Gateway --> Api
+    Gateway --> ExternalApi
+    Agent --> Gateway
+    External --> Gateway
+
+    Api --> Mongo
+    Api --> Kafka
+
+    ClientSvc --> Mongo
+    ClientSvc --> Kafka
+
+    Stream --> Kafka
+    Stream --> Mongo
+
+    Mgmt --> Mongo
+    Mgmt --> Redis
+
+    Auth --> Mongo
+    Auth --> JwtCore

@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "Security Oauth Bff"
+    participant Auth as "Authorization Service Core"
+
+    Browser->>BFF: POST /oauth/refresh
+    BFF->>Auth: Refresh token request
+    Auth->>BFF: New access + refresh
+    BFF->>Browser: Set-Cookie updated tokens

@@ -1,0 +1,7 @@
+flowchart TD
+    TokenRequest["JWT Signing Request"] --> TenantKeyService
+    TenantKeyService -->|"getOrCreateActiveKey(tenantId)"| Repo["TenantKeyRepository"]
+    Repo -->|"No Active Key"| Generator["RsaAuthenticationKeyPairGenerator"]
+    Generator --> Store["Persist TenantKey"]
+    Store --> RSAKey["RSAKey (JWK)"]
+    RSAKey --> JwtEncoder

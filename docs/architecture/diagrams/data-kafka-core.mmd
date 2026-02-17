@@ -1,0 +1,6 @@
+flowchart LR
+    Service["Application Service"] -->|"produce event"| KafkaTemplate["KafkaTemplate"]
+    KafkaTemplate --> KafkaCluster[("Kafka Cluster")]
+    KafkaCluster -->|"consume"| ListenerFactory["Kafka Listener Container"]
+    ListenerFactory --> StreamService["Stream Processing Service"]
+    StreamService --> Database[("MongoDB / External Systems")]

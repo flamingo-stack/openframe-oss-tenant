@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client Request"] --> QueryBuilder["Build Query"]
+    QueryBuilder --> ApplyCursor["Apply ObjectId Cursor"]
+    ApplyCursor --> ApplySort["Apply Sort Rules"]
+    ApplySort --> MongoTemplate["MongoTemplate.find()"]
+    MongoTemplate --> Result["Page of Results"]

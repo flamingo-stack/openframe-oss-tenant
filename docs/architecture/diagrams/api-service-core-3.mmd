@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> IssuerResolver["JwtIssuerAuthenticationManagerResolver"]
+    IssuerResolver --> Cache["Caffeine LoadingCache"]
+    Cache --> Provider["JwtAuthenticationProvider"]
+    Provider --> Decoder["JwtDecoder (per issuer)"]

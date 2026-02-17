@@ -1,0 +1,3 @@
+flowchart LR
+    PrivateKey["RSA Private Key"] -->|"sign"| JWT["JWT"]
+    JWT -->|"verify"| PublicKey["RSA Public Key"]

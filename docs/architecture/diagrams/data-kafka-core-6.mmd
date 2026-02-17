@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant App as Application Service
+    participant Kafka as Kafka Cluster
+    participant Stream as Stream Processor
+
+    App->>Kafka: Publish JSON event
+    Kafka->>Stream: Deliver record
+    Stream->>Stream: Deserialize DebeziumMessage
+    Stream->>Stream: Process based on message-type header

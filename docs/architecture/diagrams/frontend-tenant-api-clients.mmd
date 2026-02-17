@@ -1,0 +1,11 @@
+flowchart LR
+    UI["Frontend UI Components"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+
+    ApiClient --> Gateway["Gateway Service"]
+    ApiClient --> ApiService["API Service"]
+
+    AuthApiClient --> AuthServer["Authorization Server"]
+    AuthApiClient --> OAuthEndpoints["OAuth and SSO Endpoints"]
+
+    Gateway --> ApiService

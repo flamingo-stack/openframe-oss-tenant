@@ -1,0 +1,9 @@
+flowchart LR
+    Gateway["Gateway Service"] --> Api["Api Service Core"]
+    Auth["Authorization Service"] --> Gateway
+
+    Api --> Mongo["Data Mongo Core"]
+    Api --> Kafka["Data Kafka Core"]
+    Api --> Redis["Data Redis Cache"]
+
+    Frontend["Frontend Tenant API Clients"] --> Gateway

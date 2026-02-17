@@ -1,0 +1,8 @@
+flowchart TD
+    JwtSecurityConfig["JwtSecurityConfig"] -->|"injects"| JwtConfig["JwtConfig"]
+    JwtConfig -->|"loadPublicKey()"| RSAPublicKey["RSAPublicKey"]
+    JwtConfig -->|"loadPrivateKey()"| RSAPrivateKey["RSAPrivateKey"]
+    RSAPublicKey --> RSAKey["RSAKey"]
+    RSAPrivateKey --> RSAKey
+    RSAKey --> JWKSet["JWKSet"]
+    JWKSet --> JwtEncoder["NimbusJwtEncoder"]

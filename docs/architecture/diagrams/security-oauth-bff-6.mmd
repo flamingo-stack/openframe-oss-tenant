@@ -1,0 +1,4 @@
+flowchart TD
+    Browser -->|"GET /oauth/logout"| BFF
+    BFF -->|"Revoke Token"| AuthServer["Authorization Service Core"]
+    BFF -->|"Clear Cookies"| Browser

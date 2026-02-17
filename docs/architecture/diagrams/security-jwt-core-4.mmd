@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as "Authorization Service"
+
+    Client->>Client: Generate code_verifier
+    Client->>Client: Derive code_challenge (SHA-256)
+    Client->>AuthServer: Authorization Request with code_challenge
+    AuthServer->>Client: Authorization Code
+    Client->>AuthServer: Token Request with code_verifier
+    AuthServer->>AuthServer: Validate SHA256(code_verifier)
+    AuthServer->>Client: Access Token (JWT)

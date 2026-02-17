@@ -1,0 +1,8 @@
+flowchart TD
+    Admin --> SaveTool
+    SaveTool --> Mongo
+    SaveTool --> DebeziumConnector
+    SaveTool --> PostSaveHooks
+    DebeziumHealthScheduler --> Monitor
+    AgentScheduler --> PublishUpdates
+    Agents --> ReceiveUpdates

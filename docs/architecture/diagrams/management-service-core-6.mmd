@@ -1,0 +1,6 @@
+flowchart TD
+    ApplicationStart["Application Startup"] --> AgentSecretInit
+    ApplicationStart --> ToolAgentInit
+    ApplicationStart --> NatsInit
+    ApplicationStart --> ClientConfigInit
+    ApplicationStart --> DebeziumConnectorInit

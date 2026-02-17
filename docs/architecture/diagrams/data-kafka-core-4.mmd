@@ -1,0 +1,11 @@
+flowchart TD
+    Message["DebeziumMessage<T>"] --> Payload["Payload<T>"]
+    Payload --> Before["before"]
+    Payload --> After["after"]
+    Payload --> Source["Source"]
+    Payload --> Operation["operation"]
+    Payload --> Timestamp["timestamp"]
+    Source --> Database["database"]
+    Source --> Schema["schema"]
+    Source --> Table["table"]
+    Source --> Collection["collection"]

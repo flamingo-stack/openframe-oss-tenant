@@ -1,0 +1,7 @@
+flowchart TD
+    Request["GET /api/v1/devices"] --> Controller["DeviceController"]
+    Controller --> Mapper["DeviceMapper"]
+    Controller --> DeviceService["DeviceService"]
+    Controller --> TagService["TagService"]
+    DeviceService --> Repository["Device Repository"]
+    Repository --> Mongo["MongoDB"]

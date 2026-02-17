@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant ApiClient
+    participant AuthApiClient
+    participant AuthServer
+
+    Client->>ApiClient: Request /api/resource
+    ApiClient->>AuthServer: (after 401) POST /oauth/refresh
+    AuthServer-->>ApiClient: New tokens
+    ApiClient->>ApiClient: Update localStorage
+    ApiClient->>Client: Retry original request

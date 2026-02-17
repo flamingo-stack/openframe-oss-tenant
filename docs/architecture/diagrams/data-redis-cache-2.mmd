@@ -1,0 +1,6 @@
+flowchart TD
+    RedisConnectionFactory --> CacheConfig
+    KeyBuilder --> CacheConfig
+    CacheConfig --> RedisCacheConfiguration
+    RedisCacheConfiguration --> RedisCacheManager
+    RedisCacheManager --> CacheManager

@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Client / Frontend"] --> Gateway
+    Gateway --> Api
+
+    Api --> Controller
+    Controller --> Service
+    Service --> Repository
+    Repository --> Mongo
+
+    Service --> Processor

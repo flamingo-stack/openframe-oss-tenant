@@ -1,0 +1,6 @@
+flowchart TD
+    AuthenticatedUser["Authenticated User"] --> TokenCustomizer["OAuth2TokenCustomizer"]
+    TokenCustomizer --> Claims["Add Claims"]
+    Claims -->|"tenant_id"| AccessToken
+    Claims -->|"userId"| AccessToken
+    Claims -->|"roles[]"| AccessToken

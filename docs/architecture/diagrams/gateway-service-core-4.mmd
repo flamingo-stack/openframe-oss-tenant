@@ -1,0 +1,8 @@
+flowchart TD
+    Token["Incoming JWT"] --> ExtractIssuer["Extract iss claim"]
+    ExtractIssuer --> Cache{"Issuer in Cache?"}
+    Cache -->|"No"| BuildManager["Create Decoder for Issuer"]
+    Cache -->|"Yes"| UseManager["Reuse Cached Manager"]
+    BuildManager --> Validate["Validate Signature + Issuer"]
+    UseManager --> Validate
+    Validate --> Authenticated["Authenticated Principal"]

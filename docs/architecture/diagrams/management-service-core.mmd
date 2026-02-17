@@ -1,0 +1,20 @@
+flowchart TD
+    ManagementApp["Management Application"] --> ConfigLayer["Configuration Layer"]
+    ManagementApp --> InitLayer["Initialization Layer"]
+    ManagementApp --> ControllerLayer["REST Controllers"]
+    ManagementApp --> SchedulerLayer["Schedulers"]
+    ManagementApp --> ServiceLayer["Management Services"]
+
+    ControllerLayer --> DataServices["Data Services (Mongo)"]
+    ControllerLayer --> DebeziumService["Debezium Service"]
+
+    InitLayer --> DataServices
+    InitLayer --> NatsService["NATS Stream Management Service"]
+
+    SchedulerLayer --> Redis["Redis (ShedLock)"]
+    SchedulerLayer --> DebeziumService
+    SchedulerLayer --> DataServices
+
+    ServiceLayer --> Publishers["Event Publishers"]
+    Publishers --> Nats["NATS Streams"]
+    Publishers --> Kafka["Kafka (if configured)"]

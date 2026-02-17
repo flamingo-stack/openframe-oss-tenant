@@ -1,0 +1,7 @@
+flowchart TD
+    ConfigFile["Agent JSON Config"] --> Parse
+    Parse --> ExistingCheck["Find Existing Agent"]
+    ExistingCheck -->|Exists| UpdateAgent
+    ExistingCheck -->|New| CreateAgent
+    UpdateAgent --> VersionCheck
+    VersionCheck -->|Changed| PublishUpdate

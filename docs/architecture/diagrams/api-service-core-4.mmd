@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant Client
+    participant GraphQL
+    participant DataLoader
+    participant Service
+    participant Mongo
+
+    Client->>GraphQL: Query devices
+    GraphQL->>DataLoader: Load tags for machines
+    DataLoader->>Service: Batch request
+    Service->>Mongo: findByIds
+    Mongo-->>Service: Results
+    Service-->>DataLoader: Batched response
+    DataLoader-->>GraphQL: Resolved fields
