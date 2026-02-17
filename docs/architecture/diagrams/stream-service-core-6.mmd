@@ -1,0 +1,6 @@
+flowchart LR
+    Activity["Activity Topic"] --> Join["Left Join (5s Window)"]
+    HostActivity["HostActivity Topic"] --> Join
+    Join --> Enriched["ActivityMessage (with hostId)"]
+    Enriched --> Header["Add MESSAGE_TYPE_HEADER"]
+    Header --> Output["Enriched Fleet Events Topic"]

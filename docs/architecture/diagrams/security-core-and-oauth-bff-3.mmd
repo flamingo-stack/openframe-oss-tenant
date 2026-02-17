@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as "OAuthBffController"
+    participant Auth as "Authorization Server"
+
+    Browser->>BFF: GET /oauth/login
+    BFF->>BFF: generateState()
+    BFF->>BFF: generateCodeVerifier()
+    BFF->>BFF: generateCodeChallenge()
+    BFF->>Auth: Redirect with challenge
+    Auth->>Browser: Login
+    Auth->>BFF: Callback with code
+    BFF->>Auth: Exchange code + verifier

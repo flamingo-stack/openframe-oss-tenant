@@ -1,0 +1,7 @@
+flowchart LR
+    Client["Frontend or Gateway"] --> Controller["API Controller"]
+    Controller --> Service["Business Service"]
+    Service --> Repository["Mongo Repository"]
+    Service --> KafkaProducer["Kafka Producer"]
+    Repository --> MongoDB[("MongoDB")]
+    KafkaProducer --> Kafka[("Kafka Cluster")]

@@ -1,0 +1,8 @@
+flowchart LR
+    Browser["Tenant Frontend"] --> AuthServer["Authorization Server Core"]
+    Gateway["Gateway Service Core"] --> AuthServer
+    AuthServer --> Mongo["MongoDB (Users, Clients, Tokens)"]
+    AuthServer --> KeyStore["Tenant Key Service"]
+    AuthServer --> Google["Google OIDC"]
+    AuthServer --> Microsoft["Microsoft OIDC"]
+    AuthServer --> Jwt["Signed JWT Access Tokens"]

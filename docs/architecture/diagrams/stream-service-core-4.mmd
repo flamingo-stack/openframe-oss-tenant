@@ -1,0 +1,4 @@
+flowchart TD
+    DebeziumMsg["DeserializedDebeziumMessage"] --> Transform["transform()"]
+    Transform --> UnifiedEvent["UnifiedLogEvent"]
+    UnifiedEvent --> Save["CassandraRepository.save()"]

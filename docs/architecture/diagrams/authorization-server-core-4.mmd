@@ -1,0 +1,5 @@
+flowchart TD
+    JwtRequest["JWT Signing Request"] --> TenantId["Resolve Tenant ID"]
+    TenantId --> KeyService["TenantKeyService"]
+    KeyService --> RSAKey["Active RSA Key"]
+    RSAKey --> JWKS["JWKSet Returned"]

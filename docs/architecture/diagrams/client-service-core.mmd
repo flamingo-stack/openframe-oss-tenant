@@ -1,0 +1,21 @@
+flowchart LR
+    Agent["OpenFrame Agent"] -->|"Register"| AgentController["Agent Controller"]
+    Agent -->|"OAuth Token"| AgentAuthController["Agent Auth Controller"]
+
+    Agent -->|"Heartbeat"| HeartbeatListener["Machine Heartbeat Listener"]
+    Agent -->|"Installed Agent Event"| InstalledAgentListener["Installed Agent Listener"]
+    Agent -->|"Tool Connection Event"| ToolConnectionListener["Tool Connection Listener"]
+    Agent -->|"Connect/Disconnect"| ClientConnectionListener["Client Connection Listener"]
+
+    AgentController --> RegistrationService["Agent Registration Service"]
+    AgentAuthController --> AuthService["Agent Auth Service"]
+
+    HeartbeatListener --> MachineStatusService["Machine Status Service"]
+    ClientConnectionListener --> MachineStatusService
+    InstalledAgentListener --> InstalledAgentService["Installed Agent Service"]
+    ToolConnectionListener --> ToolConnectionService["Tool Connection Service"]
+
+    MachineStatusService --> Mongo[("MongoDB")]
+    InstalledAgentService --> Mongo
+    ToolConnectionService --> Mongo
+    RegistrationService --> Mongo

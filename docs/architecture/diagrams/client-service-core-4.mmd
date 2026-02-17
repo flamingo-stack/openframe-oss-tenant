@@ -1,0 +1,5 @@
+flowchart TD
+    Agent["Agent"] -->|"Tool Connection"| NATS["NATS JetStream"]
+    NATS --> ToolListener["Tool Connection Listener"]
+    ToolListener --> ToolConnectionService["Tool Connection Service"]
+    ToolConnectionService --> Mongo[("MongoDB")]

@@ -1,0 +1,7 @@
+flowchart TD
+    LoadFile["Load Agent JSON"] --> ExistsCheck["Find By ID"]
+    ExistsCheck -->|"New"| SaveNew["Save Agent"]
+    ExistsCheck -->|"Existing"| Update["Update Agent"]
+    Update --> Compare["Compare Versions"]
+    Compare -->|"Changed"| Publish["Publish Version Update"]
+    Compare -->|"Same"| End["End"]

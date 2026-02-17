@@ -1,0 +1,4 @@
+flowchart TD
+    OAuthFlow["OAuth2 Login"] --> ResolveTenant["Resolve Tenant"]
+    ResolveTenant --> DynamicService["DynamicClientRegistrationService"]
+    DynamicService --> ClientReg["ClientRegistration"]

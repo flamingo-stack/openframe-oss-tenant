@@ -1,0 +1,9 @@
+flowchart TD
+    Client["WebSocket Client"] --> Route["WebSocket Route Locator"]
+    Route --> AgentRoute["Agent WS Route"]
+    Route --> ApiRoute["Tool API WS Route"]
+    Route --> NatsRoute["NATS WS Route"]
+
+    AgentRoute --> SecurityDecorator["WebSocket Security Decorator"]
+    ApiRoute --> SecurityDecorator
+    NatsRoute --> SecurityDecorator

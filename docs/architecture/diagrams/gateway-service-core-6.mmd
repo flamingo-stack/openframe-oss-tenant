@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Client Request"] --> Gateway["Gateway Service Core"]
+    Gateway --> PreAuth["AddAuthorizationHeaderFilter"]
+    PreAuth --> ApiKeyFilter["ApiKeyAuthenticationFilter (if external)"]
+    ApiKeyFilter --> JwtValidation["JWT Authentication"]
+    JwtValidation --> Authorization["Role-Based Access"]
+    Authorization --> Route["Route to Target Service"]
+    Route --> Response["Reactive Response"]
+    Response --> Client

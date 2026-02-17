@@ -1,0 +1,4 @@
+flowchart TD
+    OAuthRequest["OAuth2 Authorization"] --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> MongoDoc["MongoOAuth2Authorization"]
+    MongoDoc --> Database["MongoDB"]
