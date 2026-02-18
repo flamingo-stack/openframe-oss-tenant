@@ -1,7 +1,0 @@
-flowchart TB
-    Tools["Integrated Tools"] --> KafkaInbound["Kafka Inbound Topics"]
-    KafkaInbound --> StreamCore["Stream Service Core"]
-    StreamCore --> Cassandra["Cassandra (Audit Storage)"]
-    StreamCore --> KafkaOutbound["Normalized Event Topics"]
-    KafkaOutbound --> ApiLayer["API & External Services"]
-    KafkaOutbound --> Analytics["Analytics / Automation"]

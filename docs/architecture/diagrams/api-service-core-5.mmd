@@ -1,7 +1,0 @@
-flowchart TD
-    Request["Upsert SSO Config"] --> Normalize["Normalize Domains"]
-    Normalize --> ValidateDomains["Validate Domain Existence"]
-    ValidateDomains --> CheckAuto["Check autoProvisionUsers"]
-    CheckAuto --> MicrosoftCheck["If Microsoft require msTenantId"]
-    MicrosoftCheck --> Save["Save or Update Config"]
-    Save --> PostProcess["Trigger Processor Hooks"]
