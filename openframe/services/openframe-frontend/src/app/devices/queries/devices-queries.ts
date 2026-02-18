@@ -39,8 +39,8 @@ export const GET_DEVICE_FILTERS_QUERY = `
 `
 
 export const GET_DEVICES_QUERY = `
-  query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
-    devices(filter: $filter, pagination: $pagination, search: $search) {
+  query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String, $sort: SortInput) {
+    devices(filter: $filter, pagination: $pagination, search: $search, sort: $sort) {
       edges {
         node {
           id

@@ -3,14 +3,12 @@
 export const dynamic = 'force-dynamic'
 
 import { AppLayout } from '../components/app-layout'
-import { ScriptsTable } from './components/scripts-table'
+import { ScriptsView } from './components/scripts-view'
 
 export default function Scripts() {
   return (
     <AppLayout>
-      <div className="h-full flex flex-col space-y-6">
-        <ScriptsTable/>
-      </div>
+      <ScriptsView />
     </AppLayout>
   )
 }

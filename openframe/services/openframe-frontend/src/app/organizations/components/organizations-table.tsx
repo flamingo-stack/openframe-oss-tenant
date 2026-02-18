@@ -8,6 +8,7 @@ import {
   type TableColumn
 } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useApiParams, useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks'
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils'
 import { featureFlags } from '@lib/feature-flags'
 import { getFullImageUrl } from '@lib/image-url'
 import { useRouter } from 'next/navigation'
@@ -110,17 +111,6 @@ export function OrganizationsTable() {
 
   const transformed: UIOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`
-    const timeAgo = (iso: string) => {
-      const now = new Date().getTime()
-      const then = new Date(iso).getTime()
-      const diff = Math.max(0, now - then)
-      const days = Math.floor(diff / (24 * 60 * 60 * 1000))
-      if (days === 0) return 'today'
-      if (days === 1) return '1 day ago'
-      if (days < 7) return `${days} days ago`
-      const weeks = Math.floor(days / 7)
-      return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`
-    }
 
     return organizations.map(org => ({
       id: org.id,
@@ -130,7 +120,7 @@ export function OrganizationsTable() {
       tier: org.tier,
       industry: org.industry,
       mrrDisplay: toMoney(org.mrrUsd),
-      lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${timeAgo(org.lastActivity)}`,
+      lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${formatRelativeTime(org.lastActivity)}`,
       imageUrl: org.imageUrl,
     }))
   }, [organizations])

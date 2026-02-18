@@ -1,12 +1,10 @@
 'use client'
 
 import { CardLoader, DetailPageContainer, LoadError, NotFoundError, ScriptInfoSection } from '@flamingo-stack/openframe-frontend-core'
-import { CalendarIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { featureFlags } from '@lib/feature-flags'
+import { PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { useScriptDetails } from '../hooks/use-script-details'
-import { ScheduledRunsSection } from './scheduled-runs-section'
 import { ScriptArgumentsCard } from './script-arguments-card'
 import { ScriptEditor } from './script-editor'
 
@@ -32,34 +30,20 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     }
   }
 
-  const handleScheduleScript = () => {
-    if (scriptDetails?.id) {
-      router.push(`/scripts/details/${scriptDetails.id}/schedule`)
-    }
-  }
-  const isScheduleEnabled = featureFlags.scriptSchedule.enabled()
-
-  const menuActions = useMemo(() => [
-    {
+  const actions = useMemo(() => [
+     {
       label: 'Edit Script',
       icon: <PenEditIcon size={20} />,
       onClick: handleEditScript,
+      variant: 'outline' as const,
     },
-    ...(isScheduleEnabled ? [{
-      label: 'Schedule Script',
-      icon: <CalendarIcon size={20} />,
-      onClick: handleScheduleScript,
-    }] : [])
-  ], [handleEditScript, handleScheduleScript, isScheduleEnabled])
-
-  const actions = useMemo(() => [
     {
       label: 'Run Script',
       icon: <PlayIcon size={20} />,
       onClick: handleRunScript,
       variant: 'primary' as const,
     }
-  ], [handleRunScript])
+  ], [handleRunScript, handleEditScript])
 
   if (isLoading) {
     return <CardLoader items={4} />
@@ -82,8 +66,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         onClick: handleBack
       }}
       actions={actions}
-      menuActions={menuActions}
-      actionsVariant="menu-primary"
     >
 
       {/* Main Content */}
@@ -130,9 +112,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
             />
           </div>
         )}
-
-        {/* Scheduled Runs Section */}
-        {isScheduleEnabled && <ScheduledRunsSection scriptId={scriptId} />}
       </div>
     </DetailPageContainer>
   )
