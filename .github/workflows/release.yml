@@ -199,7 +199,6 @@ jobs:
           fi          
 
       - name: Sign Windows package
-        id: sign_windows
         if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'
         uses: ./.github/steps/sign-windows-package
         with:
@@ -218,7 +217,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.name }}-${{ matrix.os }}"
-          path: ${{ steps.sign_windows.outputs.artifact_path }}
+          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe"
           if-no-files-found: warn
           retention-days: 30
           compression-level: 9

@@ -269,24 +269,12 @@ jobs:
             make build TARGET="${{ matrix.target }}"
           fi
 
-      - name: Resolve Windows artifact path
-        id: win_artifact
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'
-        shell: bash
-        run: |
-          RELEASE_DIR="${{ matrix.target_path }}/${{ matrix.target }}/release"
-          ARTIFACT="$RELEASE_DIR/${{ env.BINARY_NAME }}.exe"
-          for f in "$RELEASE_DIR"/bundle/nsis/*-setup.exe; do
-            [[ -f "$f" ]] && ARTIFACT="$f" && break
-          done
-          echo "path=$ARTIFACT" >> $GITHUB_OUTPUT
-
       - name: Upload Windows artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: "${{ matrix.name }}-${{ matrix.os }}"
-          path: ${{ steps.win_artifact.outputs.path }}
+          path: "${{ matrix.target_path }}/${{ matrix.target }}/release/${{ env.BINARY_NAME }}.exe"
           if-no-files-found: warn
           retention-days: 1
           compression-level: 9

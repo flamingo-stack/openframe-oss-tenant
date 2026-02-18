@@ -1,5 +1,5 @@
 name: Sign Windows package
-description: Sign Windows executable using Azure Trusted Signing. Auto-detects NSIS installer or raw binary.
+description: Sign Windows executable using Azure Trusted Signing
 inputs:
   azure_tenant_id:
     description: 'Azure AD tenant ID'
@@ -28,41 +28,22 @@ inputs:
   target:
     description: 'Rust build target (e.g. x86_64-pc-windows-msvc)'
     required: true
-outputs:
-  artifact_path:
-    description: 'Resolved artifact path (relative to workspace)'
-    value: ${{ steps.resolve.outputs.path }}
 
 runs:
   using: "composite"
   steps:
-    - name: Resolve artifact path
-      id: resolve
+    - name: Setup and verify binary path
       shell: pwsh
       run: |
-        $ReleaseDir = "${{ github.workspace }}/${{ inputs.target_path }}/${{ inputs.target }}/release"
-        $NsisDir = Join-Path $ReleaseDir "bundle/nsis"
-        $ArtifactPath = ""
-
-        if (Test-Path $NsisDir) {
-          $Installer = Get-ChildItem -Path $NsisDir -Filter "*-setup.exe" | Select-Object -First 1
-          if ($Installer) {
-            $ArtifactPath = $Installer.FullName
-          }
-        }
-
-        if (-not $ArtifactPath) {
-          $ArtifactPath = Join-Path $ReleaseDir "${{ inputs.name }}.exe"
-        }
+        $ArtifactPath = "${{ github.workspace }}/${{ inputs.target_path }}/${{ inputs.target }}/release/${{ inputs.name }}.exe"
 
         if (-not (Test-Path $ArtifactPath)) {
-          Write-Error "Artifact not found at: $ArtifactPath"
+          Write-Error "Binary not found at: $ArtifactPath"
           exit 1
         }
 
-        Write-Host "Resolved artifact: $ArtifactPath"
+        Write-Host "Binary to sign: $ArtifactPath"
         echo "ARTIFACT_PATH=$ArtifactPath" >> $env:GITHUB_ENV
-        echo "path=$ArtifactPath" >> $env:GITHUB_OUTPUT
 
     - name: Sign Windows Executable
       uses: azure/trusted-signing-action@v0.5.0
