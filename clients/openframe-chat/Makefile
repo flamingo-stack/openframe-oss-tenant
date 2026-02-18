@@ -22,7 +22,6 @@ lint: fmt-check clippy
 build:
 	rm -rf node_modules package-lock.json
 	npm install
-	rustup target add aarch64-apple-darwin x86_64-apple-darwin 2>/dev/null || true
 	npx tauri build $(TARGET_FLAG)
 
 test: build

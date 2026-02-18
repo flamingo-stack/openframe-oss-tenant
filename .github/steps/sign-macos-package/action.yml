@@ -131,8 +131,11 @@ runs:
       if: env.SIGN_MODE == 'tauri'
       shell: bash
       run: |
-        mkdir -p ./artifacts
-        hdiutil create -volname "${{ inputs.name }}" -srcfolder "$APP_PATH" -ov -format UDZO "./artifacts/$DMG_NAME"
+        mkdir -p ./artifacts ./dmg-staging
+        cp -R "$APP_PATH" ./dmg-staging/
+        ln -s /Applications ./dmg-staging/Applications
+        hdiutil create -volname "${{ inputs.name }}" -srcfolder ./dmg-staging -ov -format UDZO "./artifacts/$DMG_NAME"
+        rm -rf ./dmg-staging
         codesign --sign "$SIGNING_IDENTITY" --timestamp "./artifacts/$DMG_NAME"
         echo "DMG created and signed: ./artifacts/$DMG_NAME"
 
