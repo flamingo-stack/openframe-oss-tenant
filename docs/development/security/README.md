@@ -1,224 +1,235 @@
 # Security Best Practices
 
-This comprehensive guide covers OpenFrame's security architecture, authentication patterns, authorization mechanisms, data protection strategies, and security best practices for development and production deployment.
+Security is a fundamental aspect of OpenFrame OSS Tenant, built into every layer of the platform. This guide covers authentication and authorization patterns, data protection strategies, security testing practices, and comprehensive guidelines for maintaining a secure multi-tenant MSP platform.
 
 ## Security Architecture Overview
 
-OpenFrame implements a defense-in-depth security model with multiple layers of protection:
+OpenFrame implements a comprehensive security model with defense-in-depth principles:
 
 ```mermaid
-flowchart TB
-    subgraph "Security Layers"
-        WAF[Web Application Firewall]
-        TLS[TLS/SSL Encryption]
-        Gateway[API Gateway Security]
-        Auth[Authentication Layer]
-        Authz[Authorization Layer]
-        Data[Data Protection]
-        Audit[Audit & Monitoring]
+graph TD
+    subgraph "Client Security"
+        A[TLS 1.3]
+        B[Certificate Pinning]
+        C[CSRF Protection]
     end
     
-    Client[Client Request] --> WAF
-    WAF --> TLS
-    TLS --> Gateway
-    Gateway --> Auth
-    Auth --> Authz
-    Authz --> Data
-    Data --> Audit
+    subgraph "Gateway Security"
+        D[JWT Validation]
+        E[API Key Auth]
+        F[Rate Limiting]
+        G[CORS Headers]
+    end
+    
+    subgraph "Application Security"
+        H[Method-Level Security]
+        I[Input Validation]
+        J[Tenant Isolation]
+        K[Audit Logging]
+    end
+    
+    subgraph "Data Security"
+        L[Encryption at Rest]
+        M[Field-Level Encryption]
+        N[Access Logging]
+        O[Data Masking]
+    end
+    
+    A --> D
+    B --> D
+    C --> D
+    
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+    
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+    
+    style D fill:#f44336
+    style H fill:#ff9800
+    style L fill:#4caf50
 ```
 
-## Authentication and Authorization Patterns
+## Authentication and Authorization
 
-### OAuth2/OIDC Authentication Flow
+### Multi-Tenant OAuth2 Implementation
 
-OpenFrame uses industry-standard OAuth2 with OIDC extensions for secure authentication:
+OpenFrame uses a sophisticated OAuth2/OIDC implementation with per-tenant isolation:
 
-```mermaid
-sequenceDiagram
-    participant User as User Browser
-    participant Frontend as Frontend App
-    participant Gateway as API Gateway
-    participant AuthServer as Auth Server
-    participant API as API Service
-    participant DB as Database
-
-    User->>Frontend: Access protected resource
-    Frontend->>Gateway: Request without token
-    Gateway->>AuthServer: Redirect to authorization
-    AuthServer->>User: Present login form
-    User->>AuthServer: Submit credentials
-    AuthServer->>DB: Validate user credentials
-    DB->>AuthServer: User verified
-    AuthServer->>User: Authorization code
-    User->>Frontend: Return with code
-    Frontend->>AuthServer: Exchange code for token
-    AuthServer->>Frontend: JWT access token + refresh token
-    Frontend->>Gateway: API request with JWT
-    Gateway->>Gateway: Validate JWT signature
-    Gateway->>API: Forwarded request with user context
-    API->>Frontend: Protected resource response
-```
-
-### Multi-Tenant Authentication
-
-#### Tenant Resolution Strategy
+#### Per-Tenant RSA Key Management
 
 ```java
 @Component
-public class TenantResolver {
-    
-    public String resolveTenant(HttpServletRequest request, Authentication auth) {
-        // 1. Check JWT claims first
-        if (auth instanceof JwtAuthenticationToken jwt) {
-            return jwt.getToken().getClaimAsString("tenant_id");
-        }
-        
-        // 2. Check subdomain
-        String host = request.getHeader("Host");
-        if (host != null && host.contains(".")) {
-            String subdomain = host.split("\\.")[0];
-            return tenantService.findBySubdomain(subdomain);
-        }
-        
-        // 3. Check path parameter
-        String tenantSlug = request.getHeader("X-Tenant-Slug");
-        if (tenantSlug != null) {
-            return tenantService.findBySlug(tenantSlug);
-        }
-        
-        throw new TenantResolutionException("Cannot resolve tenant");
-    }
-}
-```
-
-#### Per-Tenant JWT Keys
-
-```java
-@Service
 public class TenantKeyService {
     
     @Cacheable("tenant-keys")
     public RSAKey getTenantSigningKey(String tenantId) {
-        TenantKey tenantKey = tenantKeyRepository.findByTenantId(tenantId)
-            .orElseGet(() -> generateNewTenantKey(tenantId));
-            
-        return RSAKey.parse(tenantKey.getPublicKey());
+        TenantKey tenantKey = tenantKeyRepository.findByTenantId(tenantId);
+        if (tenantKey == null) {
+            tenantKey = generateAndStoreTenantKey(tenantId);
+        }
+        return RSAKey.parse(tenantKey.getPrivateKey());
     }
     
-    private TenantKey generateNewTenantKey(String tenantId) {
-        KeyPair keyPair = rsaKeyGenerator.generate();
-        
+    private TenantKey generateAndStoreTenantKey(String tenantId) {
+        KeyPair keyPair = rsaKeyPairGenerator.generate();
         TenantKey tenantKey = new TenantKey();
         tenantKey.setTenantId(tenantId);
-        tenantKey.setPublicKey(keyPair.getPublic().getEncoded());
         tenantKey.setPrivateKey(keyPair.getPrivate().getEncoded());
-        tenantKey.setAlgorithm("RS256");
-        
+        tenantKey.setPublicKey(keyPair.getPublic().getEncoded());
+        tenantKey.setKeyId(generateKeyId());
+        tenantKey.setCreatedAt(Instant.now());
         return tenantKeyRepository.save(tenantKey);
     }
 }
 ```
 
-### Role-Based Access Control (RBAC)
+#### JWT Token Structure
 
-#### Permission Framework
-
-```java
-@Entity
-@Document(collection = "permissions")
-public class Permission {
-    private String id;
-    private String name;
-    private String resource;
-    private String action;
-    private String scope; // GLOBAL, ORGANIZATION, PERSONAL
-}
-
-@Entity
-@Document(collection = "roles")
-public class Role {
-    private String id;
-    private String name;
-    private String tenantId;
-    private List<String> permissionIds;
-    private boolean systemRole; // Built-in vs custom roles
-}
-
-@Entity
-@Document(collection = "user_roles")
-public class UserRole {
-    private String userId;
-    private String roleId;
-    private String tenantId;
-    private String scope; // What this role applies to
-    private LocalDateTime expiresAt;
+```json
+{
+  "iss": "https://tenant.openframe.ai",
+  "sub": "user123",
+  "aud": "openframe-api",
+  "exp": 1640995200,
+  "iat": 1640991600,
+  "tenant_id": "tenant-abc-123",
+  "roles": ["ADMIN", "TECHNICIAN"],
+  "scope": "read write",
+  "email": "admin@company.com",
+  "organization_id": "org-456"
 }
 ```
 
-#### Method-Level Security
+#### Multi-Issuer JWT Validation
 
 ```java
-@RestController
-@PreAuthorize("hasRole('USER')")
-public class DeviceController {
+@Component
+public class MultiTenantJwtDecoder {
     
-    @GetMapping("/devices/{deviceId}")
-    @PreAuthorize("@deviceSecurityService.canView(authentication, #deviceId)")
-    public DeviceResponse getDevice(@PathVariable String deviceId) {
-        return deviceService.getDevice(deviceId);
+    private final ConcurrentHashMap<String, ReactiveJwtDecoder> decoders = new ConcurrentHashMap<>();
+    
+    public Mono<Jwt> decode(String token) {
+        return extractIssuerFromToken(token)
+            .flatMap(this::getOrCreateDecoder)
+            .flatMap(decoder -> decoder.decode(token));
     }
     
-    @PutMapping("/devices/{deviceId}")
-    @PreAuthorize("hasRole('TECHNICIAN') and @deviceSecurityService.canModify(authentication, #deviceId)")
-    public DeviceResponse updateDevice(
-            @PathVariable String deviceId, 
-            @RequestBody UpdateDeviceRequest request) {
-        return deviceService.updateDevice(deviceId, request);
+    private Mono<ReactiveJwtDecoder> getOrCreateDecoder(String issuer) {
+        return Mono.fromCallable(() -> 
+            decoders.computeIfAbsent(issuer, this::createDecoderForIssuer));
     }
     
-    @DeleteMapping("/devices/{deviceId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deleteDevice(@PathVariable String deviceId) {
-        deviceService.deleteDevice(deviceId);
+    private ReactiveJwtDecoder createDecoderForIssuer(String issuer) {
+        String tenantId = extractTenantFromIssuer(issuer);
+        RSAKey rsaKey = tenantKeyService.getTenantSigningKey(tenantId);
+        return NimbusReactiveJwtDecoder.withPublicKey(rsaKey.toRSAPublicKey()).build();
     }
 }
 ```
 
-#### Custom Security Service
+### API Key Authentication
+
+For external integrations, OpenFrame provides API key authentication with comprehensive tracking:
+
+#### API Key Structure
+
+```text
+Format: ak_1a2b3c4d5e6f7890.sk_live_abcdefghijklmnopqrstuvwxyz123456
+        ↑                   ↑
+        Key ID              Secret Key
+```
+
+#### API Key Validation
 
 ```java
-@Service
-public class DeviceSecurityService {
+@Component
+public class ApiKeyAuthenticationFilter implements WebFilter {
     
-    public boolean canView(Authentication auth, String deviceId) {
-        UserPrincipal user = (UserPrincipal) auth.getPrincipal();
-        Device device = deviceRepository.findById(deviceId);
-        
-        if (device == null) {
-            return false;
-        }
-        
-        // Same tenant check
-        if (!device.getTenantId().equals(user.getTenantId())) {
-            return false;
-        }
-        
-        // Organization-level access
-        if (hasRole(user, "ADMIN", "MANAGER")) {
-            return true;
-        }
-        
-        // Device-level access
-        if (hasRole(user, "TECHNICIAN")) {
-            return deviceAssignmentService.isAssigned(user.getId(), deviceId);
-        }
-        
-        return false;
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        return extractApiKey(exchange)
+            .flatMap(this::validateApiKey)
+            .flatMap(apiKey -> {
+                // Update usage statistics
+                updateApiKeyUsage(apiKey);
+                // Set security context
+                return setAuthenticationContext(exchange, apiKey);
+            })
+            .then(chain.filter(exchange))
+            .onErrorResume(InvalidApiKeyException.class, 
+                ex -> handleAuthenticationFailure(exchange, ex));
     }
     
-    public boolean canModify(Authentication auth, String deviceId) {
-        return canView(auth, deviceId) && 
-               hasAnyRole(auth, "ADMIN", "TECHNICIAN");
+    private Mono<ApiKey> validateApiKey(String keyString) {
+        ApiKeyComponents components = parseApiKey(keyString);
+        return apiKeyRepository.findByKeyId(components.getKeyId())
+            .filter(ApiKey::isActive)
+            .filter(key -> verifyKeySecret(key, components.getSecret()))
+            .switchIfEmpty(Mono.error(new InvalidApiKeyException("Invalid API key")));
+    }
+}
+```
+
+### Single Sign-On (SSO) Integration
+
+#### Google SSO Configuration
+
+```java
+@Configuration
+public class GoogleSSOConfiguration {
+    
+    @Bean
+    public ClientRegistration googleClientRegistration() {
+        return ClientRegistration.withRegistrationId("google")
+            .clientId(googleClientId)
+            .clientSecret(googleClientSecret)
+            .scope("openid", "profile", "email")
+            .authorizationUri("https://accounts.google.com/o/oauth2/v2/auth")
+            .tokenUri("https://oauth2.googleapis.com/token")
+            .userInfoUri("https://www.googleapis.com/oauth2/v3/userinfo")
+            .userNameAttributeName(IdTokenClaimNames.SUB)
+            .jwkSetUri("https://www.googleapis.com/oauth2/v3/certs")
+            .clientName("Google")
+            .build();
+    }
+}
+```
+
+#### SSO User Mapping and Provisioning
+
+```java
+@Component
+public class SsoUserProcessor {
+    
+    public User processOidcUser(OidcUser oidcUser, String tenantId) {
+        String email = oidcUser.getEmail();
+        String domain = extractDomain(email);
+        
+        // Validate domain against tenant configuration
+        if (!isAllowedDomain(domain, tenantId)) {
+            throw new UnauthorizedDomainException("Domain not allowed for tenant");
+        }
+        
+        // Find or create user
+        return userRepository.findByEmailAndTenantId(email, tenantId)
+            .orElseGet(() -> createUserFromOidcUser(oidcUser, tenantId));
+    }
+    
+    private User createUserFromOidcUser(OidcUser oidcUser, String tenantId) {
+        User user = new User();
+        user.setEmail(oidcUser.getEmail());
+        user.setFirstName(oidcUser.getGivenName());
+        user.setLastName(oidcUser.getFamilyName());
+        user.setTenantId(tenantId);
+        user.setEmailVerified(true);
+        user.setStatus(UserStatus.ACTIVE);
+        user.setRoles(determineDefaultRoles(oidcUser, tenantId));
+        return userRepository.save(user);
     }
 }
 ```
@@ -227,132 +238,110 @@ public class DeviceSecurityService {
 
 ### Encryption at Rest
 
-#### Database Encryption
+#### Database Encryption Configuration
 
-**MongoDB Configuration:**
 ```yaml
-# MongoDB encryption at rest
-storage:
-  engine: wiredTiger
-  wiredTiger:
-    engineConfig:
-      configString: "encryption=(name=AES256-CBC,keyid=master-key)"
-
-# Application-level field encryption
+# MongoDB encryption configuration
 spring:
   data:
     mongodb:
-      field-encryption:
-        auto-encryption-settings:
-          key-vault-namespace: "encryption.__keyVault"
-          schema-map:
-            "openframe.users":
-              properties:
-                ssn:
-                  encrypt:
-                    algorithm: "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic"
-                    keyId: "user-data-key"
+      uri: mongodb://localhost:27017/openframe?ssl=true&authSource=admin
+      auto-encryption:
+        key-vault-namespace: "openframe.keys"
+        schema-map:
+          "openframe.users":
+            encrypt-metadata:
+              key-id: !Binary "base64-encoded-key-id"
+            properties:
+              ssn:
+                encrypt:
+                  algorithm: "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic"
+              email:
+                encrypt:
+                  algorithm: "AEAD_AES_256_CBC_HMAC_SHA_512-Random"
 ```
 
-#### Sensitive Data Encryption Service
+#### Field-Level Encryption Service
 
 ```java
 @Service
-public class EncryptionService {
+public class FieldEncryptionService {
     
     private final AESUtil aesUtil;
-    private final String masterKey;
+    private final KeyManagementService keyManagementService;
+    
+    public String encryptSensitiveField(String plaintext, String tenantId) {
+        String encryptionKey = keyManagementService.getTenantEncryptionKey(tenantId);
+        return aesUtil.encrypt(plaintext, encryptionKey);
+    }
+    
+    public String decryptSensitiveField(String ciphertext, String tenantId) {
+        String encryptionKey = keyManagementService.getTenantEncryptionKey(tenantId);
+        return aesUtil.decrypt(ciphertext, encryptionKey);
+    }
     
     @EventListener
-    @TransactionalEventListener
-    public void encryptSensitiveFields(BeforeSaveEvent<Object> event) {
-        Object source = event.getSource();
+    public void handleKeyRotation(KeyRotationEvent event) {
+        String tenantId = event.getTenantId();
+        String oldKey = event.getOldKey();
+        String newKey = event.getNewKey();
         
-        Field[] fields = source.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(Encrypted.class)) {
-                try {
-                    field.setAccessible(true);
-                    String value = (String) field.get(source);
-                    if (value != null && !isAlreadyEncrypted(value)) {
-                        String encrypted = aesUtil.encrypt(value, masterKey);
-                        field.set(source, encrypted);
-                    }
-                } catch (Exception e) {
-                    throw new EncryptionException("Failed to encrypt field: " + field.getName(), e);
-                }
-            }
-        }
+        // Re-encrypt all sensitive data with new key
+        reEncryptTenantData(tenantId, oldKey, newKey);
     }
-    
-    @PostLoad
-    public void decryptSensitiveFields(AfterLoadEvent<Object> event) {
-        // Similar decryption logic
-    }
-}
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-public @interface Encrypted {
-    String algorithm() default "AES";
 }
 ```
 
-### Encryption in Transit
+### Secrets Management
 
-#### TLS Configuration
+#### Environment Variable Security
 
-**Application Properties:**
+```bash
+# Use strong passwords and rotate regularly
+MONGODB_USERNAME=openframe_user
+MONGODB_PASSWORD=$(openssl rand -base64 32)
+
+# JWT signing secrets (different per environment)
+JWT_SECRET=$(openssl rand -base64 64)
+
+# API encryption keys
+API_ENCRYPTION_KEY=$(openssl rand -base64 32)
+
+# External service credentials
+GOOGLE_CLIENT_SECRET=secure_google_secret
+MICROSOFT_CLIENT_SECRET=secure_microsoft_secret
+
+# Redis passwords
+REDIS_PASSWORD=$(openssl rand -base64 32)
+```
+
+#### Configuration Security
+
 ```yaml
-server:
-  ssl:
-    enabled: true
-    key-store: classpath:keystore.p12
-    key-store-password: ${SSL_KEYSTORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: openframe
-  port: 8443
-
-# Force HTTPS redirect
-security:
-  require-ssl: true
-  
-# HSTS headers
-management:
-  server:
-    ssl:
-      enabled: true
-```
-
-#### Inter-Service Communication
-
-```java
-@Configuration
-public class WebClientSecurityConfig {
+# application-production.yml
+spring:
+  config:
+    activate:
+      on-profile: production
+  datasource:
+    password: ${DATABASE_PASSWORD:}
     
-    @Bean
-    public WebClient secureWebClient() {
-        SslContext sslContext = SslContextBuilder
-            .forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-            .build();
-            
-        HttpClient httpClient = HttpClient.create()
-            .secure(sslContextSpec -> sslContextSpec.sslContext(sslContext))
-            .headers(headers -> headers
-                .add("X-Service-Token", serviceToken)
-                .add("X-Request-ID", UUID.randomUUID().toString()));
-                
-        return WebClient.builder()
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
-            .build();
-    }
-}
+security:
+  jwt:
+    secret: ${JWT_SECRET:}
+  encryption:
+    key: ${ENCRYPTION_KEY:}
+    
+# Use encrypted properties for sensitive data
+jasypt:
+  encryptor:
+    password: ${JASYPT_PASSWORD:}
+    algorithm: PBEWITHHMACSHA512ANDAES_256
 ```
 
 ## Input Validation and Sanitization
 
-### Request Validation
+### Request Validation Framework
 
 ```java
 @RestController
@@ -360,446 +349,698 @@ public class WebClientSecurityConfig {
 public class UserController {
     
     @PostMapping("/users")
-    public ResponseEntity<UserResponse> createUser(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<User> createUser(
             @Valid @RequestBody CreateUserRequest request,
-            BindingResult bindingResult) {
+            @AuthenticationPrincipal AuthPrincipal principal) {
         
-        if (bindingResult.hasErrors()) {
-            List<String> errors = bindingResult.getAllErrors().stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
-            throw new ValidationException("Validation failed", errors);
-        }
+        // Validate tenant context
+        validateTenantAccess(request.getTenantId(), principal);
         
-        return ResponseEntity.ok(userService.createUser(request));
+        // Sanitize inputs
+        request = sanitizeCreateUserRequest(request);
+        
+        User user = userService.createUser(request, principal.getTenantId());
+        return ResponseEntity.ok(user);
     }
 }
 
-// Request DTO with validation
+@Data
+@Validated
 public class CreateUserRequest {
     
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
-    @Size(max = 255, message = "Email too long")
+    @Pattern(regexp = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", 
+             message = "Invalid email format")
     private String email;
     
     @NotBlank(message = "First name is required")
-    @Size(min = 1, max = 50, message = "First name must be 1-50 characters")
-    @Pattern(regexp = "^[a-zA-Z\\s]+$", message = "First name contains invalid characters")
+    @Size(min = 1, max = 50, message = "First name must be between 1 and 50 characters")
+    @Pattern(regexp = "^[a-zA-Z\\s-']+$", message = "First name contains invalid characters")
     private String firstName;
     
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 128, message = "Password must be 8-128 characters")
-    @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&].*$", 
-             message = "Password must contain uppercase, lowercase, digit, and special character")
-    private String password;
+    @NotBlank(message = "Last name is required")
+    @Size(min = 1, max = 50, message = "Last name must be between 1 and 50 characters")
+    @Pattern(regexp = "^[a-zA-Z\\s-']+$", message = "Last name contains invalid characters")
+    private String lastName;
     
     @Valid
     @NotNull(message = "Organization is required")
-    private OrganizationRequest organization;
+    private OrganizationReference organization;
 }
 ```
 
-### SQL Injection Prevention
+### SQL/NoSQL Injection Prevention
 
 ```java
 @Repository
-public class CustomUserRepositoryImpl implements CustomUserRepository {
+public class UserRepository {
     
     private final MongoTemplate mongoTemplate;
     
-    // Using parameterized queries with Spring Data MongoDB
-    public List<User> findByEmailPattern(String emailPattern) {
-        // Escape special regex characters
-        String escapedPattern = Pattern.quote(emailPattern);
-        
-        Query query = new Query(
-            Criteria.where("email").regex(escapedPattern, "i")
-        );
-        
+    // Safe query construction using Spring Data MongoDB
+    public List<User> findUsersByTenantAndRole(String tenantId, String role) {
+        Query query = new Query()
+            .addCriteria(Criteria.where("tenantId").is(tenantId))
+            .addCriteria(Criteria.where("roles").in(role))
+            .with(Sort.by(Sort.Direction.ASC, "lastName", "firstName"));
+            
         return mongoTemplate.find(query, User.class);
     }
     
-    // Using aggregation pipeline for complex queries
-    public List<DeviceStats> getDeviceStatsByOrganization(String organizationId) {
-        Aggregation aggregation = Aggregation.newAggregation(
-            Aggregation.match(Criteria.where("organizationId").is(organizationId)),
-            Aggregation.group("status").count().as("count"),
-            Aggregation.sort(Direction.DESC, "count")
-        );
+    // Parameterized aggregation pipeline
+    public List<UserStats> getUserStatsByTenant(String tenantId) {
+        MatchOperation matchTenant = Aggregation.match(
+            Criteria.where("tenantId").is(tenantId));
         
-        return mongoTemplate.aggregate(aggregation, "devices", DeviceStats.class)
+        GroupOperation groupByRole = Aggregation.group("roles")
+            .count().as("userCount")
+            .first("roles").as("role");
+            
+        Aggregation aggregation = Aggregation.newAggregation(
+            matchTenant, groupByRole);
+            
+        return mongoTemplate.aggregate(aggregation, "users", UserStats.class)
             .getMappedResults();
     }
 }
 ```
 
-### XSS Prevention
+### GraphQL Security
 
 ```java
-@Component
-public class XSSRequestWrapper extends HttpServletRequestWrapper {
+@DgsComponent
+public class UserDataFetcher {
     
-    private static final Pattern[] XSS_PATTERNS = {
-        Pattern.compile("<script>(.*?)</script>", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("src[\r\n]*=[\r\n]*\\\'(.*?)\\\'", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-        Pattern.compile("</script>", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("<script(.*?)>", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-        Pattern.compile("eval\\((.*?)\\)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-        Pattern.compile("expression\\((.*?)\\)", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL),
-        Pattern.compile("javascript:", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("vbscript:", Pattern.CASE_INSENSITIVE),
-        Pattern.compile("onload(.*?)=", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL)
-    };
-    
-    public XSSRequestWrapper(HttpServletRequest request) {
-        super(request);
+    @DgsQuery
+    @PreAuthorize("hasRole('USER')")
+    public List<User> users(@InputArgument UserFilterInput filter,
+                           @AuthenticationPrincipal AuthPrincipal principal) {
+        
+        // Ensure tenant isolation
+        filter.setTenantId(principal.getTenantId());
+        
+        // Validate and sanitize filter inputs
+        validateUserFilter(filter);
+        
+        return userService.findUsers(filter);
     }
     
-    @Override
-    public String[] getParameterValues(String parameter) {
-        String[] values = super.getParameterValues(parameter);
-        if (values == null) {
-            return null;
+    @DgsMutation
+    @PreAuthorize("hasRole('ADMIN')")
+    public User updateUser(@InputArgument String userId,
+                          @InputArgument UpdateUserInput input,
+                          @AuthenticationPrincipal AuthPrincipal principal) {
+        
+        // Verify user belongs to tenant
+        User existingUser = userService.findById(userId);
+        if (!existingUser.getTenantId().equals(principal.getTenantId())) {
+            throw new AccessDeniedException("User not found in tenant");
         }
         
-        int count = values.length;
-        String[] encodedValues = new String[count];
-        for (int i = 0; i < count; i++) {
-            encodedValues[i] = stripXSS(values[i]);
-        }
-        
-        return encodedValues;
-    }
-    
-    private String stripXSS(String value) {
-        if (value != null) {
-            // HTML encode
-            value = StringEscapeUtils.escapeHtml4(value);
-            
-            // Remove XSS patterns
-            for (Pattern pattern : XSS_PATTERNS) {
-                value = pattern.matcher(value).replaceAll("");
-            }
-        }
-        return value;
+        return userService.updateUser(userId, input);
     }
 }
 ```
 
 ## Common Security Vulnerabilities and Mitigations
 
-### 1. Broken Authentication
+### OWASP Top 10 Mitigations
 
-**Vulnerability**: Weak password policies, session management issues
+#### 1. Injection Attacks
 
-**Mitigation**:
+**Prevention:**
+- Use parameterized queries for all database operations
+- Validate and sanitize all inputs
+- Use prepared statements and ORM frameworks
+- Implement proper error handling
+
 ```java
-@Configuration
-public class PasswordSecurityConfig {
-    
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // Strong cost factor
-    }
-    
-    @Bean
-    public PasswordPolicy passwordPolicy() {
-        return new PasswordPolicy(
-            // Minimum 8 characters
-            new LengthRule(8, 128),
-            // At least one uppercase letter
-            new CharacterRule(EnglishCharacterData.UpperCase, 1),
-            // At least one lowercase letter
-            new CharacterRule(EnglishCharacterData.LowerCase, 1),
-            // At least one digit
-            new CharacterRule(EnglishCharacterData.Digit, 1),
-            // At least one special character
-            new CharacterRule(EnglishCharacterData.Special, 1),
-            // No whitespace
-            new WhitespaceRule(),
-            // No common passwords
-            new DictionaryRule(new WordListDictionary(commonPasswords))
-        );
-    }
-}
+// Bad - Vulnerable to injection
+String query = "SELECT * FROM users WHERE email = '" + email + "'";
 
+// Good - Parameterized query
+Query query = new Query(Criteria.where("email").is(email));
+```
+
+#### 2. Broken Authentication
+
+**Prevention:**
+- Implement multi-factor authentication
+- Use secure session management
+- Enforce strong password policies
+- Monitor for suspicious login attempts
+
+```java
 @Component
-public class AccountLockoutService {
+public class AuthenticationSecurityService {
     
-    private static final int MAX_ATTEMPTS = 5;
-    private static final Duration LOCKOUT_DURATION = Duration.ofMinutes(30);
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final int MAX_LOGIN_ATTEMPTS = 5;
+    private final Duration LOCKOUT_DURATION = Duration.ofMinutes(15);
     
-    public void recordFailedLogin(String email) {
-        String key = "login_attempts:" + email;
-        String attemptsStr = redisTemplate.opsForValue().get(key);
-        int attempts = attemptsStr != null ? Integer.parseInt(attemptsStr) : 0;
+    public void recordFailedLogin(String username, String ipAddress) {
+        String key = "failed_login:" + username + ":" + ipAddress;
+        Integer attempts = (Integer) redisTemplate.opsForValue().get(key);
+        attempts = (attempts == null) ? 1 : attempts + 1;
         
-        attempts++;
-        if (attempts >= MAX_ATTEMPTS) {
-            lockAccount(email);
-        } else {
-            redisTemplate.opsForValue().set(key, String.valueOf(attempts), 
-                Duration.ofMinutes(15));
+        if (attempts >= MAX_LOGIN_ATTEMPTS) {
+            lockAccount(username, ipAddress);
         }
+        
+        redisTemplate.opsForValue().set(key, attempts, Duration.ofHours(1));
     }
     
-    private void lockAccount(String email) {
-        String lockKey = "account_locked:" + email;
-        redisTemplate.opsForValue().set(lockKey, "true", LOCKOUT_DURATION);
+    private void lockAccount(String username, String ipAddress) {
+        String lockKey = "account_locked:" + username + ":" + ipAddress;
+        redisTemplate.opsForValue().set(lockKey, true, LOCKOUT_DURATION);
         
-        // Send security notification
-        securityNotificationService.sendAccountLockoutNotification(email);
+        // Send security alert
+        securityAlertService.sendAccountLockoutAlert(username, ipAddress);
     }
 }
 ```
 
-### 2. Sensitive Data Exposure
+#### 3. Sensitive Data Exposure
 
-**Vulnerability**: Storing sensitive data in plaintext, inadequate encryption
+**Prevention:**
+- Encrypt sensitive data at rest and in transit
+- Use HTTPS everywhere
+- Implement proper data masking
+- Audit data access
 
-**Mitigation**:
 ```java
-@Entity
-@Document(collection = "api_keys")
-public class ApiKey {
+@JsonSerialize(using = SensitiveDataSerializer.class)
+@JsonDeserialize(using = SensitiveDataDeserializer.class)
+public class SensitiveField {
+    private String value;
     
-    @Id
-    private String id;
-    
-    @Encrypted
-    private String keyValue; // Encrypted at field level
-    
-    @JsonIgnore
-    private String hashedKey; // For lookups without decryption
-    
-    private String name;
-    private String tenantId;
-    private LocalDateTime createdAt;
-    private LocalDateTime expiresAt;
-    private boolean active;
-    
-    // Never expose the actual key value in responses
-    @JsonIgnore
-    public String getKeyValue() {
-        return keyValue;
-    }
-    
-    public void setKeyValue(String keyValue) {
-        this.keyValue = keyValue;
-        this.hashedKey = BCrypt.hashpw(keyValue, BCrypt.gensalt());
-    }
-}
-
-@Service
-public class ApiKeyService {
-    
-    public ApiKeyResponse createApiKey(CreateApiKeyRequest request) {
-        String keyValue = generateSecureKey();
-        
-        ApiKey apiKey = new ApiKey();
-        apiKey.setKeyValue(keyValue); // Will be encrypted
-        apiKey.setName(request.getName());
-        apiKey.setTenantId(getCurrentTenantId());
-        
-        ApiKey saved = apiKeyRepository.save(apiKey);
-        
-        // Return the key value only once, on creation
-        return ApiKeyResponse.builder()
-            .id(saved.getId())
-            .name(saved.getName())
-            .keyValue(keyValue) // Only shown once
-            .createdAt(saved.getCreatedAt())
-            .build();
+    // Custom serialization to mask sensitive data in logs
+    @Override
+    public String toString() {
+        return value != null ? "***MASKED***" : null;
     }
 }
 ```
 
-### 3. XML External Entity (XXE) Attacks
+#### 4. XML External Entities (XXE)
 
-**Mitigation**:
+**Prevention:**
+- Disable XML external entity processing
+- Use safe XML parsers
+- Validate XML inputs
+
 ```java
 @Configuration
-public class XmlSecurityConfig {
+public class XmlSecurityConfiguration {
     
     @Bean
-    public DocumentBuilderFactory documentBuilderFactory() throws ParserConfigurationException {
+    public DocumentBuilderFactory documentBuilderFactory() {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        
-        // Disable external entities
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-dtd-grammar", false);
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        
+        try {
+            // Disable external entity processing
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            factory.setXIncludeAware(false);
+            factory.setExpandEntityReferences(false);
+        } catch (ParserConfigurationException e) {
+            throw new SecurityException("Failed to configure XML security", e);
+        }
         return factory;
     }
 }
 ```
 
-### 4. Security Misconfigurations
+#### 5. Security Misconfiguration
 
-**Mitigation**:
-```yaml
-# Secure application configuration
-server:
-  error:
-    include-exception: false
-    include-stacktrace: never
-    include-message: never
-
-spring:
-  jpa:
-    show-sql: false
-    
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,metrics
-      base-path: /internal/actuator
-  endpoint:
-    health:
-      show-details: when_authorized
-
-logging:
-  level:
-    org.springframework.security: WARN
-    org.springframework.web: WARN
-```
-
-## Security Testing and Code Review Guidelines
-
-### 1. Security Unit Tests
+**Prevention:**
+- Use security headers
+- Configure HTTPS properly
+- Remove default accounts
+- Regular security updates
 
 ```java
-@SpringBootTest
-@ActiveProfiles("test")
-class SecurityIntegrationTest {
+@Configuration
+@EnableWebSecurity
+public class SecurityConfiguration {
     
-    @Autowired
-    private MockMvc mockMvc;
-    
-    @Test
-    void shouldRejectUnauthorizedAccess() throws Exception {
-        mockMvc.perform(get("/api/devices"))
-            .andExpect(status().isUnauthorized());
-    }
-    
-    @Test
-    void shouldEnforceRoleBasedAccess() throws Exception {
-        String userToken = generateTokenWithRole("USER");
-        
-        mockMvc.perform(delete("/api/devices/123")
-            .header("Authorization", "Bearer " + userToken))
-            .andExpect(status().isForbidden());
-    }
-    
-    @Test
-    void shouldValidateInputProperly() throws Exception {
-        String maliciousInput = "<script>alert('xss')</script>";
-        
-        mockMvc.perform(post("/api/users")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"firstName\":\"" + maliciousInput + "\"}"))
-            .andExpect(status().isBadRequest());
-    }
-    
-    @Test
-    void shouldPreventSqlInjection() throws Exception {
-        String sqlInjection = "'; DROP TABLE users; --";
-        
-        mockMvc.perform(get("/api/users")
-            .param("search", sqlInjection))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data").isEmpty());
+    @Bean
+    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+        return http
+            .headers(headers -> headers
+                .frameOptions().deny()
+                .contentTypeOptions(Customizer.withDefaults())
+                .httpStrictTransportSecurity(hstsConfig -> hstsConfig
+                    .maxAgeInSeconds(31536000)
+                    .includeSubdomains(true))
+                .and()
+                .add("X-Content-Type-Options", "nosniff")
+                .add("X-Frame-Options", "DENY")
+                .add("X-XSS-Protection", "1; mode=block")
+                .add("Referrer-Policy", "strict-origin-when-cross-origin")
+                .add("Content-Security-Policy", "default-src 'self'"))
+            .csrf(csrf -> csrf
+                .csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()))
+            .build();
     }
 }
 ```
 
-### 2. Security Code Review Checklist
+## Security Testing and Code Review
 
-#### Authentication & Authorization
-- [ ] JWT tokens are properly validated and contain required claims
-- [ ] Role-based access control is implemented correctly
-- [ ] Sensitive endpoints require appropriate permissions
-- [ ] Session management follows security best practices
-- [ ] Password policies are enforced
+### Automated Security Testing
 
-#### Input Validation
-- [ ] All user inputs are validated and sanitized
-- [ ] SQL injection prevention measures are in place
-- [ ] XSS protection is implemented
-- [ ] File upload security is properly handled
-- [ ] Request size limits are enforced
+#### Unit Tests for Security
 
-#### Data Protection  
-- [ ] Sensitive data is encrypted at rest and in transit
-- [ ] PII is properly handled and protected
-- [ ] Database connections use encrypted channels
-- [ ] Secrets are not hardcoded in source code
-- [ ] Proper key management practices are followed
+```java
+@SpringBootTest
+@TestMethodOrder(OrderAnnotation.class)
+class SecurityTests {
+    
+    @Test
+    @Order(1)
+    void testJwtTokenValidation() {
+        // Test valid JWT token
+        String validToken = generateValidJwtToken("tenant123", "user456");
+        assertTrue(jwtValidator.isValid(validToken));
+        
+        // Test expired token
+        String expiredToken = generateExpiredJwtToken("tenant123", "user456");
+        assertFalse(jwtValidator.isValid(expiredToken));
+        
+        // Test tampered token
+        String tamperedToken = tamperWithToken(validToken);
+        assertFalse(jwtValidator.isValid(tamperedToken));
+    }
+    
+    @Test
+    @Order(2)
+    void testTenantIsolation() {
+        // Create users in different tenants
+        User tenant1User = createTestUser("tenant1", "user1@example.com");
+        User tenant2User = createTestUser("tenant2", "user2@example.com");
+        
+        // Verify tenant1 user cannot access tenant2 data
+        assertThrows(AccessDeniedException.class, () -> {
+            userService.findUsersInTenant("tenant2", createAuthContext("tenant1", "user1"));
+        });
+    }
+    
+    @Test
+    @Order(3)
+    void testInputValidation() {
+        CreateUserRequest maliciousRequest = new CreateUserRequest();
+        maliciousRequest.setEmail("<script>alert('xss')</script>@example.com");
+        maliciousRequest.setFirstName("'; DROP TABLE users; --");
+        
+        Set<ConstraintViolation<CreateUserRequest>> violations = 
+            validator.validate(maliciousRequest);
+        
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream()
+            .anyMatch(v -> v.getMessage().contains("Invalid email format")));
+    }
+}
+```
 
-#### Error Handling
-- [ ] Error messages don't expose sensitive information
-- [ ] Stack traces are not returned to clients
-- [ ] Logging doesn't include sensitive data
-- [ ] Rate limiting is implemented for API endpoints
-- [ ] Security events are properly audited
+#### Integration Security Tests
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class SecurityIntegrationTests {
+    
+    @Test
+    void testUnauthorizedAccess() {
+        ResponseEntity<String> response = restTemplate.getForEntity(
+            "/api/users", String.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+    
+    @Test
+    void testCrossOriginResourceSharing() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Origin", "https://malicious-site.com");
+        
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(
+            "/api/users", HttpMethod.GET, request, String.class);
+            
+        assertNull(response.getHeaders().getAccessControlAllowOrigin());
+    }
+    
+    @Test
+    void testApiKeyRateLimit() {
+        String apiKey = "ak_test123.sk_test456";
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-API-Key", apiKey);
+        
+        // Make requests up to the limit
+        for (int i = 0; i < 100; i++) {
+            HttpEntity<String> request = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                "/external-api/devices", HttpMethod.GET, request, String.class);
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+        }
+        
+        // Next request should be rate limited
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(
+            "/external-api/devices", HttpMethod.GET, request, String.class);
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+    }
+}
+```
+
+### Static Code Analysis
+
+#### Security-Focused Code Review Checklist
+
+```text
+Authentication & Authorization:
+☐ All endpoints have appropriate authentication
+☐ Role-based access control is properly implemented
+☐ Tenant isolation is maintained throughout request processing
+☐ JWT tokens contain necessary claims and are validated properly
+
+Input Validation:
+☐ All user inputs are validated and sanitized
+☐ Parameterized queries are used for database operations
+☐ File upload restrictions are in place
+☐ Request size limits are configured
+
+Data Protection:
+☐ Sensitive data is encrypted at rest
+☐ PII is properly masked in logs
+☐ Database connections use encryption
+☐ Secrets are not hardcoded in source
+
+Error Handling:
+☐ Errors don't leak sensitive information
+☐ Generic error messages for authentication failures
+☐ Proper logging of security events
+☐ Exception handling doesn't expose stack traces
+
+Configuration Security:
+☐ Security headers are properly configured
+☐ HTTPS is enforced in production
+☐ CORS policies are restrictive
+☐ Default credentials are changed
+```
 
 ## Environment Variables and Secrets Management
 
 ### Development Environment
-```bash
-# .env.local (development only)
-JWT_SIGNING_KEY=development-key-change-in-production
-DATABASE_PASSWORD=dev-password
-REDIS_PASSWORD=dev-redis-password
 
-# Never commit these to version control
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-OPENAI_API_KEY=sk-xxxxx
+```bash
+# Development environment variables (.env.development)
+OPENFRAME_ENV=development
+LOG_LEVEL=DEBUG
+JWT_EXPIRATION=3600
+ENABLE_CSRF=true
+ENABLE_CORS=true
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Database credentials (rotate regularly)
+DATABASE_USERNAME=openframe_dev
+DATABASE_PASSWORD=secure_dev_password_2024
+
+# External service credentials (use test/sandbox keys)
+GOOGLE_CLIENT_ID=development_google_client_id
+GOOGLE_CLIENT_SECRET=development_google_client_secret
 ```
 
 ### Production Environment
-```bash
-# Use proper secrets management
-JWT_SIGNING_KEY=${VAULT_JWT_KEY}
-DATABASE_PASSWORD=${AWS_RDS_PASSWORD}
-REDIS_PASSWORD=${AZURE_REDIS_KEY}
 
-# Rotate keys regularly
-ENCRYPTION_KEY_ID=key-rotation-v2
-ENCRYPTION_PROVIDER=aws-kms
+```bash
+# Production environment variables (use proper secret management)
+OPENFRAME_ENV=production
+LOG_LEVEL=WARN
+JWT_EXPIRATION=1800
+ENABLE_CSRF=true
+ENABLE_CORS=false
+
+# Use Azure Key Vault, AWS Secrets Manager, or similar
+DATABASE_PASSWORD=$(az keyvault secret show --name db-password --vault-name openframe-vault --query value -o tsv)
+JWT_SECRET=$(aws secretsmanager get-secret-value --secret-id openframe/jwt-secret --query SecretString --output text)
+
+# Security monitoring
+SECURITY_MONITORING_ENABLED=true
+AUDIT_LOG_LEVEL=INFO
+FAILED_LOGIN_THRESHOLD=3
+ACCOUNT_LOCKOUT_DURATION=900
 ```
 
-### Secrets Management Service
+### Secret Rotation Strategy
+
 ```java
-@Service
-public class SecretsService {
+@Component
+@Slf4j
+public class SecretRotationService {
     
-    private final VaultTemplate vaultTemplate;
-    
-    public String getSecret(String path, String key) {
-        VaultResponseSupport<Map<String, Object>> response = 
-            vaultTemplate.read(path, Map.class);
-            
-        if (response != null && response.getData() != null) {
-            return (String) response.getData().get(key);
+    @Scheduled(cron = "0 0 2 1 * ?") // Monthly rotation
+    public void rotateJwtSecrets() {
+        log.info("Starting JWT secret rotation");
+        
+        // Generate new signing keys for all tenants
+        List<String> tenantIds = tenantService.getAllTenantIds();
+        
+        for (String tenantId : tenantIds) {
+            try {
+                KeyPair newKeyPair = rsaKeyPairGenerator.generate();
+                tenantKeyService.rotateSigningKey(tenantId, newKeyPair);
+                log.info("Rotated signing key for tenant: {}", tenantId);
+            } catch (Exception e) {
+                log.error("Failed to rotate key for tenant: {}", tenantId, e);
+                alertingService.sendSecurityAlert("Key rotation failed", tenantId, e);
+            }
         }
         
-        throw new SecretNotFoundException("Secret not found: " + path + ":" + key);
-    }
-    
-    @EventListener
-    public void rotateKeys(KeyRotationEvent event) {
-        // Implement key rotation logic
-        String newKey = generateNewKey();
-        vaultTemplate.write("secret/keys/" + event.getKeyId(), 
-            Map.of("key", newKey, "version", event.getVersion()));
+        log.info("Completed JWT secret rotation");
     }
 }
 ```
 
-This security guide provides comprehensive coverage of OpenFrame's security implementation. Following these practices ensures robust protection of user data, system integrity, and compliance with security standards.
+## Security Monitoring and Incident Response
+
+### Security Event Logging
+
+```java
+@Component
+@Slf4j
+public class SecurityEventLogger {
+    
+    private final ObjectMapper objectMapper;
+    
+    public void logAuthenticationEvent(AuthenticationEvent event) {
+        try {
+            String eventJson = objectMapper.writeValueAsString(Map.of(
+                "event_type", "authentication",
+                "timestamp", Instant.now(),
+                "user_id", event.getUserId(),
+                "tenant_id", event.getTenantId(),
+                "ip_address", event.getIpAddress(),
+                "user_agent", event.getUserAgent(),
+                "success", event.isSuccess(),
+                "failure_reason", event.getFailureReason()
+            ));
+            
+            log.info("SECURITY_EVENT: {}", eventJson);
+        } catch (Exception e) {
+            log.error("Failed to log security event", e);
+        }
+    }
+    
+    public void logDataAccessEvent(DataAccessEvent event) {
+        try {
+            String eventJson = objectMapper.writeValueAsString(Map.of(
+                "event_type", "data_access",
+                "timestamp", Instant.now(),
+                "user_id", event.getUserId(),
+                "tenant_id", event.getTenantId(),
+                "resource_type", event.getResourceType(),
+                "resource_id", event.getResourceId(),
+                "operation", event.getOperation(),
+                "ip_address", event.getIpAddress()
+            ));
+            
+            log.info("SECURITY_EVENT: {}", eventJson);
+        } catch (Exception e) {
+            log.error("Failed to log data access event", e);
+        }
+    }
+}
+```
+
+### Automated Threat Detection
+
+```java
+@Component
+public class ThreatDetectionService {
+    
+    @EventListener
+    public void handleFailedAuthentication(FailedAuthenticationEvent event) {
+        String key = "failed_auth:" + event.getIpAddress();
+        int failureCount = incrementFailureCount(key);
+        
+        if (failureCount > 5) {
+            // Potential brute force attack
+            securityAlertService.sendAlert(SecurityAlert.builder()
+                .type(AlertType.BRUTE_FORCE_DETECTED)
+                .ipAddress(event.getIpAddress())
+                .description("Multiple authentication failures detected")
+                .build());
+                
+            // Temporarily block IP address
+            ipBlockingService.blockIpAddress(event.getIpAddress(), Duration.ofMinutes(15));
+        }
+    }
+    
+    @EventListener
+    public void handleUnusualDataAccess(DataAccessEvent event) {
+        UserBehaviorProfile profile = userBehaviorService.getProfile(event.getUserId());
+        
+        if (isUnusualAccess(event, profile)) {
+            securityAlertService.sendAlert(SecurityAlert.builder()
+                .type(AlertType.UNUSUAL_ACCESS_PATTERN)
+                .userId(event.getUserId())
+                .tenantId(event.getTenantId())
+                .description("Unusual data access pattern detected")
+                .build());
+        }
+    }
+}
+```
+
+### Incident Response Procedures
+
+#### Automatic Response Actions
+
+```java
+@Component
+public class IncidentResponseService {
+    
+    @EventListener
+    public void handleSecurityIncident(SecurityIncident incident) {
+        switch (incident.getSeverity()) {
+            case CRITICAL:
+                handleCriticalIncident(incident);
+                break;
+            case HIGH:
+                handleHighSeverityIncident(incident);
+                break;
+            case MEDIUM:
+                handleMediumSeverityIncident(incident);
+                break;
+            default:
+                logIncident(incident);
+        }
+    }
+    
+    private void handleCriticalIncident(SecurityIncident incident) {
+        // Immediate containment actions
+        if (incident.getType() == IncidentType.SUSPECTED_BREACH) {
+            // Disable affected user accounts
+            userService.disableUsersInTenant(incident.getTenantId());
+            
+            // Invalidate all active sessions
+            sessionService.invalidateAllSessions(incident.getTenantId());
+            
+            // Enable enhanced monitoring
+            monitoringService.enableEnhancedMode(incident.getTenantId());
+        }
+        
+        // Alert security team
+        alertingService.sendImmediateAlert(incident);
+        
+        // Create incident ticket
+        incidentTrackingService.createIncident(incident);
+    }
+}
+```
+
+## Security Compliance and Auditing
+
+### Audit Trail Implementation
+
+```java
+@Aspect
+@Component
+@Slf4j
+public class AuditAspect {
+    
+    @Around("@annotation(Auditable)")
+    public Object auditMethod(ProceedingJoinPoint joinPoint) throws Throwable {
+        AuditEvent auditEvent = AuditEvent.builder()
+            .timestamp(Instant.now())
+            .method(joinPoint.getSignature().getName())
+            .className(joinPoint.getTarget().getClass().getSimpleName())
+            .arguments(Arrays.toString(joinPoint.getArgs()))
+            .build();
+            
+        try {
+            Object result = joinPoint.proceed();
+            auditEvent.setSuccess(true);
+            auditEvent.setResult(result != null ? result.toString() : null);
+            return result;
+        } catch (Exception e) {
+            auditEvent.setSuccess(false);
+            auditEvent.setError(e.getMessage());
+            throw e;
+        } finally {
+            auditService.recordEvent(auditEvent);
+        }
+    }
+}
+
+@Auditable
+@RestController
+public class SensitiveOperationsController {
+    
+    @PostMapping("/admin/users/{userId}/reset-password")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> resetPassword(@PathVariable String userId) {
+        // Implementation
+        return ResponseEntity.ok().build();
+    }
+}
+```
+
+### GDPR Compliance Features
+
+```java
+@Service
+public class DataPrivacyService {
+    
+    public void handleDataDeletionRequest(String userId, String tenantId) {
+        // Verify user belongs to tenant
+        User user = userService.findByIdAndTenant(userId, tenantId);
+        if (user == null) {
+            throw new UserNotFoundException("User not found in tenant");
+        }
+        
+        // Delete user data across all systems
+        deleteUserFromAllSystems(user);
+        
+        // Log data deletion for audit
+        auditService.logDataDeletion(userId, tenantId, 
+            "GDPR data deletion request processed");
+    }
+    
+    public PersonalDataExport exportUserData(String userId, String tenantId) {
+        User user = userService.findByIdAndTenant(userId, tenantId);
+        
+        return PersonalDataExport.builder()
+            .personalInformation(user.getPersonalInformation())
+            .deviceInteractions(deviceService.getUserDeviceHistory(userId))
+            .auditLogs(auditService.getUserAuditLogs(userId))
+            .preferences(preferenceService.getUserPreferences(userId))
+            .build();
+    }
+}
+```
+
+---
+
+This comprehensive security guide provides the foundation for maintaining a secure multi-tenant MSP platform. Regular security reviews, updates, and monitoring are essential for maintaining the security posture of OpenFrame OSS Tenant.

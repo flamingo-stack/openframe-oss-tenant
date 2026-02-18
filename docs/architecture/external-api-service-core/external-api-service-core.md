@@ -2,367 +2,448 @@
 
 ## Overview
 
-The **External Api Service Core** module exposes a public, API key–secured REST interface to the OpenFrame platform. It is designed for third-party systems, integrations, and automation scripts that require programmatic access to devices, events, logs, organizations, and integrated tools.
+The **External Api Service Core** module provides a secure, API key–based REST interface for external systems to interact with the OpenFrame platform.
 
-Unlike the internal API modules, this module is:
+It exposes curated endpoints for:
 
-- ✅ API key–based (header authentication)
-- ✅ Rate-limited per API key
-- ✅ Documented via OpenAPI / Swagger
-- ✅ Integration-friendly with proxy support for external tools
+- Device management
+- Event ingestion and querying
+- Log access and filtering
+- Organization CRUD operations
+- Integrated tool discovery
+- Tool API proxying
 
-It is deployed as the `ExternalApiApplication` service in the service layer.
+Unlike the internal API layer, this module is designed specifically for third-party integrations and automation use cases. It enforces API key authentication and rate limiting at the gateway level and presents a stable, versioned REST contract under `/api/v1/**` and `/tools/**`.
 
 ---
 
-## High-Level Architecture
+## Architectural Context
 
-The External Api Service Core acts as a façade over domain services defined in the API and data-access layers.
+The External Api Service Core sits between external consumers and the internal OpenFrame services.
 
 ```mermaid
 flowchart LR
-    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service"]
-    Gateway --> ExternalAPI["External Api Service Core"]
+    Client["External Client<br/>Automation / Integration"] --> Gateway["Gateway Service"]
+    Gateway --> ExternalApi["External Api Service Core"]
 
-    subgraph controllers["REST Controllers"]
-        DeviceCtrl["Device Controller"]
-        EventCtrl["Event Controller"]
-        LogCtrl["Log Controller"]
-        OrgCtrl["Organization Controller"]
-        ToolCtrl["Tool Controller"]
-        IntegrationCtrl["Integration Controller"]
-    end
+    ExternalApi --> ApiCore["Api Service Core"]
+    ExternalApi --> DataMongo["Data Mongo Core"]
+    ExternalApi --> DataKafka["Data Kafka Core"]
 
-    ExternalAPI --> DeviceCtrl
-    ExternalAPI --> EventCtrl
-    ExternalAPI --> LogCtrl
-    ExternalAPI --> OrgCtrl
-    ExternalAPI --> ToolCtrl
-    ExternalAPI --> IntegrationCtrl
+    ExternalApi --> StreamCore["Stream Service Core"]
+    ExternalApi --> ManagementCore["Management Service Core"]
 
-    DeviceCtrl --> DomainServices["Domain Services"]
-    EventCtrl --> DomainServices
-    LogCtrl --> DomainServices
-    OrgCtrl --> DomainServices
-    ToolCtrl --> DomainServices
-
-    DomainServices --> Mongo["MongoDB"]
-    DomainServices --> Kafka["Kafka / Streams"]
+    ExternalApi --> ToolProxy["Integrated Tool APIs"]
 ```
 
-### Responsibilities
+### Responsibilities in the Stack
 
-- Expose versioned REST endpoints under `/api/v1/**`
-- Enforce API key authentication
-- Apply pagination, sorting, and filtering
-- Map internal domain models to external DTOs
-- Proxy integration requests to external tools
-- Provide OpenAPI documentation
+| Layer | Responsibility |
+|--------|---------------|
+| Gateway Service | API key validation, rate limiting, header enrichment (`X-User-Id`, `X-API-Key-Id`) |
+| External Api Service Core | Public REST contract, request validation, filtering, sorting, proxying |
+| Api Service Core | Domain services and business logic |
+| Data Mongo Core | Persistence (devices, events, organizations, tools) |
+| Data Kafka Core | Streaming/event infrastructure |
+| Stream Service Core | Event processing and enrichment |
+| Management Service Core | Tool configuration, versioning, initializers |
 
 ---
 
-## OpenAPI Configuration
+## Module Structure
 
-### `OpenApiConfig`
+The External Api Service Core consists of:
 
-This configuration defines:
+- **OpenApiConfig** – Swagger/OpenAPI configuration
+- **Controllers** – Public REST endpoints
+- **RestProxyService** – HTTP proxy layer for integrated tools
 
-- API metadata (title, version, contact, license)
-- Security scheme (`ApiKeyAuth`)
-- API key header: `X-API-Key`
-- Rate limiting documentation
-- Grouped endpoint exposure for Swagger UI
+### Component Overview
 
-### Security Scheme
+```mermaid
+flowchart TD
+    OpenApiConfig["OpenApiConfig"]
 
-All endpoints require the `X-API-Key` header:
+    subgraph controllers["REST Controllers"]
+        DeviceController
+        EventController
+        LogController
+        OrganizationController
+        ToolController
+        IntegrationController
+    end
+
+    IntegrationController --> RestProxyService["RestProxyService"]
+
+    DeviceController --> ApiServices["Domain Services"]
+    EventController --> ApiServices
+    LogController --> ApiServices
+    OrganizationController --> ApiServices
+    ToolController --> ApiServices
+```
+
+---
+
+# OpenAPI Configuration
+
+## OpenApiConfig
+
+The `OpenApiConfig` class configures:
+
+- OpenAPI metadata (title, version, contact, license)
+- API key security scheme
+- Server base path (`/external-api`)
+- Endpoint grouping
+
+### Authentication Scheme
+
+All endpoints require an API key in the `X-API-Key` header.
 
 ```text
 X-API-Key: ak_keyId.sk_secretKey
 ```
 
-OpenAPI defines this as an `APIKEY` security scheme located in the HTTP header.
+Security scheme configuration:
+
+- Type: `APIKEY`
+- Location: Header
+- Header name: `X-API-Key`
+
+### Rate Limiting
+
+Rate limiting is enforced upstream (Gateway Service). Responses include headers such as:
+
+- `X-RateLimit-Limit-Minute`
+- `X-RateLimit-Remaining-Minute`
+- `X-RateLimit-Limit-Hour`
+- `X-RateLimit-Remaining-Hour`
 
 ---
 
-## Core REST Controllers
+# REST Controllers
 
-All endpoints are versioned under `/api/v1` unless otherwise specified.
+All REST endpoints are versioned under `/api/v1/**`, except tool proxy endpoints which use `/tools/**`.
 
-### 1. Device Controller
+---
+
+## DeviceController
 
 **Base Path:** `/api/v1/devices`
 
-Capabilities:
+Provides device querying and lifecycle management.
 
-- List devices with advanced filtering
+### Key Capabilities
+
 - Cursor-based pagination
-- Sorting support
-- Optional tag inclusion
-- Update device status (ARCHIVED / DELETED)
+- Multi-criteria filtering (status, type, OS, organization, tags)
+- Search by hostname/display name
+- Optional tag enrichment
+- Sort field and direction support
+- Status updates (ARCHIVED / DELETED)
 
-Supports filtering by:
-
-- Status
-- Device type
-- OS type
-- Organization IDs
-- Tags
-- Search query
-
-#### Device Query Flow
+### Request Flow
 
 ```mermaid
 flowchart TD
-    Request["GET /api/v1/devices"] --> BuildFilter["Build DeviceFilterCriteria"]
-    BuildFilter --> ServiceCall["DeviceService.queryDevices()"]
-    ServiceCall --> Result["Query Result"]
-    Result --> Mapper["DeviceMapper"]
-    Mapper --> Response["DevicesResponse"]
+    Client -->|"GET /api/v1/devices"| DeviceController
+    DeviceController --> FilterCriteria["DeviceFilterCriteria"]
+    DeviceController --> Pagination["PaginationCriteria"]
+    DeviceController --> SortCriteria
+
+    DeviceController --> DeviceService
+    DeviceService --> MongoRepo["Device Repository"]
+    DeviceService --> TagService
+
+    DeviceController --> DeviceMapper
+    DeviceMapper --> DevicesResponse
 ```
+
+### Notable Design Decisions
+
+- Filtering logic is translated into domain-level filter options.
+- Tag enrichment is optional and wrapped in a safe fallback.
+- Pagination uses cursor-based semantics instead of offset-based paging.
 
 ---
 
-### 2. Event Controller
+## EventController
 
 **Base Path:** `/api/v1/events`
 
-Capabilities:
+Supports event ingestion and querying.
 
-- Query events with filtering
-- Retrieve single event by ID
-- Create event
-- Update event
-- Fetch event filter options
+### Features
 
-Supports:
-
+- Cursor-based pagination
 - Date range filtering
-- Event type filtering
-- User filtering
-- Search
+- User ID and event type filtering
+- Search support
 - Sorting
+- Event creation and update
 
-Uses `EventService` and maps internal `Event` documents to `EventResponse` DTOs.
+### Event Lifecycle
+
+```mermaid
+flowchart LR
+    ExternalClient --> EventController
+    EventController --> EventService
+    EventService --> MongoEvents["Event Collection"]
+    EventService --> StreamCore["Stream Service Core"]
+```
+
+The controller:
+
+- Validates query parameters
+- Maps request DTOs to domain filters
+- Delegates to `EventService`
+- Maps domain results to API responses
 
 ---
 
-### 3. Log Controller
+## LogController
 
 **Base Path:** `/api/v1/logs`
 
-Capabilities:
+Provides access to system and integration logs.
 
-- Query logs with filter options
-- Cursor-based pagination
-- Retrieve detailed log entry
-- Retrieve available filter metadata
+### Capabilities
 
-Supports filtering by:
+- Date-based filtering
+- Tool type and event type filtering
+- Severity filtering
+- Organization scoping
+- Cursor pagination
+- Detailed log retrieval
 
-- Date range
-- Tool type
-- Event type
-- Severity
-- Organization
-- Device ID
+### Log Retrieval Flow
 
-Designed for audit and compliance workflows.
+```mermaid
+flowchart TD
+    Client --> LogController
+    LogController --> LogFilterCriteria
+    LogController --> LogService
+    LogService --> LogStorage["Log Storage"]
+    LogController --> LogMapper
+```
+
+This controller supports:
+
+- Summary listing (`LogsResponse`)
+- Filter metadata (`LogFilterResponse`)
+- Detailed entry retrieval (`LogDetailsResponse`)
 
 ---
 
-### 4. Organization Controller
+## OrganizationController
 
 **Base Path:** `/api/v1/organizations`
 
-Provides full CRUD operations:
+Provides full CRUD for organizations.
 
-- List organizations
+### Operations
+
+- List with filtering and search
 - Get by database ID
 - Get by business `organizationId`
 - Create
 - Update
-- Delete (blocked if organization has machines)
+- Delete (with constraint validation)
 
-Internally integrates with:
+### Business Rules
 
-- `OrganizationQueryService`
-- `OrganizationCommandService`
-- `OrganizationService`
+- Cannot delete organization if associated machines exist.
+- Validation errors and domain conflicts are translated to HTTP status codes.
 
-Implements validation and proper HTTP status mapping.
-
----
-
-### 5. Tool Controller
-
-**Base Path:** `/api/v1/tools`
-
-Provides:
-
-- List integrated tools
-- Filter by enabled status, type, category
-- Sorting support
-- Retrieve tool filter options
-
-Backed by `ToolService`.
-
----
-
-### 6. Integration Controller
-
-**Base Path:** `/tools/{toolId}/**`
-
-This controller proxies arbitrary HTTP requests to configured integrated tools.
-
-Example:
-
-```text
-POST /tools/jira/api/issues
-```
-
-The request is:
-
-1. Authenticated via API key
-2. Resolved to the tool’s configured base URL
-3. Forwarded with appropriate credentials
-4. Returned with original status and body
-
----
-
-## Rest Proxy Service
-
-### `RestProxyService`
-
-This service performs secure HTTP forwarding to integrated tools.
-
-### Responsibilities
-
-- Validate tool existence
-- Ensure tool is enabled
-- Resolve tool URL via `ProxyUrlResolver`
-- Apply credentials based on `APIKeyType`
-- Execute HTTP request with Apache HttpClient
-- Return original status code and body
-
-### Credential Handling
-
-Supports:
-
-- `HEADER` – Custom header key/value
-- `BEARER_TOKEN` – Authorization header
-- `NONE` – No credential injection
-
-### Proxy Execution Flow
+### Interaction Model
 
 ```mermaid
 flowchart TD
-    Req["Incoming /tools/{toolId}/**"] --> Lookup["Find IntegratedTool"]
-    Lookup --> Enabled{"Tool Enabled?"}
-    Enabled -->|No| Reject["400 Response"]
-    Enabled -->|Yes| Resolve["Resolve Target URL"]
-    Resolve --> BuildReq["Create HttpRequest"]
-    BuildReq --> AddHeaders["Inject Credentials"]
-    AddHeaders --> Execute["Execute via HttpClient"]
-    Execute --> Return["Return ResponseEntity"]
+    Client --> OrganizationController
+    OrganizationController --> OrganizationQueryService
+    OrganizationController --> OrganizationCommandService
+    OrganizationQueryService --> MongoOrg["Organization Repository"]
+    OrganizationCommandService --> MongoOrg
 ```
 
-Timeouts:
+---
+
+## ToolController
+
+**Base Path:** `/api/v1/tools`
+
+Exposes integrated tool discovery.
+
+### Features
+
+- Filter by enabled status
+- Filter by type and category
+- Search
+- Sorting
+- Filter metadata endpoint
+
+The controller delegates entirely to `ToolService` and maps results to API DTOs.
+
+---
+
+## IntegrationController
+
+**Base Path:** `/tools/{toolId}/**`
+
+This controller enables dynamic proxying of API calls to integrated tools.
+
+It supports:
+
+- GET
+- POST
+- PUT
+- PATCH
+- DELETE
+- OPTIONS
+
+The actual proxy logic is delegated to `RestProxyService`.
+
+---
+
+# RestProxyService
+
+The **RestProxyService** is a generic HTTP reverse proxy for integrated tools.
+
+## Responsibilities
+
+1. Validate tool existence
+2. Ensure tool is enabled
+3. Resolve tool API base URL
+4. Build target URI
+5. Inject credentials (header or bearer token)
+6. Execute HTTP request via Apache HttpClient
+7. Relay status and body to caller
+
+## Proxy Flow
+
+```mermaid
+flowchart TD
+    Client --> IntegrationController
+    IntegrationController --> RestProxyService
+
+    RestProxyService --> ToolRepository["IntegratedToolRepository"]
+    RestProxyService --> ToolUrlService
+    RestProxyService --> ProxyUrlResolver
+
+    RestProxyService --> HttpClient["Apache HttpClient"]
+    HttpClient --> ExternalToolAPI["Integrated Tool API"]
+    ExternalToolAPI --> HttpClient
+    HttpClient --> RestProxyService
+```
+
+## Credential Injection
+
+Depending on `APIKeyType`, headers are injected as:
+
+- Custom header (e.g., `X-Api-Key`)
+- `Authorization: Bearer <token>`
+- None
+
+## Timeouts
 
 - Connection request timeout: 10 seconds
 - Response timeout: 60 seconds
 
 ---
 
-## Pagination and Sorting Model
+# Cross-Cutting Concerns
 
-All list endpoints follow a consistent model:
+## Authentication
 
-### Cursor-Based Pagination
+Authentication is enforced using API keys provided in the `X-API-Key` header.
 
-```text
-GET /api/v1/devices?limit=20&cursor=abc123
-```
+The Gateway Service:
 
-- `limit` (1–100)
-- `cursor` (opaque token)
+- Validates API key format
+- Verifies key against stored credentials
+- Enforces rate limits
+- Injects contextual headers:
+  - `X-User-Id`
+  - `X-API-Key-Id`
 
-### Sorting
-
-```text
-?sortField=hostname&sortDirection=DESC
-```
-
-Default sort direction varies by endpoint.
+These headers are consumed internally for logging and auditing.
 
 ---
 
-## Security Model
+## Pagination Model
 
-The External Api Service Core does **not** perform authentication itself. Instead:
+All list endpoints use cursor-based pagination via:
 
-1. API keys are validated upstream
-2. Headers injected:
-   - `X-User-Id`
-   - `X-API-Key-Id`
-3. Controllers log these values for traceability
+- `limit`
+- `cursor`
 
-Security enforcement includes:
+This ensures:
 
-- API key validation
-- Permission checks
-- Rate limiting
-- Standard HTTP status responses
+- Stable pagination across large datasets
+- Better performance than offset-based queries
+- Safer concurrent data updates
+
+---
+
+## Sorting Model
+
+Endpoints accept:
+
+- `sortField`
+- `sortDirection` (`ASC` or `DESC`)
+
+These are converted into domain-level `SortInput` or equivalent objects.
 
 ---
 
 ## Error Handling
 
-The module consistently returns:
+Controllers translate domain exceptions into HTTP status codes:
 
-- `400` – Validation or bad request
-- `401` – Missing or invalid API key
-- `403` – Insufficient permissions
-- `404` – Resource not found
-- `409` – Conflict (e.g., organization has machines)
-- `429` – Rate limit exceeded
-- `500` – Internal server error
+- `404` – Not found
+- `400` – Validation or invalid parameters
+- `409` – Business constraint violations
+- `401` – Invalid or missing API key
 
-Error bodies use a structured `ErrorResponse` model.
+Error responses use a consistent `ErrorResponse` DTO.
 
 ---
 
-## Deployment Context
+# Deployment and Application Binding
 
-The module is packaged within:
+The External Api Service Core is used by the `ExternalApiApplication` in the service applications layer.
 
-- `ExternalApiApplication`
+```mermaid
+flowchart LR
+    ExternalApiApplication --> ExternalApiServiceCore
+    ExternalApiServiceCore --> ApiServiceCore
+    ExternalApiServiceCore --> DataMongoCore
+```
 
-It integrates with:
+It is typically deployed behind:
 
-- API service core (domain services)
-- Data access Mongo
-- Kafka / stream services
-- Gateway service for routing
-- Security core for API key validation
+- Kubernetes Gateway
+- TLS termination
+- Rate limiting infrastructure
 
 ---
 
-## Summary
+# Summary
 
-The **External Api Service Core** module provides:
+The **External Api Service Core** module is the public-facing REST contract for OpenFrame.
 
-- A stable, versioned REST API
-- API key–secured external access
-- Rich filtering and pagination
-- Tool integration proxying
-- Comprehensive OpenAPI documentation
+It provides:
 
-It is the primary entry point for:
+- Stable, versioned APIs
+- API key–based authentication
+- Filtering, sorting, and cursor pagination
+- CRUD operations across core domain entities
+- Transparent proxying to integrated tool APIs
 
-- Third-party integrations
-- Automation systems
-- MSP tooling
-- External reporting and compliance workflows
+By separating this module from internal API layers, OpenFrame ensures:
 
-This module bridges the OpenFrame internal platform capabilities with secure external programmatic access.
+- Clear security boundaries
+- Controlled exposure of platform functionality
+- Integration-ready REST design
+- Extensibility for future external automation scenarios
+
+This module is the primary integration surface for MSP automation, third-party tooling, and platform extensions.

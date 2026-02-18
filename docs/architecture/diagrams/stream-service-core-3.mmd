@@ -1,3 +1,5 @@
-flowchart TD
-    Base["DebeziumMessageHandler<T>"] --> KafkaImpl["DebeziumKafkaMessageHandler"]
-    Base --> CassandraImpl["DebeziumCassandraMessageHandler"]
+flowchart LR
+    Event["Deserialized Event"] --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> Redis["MachineIdCacheService"]
+    Redis --> Enrichment
+    Enrichment --> Enriched["IntegratedToolEnrichedData"]

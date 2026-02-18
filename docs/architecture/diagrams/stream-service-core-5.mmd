@@ -1,7 +1,5 @@
 flowchart LR
-    DebeziumMsg["DeserializedDebeziumMessage"] --> AgentId["agentId"]
-    AgentId --> CacheLookup["MachineIdCacheService"]
-    CacheLookup --> Machine["CachedMachineInfo"]
-    CacheLookup --> Org["CachedOrganizationInfo"]
-    Machine --> Enriched["IntegratedToolEnrichedData"]
-    Org --> Enriched
+    Activity["Fleet Activity Stream"] --> Join["Left Join Window 5s"]
+    HostActivity["Fleet Host Activity Stream"] --> Join
+    Join --> Header["HeaderAdder Processor"]
+    Header --> OutTopic["Enriched Fleet Event Topic"]

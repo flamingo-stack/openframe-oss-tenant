@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Resolve Redirect"] --> HasRequested{"Requested Redirect Provided?"}
+    HasRequested -->|"Yes"| UseRequested["Use requestedRedirectTo"]
+    HasRequested -->|"No"| HasReferer{"Referer Header Present?"}
+    HasReferer -->|"Yes"| UseReferer["Use Referer"]
+    HasReferer -->|"No"| UseDefault["Use /"]

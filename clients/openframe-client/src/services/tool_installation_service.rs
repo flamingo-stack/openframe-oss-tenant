@@ -4,6 +4,7 @@ use tracing::{info, debug, warn};
 use anyhow::{Context, Result};
 use crate::models::ToolInstallationMessage;
 use crate::models::tool_installation_message::AssetSource;
+use crate::models::download_configuration::{DownloadConfiguration, InstallationType};
 use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
@@ -143,21 +144,34 @@ impl ToolInstallationService {
             .with_context(|| format!("Failed to create tool directory: {}", tool_folder_path.display()))?;
 
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
-        let executable_path = match &tool_installation_message.download_configurations {
+
+        // Download and install the tool
+        let (executable_path, installation_type, bundle_id) = match &tool_installation_message.download_configurations {
             Some(configs) => {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
-                self.github_download_service
-                    .download_and_save(config, &tool_folder_path, &default_agent_path)
-                    .await
-                    .with_context(|| format!("Failed to download tool agent: {}", tool_agent_id))?
+
+                let exec_path = self.install_from_download_config(
+                    config,
+                    tool_agent_id,
+                    &tool_folder_path,
+                    &default_agent_path,
+                ).await?;
+
+                (exec_path, config.installation_type, config.bundle_id.clone())
             }
             None => {
                 self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;
-                None
+                (None, InstallationType::Standard, None)
             }
         };
-        let file_path = self.directory_manager.get_tool_executable_path(tool_agent_id, executable_path.as_deref());
+
+        // Resolve the final executable path
+        let file_path = self.resolve_executable_path(
+            tool_agent_id,
+            executable_path.as_deref(),
+            installation_type,
+        );
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
@@ -290,6 +304,8 @@ impl ToolInstallationService {
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             status: ToolStatus::Installed,
             executable_path,
+            installation_type,
+            bundle_id,
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await
@@ -327,6 +343,78 @@ impl ToolInstallationService {
         Ok(())
     }
 
+    /// Installs a tool from a download configuration.
+    /// Returns the executable path (relative for Standard, absolute for GuiApp).
+    async fn install_from_download_config(
+        &self,
+        config: &DownloadConfiguration,
+        tool_agent_id: &str,
+        tool_folder_path: &Path,
+        default_agent_path: &Path,
+    ) -> Result<Option<String>> {
+        match config.installation_type {
+            InstallationType::GuiApp => {
+                self.install_gui_app(config, tool_agent_id).await
+            }
+            InstallationType::Standard => {
+                self.github_download_service
+                    .download_and_save(config, tool_folder_path, default_agent_path)
+                    .await
+                    .with_context(|| format!("Failed to download tool agent: {}", tool_agent_id))
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn install_gui_app(
+        &self,
+        config: &DownloadConfiguration,
+        tool_agent_id: &str,
+    ) -> Result<Option<String>> {
+        let applications_dir = PathBuf::from("/Applications");
+
+        self.github_download_service
+            .download_and_save(config, &applications_dir, &applications_dir.join("dummy"))
+            .await
+            .with_context(|| format!("Failed to install GUI app to /Applications: {}", tool_agent_id))?;
+
+        // Return absolute path to the executable inside the .app bundle
+        let abs_path = applications_dir.join(&config.target_file_name);
+        info!("Installed GUI app to /Applications, executable: {}", abs_path.display());
+        Ok(Some(abs_path.to_string_lossy().to_string()))
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    async fn install_gui_app(
+        &self,
+        _config: &DownloadConfiguration,
+        tool_agent_id: &str,
+    ) -> Result<Option<String>> {
+        anyhow::bail!(
+            "GUI app installation is not yet supported on this platform for tool: {}",
+            tool_agent_id
+        )
+    }
+
+    /// Resolves the final executable path based on installation type.
+    fn resolve_executable_path(
+        &self,
+        tool_agent_id: &str,
+        executable_path: Option<&str>,
+        installation_type: InstallationType,
+    ) -> PathBuf {
+        match installation_type {
+            InstallationType::GuiApp => {
+                // GuiApp: executable_path is already absolute
+                PathBuf::from(executable_path.unwrap_or_default())
+            }
+            InstallationType::Standard => {
+                // Standard: resolve relative to tool folder
+                self.directory_manager.get_tool_executable_path(tool_agent_id, executable_path)
+            }
+        }
+    }
+
     async fn download_from_artifactory(&self, tool_agent_id: &str, path: &Path) -> Result<()> {
         if path.exists() {
             info!("Agent already exists at {}, skipping", path.display());
@@ -352,4 +440,5 @@ impl ToolInstallationService {
         }
         Ok(())
     }
+
 }

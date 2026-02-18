@@ -1,0 +1,5 @@
+flowchart TD
+    Tenant["Tenant"] --> AuthUser
+    Tenant --> SSOTenant
+    AuthUser --> OAuthToken
+    MongoRegisteredClient --> OAuthToken

@@ -70,6 +70,7 @@ export function RemoteSettingsModal({
       if (desktopRef.current) {
         desktopRef.current.setSwapMouseButtons?.(settings.swapMouseButtons)
         desktopRef.current.setUseRemoteKeyboardMap?.(settings.useRemoteKeyboardMap)
+        desktopRef.current.setInvertScrollDirection?.(settings.invertScrollDirection)
       }
 
       onSettingsChange?.(settings)
@@ -172,6 +173,22 @@ export function RemoteSettingsModal({
         </div>
 
         {/* Checkbox Options */}
+        <div className="flex items-center space-x-3 p-4 bg-ods-card border border-ods-border rounded-lg">
+          <Checkbox
+            id="invert-scroll"
+            checked={settings.invertScrollDirection}
+            onCheckedChange={(checked) =>
+              setSettings({ ...settings, invertScrollDirection: !!checked })
+            }
+          />
+          <div className="flex-1">
+            <Label htmlFor="invert-scroll" className="cursor-pointer">
+              Invert Scroll Direction
+            </Label>
+            <p className="text-sm text-ods-text-secondary">Reverse mouse wheel scroll direction</p>
+          </div>
+        </div>
+
         <div className="space-y-3">
           <div className="flex items-center space-x-3 p-4 bg-ods-card border border-ods-border rounded-lg">
             <Checkbox

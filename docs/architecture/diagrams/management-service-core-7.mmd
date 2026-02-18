@@ -1,0 +1,5 @@
+flowchart TD
+    Client["API Client"] --> Controller["IntegratedToolController"]
+    Controller --> Service["IntegratedToolService"]
+    Controller --> Debezium["DebeziumService"]
+    Controller --> Hooks["IntegratedToolPostSaveHook"]

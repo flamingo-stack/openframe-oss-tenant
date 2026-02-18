@@ -32,6 +32,6 @@ pub use openframe_client_update_message::OpenFrameClientUpdateMessage;
 pub use tool_agent_update_message::ToolAgentUpdateMessage;
 pub use openframe_client_info::OpenFrameClientInfo;
 pub use machine_heartbeat_message::MachineHeartbeatMessage;
-pub use download_configuration::DownloadConfiguration;
+pub use download_configuration::{DownloadConfiguration, InstallationType};
 pub use installed_agent_message::InstalledAgentMessage;
 pub use update_state::{UpdateState, UpdatePhase};

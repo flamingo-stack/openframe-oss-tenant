@@ -1,6 +1,9 @@
-flowchart LR
-    Activity["Activity Topic"] --> Join["Left Join (5s Window)"]
-    HostActivity["HostActivity Topic"] --> Join
-    Join --> Enriched["ActivityMessage (with hostId)"]
-    Enriched --> Header["Add MESSAGE_TYPE_HEADER"]
-    Header --> Output["Enriched Fleet Events Topic"]
+flowchart TD
+    Step1["Tool Emits CDC Event"] --> Step2["Kafka Topic"]
+    Step2 --> Step3["JsonKafkaListener"]
+    Step3 --> Step4["Tool Deserializer"]
+    Step4 --> Step5["EventTypeMapper"]
+    Step5 --> Step6["Data Enrichment"]
+    Step6 --> Step7["Message Handler"]
+    Step7 --> Step8A["Kafka Outbound"]
+    Step7 --> Step8B["Cassandra Persistence"]

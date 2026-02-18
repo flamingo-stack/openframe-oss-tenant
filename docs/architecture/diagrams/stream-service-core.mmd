@@ -1,14 +1,39 @@
 flowchart LR
-    InboundTopics["Inbound Tool Topics<br/>MeshCentral / Tactical / Fleet"] --> JsonListener["JsonKafkaListener"]
-    JsonListener --> Processor["GenericJsonMessageProcessor"]
-    Processor --> Enrichment["IntegratedToolDataEnrichmentService"]
-    Enrichment --> HandlerRouter["DebeziumMessageHandler (Polymorphic)"]
+    subgraph tools["Integrated Tools"]
+        Fleet["Fleet MDM"]
+        Tactical["Tactical RMM"]
+        Mesh["MeshCentral"]
+    end
 
-    HandlerRouter -->|"Destination.KAFKA"| KafkaHandler["DebeziumKafkaMessageHandler"]
-    HandlerRouter -->|"Destination.CASSANDRA"| CassandraHandler["DebeziumCassandraMessageHandler"]
+    subgraph ingestion["Kafka Inbound Topics"]
+        InTopics["Tool Event Topics"]
+    end
 
-    KafkaHandler --> OutboundTopic["Outbound IntegratedToolEvents Topic"]
-    CassandraHandler --> CassandraDB[("Cassandra UnifiedLogEvent Table")]
+    subgraph streamcore["Stream Service Core"]
+        Listener["JsonKafkaListener"]
+        Deserializer["Tool Event Deserializers"]
+        Mapper["EventTypeMapper"]
+        Enrichment["IntegratedToolDataEnrichmentService"]
+        Handlers["Debezium Message Handlers"]
+        Streams["ActivityEnrichmentService"]
+    end
 
-    FleetActivityTopics["Fleet Activity & Host Activity Topics"] --> Streams["ActivityEnrichmentService<br/>Kafka Streams"]
-    Streams --> EnrichedFleetTopic["Enriched Fleet Events Topic"]
+    subgraph downstream["Downstream Systems"]
+        KafkaOut["Outbound Kafka Topics"]
+        Cassandra["Cassandra UnifiedLogEvent"]
+    end
+
+    Fleet --> InTopics
+    Tactical --> InTopics
+    Mesh --> InTopics
+
+    InTopics --> Listener
+    Listener --> Deserializer
+    Deserializer --> Mapper
+    Mapper --> Enrichment
+    Enrichment --> Handlers
+    Handlers --> KafkaOut
+    Handlers --> Cassandra
+
+    InTopics --> Streams
+    Streams --> KafkaOut

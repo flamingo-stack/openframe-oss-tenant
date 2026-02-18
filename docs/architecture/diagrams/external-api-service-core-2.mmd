@@ -1,6 +1,19 @@
 flowchart TD
-    Request["GET /api/v1/devices"] --> BuildFilter["Build DeviceFilterCriteria"]
-    BuildFilter --> ServiceCall["DeviceService.queryDevices()"]
-    ServiceCall --> Result["Query Result"]
-    Result --> Mapper["DeviceMapper"]
-    Mapper --> Response["DevicesResponse"]
+    OpenApiConfig["OpenApiConfig"]
+
+    subgraph controllers["REST Controllers"]
+        DeviceController
+        EventController
+        LogController
+        OrganizationController
+        ToolController
+        IntegrationController
+    end
+
+    IntegrationController --> RestProxyService["RestProxyService"]
+
+    DeviceController --> ApiServices["Domain Services"]
+    EventController --> ApiServices
+    LogController --> ApiServices
+    OrganizationController --> ApiServices
+    ToolController --> ApiServices

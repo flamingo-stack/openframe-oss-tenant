@@ -1,7 +1,5 @@
 flowchart TD
-    LoadFile["Load Agent JSON"] --> ExistsCheck["Find By ID"]
-    ExistsCheck -->|"New"| SaveNew["Save Agent"]
-    ExistsCheck -->|"Existing"| Update["Update Agent"]
-    Update --> Compare["Compare Versions"]
-    Compare -->|"Changed"| Publish["Publish Version Update"]
-    Compare -->|"Same"| End["End"]
+    Ready["ApplicationReadyEvent"] --> Deploy["Deploy Pinot Config"]
+    Deploy --> Schema["POST /schemas"]
+    Deploy --> Table["PUT or POST /tables"]
+    Deploy --> Retry["Retry Mechanism"]

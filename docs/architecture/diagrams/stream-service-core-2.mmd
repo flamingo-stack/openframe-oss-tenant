@@ -1,3 +1,4 @@
 flowchart TD
-    Topic["Inbound Topic"] --> Listener["JsonKafkaListener"]
+    Kafka["Inbound Kafka Topics"] --> Listener["JsonKafkaListener"]
     Listener --> Processor["GenericJsonMessageProcessor"]
+    Processor --> Deserializer["Tool Deserializer"]

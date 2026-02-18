@@ -5,6 +5,7 @@ use tauri::{
     Manager, RunEvent, WindowEvent,
 };
 
+mod config_reader;
 mod token_watcher;
 mod token_decryption_service;
 use token_watcher::{TokenWatcher, TokenState};
@@ -55,45 +56,37 @@ fn get_debug_mode(debug_mode_state: State<DebugModeState>) -> bool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    println!("[INFO] OpenFrame Chat starting... ");
-    println!("[INFO] It's new version v3... ");
+    println!("[INFO] OpenFrame Chat starting...");
 
-    // Parse command line arguments
-    let args: Vec<String> = std::env::args().collect();
-    
-    // Look for --openframe-token-path, --openframe-secret, --serverUrl, and --devMode parameters
-    let mut token_path: Option<String> = None;
-    let mut secret: Option<String> = None;
-    let mut server_url: Option<String> = None;
-    let mut debug_mode = false;
+    // Read configuration from CFPreferences (written by openframe-client daemon)
+    let config = config_reader::AppConfig::from_preferences();
 
-    for i in 0..args.len() {
-        if args[i] == "--openframe-token-path" && i + 1 < args.len() {
-            token_path = Some(args[i + 1].clone());
-        } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
-            secret = Some(args[i + 1].clone());
-        } else if args[i] == "--serverUrl" && i + 1 < args.len() {
-            server_url = Some(args[i + 1].clone());
-        } else if args[i] == "--devMode" {
-            debug_mode = true;
-        }
+    if config.is_valid() {
+        println!("[INFO] Configuration loaded from preferences");
+    } else {
+        eprintln!("[WARN] Configuration incomplete - please ensure OpenFrame Agent is running");
     }
+
+    // --background is the only CLI argument (indicates launch mode from daemon)
+    let background_mode = std::env::args().any(|arg| arg == "--background");
+
+    // Extract config values
+    let token_path = config.token_path;
+    let secret = config.secret;
+    let server_url = config.server_url;
+    let debug_mode = config.debug_mode;
     
     let mut builder = tauri::Builder::default();
     
-    // Start token watcher and get state if both parameters are provided
+    // Prepare token watcher parameters if both are available
     let token_params = match (token_path, secret) {
-        (Some(path), Some(secret_key)) => {
-            Some((path, secret_key))
-        }
-        _ => {
-            eprintln!("[ERROR] Missing required parameters: --openframe-token-path and --openframe-secret");
-            None
-        }
+        (Some(path), Some(secret_key)) => Some((path, secret_key)),
+        _ => None,
     };
     
     let server_url_clone = server_url.clone();
     let debug_mode_clone = debug_mode;
+    let background_mode_clone = background_mode;
 
     builder = builder.setup(move |app| {
             if cfg!(debug_assertions) {
@@ -124,8 +117,8 @@ pub fn run() {
             println!("[INFO] Debug mode: {}", debug_mode_clone);
 
             // Start token watcher with app handle if parameters were provided
-            if let Some((path, secret_key)) = token_params {
-                let state = TokenWatcher::start(path, secret_key, app.handle().clone());
+            if let Some((token_path, secret_key)) = token_params {
+                let state = TokenWatcher::start(token_path, secret_key, app.handle().clone());
                 app.manage(state);
                 println!("[INFO] Token watcher initialized");
             } else {
@@ -189,7 +182,18 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-            
+
+            // Show window on startup unless --background flag is passed
+            if !background_mode_clone {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    println!("[INFO] Main window shown on startup");
+                }
+            } else {
+                println!("[INFO] Starting in background mode (tray only)");
+            }
+
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -212,6 +216,16 @@ pub fn run() {
             match event {
                 RunEvent::Ready => {
                     println!("[INFO] Application ready");
+                }
+                #[cfg(target_os = "macos")]
+                RunEvent::Reopen { .. } => {
+                    // User clicked the app icon in Dock or launched from Spotlight
+                    // while the app is already running (hidden in tray)
+                    if let Some(window) = app_handle.get_webview_window("main") {
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    }
+                    println!("[INFO] App reopen requested - showing main window");
                 }
                 RunEvent::ExitRequested { api, .. } => {
                     // Prevent the app from exiting via system shortcuts

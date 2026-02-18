@@ -1,5 +1,5 @@
-flowchart LR
-    Client --> Gateway
-    Gateway --> JwtValidation["JWT Validation"]
-    Gateway --> ApiKeyFilter["API Key Filter"]
-    Gateway --> Route["Route to Services"]
+flowchart TD
+    ExternalClient --> Gateway
+    Gateway --> ExternalApi
+    ExternalApi --> DomainServices
+    ExternalApi --> RestProxyService

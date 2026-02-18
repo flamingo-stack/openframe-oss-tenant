@@ -44,7 +44,7 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>5.29.3</openframe.libs.version>
+        <openframe.libs.version>5.30.0</openframe.libs.version>
     </properties>
 
     <modules>

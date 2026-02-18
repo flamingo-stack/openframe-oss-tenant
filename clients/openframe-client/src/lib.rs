@@ -34,6 +34,7 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolUrlParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
 use crate::services::InstalledToolsService;
 use crate::services::github_download_service::GithubDownloadService;
+use crate::platform::DmgExtractor;
 use crate::services::registration_processor::RegistrationProcessor;
 use crate::clients::{RegistrationClient, AuthClient, ToolApiClient};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
@@ -286,7 +287,7 @@ impl Client {
             .context("Failed to initialize OpenFrame client info service")?;
 
         // Initialize GitHub download service (used by update and installation services)
-        let github_download_service = GithubDownloadService::new(http_client.clone());
+        let github_download_service = GithubDownloadService::new(http_client.clone(), DmgExtractor::new());
 
         // Initialize update state and cleanup services (needed by update service)
         let update_state_service = UpdateStateService::new(directory_manager.clone())

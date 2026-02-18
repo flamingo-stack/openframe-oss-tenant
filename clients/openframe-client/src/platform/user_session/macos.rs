@@ -57,11 +57,55 @@ pub async fn launch_as_user(
     launch_via_sudo(executable, args, &user.username).await
 }
 
+pub async fn is_process_running(executable_path: &str) -> bool {
+    match Command::new("pgrep")
+        .args(["-f", executable_path])
+        .output()
+        .await
+    {
+        Ok(output) => {
+            let running = output.status.success();
+            if running {
+                let pids = String::from_utf8_lossy(&output.stdout);
+                info!("Process already running for {}: PIDs={}", executable_path, pids.trim());
+            }
+            running
+        }
+        Err(_) => false,
+    }
+}
+
 async fn launch_via_launchctl(
     executable: &str,
     args: &[String],
     uid: u32,
 ) -> Result<tokio::process::Child> {
+    if let Some(app_path) = extract_app_bundle_path(executable) {
+        info!("Launching .app bundle via launchctl asuser: {}", app_path);
+
+        let mut cmd = Command::new("launchctl");
+        cmd.arg("asuser")
+            .arg(uid.to_string())
+            .arg("open")
+            .arg("-a")
+            .arg(&app_path);
+
+        if !args.is_empty() {
+            cmd.arg("--args");
+            cmd.args(args);
+        }
+
+        let child = cmd
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .with_context(|| format!("launchctl asuser {} open -a {} failed", uid, app_path))?;
+
+        info!("App launched, PID: {:?}", child.id());
+        return Ok(child);
+    }
+
+    // Fallback to launchctl for non-.app executables
     info!("Launching via launchctl asuser {}: {}", uid, executable);
 
     let child = Command::new("launchctl")
@@ -76,6 +120,18 @@ async fn launch_via_launchctl(
 
     info!("Spawned via launchctl, PID: {:?}", child.id());
     Ok(child)
+}
+
+fn extract_app_bundle_path(executable: &str) -> Option<String> {
+    let path = std::path::Path::new(executable);
+    for ancestor in path.ancestors() {
+        if let Some(name) = ancestor.file_name() {
+            if name.to_string_lossy().ends_with(".app") {
+                return Some(ancestor.to_string_lossy().to_string());
+            }
+        }
+    }
+    None
 }
 
 async fn launch_via_sudo(

@@ -1,0 +1,5 @@
+flowchart LR
+    ExternalClient --> EventController
+    EventController --> EventService
+    EventService --> MongoEvents["Event Collection"]
+    EventService --> StreamCore["Stream Service Core"]

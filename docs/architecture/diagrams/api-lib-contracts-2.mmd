@@ -1,0 +1,4 @@
+flowchart TD
+    Generic["GenericQueryResult<T>"] --> Counted["CountedGenericQueryResult<T>"]
+    Counted --> Items["items: List<T>"]
+    Counted --> Count["filteredCount: int"]

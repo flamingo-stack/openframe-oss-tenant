@@ -1,248 +1,300 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your environment meets the following requirements. This guide covers system requirements, software dependencies, and account prerequisites for a successful deployment.
+Before setting up OpenFrame OSS Tenant, ensure your development environment meets the following requirements. This guide covers all necessary software, system requirements, and access needs.
 
 ## System Requirements
 
-### Backend Services (Java/Spring Boot)
+### Minimum Hardware Requirements
 
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| **CPU** | 2 cores | 4+ cores |
-| **RAM** | 4 GB | 8+ GB |
-| **Storage** | 20 GB | 50+ GB SSD |
-| **Java Version** | Java 21 | Java 21+ |
-| **OS** | Linux, macOS, Windows | Linux (Ubuntu 20.04+) |
+| Resource | Minimum | Recommended |
+|----------|---------|-------------|
+| **RAM** | 8 GB | 16 GB |
+| **CPU** | 4 cores | 8 cores |
+| **Storage** | 20 GB free | 50 GB free |
+| **Network** | Stable internet connection | High-speed broadband |
 
-### Frontend Application (Node.js/TypeScript)
+### Supported Operating Systems
 
-| Component | Requirement |
-|-----------|-------------|
-| **Node.js** | 18+ |
-| **npm/yarn** | Latest stable |
-| **Browser Support** | Chrome 90+, Firefox 88+, Safari 14+ |
+- **Linux** (Ubuntu 20.04+, CentOS 8+, or equivalent)
+- **macOS** (10.15 Catalina or later)
+- **Windows** (Windows 10 or Windows Server 2019+)
 
-### Client Agent (Rust)
+## Required Software
 
-| Platform | Support Level |
-|----------|---------------|
-| **Windows** | ✅ Full support (Windows 10+) |
-| **macOS** | ✅ Full support (macOS 10.15+) |
-| **Linux** | ✅ Full support (Ubuntu 18.04+, CentOS 7+) |
+### 1. Java Development Kit (JDK) 21
 
-## Software Dependencies
+OpenFrame OSS Tenant requires **Java 21** as specified in the Spring Boot 3.3.0 configuration.
 
-### Required Infrastructure Components
+**Installation:**
 
-#### Database Systems
-- **MongoDB** 5.0+ (primary data store)
-- **Apache Cassandra** 4.0+ (audit/event storage)
-- **Redis** 6.0+ (caching and enrichment)
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install openjdk-21-jdk
 
-#### Messaging & Streaming
-- **Apache Kafka** 3.6.0+ (event streaming)
-- **NATS JetStream** 2.9+ (real-time messaging)
+# macOS (using Homebrew)
+brew install openjdk@21
 
-#### Build Tools
-- **Maven** 3.8+ (Java backend build)
-- **Node.js** 18+ with npm/yarn (frontend build)
-- **Rust** 1.70+ (client agent build)
+# Windows (using Chocolatey)
+choco install openjdk21
+```
 
-### Development Tools
+**Verification:**
+```bash
+java -version
+javac -version
+```
 
-| Tool | Purpose | Version |
-|------|---------|---------|
-| **Docker** | Containerization | 20.10+ |
-| **Docker Compose** | Local orchestration | 2.0+ |
-| **Git** | Version control | 2.30+ |
-| **curl** | API testing | Latest |
+Expected output should show Java 21.x.x.
+
+### 2. Apache Maven 3.6+
+
+Maven is required for building the Spring Boot services.
+
+**Installation:**
+
+```bash
+# Ubuntu/Debian
+sudo apt install maven
+
+# macOS (using Homebrew)
+brew install maven
+
+# Windows (using Chocolatey)
+choco install maven
+```
+
+**Verification:**
+```bash
+mvn -version
+```
+
+### 3. Node.js 18+ and npm/yarn
+
+Required for the frontend application and development tooling.
+
+**Installation:**
+
+```bash
+# Using Node Version Manager (recommended)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install 18
+nvm use 18
+
+# Or direct installation
+# Ubuntu/Debian
+sudo apt install nodejs npm
+
+# macOS (using Homebrew)
+brew install node
+
+# Windows (using Chocolatey)
+choco install nodejs
+```
+
+**Verification:**
+```bash
+node --version
+npm --version
+```
+
+### 4. Rust (for Client Applications)
+
+The OpenFrame client applications are written in Rust and use Tauri for desktop apps.
+
+**Installation:**
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source `$HOME`/.cargo/env
+
+# Add required targets
+rustup target add x86_64-pc-windows-msvc
+rustup target add aarch64-apple-darwin
+```
+
+**Verification:**
+```bash
+rustc --version
+cargo --version
+```
+
+### 5. Git
+
+Version control system for source code management.
+
+**Installation:**
+
+```bash
+# Ubuntu/Debian
+sudo apt install git
+
+# macOS (using Homebrew)
+brew install git
+
+# Windows (using Chocolatey)
+choco install git
+```
+
+**Verification:**
+```bash
+git --version
+```
+
+## Infrastructure Dependencies
+
+The following services are required for a complete OpenFrame deployment:
+
+### Database Systems
+
+| Service | Version | Purpose |
+|---------|---------|---------|
+| **MongoDB** | 5.0+ | Primary document database |
+| **Redis** | 6.0+ | Caching and distributed locking |
+| **Apache Cassandra** | 4.0+ | Time-series log storage |
+
+### Message Streaming & Processing
+
+| Service | Version | Purpose |
+|---------|---------|---------|
+| **Apache Kafka** | 3.6+ | Event streaming |
+| **NATS** | 2.9+ | Lightweight messaging |
+| **Apache Pinot** | 1.2+ | Real-time analytics |
+
+### Development Tools (Optional but Recommended)
+
+| Tool | Purpose |
+|------|---------|
+| **Docker** & **Docker Compose** | Containerized development |
+| **IntelliJ IDEA** or **VS Code** | IDE with Java/Rust support |
+| **Postman** or **curl** | API testing |
+| **MongoDB Compass** | Database visualization |
+| **Redis CLI** | Cache debugging |
 
 ## Environment Variables
 
-### Backend Configuration
-
-Set these environment variables for backend services:
+Set up the following environment variables for development:
 
 ```bash
-# Database Connections
-MONGODB_URI=mongodb://localhost:27017/openframe
-CASSANDRA_CONTACT_POINTS=localhost:9042
-REDIS_URL=redis://localhost:6379
+# Java Configuration
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH=$JAVA_HOME/bin:$PATH
 
-# Messaging
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-NATS_URL=nats://localhost:4222
+# Maven Configuration
+export M2_HOME=/usr/share/maven
+export PATH=$M2_HOME/bin:$PATH
 
-# Security
-JWT_ISSUER_URI=http://localhost:8080/auth/realms/openframe
-SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_GOOGLE_ISSUER_URI=https://accounts.google.com
+# Node.js Configuration  
+export NODE_ENV=development
 
-# Application
-SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=local
+# Rust Configuration
+export PATH=$HOME/.cargo/bin:$PATH
+
+# OpenFrame Configuration
+export OPENFRAME_ENV=local
+export OPENFRAME_LOG_LEVEL=DEBUG
 ```
 
-### Frontend Configuration
+Add these to your shell profile (`.bashrc`, `.zshrc`, etc.).
 
-Create a `.env.local` file:
+## Access Requirements
 
-```bash
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_WEBSOCKET_URL=ws://localhost:8080
-NEXT_PUBLIC_AUTH_URL=http://localhost:8081
-```
+### Development Accounts (Optional)
 
-## Account Requirements
+For full platform integration, you may need:
 
-### Third-Party Service Accounts
+- **Google Cloud Account** - For Google SSO integration
+- **Microsoft Azure Account** - For Microsoft SSO integration
+- **GitHub Account** - For source code access to additional repositories
 
-#### OAuth Providers (Optional, for SSO)
-- **Google OAuth2**: Client ID and Client Secret
-- **Microsoft Azure AD**: Application ID and Client Secret
+### Network Requirements
 
-#### AI Services (for Mingo AI)
-- **Anthropic API**: API key for Claude integration
-- **OpenAI API**: API key for GPT integration (alternative)
+Ensure your development environment can access:
 
-### Development Access
-
-- **GitHub Account**: For accessing repositories and CI/CD
-- **Docker Hub Account**: For pulling container images (optional)
-
-## Network Requirements
-
-### Ports Configuration
-
-Ensure these ports are available:
-
-| Service | Port | Protocol | Purpose |
-|---------|------|----------|---------|
-| **Gateway** | 8080 | HTTP/HTTPS | Main API gateway |
-| **Auth Server** | 8081 | HTTP | OAuth2/OIDC provider |
-| **Frontend** | 3000 | HTTP | React application (dev) |
-| **MongoDB** | 27017 | TCP | Database connection |
-| **Cassandra** | 9042 | TCP | Audit storage |
-| **Redis** | 6379 | TCP | Caching |
-| **Kafka** | 9092 | TCP | Event streaming |
-| **NATS** | 4222 | TCP | Real-time messaging |
-
-### Firewall Rules
-
-For production deployments:
-
-```bash
-# Allow inbound HTTP/HTTPS
-ufw allow 80/tcp
-ufw allow 443/tcp
-
-# Allow agent connections
-ufw allow 8080/tcp
-
-# Internal service communication (restrict to internal network)
-ufw allow from 10.0.0.0/8 to any port 27017
-ufw allow from 10.0.0.0/8 to any port 9042
-ufw allow from 10.0.0.0/8 to any port 6379
-```
+- **Port 8080-8090** - Spring Boot services
+- **Port 3000** - Frontend development server
+- **Port 27017** - MongoDB default port
+- **Port 6379** - Redis default port
+- **Port 9092** - Kafka default port
+- **Port 4222** - NATS default port
 
 ## Verification Commands
 
-Run these commands to verify your environment:
+Run these commands to verify your setup:
 
-### Java Environment
 ```bash
-java --version
-# Expected: openjdk 21.x.x
+# Java and Maven
+java -version && mvn -version
 
-mvn --version
-# Expected: Apache Maven 3.8.x
+# Node.js ecosystem
+node --version && npm --version
+
+# Rust ecosystem  
+rustc --version && cargo --version
+
+# Git
+git --version
+
+# Check required ports are available
+netstat -tuln | grep -E ':(8080|3000|27017|6379|9092|4222)'
 ```
 
-### Node.js Environment
-```bash
-node --version
-# Expected: v18.x.x or higher
+## Development Environment Setup
 
-npm --version
-# Expected: 9.x.x or higher
+### IDE Configuration
+
+**For IntelliJ IDEA:**
+1. Install plugins: Spring Boot, GraphQL, Rust
+2. Configure JDK 21 in Project Settings
+3. Enable annotation processing
+4. Set up code style (Google Java Style recommended)
+
+**For VS Code:**
+1. Install extensions:
+   - Java Extension Pack
+   - Spring Boot Extension Pack
+   - Rust Analyzer
+   - GraphQL
+   - Docker
+
+### Shell Environment
+
+Consider using these development tools:
+
+```bash
+# Oh My Zsh for enhanced shell experience
+sh -c "$(curl -fsSL https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+# Useful aliases
+echo 'alias ll="ls -la"' >> ~/.zshrc
+echo 'alias openframe-build="mvn clean install -DskipTests"' >> ~/.zshrc
+echo 'alias openframe-test="mvn test"' >> ~/.zshrc
 ```
 
-### Rust Environment (for client development)
-```bash
-rustc --version
-# Expected: rustc 1.70.x or higher
+## Troubleshooting Common Issues
 
-cargo --version
-# Expected: cargo 1.70.x or higher
-```
+### Java Issues
+- **Problem:** `JAVA_HOME` not set
+- **Solution:** Export `JAVA_HOME` pointing to your Java 21 installation
 
-### Docker Environment
-```bash
-docker --version
-# Expected: Docker version 20.10.x
+### Maven Issues  
+- **Problem:** Maven cannot find dependencies
+- **Solution:** Run `mvn clean install` from the root directory
 
-docker-compose --version
-# Expected: docker-compose version 2.x.x
-```
+### Node.js Issues
+- **Problem:** Permission errors with npm
+- **Solution:** Use Node Version Manager (nvm) or configure npm prefix
 
-## Security Considerations
+### Port Conflicts
+- **Problem:** Ports already in use
+- **Solution:** Stop conflicting services or change port configurations
 
-### SSL/TLS Certificates
-- Development: Self-signed certificates are acceptable
-- Production: Use valid SSL certificates from a trusted CA
-- Let's Encrypt recommended for cost-effective SSL
+## Next Steps
 
-### API Keys and Secrets
-- Store sensitive values in environment variables
-- Use secrets management in production (HashiCorp Vault, AWS Secrets Manager)
-- Rotate keys regularly
+Once your prerequisites are satisfied:
 
-### Network Security
-- Enable firewall on all systems
-- Use VPN for remote access to infrastructure
-- Implement network segmentation for production
+1. **[Quick Start Guide](quick-start.md)** - Get the platform running locally
+2. **[Development Setup](../development/setup/environment.md)** - Configure your IDE and tools
 
-## Ready to Proceed?
-
-Once you've verified all prerequisites are met:
-
-1. ✅ System requirements satisfied
-2. ✅ Required software installed
-3. ✅ Environment variables configured
-4. ✅ Network ports available
-5. ✅ Accounts and API keys obtained
-
-You're ready to proceed with the [Quick Start Guide](./quick-start.md)!
-
-## Troubleshooting Prerequisites
-
-### Common Issues
-
-**Java Version Mismatch**
-```bash
-# Check multiple Java installations
-update-alternatives --config java
-
-# Set JAVA_HOME explicitly
-export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
-```
-
-**Node.js Version Issues**
-```bash
-# Install Node Version Manager (nvm)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-
-# Install and use Node.js 18
-nvm install 18
-nvm use 18
-```
-
-**Port Conflicts**
-```bash
-# Check what's using a port
-lsof -i :8080
-
-# Kill process using port
-sudo kill -9 <PID>
-```
-
-For additional help, join our [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) where our community can assist with environment setup questions.
+> **Having Issues?** Join the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for help from the community.

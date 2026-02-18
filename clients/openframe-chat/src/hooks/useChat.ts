@@ -109,14 +109,12 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       setNatsStreaming(true)
       messagesRef.current.updateSegments(segments)
     },
-    onError: (errorText: string) => {
+    onError: (_errorText: string) => {
       setNatsStreaming(false)
       setIsTyping(false)
       const resolve = natsDoneResolverRef.current
       natsDoneResolverRef.current = null
       if (resolve) resolve()
-      messagesRef.current.addErrorMessage(errorText)
-      messagesRef.current.resetCurrentMessageSegments()
     },
     onApprove: (requestId?: string) => approvalsRef.current.handleApproveRequest(requestId),
     onReject: (requestId?: string) => approvalsRef.current.handleRejectRequest(requestId),

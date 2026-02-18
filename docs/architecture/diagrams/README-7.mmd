@@ -1,5 +1,8 @@
 flowchart TD
-    Agent --> ClientService
-    Agent --> NATS
-    NATS --> Listeners
-    Listeners --> Mongo
+    UI --> ApiClient
+    UI --> AuthApiClient
+    UI --> FleetApiClient
+    UI --> TacticalApiClient
+
+    ApiClient --> Gateway
+    AuthApiClient --> AuthorizationServer
