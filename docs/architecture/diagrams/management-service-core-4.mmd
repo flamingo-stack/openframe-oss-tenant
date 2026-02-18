@@ -1,0 +1,4 @@
+flowchart LR
+    IntegratedToolController --> HookInterface["IntegratedToolPostSaveHook"]
+    HookInterface --> HookImpl1["Custom Hook Implementation"]
+    HookInterface --> HookImpl2["Another Hook Implementation"]

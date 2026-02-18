@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Client"] --> Gateway["Gateway Service Core"]
+
+    Gateway -->|"External API"| ApiKeyFilter["ApiKeyAuthenticationFilter"]
+    ApiKeyFilter --> ExternalApi["External API Service Core"]
+
+    Gateway -->|"JWT Protected Path"| AddHeader["AddAuthorizationHeaderFilter"]
+    AddHeader --> JwtAuth["JWT Authentication"]
+    JwtAuth --> RoleCheck["Role Authorization"]
+    RoleCheck --> InternalService["Internal Service"]
