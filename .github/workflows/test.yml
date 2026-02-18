@@ -244,7 +244,7 @@ jobs:
         with:
           path: ${{ matrix.path }}
           toolchain: stable
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.archs || matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
@@ -304,10 +304,8 @@ jobs:
           apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ matrix.artifact_name && '' || env.BINARY_NAME }}
-          target_path: ${{ matrix.artifact_name && matrix.target_path || '' }}
-          dmg_name: ${{ matrix.artifact_name || '' }}
-          dmg_volume_name: ${{ matrix.artifact_name && 'Fae Chat' || '' }}
+          name: ${{ matrix.name }}
+          target_path: ${{ matrix.target_path }}
 
       - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'

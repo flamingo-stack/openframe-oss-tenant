@@ -1,5 +1,5 @@
 name: Sign MacOS package
-description: Sign and notarize a macOS binary or Tauri .app bundle
+description: Sign and notarize a macOS binary or Tauri .app bundle. Auto-detects mode from artifacts.
 inputs:
   apple_certificate_p12:
     description: 'Base64 encoded Apple Developer certificate (.p12)'
@@ -16,18 +16,12 @@ inputs:
   apple_team_id:
     description: 'Apple Developer Team ID'
     required: true
-  binary_name:
-    description: 'Name of built MacOS binary (e.g. "openframe-client"). Required for standalone binary signing.'
-    required: false
+  name:
+    description: 'Client name (e.g. "openframe-client"). Used for binary path and DMG naming.'
+    required: true
   target_path:
-    description: 'Cargo target directory (e.g. ./clients/openframe-chat/src-tauri/target). Required for Tauri app signing.'
-    required: false
-  dmg_name:
-    description: 'Name for the output DMG file. Required for Tauri app signing.'
-    required: false
-  dmg_volume_name:
-    description: 'Volume name for the DMG. Required for Tauri app signing.'
-    required: false
+    description: 'Cargo target directory (e.g. ./clients/openframe-chat/src-tauri/target)'
+    required: true
 
 runs:
   using: "composite"
@@ -62,11 +56,23 @@ runs:
         echo "Found signing identity: $SIGNING_IDENTITY"
         echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> $GITHUB_ENV
 
-        # Determine signing mode
-        if [[ -n "${{ inputs.target_path }}" ]]; then
+    - name: Detect signing mode
+      shell: bash
+      run: |
+        NAME="${{ inputs.name }}"
+        TARGET_PATH="${{ inputs.target_path }}"
+
+        # Check for Tauri .app bundle
+        APP_PATH=$(find "$TARGET_PATH"/universal-apple-darwin/release/bundle/macos -name "*.app" 2>/dev/null | head -1)
+        if [[ -n "$APP_PATH" ]]; then
           echo "SIGN_MODE=tauri" >> $GITHUB_ENV
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          echo "DMG_NAME=${NAME}_universal.dmg" >> $GITHUB_ENV
+          echo "Detected Tauri app: $APP_PATH"
         else
           echo "SIGN_MODE=binary" >> $GITHUB_ENV
+          echo "BINARY_PATH=./artifacts/$NAME" >> $GITHUB_ENV
+          echo "Detected standalone binary: ./artifacts/$NAME"
         fi
 
     # ── Standalone binary flow ──
@@ -75,7 +81,6 @@ runs:
       if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
-        BINARY_PATH="./artifacts/${{ inputs.binary_name }}"
         chmod +x "$BINARY_PATH"
         codesign --sign "$SIGNING_IDENTITY" --timestamp --options runtime --deep --force "$BINARY_PATH"
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
@@ -85,8 +90,7 @@ runs:
       if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
-        BINARY_NAME="${{ inputs.binary_name }}"
-        BINARY_PATH="./artifacts/$BINARY_NAME"
+        BINARY_NAME="${{ inputs.name }}"
         zip "${BINARY_NAME}.zip" -j "$BINARY_PATH"
 
         xcrun notarytool submit "${BINARY_NAME}.zip" \
@@ -103,24 +107,11 @@ runs:
       if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
-        BINARY_PATH="./artifacts/${{ inputs.binary_name }}"
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
         spctl --assess --type open --context context:primary-signature --verbose "$BINARY_PATH" || true
         echo "Binary is signed, notarized, and ready for distribution"
 
     # ── Tauri app flow ──
-
-    - name: Find Tauri app bundle
-      if: env.SIGN_MODE == 'tauri'
-      shell: bash
-      run: |
-        APP_PATH=$(find ${{ inputs.target_path }}/universal-apple-darwin/release/bundle/macos -name "*.app" | head -1)
-        if [[ -z "$APP_PATH" ]]; then
-          echo "Error: No .app bundle found"
-          exit 1
-        fi
-        echo "Found app bundle: $APP_PATH"
-        echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
 
     - name: Sign Tauri app bundle
       if: env.SIGN_MODE == 'tauri'
@@ -134,10 +125,8 @@ runs:
       if: env.SIGN_MODE == 'tauri'
       shell: bash
       run: |
-        DMG_NAME="${{ inputs.dmg_name }}"
-        VOLUME_NAME="${{ inputs.dmg_volume_name }}"
         mkdir -p ./artifacts
-        hdiutil create -volname "$VOLUME_NAME" -srcfolder "$APP_PATH" -ov -format UDZO "./artifacts/$DMG_NAME"
+        hdiutil create -volname "${{ inputs.name }}" -srcfolder "$APP_PATH" -ov -format UDZO "./artifacts/$DMG_NAME"
         codesign --sign "$SIGNING_IDENTITY" --timestamp "./artifacts/$DMG_NAME"
         echo "DMG created and signed: ./artifacts/$DMG_NAME"
 
@@ -145,7 +134,6 @@ runs:
       if: env.SIGN_MODE == 'tauri'
       shell: bash
       run: |
-        DMG_NAME="${{ inputs.dmg_name }}"
         xcrun notarytool submit "./artifacts/$DMG_NAME" \
           --apple-id "${{ inputs.apple_id_username }}" \
           --password "${{ inputs.apple_id_password }}" \
@@ -159,7 +147,6 @@ runs:
       if: env.SIGN_MODE == 'tauri'
       shell: bash
       run: |
-        DMG_NAME="${{ inputs.dmg_name }}"
         codesign --verify --verbose=2 "./artifacts/$DMG_NAME"
         spctl --assess --type open --context context:primary-signature --verbose "./artifacts/$DMG_NAME" || true
         echo "DMG is signed, notarized, and ready for distribution"

@@ -180,7 +180,7 @@ jobs:
         with:
           path: ${{ matrix.path }}
           toolchain: stable
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.archs || matrix.target }}
           components: clippy, rustfmt
           shared-key: ${{ runner.os }}-${{ runner.arch }}
 
@@ -245,10 +245,8 @@ jobs:
           apple_id_username: ${{ secrets.APPLE_ID_USERNAME }}
           apple_id_password: ${{ secrets.APPLE_ID_PASSWORD }}
           apple_team_id: ${{ secrets.APPLE_TEAM_ID }}
-          binary_name: ${{ matrix.artifact_name && '' || env.BINARY_NAME }}
-          target_path: ${{ matrix.artifact_name && matrix.target_path || '' }}
-          dmg_name: ${{ matrix.artifact_name || '' }}
-          dmg_volume_name: ${{ matrix.artifact_name && 'Fae Chat' || '' }}
+          name: ${{ matrix.name }}
+          target_path: ${{ matrix.target_path }}
 
       - name: Upload macOS client artifact
         if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS'
@@ -312,13 +310,11 @@ jobs:
           set -e && mkdir -p final-artifacts/clients
           gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
-            HAS_DMG=$(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r --arg name "$client" '.[] | select(.name == $name and .os == "macos") | .artifact_name // empty')
-
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
-              if [ -n "$HAS_DMG" ]; then
+              if ls release-artifacts/${client}-macos/*.dmg 1>/dev/null 2>&1; then
                 # Tauri app - copy .dmg directly
-                cp release-artifacts/${client}-macos/*.dmg final-artifacts/clients/ 2>/dev/null || true
+                cp release-artifacts/${client}-macos/*.dmg final-artifacts/clients/
               else
                 # Regular binary - create tar.gz
                 tar -czvf "final-artifacts/clients/${client}_macos.tar.gz" \
