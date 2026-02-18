@@ -1,0 +1,6 @@
+flowchart TD
+    LogRequest["Log Search Request"] --> QueryBuilder["PinotQueryBuilder"]
+    QueryBuilder --> PinotQuery2["Generated SQL"]
+    PinotQuery2 --> Pinot
+    Pinot --> MapProjection["Map to LogProjection"]
+    MapProjection --> ClientResponse["Paginated Log Response"]

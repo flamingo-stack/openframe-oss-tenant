@@ -1,0 +1,7 @@
+flowchart LR
+    Frontend["Frontend Application"] -->|"GET /oauth/login"| BFF["Security Oauth Bff"]
+    BFF -->|"Authorize Redirect"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"Authorization Code"| BFF
+    BFF -->|"Set HttpOnly Cookies"| Browser["Browser"]
+    Browser -->|"API Calls"| Gateway["Gateway Service Core"]
+    Gateway -->|"JWT Validation"| Resource["Protected Services"]

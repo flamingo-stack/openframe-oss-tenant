@@ -1,0 +1,19 @@
+flowchart TD
+    UI["React UI Components"] --> Hooks["Auth & Provider Hooks"]
+    UI --> MingoUI["Mingo Chat UI"]
+    
+    Hooks --> AuthClient["AuthApiClient"]
+    UI --> ApiClient["ApiClient"]
+    UI --> FleetClient["FleetApiClient"]
+    UI --> TacticalClient["TacticalApiClient"]
+    MingoUI --> MingoService["MingoApiService"]
+    
+    FleetClient --> ApiClient
+    TacticalClient --> ApiClient
+    MingoService --> ApiClient
+    
+    ApiClient --> Gateway["Gateway Service"]
+    AuthClient --> AuthServer["Authorization Server"]
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> ToolProxy["Tool Proxies"]
+    ApiService --> ChatService["Chat / Mingo APIs"]

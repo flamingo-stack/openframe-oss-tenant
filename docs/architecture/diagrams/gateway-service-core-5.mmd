@@ -1,0 +1,4 @@
+flowchart TD
+    WSRequest["WebSocket Request"] --> RouteLocator["RouteLocator"]
+    RouteLocator --> ToolFilter["ToolWebSocketProxyUrlFilter"]
+    ToolFilter --> Target["Resolved Tool WS URL"]

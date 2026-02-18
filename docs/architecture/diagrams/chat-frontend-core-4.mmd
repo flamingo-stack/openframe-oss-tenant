@@ -1,0 +1,8 @@
+flowchart TD
+    Idle["Idle"] --> Start["start()"]
+    Start --> Active["Active"]
+    Active --> Pause["pause()"]
+    Pause --> Resume["resume()"]
+    Resume --> Active
+    Active --> Stop["stop()"]
+    Stop --> Idle

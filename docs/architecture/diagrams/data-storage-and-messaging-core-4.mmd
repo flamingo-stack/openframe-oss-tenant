@@ -1,0 +1,4 @@
+flowchart LR
+    App["Service Layer"] --> CacheManager["RedisCacheManager"]
+    CacheManager --> KeyBuilder["OpenframeRedisKeyBuilder"]
+    CacheManager --> Redis[("Redis Instance")]

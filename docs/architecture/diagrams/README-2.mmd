@@ -1,0 +1,8 @@
+flowchart LR
+    Frontend["Frontend Layer"] --> Edge["Gateway Layer"]
+    Edge --> Identity["Identity Layer"]
+    Edge --> ApiLayer["API Layer"]
+    ApiLayer --> Domain["Domain & Core Libraries"]
+    Domain --> Data["Data & Messaging Core"]
+    Domain --> Streaming["Stream Processing"]
+    Streaming --> Analytics["Analytics (Pinot)"]

@@ -1,0 +1,4 @@
+flowchart LR
+    User["User or Agent"] --> Gateway["IntegrationController"]
+    Gateway --> Proxy["RestProxyService"]
+    Proxy --> Tool["Integrated Tool Service"]

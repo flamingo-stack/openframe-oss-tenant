@@ -1,0 +1,6 @@
+flowchart TD
+    Verifier["Generate Code Verifier"] --> Challenge["SHA256(verifier)"]
+    Challenge -->|"Send to Auth Server"| Authorize
+    Authorize["Authorization Request"] --> Callback
+    Callback["Callback with Code"] -->|"Send Verifier"| TokenExchange
+    TokenExchange["Token Exchange"] --> Tokens["Access + Refresh Tokens"]

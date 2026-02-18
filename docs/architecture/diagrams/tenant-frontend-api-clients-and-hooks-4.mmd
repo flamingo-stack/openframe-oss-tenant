@@ -1,0 +1,9 @@
+flowchart TD
+    Start["App Load"] --> CheckAuth["Call /api/me"]
+    CheckAuth -->|Authenticated| StoreLogin["Update Auth Store"]
+    CheckAuth -->|401| ClearTokens["Clear Tokens"]
+    
+    UserLogin["User Login"] --> HandleSuccess["handleAuthenticationSuccess"]
+    HandleSuccess --> StoreTokens["Store Access & Refresh Tokens"]
+    StoreTokens --> FetchProfile["Fetch Full Profile"]
+    FetchProfile --> Redirect["Redirect to Dashboard"]

@@ -1,0 +1,45 @@
+flowchart TD
+    subgraph Services["Platform Services"]
+        ApiService["API Service Core"]
+        AuthService["Authorization Server Core"]
+        StreamService["Stream Service Core"]
+        ManagementService["Management Service Core"]
+        GatewayService["Gateway Service Core"]
+    end
+
+    subgraph DataMessaging["Data Storage And Messaging Core"]
+        KafkaLayer["Kafka Configuration & Producers"]
+        MongoLayer["Mongo Documents & Repositories"]
+        RedisLayer["Redis Cache Layer"]
+        CassandraLayer["Cassandra Configuration"]
+        PinotLayer["Pinot Analytical Repositories"]
+    end
+
+    subgraph Infrastructure["External Infrastructure"]
+        KafkaCluster[("Kafka Cluster")]
+        MongoDB[("MongoDB")]
+        Redis[("Redis")]
+        Cassandra[("Cassandra")]
+        Pinot[("Apache Pinot")]
+    end
+
+    ApiService --> MongoLayer
+    ApiService --> RedisLayer
+    ApiService --> KafkaLayer
+
+    AuthService --> MongoLayer
+    AuthService --> RedisLayer
+
+    StreamService --> KafkaLayer
+    StreamService --> CassandraLayer
+
+    ManagementService --> KafkaLayer
+    ManagementService --> MongoLayer
+
+    GatewayService --> RedisLayer
+
+    KafkaLayer --> KafkaCluster
+    MongoLayer --> MongoDB
+    RedisLayer --> Redis
+    CassandraLayer --> Cassandra
+    PinotLayer --> Pinot

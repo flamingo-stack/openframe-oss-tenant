@@ -1,0 +1,9 @@
+flowchart LR
+    UI["Frontend UI Components"] --> Hooks["Chat Hooks & Services"]
+    Hooks --> Core["Chat Frontend Core"]
+    Core --> Network["REST & WebSocket Layer"]
+    Network --> Backend["Chat & Stream Services"]
+
+    Core --> Types["Message & API Types"]
+    Core --> Processing["Chunk & Stream Processing"]
+    Core --> Buffering["Buffer Management"]

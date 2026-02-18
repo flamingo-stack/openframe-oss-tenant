@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant AuthServer
+    participant SSO
+    participant UserService
+
+    User->>AuthServer: GET /invitations/accept/sso
+    AuthServer->>SSO: Redirect to provider
+    SSO-->>AuthServer: OIDC callback
+    AuthServer->>UserService: registerByInvitation()
+    AuthServer-->>User: Redirect to tenant

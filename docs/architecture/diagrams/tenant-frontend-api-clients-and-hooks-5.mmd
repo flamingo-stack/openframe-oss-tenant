@@ -1,0 +1,5 @@
+flowchart TD
+    WebSocket["Streaming Segments"] --> Accumulator["MessageSegmentAccumulator"]
+    Accumulator --> StreamingMessage["Streaming Message"]
+    StreamingMessage --> Store["MingoMessagesStore"]
+    Store --> UI["Chat UI"]

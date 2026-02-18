@@ -1,0 +1,7 @@
+flowchart LR
+    Request["Tool Request"] --> Approval["Approval Required?"]
+    Approval -->|"Yes"| Await["Pending Approval"]
+    Await --> Decision["User Approves / Rejects"]
+    Decision --> Execute["Execute Tool"]
+    Approval -->|"No"| Execute
+    Execute --> Result["EXECUTED_TOOL"]

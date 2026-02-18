@@ -1,0 +1,10 @@
+flowchart TD
+    A["Incoming Request"] --> B["OriginSanitizerFilter"]
+    B --> C["AddAuthorizationHeaderFilter"]
+    C --> D{{"Path Type?"}}
+    D -->|"/external-api/**"| E["ApiKeyAuthenticationFilter"]
+    D -->|"JWT Protected"| F["JWT Resource Server"]
+    D -->|"Public"| G["Permit All"]
+
+    E --> H["Forward to External API Service"]
+    F --> I["Forward to Target Service"]

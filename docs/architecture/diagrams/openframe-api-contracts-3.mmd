@@ -1,0 +1,7 @@
+flowchart LR
+    DeviceQuery["Device Query"] --> DeviceFilterOptions
+    DeviceQuery --> DeviceFilters
+
+    DeviceFilters --> Status["Statuses"]
+    DeviceFilters --> Types["Device Types"]
+    DeviceFilters --> Tags["Tags"]

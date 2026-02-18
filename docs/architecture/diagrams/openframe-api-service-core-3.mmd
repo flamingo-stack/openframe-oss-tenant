@@ -1,0 +1,4 @@
+flowchart TD
+    Startup["Application Startup"] --> Init["DataInitializer"]
+    Init -->|"findByClientId"| Repo[("OAuthClientRepository")]
+    Repo -->|"create or update"| Mongo[("MongoDB")]

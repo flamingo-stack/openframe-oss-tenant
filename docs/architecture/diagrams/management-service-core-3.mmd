@@ -1,0 +1,5 @@
+flowchart TD
+    Request["POST /v1/tools/{id}"] --> SaveTool["Save Tool to MongoDB"]
+    SaveTool --> CreateConnector["Create/Update Debezium Connectors"]
+    CreateConnector --> ExecuteHooks["Run Post-Save Hooks"]
+    ExecuteHooks --> Response["Return Success Response"]

@@ -1,0 +1,6 @@
+flowchart TD
+    FilterRequest["Device Filter Request"] --> BuildWhere["Build WHERE Clause"]
+    BuildWhere --> PinotQuery["Pinot SQL Query"]
+    PinotQuery --> Pinot[("Pinot Broker")]
+    Pinot --> ResultSet["ResultSet"]
+    ResultSet --> Response["Aggregated Filter Options"]

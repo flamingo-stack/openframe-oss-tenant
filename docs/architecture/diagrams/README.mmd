@@ -1,0 +1,55 @@
+flowchart TD
+    %% Frontend
+    TenantUI["Tenant Frontend"]
+    ChatUI["Chat Frontend"]
+    
+    %% Edge
+    Gateway["Gateway Service Core"]
+    
+    %% Identity
+    AuthServer["Authorization Server Core"]
+    OAuthBFF["Security OAuth BFF"]
+    
+    %% Core APIs
+    ApiService["Openframe API Service Core"]
+    ExternalApi["External API Service Core"]
+    
+    %% Runtime & Management
+    ClientService["Client Service Core"]
+    ManagementService["Management Service Core"]
+    
+    %% Streaming
+    StreamService["Stream Service Core"]
+    
+    %% Data Layer
+    Mongo["MongoDB"]
+    Kafka["Kafka"]
+    Redis["Redis"]
+    Cassandra["Cassandra"]
+    Pinot["Pinot"]
+    
+    %% Flow
+    TenantUI --> OAuthBFF
+    OAuthBFF --> AuthServer
+    TenantUI --> Gateway
+    ChatUI --> Gateway
+    
+    Gateway --> ApiService
+    Gateway --> ExternalApi
+    
+    ApiService --> Mongo
+    ApiService --> Redis
+    ApiService --> Kafka
+    
+    ClientService --> Kafka
+    ClientService --> Mongo
+    
+    StreamService --> Kafka
+    StreamService --> Cassandra
+    
+    ManagementService --> Mongo
+    ManagementService --> Kafka
+    ManagementService --> Pinot
+    
+    ExternalApi --> ApiService
+    StreamService --> Pinot

@@ -1,0 +1,7 @@
+flowchart TD
+    ClientReq["GET /api/v1/logs"] --> Criteria["LogFilterCriteria"]
+    Criteria --> Mapper["LogMapper"]
+    Mapper --> Service["LogService.queryLogs()"]
+    Service --> Pinot["Analytics Repository"]
+    Service --> Mongo["Mongo Repository"]
+    Service --> Resp["LogsResponse"]

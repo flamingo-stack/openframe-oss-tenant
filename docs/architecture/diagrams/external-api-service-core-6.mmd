@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Incoming /tools/{toolId}/..."] --> FindTool["IntegratedToolRepository.findById()"]
+    FindTool --> CheckEnabled{{"Tool Enabled?"}}
+    CheckEnabled -->|"No"| Reject["400 Bad Request"]
+    CheckEnabled -->|"Yes"| Resolve["ProxyUrlResolver.resolve()"]
+    Resolve --> Headers["Inject Credentials"]
+    Headers --> HttpCall["Execute HttpClient Request"]
+    HttpCall --> ReturnResp["Return Upstream Response"]

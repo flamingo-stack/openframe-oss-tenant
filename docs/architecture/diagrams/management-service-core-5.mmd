@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Application Startup"] --> AgentSecret["Initialize Agent Secret"]
+    AgentSecret --> Streams["Provision NATS Streams"]
+    Streams --> Agents["Initialize Tool Agents"]
+    Agents --> ClientConfig["Initialize Client Configuration"]
+    ClientConfig --> PinotInit["Deploy Pinot Config"]
+    PinotInit --> DebeziumInit["Initialize Debezium Connectors"]
+    DebeziumInit --> Ready["System Ready"]

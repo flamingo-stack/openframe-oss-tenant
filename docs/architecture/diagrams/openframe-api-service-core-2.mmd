@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Gateway
+    Gateway -->|"Validated JWT"| ApiService
+    ApiService -->|"Issuer Resolver"| JwtCache
+    JwtCache --> JwtProvider["JwtAuthenticationProvider"]

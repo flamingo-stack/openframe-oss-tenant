@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming Request"] --> Extract["TenantContextFilter"]
+    Extract -->|"setTenantId()"| Context["TenantContext (ThreadLocal)"]
+    Context --> Downstream["Security + Services"]
+    Downstream --> Clear["TenantContext.clear()"]

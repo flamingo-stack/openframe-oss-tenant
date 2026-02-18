@@ -1,0 +1,9 @@
+flowchart TD
+    Start["User Clicks Login"] --> LoginEndpoint["/oauth/login"]
+    LoginEndpoint --> StateGen["Generate State + PKCE"]
+    StateGen --> RedirectAuth["Redirect to Authorization Server"]
+    RedirectAuth --> Callback["/oauth/callback"]
+    Callback --> ValidateState["Validate State Cookie"]
+    ValidateState --> TokenExchange["Exchange Code for Tokens"]
+    TokenExchange --> SetCookies["Set Secure Cookies"]
+    SetCookies --> RedirectBack["Redirect to Frontend"]

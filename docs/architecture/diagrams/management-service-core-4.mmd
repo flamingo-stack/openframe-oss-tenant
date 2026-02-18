@@ -1,0 +1,6 @@
+flowchart TD
+    LoadAgent["Load Agent JSON"] --> Exists{"Agent Exists?"}
+    Exists -->|"No"| Create["Save New Agent"]
+    Exists -->|"Yes"| Compare["Compare Versions"]
+    Compare --> Update["Save & Possibly Publish Update"]
+    Update --> Publish["Publish ToolAgent Update Event"]

@@ -1,0 +1,5 @@
+flowchart LR
+    Create["POST Organization"] --> CommandService["OrganizationCommandService"]
+    Update["PUT Organization"] --> CommandService
+    Delete["DELETE Organization"] --> CommandService
+    Query["GET Organizations"] --> QueryService["OrganizationQueryService"]

@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ExternalApi
+    participant Service
+
+    Client->>Gateway: Request with X-API-Key
+    Gateway->>Gateway: Validate API Key
+    Gateway->>ExternalApi: Forward request
+    ExternalApi->>Service: Delegate business logic
+    Service-->>ExternalApi: Return data
+    ExternalApi-->>Client: JSON response

@@ -1,0 +1,6 @@
+flowchart LR
+    DebeziumMsg["DeserializedDebeziumMessage"] --> Enrichment
+    Enrichment --> Cache["MachineIdCacheService (Redis)"]
+    Cache --> MachineInfo["CachedMachineInfo"]
+    Cache --> OrgInfo["CachedOrganizationInfo"]
+    Enrichment --> Enriched["IntegratedToolEnrichedData"]

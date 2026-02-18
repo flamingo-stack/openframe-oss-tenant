@@ -1,0 +1,13 @@
+flowchart TD
+    Gateway["Gateway Service Core"] -->|"JWT + Routing"| Api["Openframe Api Service Core"]
+    Api -->|"OAuth2 Resource Server"| Authz["Authorization Server Core"]
+
+    Api --> DataCore["Data Storage and Messaging Core"]
+    Api --> StreamCore["Stream Service Core"]
+    Api --> MgmtCore["Management Service Core"]
+
+    Frontend["Tenant Frontend"] --> Gateway
+
+    DataCore --> Mongo[("MongoDB")]
+    DataCore --> Kafka[("Kafka")]
+    DataCore --> Redis[("Redis")]
