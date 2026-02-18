@@ -13,6 +13,7 @@ const SHELL_TO_LANGUAGE: Record<string, string> = {
   nushell: 'shell',
   deno: 'typescript',
   shell: 'shell',
+  sql: 'sql',
 }
 
 function defineOdsTheme(monaco: Monaco) {

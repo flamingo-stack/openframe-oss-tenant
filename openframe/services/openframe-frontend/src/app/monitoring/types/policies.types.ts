@@ -11,18 +11,13 @@ export interface Policy {
   author_email: string
   team_id?: number
   resolution: string
-  platform: string,
+  platform: string
   calendar_events_enabled: boolean
   created_at: string
   updated_at: string
   passing_host_count: number
   failing_host_count: number
   host_count_updated_at?: string
-}
-
-export interface DialogsResponse {
-  dialogs: Policy[]
-  total: number
 }
 
 export interface PolicyFilters {

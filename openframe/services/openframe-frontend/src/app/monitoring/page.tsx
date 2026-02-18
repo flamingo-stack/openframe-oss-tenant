@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic'
 
 import { AppLayout } from '../components/app-layout'
 import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core'
-import { PoliciesAndQueriesView } from './components/policies-and-queries-view'
+import { MonitoringView } from './components/monitoring-view'
 
-export default function PoliciesAndQueries() {
+export default function Monitoring() {
   return (
-    <AppLayout>
+    <AppLayout mainClassName='pt-0 sm:pt-0'>
       <ContentPageContainer padding="none" showHeader={false}>
-        <PoliciesAndQueriesView />
+        <MonitoringView />
       </ContentPageContainer>
     </AppLayout>
   )
