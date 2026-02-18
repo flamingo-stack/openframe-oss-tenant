@@ -1,0 +1,6 @@
+flowchart TD
+    Resource["Agent JSON Resource"] --> Parse["ObjectMapper"]
+    Parse --> Exists{"Agent Exists?"}
+    Exists -->|"Yes"| Update["Update Agent"]
+    Exists -->|"No"| Create["Create Agent"]
+    Update --> Publish["Publish Version Update"]

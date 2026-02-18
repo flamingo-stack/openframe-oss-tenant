@@ -1,198 +1,210 @@
 # Development Documentation
 
-Welcome to the OpenFrame development documentation! This section provides comprehensive guides for developers who want to contribute to, extend, or deploy OpenFrame in their own environments.
+Welcome to the OpenFrame OSS Tenant development documentation! This section provides comprehensive guides for developers who want to understand, extend, or contribute to the platform.
 
-## 📋 Development Section Overview
+## Overview
 
-This development documentation is organized into focused sections to help you quickly find what you need:
+OpenFrame OSS Tenant is a sophisticated multi-tenant, microservices-based platform built with modern technologies and architectural patterns. Whether you're looking to customize the platform for your needs, integrate new tools, or contribute to the project, this documentation will guide you through the development process.
 
-### 🛠️ Setup & Environment
-- **[Environment Setup](./setup/environment.md)** - IDE configuration, tools, and development environment setup
-- **[Local Development](./setup/local-development.md)** - Running OpenFrame locally for development and testing
+## Documentation Structure
 
-### 🏗️ Architecture & Design  
-- **[Architecture Overview](./architecture/README.md)** - High-level system architecture and component relationships
+### 🛠️ **Setup & Environment**
+Get your development environment configured and ready for productive work.
 
-### 🔒 Security
-- **[Security Best Practices](./security/README.md)** - Authentication, authorization, and security implementation guides
+| Guide | Description |
+|-------|-------------|
+| **[Environment Setup](setup/environment.md)** | IDE configuration, development tools, and environment setup |
+| **[Local Development](setup/local-development.md)** | Running services locally, debugging, and hot reload |
 
-### 🧪 Testing
-- **[Testing Overview](./testing/README.md)** - Testing strategies, running tests, and writing new test cases
+### 🏗️ **Architecture**
+Deep dive into the platform's architecture and design decisions.
 
-### 🤝 Contributing
-- **[Contributing Guidelines](./contributing/guidelines.md)** - Code standards, PR process, and contribution workflow
+| Guide | Description |
+|-------|-------------|
+| **[Architecture Overview](architecture/README.md)** | High-level architecture, core components, and data flow |
 
-## 🚀 Quick Navigation
+### 🔒 **Security**
+Understand and implement security best practices.
 
-### For New Contributors
-1. Start with [Environment Setup](./setup/environment.md)
-2. Follow the [Local Development](./setup/local-development.md) guide
-3. Review [Contributing Guidelines](./contributing/guidelines.md)
-4. Understand the [Architecture Overview](./architecture/README.md)
+| Guide | Description |
+|-------|-------------|
+| **[Security Best Practices](security/README.md)** | Authentication, authorization, data protection, and security testing |
 
-### For Production Deployment
-1. Review [Security Best Practices](./security/README.md)
-2. Study the [Architecture Overview](./architecture/README.md)
-3. Follow [Local Development](./setup/local-development.md) for deployment scripts
+### 🧪 **Testing**
+Comprehensive testing strategies and implementation.
 
-### For Testing & QA
-1. Check [Testing Overview](./testing/README.md)
-2. Review [Contributing Guidelines](./contributing/guidelines.md) for quality standards
+| Guide | Description |
+|-------|-------------|
+| **[Testing Overview](testing/README.md)** | Test structure, running tests, and writing new tests |
 
-## 🏛️ Technology Stack
+### 🤝 **Contributing**
+Guidelines for contributing to the OpenFrame OSS Tenant project.
 
-OpenFrame is built on modern, enterprise-grade technologies:
+| Guide | Description |
+|-------|-------------|
+| **[Contributing Guidelines](contributing/guidelines.md)** | Code style, PR process, and contribution standards |
 
-### Backend Technologies
-| Component | Technology | Version |
-|-----------|------------|---------|
-| **Runtime** | Java | 21+ |
-| **Framework** | Spring Boot | 3.3.0 |
-| **Build Tool** | Maven | 3.8+ |
-| **Architecture** | Microservices | Event-driven |
+## Quick Navigation
 
-### Frontend Technologies
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **AI/LLM** | VoltAgent Core | AI agent functionality |
-| **Validation** | Zod | Schema validation |
-| **File Operations** | Glob | File pattern matching |
-| **AI Integration** | Anthropic SDK | Claude AI integration |
+### For New Developers
+1. **Start here:** [Environment Setup](setup/environment.md)
+2. **Then:** [Local Development](setup/local-development.md)  
+3. **Understand:** [Architecture Overview](architecture/README.md)
 
-### Infrastructure
-| Component | Technology | Version |
-|-----------|------------|---------|
-| **Database** | MongoDB | 5.0+ |
-| **Audit Storage** | Apache Cassandra | 4.0+ |
-| **Caching** | Redis | 6.0+ |
-| **Messaging** | Apache Kafka | 3.6.0+ |
-| **Real-time** | NATS JetStream | 2.9+ |
+### For Existing Contributors
+- **Security:** [Security Best Practices](security/README.md)
+- **Testing:** [Testing Overview](testing/README.md)
+- **Guidelines:** [Contributing Guidelines](contributing/guidelines.md)
 
-### Client Agent
-| Component | Technology | Platform |
-|-----------|------------|----------|
-| **Language** | Rust | Cross-platform |
-| **Supported OS** | Windows, macOS, Linux | All major platforms |
+### For Integration Developers
+- **Architecture:** [Architecture Overview](architecture/README.md) 
+- **APIs:** Check the GraphQL and REST API documentation
+- **Security:** [Security Best Practices](security/README.md) for secure integrations
 
-## 📐 Architecture Philosophy
+## Technology Stack Overview
 
-OpenFrame follows these architectural principles:
+### Backend Services
+- **Spring Boot 3.3.0** with Java 21
+- **OAuth2 Authorization Server** with per-tenant RSA keys
+- **GraphQL** (Netflix DGS) and REST APIs
+- **Maven** for build and dependency management
 
-### 🔄 Event-Driven Architecture
-- Asynchronous communication between services
-- Event sourcing for audit and compliance
-- Real-time updates via NATS JetStream
-- Kafka for durable event streaming
+### Data & Streaming
+- **MongoDB** for document persistence
+- **Redis** for caching and distributed locking
+- **Apache Kafka** for event streaming
+- **Cassandra** for time-series data storage
 
-### 🏢 Multi-Tenant Design
-- Tenant isolation at all layers
-- Per-tenant data segregation
-- Scalable tenant provisioning
-- Configurable tenant policies
+### Frontend & Clients
+- **React/TypeScript** for the web application
+- **Rust** with Tauri for desktop clients
+- **Node.js** ecosystem for frontend tooling
 
-### 🔐 Security-First Approach
-- OAuth2/OIDC authentication
-- JWT-based authorization
-- API key management
-- Role-based access control (RBAC)
+### Infrastructure & DevOps
+- **Docker** for containerization
+- **NATS** for messaging
+- **Apache Pinot** for analytics
+- **Debezium** for Change Data Capture
 
-### 🧩 Microservices Pattern
-```mermaid
-flowchart TD
-    A[API Gateway] --> B[API Service]
-    A --> C[Auth Server]
-    A --> D[External API]
-    A --> E[Client Service]
-    
-    F[Management Service] --> G[Stream Service]
-    G --> H[Data Storage]
-    
-    B --> H
-    C --> H
-    E --> I[Message Queues]
-    I --> G
+## Development Philosophy
+
+### Core Principles
+
+**Multi-Tenancy First**
+- Every feature must support complete tenant isolation
+- Per-tenant configuration and customization
+- Scalable tenant onboarding
+
+**Event-Driven Architecture**
+- Reactive programming patterns
+- CDC-based data synchronization
+- Eventual consistency where appropriate
+
+**Security by Design**
+- Zero-trust security model
+- Comprehensive audit logging
+- Role-based access control
+
+**API-First Development**
+- Well-defined contracts
+- Comprehensive API documentation
+- Backward compatibility considerations
+
+## Getting Started Checklist
+
+Before diving into development, ensure you have:
+
+- [ ] Completed the [Prerequisites](../getting-started/prerequisites.md)
+- [ ] Successfully run the [Quick Start](../getting-started/quick-start.md)
+- [ ] Configured your [Development Environment](setup/environment.md)
+- [ ] Read the [Architecture Overview](architecture/README.md)
+- [ ] Reviewed [Security Best Practices](security/README.md)
+
+## Development Workflows
+
+### Common Development Tasks
+
+**Adding a New Service:**
+1. Create Spring Boot application in `openframe/services/`
+2. Configure Maven build and dependencies
+3. Implement health checks and actuator endpoints
+4. Add service to gateway routing
+5. Update documentation
+
+**Extending APIs:**
+1. Define GraphQL schema or REST endpoints
+2. Implement data fetchers/controllers
+3. Add appropriate security annotations
+4. Write comprehensive tests
+5. Update API documentation
+
+**Adding Integrations:**
+1. Create SDK in `deps/openframe-oss-lib/sdk/`
+2. Implement tool-specific data models
+3. Add CDC processing in stream service
+4. Create frontend components
+5. Test end-to-end integration
+
+### Code Organization
+
+```text
+openframe-oss-tenant/
+├── openframe/services/          # Deployable Spring Boot applications
+├── deps/openframe-oss-lib/      # Shared libraries and SDKs
+├── clients/                     # Desktop and mobile clients
+├── integrated-tools/            # Tool-specific configurations
+├── manifests/                   # Deployment manifests
+└── docs/                       # Documentation
 ```
 
-## 🎯 Development Workflows
-
-### 🔧 Local Development Flow
-1. **Environment Setup** → Configure IDE and dependencies
-2. **Local Run** → Start services with hot reload
-3. **Testing** → Run unit and integration tests
-4. **Debugging** → Use IDE debugging tools
-
-### 🤝 Contribution Flow
-1. **Fork & Clone** → Get your development copy
-2. **Feature Branch** → Create feature/fix branches
-3. **Development** → Code following our standards
-4. **Testing** → Ensure tests pass
-5. **Pull Request** → Submit for review
-
-### 🚀 Deployment Flow
-1. **Build** → Maven builds for all services
-2. **Package** → Docker containerization
-3. **Deploy** → Kubernetes or Docker Compose
-4. **Monitor** → Observe system health
-
-## 📚 Essential Development Resources
-
-### API Documentation
-- **REST APIs**: OpenAPI/Swagger documentation
-- **GraphQL**: Schema introspection and playground
-- **WebSocket**: Real-time connection protocols
-
-### Development Tools
-- **IDE**: IntelliJ IDEA, VS Code, or preferred Java IDE
-- **Database**: MongoDB Compass for database management  
-- **API Testing**: Postman, curl, or similar tools
-- **Debugging**: Built-in debuggers and logging
+## Best Practices
 
 ### Code Quality
-- **Linting**: Checkstyle and ESLint configurations
-- **Testing**: JUnit 5, TestContainers for integration tests
-- **Documentation**: Javadoc and inline documentation standards
+- **Follow Java coding standards** with consistent formatting
+- **Write comprehensive tests** with good coverage
+- **Use meaningful commit messages** following conventional commits
+- **Document public APIs** with clear examples
 
-## 🎓 Learning Path
+### Architecture
+- **Maintain service boundaries** - avoid tight coupling
+- **Use proper error handling** with structured logging
+- **Implement circuit breakers** for external dependencies
+- **Follow 12-factor app principles**
 
-### For Java Developers
-1. **Spring Boot 3.x** fundamentals
-2. **Spring Security** OAuth2 resource servers
-3. **Spring Data MongoDB** reactive programming
-4. **Apache Kafka** event streaming
-5. **Docker** containerization
+### Security
+- **Never hardcode secrets** - use proper configuration management
+- **Validate all inputs** at API boundaries
+- **Implement proper authentication** for all endpoints
+- **Follow least privilege principle** for access control
 
-### For Frontend Developers
-1. **Modern JavaScript/TypeScript** development
-2. **AI Integration** with VoltAgent patterns
-3. **WebSocket** real-time communications
-4. **API Integration** patterns
+## Resources
 
-### For DevOps Engineers
-1. **Microservices** deployment patterns
-2. **Container Orchestration** (Docker, Kubernetes)
-3. **Monitoring & Observability** (Prometheus, Grafana)
-4. **CI/CD Pipelines** automation
+### Internal Documentation
+- **API Reference:** Generated from GraphQL schemas and OpenAPI specs
+- **Architecture Docs:** Detailed technical documentation in the repository
+- **Code Examples:** Sample implementations in the codebase
 
-## 🤝 Community & Support
+### External Resources
+- **Spring Boot Documentation:** [https://spring.io/projects/spring-boot](https://spring.io/projects/spring-boot)
+- **Netflix DGS:** [https://netflix.github.io/dgs/](https://netflix.github.io/dgs/)
+- **OAuth2/OIDC:** [https://oauth.net/2/](https://oauth.net/2/)
 
-### Development Community
-- **Slack Channel**: [#development](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) in OpenMSP Slack
-- **GitHub Discussions**: Technical discussions and Q&A
-- **Contributing**: Open source contribution opportunities
+### Community
+- **OpenMSP Slack:** [Join the Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Project Website:** [https://openframe.ai](https://openframe.ai)
+- **Flamingo Platform:** [https://www.flamingo.run/openframe](https://www.flamingo.run/openframe)
+
+## Support
 
 ### Getting Help
-- **Documentation**: This development section
-- **Code Examples**: Reference implementations in the codebase
-- **Community Support**: Ask questions in Slack
-- **Issue Reporting**: GitHub Issues for bugs and feature requests
+- **Technical Questions:** Use the OpenMSP Slack community
+- **Bug Reports:** Report issues through the Slack channels
+- **Feature Requests:** Discuss in the community before implementation
+- **Documentation Issues:** Contribute improvements via pull requests
 
-## 🎉 Ready to Start?
+### Contributing Back
+We welcome contributions! Please review the [Contributing Guidelines](contributing/guidelines.md) before submitting pull requests.
 
-Choose your development journey:
+---
 
-- **New to OpenFrame?** → Start with [Environment Setup](./setup/environment.md)
-- **Ready to Code?** → Jump to [Local Development](./setup/local-development.md)
-- **Want to Contribute?** → Read [Contributing Guidelines](./contributing/guidelines.md)
-- **Need Architecture Context?** → Explore [Architecture Overview](./architecture/README.md)
-
-Welcome to the OpenFrame development community! We're excited to see what you'll build. 🚀
+**Ready to start developing?** Begin with the [Environment Setup](setup/environment.md) guide to configure your development environment.

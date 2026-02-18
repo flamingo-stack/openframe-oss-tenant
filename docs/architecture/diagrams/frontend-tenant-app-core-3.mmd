@@ -1,0 +1,7 @@
+flowchart TD
+    User["User"] --> LoginPage["Login Page"]
+    LoginPage --> BuildUrl["AuthApiClient.loginUrl()"]
+    BuildUrl --> Redirect["Redirect to /oauth/login"]
+    Redirect --> AuthServer["Authorization Service Core"]
+    AuthServer --> Callback["Redirect back with session"]
+    Callback --> ApiClient["Authenticated API calls"]

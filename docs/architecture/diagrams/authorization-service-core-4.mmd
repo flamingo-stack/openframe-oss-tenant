@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Browser
+    participant Auth as "Authorization Service"
+    participant IdP as "External IdP (Google/Microsoft)"
+
+    Browser->>Auth: GET /oauth2/authorization/google
+    Auth->>IdP: Redirect with OIDC request
+    IdP->>Auth: Authorization Code
+    Auth->>IdP: Exchange code for tokens
+    Auth->>Auth: autoProvisionIfNeeded()
+    Auth->>Browser: Authenticated Session + Redirect

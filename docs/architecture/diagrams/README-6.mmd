@@ -1,5 +1,9 @@
 flowchart TD
-    ExternalClient --> Gateway
-    Gateway --> ExternalApi
-    ExternalApi --> DomainServices
-    DomainServices --> Mongo
+    Boot["Application Startup"] --> Init["Initializers"]
+    Init --> PinotInit["PinotConfigInitializer"]
+    Init --> NatsInit["NatsStreamInitializer"]
+    Init --> DebeziumInit["DebeziumConnectorInitializer"]
+    Init --> AgentInit["AgentInitializer"]
+
+    Runtime["Runtime"] --> Schedulers["Distributed Schedulers"]
+    Schedulers --> RedisLock["Redis (ShedLock)"]

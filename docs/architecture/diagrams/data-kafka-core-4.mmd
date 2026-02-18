@@ -1,0 +1,4 @@
+flowchart TD
+    Producer --> KafkaCluster
+    KafkaCluster -->|"failure"| RecoveryHandler
+    RecoveryHandler --> Log["Structured Error Log"]

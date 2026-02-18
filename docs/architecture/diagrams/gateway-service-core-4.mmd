@@ -1,7 +1,11 @@
 flowchart TD
-    Jwt["Incoming JWT"] --> ExtractIssuer["Extract iss Claim"]
-    ExtractIssuer --> Cache["Issuer Manager Cache"]
-    Cache -->|"cache miss"| BuildManager["Build JwtReactiveAuthenticationManager"]
-    Cache -->|"cache hit"| UseManager["Reuse Manager"]
-    BuildManager --> Validate["Strict Issuer Validation"]
+    Request["Incoming Request"] --> ExtractJwt["Extract JWT"]
+    ExtractJwt --> ResolveIssuer["Resolve Issuer"]
+    ResolveIssuer --> CacheCheck["Issuer Manager Cache"]
+
+    CacheCheck -->|"Hit"| UseManager["Use Cached Auth Manager"]
+    CacheCheck -->|"Miss"| BuildManager["Build JwtReactiveAuthenticationManager"]
+
+    BuildManager --> Validate["Validate Signature & Issuer"]
     UseManager --> Validate
+    Validate --> SecurityContext["Populate Security Context"]

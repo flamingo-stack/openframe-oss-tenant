@@ -1,771 +1,693 @@
 # Contributing Guidelines
 
-Welcome to the OpenFrame contributing guidelines! This document outlines the development workflow, code standards, pull request process, and quality requirements for contributing to OpenFrame.
+Welcome to the OpenFrame OSS Tenant project! We appreciate your interest in contributing to this AI-driven MSP platform. This guide outlines our code style, conventions, pull request process, and contribution standards to ensure high-quality and consistent contributions.
 
 ## Code of Conduct
 
-OpenFrame is an open and welcoming project. All contributors are expected to:
+We are committed to providing a welcoming and inclusive environment for all contributors. By participating in this project, you agree to abide by our community standards:
 
-- **Be Respectful**: Treat all community members with respect and courtesy
+- **Be Respectful**: Treat all community members with respect and kindness
 - **Be Collaborative**: Work together constructively and share knowledge
-- **Be Professional**: Maintain professional communication in all interactions
-- **Be Inclusive**: Welcome newcomers and help them get started
+- **Be Patient**: Help newcomers and be understanding of different skill levels
+- **Be Professional**: Keep discussions focused on technical matters
 
-## Development Workflow
+## Getting Started
 
-### 1. Fork and Clone
+### Prerequisites for Contributors
+
+Before contributing, ensure you have:
+
+- ✅ Completed the [Prerequisites](../../getting-started/prerequisites.md) setup
+- ✅ Successfully run the [Quick Start](../../getting-started/quick-start.md)
+- ✅ Configured your [Development Environment](../setup/environment.md)
+- ✅ Read the [Architecture Overview](../architecture/README.md)
+- ✅ Joined the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+
+### Development Setup
 
 ```bash
 # Fork the repository on GitHub
-# Then clone your fork
-git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
+# Clone your fork
+git clone https://github.com/YOUR-USERNAME/openframe-oss-tenant.git
 cd openframe-oss-tenant
 
 # Add upstream remote
 git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
 
-# Verify remotes
-git remote -v
-```
-
-### 2. Set Up Development Environment
-
-Follow the [Environment Setup](../setup/environment.md) guide to configure your development environment.
-
-### 3. Create Feature Branch
-
-```bash
-# Sync with upstream
-git checkout main
-git pull upstream main
-
-# Create feature branch
+# Create a new branch for your contribution
 git checkout -b feature/your-feature-name
 
-# Or for bug fixes
-git checkout -b fix/issue-description
-
-# Or for documentation
-git checkout -b docs/documentation-improvement
+# Install dependencies and run tests
+mvn clean install
+npm install --prefix openframe/services/openframe-frontend
 ```
-
-## Branch Naming Conventions
-
-Use descriptive branch names that follow these patterns:
-
-| Type | Pattern | Example |
-|------|---------|---------|
-| **Feature** | `feature/description` | `feature/user-profile-management` |
-| **Bug Fix** | `fix/issue-description` | `fix/authentication-token-expiry` |
-| **Documentation** | `docs/section-name` | `docs/api-documentation-update` |
-| **Refactoring** | `refactor/component-name` | `refactor/user-service-cleanup` |
-| **Performance** | `perf/optimization-area` | `perf/database-query-optimization` |
-| **CI/CD** | `ci/workflow-name` | `ci/automated-testing-pipeline` |
 
 ## Code Style and Conventions
 
-### Java/Spring Boot Backend
+### Java Code Style
 
-#### Code Formatting
+We follow **Google Java Style Guide** with specific OpenFrame conventions:
 
-**Use Google Java Style:**
-```bash
-# Configure IntelliJ IDEA
-# File → Settings → Code Style → Java → Import Scheme
-# Select: GoogleStyle.xml
-```
-
-**Key formatting rules:**
-- 2 spaces for indentation
-- Line length: 100 characters
-- No trailing whitespace
-- Unix line endings (LF)
-
-#### Naming Conventions
+#### Formatting Standards
 
 ```java
-// Classes: PascalCase
+// Class naming: PascalCase
 public class UserService {
-
+    
     // Constants: UPPER_SNAKE_CASE
     private static final String DEFAULT_ROLE = "USER";
+    private static final int MAX_LOGIN_ATTEMPTS = 5;
     
-    // Fields and methods: camelCase
-    private UserRepository userRepository;
-    
-    public UserResponse createUser(CreateUserRequest request) {
-        // Local variables: camelCase
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
-        
-        return UserResponse.builder()
-            .id(savedUser.getId())
-            .email(savedUser.getEmail())
-            .build();
-    }
-}
-```
-
-#### Method Structure
-
-```java
-@Service
-@Transactional
-public class UserService {
-    
+    // Fields: camelCase with descriptive names
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final TenantContext tenantContext;
+    private final EventPublisher eventPublisher;
     
-    // Constructor injection (preferred)
-    public UserService(UserRepository userRepository,
-                      PasswordEncoder passwordEncoder,
-                      TenantContext tenantContext) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.tenantContext = tenantContext;
-    }
-    
-    /**
-     * Creates a new user with the specified details.
-     * 
-     * @param request the user creation request containing user details
-     * @return the created user response with generated ID
-     * @throws UserAlreadyExistsException if user with email already exists
-     * @throws ValidationException if request validation fails
-     */
-    public UserResponse createUser(CreateUserRequest request) {
-        // Input validation
+    // Methods: camelCase, descriptive verbs
+    public User createUser(CreateUserRequest request) {
+        // Validation first
         validateCreateUserRequest(request);
         
-        // Business logic
-        String tenantId = tenantContext.getCurrentTenant();
-        checkUserNotExists(request.getEmail(), tenantId);
+        // Business logic with clear variable names
+        User newUser = buildUserFromRequest(request);
+        User savedUser = userRepository.save(newUser);
         
-        User user = buildUserFromRequest(request, tenantId);
-        User savedUser = userRepository.save(user);
+        // Event publishing
+        eventPublisher.publishEvent(new UserCreatedEvent(savedUser));
         
-        // Return response
-        return userMapper.toResponse(savedUser);
+        return savedUser;
     }
     
+    // Private methods: descriptive names
     private void validateCreateUserRequest(CreateUserRequest request) {
-        // Validation logic
-    }
-    
-    private void checkUserNotExists(String email, String tenantId) {
-        if (userRepository.existsByEmailAndTenantId(email, tenantId)) {
-            throw new UserAlreadyExistsException(
-                "User with email '" + email + "' already exists");
+        if (userRepository.existsByEmailAndTenantId(request.getEmail(), request.getTenantId())) {
+            throw new UserAlreadyExistsException("User with email already exists in tenant");
         }
     }
 }
 ```
 
-### TypeScript/Frontend
+#### Documentation Standards
 
-#### Code Formatting
-
-**Use Prettier configuration:**
-```json
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false
+```java
+/**
+ * Service for managing user lifecycle operations in a multi-tenant environment.
+ * 
+ * <p>This service handles user creation, updates, deactivation, and tenant isolation.
+ * All operations are tenant-scoped and include comprehensive audit logging.
+ * 
+ * @author OpenFrame Team
+ * @since 1.0.0
+ */
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class UserService {
+    
+    /**
+     * Creates a new user within the specified tenant context.
+     * 
+     * <p>This method validates that the email is unique within the tenant,
+     * creates the user with appropriate default settings, and publishes
+     * a UserCreatedEvent for downstream processing.
+     * 
+     * @param request the user creation request containing email, name, and tenant info
+     * @return the created user with generated ID and timestamps
+     * @throws UserAlreadyExistsException if a user with the email already exists in the tenant
+     * @throws ValidationException if the request contains invalid data
+     * @throws TenantNotFoundException if the specified tenant doesn't exist
+     */
+    public User createUser(CreateUserRequest request) {
+        // Implementation...
+    }
 }
 ```
+
+#### Error Handling Patterns
+
+```java
+@Service
+public class UserService {
+    
+    public User findUserById(String userId, String tenantId) {
+        return userRepository.findByIdAndTenantId(userId, tenantId)
+            .orElseThrow(() -> new UserNotFoundException(
+                String.format("User with ID %s not found in tenant %s", userId, tenantId)
+            ));
+    }
+    
+    public User createUser(CreateUserRequest request) {
+        try {
+            validateUserRequest(request);
+            return processUserCreation(request);
+        } catch (ValidationException e) {
+            log.warn("User creation failed due to validation: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error during user creation", e);
+            throw new UserCreationException("Failed to create user", e);
+        }
+    }
+}
+```
+
+### TypeScript/React Code Style
 
 #### Component Structure
 
 ```typescript
-// UserProfile.tsx
-import { useState, useCallback } from 'react';
-import { z } from 'zod';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+// UserForm.tsx
+import React, { useState, useCallback } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { createUser } from '../services/userService';
+import { Button, Input, Form } from '../components/ui';
 
-// Type definitions
-interface UserProfileProps {
-  userId: string;
-  onUpdateSuccess?: () => void;
+interface UserFormProps {
+  onSubmit: (user: User) => void;
+  onCancel: () => void;
+  initialData?: Partial<CreateUserRequest>;
 }
 
-// Validation schema
-const updateProfileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email format'),
-});
+interface FormData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  organizationId: string;
+}
 
-type UpdateProfileData = z.infer<typeof updateProfileSchema>;
-
-// Component
-export const UserProfile: React.FC<UserProfileProps> = ({
-  userId,
-  onUpdateSuccess,
+const UserForm: React.FC<UserFormProps> = ({ 
+  onSubmit, 
+  onCancel, 
+  initialData 
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const { profile, updateProfile, isLoading } = useUserProfile(userId);
+  const [formData, setFormData] = useState<FormData>({
+    email: initialData?.email ?? '',
+    firstName: initialData?.firstName ?? '',
+    lastName: initialData?.lastName ?? '',
+    organizationId: initialData?.organizationId ?? ''
+  });
 
-  const handleSave = useCallback(async (data: UpdateProfileData) => {
-    try {
-      await updateProfile(data);
-      setIsEditing(false);
-      onUpdateSuccess?.();
-    } catch (error) {
-      console.error('Failed to update profile:', error);
+  const createUserMutation = useMutation({
+    mutationFn: createUser,
+    onSuccess: (user) => {
+      onSubmit(user);
+    },
+    onError: (error) => {
+      console.error('Failed to create user:', error);
     }
-  }, [updateProfile, onUpdateSuccess]);
+  });
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  const handleSubmit = useCallback((event: React.FormEvent) => {
+    event.preventDefault();
+    createUserMutation.mutate(formData);
+  }, [formData, createUserMutation]);
+
+  const handleInputChange = useCallback((
+    field: keyof FormData, 
+    value: string
+  ) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
 
   return (
-    <div className="user-profile">
-      {isEditing ? (
-        <EditForm 
-          profile={profile} 
-          onSave={handleSave}
-          onCancel={() => setIsEditing(false)}
-        />
-      ) : (
-        <ViewMode 
-          profile={profile}
-          onEdit={() => setIsEditing(true)}
-        />
-      )}
-    </div>
+    <Form onSubmit={handleSubmit}>
+      <Input
+        label="Email"
+        type="email"
+        value={formData.email}
+        onChange={(value) => handleInputChange('email', value)}
+        required
+        error={createUserMutation.error?.message}
+      />
+      
+      <Input
+        label="First Name"
+        value={formData.firstName}
+        onChange={(value) => handleInputChange('firstName', value)}
+        required
+      />
+      
+      <Input
+        label="Last Name"
+        value={formData.lastName}
+        onChange={(value) => handleInputChange('lastName', value)}
+        required
+      />
+      
+      <div className="form-actions">
+        <Button 
+          type="submit" 
+          loading={createUserMutation.isPending}
+          disabled={!formData.email || !formData.firstName}
+        >
+          Create User
+        </Button>
+        
+        <Button 
+          type="button" 
+          variant="secondary" 
+          onClick={onCancel}
+        >
+          Cancel
+        </Button>
+      </div>
+    </Form>
   );
 };
+
+export default UserForm;
 ```
 
-#### Hook Patterns
+#### API Service Structure
 
 ```typescript
-// useUserProfile.ts
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+// userService.ts
+import { ApiClient } from './apiClient';
+import type { User, CreateUserRequest, UpdateUserRequest, UserPageResponse } from '../types';
 
-export const useUserProfile = (userId: string) => {
-  const queryClient = useQueryClient();
+export class UserService {
+  private apiClient = new ApiClient();
 
-  const {
-    data: profile,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['user-profile', userId],
-    queryFn: () => apiClient.getUser(userId),
-    enabled: !!userId,
-  });
+  async createUser(request: CreateUserRequest): Promise<User> {
+    try {
+      const response = await this.apiClient.post<User>('/api/users', request);
+      return response.data;
+    } catch (error) {
+      throw this.handleApiError(error, 'Failed to create user');
+    }
+  }
 
-  const updateMutation = useMutation({
-    mutationFn: (data: UpdateProfileData) => 
-      apiClient.updateUser(userId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile', userId]);
-    },
-  });
+  async getUsers(params?: {
+    page?: number;
+    size?: number;
+    search?: string;
+  }): Promise<UserPageResponse> {
+    try {
+      const response = await this.apiClient.get<UserPageResponse>('/api/users', {
+        params
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleApiError(error, 'Failed to fetch users');
+    }
+  }
 
-  const updateProfile = useCallback(
-    (data: UpdateProfileData) => updateMutation.mutateAsync(data),
-    [updateMutation]
-  );
+  async updateUser(userId: string, request: UpdateUserRequest): Promise<User> {
+    try {
+      const response = await this.apiClient.put<User>(`/api/users/${userId}`, request);
+      return response.data;
+    } catch (error) {
+      throw this.handleApiError(error, 'Failed to update user');
+    }
+  }
 
-  return {
-    profile,
-    isLoading: isLoading || updateMutation.isPending,
-    error: error || updateMutation.error,
-    updateProfile,
-  };
-};
+  private handleApiError(error: unknown, defaultMessage: string): Error {
+    if (error instanceof Error) {
+      return error;
+    }
+    return new Error(defaultMessage);
+  }
+}
+
+export const userService = new UserService();
+
+// Convenience functions for React Query
+export const createUser = (request: CreateUserRequest) => 
+  userService.createUser(request);
+
+export const getUsers = (params?: Parameters<typeof userService.getUsers>[0]) => 
+  userService.getUsers(params);
+
+export const updateUser = (userId: string, request: UpdateUserRequest) => 
+  userService.updateUser(userId, request);
 ```
 
-### Database and API Patterns
+## Branch Naming Conventions
 
-#### Repository Layer
+Use descriptive branch names that indicate the type and purpose of your changes:
 
-```java
-@Repository
-public interface UserRepository extends MongoRepository<User, String>, CustomUserRepository {
-    
-    Optional<User> findByEmailAndTenantId(String email, String tenantId);
-    
-    List<User> findByTenantIdAndRolesContaining(String tenantId, String role);
-    
-    boolean existsByEmailAndTenantId(String email, String tenantId);
-    
-    @Query("{ 'tenantId': ?0, 'active': true, 'lastLoginAt': { $gte: ?1 } }")
-    List<User> findActiveUsersSince(String tenantId, LocalDateTime since);
-}
+### Branch Types
 
-public interface CustomUserRepository {
-    List<User> findUsersWithComplexCriteria(UserSearchCriteria criteria);
-}
+| Type | Purpose | Example |
+|------|---------|---------|
+| `feature/` | New features | `feature/user-management-api` |
+| `bugfix/` | Bug fixes | `bugfix/jwt-token-validation` |
+| `hotfix/` | Urgent production fixes | `hotfix/security-vulnerability` |
+| `refactor/` | Code refactoring | `refactor/user-service-cleanup` |
+| `docs/` | Documentation updates | `docs/contributing-guidelines` |
+| `test/` | Test improvements | `test/integration-test-coverage` |
+| `chore/` | Maintenance tasks | `chore/dependency-updates` |
 
-@Component
-public class CustomUserRepositoryImpl implements CustomUserRepository {
-    
-    private final MongoTemplate mongoTemplate;
-    
-    @Override
-    public List<User> findUsersWithComplexCriteria(UserSearchCriteria criteria) {
-        Criteria mongoCriteria = new Criteria();
-        
-        if (criteria.getTenantId() != null) {
-            mongoCriteria.and("tenantId").is(criteria.getTenantId());
-        }
-        
-        if (criteria.getSearchTerm() != null) {
-            Criteria searchCriteria = new Criteria().orOperator(
-                Criteria.where("firstName").regex(criteria.getSearchTerm(), "i"),
-                Criteria.where("lastName").regex(criteria.getSearchTerm(), "i"),
-                Criteria.where("email").regex(criteria.getSearchTerm(), "i")
-            );
-            mongoCriteria.andOperator(searchCriteria);
-        }
-        
-        Query query = new Query(mongoCriteria);
-        
-        if (criteria.getPageable() != null) {
-            query.with(criteria.getPageable());
-        }
-        
-        return mongoTemplate.find(query, User.class);
-    }
-}
-```
+### Branch Naming Examples
 
-#### API Controller Standards
+```bash
+# Good branch names
+feature/multi-tenant-user-management
+bugfix/graphql-query-performance
+hotfix/security-jwt-validation
+refactor/service-layer-organization
+docs/api-documentation-update
+test/user-service-unit-tests
 
-```java
-@RestController
-@RequestMapping("/api/users")
-@PreAuthorize("hasRole('USER')")
-@Validated
-public class UserController {
-    
-    private final UserService userService;
-    
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<PageResponse<UserResponse>> getUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String role) {
-        
-        UserSearchCriteria criteria = UserSearchCriteria.builder()
-            .searchTerm(search)
-            .role(role)
-            .pageable(PageRequest.of(page, size))
-            .build();
-            
-        PageResponse<UserResponse> users = userService.findUsers(criteria);
-        return ResponseEntity.ok(users);
-    }
-    
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        
-        UserResponse user = userService.createUser(request);
-        
-        URI location = ServletUriComponentsBuilder
-            .fromCurrentRequest()
-            .path("/{id}")
-            .buildAndExpand(user.getId())
-            .toUri();
-            
-        return ResponseEntity.created(location).body(user);
-    }
-    
-    @GetMapping("/{userId}")
-    @PreAuthorize("@userSecurityService.canView(authentication, #userId)")
-    public ResponseEntity<UserResponse> getUser(@PathVariable String userId) {
-        UserResponse user = userService.getUser(userId);
-        return ResponseEntity.ok(user);
-    }
-    
-    @PutMapping("/{userId}")
-    @PreAuthorize("@userSecurityService.canModify(authentication, #userId)")
-    public ResponseEntity<UserResponse> updateUser(
-            @PathVariable String userId,
-            @Valid @RequestBody UpdateUserRequest request) {
-        
-        UserResponse user = userService.updateUser(userId, request);
-        return ResponseEntity.ok(user);
-    }
-    
-    @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
-        userService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
-        ErrorResponse error = ErrorResponse.builder()
-            .code("USER_NOT_FOUND")
-            .message(e.getMessage())
-            .timestamp(LocalDateTime.now())
-            .build();
-            
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-}
+# Bad branch names
+fix
+new-feature
+update
+john-working-branch
 ```
 
 ## Commit Message Format
 
-Use conventional commit format for clear change tracking:
+We follow the **Conventional Commits** specification for clear and standardized commit messages:
 
-### Format
+### Commit Message Structure
+
+```text
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
 ```
-<type>[optional scope]: <description>
 
-[optional body]
+### Commit Types
 
-[optional footer(s)]
-```
+| Type | Description | Example |
+|------|-------------|---------|
+| `feat` | New features | `feat(api): add user management endpoints` |
+| `fix` | Bug fixes | `fix(auth): resolve JWT token validation issue` |
+| `docs` | Documentation | `docs(readme): update installation instructions` |
+| `style` | Code style changes | `style(java): apply Google Java Style formatting` |
+| `refactor` | Code refactoring | `refactor(service): simplify user creation logic` |
+| `test` | Test additions/modifications | `test(user): add integration tests for user service` |
+| `chore` | Maintenance tasks | `chore(deps): update Spring Boot to 3.3.0` |
+| `perf` | Performance improvements | `perf(db): optimize user query performance` |
+| `ci` | CI/CD changes | `ci(github): add automated testing workflow` |
 
-### Types
-- **feat**: New feature
-- **fix**: Bug fix
-- **docs**: Documentation changes
-- **style**: Code style changes (formatting, etc.)
-- **refactor**: Code refactoring
-- **perf**: Performance improvements
-- **test**: Adding or updating tests
-- **ci**: CI/CD changes
-- **chore**: Maintenance tasks
+### Commit Message Examples
 
-### Examples
 ```bash
-feat(auth): add multi-factor authentication support
+# Feature addition
+feat(user-mgmt): implement multi-tenant user creation API
 
-Add support for TOTP-based MFA using authenticator apps.
-Includes user enrollment, verification, and recovery codes.
+Add REST endpoint for creating users with tenant isolation.
+Includes validation, audit logging, and event publishing.
+
+- Add CreateUserRequest DTO with validation annotations
+- Implement UserController with security annotations  
+- Add comprehensive unit and integration tests
+- Update API documentation
 
 Closes #123
 
-fix(api): handle null pointer in user profile endpoint
+# Bug fix
+fix(jwt): handle expired tokens gracefully in gateway
 
-The user profile endpoint was throwing NPE when profile 
-image was null. Added proper null checks and default values.
+Previously, expired JWT tokens caused 500 errors instead of 401.
+Now properly validates token expiration and returns appropriate
+HTTP status codes.
 
 Fixes #456
 
-docs(setup): update development environment guide
+# Documentation update  
+docs(api): add GraphQL schema documentation
 
-Added section for Docker setup and troubleshooting common
-issues with local development environment.
+Update API documentation to include GraphQL schema definitions
+and example queries for user management operations.
 
-test(user): add integration tests for user management
+# Refactoring
+refactor(auth): extract JWT validation logic
 
-Added comprehensive integration tests covering user CRUD
-operations, validation, and security checks.
+Move JWT validation from controller to dedicated service for
+better testability and reusability across components.
+
+- Create JwtValidationService
+- Add comprehensive unit tests
+- Update existing controllers to use new service
 ```
 
 ## Pull Request Process
 
-### 1. Pre-submission Checklist
+### Before Creating a Pull Request
 
-- [ ] **Code Quality**: Follows style guidelines and conventions
-- [ ] **Tests**: All tests pass and new tests added for changes
-- [ ] **Documentation**: Updated relevant documentation
-- [ ] **Security**: No security vulnerabilities introduced
-- [ ] **Performance**: No performance regressions
-- [ ] **Breaking Changes**: Clearly documented if any
+1. **Sync with upstream:**
+   ```bash
+   git fetch upstream
+   git rebase upstream/main
+   ```
 
-### 2. Creating Pull Request
+2. **Run tests locally:**
+   ```bash
+   mvn clean test
+   cd openframe/services/openframe-frontend && npm test
+   ```
 
-```bash
-# Push your changes
-git push origin feature/your-feature-name
+3. **Check code style:**
+   ```bash
+   mvn checkstyle:check
+   npm run lint --prefix openframe/services/openframe-frontend
+   ```
 
-# Create pull request on GitHub with:
-# - Descriptive title
-# - Detailed description
-# - Link to related issues
-# - Screenshots if UI changes
-```
+4. **Update documentation** if needed
 
-### 3. Pull Request Template
+### Pull Request Template
+
+When creating a pull request, use this template:
 
 ```markdown
 ## Description
-Brief description of what this PR does.
+
+Brief description of the changes and why they were made.
 
 ## Type of Change
+
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
-
-## Related Issues
-Closes #123
-Fixes #456
+- [ ] Refactoring (no functional changes)
+- [ ] Performance improvement
 
 ## Testing
+
 - [ ] Unit tests pass
 - [ ] Integration tests pass
+- [ ] New tests added for new functionality
 - [ ] Manual testing completed
-- [ ] New tests added for changes
 
 ## Screenshots (if applicable)
-Before: [screenshot]
-After: [screenshot]
+
+Add screenshots or GIFs for UI changes.
 
 ## Checklist
-- [ ] My code follows the style guidelines
-- [ ] I have performed a self-review of my code
+
+- [ ] My code follows the project's style guidelines
+- [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
+
+## Related Issues
+
+Closes #[issue_number]
+Relates to #[issue_number]
 ```
 
-### 4. Review Process
+### Pull Request Review Process
 
-**For Reviewers:**
-- **Code Quality**: Check adherence to style and patterns
-- **Functionality**: Verify changes work as intended
-- **Tests**: Ensure adequate test coverage
-- **Security**: Review for security implications
-- **Performance**: Check for performance impacts
-- **Documentation**: Verify docs are updated
+1. **Automated Checks**: All PRs must pass:
+   - Unit tests
+   - Integration tests
+   - Code style checks
+   - Security scans
+   - Build verification
 
-**Review Comments Format:**
-```markdown
-**Suggestion**: Consider using Optional.ofNullable() here for better null safety.
+2. **Code Review Requirements**:
+   - At least 2 approvals from maintainers
+   - No unresolved discussions
+   - All CI checks passing
 
-**Issue**: This method is missing input validation.
-
-**Nitpick**: Variable name could be more descriptive.
-
-**Question**: Why was this approach chosen over the existing pattern?
-
-**Approval**: LGTM! Great work on the comprehensive tests.
-```
+3. **Review Focus Areas**:
+   - **Functionality**: Does the code work as intended?
+   - **Security**: Are there any security vulnerabilities?
+   - **Performance**: Will this impact system performance?
+   - **Maintainability**: Is the code readable and maintainable?
+   - **Testing**: Are there adequate tests?
+   - **Documentation**: Is documentation updated appropriately?
 
 ## Review Checklist
 
-### Code Review Criteria
+### For Contributors
 
-#### Functionality
-- [ ] Code does what it's supposed to do
-- [ ] Edge cases are handled properly
-- [ ] Error conditions are handled gracefully
-- [ ] Performance is acceptable
+Before requesting review, ensure:
 
-#### Code Quality
-- [ ] Code is readable and self-documenting
-- [ ] Functions/methods have single responsibility
-- [ ] No code duplication
-- [ ] Proper abstraction levels
-- [ ] Follows established patterns
+- [ ] **Code Quality**
+  - [ ] Code follows established patterns and conventions
+  - [ ] No hardcoded values or magic numbers
+  - [ ] Error handling is comprehensive
+  - [ ] Logging is appropriate and informative
 
-#### Security
-- [ ] Input validation is present
-- [ ] No security vulnerabilities introduced
-- [ ] Authentication/authorization properly implemented
-- [ ] Sensitive data is protected
+- [ ] **Security**
+  - [ ] Input validation is implemented
+  - [ ] Authentication and authorization are proper
+  - [ ] No sensitive data in logs or responses
+  - [ ] SQL/NoSQL injection prevention
 
-#### Testing
-- [ ] Adequate test coverage
-- [ ] Tests are meaningful and test the right things
-- [ ] Tests are maintainable
-- [ ] No flaky tests
+- [ ] **Testing**
+  - [ ] Unit tests cover new functionality
+  - [ ] Integration tests verify end-to-end behavior
+  - [ ] Edge cases are tested
+  - [ ] Tests are maintainable and readable
 
-#### Documentation
-- [ ] Code is properly documented
-- [ ] API documentation is updated
-- [ ] README files are current
-- [ ] Breaking changes are documented
+- [ ] **Documentation**
+  - [ ] Code is well-commented
+  - [ ] API documentation is updated
+  - [ ] README updates if needed
+  - [ ] Architecture docs updated for significant changes
 
-### Common Review Issues
+### For Reviewers
 
-**Backend Code:**
-```java
-// ❌ Bad: Missing input validation
-public User createUser(CreateUserRequest request) {
-    return userRepository.save(new User(request));
-}
+When reviewing pull requests, consider:
 
-// ✅ Good: Proper validation and error handling
-public UserResponse createUser(CreateUserRequest request) {
-    validateCreateUserRequest(request);
-    
-    String tenantId = tenantContext.getCurrentTenant();
-    if (userRepository.existsByEmailAndTenantId(request.getEmail(), tenantId)) {
-        throw new UserAlreadyExistsException("User already exists");
-    }
-    
-    User user = userMapper.toEntity(request);
-    user.setTenantId(tenantId);
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
-    
-    User savedUser = userRepository.save(user);
-    return userMapper.toResponse(savedUser);
-}
+- [ ] **Architecture Alignment**
+  - [ ] Changes align with overall architecture
+  - [ ] Proper separation of concerns
+  - [ ] No unnecessary complexity
+
+- [ ] **Multi-Tenancy**
+  - [ ] Tenant isolation is maintained
+  - [ ] No cross-tenant data leakage
+  - [ ] Tenant context propagation is correct
+
+- [ ] **Performance Impact**
+  - [ ] No N+1 query problems
+  - [ ] Efficient database queries
+  - [ ] Appropriate caching strategies
+
+- [ ] **Backward Compatibility**
+  - [ ] API changes are backward compatible
+  - [ ] Database migrations are safe
+  - [ ] Configuration changes are documented
+
+## Development Workflow
+
+### Feature Development
+
+```bash
+# 1. Create feature branch
+git checkout -b feature/new-awesome-feature
+
+# 2. Develop with frequent commits
+git add .
+git commit -m "feat(feature): implement core functionality"
+
+# 3. Add tests
+git add .
+git commit -m "test(feature): add comprehensive test coverage"
+
+# 4. Update documentation
+git add .
+git commit -m "docs(feature): update API documentation"
+
+# 5. Rebase with main before PR
+git fetch upstream
+git rebase upstream/main
+
+# 6. Push and create PR
+git push origin feature/new-awesome-feature
 ```
 
-**Frontend Code:**
-```typescript
-// ❌ Bad: No error handling
-const UserProfile = ({ userId }: { userId: string }) => {
-  const [user, setUser] = useState(null);
-  
-  useEffect(() => {
-    apiClient.getUser(userId).then(setUser);
-  }, [userId]);
-  
-  return <div>{user.name}</div>;
-};
+### Bug Fix Workflow
 
-// ✅ Good: Proper error handling and loading states
-const UserProfile = ({ userId }: { userId: string }) => {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => apiClient.getUser(userId),
-    enabled: !!userId,
-  });
-  
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading user</div>;
-  if (!user) return <div>User not found</div>;
-  
-  return <div>{user.name}</div>;
-};
+```bash
+# 1. Create bugfix branch
+git checkout -b bugfix/fix-critical-issue
+
+# 2. Reproduce the bug with a test
+git add .
+git commit -m "test(bug): reproduce issue with failing test"
+
+# 3. Fix the bug
+git add .
+git commit -m "fix(component): resolve critical issue
+
+Detailed explanation of what was causing the bug
+and how this fix resolves it.
+
+Fixes #123"
+
+# 4. Verify fix and push
+npm test && mvn test
+git push origin bugfix/fix-critical-issue
 ```
 
-## Development Best Practices
+## Communication Guidelines
 
-### 1. Test-Driven Development (TDD)
+### Using Slack Community
 
-```java
-// 1. Write failing test
-@Test
-void shouldCreateUserWithHashedPassword() {
-    // Given
-    CreateUserRequest request = new CreateUserRequest("test@example.com", "password");
-    
-    // When & Then
-    assertThatThrownBy(() -> userService.createUser(request))
-        .isInstanceOf(UserAlreadyExistsException.class);
-}
+- **General Discussion**: Use #general for broad questions
+- **Technical Help**: Use #dev-help for development issues  
+- **Feature Requests**: Discuss in #feature-requests before implementing
+- **Bug Reports**: Report in #bug-reports with reproduction steps
 
-// 2. Write minimal code to pass
-public UserResponse createUser(CreateUserRequest request) {
-    throw new UserAlreadyExistsException("User already exists");
-}
+### Issue Management
 
-// 3. Refactor to proper implementation
-public UserResponse createUser(CreateUserRequest request) {
-    if (userExists(request.getEmail())) {
-        throw new UserAlreadyExistsException("User already exists");
-    }
-    // ... proper implementation
-}
-```
+We use Slack for all project management instead of GitHub Issues:
 
-### 2. Error Handling Patterns
+1. **Bug Reports**: Post in #bug-reports with:
+   - Clear description of the issue
+   - Steps to reproduce
+   - Expected vs actual behavior
+   - Environment details (OS, Java version, etc.)
 
-```java
-// Custom exception hierarchy
-public abstract class OpenFrameException extends RuntimeException {
-    protected OpenFrameException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
+2. **Feature Requests**: Discuss in #feature-requests:
+   - Use case and business justification
+   - Proposed implementation approach
+   - Impact on existing functionality
 
-public class UserNotFoundException extends OpenFrameException {
-    public UserNotFoundException(String userId) {
-        super("User not found: " + userId, null);
-    }
-}
+3. **Questions**: Ask in appropriate channels:
+   - Tag relevant team members
+   - Provide context and code snippets
+   - Be specific about what you've already tried
 
-// Global exception handler
-@ControllerAdvice
-public class GlobalExceptionHandler {
-    
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(new ErrorResponse("USER_NOT_FOUND", e.getMessage()));
-    }
-}
-```
+## Code of Conduct Violations
 
-### 3. Logging Standards
+If you experience or witness behavior that violates our code of conduct:
 
-```java
-@Service
-public class UserService {
-    
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-    
-    public UserResponse createUser(CreateUserRequest request) {
-        logger.info("Creating user with email: {}", request.getEmail());
-        
-        try {
-            User user = processUserCreation(request);
-            logger.info("Successfully created user with ID: {}", user.getId());
-            return userMapper.toResponse(user);
-            
-        } catch (Exception e) {
-            logger.error("Failed to create user with email: {}", 
-                request.getEmail(), e);
-            throw e;
-        }
-    }
-}
-```
+1. **Document the Incident**: Record what happened, when, and who was involved
+2. **Report to Maintainers**: Contact project maintainers via direct message
+3. **Escalate if Needed**: Contact OpenMSP community moderators
 
-## Community and Support
+## Recognition
 
-### Getting Help
+We appreciate all contributions! Contributors are recognized through:
 
-- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **GitHub Discussions**: For technical questions and design discussions
-- **Documentation**: This developer documentation section
-- **Office Hours**: Weekly contributor sync meetings (announced in Slack)
+- **Contributor Credits**: Listed in project documentation
+- **Community Highlights**: Featured in community channels
+- **Swag and Rewards**: Special recognition for significant contributions
 
-### Contributing Areas
+## Getting Help
 
-#### High Priority
-- **Bug fixes**: Issues labeled with `bug` and `high-priority`
-- **Security improvements**: Security-related enhancements
-- **Performance optimizations**: Database queries, API response times
-- **Test coverage**: Areas with low test coverage
+### Resources
 
-#### Medium Priority
-- **Feature enhancements**: New functionality for existing features
-- **Documentation**: Improving developer and user documentation
-- **Developer experience**: Tooling and workflow improvements
-- **Code quality**: Refactoring and cleanup
+- **Documentation**: Start with our comprehensive docs
+- **Architecture Guide**: Understand the system design
+- **Code Examples**: Learn from existing implementations
+- **Test Cases**: See how features should work
 
-#### Great for Beginners
-- **Documentation fixes**: Typos, clarity improvements
-- **Test additions**: Adding missing unit tests
-- **UI/UX improvements**: Frontend polish and usability
-- **Good first issue**: Issues labeled specifically for newcomers
+### Community Support
 
-### Recognition
+- **Slack Community**: [Join OpenMSP](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **Mentorship**: Experienced contributors help newcomers
+- **Code Reviews**: Learn from review feedback
+- **Pairing Sessions**: Work with maintainers on complex features
 
-Contributors are recognized through:
-- **Contributor list**: In README and documentation
-- **Release notes**: Acknowledgment in version releases
-- **Community highlights**: Featured in community updates
-- **Maintainer track**: Path to becoming a project maintainer
+---
 
-Thank you for contributing to OpenFrame! Your efforts help build a better MSP platform for the community. 🚀
+Thank you for contributing to OpenFrame OSS Tenant! Your contributions help build a better, more secure, and more powerful MSP platform for the entire community. 
+
+Remember: Every contribution, no matter how small, makes a difference. Whether it's fixing a typo, adding a test, or implementing a major feature, we appreciate your time and effort.

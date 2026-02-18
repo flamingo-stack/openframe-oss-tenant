@@ -1,9 +1,20 @@
 flowchart LR
     Client["Browser / Agent / External Client"] --> Gateway["Gateway Service Core"]
 
-    Gateway --> Authz["Authorization Server Core"]
     Gateway --> ApiService["API Service Core"]
+    Gateway --> AuthService["Authorization Service Core"]
     Gateway --> ExternalApi["External API Service Core"]
-    Gateway --> ClientService["Client Service Core"]
+    Gateway --> ManagementService["Management Service Core"]
+    Gateway --> ToolApi["Integrated Tool API"]
+    Gateway --> ToolAgent["Integrated Tool Agent"]
+    Gateway --> Nats["NATS WebSocket Endpoint"]
 
-    Gateway --> Mongo["Data Access Mongo"]
+    subgraph SecurityLayer["Security & Filters"]
+        JwtAuth["JWT Authentication"]
+        ApiKeyAuth["API Key Authentication"]
+        RateLimit["Rate Limiting"]
+        HeaderFilter["Authorization Header Injection"]
+        OriginFilter["Origin Sanitizer"]
+    end
+
+    Gateway --> SecurityLayer

@@ -1,0 +1,12 @@
+flowchart LR
+    Frontend["Frontend Tenant App Core"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+    Gateway --> ExternalApi["External API Service Core"]
+
+    ApiService --> Contracts["Api Lib Contracts"]
+    ExternalApi --> Contracts
+
+    ApiService --> Mongo["Data Mongo Core"]
+    ExternalApi --> Mongo
+
+    Contracts --> MongoDocs["Mongo Documents"]
