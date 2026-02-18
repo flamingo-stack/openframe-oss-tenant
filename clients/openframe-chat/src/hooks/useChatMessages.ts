@@ -106,6 +106,8 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
           data.approvalType || '',
           status
         )
+      } else if (segment.type === 'error') {
+        segmentAccumulator.addError(segment.title, segment.details)
       }
     })
     updateLastAssistantMessage(segmentAccumulator.getSegments())
