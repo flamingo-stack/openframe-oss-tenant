@@ -1,0 +1,7 @@
+flowchart TD
+    TokenRequest["Token Request"] --> JwkSourceNode["JWKSource"]
+    JwkSourceNode -->|"getTenantId()"| TenantKeyServiceNode["TenantKeyService"]
+    TenantKeyServiceNode -->|"Load or Create RSA Key"| MongoKeyDoc["TenantKey (Mongo)"]
+    TenantKeyServiceNode --> RSAKey["RSAKey (kid per tenant)"]
+    RSAKey --> JwtEncoderNode2["NimbusJwtEncoder"]
+    JwtEncoderNode2 --> SignedJwt["Signed JWT"]

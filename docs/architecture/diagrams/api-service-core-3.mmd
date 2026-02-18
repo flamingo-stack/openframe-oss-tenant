@@ -1,0 +1,4 @@
+flowchart LR
+    Request["Incoming Request"] --> JwtResolver["JwtIssuerAuthenticationManagerResolver"]
+    JwtResolver --> Cache["Caffeine JWT Provider Cache"]
+    Cache --> JwtProvider["JwtAuthenticationProvider"]

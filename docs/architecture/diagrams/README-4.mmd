@@ -1,0 +1,9 @@
+flowchart TD
+    Client["Frontend"] --> Gateway
+    Gateway --> ApiService["API Service Core"]
+
+    ApiService --> Controllers["REST Controllers"]
+    ApiService --> GraphQL["GraphQL DataFetchers"]
+    GraphQL --> DataLoaders["DataLoaders"]
+    Controllers --> Services["Domain Services"]
+    Services --> Mongo

@@ -1,0 +1,9 @@
+flowchart LR
+    Browser["Frontend Tenant App"] -->|"GET /oauth/login"| Bff["Security Oauth Core"]
+    Bff -->|"Authorize Redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"Authorization Code"| Bff
+    Bff -->|"Token Exchange"| AuthServer
+    AuthServer -->|"Access + Refresh Tokens"| Bff
+    Bff -->|"Set HttpOnly Cookies"| Browser
+
+    Gateway["Gateway Service"] -->|"Validates JWT"| ApiService["API Service"]

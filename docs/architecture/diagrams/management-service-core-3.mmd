@@ -1,0 +1,3 @@
+flowchart TD
+    Scheduler["Scheduled Task"] --> Lock["RedisLockProvider"]
+    Lock --> Redis["Redis"]

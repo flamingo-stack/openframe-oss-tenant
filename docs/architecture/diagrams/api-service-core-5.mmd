@@ -1,0 +1,4 @@
+flowchart TD
+    GraphQLQuery["GraphQL Query"] --> DeviceFetcher["DeviceDataFetcher"]
+    DeviceFetcher --> DataLoader["DataLoader"]
+    DataLoader --> BatchService["Batch Service Call"]

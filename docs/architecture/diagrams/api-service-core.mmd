@@ -1,0 +1,11 @@
+flowchart TD
+    Client["Frontend Tenant App"] --> Gateway["Gateway Service Core"]
+    Gateway --> ApiService["Api Service Core"]
+
+    ApiService --> Authz["Authorization Service Core"]
+    ApiService --> Mongo["Data Mongo Core"]
+    ApiService --> Redis["Data Redis Core"]
+    ApiService --> Kafka["Data Kafka Core"]
+
+    ApiService --> Stream["Stream Service Core"]
+    ApiService --> Management["Management Service Core"]

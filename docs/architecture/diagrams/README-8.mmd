@@ -1,0 +1,18 @@
+flowchart TD
+    Repo["openframe-oss-tenant"]
+
+    Repo --> Services["/services (Spring Boot Apps)"]
+    Repo --> ApiCore["api-service-core"]
+    Repo --> AuthCore["authorization-service-core"]
+    Repo --> GatewayCore["gateway-service-core"]
+    Repo --> StreamCore["stream-service-core"]
+    Repo --> MgmtCore["management-service-core"]
+    Repo --> ExternalCore["external-api-service-core"]
+
+    Repo --> MongoCore["data-mongo-core"]
+    Repo --> KafkaCore["data-kafka-core"]
+    Repo --> RedisCore["data-redis-core"]
+
+    Repo --> OAuthCore["security-oauth-core"]
+    Repo --> ApiContracts["api-lib-contracts"]
+    Repo --> Frontend["frontend-tenant-app-core"]

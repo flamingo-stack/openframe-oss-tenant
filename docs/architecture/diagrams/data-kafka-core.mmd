@@ -1,0 +1,27 @@
+flowchart TD
+    subgraph Applications["Service Applications"]
+        StreamApp["Stream Application"]
+        MgmtApp["Management Application"]
+    end
+
+    subgraph Infra["Data Kafka Core"]
+        KafkaConfig["Kafka Auto Configuration"]
+        KafkaTemplate["KafkaTemplate"]
+        ListenerFactory["Listener Container Factory"]
+        TopicAdmin["Kafka Admin & Topics"]
+        RecoveryHandler["Recovery Handler"]
+    end
+
+    KafkaCluster[("Kafka Cluster")]
+
+    StreamApp --> KafkaConfig
+    MgmtApp --> KafkaConfig
+
+    KafkaConfig --> KafkaTemplate
+    KafkaConfig --> ListenerFactory
+    KafkaConfig --> TopicAdmin
+    KafkaConfig --> RecoveryHandler
+
+    KafkaTemplate --> KafkaCluster
+    ListenerFactory --> KafkaCluster
+    TopicAdmin --> KafkaCluster

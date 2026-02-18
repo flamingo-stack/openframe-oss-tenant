@@ -1,0 +1,19 @@
+flowchart TD
+    OpenApiConfig["OpenApiConfig"]
+
+    subgraph controllers["REST Controllers"]
+        DeviceController
+        EventController
+        LogController
+        OrganizationController
+        ToolController
+        IntegrationController
+    end
+
+    IntegrationController --> RestProxyService["RestProxyService"]
+
+    DeviceController --> ApiServices["Domain Services"]
+    EventController --> ApiServices
+    LogController --> ApiServices
+    OrganizationController --> ApiServices
+    ToolController --> ApiServices

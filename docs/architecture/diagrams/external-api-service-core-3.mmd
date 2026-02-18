@@ -1,0 +1,12 @@
+flowchart TD
+    Client -->|"GET /api/v1/devices"| DeviceController
+    DeviceController --> FilterCriteria["DeviceFilterCriteria"]
+    DeviceController --> Pagination["PaginationCriteria"]
+    DeviceController --> SortCriteria
+
+    DeviceController --> DeviceService
+    DeviceService --> MongoRepo["Device Repository"]
+    DeviceService --> TagService
+
+    DeviceController --> DeviceMapper
+    DeviceMapper --> DevicesResponse

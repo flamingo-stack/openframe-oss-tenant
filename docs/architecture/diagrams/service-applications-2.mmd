@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant Auth as "Authorization Server"
+    participant API
+
+    Browser->>Gateway: HTTP Request
+    Gateway->>Auth: Validate JWT
+    Auth->>Gateway: Token Valid
+    Gateway->>API: Forward Request
+    API->>Gateway: Response
+    Gateway->>Browser: Response

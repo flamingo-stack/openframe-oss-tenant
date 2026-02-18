@@ -1,0 +1,4 @@
+flowchart LR
+    User["User"] -->|"POST /password-reset/request"| CreateToken["PasswordResetService.createResetToken"]
+    CreateToken --> Email["Send Reset Link"]
+    User -->|"POST /password-reset/confirm"| ResetPassword["PasswordResetService.resetPassword"]

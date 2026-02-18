@@ -1,0 +1,6 @@
+flowchart TD
+    Request["API Request"] --> BuildQuery["Build Query + Filters"]
+    BuildQuery --> ApplyCursor["Apply ObjectId Cursor"]
+    ApplyCursor --> ApplySort["Apply Sort Field"]
+    ApplySort --> Execute["MongoTemplate.find()"]
+    Execute --> Result["Paged Results"]

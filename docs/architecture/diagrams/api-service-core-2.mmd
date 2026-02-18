@@ -1,0 +1,43 @@
+flowchart TD
+    subgraph config["Configuration Layer"]
+        ApiApplicationConfig["ApiApplicationConfig"]
+        AuthenticationConfig["AuthenticationConfig"]
+        SecurityConfig["SecurityConfig"]
+    end
+
+    subgraph rest["REST Controllers"]
+        UserController["UserController"]
+        InvitationController["InvitationController"]
+        OrganizationController["OrganizationController"]
+        ApiKeyController["ApiKeyController"]
+        SSOConfigController["SSOConfigController"]
+        DeviceController["DeviceController"]
+        HealthController["HealthController"]
+    end
+
+    subgraph graphql["GraphQL Layer"]
+        DeviceDataFetcher["DeviceDataFetcher"]
+        EventDataFetcher["EventDataFetcher"]
+        LogDataFetcher["LogDataFetcher"]
+        OrganizationDataFetcher["OrganizationDataFetcher"]
+        ToolsDataFetcher["ToolsDataFetcher"]
+    end
+
+    subgraph dataloader["DataLoaders"]
+        OrganizationDataLoader["OrganizationDataLoader"]
+        TagDataLoader["TagDataLoader"]
+        ToolConnectionDataLoader["ToolConnectionDataLoader"]
+        InstalledAgentDataLoader["InstalledAgentDataLoader"]
+    end
+
+    subgraph service["Service & Processor Layer"]
+        UserService["UserService"]
+        SSOConfigService["SSOConfigService"]
+        DefaultUserProcessor["DefaultUserProcessor"]
+        DefaultInvitationProcessor["DefaultInvitationProcessor"]
+        DefaultSSOConfigProcessor["DefaultSSOConfigProcessor"]
+    end
+
+    rest --> service
+    graphql --> service
+    graphql --> dataloader

@@ -1,0 +1,10 @@
+flowchart TD
+    Tool["Integrated Tool"] --> Debezium["Debezium"]
+    Debezium --> Kafka["Kafka Topic"]
+    Kafka --> Stream["Stream Service"]
+
+    Stream --> Normalize["Event Normalization"]
+    Normalize --> Enrich["Data Enrichment"]
+    Enrich --> Mongo["MongoDB"]
+    Enrich --> Cassandra["Cassandra"]
+    Enrich --> KafkaOut["Outbound Kafka"]

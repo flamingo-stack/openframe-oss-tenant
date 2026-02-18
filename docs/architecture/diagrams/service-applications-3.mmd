@@ -1,0 +1,6 @@
+flowchart LR
+    KafkaTopic["Kafka Topic"] --> Listener["JsonKafkaListener"]
+    Listener --> Deserializer["Event Deserializer"]
+    Deserializer --> Handler["Message Handler"]
+    Handler --> Enrichment["Activity Enrichment Service"]
+    Enrichment --> Mongo[("MongoDB")]

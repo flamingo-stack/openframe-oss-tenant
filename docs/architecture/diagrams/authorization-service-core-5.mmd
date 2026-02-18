@@ -1,0 +1,7 @@
+flowchart TD
+    InviteLink["Invitation Link"] --> AcceptSso["/invitations/accept/sso"]
+    AcceptSso --> SetCookie["Set SSO Invite Cookie"]
+    SetCookie --> RedirectIdP["Redirect to IdP"]
+    RedirectIdP --> SuccessHandler["AuthSuccessHandler"]
+    SuccessHandler --> InviteHandlerNode["InviteSsoHandler"]
+    InviteHandlerNode --> RegisterUser["InvitationRegistrationService"]

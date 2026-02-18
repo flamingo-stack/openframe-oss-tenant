@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph tools["Integrated Tools"]
+        Fleet["Fleet MDM"]
+        Tactical["Tactical RMM"]
+        Mesh["MeshCentral"]
+    end
+
+    subgraph ingestion["Kafka Inbound Topics"]
+        InTopics["Tool Event Topics"]
+    end
+
+    subgraph streamcore["Stream Service Core"]
+        Listener["JsonKafkaListener"]
+        Deserializer["Tool Event Deserializers"]
+        Mapper["EventTypeMapper"]
+        Enrichment["IntegratedToolDataEnrichmentService"]
+        Handlers["Debezium Message Handlers"]
+        Streams["ActivityEnrichmentService"]
+    end
+
+    subgraph downstream["Downstream Systems"]
+        KafkaOut["Outbound Kafka Topics"]
+        Cassandra["Cassandra UnifiedLogEvent"]
+    end
+
+    Fleet --> InTopics
+    Tactical --> InTopics
+    Mesh --> InTopics
+
+    InTopics --> Listener
+    Listener --> Deserializer
+    Deserializer --> Mapper
+    Mapper --> Enrichment
+    Enrichment --> Handlers
+    Handlers --> KafkaOut
+    Handlers --> Cassandra
+
+    InTopics --> Streams
+    Streams --> KafkaOut

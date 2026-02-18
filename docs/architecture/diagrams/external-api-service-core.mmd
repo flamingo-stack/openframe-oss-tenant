@@ -1,0 +1,12 @@
+flowchart LR
+    Client["External Client<br/>Automation / Integration"] --> Gateway["Gateway Service"]
+    Gateway --> ExternalApi["External Api Service Core"]
+
+    ExternalApi --> ApiCore["Api Service Core"]
+    ExternalApi --> DataMongo["Data Mongo Core"]
+    ExternalApi --> DataKafka["Data Kafka Core"]
+
+    ExternalApi --> StreamCore["Stream Service Core"]
+    ExternalApi --> ManagementCore["Management Service Core"]
+
+    ExternalApi --> ToolProxy["Integrated Tool APIs"]

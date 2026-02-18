@@ -1,0 +1,19 @@
+flowchart TD
+    ClientApp["Frontend / Client"] --> Gateway["Gateway Application"]
+
+    Gateway --> ApiApp["API Application"]
+    Gateway --> ExternalApi["External API Application"]
+    Gateway --> AuthServer["Authorization Server Application"]
+
+    ApiApp --> MongoDB[("MongoDB")]
+    ApiApp --> Kafka[("Kafka")]
+
+    StreamApp["Stream Application"] --> Kafka
+    StreamApp --> MongoDB
+
+    ManagementApp["Management Application"] --> MongoDB
+    ManagementApp --> Kafka
+
+    AuthServer --> MongoDB
+
+    ConfigServer["Config Server Application"] --> AllServices["All Services"]

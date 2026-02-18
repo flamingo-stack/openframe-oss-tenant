@@ -1,0 +1,8 @@
+flowchart TD
+    UI --> ApiClient
+    UI --> AuthApiClient
+    UI --> FleetApiClient
+    UI --> TacticalApiClient
+
+    ApiClient --> Gateway
+    AuthApiClient --> AuthorizationServer

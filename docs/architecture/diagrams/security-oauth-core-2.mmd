@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as SecurityOauthCore
+    participant Auth as AuthorizationServer
+
+    Browser->>BFF: GET /oauth/login?tenantId=xyz
+    BFF->>Auth: Redirect to /authorize (PKCE + state)
+    Auth->>Browser: Login Page
+    Browser->>Auth: Submit credentials
+    Auth->>BFF: Redirect with code + state
+    BFF->>Auth: Exchange code for tokens
+    Auth->>BFF: access_token + refresh_token
+    BFF->>Browser: Set HttpOnly cookies + redirect

@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant Authz
+    participant API
+
+    Browser->>Authz: Login (OAuth2 / OIDC)
+    Authz-->>Browser: JWT (tenant-scoped)
+    Browser->>Gateway: API Request + JWT
+    Gateway->>Gateway: Validate Issuer & Signature
+    Gateway->>API: Forward Authenticated Request
+    API-->>Gateway: Response
+    Gateway-->>Browser: Response

@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Service Modules"] -->|"CRUD + Queries"| Repositories["Repositories"]
+    Repositories -->|"Spring Data"| MongoTemplate["MongoTemplate"]
+    MongoTemplate -->|"Driver"| MongoDB[("MongoDB")]
+
+    Config["MongoConfig"] --> Repositories
+    IndexConfig["MongoIndexConfig"] --> MongoDB

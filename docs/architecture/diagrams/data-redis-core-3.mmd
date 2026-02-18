@@ -1,0 +1,6 @@
+flowchart TD
+    TenantA["Tenant A"] --> PrefixA["tenantA:*"]
+    TenantB["Tenant B"] --> PrefixB["tenantB:*"]
+
+    PrefixA --> RedisA[("Redis Keys")]
+    PrefixB --> RedisA

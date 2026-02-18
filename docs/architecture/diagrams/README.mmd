@@ -1,0 +1,27 @@
+flowchart TD
+    User["Frontend Tenant App"] --> Gateway["Gateway Service"]
+    Gateway --> Authz["Authorization Service"]
+    Gateway --> Api["API Service"]
+    Gateway --> ExternalApi["External API Service"]
+
+    Api --> Mongo["Data Mongo Core"]
+    Api --> Redis["Data Redis Core"]
+    Api --> Kafka["Data Kafka Core"]
+
+    ExternalApi --> Mongo
+    Authz --> Mongo
+
+    Kafka --> Stream["Stream Service"]
+    Stream --> Mongo
+    Stream --> Cassandra["Cassandra"]
+
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+    Management --> Redis
+    Management --> Pinot["Pinot"]
+    Management --> NATS["NATS"]
+
+    Config["Config Server"] --> Gateway
+    Config --> Api
+    Config --> Authz
+    Config --> Stream

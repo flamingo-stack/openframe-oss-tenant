@@ -1,0 +1,5 @@
+flowchart LR
+    Event["Deserialized Event"] --> Enrichment["IntegratedToolDataEnrichmentService"]
+    Enrichment --> Redis["MachineIdCacheService"]
+    Redis --> Enrichment
+    Enrichment --> Enriched["IntegratedToolEnrichedData"]

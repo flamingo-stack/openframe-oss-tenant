@@ -1,0 +1,9 @@
+flowchart TD
+    Boot["Application Startup"] --> Init["Initializers"]
+    Init --> PinotInit["PinotConfigInitializer"]
+    Init --> NatsInit["NatsStreamInitializer"]
+    Init --> DebeziumInit["DebeziumConnectorInitializer"]
+    Init --> AgentInit["AgentInitializer"]
+
+    Runtime["Runtime"] --> Schedulers["Distributed Schedulers"]
+    Schedulers --> RedisLock["Redis (ShedLock)"]

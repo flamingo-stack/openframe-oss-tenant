@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Api
+    participant Authz
+
+    Client->>Authz: Login
+    Authz-->>Client: JWT
+    Client->>Gateway: Request with JWT
+    Gateway->>Api: Forward request
+    Api->>Api: Validate JWT issuer
+    Api-->>Gateway: Response
+    Gateway-->>Client: Response
