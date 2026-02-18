@@ -1,7 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> CheckHeader["Authorization Header Present?"]
-    CheckHeader -->|"Yes"| Continue
-    CheckHeader -->|"No"| ResolveToken["Resolve from Cookie/Header/Query"]
-    ResolveToken -->|"Found"| InjectHeader["Add Bearer Header"]
-    InjectHeader --> Continue
-    ResolveToken -->|"Not Found"| Continue

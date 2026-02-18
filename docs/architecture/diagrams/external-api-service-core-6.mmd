@@ -1,6 +1,0 @@
-flowchart TD
-    Client --> OrganizationController
-    OrganizationController --> OrganizationQueryService
-    OrganizationController --> OrganizationCommandService
-    OrganizationQueryService --> MongoOrg["Organization Repository"]
-    OrganizationCommandService --> MongoOrg

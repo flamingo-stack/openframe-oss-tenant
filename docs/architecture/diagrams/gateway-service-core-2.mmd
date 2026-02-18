@@ -1,7 +1,0 @@
-flowchart TD
-    Client["Admin or Agent"] --> Controller["Integration Controller"]
-    Controller --> RestProxy["RestProxyService"]
-    RestProxy --> Tool["Integrated Tool"]
-    Tool --> RestProxy
-    RestProxy --> Controller
-    Controller --> Client

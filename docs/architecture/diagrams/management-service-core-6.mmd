@@ -1,4 +1,0 @@
-flowchart TD
-    Start["Application Ready"] --> Check["List Connectors"]
-    Check -->|"None"| Load["Load Tools from Mongo"]
-    Load --> Create["Create Debezium Connectors"]

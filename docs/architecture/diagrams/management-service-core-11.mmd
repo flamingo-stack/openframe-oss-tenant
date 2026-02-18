@@ -1,9 +1,0 @@
-flowchart TD
-    Start["Application Boot"] --> InitPhase["Initializers Run"]
-    InitPhase --> Streams["NATS Streams Ready"]
-    InitPhase --> PinotReady["Pinot Tables Deployed"]
-    InitPhase --> Secrets["Agent Secret Created"]
-    InitPhase --> Connectors["Debezium Connectors Ready"]
-    Start --> Runtime["Runtime Operations"]
-    Runtime --> Schedulers["Background Jobs"]
-    Runtime --> Controllers["Management APIs"]

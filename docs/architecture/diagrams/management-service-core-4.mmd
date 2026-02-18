@@ -1,5 +1,0 @@
-flowchart TD
-    Ready["ApplicationReadyEvent"] --> Deploy["Deploy Pinot Config"]
-    Deploy --> Schema["POST /schemas"]
-    Deploy --> Table["PUT or POST /tables"]
-    Deploy --> Retry["Retry Mechanism"]
