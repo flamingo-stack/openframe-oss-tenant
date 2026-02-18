@@ -1,6 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> AddHeader["AddAuthorizationHeaderFilter"]
-    AddHeader --> JwtResolver["JwtIssuerReactiveAuthenticationManagerResolver"]
-    JwtResolver --> Cache["Issuer Managers Cache"]
-    Cache --> Decoder["NimbusReactiveJwtDecoder"]
-    Decoder --> Security["SecurityWebFilterChain"]

@@ -1,5 +1,0 @@
-flowchart LR
-    TenantContext["Tenant Context"] --> MongoQuery["Mongo Query Filter"]
-    TenantContext --> KafkaHeaders["Kafka Header"]
-    TenantContext --> RedisPrefix["Redis Key Prefix"]
-    TenantContext --> PinotFilter["Pinot WHERE organizationId"]

@@ -1,8 +1,0 @@
-flowchart LR
-    Frontend["Frontend Applications"] --> ApiService["Openframe Api Service Core"]
-    Frontend --> ExternalApi["External Api Service Core"]
-
-    ApiService --> Contracts["Openframe Api Contracts"]
-    ExternalApi --> Contracts
-
-    Contracts --> DataCore["Data Storage and Messaging Core"]

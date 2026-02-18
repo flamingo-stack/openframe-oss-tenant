@@ -1,6 +1,0 @@
-flowchart LR
-    Activity["Activity Stream"] --> Join
-    HostActivity["HostActivity Stream"] --> Join
-    Join --> Enriched["Enriched Activity"]
-    Enriched --> HeaderAdder["Add MessageType Header"]
-    HeaderAdder --> Output["Fleet MDM Events Topic"]

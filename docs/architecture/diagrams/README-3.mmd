@@ -1,7 +1,0 @@
-flowchart TD
-    Debezium["Debezium Event"] --> Deserializer["Tool Deserializer"]
-    Deserializer --> Mapper["EventTypeMapper"]
-    Mapper --> Enrichment["Data Enrichment"]
-    Enrichment --> Handler["DebeziumMessageHandler"]
-    Handler --> KafkaOut["Kafka"]
-    Handler --> CassandraOut["Cassandra"]

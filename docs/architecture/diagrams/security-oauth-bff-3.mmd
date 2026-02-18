@@ -1,5 +1,0 @@
-flowchart LR
-    Config["JwtConfig"] -->|"Load RSA Keys"| Encoder["JwtEncoder"]
-    Config -->|"Load Public Key"| Decoder["JwtDecoder"]
-    Encoder --> SignedJWT["Signed JWT"]
-    Decoder --> VerifiedJWT["Verified JWT"]

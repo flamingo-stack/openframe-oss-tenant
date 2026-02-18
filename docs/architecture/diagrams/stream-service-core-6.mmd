@@ -1,8 +1,0 @@
-flowchart TD
-    A["Kafka Debezium Event"] --> B["JsonKafkaListener"]
-    B --> C["Tool-Specific Deserializer"]
-    C --> D["EventTypeMapper"]
-    D --> E["IntegratedToolDataEnrichmentService"]
-    E --> F["DebeziumMessageHandler"]
-    F --> G1["Cassandra UnifiedLogEvent"]
-    F --> G2["Outbound Kafka IntegratedToolEvent"]

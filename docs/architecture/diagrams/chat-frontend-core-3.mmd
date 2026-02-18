@@ -1,6 +1,0 @@
-flowchart LR
-    Chunk["Incoming Chunk"] --> Parser["ChunkProcessor"]
-    Parser --> Action["ParsedChunkAction"]
-    Action --> Accumulator["AccumulatorState"]
-    Accumulator --> Segments["MessageSegment[]"]
-    Segments --> UI["Rendered Message"]

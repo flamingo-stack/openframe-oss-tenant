@@ -1,6 +1,0 @@
-flowchart TD
-    ExternalRequest["/external-api/** Request"] --> CheckKey["Check X-API-Key"]
-    CheckKey --> Validate["ApiKeyValidationService"]
-    Validate --> RateCheck["RateLimitService.isAllowed"]
-    RateCheck -->|"Allowed"| Forward["Forward to External API Service"]
-    RateCheck -->|"Exceeded"| Reject["429 Too Many Requests"]

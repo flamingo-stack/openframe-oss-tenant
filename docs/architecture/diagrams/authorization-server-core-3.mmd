@@ -1,9 +1,0 @@
-flowchart TD
-    TokenRequest["Access Token Request"] --> ResolveTenant["TenantContext.getTenantId()"]
-    ResolveTenant --> KeyService["TenantKeyService.getOrCreateActiveKey()"]
-    KeyService -->|"create if missing"| KeyGen["RsaAuthenticationKeyPairGenerator"]
-    KeyService --> Encrypt["EncryptionService"]
-    KeyService --> Repo[("TenantKeyRepository")]
-    KeyService --> Jwk["RSAKey (kid)"]
-    Jwk --> JwtEncoder["NimbusJwtEncoder"]
-    JwtEncoder --> AccessToken["Signed JWT"]

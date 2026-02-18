@@ -1,6 +1,0 @@
-flowchart TD
-    DevicesQuery["devices(filter, pagination)"] --> DeviceDataFetcher
-    DeviceDataFetcher --> DeviceService
-    DeviceService --> CustomMachineRepository
-    DeviceDataFetcher --> GraphQLDeviceMapper
-    GraphQLDeviceMapper --> Connection

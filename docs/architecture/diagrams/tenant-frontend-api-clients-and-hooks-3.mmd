@@ -1,4 +1,0 @@
-flowchart LR
-    Path["Auth Path"] --> CheckShared["Shared Host Config?"]
-    CheckShared -->|Yes| SharedURL["SHARED_HOST_URL + path"]
-    CheckShared -->|No| Relative["Relative Path"]

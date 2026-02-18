@@ -1,4 +1,0 @@
-flowchart LR
-    NatsHB["machine.*.heartbeat"] --> Listener["MachineHeartbeatListener"]
-    Listener --> StatusService["MachineStatusService"]
-    StatusService --> Online["Update Last Seen"]

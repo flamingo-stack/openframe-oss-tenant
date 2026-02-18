@@ -1,6 +1,0 @@
-flowchart TD
-    UUID["Fleet UUID"] --> Search["FleetMdmClient.searchHosts"]
-    Search --> Match{{"Matching Host?"}}
-    Match -->|"Yes"| Transform["Return host ID"]
-    Match -->|"No & not last"| Retry["Throw Exception"]
-    Match -->|"No & last"| Fallback["Return UUID"]

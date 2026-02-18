@@ -1,6 +1,0 @@
-flowchart TD
-    ClientRequest["Client Request"] --> BuildQuery["Build Mongo Query"]
-    BuildQuery --> ApplyFilters["Apply Filter Criteria"]
-    ApplyFilters --> ApplyCursor["Apply ObjectId Cursor"]
-    ApplyCursor --> ApplySort["Apply Sort Logic"]
-    ApplySort --> MongoDB[("MongoDB")]

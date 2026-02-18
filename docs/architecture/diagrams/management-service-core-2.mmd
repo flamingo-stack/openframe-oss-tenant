@@ -1,8 +1,0 @@
-flowchart TD
-    AppReady["ApplicationReadyEvent"] --> CheckEnabled{"Pinot Enabled?"}
-    CheckEnabled -->|"No"| Stop["Skip Deployment"]
-    CheckEnabled -->|"Yes"| LoadResources["Load JSON Schema & Table Config"]
-    LoadResources --> Resolve["Resolve Environment Placeholders"]
-    Resolve --> DeploySchema["POST /schemas"]
-    DeploySchema --> DeployTable["PUT or POST /tables"]
-    DeployTable --> Success["Deployment Complete"]

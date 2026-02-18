@@ -1,5 +1,0 @@
-flowchart LR
-    OAuthLogin["/oauth2/authorization/{provider}"] --> DynamicRepo["DynamicClientRegistrationRepository"]
-    DynamicRepo --> SSOService["DynamicClientRegistrationService"]
-    SSOService --> TenantConfig[("SSOPerTenantConfig")]
-    TenantConfig --> ClientRegistration["ClientRegistration"]

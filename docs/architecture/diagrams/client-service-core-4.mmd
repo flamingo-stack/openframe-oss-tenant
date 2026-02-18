@@ -1,5 +1,0 @@
-flowchart TD
-    Message["InstalledAgentMessage"] --> Parse["Deserialize JSON"]
-    Parse --> Extract["Extract machineId"]
-    Extract --> ServiceCall["InstalledAgentService.addInstalledAgent"]
-    ServiceCall --> Ack["message.ack()"]
