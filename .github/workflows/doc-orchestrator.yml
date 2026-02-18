@@ -447,43 +447,43 @@ jobs:
           echo "2️⃣ Parsing CodeWiki configuration..."
 
           # Parse nested cluster config
-          CODEWIKI_CLUSTER_PROVIDER=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.provider // "anthropic"')
-          CODEWIKI_CLUSTER_MODEL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.model // "claude-sonnet-4-5-20250929"')
-          CODEWIKI_CLUSTER_BASE_URL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.base_url // "https://api.anthropic.com/v1"')
-          CODEWIKI_CLUSTER_API_VERSION=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.api_version // ""')
-          CODEWIKI_CLUSTER_MAX_TOKENS=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.max_tokens // "32768"')
-          CODEWIKI_CLUSTER_MAX_TOKEN_FIELD=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.max_token_field // "max_tokens"')
-          CODEWIKI_CLUSTER_API_PATH=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.api_path // "/v1/chat/completions"')
-          CODEWIKI_CLUSTER_TEMPERATURE=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cluster.temperature // "0.0"')
-          CODEWIKI_CLUSTER_TEMPERATURE_SUPPORTED=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r 'if .cluster.temperature_supported == false then "false" elif .cluster.temperature_supported == true then "true" else "true" end')
+          CODEWIKI_CLUSTER_PROVIDER=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.provider // "anthropic"')
+          CODEWIKI_CLUSTER_MODEL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.model // "claude-sonnet-4-5-20250929"')
+          CODEWIKI_CLUSTER_BASE_URL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.base_url // "https://api.anthropic.com/v1"')
+          CODEWIKI_CLUSTER_API_VERSION=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.api_version // ""')
+          CODEWIKI_CLUSTER_MAX_TOKENS=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.max_tokens // "32768"')
+          CODEWIKI_CLUSTER_MAX_TOKEN_FIELD=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.max_token_field // "max_tokens"')
+          CODEWIKI_CLUSTER_API_PATH=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.api_path // "/v1/chat/completions"')
+          CODEWIKI_CLUSTER_TEMPERATURE=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cluster.temperature // "0.0"')
+          CODEWIKI_CLUSTER_TEMPERATURE_SUPPORTED=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r 'if .cluster.temperature_supported == false then "false" elif .cluster.temperature_supported == true then "true" else "true" end')
 
           # Parse nested generation config (enriched by buildPayloadFromRepo with model metadata)
-          CODEWIKI_GENERATION_PROVIDER=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.provider // "anthropic"')
-          CODEWIKI_GENERATION_MODEL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.model // "claude-sonnet-4-5-20250929"')
-          CODEWIKI_GENERATION_BASE_URL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.base_url // "https://api.anthropic.com/v1"')
-          CODEWIKI_GENERATION_MAX_TOKENS=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.max_tokens // "32768"')
-          CODEWIKI_GENERATION_MAX_TOKEN_FIELD=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.max_token_field // "max_tokens"')
-          CODEWIKI_GENERATION_API_PATH=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.api_path // "/v1/messages"')
-          CODEWIKI_GENERATION_API_VERSION=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.api_version // ""')
-          CODEWIKI_GENERATION_TEMPERATURE=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.generation.temperature // "0.0"')
-          CODEWIKI_GENERATION_TEMPERATURE_SUPPORTED=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r 'if .generation.temperature_supported == false then "false" elif .generation.temperature_supported == true then "true" else "true" end')
+          CODEWIKI_GENERATION_PROVIDER=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.provider // "anthropic"')
+          CODEWIKI_GENERATION_MODEL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.model // "claude-sonnet-4-5-20250929"')
+          CODEWIKI_GENERATION_BASE_URL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.base_url // "https://api.anthropic.com/v1"')
+          CODEWIKI_GENERATION_MAX_TOKENS=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.max_tokens // "32768"')
+          CODEWIKI_GENERATION_MAX_TOKEN_FIELD=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.max_token_field // "max_tokens"')
+          CODEWIKI_GENERATION_API_PATH=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.api_path // "/v1/messages"')
+          CODEWIKI_GENERATION_API_VERSION=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.api_version // ""')
+          CODEWIKI_GENERATION_TEMPERATURE=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.generation.temperature // "0.0"')
+          CODEWIKI_GENERATION_TEMPERATURE_SUPPORTED=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r 'if .generation.temperature_supported == false then "false" elif .generation.temperature_supported == true then "true" else "true" end')
 
           # Parse nested fallback config (enriched by buildPayloadFromRepo with model metadata)
-          CODEWIKI_FALLBACK_PROVIDER=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.provider // "anthropic"')
-          CODEWIKI_FALLBACK_MODEL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.model // "claude-sonnet-4-5-20250929"')
-          CODEWIKI_FALLBACK_BASE_URL=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.base_url // "https://api.anthropic.com/v1"')
-          CODEWIKI_FALLBACK_API_VERSION=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.api_version // ""')
-          CODEWIKI_FALLBACK_MAX_TOKENS=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.max_tokens // "32768"')
-          CODEWIKI_FALLBACK_MAX_TOKEN_FIELD=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.max_token_field // "max_tokens"')
-          CODEWIKI_FALLBACK_API_PATH=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.api_path // "/v1/messages"')
-          CODEWIKI_FALLBACK_TEMPERATURE=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.fallback.temperature // "0.0"')
-          CODEWIKI_FALLBACK_TEMPERATURE_SUPPORTED=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r 'if .fallback.temperature_supported == false then "false" elif .fallback.temperature_supported == true then "true" else "true" end')
+          CODEWIKI_FALLBACK_PROVIDER=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.provider // "anthropic"')
+          CODEWIKI_FALLBACK_MODEL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.model // "claude-sonnet-4-5-20250929"')
+          CODEWIKI_FALLBACK_BASE_URL=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.base_url // "https://api.anthropic.com/v1"')
+          CODEWIKI_FALLBACK_API_VERSION=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.api_version // ""')
+          CODEWIKI_FALLBACK_MAX_TOKENS=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.max_tokens // "32768"')
+          CODEWIKI_FALLBACK_MAX_TOKEN_FIELD=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.max_token_field // "max_tokens"')
+          CODEWIKI_FALLBACK_API_PATH=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.api_path // "/v1/messages"')
+          CODEWIKI_FALLBACK_TEMPERATURE=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.fallback.temperature // "0.0"')
+          CODEWIKI_FALLBACK_TEMPERATURE_SUPPORTED=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r 'if .fallback.temperature_supported == false then "false" elif .fallback.temperature_supported == true then "true" else "true" end')
 
           # Parse top-level config
-          CODEWIKI_MAX_FILES_PER_MODULE=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.max_files_per_module // "5"')
-          CODEWIKI_MAX_DEPTH=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.max_depth // "3"')
-          CODEWIKI_CACHE_ENABLED=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.cache_enabled // "true"')
-          CODEWIKI_REPO=$(echo '${{ env.CODEWIKI_CONFIG_JSON }}' | jq -r '.repo // "git+https://github.com/flamingo-stack/CodeWiki.git@main"')
+          CODEWIKI_MAX_FILES_PER_MODULE=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.max_files_per_module // "5"')
+          CODEWIKI_MAX_DEPTH=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.max_depth // "3"')
+          CODEWIKI_CACHE_ENABLED=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.cache_enabled // "true"')
+          CODEWIKI_REPO=$(echo "${CODEWIKI_CONFIG_JSON}" | jq -r '.repo // "git+https://github.com/flamingo-stack/CodeWiki.git@main"')
 
           echo "   Cluster (Phase 2): $CODEWIKI_CLUSTER_PROVIDER / $CODEWIKI_CLUSTER_MODEL (${CODEWIKI_CLUSTER_MAX_TOKEN_FIELD}, ${CODEWIKI_CLUSTER_MAX_TOKENS} tokens)"
           echo "   Generation (Phase 3+): $CODEWIKI_GENERATION_PROVIDER / $CODEWIKI_GENERATION_MODEL (${CODEWIKI_GENERATION_MAX_TOKEN_FIELD}, ${CODEWIKI_GENERATION_MAX_TOKENS} tokens)"
@@ -500,7 +500,7 @@ jobs:
           echo "3️⃣ Parsing YouTube configuration..."
 
           # Parse YouTube config from JSONB (channels only - API key from secrets)
-          YOUTUBE_CHANNELS=$(echo '${{ env.YOUTUBE_CONFIG_JSON }}' | jq -c '.channels // []')
+          YOUTUBE_CHANNELS=$(echo "${YOUTUBE_CONFIG_JSON}" | jq -c '.channels // []')
 
           # YouTube is enabled if channels array has items
           YOUTUBE_ENABLED=$(echo "$YOUTUBE_CHANNELS" | jq -r 'if length > 0 then "true" else "false" end')
@@ -517,9 +517,9 @@ jobs:
           echo "4️⃣ Parsing README logo configuration..."
 
           # Parse README config from JSONB
-          README_LOGO_DARK=$(echo '${{ env.README_CONFIG_JSON }}' | jq -r '.logo_dark // ""')
-          README_LOGO_LIGHT=$(echo '${{ env.README_CONFIG_JSON }}' | jq -r '.logo_light // ""')
-          README_LOGO_ALT=$(echo '${{ env.README_CONFIG_JSON }}' | jq -r '.logo_alt // "Project Logo"')
+          README_LOGO_DARK=$(echo "${README_CONFIG_JSON}" | jq -r '.logo_dark // ""')
+          README_LOGO_LIGHT=$(echo "${README_CONFIG_JSON}" | jq -r '.logo_light // ""')
+          README_LOGO_ALT=$(echo "${README_CONFIG_JSON}" | jq -r '.logo_alt // "Project Logo"')
 
           echo "   Dark logo: ${README_LOGO_DARK:-'(not set)'}"
           echo "   Light logo: ${README_LOGO_LIGHT:-'(not set)'}"
@@ -532,11 +532,11 @@ jobs:
           # ===================================================================
           echo "5️⃣ Parsing output paths..."
 
-          DOCS_OUTPUT_PATH=$(echo '${{ env.OUTPUT_PATHS_JSON }}' | jq -r '.docs // "docs"')
-          REFERENCE_OUTPUT_PATH=$(echo '${{ env.OUTPUT_PATHS_JSON }}' | jq -r '.reference // "docs/architecture"')
-          DIAGRAMS_OUTPUT_PATH=$(echo '${{ env.OUTPUT_PATHS_JSON }}' | jq -r '.diagrams // "docs/diagrams/architecture"')
-          GETTING_STARTED_OUTPUT_PATH=$(echo '${{ env.OUTPUT_PATHS_JSON }}' | jq -r '.getting_started // "docs/getting-started"')
-          DEVELOPMENT_OUTPUT_PATH=$(echo '${{ env.OUTPUT_PATHS_JSON }}' | jq -r '.development // "docs/development"')
+          DOCS_OUTPUT_PATH=$(echo "${OUTPUT_PATHS_JSON}" | jq -r '.docs // "docs"')
+          REFERENCE_OUTPUT_PATH=$(echo "${OUTPUT_PATHS_JSON}" | jq -r '.reference // "docs/architecture"')
+          DIAGRAMS_OUTPUT_PATH=$(echo "${OUTPUT_PATHS_JSON}" | jq -r '.diagrams // "docs/diagrams/architecture"')
+          GETTING_STARTED_OUTPUT_PATH=$(echo "${OUTPUT_PATHS_JSON}" | jq -r '.getting_started // "docs/getting-started"')
+          DEVELOPMENT_OUTPUT_PATH=$(echo "${OUTPUT_PATHS_JSON}" | jq -r '.development // "docs/development"')
 
           echo "   Base docs: $DOCS_OUTPUT_PATH"
           echo "   Reference: $REFERENCE_OUTPUT_PATH"
@@ -552,10 +552,10 @@ jobs:
           echo "6️⃣ Setting custom instructions and external repos..."
 
           # Custom instructions come as plain text
-          CUSTOM_INSTRUCTIONS='${{ env.CUSTOM_REPO_INSTRUCTIONS }}'
+          CUSTOM_INSTRUCTIONS="${CUSTOM_REPO_INSTRUCTIONS}"
 
           # External repos come as separate JSON array parameter
-          EXTERNAL_REPOS='${{ env.EXTERNAL_REPOS }}'
+          EXTERNAL_REPOS="${EXTERNAL_REPOS}"
 
           EXTERNAL_REPOS_COUNT=$(echo "$EXTERNAL_REPOS" | jq '. | length' 2>/dev/null || echo "0")
           echo "   Instructions length: ${#CUSTOM_INSTRUCTIONS} chars"
