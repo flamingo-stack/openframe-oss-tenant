@@ -8,6 +8,7 @@ export interface RemoteSettingsConfig {
   frameRate: 'smooth' | 'fast' | 'medium' | 'slow' | 'very slow'
   swapMouseButtons: boolean
   useRemoteKeyboardMap: boolean
+  invertScrollDirection: boolean
 }
 
 // Map quality percentage to JPEG quality value (1-100)
@@ -47,7 +48,8 @@ export const DEFAULT_SETTINGS: RemoteSettingsConfig = {
   scaling: 1024,
   frameRate: 'medium',
   swapMouseButtons: false,
-  useRemoteKeyboardMap: false
+  useRemoteKeyboardMap: false,
+  invertScrollDirection: false
 }
 
 export class RemoteDesktopSettings {

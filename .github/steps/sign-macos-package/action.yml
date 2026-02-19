@@ -1,14 +1,11 @@
 name: Sign MacOS package
-description: Sign built universal MacOS package and Notarize it
+description: Sign and notarize a macOS binary or Tauri .app bundle. Auto-detects mode from artifacts.
 inputs:
   apple_certificate_p12:
     description: 'Base64 encoded Apple Developer certificate (.p12)'
     required: true
   apple_certificate_password:
     description: 'Password for the .p12 certificate'
-    required: true
-  apple_developer_id:
-    description: 'Apple Developer ID string'
     required: true
   apple_id_username:
     description: 'Apple ID username for notarization'
@@ -17,47 +14,40 @@ inputs:
     description: 'App-specific password for Apple ID'
     required: true
   apple_team_id:
-    description: 'Apple Developer ID'
+    description: 'Apple Developer Team ID'
     required: true
-  binary_name:
-    description: 'Name of built MacOS binary (e.g. "rmmagent")'
+  name:
+    description: 'Client name (e.g. "openframe-client"). Used for binary path and DMG naming.'
+    required: true
+  target_path:
+    description: 'Cargo target directory (e.g. ./clients/openframe-chat/src-tauri/target)'
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Setup and export all needed vars
-      shell: bash
-      run: |
-        BINARY_NAME="${{ inputs.binary_name }}"
-        BINARY_PATH="./artifacts/$BINARY_NAME"
-        DEVELOPER_ID="${{ inputs.apple_developer_id }}"
-
-        echo "BINARY_NAME=$BINARY_NAME"  >> $GITHUB_ENV
-        echo "BINARY_PATH=$BINARY_PATH" >> $GITHUB_ENV
-        echo "DEVELOPER_ID=$DEVELOPER_ID" >> $GITHUB_ENV
-
     - name: Setup Apple Code Signing
       shell: bash
       run: |
         CERTIFICATE_PATH="$HOME/certificate.p12"
         KEYCHAIN_PATH="$HOME/signing.keychain-db"
-        
+
         # Decode certificate and create keychain
         echo "${{ inputs.apple_certificate_p12 }}" | base64 --decode > "$CERTIFICATE_PATH"
         security create-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
         security default-keychain -s "$KEYCHAIN_PATH"
         security unlock-keychain -p "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
-        
+
         # Import certificate and set key partition list
         security import "$CERTIFICATE_PATH" -P "${{ inputs.apple_certificate_password }}" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
         security set-key-partition-list -S apple-tool:,apple: -s -k "${{ inputs.apple_certificate_password }}" "$KEYCHAIN_PATH"
-                
+
         # Verify setup, cleanup initial cert and export path
         security find-identity -v -p codesigning "$KEYCHAIN_PATH"
         rm "$CERTIFICATE_PATH"
         echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
-        # Extract the signing identity from the keychain (use SHA-1 hash for reliability)
+
+        # Extract the signing identity from the keychain
         SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
         if [[ -z "$SIGNING_IDENTITY" ]]; then
           echo "Error: No Developer ID Application identity found in keychain"
@@ -66,24 +56,49 @@ runs:
         echo "Found signing identity: $SIGNING_IDENTITY"
         echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> $GITHUB_ENV
 
-    - name: Code Sign Standalone binary
+    - name: Detect signing mode
+      shell: bash
+      run: |
+        NAME="${{ inputs.name }}"
+        TARGET_PATH="${{ inputs.target_path }}"
+
+        # Check for Tauri .app bundle
+        BUNDLE_DIR="$TARGET_PATH/universal-apple-darwin/release/bundle/macos"
+        APP_PATH=""
+        if [[ -d "$BUNDLE_DIR" ]]; then
+          for app in "$BUNDLE_DIR"/*.app; do
+            [[ -d "$app" ]] && APP_PATH="$app" && break
+          done
+        fi
+        if [[ -n "$APP_PATH" ]]; then
+          echo "SIGN_MODE=tauri" >> $GITHUB_ENV
+          echo "APP_PATH=$APP_PATH" >> $GITHUB_ENV
+          echo "DMG_NAME=${NAME}_universal.dmg" >> $GITHUB_ENV
+          echo "Detected Tauri app: $APP_PATH"
+        else
+          echo "SIGN_MODE=binary" >> $GITHUB_ENV
+          echo "BINARY_PATH=./artifacts/$NAME" >> $GITHUB_ENV
+          echo "Detected standalone binary: ./artifacts/$NAME"
+        fi
+
+    # ── Standalone binary flow ──
+
+    - name: Sign standalone binary
+      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
         chmod +x "$BINARY_PATH"
-        # Sign the binary and verify
         codesign --sign "$SIGNING_IDENTITY" --timestamp --options runtime --deep --force "$BINARY_PATH"
-
-        # Verify signature
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
-        codesign -dv --verbose=4 "$BINARY_PATH"
         echo "Binary signed successfully"
 
-    - name: Create archive and submit for Notarization
+    - name: Notarize standalone binary
+      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
+        BINARY_NAME="${{ inputs.name }}"
         zip "${BINARY_NAME}.zip" -j "$BINARY_PATH"
 
-        echo "Submitting binary for notarization..."
         xcrun notarytool submit "${BINARY_NAME}.zip" \
           --apple-id "${{ inputs.apple_id_username }}" \
           --password "${{ inputs.apple_id_password }}" \
@@ -91,17 +106,62 @@ runs:
           --wait \
           --timeout 30m
 
-        # Cleanup zip
         rm "${BINARY_NAME}.zip"
-        echo "Notarization completed successfully"          
+        echo "Notarization completed successfully"
 
-    - name: Verify Final Binary
+    - name: Verify standalone binary
+      if: env.SIGN_MODE == 'binary'
       shell: bash
       run: |
-        # Verify code signature and notarization
         codesign --verify --deep --strict --verbose=2 "$BINARY_PATH"
         spctl --assess --type open --context context:primary-signature --verbose "$BINARY_PATH" || true
         echo "Binary is signed, notarized, and ready for distribution"
+
+    # ── Tauri app flow ──
+
+    - name: Sign Tauri app bundle
+      if: env.SIGN_MODE == 'tauri'
+      shell: bash
+      run: |
+        codesign --sign "$SIGNING_IDENTITY" --timestamp --options runtime --deep --force "$APP_PATH"
+        codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+        echo "App bundle signed successfully"
+
+    - name: Create and sign DMG
+      if: env.SIGN_MODE == 'tauri'
+      shell: bash
+      run: |
+        mkdir -p ./artifacts ./dmg-staging
+        cp -R "$APP_PATH" ./dmg-staging/
+        ln -s /Applications ./dmg-staging/Applications
+        hdiutil create -volname "${{ inputs.name }}" -srcfolder ./dmg-staging -ov -format UDZO "./artifacts/$DMG_NAME"
+        rm -rf ./dmg-staging
+        codesign --sign "$SIGNING_IDENTITY" --timestamp "./artifacts/$DMG_NAME"
+        echo "DMG created and signed: ./artifacts/$DMG_NAME"
+
+    - name: Notarize DMG
+      if: env.SIGN_MODE == 'tauri'
+      shell: bash
+      run: |
+        xcrun notarytool submit "./artifacts/$DMG_NAME" \
+          --apple-id "${{ inputs.apple_id_username }}" \
+          --password "${{ inputs.apple_id_password }}" \
+          --team-id "${{ inputs.apple_team_id }}" \
+          --wait \
+          --timeout 30m
+        xcrun stapler staple "./artifacts/$DMG_NAME"
+        echo "DMG notarized and stapled successfully"
+
+    - name: Verify DMG
+      if: env.SIGN_MODE == 'tauri'
+      shell: bash
+      run: |
+        codesign --verify --verbose=2 "./artifacts/$DMG_NAME"
+        spctl --assess --type open --context context:primary-signature --verbose "./artifacts/$DMG_NAME" || true
+        echo "DMG is signed, notarized, and ready for distribution"
+        ls -lh ./artifacts/
+
+    # ── Shared cleanup ──
 
     - name: Cleanup Keychain
       if: always()

@@ -20,8 +20,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends git gcc libc6-dev redis-tools
 
 # Clone the repository and install dependencies
-ARG TACTICAL_BRANCH=feature/super-policy
-RUN git clone -b ${TACTICAL_BRANCH} https://github.com/flamingo-stack/tacticalrmm.git .
+RUN git clone https://github.com/flamingo-stack/tacticalrmm.git . && \
+    git checkout 63e1adb782a656d2b6af4d5bed12e685b50a60ad
 
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel daphne django_extensions django-silk && \
