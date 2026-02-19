@@ -1,6 +1,6 @@
-flowchart TD
-    Client --> LogController
-    LogController --> LogFilterCriteria
-    LogController --> LogService
-    LogService --> LogStorage["Log Storage"]
-    LogController --> LogMapper
+flowchart LR
+    Client["Client"] --> Controller["OrganizationController"]
+    Controller --> QuerySvc["OrganizationQueryService"]
+    Controller --> CommandSvc["OrganizationCommandService"]
+    QuerySvc --> Mongo[("Mongo Data Layer")]
+    CommandSvc --> Mongo

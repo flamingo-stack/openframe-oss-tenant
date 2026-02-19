@@ -1,4 +1,6 @@
 flowchart TD
-    GraphQLQuery["GraphQL Query"] --> DeviceFetcher["DeviceDataFetcher"]
-    DeviceFetcher --> DataLoader["DataLoader"]
-    DataLoader --> BatchService["Batch Service Call"]
+    Start["Soft Delete Request"] --> SelfCheck{"Requester equals Target?"}
+    SelfCheck -->|"Yes"| Error1["UserSelfDeleteNotAllowedException"]
+    SelfCheck -->|"No"| OwnerCheck{"Has OWNER Role?"}
+    OwnerCheck -->|"Yes"| Error2["OperationNotAllowedException"]
+    OwnerCheck -->|"No"| MarkDeleted["Set Status = DELETED"]

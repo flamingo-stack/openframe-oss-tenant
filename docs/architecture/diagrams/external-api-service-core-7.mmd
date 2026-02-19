@@ -1,12 +1,6 @@
 flowchart TD
-    Client --> IntegrationController
-    IntegrationController --> RestProxyService
-
-    RestProxyService --> ToolRepository["IntegratedToolRepository"]
-    RestProxyService --> ToolUrlService
-    RestProxyService --> ProxyUrlResolver
-
-    RestProxyService --> HttpClient["Apache HttpClient"]
-    HttpClient --> ExternalToolAPI["Integrated Tool API"]
-    ExternalToolAPI --> HttpClient
-    HttpClient --> RestProxyService
+    Gateway["Gateway Service Core"] --> ExternalApi["External Api Service Core"]
+    ExternalApi --> ApiCore["Api Service Core"]
+    ApiCore --> DataMongo["Data Layer Mongo"]
+    ApiCore --> DataCore["Data Layer Core"]
+    ApiCore --> StreamCore["Stream Service Core"]

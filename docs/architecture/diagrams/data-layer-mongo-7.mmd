@@ -1,0 +1,5 @@
+flowchart TD
+    QueryStart["Build Query"] --> ExcludeDeleted["deleted == false OR not exists"]
+    ExcludeDeleted --> ApplyFilters
+    ApplyFilters --> Combine["Combine using $and"]
+    Combine --> ExecuteQuery

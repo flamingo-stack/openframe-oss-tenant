@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantContext
+    TenantContext --> OrganizationFilter
+    OrganizationFilter --> Repository
+    Repository --> MongoDB

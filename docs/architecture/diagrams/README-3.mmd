@@ -1,10 +1,9 @@
-flowchart TD
-    Tool["Integrated Tool"] --> Debezium["Debezium"]
-    Debezium --> Kafka["Kafka Topic"]
-    Kafka --> Stream["Stream Service"]
+flowchart LR
+    Tools["Integrated Tools"] --> Kafka["Kafka Topics"]
 
-    Stream --> Normalize["Event Normalization"]
-    Normalize --> Enrich["Data Enrichment"]
-    Enrich --> Mongo["MongoDB"]
-    Enrich --> Cassandra["Cassandra"]
-    Enrich --> KafkaOut["Outbound Kafka"]
+    Kafka --> Stream["Stream Service Core"]
+    Stream --> Enrichment["Event & Activity Enrichment"]
+    Enrichment --> Unified["Unified Events Topic"]
+
+    Unified --> API["API Service"]
+    Unified --> ExternalAPI["External API"]

@@ -1,7 +1,5 @@
 flowchart TD
-    Request["Incoming Request"] --> OriginFilter["Origin Sanitizer"]
-    OriginFilter --> HeaderInjection["Add Authorization Header Filter"]
-    HeaderInjection --> JwtValidation["JWT Authentication"]
-    JwtValidation --> RoleCheck["Role-Based Authorization"]
-    RoleCheck --> ApiKeyFilter["API Key Filter (external-api)"]
-    ApiKeyFilter --> Route["Route to Target Service"]
+    WsClient["WebSocket Client"] --> Gateway["Gateway Service Core"]
+    Gateway --> AgentProxy["Tool Agent WebSocket Proxy"]
+    Gateway --> ApiProxy["Tool API WebSocket Proxy"]
+    Gateway --> Nats["NATS WebSocket Endpoint"]

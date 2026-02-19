@@ -1,19 +1,8 @@
 flowchart TD
-    OpenApiConfig["OpenApiConfig"]
-
-    subgraph controllers["REST Controllers"]
-        DeviceController
-        EventController
-        LogController
-        OrganizationController
-        ToolController
-        IntegrationController
-    end
-
-    IntegrationController --> RestProxyService["RestProxyService"]
-
-    DeviceController --> ApiServices["Domain Services"]
-    EventController --> ApiServices
-    LogController --> ApiServices
-    OrganizationController --> ApiServices
-    ToolController --> ApiServices
+    Request["GET /api/v1/devices"] --> BuildFilter["Build DeviceFilterCriteria"]
+    BuildFilter --> BuildPagination["Build PaginationCriteria"]
+    BuildPagination --> BuildSort["Build SortCriteria"]
+    BuildSort --> Service["DeviceService.queryDevices()"]
+    Service --> Result["Cursor Result"]
+    Result --> Mapper["DeviceMapper"]
+    Mapper --> Response["DevicesResponse"]

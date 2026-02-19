@@ -1,6 +1,10 @@
 flowchart TD
-    Resource["Agent JSON Resource"] --> Parse["ObjectMapper"]
-    Parse --> Exists{"Agent Exists?"}
-    Exists -->|"Yes"| Update["Update Agent"]
-    Exists -->|"No"| Create["Create Agent"]
-    Update --> Publish["Publish Version Update"]
+    Admin["Admin User"] --> API["IntegratedToolController"]
+    API --> Service["IntegratedToolService"]
+    Service --> Mongo["MongoDB"]
+
+    Service --> DebeziumStep["DebeziumService"]
+    DebeziumStep --> Kafka["Kafka Cluster"]
+
+    API --> Hooks["Post Save Hooks"]
+    Hooks --> Nats["NATS JetStream"]

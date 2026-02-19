@@ -1,0 +1,5 @@
+flowchart LR
+    SpringBoot["Spring Boot"] --> MongoConfig
+    MongoConfig --> Converter["MappingMongoConverter"]
+    MongoConfig --> Repositories
+    Repositories --> MongoTemplate

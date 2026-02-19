@@ -1,0 +1,4 @@
+flowchart TD
+    StatusUpdate["Machine Status Updated"] --> Processor["DeviceStatusProcessor"]
+    Processor --> Default["DefaultDeviceStatusProcessor"]
+    Processor --> Custom["Custom Implementation (Optional)"]

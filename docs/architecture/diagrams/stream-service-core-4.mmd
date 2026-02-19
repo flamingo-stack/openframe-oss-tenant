@@ -1,5 +1,5 @@
-flowchart TD
-    Enriched["Enriched Debezium Message"] --> KafkaHandler["DebeziumKafkaMessageHandler"]
-    Enriched --> CassandraHandler["DebeziumCassandraMessageHandler"]
-    KafkaHandler --> KafkaOut["Outbound Topic"]
-    CassandraHandler --> CassandraDB["Cassandra UnifiedLogEvent"]
+flowchart LR
+    Tool["IntegratedToolType"] --> Key["tool:sourceEvent"]
+    Source["Source Event String"] --> Key
+    Key --> Lookup["Mapping Registry"]
+    Lookup --> Unified["UnifiedEventType"]

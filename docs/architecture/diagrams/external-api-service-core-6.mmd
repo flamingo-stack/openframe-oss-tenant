@@ -1,6 +1,10 @@
 flowchart TD
-    Client --> OrganizationController
-    OrganizationController --> OrganizationQueryService
-    OrganizationController --> OrganizationCommandService
-    OrganizationQueryService --> MongoOrg["Organization Repository"]
-    OrganizationCommandService --> MongoOrg
+    Client["Client"] --> Controller["External API Endpoint"]
+    Controller --> ProxySvc["RestProxyService"]
+    ProxySvc --> ToolRepo["IntegratedToolRepository"]
+    ProxySvc --> UrlService["ToolUrlService"]
+    ProxySvc --> Resolver["ProxyUrlResolver"]
+    Resolver --> Target["Tool API URL"]
+    ProxySvc --> HttpClient["Apache HttpClient"]
+    HttpClient --> Target
+    Target --> Response["HTTP Response"]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant DB as "MongoDB"
+    participant Debezium
+    participant Kafka
+    participant Stream as "Stream Service Core"
+
+    DB->>Debezium: Data change event
+    Debezium->>Kafka: Publish DebeziumMessage
+    Kafka->>Stream: Consume via ListenerFactory
+    Stream->>Stream: Enrich and process

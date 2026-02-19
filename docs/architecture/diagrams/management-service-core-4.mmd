@@ -1,5 +1,4 @@
-flowchart TD
-    Ready["ApplicationReadyEvent"] --> Deploy["Deploy Pinot Config"]
-    Deploy --> Schema["POST /schemas"]
-    Deploy --> Table["PUT or POST /tables"]
-    Deploy --> Retry["Retry Mechanism"]
+flowchart LR
+    IntegratedToolController --> HookInterface["IntegratedToolPostSaveHook"]
+    HookInterface --> HookImpl1["Custom Hook Implementation"]
+    HookInterface --> HookImpl2["Another Hook Implementation"]

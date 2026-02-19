@@ -1,22 +1,11 @@
 flowchart TD
-    App["ManagementApplication"] --> Config["Management Configuration"]
-    App --> Init["Initializers"]
-    App --> Controllers["REST Controllers"]
-    App --> Schedulers["Distributed Schedulers"]
+    ManagementApp["Management Application"] --> ManagementCore["Management Service Core"]
 
-    Init --> Pinot["PinotConfigInitializer"]
-    Init --> Nats["NatsStreamConfigurationInitializer"]
-    Init --> AgentInit["IntegratedToolAgentInitializer"]
-    Init --> ClientInit["OpenFrameClientConfigurationInitializer"]
-    Init --> SecretInit["AgentRegistrationSecretInitializer"]
-    Init --> DebeziumInit["DebeziumConnectorInitializer"]
+    ManagementCore --> DataLayer["Data Layer Mongo"]
+    ManagementCore --> NatsStreams["NATS JetStream"]
+    ManagementCore --> Debezium["Debezium Connectors"]
+    ManagementCore --> ClientPublisher["Client Update Publisher"]
 
-    Controllers --> ToolCtrl["IntegratedToolController"]
-    Controllers --> ReleaseCtrl["ReleaseVersionController"]
-
-    Schedulers --> ApiKeySync["ApiKeyStatsSyncScheduler"]
-    Schedulers --> DebeziumHealth["DebeziumHealthCheckScheduler"]
-    Schedulers --> AgentFallback["AgentVersionUpdatePublishFallbackScheduler"]
-
-    ToolCtrl --> DebeziumSvc["DebeziumService"]
-    AgentFallback --> Publisher["Update Publishers"]
+    DataLayer --> MongoDB[("MongoDB")]
+    NatsStreams --> NatsServer[("NATS Server")]
+    Debezium --> Kafka[("Kafka Cluster")]

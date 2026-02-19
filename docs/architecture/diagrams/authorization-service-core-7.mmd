@@ -1,0 +1,5 @@
+flowchart TD
+    AuthRequest["OAuth2 Request"] --> Save["Save Authorization"]
+    Save --> Mongo[("MongoOAuth2Authorization")]
+    TokenExchange["Token Exchange"] --> Lookup["Find By Token"]
+    Lookup --> Mongo

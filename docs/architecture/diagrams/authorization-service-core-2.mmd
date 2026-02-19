@@ -1,5 +1,6 @@
 flowchart TD
-    Request["Incoming HTTP Request"] --> Filter["TenantContextFilter"]
-    Filter -->|"Extract tenant from path"| SetContext["TenantContext.setTenantId()"]
-    SetContext --> Continue["Continue Security Chain"]
-    Continue --> Clear["TenantContext.clear() on finally"]
+    Request["Incoming Request"] --> Extract["Extract Tenant From Path"]
+    Extract --> Validate["Validate Context"]
+    Validate --> SetCtx["Set TenantContext"]
+    SetCtx --> Continue["Continue Filter Chain"]
+    Continue --> Clear["Clear TenantContext"]

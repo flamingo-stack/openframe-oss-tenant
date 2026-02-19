@@ -1,5 +1,9 @@
-flowchart LR
-    Event["Deserialized Event"] --> Enrichment["IntegratedToolDataEnrichmentService"]
-    Enrichment --> Redis["MachineIdCacheService"]
-    Redis --> Enrichment
-    Enrichment --> Enriched["IntegratedToolEnrichedData"]
+flowchart TD
+    Message["Incoming Debezium Message"] --> Validate["isValidMessage()"]
+    Validate --> Transform["transform()"]
+    Transform --> Op["getOperationType()"]
+    Op --> Route["pushData()"]
+    Route --> Create["handleCreate()"]
+    Route --> Update["handleUpdate()"]
+    Route --> Delete["handleDelete()"]
+    Route --> Read["handleRead()"]

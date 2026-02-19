@@ -1,11 +1,5 @@
 flowchart TD
-    Request["Incoming Request"] --> ExtractJwt["Extract JWT"]
-    ExtractJwt --> ResolveIssuer["Resolve Issuer"]
-    ResolveIssuer --> CacheCheck["Issuer Manager Cache"]
-
-    CacheCheck -->|"Hit"| UseManager["Use Cached Auth Manager"]
-    CacheCheck -->|"Miss"| BuildManager["Build JwtReactiveAuthenticationManager"]
-
-    BuildManager --> Validate["Validate Signature & Issuer"]
-    UseManager --> Validate
-    Validate --> SecurityContext["Populate Security Context"]
+    JwtAuthConfig["JwtAuthConfig"] --> Cache["Caffeine LoadingCache"]
+    Cache --> Manager["ReactiveAuthenticationManager"]
+    Manager --> Decoder["NimbusReactiveJwtDecoder"]
+    Decoder --> Validator["Default and Strict Issuer Validators"]

@@ -1,5 +1,10 @@
-flowchart LR
-    Activity["Fleet Activity Stream"] --> Join["Left Join Window 5s"]
-    HostActivity["Fleet Host Activity Stream"] --> Join
-    Join --> Header["HeaderAdder Processor"]
-    Header --> OutTopic["Enriched Fleet Event Topic"]
+flowchart TD
+    Activity["ActivityMessage"] --> ReKeyA["Key by Activity ID"]
+    HostActivity["HostActivityMessage"] --> ReKeyH["Key by Activity ID"]
+
+    ReKeyA --> Join["Left Join (5s window)"]
+    ReKeyH --> Join
+
+    Join --> Enriched["Set hostId + agentId"]
+    Enriched --> Header["Add MESSAGE_TYPE_HEADER"]
+    Header --> Output["Publish to Enriched Topic"]

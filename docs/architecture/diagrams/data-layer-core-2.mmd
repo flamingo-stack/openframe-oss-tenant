@@ -1,0 +1,4 @@
+flowchart TD
+    Start["Application Startup"] --> CheckProperty{"Cassandra Enabled?"}
+    CheckProperty -->|"Yes"| EnableRepos["Enable Cassandra Repositories"]
+    CheckProperty -->|"No"| SkipInit["Skip Cassandra Initialization"]
