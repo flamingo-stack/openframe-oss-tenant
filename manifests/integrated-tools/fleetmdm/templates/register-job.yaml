@@ -73,6 +73,11 @@ spec:
                       "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
                       "port": "8070",
                       "type": "DASHBOARD"
+                    },
+                    {
+                      "url": "ws://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
+                      "port": "8070",
+                      "type": "WS"
                     }
                   ],
                   "category": "Device Management",
