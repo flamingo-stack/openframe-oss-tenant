@@ -270,7 +270,6 @@ export function OrganizationsTable() {
       error={error}
       background="default"
       padding="none"
-      className="pt-6"
     >
       <Table
         data={filteredOrganizations}

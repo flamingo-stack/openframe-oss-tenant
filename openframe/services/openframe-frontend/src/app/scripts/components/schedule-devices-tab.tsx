@@ -64,19 +64,6 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
     [],
   )
 
-  // const renderRowActions = useMemo(
-  //   () => (agent: ScriptScheduleAgent) => (
-  //     <Button
-  //       variant="outline"
-  //       onClick={() => router.push(`/devices/details/${agent.agent_id}`)}
-  //       className="text-[14px]"
-  //     >
-  //       Details
-  //     </Button>
-  //   ),
-  //   [router],
-  // )
-
   if (error) {
     return <LoadError message={`Failed to load assigned devices: ${error}`} />
   }
@@ -104,7 +91,6 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
         skeletonRows={5}
         emptyMessage="No devices assigned to this schedule"
         showFilters={false}
-        // renderRowActions={renderRowActions}
       />
       {agents.length > 0 && (
         <div className="text-right text-[14px] text-ods-text-secondary">

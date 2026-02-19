@@ -1,6 +1,6 @@
 'use client'
 
-import { DetailPageContainer, LoadError, OS_PLATFORMS, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
+import { DetailPageContainer, LoadError, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
 import { useMdUp } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
@@ -27,6 +27,7 @@ import {
   type CreateScheduleFormData,
   type Platform,
 } from '../types/script-schedule.types'
+import { DISABLED_PLATFORMS, getAvailableOsPlatforms } from '../utils/script-utils'
 import { ScheduleActionFormCard } from './schedule-action-form-card'
 import { ScheduleCreateLoader } from './schedule-create-loader'
 
@@ -279,9 +280,9 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             {repeatEnabled && (
               <>
                 <div className="flex flex-col gap-1">
-                  <Label className="text-ods-text-secondary font-medium text-[14px]">
+                  {/* <Label className="text-ods-text-secondary font-medium text-[14px]">
                     Repeat in
-                  </Label>
+                  </Label> */}
                   <Controller
                     name="repeatInterval"
                     control={control}
@@ -324,15 +325,20 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
               Supported Platform
             </Label>
             <div className="flex gap-3 max-w-[920px]">
-              {OS_PLATFORMS.map((p) => (
-                <SelectButton
-                  key={p.id}
-                  title={p.name}
-                  icon={<p.icon className="w-5 h-5" />}
-                  selected={supportedPlatforms.includes(p.id)}
-                  onClick={() => togglePlatform(p.id)}
-                />
-              ))}
+              {getAvailableOsPlatforms().map((p) => {
+                const isDisabled = DISABLED_PLATFORMS.includes(p.id)
+                return (
+                  <SelectButton
+                    key={p.id}
+                    title={p.name}
+                    icon={<p.icon className="w-5 h-5" />}
+                    selected={!isDisabled && supportedPlatforms.includes(p.id)}
+                    disabled={isDisabled}
+                    tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
+                    onClick={isDisabled ? undefined : () => togglePlatform(p.id)}
+                  />
+                )
+              })}
             </div>
           </div>
 
@@ -355,7 +361,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             <Button
               variant="ghost-subtle"
               onClick={addAction}
-              className="self-start"
+              className="self-start text-ods-text-primary"
               leftIcon={<PlusCircleIcon size={20} />}
               noPadding
             >

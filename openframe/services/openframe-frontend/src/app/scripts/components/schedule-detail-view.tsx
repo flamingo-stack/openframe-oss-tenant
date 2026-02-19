@@ -25,19 +25,19 @@ interface ScheduleDetailViewProps {
 
 const SCHEDULE_TABS: TabItem[] = [
   {
-    id: 'scripts',
+    id: 'schedule-scripts',
     label: 'Scheduled Scripts',
     icon: BracketCurlyIcon,
     component: ScheduleScriptsTab,
   },
   {
-    id: 'devices',
+    id: 'schedule-devices',
     label: 'Assigned Devices',
     icon: MonitorIcon,
     component: ScheduleDevicesTab,
   },
   {
-    id: 'history',
+    id: 'schedule-history',
     label: 'Execution History',
     icon: ClockHistoryIcon,
     component: ScheduleHistoryTab,
@@ -93,7 +93,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={SCHEDULE_TABS} defaultTab="scripts" urlSync={true}>
+          <TabNavigation tabs={SCHEDULE_TABS} defaultTab="schedule-scripts" urlSync={true}>
             {(activeTab) => (
               <div className="pt-6">
                 <TabContent

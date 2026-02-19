@@ -435,7 +435,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       error={error}
       background="default"
       padding="none"
-      className="pt-6"
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       currentMobileFilters={tableFilters}

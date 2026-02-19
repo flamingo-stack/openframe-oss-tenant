@@ -1,3 +1,4 @@
+import { format } from 'date-fns'
 import { z } from 'zod'
 
 // ============ API Response Types ============
@@ -158,6 +159,31 @@ export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>
 
 // ============ Utility Functions ============
 
+/**
+ * Format a Date as Zulu string using local date components (no timezone shift).
+ * The user picks a time in the date picker — we treat it as UTC.
+ * Output: "yyyy-MM-dd'T'HH:mm:ss'Z'"
+ */
+export function toZuluDateString(date: Date): string {
+  return format(date, "yyyy-MM-dd'T'HH:mm:ss'Z'")
+}
+
+/**
+ * Parse a Zulu/UTC date string into a local Date whose local components
+ * match the UTC values. Ensures the date picker shows the same time as stored.
+ */
+export function parseZuluToLocalDate(isoString: string): Date {
+  const d = new Date(isoString)
+  return new Date(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+  )
+}
+
 export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
   switch (schedule.task_type) {
     case 'runonce':
@@ -180,8 +206,8 @@ export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
 
 export function formatScheduleDate(isoDate: string): { date: string; time: string } {
   const d = new Date(isoDate)
-  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' })
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' })
   return { date, time }
 }
 
@@ -235,7 +261,7 @@ export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): Create
   return {
     name: schedule.name,
     note: '',
-    scheduledDate: new Date(schedule.run_time_date),
+    scheduledDate: parseZuluToLocalDate(schedule.run_time_date),
     repeatEnabled: Boolean(repeatEnabled),
     repeatInterval,
     repeatPeriod,
@@ -265,7 +291,7 @@ export function buildCreatePayload(formData: CreateScheduleFormData): CreateScri
   const payload: CreateScriptSchedulePayload = {
     name: formData.name,
     task_type: taskType,
-    run_time_date: formData.scheduledDate.toISOString(),
+    run_time_date: toZuluDateString(formData.scheduledDate),
     task_supported_platforms: formData.supportedPlatforms,
     enabled: formData.enabled,
     actions,

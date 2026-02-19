@@ -75,7 +75,6 @@ export function Policies() {
       onSearch={setSearchTerm}
       error={error}
       padding="none"
-      className="pt-4"
     >
       <Table
         data={policies}
