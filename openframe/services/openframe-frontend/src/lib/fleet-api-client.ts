@@ -216,10 +216,13 @@ class FleetApiClient {
 
   async runLiveQuery(params: {
     query: string
-    host_ids?: number[]
-    label_ids?: number[]
-    team_ids?: number[]
-  }): Promise<ApiResponse<any>> {
+    query_id?: number | null
+    selected: {
+      hosts: number[]
+      labels: number[]
+      teams: number[]
+    }
+  }): Promise<ApiResponse<{ campaign: { id: number; query_id: number; created_at: string; updated_at: string; user_id: number } }>> {
     return this.post('/api/latest/fleet/queries/run', params)
   }
 

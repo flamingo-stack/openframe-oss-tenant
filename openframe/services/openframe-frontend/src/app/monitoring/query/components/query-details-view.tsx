@@ -115,7 +115,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
           loading={isReportLoading}
           emptyMessage="No report results available"
           columnOrder={['host_name', 'last_fetched']}
-          exportFilename={`query-${queryId}-report`}
+          exportFilename={`query-${queryDetails.name}-report`}
           onExport={() => {
             toast({ title: 'Report Exported', description: 'Query report exported as CSV', variant: 'success' })
           }}

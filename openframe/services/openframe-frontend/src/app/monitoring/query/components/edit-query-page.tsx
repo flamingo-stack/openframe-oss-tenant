@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ScriptEditor } from '../../../scripts/components/script-editor'
+import { LiveTestPanel } from '../../components/live-test-panel'
 import { useQueries } from '../../hooks/use-queries'
 import { useQueryDetails } from '../hooks/use-query-details'
 
@@ -199,6 +200,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             )}
           />
         </div>
+
+        {/* Test Query */}
+        <LiveTestPanel sql={watch('query')} mode="query" />
       </div>
     </FormPageContainer>
   )

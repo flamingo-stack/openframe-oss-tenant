@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ScriptEditor } from '../../../scripts/components/script-editor'
+import { LiveTestPanel } from '../../components/live-test-panel'
 import { usePolicies } from '../../hooks/use-policies'
 import { usePolicyDetails } from '../hooks/use-policy-details'
 
@@ -224,6 +225,9 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             )}
           />
         </div>
+
+        {/* Test Policy */}
+        <LiveTestPanel sql={watch('query')} mode="policy" />
       </div>
     </FormPageContainer>
   )
