@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, CheckboxBlock, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { isSaasSharedMode } from '@lib/app-mode'
 import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
@@ -30,7 +30,6 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const [isCheckingDomain, setIsCheckingDomain] = useState(false)
   const [isValidatingAccessCode, setIsValidatingAccessCode] = useState(false)
   const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
-  // const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   const orgNameRegex = /^[\p{L}\p{M}0-9&\.,'"()\- ]{2,100}$/u
@@ -165,76 +164,115 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </p>
           </div>
 
-          {/* Organization Name */}
-          <div className="flex flex-col gap-1">
-            <Label>Organization Name</Label>
-            <Input
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder="Your Company Name"
-              disabled={isLoading}
-              className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLoading && isOrgNameValid) {
-                  handleCreateOrganization()
-                }
-              }}
-            />
-            {orgName.trim() && !isOrgNameValid && (
-              <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,&apos;&quot;()-</p>
-            )}
+          {/* Email and Organization Name Fields - Side by Side */}
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="flex-1 flex flex-col gap-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={orgEmail}
+                onChange={(e) => setOrgEmail(e.target.value)}
+                placeholder="username@mail.com"
+                disabled={isLoading}
+                className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading && isOrgEmailValid && isOrgNameValid) {
+                    handleCreateOrganization()
+                  }
+                }}
+              />
+              {orgEmail.trim() && !isOrgEmailValid && (
+                <p className="text-xs text-error mt-1">Enter a valid email address</p>
+              )}
+            </div>
+            <div className="flex-1 flex flex-col gap-1">
+              <Label>Organization Name</Label>
+              <Input
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Your Company Name"
+                disabled={isLoading}
+                className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading && isOrgNameValid) {
+                    handleCreateOrganization()
+                  }
+                }}
+              />
+              {orgName.trim() && !isOrgNameValid && (
+                <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,&apos;&quot;()-</p>
+              )}
+            </div>
           </div>
 
-          {/* Domain */}
+          {/* Domain Field - Full Width */}
           <div className="flex flex-col gap-1">
-            <Label>{isSaasShared ? 'Subdomain' : 'Domain'}</Label>
-            <Input
-              value={domain}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLoading) {
-                  handleCreateOrganization()
-                }
-              }}
-              onChange={(e) => {
-                const value = isSaasShared
-                  ? e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                  : e.target.value
-                setDomain(value)
-                setSuggestedDomains([])
-              }}
-              placeholder={isSaasShared ? 'your-company' : 'localhost'}
-              disabled={isLoading}
-              className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-              endAdornment={
-                isSaasShared
-                  ? <span className="text-ods-text-secondary text-sm">.{SAAS_DOMAIN_SUFFIX}</span>
-                  : undefined
-              }
-            />
-            {suggestedDomains.length > 0 && (
-              <div className="text-sm text-ods-text-secondary">
-                <p className="mb-1">Available suggestions:</p>
-                <div className="flex flex-wrap gap-2">
-                  {suggestedDomains.map((suggestion, index) => (
-                    <Button
-                      key={index}
-                      onClick={() => {
-                        setDomain(suggestion)
-                        setSuggestedDomains([])
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="font-body"
-                    >
-                      {suggestion}.{SAAS_DOMAIN_SUFFIX}
-                    </Button>
-                  ))}
+            <Label>{isSaasShared ? 'Domain' : 'Domain'}</Label>
+            <div className="flex flex-col gap-2">
+              {isSaasShared ? (
+                <Input
+                  value={domain}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isLoading) {
+                      handleCreateOrganization()
+                    }
+                  }}
+                  onChange={(e) => {
+                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                    setDomain(value)
+                    setSuggestedDomains([])
+                  }}
+                  placeholder="localhost"
+                  disabled={isLoading}
+                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                  endAdornment={
+                    <span className="text-ods-text-secondary font-body text-[14px] font-medium whitespace-nowrap select-none">
+                      .{SAAS_DOMAIN_SUFFIX}
+                    </span>
+                  }
+                />
+              ) : (
+                <Input
+                  value={domain}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isLoading) {
+                      handleCreateOrganization()
+                    }
+                  }}
+                  onChange={(e) => {
+                    setDomain(e.target.value)
+                    setSuggestedDomains([])
+                  }}
+                  placeholder="localhost"
+                  disabled={isLoading}
+                  className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
+                />
+              )}
+              {suggestedDomains.length > 0 && (
+                <div className="text-sm text-ods-text-secondary">
+                  <p className="mb-1">Available suggestions:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedDomains.map((suggestion, index) => (
+                      <Button
+                        key={index}
+                        onClick={() => {
+                          setDomain(suggestion)
+                          setSuggestedDomains([])
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="font-body"
+                      >
+                        {suggestion}.{SAAS_DOMAIN_SUFFIX}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Access Code */}
+          {/* Access Code field for SaaS shared mode */}
           {isSaasShared && (
             <div className="flex flex-col gap-1">
               <Label>Access Code</Label>
@@ -256,20 +294,13 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             </div>
           )}
 
-          {/* Terms Checkbox */}
-          {/* <CheckboxBlock
-            checked={agreedToTerms}
-            onCheckedChange={(checked) => setAgreedToTerms(!!checked)}
-            label="Agree to Terms & Privacy Policy by signing up."
-          /> */}
-
           {/* Button Row */}
           <div className="flex gap-6 items-center">
             <div className="flex-1"></div>
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isValidatingAccessCode || isCheckingDomain}
+                disabled={!orgName.trim() || !isOrgEmailValid || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isValidatingAccessCode || isCheckingDomain}
                 loading={isLoading || isValidatingAccessCode || isCheckingDomain}
                 variant="primary"
                 className="!w-full sm:!w-full"
@@ -287,7 +318,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           {/* Header */}
           <div className="flex flex-col gap-2">
             <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px]">
-              Sign In to OpenFrame
+              Already Have an Account?
             </h1>
             <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">
               Enter you email to access your organization.
