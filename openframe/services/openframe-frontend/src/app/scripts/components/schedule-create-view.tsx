@@ -331,10 +331,10 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                     key={p.id}
                     title={p.name}
                     icon={<p.icon className="w-5 h-5" />}
-                    selected={supportedPlatforms.includes(p.id)}
-                    // disabled={isDisabled}
-                    // tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
-                    onClick={() => togglePlatform(p.id)}
+                    selected={!isDisabled && supportedPlatforms.includes(p.id)}
+                    disabled={isDisabled}
+                    tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
+                    onClick={isDisabled ? undefined : () => togglePlatform(p.id)}
                   />
                 )
               })}

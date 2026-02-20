@@ -5,7 +5,7 @@ const HIDDEN_PLATFORMS: OSPlatformId[] = ['linux']
 
 export const DISABLED_PLATFORMS: OSPlatformId[] = ['darwin']
 
-export const AVAILABLE_PLATFORMS = OS_PLATFORMS
+export const AVAILABLE_PLATFORMS = OS_PLATFORMS.filter(p => !HIDDEN_PLATFORMS.includes(p.id))
 
 /**
  * Map supported_platforms from script to osTypes filter values
