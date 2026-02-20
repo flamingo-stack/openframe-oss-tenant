@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation'
 import { AppLayout } from '@app/components/app-layout'
 import { FileManagerContainer } from '@/src/app/devices/details/[deviceId]/file-manager/components/file-manager-container'
 import { useDeviceDetails } from '@app/devices/hooks/use-device-details'
-import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core'
+import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
 import { getMeshCentralAgentId } from '@app/devices/utils/device-action-utils'
-import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
 import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
-import { ChevronLeft } from 'lucide-react'
 
 interface FileManagerPageProps {
   params: Promise<{
@@ -40,36 +38,49 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
 
   if (error) {
     return (
-      <AppLayout>
-        <div className="p-4">
-          <div className="text-ods-attention-red-error">
-            Error: {error}
+      <AppLayout mainClassName='pb-0 sm:pb-0'>
+        <DetailPageContainer
+          title='File Manager'
+          className='h-full'
+          contentClassName='flex flex-col min-h-0 overflow-hidden'
+          backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
+          padding='none'
+        >
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <div className="text-ods-attention-red-error text-lg">
+              Error: {error}
+            </div>
+            <Button variant="outline" onClick={() => router.push(`/devices/details/${deviceId}`)}>
+              Return to Device Details
+            </Button>
           </div>
-          <button
-            className="mt-4 text-ods-text-secondary hover:text-ods-text-primary underline"
-            onClick={() => router.push(`/devices/details/${deviceId}`)}
-          >
-            Return to Device Details
-          </button>
-        </div>
+        </DetailPageContainer>
       </AppLayout>
     )
   }
 
   if (!meshcentralAgentId) {
     return (
-      <AppLayout>
-        <div className="p-4">
-          <div className="text-ods-attention-red-error">
-            Error: MeshCentral Agent ID is required for file manager functionality
+      <AppLayout mainClassName='pb-0 sm:pb-0'>
+        <DetailPageContainer
+          title='File Manager'
+          className='h-full'
+          contentClassName='flex flex-col min-h-0 overflow-hidden'
+          backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
+          padding='none'
+        >
+          <div className="flex-1 flex flex-col items-center justify-center gap-4">
+            <div className="text-ods-attention-red-error text-lg">
+              MeshCentral Agent ID is required for file manager functionality
+            </div>
+            <p className="text-ods-text-secondary">
+              File manager requires MeshCentral agent to be connected.
+            </p>
+            <Button variant="outline" onClick={() => router.push(`/devices/details/${deviceId}`)}>
+              Return to Device Details
+            </Button>
           </div>
-          <button
-            className="mt-4 text-ods-text-secondary hover:text-ods-text-primary underline"
-            onClick={() => router.push(`/devices/details/${deviceId}`)}
-          >
-            Return to Device Details
-          </button>
-        </div>
+        </DetailPageContainer>
       </AppLayout>
     )
   }
@@ -77,7 +88,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
   const hostname = deviceDetails?.hostname || deviceDetails?.displayName
 
   return (
-    <AppLayout>
+    <AppLayout mainClassName='pb-0 sm:pb-0'>
       <FileManagerContainer
         deviceId={deviceId}
         meshcentralAgentId={meshcentralAgentId}
@@ -93,16 +104,20 @@ interface FileManagerPageSkeletonProps {
 
 function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
-    <AppLayout>
+    <AppLayout mainClassName='pb-0 sm:pb-0'>
       <DetailPageContainer
-        title={'File Manager'}
+        title='File Manager'
+        className='h-full'
+        contentClassName='flex flex-col min-h-0 overflow-hidden'
         backButton={{
           label: 'Back to Device',
           onClick: onBack
         }}
         padding='none'
       >
-        <FileManagerSkeleton />
+        <div className="flex flex-col flex-1 min-h-0">
+          <FileManagerSkeleton />
+        </div>
       </DetailPageContainer>
     </AppLayout>
   )

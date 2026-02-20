@@ -254,6 +254,8 @@ export function FileManagerContainer({
     <DetailPageContainer
       title={'File Manager'}
       subtitle={hostname || `Device ${deviceId}`}
+      className='h-full'
+      contentClassName='flex flex-col min-h-0 overflow-hidden'
       backButton={{
         label: 'Back to Device',
         onClick: handleBackToDevice
