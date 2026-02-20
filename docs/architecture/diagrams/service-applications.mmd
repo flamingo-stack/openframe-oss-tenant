@@ -1,19 +1,16 @@
-flowchart TD
-    ClientApp["Frontend / Client"] --> Gateway["Gateway Application"]
+flowchart LR
+    GatewayApp["Gateway Application"] --> ApiApp["API Application"]
+    GatewayApp --> ExternalApiApp["External API Application"]
 
-    Gateway --> ApiApp["API Application"]
-    Gateway --> ExternalApi["External API Application"]
-    Gateway --> AuthServer["Authorization Server Application"]
+    ApiApp --> DataMongo["Data Layer Mongo"]
+    ApiApp --> DataKafka["Data Layer Kafka"]
 
-    ApiApp --> MongoDB[("MongoDB")]
-    ApiApp --> Kafka[("Kafka")]
+    ExternalApiApp --> ApiCore["API Service Core"]
 
-    StreamApp["Stream Application"] --> Kafka
-    StreamApp --> MongoDB
+    ApiApp --> StreamApp["Stream Application"]
 
-    ManagementApp["Management Application"] --> MongoDB
-    ManagementApp --> Kafka
+    AuthApp["Authorization Server Application"] --> DataMongo
 
-    AuthServer --> MongoDB
+    ManagementApp["Management Application"] --> DataMongo
 
-    ConfigServer["Config Server Application"] --> AllServices["All Services"]
+    StreamApp --> KafkaBroker[("Kafka Cluster")]

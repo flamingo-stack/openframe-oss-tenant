@@ -1,5 +1,0 @@
-flowchart TD
-    Client["Client Request"] --> FilterInput["LogFilterOptions"]
-    FilterInput --> Service["Log Query Service"]
-    Service --> Result["CountedGenericQueryResult<LogEvent>"]
-    Service --> Filters["LogFilters"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> ApiService["API Service Core"]
+    ApiService --> DataMongo["Data Layer Mongo"]
+    AuthService["Authorization Service Core"] --> DataMongo
+    ManagementService["Management Service Core"] --> DataMongo
+    StreamService["Stream Service Core"] --> DataMongo
+    DataMongo --> MongoDB[("MongoDB Cluster")]

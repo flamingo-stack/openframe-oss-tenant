@@ -1,0 +1,5 @@
+flowchart LR
+    MongoEntity["Organization Entity"] --> Mapper["OrganizationMapper"]
+    Mapper --> Response["OrganizationResponse DTO"]
+    Response --> GraphQL["GraphQL API"]
+    Response --> REST["REST API"]

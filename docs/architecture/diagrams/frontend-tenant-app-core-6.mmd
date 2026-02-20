@@ -1,7 +1,0 @@
-flowchart TD
-    Request["API Request"] --> Valid{"Token Valid?"}
-    Valid -->|Yes| Success["Return Response"]
-    Valid -->|No| Refresh["Attempt Refresh"]
-    Refresh --> RefOk{"Refresh Success?"}
-    RefOk -->|Yes| Retry["Retry Original Request"]
-    RefOk -->|No| Logout["Force Logout"]

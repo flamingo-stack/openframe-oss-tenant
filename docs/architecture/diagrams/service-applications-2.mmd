@@ -1,12 +1,14 @@
 sequenceDiagram
-    participant Browser
-    participant Gateway
+    participant Client
+    participant Gateway as "Gateway Application"
     participant Auth as "Authorization Server"
-    participant API
+    participant Api as "API Application"
 
-    Browser->>Gateway: HTTP Request
-    Gateway->>Auth: Validate JWT
-    Auth->>Gateway: Token Valid
-    Gateway->>API: Forward Request
-    API->>Gateway: Response
-    Gateway->>Browser: Response
+    Client->>Gateway: Request /login
+    Gateway->>Auth: Forward auth request
+    Auth->>Auth: Validate credentials
+    Auth->>Gateway: Return JWT
+    Gateway->>Api: Forward request with JWT
+    Api->>Api: Validate token
+    Api->>Gateway: Protected resource
+    Gateway->>Client: Response

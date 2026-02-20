@@ -1,7 +1,6 @@
 flowchart TD
-    InviteLink["Invitation Link"] --> AcceptSso["/invitations/accept/sso"]
-    AcceptSso --> SetCookie["Set SSO Invite Cookie"]
-    SetCookie --> RedirectIdP["Redirect to IdP"]
-    RedirectIdP --> SuccessHandler["AuthSuccessHandler"]
-    SuccessHandler --> InviteHandlerNode["InviteSsoHandler"]
-    InviteHandlerNode --> RegisterUser["InvitationRegistrationService"]
+    User["User"] --> Login["/login"]
+    Login -->|"Form"| AuthDB["UserDetailsService"]
+    Login -->|"OAuth2"| OIDC["OIDC Provider"]
+    OIDC --> OidcUserService["Custom OidcUserService"]
+    OidcUserService --> AutoProv["Auto Provision If Needed"]

@@ -1,6 +1,0 @@
-flowchart LR
-    CacheRequest["@Cacheable Method"] --> CacheManager["RedisCacheManager"]
-    CacheManager --> PrefixComputation["computePrefixWith()"]
-    PrefixComputation --> KeyBuilder["OpenframeRedisKeyBuilder"]
-    KeyBuilder --> FinalKey["tenant:cacheName::key"]
-    FinalKey --> RedisServer[("Redis")]

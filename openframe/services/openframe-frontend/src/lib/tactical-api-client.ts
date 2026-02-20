@@ -229,6 +229,63 @@ class TacticalApiClient {
     return this.get(path)
   }
 
+  // Script Schedule methods
+
+  async getScriptSchedules(): Promise<ApiResponse<any[]>> {
+    return this.get('/script-schedules/')
+  }
+
+  async getScriptSchedule(id: number | string): Promise<ApiResponse<any>> {
+    return this.get(`/script-schedules/${id}/`)
+  }
+
+  async createScriptSchedule(data: any): Promise<ApiResponse<any>> {
+    return this.post('/script-schedules/', data)
+  }
+
+  async updateScriptSchedule(id: number | string, data: any): Promise<ApiResponse<any>> {
+    return this.put(`/script-schedules/${id}/`, data)
+  }
+
+  async deleteScriptSchedule(id: number | string): Promise<ApiResponse<any>> {
+    return this.delete(`/script-schedules/${id}/`)
+  }
+
+  async getScriptScheduleAgents(id: number | string): Promise<ApiResponse<any[]>> {
+    return this.get(`/script-schedules/${id}/agents/`)
+  }
+
+  async replaceScriptScheduleAgents(id: number | string, agents: string[]): Promise<ApiResponse<any>> {
+    return this.put(`/script-schedules/${id}/agents/`, { agents })
+  }
+
+  async addScriptScheduleAgents(id: number | string, agents: string[]): Promise<ApiResponse<any>> {
+    return this.post(`/script-schedules/${id}/agents/`, { agents })
+  }
+
+  async removeScriptScheduleAgents(id: number | string, agents: string[]): Promise<ApiResponse<any>> {
+    return this.request(`/script-schedules/${id}/agents/`, {
+      method: 'DELETE',
+      body: JSON.stringify({ agents }),
+    })
+  }
+
+  async getScriptScheduleHistory(id: number | string, params?: {
+    limit?: number
+    offset?: number
+  }): Promise<ApiResponse<any>> {
+    const queryParams = new URLSearchParams()
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.offset) queryParams.append('offset', params.offset.toString())
+
+    const queryString = queryParams.toString()
+    const path = queryString
+      ? `/script-schedules/${id}/history/?${queryString}`
+      : `/script-schedules/${id}/history/`
+
+    return this.get(path)
+  }
+
   async getScheduledTasks(): Promise<ApiResponse<any[]>> {
     return this.get('/tasks/')
   }

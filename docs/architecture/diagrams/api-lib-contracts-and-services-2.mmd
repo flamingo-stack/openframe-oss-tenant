@@ -1,0 +1,5 @@
+flowchart TD
+    Query["Repository Query"] --> Service["Service Layer"]
+    Service --> Result["GenericQueryResult"]
+    Result --> Counted["CountedGenericQueryResult"]
+    Counted --> Api["GraphQL / REST Response"]

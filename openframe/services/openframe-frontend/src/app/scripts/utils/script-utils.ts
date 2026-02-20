@@ -1,3 +1,14 @@
+import { OS_PLATFORMS } from '@flamingo-stack/openframe-frontend-core'
+import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core'
+
+const HIDDEN_PLATFORMS: OSPlatformId[] = ['linux']
+
+export const DISABLED_PLATFORMS: OSPlatformId[] = ['darwin']
+
+export function getAvailableOsPlatforms() {
+  return OS_PLATFORMS.filter(p => !HIDDEN_PLATFORMS.includes(p.id))
+}
+
 /**
  * Map supported_platforms from script to osTypes filter values
  * Script uses: 'windows', 'linux', 'darwin'

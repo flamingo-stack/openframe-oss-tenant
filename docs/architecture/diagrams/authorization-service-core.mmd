@@ -1,29 +1,15 @@
-flowchart LR
-    Browser["Browser / Frontend"] -->|"/login or /oauth2/authorize"| AuthServer["Authorization Service Core"]
+flowchart TD
+    Browser["Browser or Client App"] -->|"Authorization Code Flow"| Gateway["Gateway Service Core"]
+    Gateway -->|"/oauth2/authorize"| Authz["Authorization Service Core"]
 
-    subgraph security_layer["Security Layer"]
-        TenantFilter["TenantContextFilter"]
-        SecurityConfigNode["SecurityConfig"]
-        AuthServerConfigNode["AuthorizationServerConfig"]
-    end
+    Authz --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> Security["SecurityConfig"]
+    Security --> AuthServer["AuthorizationServerConfig"]
 
-    subgraph sso_layer["SSO & Registration Flows"]
-        InviteHandler["InviteSsoHandler"]
-        TenantRegHandler["TenantRegSsoHandler"]
-        AuthSuccess["AuthSuccessHandler"]
-    end
+    AuthServer -->|"Load Client"| ClientRepo["MongoRegisteredClientRepository"]
+    AuthServer -->|"Persist Tokens"| AuthService["MongoAuthorizationService"]
+    AuthServer -->|"Sign JWT"| KeyService["TenantKeyService"]
 
-    subgraph token_layer["Token & Key Management"]
-        JwkSource["TenantKeyService"]
-        JwtEncoderNode["JwtEncoder / JwtDecoder"]
-        MongoAuthService["MongoAuthorizationService"]
-    end
-
-    AuthServer --> TenantFilter
-    TenantFilter --> SecurityConfigNode
-    SecurityConfigNode --> AuthServerConfigNode
-    AuthServerConfigNode --> JwtEncoderNode
-    JwtEncoderNode --> MongoAuthService
-    JwkSource --> JwtEncoderNode
-    AuthSuccess --> InviteHandler
-    AuthSuccess --> TenantRegHandler
+    KeyService --> Mongo[("MongoDB")]
+    ClientRepo --> Mongo
+    AuthService --> Mongo

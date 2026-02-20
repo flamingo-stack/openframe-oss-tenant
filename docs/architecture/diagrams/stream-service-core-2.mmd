@@ -1,4 +1,7 @@
-flowchart TD
-    Kafka["Inbound Kafka Topics"] --> Listener["JsonKafkaListener"]
-    Listener --> Processor["GenericJsonMessageProcessor"]
-    Processor --> Deserializer["Tool Deserializer"]
+sequenceDiagram
+    participant Kafka
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+
+    Kafka->>Listener: CommonDebeziumMessage + MESSAGE_TYPE_HEADER
+    Listener->>Processor: process(message, messageType)

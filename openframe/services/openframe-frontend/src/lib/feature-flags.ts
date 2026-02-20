@@ -25,15 +25,6 @@ export const featureFlags = {
       return runtimeEnv.featureSSOAllowDomain()
     }
   },
-  /**
-   * Script Schedule Feature
-   * Controls the availability of script scheduling functionality
-   */
-  scriptSchedule: {
-    enabled(): boolean {
-      return runtimeEnv.featureScriptSchedule()
-    }
-  }
 } as const
 
 /**

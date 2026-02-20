@@ -6,8 +6,8 @@ import {
   Clock,
   CheckCircle,
 } from 'lucide-react'
-import { 
-  MessageCircleIcon, 
+import {
+  MessageCircleIcon,
   ChatMessageList,
   ChatInput,
   DetailPageContainer,
@@ -15,7 +15,8 @@ import {
   processHistoricalMessagesWithErrors,
   type HistoricalMessage
 } from '@flamingo-stack/openframe-frontend-core'
-import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { Button, Tabs, TabsList, TabsTrigger } from '@flamingo-stack/openframe-frontend-core'
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { DetailLoader, ProcessedMessage } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useDialogDetailsStore } from '../stores/dialog-details-store'
@@ -72,7 +73,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests()
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({})
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false)
-  const prevMessageLength = useRef<number>(0)
+  const [activeChatTab, setActiveChatTab] = useState('client')
   const hasCaughtUp = useRef(false)
 
   const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
@@ -86,23 +87,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     onMessageAdd: (message, isAdmin) => {
       addRealtimeMessage(message, isAdmin)
     },
-    onError: (error, isAdmin) => {
-      setTypingIndicator(isAdmin, false)
-      const errorMessage: Message = {
-        id: `error-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        dialogId: dialogId,
-        chatType: isAdmin ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT',
-        dialogMode: 'DEFAULT',
-        createdAt: new Date().toISOString(),
-        owner: { type: 'ASSISTANT', model: '' } as any,
-        messageData: { 
-          type: 'ERROR', 
-          error: error,
-          details: undefined
-        } as any,
-      }
-      addRealtimeMessage(errorMessage, isAdmin)
-    }
+    onError: (error, isAdmin) => {}
   })
   
   const { 
@@ -384,79 +369,96 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       )}
 
       {/* Chat Section */}
-      <div className="flex-1 flex gap-6 min-h-0">
-        {/* Client Chat */}
-        <div className="flex-1 flex flex-col gap-1 min-h-0">
-          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
-            Client Chat
-          </h2>
-          {/* Messages card */}
-          <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
-            <ChatMessageList
-              messages={chatData.messages}
-              autoScroll={true}
-              showAvatars={false}
-              isTyping={isClientChatTyping}
-              pendingApprovals={chatData.pendingApprovals}
-              assistantType={chatData.assistantType}
-            />
-            {hasMore && !messagesLoading && (
-              <div className="p-2 text-center border-t border-ods-border">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => loadMore()}
-                  className="text-ods-text-secondary hover:text-ods-text-primary"
-                >
-                  Load More Messages
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Tab bar — visible only on mobile/tablet */}
+        <Tabs value={activeChatTab} onValueChange={setActiveChatTab} className="lg:hidden mb-2">
+          <TabsList className="w-full">
+            <TabsTrigger value="client" className="flex-1">Client Chat</TabsTrigger>
+            <TabsTrigger value="technician" className="flex-1">Technician Chat</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        {/* Technician Chat */}
-        <div className="flex-1 flex flex-col gap-1 min-h-0">
-          <h2 className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
-            Technician Chat
-          </h2>
-          <div className="flex-1 flex flex-col relative min-h-0">
-            {adminMessages.length === 0 ? (
-              /* Empty State */
-              <div className="bg-ods-card border border-ods-border rounded-lg flex-1 flex flex-col items-center justify-center p-8">
-                <div className="flex flex-col items-center gap-4 text-center">
-                  <div className="relative w-12 h-12">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <MessageCircleIcon className="h-8 w-8 text-ods-text-secondary" />
-                    </div>
-                  </div>
-                  <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
-                    Start a technician conversation
-                  </p>
-                </div>
-              </div>
-            ) : (
-              /* Messages */
+        {/* Chat panels — tabs on mobile, side-by-side on desktop */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+          {/* Client Chat */}
+          <div className={cn(
+            "flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0",
+            activeChatTab !== 'client' ? 'hidden lg:flex' : 'flex'
+          )}>
+            <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
+              Client Chat
+            </h2>
+            {/* Messages card */}
+            <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
               <ChatMessageList
-                className="flex-1 bg-ods-card border border-ods-border rounded-lg"
-                messages={adminChatData.messages}
+                messages={chatData.messages}
                 autoScroll={true}
                 showAvatars={false}
-                isTyping={isAdminChatTyping}
-                pendingApprovals={adminChatData.pendingApprovals}
-                assistantType={adminChatData.assistantType}
+                isTyping={isClientChatTyping}
+                pendingApprovals={chatData.pendingApprovals}
+                assistantType={chatData.assistantType}
               />
-            )}
-            
-            {/* Message Input */}
-            <ChatInput
-              reserveAvatarOffset={false}
-              placeholder="Enter your Request..."
-              onSend={handleSendAdminMessage}
-              sending={isSendingAdminMessage || isAdminChatTyping}
-              autoFocus={false}
-              className='mt-2 bg-ods-card rounded-lg'
-            />
+              {hasMore && !messagesLoading && (
+                <div className="p-2 text-center border-t border-ods-border">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => loadMore()}
+                    className="text-ods-text-secondary hover:text-ods-text-primary"
+                  >
+                    Load More Messages
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Technician Chat */}
+          <div className={cn(
+            "flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0",
+            activeChatTab !== 'technician' ? 'hidden lg:flex' : 'flex'
+          )}>
+            <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
+              Technician Chat
+            </h2>
+            <div className="flex-1 flex flex-col relative min-h-0">
+              {adminMessages.length === 0 ? (
+                /* Empty State */
+                <div className="bg-ods-card border border-ods-border rounded-lg flex-1 flex flex-col items-center justify-center p-8">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="relative w-12 h-12">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <MessageCircleIcon className="h-8 w-8 text-ods-text-secondary" />
+                      </div>
+                    </div>
+                    <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
+                      Start a technician conversation
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                /* Messages */
+                <ChatMessageList
+                  className="flex-1 bg-ods-card border border-ods-border rounded-lg"
+                  messages={adminChatData.messages}
+                  autoScroll={true}
+                  showAvatars={false}
+                  isTyping={isAdminChatTyping}
+                  pendingApprovals={adminChatData.pendingApprovals}
+                  assistantType={adminChatData.assistantType}
+                />
+              )}
+
+              {/* Message Input */}
+              <ChatInput
+                reserveAvatarOffset={false}
+                placeholder="Enter your Request..."
+                onSend={handleSendAdminMessage}
+                sending={isSendingAdminMessage || isAdminChatTyping}
+                autoFocus={false}
+                className='mt-2 bg-ods-card rounded-lg max-w-full'
+              />
+            </div>
           </div>
         </div>
       </div>

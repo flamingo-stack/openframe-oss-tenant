@@ -1,7 +1,4 @@
-flowchart TD
-    Client["Admin or Agent"] --> Controller["Integration Controller"]
-    Controller --> RestProxy["RestProxyService"]
-    RestProxy --> Tool["Integrated Tool"]
-    Tool --> RestProxy
-    RestProxy --> Controller
-    Controller --> Client
+flowchart LR
+    WebClientConfig["WebClientConfig"] --> HttpClient["Reactor HttpClient"]
+    HttpClient --> Timeouts["Connect and Read Write Timeouts"]
+    WebClientConfig --> WebClientBuilder["WebClient Builder Bean"]

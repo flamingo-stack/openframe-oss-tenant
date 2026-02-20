@@ -1,13 +1,9 @@
 flowchart TD
-    Client["External Client"] --> Gateway["Gateway"]
-    Gateway --> CheckPath["Is /external-api/?"]
-    CheckPath -->|"No"| Continue
-    CheckPath -->|"Yes"| ValidateKey["Validate API Key"]
-
-    ValidateKey -->|"Invalid"| Unauthorized
-    ValidateKey -->|"Valid"| RateLimit["Check Rate Limit"]
-
-    RateLimit -->|"Exceeded"| TooMany
-    RateLimit -->|"Allowed"| AddHeaders["Add User Context Headers"]
-
-    AddHeaders --> Forward["Forward to External API Service"]
+    Req["External API Request"] --> CheckKey["Check X API Key Header"]
+    CheckKey -->|"Missing"| Unauthorized["Return 401"]
+    CheckKey -->|"Present"| Validate["Validate API Key"]
+    Validate -->|"Invalid"| Unauthorized
+    Validate -->|"Valid"| RateLimit["Check Rate Limit"]
+    RateLimit -->|"Exceeded"| TooMany["Return 429"]
+    RateLimit -->|"Allowed"| Enrich["Add User Context Headers"]
+    Enrich --> Forward["Forward to External API Service"]

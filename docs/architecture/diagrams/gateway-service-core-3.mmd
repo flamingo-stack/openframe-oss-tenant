@@ -1,10 +1,6 @@
 flowchart TD
-    Client["WebSocket Client"] --> GatewayWS["WebSocket Gateway"]
-
-    GatewayWS --> ApiWsFilter["Tool API WS Filter"]
-    GatewayWS --> AgentWsFilter["Tool Agent WS Filter"]
-    GatewayWS --> NatsRoute["NATS WS Route"]
-
-    ApiWsFilter --> ToolApi["Tool API Backend"]
-    AgentWsFilter --> ToolAgent["Tool Agent Backend"]
-    NatsRoute --> NatsServer["NATS Server"]
+    Request["Incoming Request"] --> AddAuth["AddAuthorizationHeaderFilter"]
+    AddAuth --> JwtResolution["JWT Issuer Resolver"]
+    JwtResolution --> JwtValidation["Reactive JwtAuthenticationManager"]
+    JwtValidation --> RoleCheck["Role Based Authorization"]
+    RoleCheck --> Route["Route to Downstream Service"]

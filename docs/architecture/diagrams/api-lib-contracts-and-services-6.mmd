@@ -1,0 +1,6 @@
+flowchart TD
+    Machines["Machine IDs"] --> ToolService["ToolConnectionService"]
+    ToolService --> ToolRepo["ToolConnectionRepository"]
+    ToolRepo --> Connections["All ToolConnections"]
+    Connections --> Grouped["Grouped By Machine ID"]
+    Grouped --> Output["List<List<ToolConnection>>"]

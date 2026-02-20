@@ -1,3 +1,4 @@
 flowchart LR
-    Config["ManagementConfiguration"] --> Encoder["BCryptPasswordEncoder Bean"]
-    Config --> Scan["Component Scan com.openframe"]
+    ManagementConfiguration --> ComponentScan["Component Scan com.openframe"]
+    ManagementConfiguration --> PasswordEncoder["BCryptPasswordEncoder Bean"]
+    ComponentScan --> Exclusion["Exclude CassandraHealthIndicator"]

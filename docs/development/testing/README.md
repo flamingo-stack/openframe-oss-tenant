@@ -1,1164 +1,989 @@
 # Testing Overview
 
-Testing is a critical aspect of OpenFrame OSS Tenant's development process. This guide covers the comprehensive testing strategy, test structure organization, test execution procedures, and best practices for writing effective tests in a multi-tenant microservices environment.
+Comprehensive testing is essential for maintaining the quality and reliability of OpenFrame's multi-tenant MSP platform. This guide covers testing strategies, frameworks, patterns, and execution for all layers of the system.
+
+## Testing Philosophy
+
+OpenFrame follows a test-driven development (TDD) approach with comprehensive coverage across all system layers:
+
+```mermaid
+flowchart TD
+    subgraph "Testing Pyramid"
+        UI[UI/E2E Tests]
+        Integration[Integration Tests]
+        Unit[Unit Tests]
+    end
+    
+    Unit --> Integration
+    Integration --> UI
+    
+    subgraph "Test Types"
+        Functional[Functional Tests]
+        Performance[Performance Tests]
+        Security[Security Tests]
+        Contract[Contract Tests]
+    end
+    
+    subgraph "Test Scope"
+        Component[Component Tests]
+        Service[Service Tests]
+        System[System Tests]
+    end
+    
+    style Unit fill:#e8f5e8
+    style Integration fill:#fff3e0
+    style UI fill:#ffebee
+```
 
 ## Testing Strategy
 
-OpenFrame implements a multi-layered testing approach following the testing pyramid principle:
+### Test Structure and Organization
 
-```mermaid
-graph TD
-    subgraph "Testing Pyramid"
-        A[Unit Tests - 70%]
-        B[Integration Tests - 20%]  
-        C[End-to-End Tests - 10%]
-        D[Manual Tests - As Needed]
-    end
-    
-    subgraph "Test Types"
-        E[Service Tests]
-        F[Repository Tests]
-        G[Controller Tests]
-        H[Security Tests]
-        I[Performance Tests]
-        J[Contract Tests]
-    end
-    
-    A --> E
-    A --> F
-    B --> G
-    B --> H
-    C --> I
-    C --> J
-    
-    style A fill:#4caf50
-    style B fill:#ff9800
-    style C fill:#f44336
-```
-
-## Test Structure and Organization
-
-### Project Test Structure
+OpenFrame organizes tests following Maven's standard directory structure with additional categorization:
 
 ```text
-openframe-oss-tenant/
-├── openframe/services/openframe-api/
-│   └── src/test/java/com/openframe/api/
-│       ├── controller/          # Controller layer tests
-│       ├── service/             # Business logic tests
-│       ├── repository/          # Data access tests
-│       ├── security/            # Security tests
-│       ├── integration/         # Integration tests
-│       └── TestConstants.java   # Test constants and utilities
-├── openframe/services/openframe-frontend/
-│   └── src/
-│       ├── __tests__/           # React component tests
-│       ├── __mocks__/           # Mock implementations
-│       └── test-utils/          # Testing utilities
-└── tests/
-    ├── e2e/                     # End-to-end tests
-    ├── performance/             # Performance tests
-    └── contracts/               # Contract tests
+src/
+├── test/java/
+│   ├── unit/                    # Fast, isolated unit tests
+│   ├── integration/             # Integration tests with external dependencies
+│   ├── contract/               # Consumer-driven contract tests
+│   └── performance/            # Performance and load tests
+└── test/resources/
+    ├── application-test.yml    # Test configuration
+    ├── test-data/             # Test fixtures and sample data
+    └── containers/            # Docker compose for integration tests
 ```
 
-### Test Categories
+### Testing Framework Stack
 
-| Category | Scope | Technology | Coverage |
-|----------|--------|------------|----------|
-| **Unit Tests** | Individual components, services, utilities | JUnit 5, Mockito, Jest | 70% |
-| **Integration Tests** | Service interactions, database operations | Spring Boot Test, Testcontainers | 20% |
-| **End-to-End Tests** | Complete user workflows | Playwright, RestAssured | 10% |
-| **Security Tests** | Authentication, authorization, vulnerabilities | Spring Security Test | Critical paths |
-| **Performance Tests** | Load testing, stress testing | JMeter, k6 | Critical endpoints |
-| **Contract Tests** | API contract verification | Pact, Spring Cloud Contract | All APIs |
+| Layer | Framework | Purpose |
+|-------|-----------|---------|
+| **Unit Tests** | JUnit 5, Mockito | Fast, isolated component testing |
+| **Integration Tests** | Spring Boot Test, Testcontainers | Real dependency integration |
+| **Contract Tests** | Pact | API contract verification |
+| **E2E Tests** | Selenium WebDriver, REST Assured | Full system testing |
+| **Performance Tests** | JMeter, Gatling | Load and stress testing |
+| **Security Tests** | OWASP ZAP, Spring Security Test | Vulnerability testing |
 
 ## Unit Testing
 
-### Service Layer Testing
+### Unit Test Structure
+
+OpenFrame unit tests follow the Arrange-Act-Assert (AAA) pattern:
 
 ```java
 @ExtendWith(MockitoExtension.class)
-class UserServiceTest {
+class OrganizationServiceTest {
     
     @Mock
-    private UserRepository userRepository;
+    private OrganizationRepository organizationRepository;
     
     @Mock
-    private OrganizationService organizationService;
+    private UserService userService;
     
     @Mock
     private EventPublisher eventPublisher;
     
     @InjectMocks
-    private UserService userService;
+    private OrganizationService organizationService;
     
     @Test
-    @DisplayName("Should create user successfully with valid input")
-    void shouldCreateUserSuccessfully() {
-        // Given
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("test@example.com")
-            .firstName("John")
-            .lastName("Doe")
-            .tenantId("tenant-123")
+    @DisplayName("Should create organization with valid data")
+    void shouldCreateOrganization_WithValidData() {
+        // Arrange
+        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
+            .name("Acme Corp")
+            .domain("acme-corp")
+            .adminEmail("admin@acme.com")
             .build();
-            
-        User expectedUser = User.builder()
-            .id("user-456")
-            .email("test@example.com")
-            .firstName("John")
-            .lastName("Doe")
-            .tenantId("tenant-123")
-            .status(UserStatus.ACTIVE)
-            .build();
-            
-        when(userRepository.existsByEmailAndTenantId("test@example.com", "tenant-123"))
-            .thenReturn(false);
-        when(organizationService.validateOrganizationAccess("tenant-123", request.getOrganizationId()))
-            .thenReturn(true);
-        when(userRepository.save(any(User.class)))
-            .thenReturn(expectedUser);
-            
-        // When
-        User result = userService.createUser(request);
         
-        // Then
+        Organization savedOrganization = Organization.builder()
+            .id("org-123")
+            .name("Acme Corp")
+            .domain("acme-corp")
+            .status(OrganizationStatus.ACTIVE)
+            .build();
+        
+        when(organizationRepository.save(any(Organization.class)))
+            .thenReturn(savedOrganization);
+        when(userService.createAdminUser(any(), any()))
+            .thenReturn(createMockUser());
+        
+        // Act
+        Organization result = organizationService.createOrganization(request);
+        
+        // Assert
         assertThat(result).isNotNull();
-        assertThat(result.getEmail()).isEqualTo("test@example.com");
-        assertThat(result.getTenantId()).isEqualTo("tenant-123");
-        assertThat(result.getStatus()).isEqualTo(UserStatus.ACTIVE);
+        assertThat(result.getName()).isEqualTo("Acme Corp");
+        assertThat(result.getDomain()).isEqualTo("acme-corp");
+        assertThat(result.getStatus()).isEqualTo(OrganizationStatus.ACTIVE);
         
-        verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
-        verify(userRepository).save(argThat(user -> 
-            user.getEmail().equals("test@example.com") &&
-            user.getTenantId().equals("tenant-123")
-        ));
+        verify(organizationRepository).save(argThat(org -> 
+            org.getName().equals("Acme Corp") && 
+            org.getDomain().equals("acme-corp")));
+        verify(eventPublisher).publishEvent(any(OrganizationCreatedEvent.class));
     }
     
     @Test
-    @DisplayName("Should throw exception when user already exists")
-    void shouldThrowExceptionWhenUserExists() {
-        // Given
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("existing@example.com")
-            .tenantId("tenant-123")
+    @DisplayName("Should throw exception when domain already exists")
+    void shouldThrowException_WhenDomainAlreadyExists() {
+        // Arrange
+        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
+            .name("Duplicate Corp")
+            .domain("existing-domain")
+            .adminEmail("admin@duplicate.com")
             .build();
-            
-        when(userRepository.existsByEmailAndTenantId("existing@example.com", "tenant-123"))
+        
+        when(organizationRepository.existsByDomain("existing-domain"))
             .thenReturn(true);
-            
-        // When & Then
-        assertThatThrownBy(() -> userService.createUser(request))
-            .isInstanceOf(UserAlreadyExistsException.class)
-            .hasMessage("User with email existing@example.com already exists in tenant");
-            
-        verify(userRepository, never()).save(any(User.class));
+        
+        // Act & Assert
+        assertThrows(DuplicateDomainException.class, () ->
+            organizationService.createOrganization(request));
+        
+        verify(organizationRepository, never()).save(any());
         verify(eventPublisher, never()).publishEvent(any());
     }
     
-    @Test
-    @DisplayName("Should enforce tenant isolation in user queries")
-    void shouldEnforceTenantIsolation() {
-        // Given
-        String tenantId = "tenant-123";
-        String otherTenantId = "tenant-456";
-        
-        List<User> tenantUsers = List.of(
-            User.builder().id("user-1").tenantId(tenantId).build(),
-            User.builder().id("user-2").tenantId(tenantId).build()
+    private User createMockUser() {
+        return User.builder()
+            .id("user-123")
+            .email("admin@acme.com")
+            .status(UserStatus.ACTIVE)
+            .build();
+    }
+}
+```
+
+### Parameterized Tests
+
+For testing multiple scenarios:
+
+```java
+class ValidationServiceTest {
+    
+    @ParameterizedTest
+    @DisplayName("Should validate organization names correctly")
+    @ValueSource(strings = {
+        "Acme Corporation",
+        "IT Solutions LLC", 
+        "Tech-Innovators Inc",
+        "Global_Services_Ltd"
+    })
+    void shouldAcceptValidOrganizationNames(String validName) {
+        // Act & Assert
+        assertDoesNotThrow(() -> validationService.validateOrganizationName(validName));
+    }
+    
+    @ParameterizedTest
+    @DisplayName("Should reject invalid organization names")
+    @CsvSource({
+        "'', 'Name cannot be empty'",
+        "'A', 'Name too short'",
+        "'<script>alert()', 'Invalid characters'",
+        "'Very long name that exceeds the maximum allowed length for organization names', 'Name too long'"
+    })
+    void shouldRejectInvalidOrganizationNames(String invalidName, String expectedMessage) {
+        // Act & Assert
+        ValidationException exception = assertThrows(
+            ValidationException.class,
+            () -> validationService.validateOrganizationName(invalidName)
         );
         
-        when(userRepository.findByTenantId(tenantId))
-            .thenReturn(tenantUsers);
-            
-        // When
-        List<User> result = userService.findUsersByTenant(tenantId);
-        
-        // Then
-        assertThat(result).hasSize(2);
-        assertThat(result).allMatch(user -> user.getTenantId().equals(tenantId));
-        
-        verify(userRepository).findByTenantId(tenantId);
-        verify(userRepository, never()).findByTenantId(otherTenantId);
-    }
-}
-```
-
-### Repository Testing
-
-```java
-@DataMongoTest
-@TestPropertySource(properties = {
-    "spring.mongodb.embedded.version=4.4.0"
-})
-class UserRepositoryTest {
-    
-    @Autowired
-    private TestEntityManager entityManager;
-    
-    @Autowired
-    private UserRepository userRepository;
-    
-    @Test
-    @DisplayName("Should find users by tenant ID")
-    void shouldFindUsersByTenantId() {
-        // Given
-        String tenantId = "tenant-123";
-        User user1 = createTestUser("user1@example.com", tenantId);
-        User user2 = createTestUser("user2@example.com", tenantId);
-        User otherTenantUser = createTestUser("other@example.com", "tenant-456");
-        
-        entityManager.save(user1);
-        entityManager.save(user2);
-        entityManager.save(otherTenantUser);
-        entityManager.flush();
-        
-        // When
-        List<User> result = userRepository.findByTenantId(tenantId);
-        
-        // Then
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(User::getEmail)
-            .containsExactlyInAnyOrder("user1@example.com", "user2@example.com");
-        assertThat(result).allMatch(user -> user.getTenantId().equals(tenantId));
+        assertThat(exception.getMessage()).contains(expectedMessage);
     }
     
-    @Test
-    @DisplayName("Should check user existence by email and tenant")
-    void shouldCheckUserExistence() {
-        // Given
-        String email = "test@example.com";
-        String tenantId = "tenant-123";
-        User user = createTestUser(email, tenantId);
-        entityManager.save(user);
-        entityManager.flush();
+    @ParameterizedTest
+    @DisplayName("Should validate tenant domains correctly")
+    @MethodSource("provideValidDomains")
+    void shouldAcceptValidDomains(String domain, boolean expected) {
+        // Act
+        boolean result = validationService.isValidDomain(domain);
         
-        // When & Then
-        assertThat(userRepository.existsByEmailAndTenantId(email, tenantId)).isTrue();
-        assertThat(userRepository.existsByEmailAndTenantId(email, "other-tenant")).isFalse();
-        assertThat(userRepository.existsByEmailAndTenantId("other@example.com", tenantId)).isFalse();
+        // Assert
+        assertThat(result).isEqualTo(expected);
     }
     
-    @Test
-    @DisplayName("Should find active users with pagination")
-    void shouldFindActiveUsersWithPagination() {
-        // Given
-        String tenantId = "tenant-123";
-        for (int i = 1; i <= 15; i++) {
-            User user = createTestUser("user" + i + "@example.com", tenantId);
-            user.setStatus(i <= 10 ? UserStatus.ACTIVE : UserStatus.INACTIVE);
-            entityManager.save(user);
-        }
-        entityManager.flush();
-        
-        Pageable pageable = PageRequest.of(0, 5, Sort.by("email"));
-        
-        // When
-        Page<User> result = userRepository.findByTenantIdAndStatus(tenantId, UserStatus.ACTIVE, pageable);
-        
-        // Then
-        assertThat(result.getTotalElements()).isEqualTo(10);
-        assertThat(result.getContent()).hasSize(5);
-        assertThat(result.getTotalPages()).isEqualTo(2);
-        assertThat(result.getContent()).allMatch(user -> user.getStatus() == UserStatus.ACTIVE);
-    }
-    
-    private User createTestUser(String email, String tenantId) {
-        return User.builder()
-            .email(email)
-            .firstName("Test")
-            .lastName("User")
-            .tenantId(tenantId)
-            .status(UserStatus.ACTIVE)
-            .roles(Set.of("USER"))
-            .createdAt(Instant.now())
-            .build();
-    }
-}
-```
-
-### Controller Testing
-
-```java
-@WebMvcTest(UserController.class)
-@Import({SecurityConfig.class, JwtConfig.class})
-class UserControllerTest {
-    
-    @Autowired
-    private MockMvc mockMvc;
-    
-    @MockBean
-    private UserService userService;
-    
-    @MockBean
-    private JwtDecoder jwtDecoder;
-    
-    private String validJwtToken;
-    
-    @BeforeEach
-    void setUp() {
-        validJwtToken = createValidJwtToken("tenant-123", "user-456", List.of("ROLE_ADMIN"));
-        
-        Jwt jwt = Jwt.withTokenValue(validJwtToken)
-            .header("alg", "RS256")
-            .claim("sub", "user-456")
-            .claim("tenant_id", "tenant-123")
-            .claim("scope", "read write")
-            .claim("authorities", List.of("ROLE_ADMIN"))
-            .build();
-            
-        when(jwtDecoder.decode(validJwtToken)).thenReturn(jwt);
-    }
-    
-    @Test
-    @DisplayName("Should create user with valid request and admin role")
-    void shouldCreateUserWithValidRequest() throws Exception {
-        // Given
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("newuser@example.com")
-            .firstName("New")
-            .lastName("User")
-            .organizationId("org-123")
-            .build();
-            
-        User createdUser = User.builder()
-            .id("user-789")
-            .email("newuser@example.com")
-            .firstName("New")
-            .lastName("User")
-            .tenantId("tenant-123")
-            .status(UserStatus.ACTIVE)
-            .build();
-            
-        when(userService.createUser(any(CreateUserRequest.class)))
-            .thenReturn(createdUser);
-            
-        // When & Then
-        mockMvc.perform(post("/api/users")
-                .header("Authorization", "Bearer " + validJwtToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("user-789"))
-                .andExpect(jsonPath("$.email").value("newuser@example.com"))
-                .andExpect(jsonPath("$.tenantId").value("tenant-123"));
-                
-        verify(userService).createUser(argThat(req -> 
-            req.getEmail().equals("newuser@example.com") &&
-            req.getTenantId().equals("tenant-123")
-        ));
-    }
-    
-    @Test
-    @DisplayName("Should return 400 for invalid email format")
-    void shouldReturnBadRequestForInvalidEmail() throws Exception {
-        // Given
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("invalid-email")
-            .firstName("Test")
-            .lastName("User")
-            .build();
-            
-        // When & Then
-        mockMvc.perform(post("/api/users")
-                .header("Authorization", "Bearer " + validJwtToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errors[?(@.field == 'email')].message")
-                    .value(containsString("Invalid email format")));
-                    
-        verify(userService, never()).createUser(any());
-    }
-    
-    @Test
-    @DisplayName("Should return 403 when user lacks admin role")
-    void shouldReturnForbiddenWithoutAdminRole() throws Exception {
-        // Given
-        String userToken = createValidJwtToken("tenant-123", "user-456", List.of("ROLE_USER"));
-        
-        Jwt jwt = Jwt.withTokenValue(userToken)
-            .header("alg", "RS256")
-            .claim("sub", "user-456")
-            .claim("tenant_id", "tenant-123")
-            .claim("authorities", List.of("ROLE_USER"))
-            .build();
-            
-        when(jwtDecoder.decode(userToken)).thenReturn(jwt);
-        
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("test@example.com")
-            .firstName("Test")
-            .lastName("User")
-            .build();
-            
-        // When & Then
-        mockMvc.perform(post("/api/users")
-                .header("Authorization", "Bearer " + userToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-                
-        verify(userService, never()).createUser(any());
+    static Stream<Arguments> provideValidDomains() {
+        return Stream.of(
+            Arguments.of("acme-corp", true),
+            Arguments.of("it-solutions", true),
+            Arguments.of("123invalid", false),
+            Arguments.of("admin", false), // reserved
+            Arguments.of("api", false)    // reserved
+        );
     }
 }
 ```
 
 ## Integration Testing
 
-### Service Integration Tests
+### Spring Boot Integration Tests
+
+OpenFrame uses `@SpringBootTest` for comprehensive integration testing:
 
 ```java
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-class UserServiceIntegrationTest {
+class OrganizationControllerIntegrationTest {
     
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:5.0")
-            .withExposedPorts(27017);
-            
+    static MongoDBContainer mongodb = new MongoDBContainer("mongo:7.0")
+            .withReuse(true);
+    
     @Container
-    static GenericContainer<?> redisContainer = new GenericContainer<>("redis:7-alpine")
-            .withExposedPorts(6379);
-            
+    static GenericContainer<?> redis = new GenericContainer<>("redis:7.2-alpine")
+            .withExposedPorts(6379)
+            .withReuse(true);
+    
     @Autowired
     private TestRestTemplate restTemplate;
     
     @Autowired
-    private UserService userService;
+    private OrganizationRepository organizationRepository;
     
     @Autowired
-    private UserRepository userRepository;
+    private TestSecurityConfigurer securityConfigurer;
     
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-        registry.add("spring.redis.host", redisContainer::getHost);
-        registry.add("spring.redis.port", () -> redisContainer.getMappedPort(6379));
+    @BeforeEach
+    void setUp() {
+        organizationRepository.deleteAll();
     }
     
     @Test
-    @DisplayName("Should handle complete user lifecycle")
-    void shouldHandleCompleteUserLifecycle() {
-        // Create user
-        CreateUserRequest createRequest = CreateUserRequest.builder()
-            .email("lifecycle@example.com")
-            .firstName("Lifecycle")
-            .lastName("Test")
-            .tenantId("tenant-integration")
-            .organizationId("org-123")
+    @DisplayName("Should create organization via REST API")
+    void shouldCreateOrganization_ViaRestApi() {
+        // Arrange
+        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
+            .name("Integration Test Corp")
+            .domain("integration-test")
+            .adminEmail("admin@integration.test")
             .build();
-            
-        User createdUser = userService.createUser(createRequest);
-        assertThat(createdUser).isNotNull();
-        assertThat(createdUser.getId()).isNotNull();
         
-        // Verify user exists in database
-        Optional<User> dbUser = userRepository.findById(createdUser.getId());
-        assertThat(dbUser).isPresent();
-        assertThat(dbUser.get().getEmail()).isEqualTo("lifecycle@example.com");
+        HttpHeaders headers = securityConfigurer.createAuthHeaders("TENANT_ADMIN");
+        HttpEntity<CreateOrganizationRequest> entity = new HttpEntity<>(request, headers);
         
-        // Update user
-        UpdateUserRequest updateRequest = UpdateUserRequest.builder()
-            .firstName("Updated")
-            .lastName("Name")
-            .build();
-            
-        User updatedUser = userService.updateUser(createdUser.getId(), updateRequest);
-        assertThat(updatedUser.getFirstName()).isEqualTo("Updated");
-        assertThat(updatedUser.getLastName()).isEqualTo("Name");
+        // Act
+        ResponseEntity<OrganizationResponse> response = restTemplate.exchange(
+            "/api/v1/organizations",
+            HttpMethod.POST,
+            entity,
+            OrganizationResponse.class
+        );
         
-        // Deactivate user
-        User deactivatedUser = userService.deactivateUser(createdUser.getId());
-        assertThat(deactivatedUser.getStatus()).isEqualTo(UserStatus.INACTIVE);
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getName()).isEqualTo("Integration Test Corp");
         
-        // Verify user is deactivated in database
-        Optional<User> finalDbUser = userRepository.findById(createdUser.getId());
-        assertThat(finalDbUser).isPresent();
-        assertThat(finalDbUser.get().getStatus()).isEqualTo(UserStatus.INACTIVE);
+        // Verify database state
+        Optional<Organization> savedOrg = organizationRepository
+            .findByDomain("integration-test");
+        assertThat(savedOrg).isPresent();
+        assertThat(savedOrg.get().getName()).isEqualTo("Integration Test Corp");
     }
     
     @Test
-    @DisplayName("Should enforce tenant isolation in integration scenarios")
-    void shouldEnforceTenantIsolation() {
-        // Create users in different tenants
-        User tenant1User = userService.createUser(CreateUserRequest.builder()
-            .email("tenant1@example.com")
-            .tenantId("tenant-1")
-            .firstName("Tenant1")
-            .lastName("User")
-            .build());
-            
-        User tenant2User = userService.createUser(CreateUserRequest.builder()
-            .email("tenant2@example.com")
-            .tenantId("tenant-2")
-            .firstName("Tenant2")
-            .lastName("User")
-            .build());
-            
-        // Verify tenant isolation
-        List<User> tenant1Users = userService.findUsersByTenant("tenant-1");
-        List<User> tenant2Users = userService.findUsersByTenant("tenant-2");
+    @DisplayName("Should return 409 when creating organization with duplicate domain")
+    void shouldReturn409_WhenDuplicateDomain() {
+        // Arrange - create existing organization
+        Organization existing = Organization.builder()
+            .name("Existing Corp")
+            .domain("existing-domain")
+            .tenantId("tenant-123")
+            .status(OrganizationStatus.ACTIVE)
+            .build();
+        organizationRepository.save(existing);
         
-        assertThat(tenant1Users).hasSize(1);
-        assertThat(tenant1Users.get(0).getEmail()).isEqualTo("tenant1@example.com");
+        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
+            .name("Duplicate Corp")
+            .domain("existing-domain")
+            .adminEmail("admin@duplicate.test")
+            .build();
         
-        assertThat(tenant2Users).hasSize(1);
-        assertThat(tenant2Users.get(0).getEmail()).isEqualTo("tenant2@example.com");
+        HttpHeaders headers = securityConfigurer.createAuthHeaders("TENANT_ADMIN");
+        HttpEntity<CreateOrganizationRequest> entity = new HttpEntity<>(request, headers);
         
-        // Verify cross-tenant access is blocked
-        assertThatThrownBy(() -> userService.findUserByIdAndTenant(tenant1User.getId(), "tenant-2"))
-            .isInstanceOf(UserNotFoundException.class);
+        // Act
+        ResponseEntity<ErrorResponse> response = restTemplate.exchange(
+            "/api/v1/organizations",
+            HttpMethod.POST,
+            entity,
+            ErrorResponse.class
+        );
+        
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().getMessage()).contains("Domain already exists");
     }
 }
 ```
 
-### Database Integration Tests
+### GraphQL Integration Tests
+
+Testing GraphQL endpoints with Spring Boot:
 
 ```java
-@SpringBootTest
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Testcontainers
-@Transactional
-class DatabaseIntegrationTest {
+class DeviceGraphQLIntegrationTest {
     
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:5.0");
+    static MongoDBContainer mongodb = new MongoDBContainer("mongo:7.0");
     
     @Autowired
-    private MongoTemplate mongoTemplate;
+    private TestRestTemplate restTemplate;
+    
+    @Autowired
+    private DeviceRepository deviceRepository;
     
     @Test
-    @DisplayName("Should handle concurrent user creation")
-    void shouldHandleConcurrentUserCreation() throws InterruptedException {
-        String tenantId = "concurrent-tenant";
-        int numberOfThreads = 10;
-        CountDownLatch latch = new CountDownLatch(numberOfThreads);
-        List<String> createdUserIds = Collections.synchronizedList(new ArrayList<>());
-        List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
+    @DisplayName("Should query devices via GraphQL")
+    void shouldQueryDevices_ViaGraphQL() {
+        // Arrange - create test data
+        Device device1 = createTestDevice("Device 1", DeviceStatus.ONLINE);
+        Device device2 = createTestDevice("Device 2", DeviceStatus.OFFLINE);
+        deviceRepository.saveAll(Arrays.asList(device1, device2));
         
-        ExecutorService executor = Executors.newFixedThreadPool(numberOfThreads);
-        
-        for (int i = 0; i < numberOfThreads; i++) {
-            final int userIndex = i;
-            executor.submit(() -> {
-                try {
-                    User user = User.builder()
-                        .email("concurrent" + userIndex + "@example.com")
-                        .firstName("Concurrent" + userIndex)
-                        .lastName("User")
-                        .tenantId(tenantId)
-                        .status(UserStatus.ACTIVE)
-                        .createdAt(Instant.now())
-                        .build();
-                        
-                    User saved = mongoTemplate.save(user);
-                    createdUserIds.add(saved.getId());
-                } catch (Exception e) {
-                    exceptions.add(e);
-                } finally {
-                    latch.countDown();
+        String query = """
+            query GetDevices($filter: DeviceFilterInput) {
+                devices(filter: $filter) {
+                    id
+                    name
+                    status
+                    lastSeen
+                    organization {
+                        id
+                        name
+                    }
                 }
-            });
+            }
+            """;
+        
+        Map<String, Object> variables = Map.of(
+            "filter", Map.of("status", "ONLINE")
+        );
+        
+        GraphQLRequest graphQLRequest = GraphQLRequest.builder()
+            .query(query)
+            .variables(variables)
+            .build();
+        
+        HttpHeaders headers = createAuthHeaders();
+        HttpEntity<GraphQLRequest> entity = new HttpEntity<>(graphQLRequest, headers);
+        
+        // Act
+        ResponseEntity<GraphQLResponse> response = restTemplate.exchange(
+            "/graphql",
+            HttpMethod.POST,
+            entity,
+            GraphQLResponse.class
+        );
+        
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        
+        List<Map<String, Object>> devices = response.getBody()
+            .getData().get("devices");
+        
+        assertThat(devices).hasSize(1);
+        assertThat(devices.get(0).get("name")).isEqualTo("Device 1");
+        assertThat(devices.get(0).get("status")).isEqualTo("ONLINE");
+    }
+    
+    private Device createTestDevice(String name, DeviceStatus status) {
+        return Device.builder()
+            .id(UUID.randomUUID().toString())
+            .name(name)
+            .status(status)
+            .tenantId("test-tenant")
+            .organizationId("test-org")
+            .lastSeen(Instant.now())
+            .build();
+    }
+}
+```
+
+## Contract Testing
+
+### Consumer-Driven Contract Tests
+
+Using Spring Cloud Contract for API contract testing:
+
+```groovy
+// contracts/organization_should_return_created_org.groovy
+package contracts
+
+org.springframework.cloud.contract.spec.Contract.make {
+    description "Should return created organization"
+    
+    request {
+        method POST
+        url "/api/v1/organizations"
+        headers {
+            contentType(applicationJson())
+            header("Authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...")
         }
+        body(
+            name: "Test Organization",
+            domain: "test-org",
+            adminEmail: "admin@test.org"
+        )
+    }
+    
+    response {
+        status OK()
+        headers {
+            contentType(applicationJson())
+        }
+        body(
+            id: anyNonBlankString(),
+            name: "Test Organization",
+            domain: "test-org",
+            status: "ACTIVE",
+            createdAt: anyIso8601WithOffset()
+        )
+    }
+}
+```
+
+### Consumer Contract Test
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@AutoConfigureStubRunner(
+    stubsMode = StubRunnerProperties.StubsMode.LOCAL,
+    ids = "com.openframe:openframe-api:+:stubs:8080"
+)
+class OrganizationApiConsumerTest {
+    
+    @StubRunnerPort("openframe-api")
+    private int apiPort;
+    
+    private RestTemplate restTemplate = new RestTemplate();
+    
+    @Test
+    void shouldCreateOrganization() {
+        // Arrange
+        CreateOrganizationRequest request = new CreateOrganizationRequest();
+        request.setName("Test Organization");
+        request.setDomain("test-org");
+        request.setAdminEmail("admin@test.org");
         
-        latch.await(10, TimeUnit.SECONDS);
-        executor.shutdown();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth("test-jwt-token");
         
-        // Verify all users were created successfully
-        assertThat(exceptions).isEmpty();
-        assertThat(createdUserIds).hasSize(numberOfThreads);
+        HttpEntity<CreateOrganizationRequest> entity = new HttpEntity<>(request, headers);
         
-        // Verify all users exist in database
-        Query query = new Query(Criteria.where("tenantId").is(tenantId));
-        List<User> dbUsers = mongoTemplate.find(query, User.class);
-        assertThat(dbUsers).hasSize(numberOfThreads);
+        // Act
+        ResponseEntity<OrganizationResponse> response = restTemplate.exchange(
+            "http://localhost:" + apiPort + "/api/v1/organizations",
+            HttpMethod.POST,
+            entity,
+            OrganizationResponse.class
+        );
+        
+        // Assert
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().getName()).isEqualTo("Test Organization");
+        assertThat(response.getBody().getDomain()).isEqualTo("test-org");
+        assertThat(response.getBody().getStatus()).isEqualTo("ACTIVE");
+    }
+}
+```
+
+## Performance Testing
+
+### JMeter Load Tests
+
+OpenFrame includes JMeter test plans for performance validation:
+
+```xml
+<!-- api-load-test.jmx -->
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2">
+    <hashTree>
+        <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="OpenFrame API Load Test">
+            <elementProp name="TestPlan.arguments" elementType="Arguments" guiclass="ArgumentsPanel">
+                <collectionProp name="Arguments.arguments">
+                    <elementProp name="host" elementType="Argument">
+                        <stringProp name="Argument.name">host</stringProp>
+                        <stringProp name="Argument.value">localhost</stringProp>
+                    </elementProp>
+                    <elementProp name="port" elementType="Argument">
+                        <stringProp name="Argument.name">port</stringProp>
+                        <stringProp name="Argument.value">8080</stringProp>
+                    </elementProp>
+                </collectionProp>
+            </elementProp>
+        </TestPlan>
+        
+        <hashTree>
+            <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="API Users">
+                <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+                <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+                    <boolProp name="LoopController.continue_forever">false</boolProp>
+                    <stringProp name="LoopController.loops">10</stringProp>
+                </elementProp>
+                <stringProp name="ThreadGroup.num_threads">50</stringProp>
+                <stringProp name="ThreadGroup.ramp_time">10</stringProp>
+            </ThreadGroup>
+            
+            <hashTree>
+                <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="Get Organizations">
+                    <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+                        <collectionProp name="Arguments.arguments"/>
+                    </elementProp>
+                    <stringProp name="HTTPSampler.domain">${host}</stringProp>
+                    <stringProp name="HTTPSampler.port">${port}</stringProp>
+                    <stringProp name="HTTPSampler.path">/api/v1/organizations</stringProp>
+                    <stringProp name="HTTPSampler.method">GET</stringProp>
+                    <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+                </HTTPSamplerProxy>
+            </hashTree>
+        </hashTree>
+    </hashTree>
+</jmeterTestPlan>
+```
+
+### Gatling Performance Tests
+
+```scala
+import io.gatling.core.Predef._
+import io.gatling.http.Predef._
+import scala.concurrent.duration._
+
+class OpenFrameApiSimulation extends Simulation {
+  
+  val httpProtocol = http
+    .baseUrl("http://localhost:8080")
+    .acceptHeader("application/json")
+    .authorizationHeader("Bearer test-jwt-token")
+    
+  val scn = scenario("OpenFrame API Load Test")
+    .exec(
+      http("Get Organizations")
+        .get("/api/v1/organizations")
+        .check(status.is(200))
+        .check(jsonPath("$[*].id").exists)
+    )
+    .pause(1)
+    .exec(
+      http("Get Devices") 
+        .get("/api/v1/devices")
+        .check(status.is(200))
+    )
+    .pause(2)
+    .exec(
+      http("GraphQL Query")
+        .post("/graphql")
+        .body(StringBody("""{"query": "{ organizations { id name } }"}"""))
+        .asJson
+        .check(status.is(200))
+        .check(jsonPath("$.data.organizations").exists)
+    )
+    
+  setUp(
+    scn.inject(
+      rampUsers(100) during (30 seconds),
+      constantUsers(50) during (60 seconds)
+    )
+  ).protocols(httpProtocol)
+   .assertions(
+     global.responseTime.max.lt(2000),
+     global.responseTime.mean.lt(500),
+     global.successfulRequests.percent.gt(95)
+   )
+}
+```
+
+### Microbenchmarks with JMH
+
+For fine-grained performance testing:
+
+```java
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@State(Scope.Benchmark)
+public class EncryptionServiceBenchmark {
+    
+    private EncryptionService encryptionService;
+    private String testData;
+    
+    @Setup
+    public void setup() {
+        encryptionService = new EncryptionService();
+        testData = "This is test data for encryption benchmarking";
+    }
+    
+    @Benchmark
+    public String benchmarkEncryption() {
+        return encryptionService.encrypt(testData);
+    }
+    
+    @Benchmark
+    public String benchmarkDecryption() {
+        String encrypted = encryptionService.encrypt(testData);
+        return encryptionService.decrypt(encrypted);
+    }
+}
+```
+
+## Security Testing
+
+### Security Integration Tests
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@WithMockUser(username = "test-user", roles = {"DEVICE_MANAGER"})
+class SecurityIntegrationTest {
+    
+    @Autowired
+    private TestRestTemplate restTemplate;
+    
+    @Test
+    @DisplayName("Should prevent SQL injection attacks")
+    void shouldPreventSqlInjection() {
+        String maliciousInput = "'; DROP TABLE organizations; --";
+        
+        ResponseEntity<String> response = restTemplate.getForEntity(
+            "/api/v1/organizations?search=" + maliciousInput,
+            String.class
+        );
+        
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        // Verify no SQL injection occurred
+        assertThat(response.getBody()).doesNotContain("error");
     }
     
     @Test
-    @DisplayName("Should handle database constraint violations gracefully")
-    void shouldHandleConstraintViolations() {
-        String email = "duplicate@example.com";
-        String tenantId = "constraint-tenant";
-        
-        // Create first user
-        User user1 = User.builder()
-            .email(email)
-            .tenantId(tenantId)
-            .firstName("First")
-            .lastName("User")
-            .status(UserStatus.ACTIVE)
+    @DisplayName("Should prevent XSS attacks")
+    void shouldPreventXssAttacks() {
+        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
+            .name("<script>alert('XSS')</script>")
+            .domain("xss-test")
+            .adminEmail("admin@xss.test")
             .build();
-            
-        mongoTemplate.save(user1);
         
-        // Attempt to create duplicate user (same email and tenant)
-        User user2 = User.builder()
-            .email(email)
-            .tenantId(tenantId)
-            .firstName("Second")
-            .lastName("User")
-            .status(UserStatus.ACTIVE)
-            .build();
-            
-        // This should be handled at application level, not database level
-        // MongoDB doesn't enforce unique constraints by default
-        assertThatNoException().isThrownBy(() -> mongoTemplate.save(user2));
+        ResponseEntity<String> response = restTemplate.postForEntity(
+            "/api/v1/organizations",
+            request,
+            String.class
+        );
         
-        // But application logic should prevent duplicates
-        Query query = new Query(Criteria.where("email").is(email).and("tenantId").is(tenantId));
-        List<User> duplicateUsers = mongoTemplate.find(query, User.class);
+        // Should reject malicious input
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+    
+    @Test
+    @DisplayName("Should enforce rate limiting")
+    void shouldEnforceRateLimiting() {
+        String endpoint = "/api/v1/organizations";
         
-        // Application should handle this - for testing we just verify the behavior
-        assertThat(duplicateUsers.size()).isGreaterThan(1);
+        // Make requests up to the limit
+        for (int i = 0; i < 100; i++) {
+            ResponseEntity<String> response = restTemplate.getForEntity(endpoint, String.class);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        }
+        
+        // Next request should be rate limited
+        ResponseEntity<String> response = restTemplate.getForEntity(endpoint, String.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
     }
 }
 ```
 
 ## End-to-End Testing
 
-### Full Workflow Testing
+### Selenium WebDriver Tests
 
 ```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@TestMethodOrder(OrderAnnotation.class)
-class UserWorkflowE2ETest {
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@Testcontainers
+class OpenFrameE2ETest {
     
-    @Autowired
-    private TestRestTemplate restTemplate;
+    @Container
+    static BrowserWebDriverContainer<?> chrome = new BrowserWebDriverContainer<>()
+            .withCapabilities(new ChromeOptions());
     
-    @LocalServerPort
-    private int port;
-    
-    private String baseUrl;
-    private String adminJwtToken;
-    private String userId;
+    private WebDriver driver;
     
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port;
-        adminJwtToken = obtainAdminJwtToken();
+        driver = chrome.getWebDriver();
     }
     
     @Test
-    @Order(1)
-    @DisplayName("Admin should create user successfully")
-    void adminShouldCreateUser() {
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("e2e-test@example.com")
-            .firstName("E2E")
-            .lastName("Test")
-            .organizationId("org-e2e")
-            .build();
-            
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(adminJwtToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    @DisplayName("Should complete full user registration and login flow")
+    void shouldCompleteRegistrationAndLoginFlow() {
+        // Navigate to registration page
+        driver.get("http://localhost:3000/auth/register");
         
-        HttpEntity<CreateUserRequest> entity = new HttpEntity<>(request, headers);
+        // Fill registration form
+        WebElement orgNameInput = driver.findElement(By.name("organizationName"));
+        orgNameInput.sendKeys("E2E Test Corporation");
         
-        ResponseEntity<User> response = restTemplate.exchange(
-            baseUrl + "/api/users",
-            HttpMethod.POST,
-            entity,
-            User.class
+        WebElement domainInput = driver.findElement(By.name("domain"));
+        domainInput.sendKeys("e2e-test-corp");
+        
+        WebElement emailInput = driver.findElement(By.name("adminEmail"));
+        emailInput.sendKeys("admin@e2etest.com");
+        
+        WebElement passwordInput = driver.findElement(By.name("password"));
+        passwordInput.sendKeys("SecurePassword123!");
+        
+        // Submit registration
+        WebElement submitButton = driver.findElement(By.cssSelector("button[type='submit']"));
+        submitButton.click();
+        
+        // Wait for redirect to dashboard
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.urlContains("/dashboard"));
+        
+        // Verify successful registration
+        WebElement welcomeMessage = wait.until(
+            ExpectedConditions.presenceOfElementLocated(
+                By.cssSelector("[data-testid='welcome-message']")
+            )
         );
         
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getEmail()).isEqualTo("e2e-test@example.com");
+        assertThat(welcomeMessage.getText()).contains("Welcome to OpenFrame");
         
-        userId = response.getBody().getId();
-    }
-    
-    @Test
-    @Order(2)
-    @DisplayName("Created user should appear in user list")
-    void createdUserShouldAppearInList() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(adminJwtToken);
+        // Test navigation to devices page
+        WebElement devicesLink = driver.findElement(By.cssSelector("[data-testid='nav-devices']"));
+        devicesLink.click();
         
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        wait.until(ExpectedConditions.urlContains("/devices"));
         
-        ResponseEntity<UserPageResponse> response = restTemplate.exchange(
-            baseUrl + "/api/users?page=0&size=20",
-            HttpMethod.GET,
-            entity,
-            UserPageResponse.class
+        // Verify devices page loads
+        WebElement devicesTitle = wait.until(
+            ExpectedConditions.presenceOfElementLocated(
+                By.cssSelector("h1")
+            )
         );
         
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getContent())
-            .anyMatch(user -> user.getEmail().equals("e2e-test@example.com"));
-    }
-    
-    @Test
-    @Order(3)
-    @DisplayName("Admin should update user successfully")
-    void adminShouldUpdateUser() {
-        UpdateUserRequest request = UpdateUserRequest.builder()
-            .firstName("Updated")
-            .lastName("Name")
-            .build();
-            
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(adminJwtToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        
-        HttpEntity<UpdateUserRequest> entity = new HttpEntity<>(request, headers);
-        
-        ResponseEntity<User> response = restTemplate.exchange(
-            baseUrl + "/api/users/" + userId,
-            HttpMethod.PUT,
-            entity,
-            User.class
-        );
-        
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getFirstName()).isEqualTo("Updated");
-        assertThat(response.getBody().getLastName()).isEqualTo("Name");
-    }
-    
-    @Test
-    @Order(4)
-    @DisplayName("Non-admin user should not access admin endpoints")
-    void nonAdminShouldNotAccessAdminEndpoints() {
-        String userJwtToken = obtainUserJwtToken();
-        
-        CreateUserRequest request = CreateUserRequest.builder()
-            .email("unauthorized@example.com")
-            .firstName("Unauthorized")
-            .lastName("User")
-            .build();
-            
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(userJwtToken);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        
-        HttpEntity<CreateUserRequest> entity = new HttpEntity<>(request, headers);
-        
-        ResponseEntity<String> response = restTemplate.exchange(
-            baseUrl + "/api/users",
-            HttpMethod.POST,
-            entity,
-            String.class
-        );
-        
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
-    }
-    
-    private String obtainAdminJwtToken() {
-        // Implementation to get admin JWT token
-        // This would typically involve authentication flow
-        return generateTestJwtToken("admin@example.com", List.of("ROLE_ADMIN"));
-    }
-    
-    private String obtainUserJwtToken() {
-        return generateTestJwtToken("user@example.com", List.of("ROLE_USER"));
+        assertThat(devicesTitle.getText()).isEqualTo("Devices");
     }
 }
 ```
 
-## Frontend Testing
+## Test Data Management
 
-### React Component Testing
+### Test Fixtures
 
-```typescript
-// __tests__/components/UserForm.test.tsx
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { jest } from '@jest/globals';
-import UserForm from '../components/UserForm';
-import { createUser } from '../services/userService';
-
-// Mock the user service
-jest.mock('../services/userService');
-const mockCreateUser = createUser as jest.MockedFunction<typeof createUser>;
-
-describe('UserForm', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should render form fields correctly', () => {
-    render(<UserForm onSubmit={jest.fn()} />);
+```java
+@Component
+public class TestDataFactory {
     
-    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/first name/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/last name/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
-  });
-
-  it('should validate email format', async () => {
-    render(<UserForm onSubmit={jest.fn()} />);
+    public Organization createTestOrganization(String domain) {
+        return Organization.builder()
+            .id(UUID.randomUUID().toString())
+            .name("Test Organization " + domain)
+            .domain(domain)
+            .tenantId("test-tenant-" + domain)
+            .status(OrganizationStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .build();
+    }
     
-    const emailInput = screen.getByLabelText(/email/i);
-    const submitButton = screen.getByRole('button', { name: /create user/i });
+    public Device createTestDevice(String organizationId, DeviceStatus status) {
+        return Device.builder()
+            .id(UUID.randomUUID().toString())
+            .name("Test Device " + UUID.randomUUID().toString().substring(0, 8))
+            .organizationId(organizationId)
+            .status(status)
+            .deviceType(DeviceType.WORKSTATION)
+            .operatingSystem("Windows 11")
+            .lastSeen(Instant.now())
+            .build();
+    }
     
-    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
-    fireEvent.click(submitButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText(/invalid email format/i)).toBeInTheDocument();
-    });
-  });
-
-  it('should submit valid form data', async () => {
-    const mockOnSubmit = jest.fn();
-    mockCreateUser.mockResolvedValue({
-      id: '123',
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      status: 'ACTIVE'
-    });
-
-    render(<UserForm onSubmit={mockOnSubmit} />);
-    
-    fireEvent.change(screen.getByLabelText(/email/i), { 
-      target: { value: 'test@example.com' } 
-    });
-    fireEvent.change(screen.getByLabelText(/first name/i), { 
-      target: { value: 'Test' } 
-    });
-    fireEvent.change(screen.getByLabelText(/last name/i), { 
-      target: { value: 'User' } 
-    });
-    
-    fireEvent.click(screen.getByRole('button', { name: /create user/i }));
-    
-    await waitFor(() => {
-      expect(mockCreateUser).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User'
-      });
-      expect(mockOnSubmit).toHaveBeenCalled();
-    });
-  });
-
-  it('should handle API errors gracefully', async () => {
-    mockCreateUser.mockRejectedValue(new Error('User already exists'));
-    
-    render(<UserForm onSubmit={jest.fn()} />);
-    
-    // Fill form and submit
-    fireEvent.change(screen.getByLabelText(/email/i), { 
-      target: { value: 'existing@example.com' } 
-    });
-    fireEvent.change(screen.getByLabelText(/first name/i), { 
-      target: { value: 'Test' } 
-    });
-    fireEvent.change(screen.getByLabelText(/last name/i), { 
-      target: { value: 'User' } 
-    });
-    
-    fireEvent.click(screen.getByRole('button', { name: /create user/i }));
-    
-    await waitFor(() => {
-      expect(screen.getByText(/user already exists/i)).toBeInTheDocument();
-    });
-  });
-});
+    public User createTestUser(String organizationId, Role role) {
+        return User.builder()
+            .id(UUID.randomUUID().toString())
+            .email("test-" + UUID.randomUUID().toString().substring(0, 8) + "@test.com")
+            .organizationId(organizationId)
+            .role(role)
+            .status(UserStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .build();
+    }
+}
 ```
 
-### API Integration Testing
+### Database Test Configuration
 
-```typescript
-// __tests__/integration/userApi.test.ts
-import { setupServer } from 'msw/node';
-import { rest } from 'msw';
-import { createUser, getUsers, updateUser } from '../services/userService';
-
-const server = setupServer(
-  rest.post('/api/users', (req, res, ctx) => {
-    return res(ctx.json({
-      id: 'new-user-id',
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      status: 'ACTIVE'
-    }));
-  }),
-  
-  rest.get('/api/users', (req, res, ctx) => {
-    return res(ctx.json({
-      content: [
-        {
-          id: 'user-1',
-          email: 'user1@example.com',
-          firstName: 'User',
-          lastName: 'One'
-        }
-      ],
-      totalElements: 1,
-      totalPages: 1
-    }));
-  })
-);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-describe('User API Integration', () => {
-  it('should create user via API', async () => {
-    const userData = {
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User'
-    };
+```java
+@TestConfiguration
+public class TestDatabaseConfiguration {
     
-    const result = await createUser(userData);
+    @Bean
+    @Primary
+    public MongoTemplate testMongoTemplate() {
+        return new MongoTemplate(mongoClient(), "openframe_test");
+    }
     
-    expect(result).toEqual({
-      id: 'new-user-id',
-      email: 'test@example.com',
-      firstName: 'Test',
-      lastName: 'User',
-      status: 'ACTIVE'
-    });
-  });
-  
-  it('should handle API errors', async () => {
-    server.use(
-      rest.post('/api/users', (req, res, ctx) => {
-        return res(ctx.status(400), ctx.json({
-          message: 'Validation failed',
-          errors: [{ field: 'email', message: 'Email is required' }]
-        }));
-      })
-    );
+    @Bean
+    public MongoTransactionManager testTransactionManager() {
+        return new MongoTransactionManager(mongoDbFactory());
+    }
     
-    await expect(createUser({ firstName: 'Test', lastName: 'User' }))
-      .rejects.toThrow('Validation failed');
-  });
-});
+    @EventListener
+    public void handleApplicationReady(ApplicationReadyEvent event) {
+        // Clean test database on startup
+        MongoTemplate mongoTemplate = event.getApplicationContext()
+            .getBean("testMongoTemplate", MongoTemplate.class);
+        mongoTemplate.getDb().drop();
+    }
+}
+```
+
+## Test Coverage and Quality
+
+### JaCoCo Configuration
+
+```xml
+<!-- pom.xml -->
+<plugin>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <version>0.8.8</version>
+    <executions>
+        <execution>
+            <id>prepare-agent</id>
+            <goals>
+                <goal>prepare-agent</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+                <goal>report</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>check</id>
+            <goals>
+                <goal>check</goal>
+            </goals>
+            <configuration>
+                <rules>
+                    <rule>
+                        <element>CLASS</element>
+                        <limits>
+                            <limit>
+                                <counter>LINE</counter>
+                                <value>COVEREDRATIO</value>
+                                <minimum>0.80</minimum>
+                            </limit>
+                        </limits>
+                    </rule>
+                </rules>
+            </configuration>
+        </execution>
+    </executions>
+</plugin>
+```
+
+### SonarQube Quality Gates
+
+```properties
+# sonar-project.properties
+sonar.projectKey=openframe-oss-tenant
+sonar.projectName=OpenFrame OSS Tenant
+sonar.projectVersion=1.0.0
+
+sonar.sources=src/main/java
+sonar.tests=src/test/java
+sonar.java.binaries=target/classes
+sonar.java.test.binaries=target/test-classes
+
+# Coverage
+sonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+sonar.junit.reportPaths=target/surefire-reports
+
+# Quality Gates
+sonar.coverage.line.minimum=80
+sonar.duplicated_lines_density.maximum=3
+sonar.maintainability_rating.maximum=A
+sonar.reliability_rating.maximum=A
+sonar.security_rating.maximum=A
 ```
 
 ## Running Tests
 
-### Maven Test Execution
+### Maven Test Commands
 
 ```bash
 # Run all tests
 mvn test
 
-# Run tests for specific service
-cd openframe/services/openframe-api
-mvn test
+# Run only unit tests
+mvn test -Dtest="*Test"
 
-# Run specific test class
-mvn test -Dtest=UserServiceTest
-
-# Run tests with specific profile
-mvn test -Dspring.profiles.active=test
-
-# Run tests with coverage report
-mvn test jacoco:report
-
-# Run integration tests only
-mvn test -Dgroups=integration
-
-# Skip unit tests, run integration tests
-mvn verify -DskipUTs=true
-```
-
-### Frontend Test Execution
-
-```bash
-cd openframe/services/openframe-frontend
-
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
+# Run only integration tests
+mvn test -Dtest="*IntegrationTest"
 
 # Run tests with coverage
-npm run test:coverage
+mvn clean test jacoco:report
 
-# Run specific test file
-npm test -- UserForm.test.tsx
+# Run performance tests
+mvn test -Dtest="*PerformanceTest"
 
-# Run tests matching pattern
-npm test -- --testNamePattern="should validate"
+# Run specific test class
+mvn test -Dtest="OrganizationServiceTest"
 
-# Run tests and update snapshots
-npm test -- --updateSnapshot
+# Run specific test method
+mvn test -Dtest="OrganizationServiceTest#shouldCreateOrganization_WithValidData"
+
+# Skip tests during build
+mvn install -DskipTests
+
+# Run tests with specific profile
+mvn test -Pintegration-test
 ```
 
-### Test Coverage Requirements
-
-| Component | Minimum Coverage |
-|-----------|-----------------|
-| Service Layer | 90% |
-| Repository Layer | 85% |
-| Controller Layer | 80% |
-| Utility Classes | 95% |
-| Frontend Components | 80% |
-
-### Coverage Analysis
+### Gradle Test Commands
 
 ```bash
-# Generate coverage report
-mvn jacoco:report
+# Run all tests
+./gradlew test
 
-# View coverage report
-open target/site/jacoco/index.html
+# Run integration tests
+./gradlew integrationTest
 
-# Frontend coverage
-npm run test:coverage
-open coverage/lcov-report/index.html
+# Generate test report
+./gradlew test jacocoTestReport
+
+# Run performance tests
+./gradlew performanceTest
+
+# Run tests continuously
+./gradlew test --continuous
 ```
 
-## Writing New Tests
+### IDE Test Execution
 
-### Test Naming Convention
+**IntelliJ IDEA:**
+- Right-click test class/method → Run Test
+- Use `Ctrl+Shift+F10` to run tests
+- View coverage with `Ctrl+Shift+F6`
 
-```java
-// Good test names - describe behavior
-@Test
-void shouldCreateUserWhenValidRequestProvided() { }
+**VS Code:**
+- Use Java Test Runner extension
+- Click play button next to test methods
+- Use Command Palette: "Java: Run Tests"
 
-@Test  
-void shouldThrowExceptionWhenEmailAlreadyExists() { }
+## Continuous Integration
 
-@Test
-void shouldEnforceTenantIsolationInUserQueries() { }
-
-// Bad test names - not descriptive
-@Test
-void testCreateUser() { }
-
-@Test
-void userTest() { }
-```
-
-### Test Structure (AAA Pattern)
-
-```java
-@Test
-void shouldCalculateUserStatisticsCorrectly() {
-    // Arrange (Given)
-    String tenantId = "tenant-123";
-    List<User> users = Arrays.asList(
-        createActiveUser("user1@example.com", tenantId),
-        createActiveUser("user2@example.com", tenantId),
-        createInactiveUser("user3@example.com", tenantId)
-    );
-    when(userRepository.findByTenantId(tenantId)).thenReturn(users);
-    
-    // Act (When)
-    UserStatistics result = userService.calculateStatistics(tenantId);
-    
-    // Assert (Then)
-    assertThat(result.getTotalUsers()).isEqualTo(3);
-    assertThat(result.getActiveUsers()).isEqualTo(2);
-    assertThat(result.getInactiveUsers()).isEqualTo(1);
-    assertThat(result.getActivationRate()).isEqualTo(0.67, within(0.01));
-}
-```
-
-### Mock Configuration Best Practices
-
-```java
-@ExtendWith(MockitoExtension.class)
-class UserServiceTest {
-    
-    @Mock
-    private UserRepository userRepository;
-    
-    @Mock 
-    private EventPublisher eventPublisher;
-    
-    @InjectMocks
-    private UserService userService;
-    
-    @Test
-    void shouldVerifyMockInteractions() {
-        // Given
-        CreateUserRequest request = createValidUserRequest();
-        User expectedUser = createExpectedUser();
-        when(userRepository.save(any(User.class))).thenReturn(expectedUser);
-        
-        // When
-        User result = userService.createUser(request);
-        
-        // Then - Verify state
-        assertThat(result).isEqualTo(expectedUser);
-        
-        // Then - Verify interactions
-        verify(userRepository).save(argThat(user -> 
-            user.getEmail().equals(request.getEmail()) &&
-            user.getTenantId().equals(request.getTenantId())
-        ));
-        verify(eventPublisher).publishEvent(any(UserCreatedEvent.class));
-    }
-}
-```
-
-### Test Data Builders
-
-```java
-public class TestDataBuilder {
-    
-    public static class UserBuilder {
-        private User user = new User();
-        
-        public static UserBuilder aUser() {
-            return new UserBuilder();
-        }
-        
-        public UserBuilder withEmail(String email) {
-            user.setEmail(email);
-            return this;
-        }
-        
-        public UserBuilder withTenant(String tenantId) {
-            user.setTenantId(tenantId);
-            return this;
-        }
-        
-        public UserBuilder withStatus(UserStatus status) {
-            user.setStatus(status);
-            return this;
-        }
-        
-        public User build() {
-            // Set defaults
-            if (user.getId() == null) user.setId(UUID.randomUUID().toString());
-            if (user.getEmail() == null) user.setEmail("test@example.com");
-            if (user.getFirstName() == null) user.setFirstName("Test");
-            if (user.getLastName() == null) user.setLastName("User");
-            if (user.getStatus() == null) user.setStatus(UserStatus.ACTIVE);
-            if (user.getCreatedAt() == null) user.setCreatedAt(Instant.now());
-            
-            return user;
-        }
-    }
-    
-    // Usage in tests
-    @Test
-    void testWithBuilder() {
-        User user = UserBuilder.aUser()
-            .withEmail("test@example.com")
-            .withTenant("tenant-123")
-            .withStatus(UserStatus.ACTIVE)
-            .build();
-            
-        // Use user in test...
-    }
-}
-```
-
-## Continuous Integration Testing
-
-### GitHub Actions Test Pipeline
+### GitHub Actions Test Workflow
 
 ```yaml
-# .github/workflows/test.yml
-name: Test Pipeline
+name: Tests
 
 on:
   push:
@@ -1167,67 +992,146 @@ on:
     branches: [ main ]
 
 jobs:
-  backend-tests:
+  test:
     runs-on: ubuntu-latest
     
     services:
       mongodb:
-        image: mongo:5.0
+        image: mongo:7.0
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      
       redis:
-        image: redis:7-alpine
+        image: redis:7.2-alpine
         ports:
           - 6379:6379
-          
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
     steps:
     - uses: actions/checkout@v3
     
-    - name: Set up JDK 21
+    - name: Set up Java 21
       uses: actions/setup-java@v3
       with:
         java-version: '21'
         distribution: 'temurin'
-        
+    
     - name: Cache Maven dependencies
       uses: actions/cache@v3
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        
-    - name: Run tests
-      run: mvn clean test
-      
-    - name: Generate coverage report
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Run unit tests
+      run: mvn test -Dtest="*Test"
+    
+    - name: Run integration tests
+      run: mvn test -Dtest="*IntegrationTest"
+    
+    - name: Generate test report
       run: mvn jacoco:report
-      
-    - name: Upload coverage to Codecov
+    
+    - name: Upload coverage reports
       uses: codecov/codecov-action@v3
-      
-  frontend-tests:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
       with:
-        node-version: '18'
-        cache: 'npm'
-        cache-dependency-path: openframe/services/openframe-frontend/package-lock.json
-        
-    - name: Install dependencies
-      run: |
-        cd openframe/services/openframe-frontend
-        npm ci
-        
-    - name: Run tests
-      run: |
-        cd openframe/services/openframe-frontend
-        npm test -- --coverage --watchAll=false
+        file: target/site/jacoco/jacoco.xml
+        fail_ci_if_error: true
 ```
 
----
+## Testing Best Practices
 
-This comprehensive testing guide provides the foundation for maintaining high code quality and reliability in the OpenFrame OSS Tenant platform. Regular testing, proper test structure, and comprehensive coverage are essential for the success of this multi-tenant microservices platform.
+### Test Organization
+
+1. **Follow AAA Pattern**: Arrange, Act, Assert
+2. **Use Descriptive Names**: Test names should explain what is being tested
+3. **Keep Tests Independent**: Each test should be able to run in isolation
+4. **Use Test Data Builders**: Create reusable test data factories
+
+### Test Performance
+
+1. **Use `@DirtiesContext` Sparingly**: Only when necessary to avoid slow tests
+2. **Mock External Dependencies**: Keep unit tests fast and isolated
+3. **Use Test Slices**: `@WebMvcTest`, `@DataMongoTest` for focused testing
+4. **Parallel Execution**: Configure Maven Surefire for parallel test execution
+
+### Test Maintenance
+
+1. **Regular Test Review**: Remove obsolete tests and update test data
+2. **Test Coverage Monitoring**: Maintain minimum coverage thresholds
+3. **Flaky Test Management**: Identify and fix unstable tests promptly
+4. **Documentation**: Comment complex test scenarios and setup
+
+## Troubleshooting Common Test Issues
+
+### Container Startup Issues
+
+```bash
+# Check if containers are running
+docker ps
+
+# View container logs
+docker logs openframe-mongodb-test
+docker logs openframe-redis-test
+
+# Restart containers
+docker-compose -f docker-compose.test.yml restart
+```
+
+### Memory Issues During Tests
+
+```bash
+# Increase JVM memory for tests
+export MAVEN_OPTS="-Xmx2g -XX:MaxPermSize=256m"
+
+# Or configure in pom.xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <configuration>
+        <argLine>-Xmx2g</argLine>
+    </configuration>
+</plugin>
+```
+
+### Test Database Issues
+
+```java
+// Clean database before each test
+@BeforeEach
+void cleanDatabase() {
+    mongoTemplate.getDb().drop();
+}
+
+// Use test transactions
+@Transactional
+@Rollback
+@Test
+void testMethod() {
+    // Test implementation
+}
+```
+
+## Further Reading
+
+- **JUnit 5 User Guide**: https://junit.org/junit5/docs/current/user-guide/
+- **Spring Boot Testing**: https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing
+- **Testcontainers**: https://www.testcontainers.org/
+- **Mockito Documentation**: https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html
+
+## Community Support
+
+Testing discussions and support are available in the OpenMSP Slack community:
+- **Join**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Website**: https://www.openmsp.ai/
+
+Quality testing ensures OpenFrame remains reliable, secure, and performant. When in doubt, write more tests! 🧪

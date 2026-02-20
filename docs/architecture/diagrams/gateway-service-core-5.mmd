@@ -1,7 +1,4 @@
-flowchart TD
-    Request["Incoming Request"] --> CheckHeader["Authorization Header Present?"]
-    CheckHeader -->|"Yes"| Continue
-    CheckHeader -->|"No"| ResolveToken["Resolve from Cookie/Header/Query"]
-    ResolveToken -->|"Found"| InjectHeader["Add Bearer Header"]
-    InjectHeader --> Continue
-    ResolveToken -->|"Not Found"| Continue
+flowchart LR
+    TenantRepo["ReactiveTenantRepository"] --> IssuerProvider["IssuerUrlProvider"]
+    IssuerProvider --> IssuerList["Allowed Issuer List"]
+    IssuerList --> JwtValidator["Strict Issuer Validator"]

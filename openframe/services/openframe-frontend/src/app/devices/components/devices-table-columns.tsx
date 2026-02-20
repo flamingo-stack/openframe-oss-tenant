@@ -110,7 +110,6 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
               <StatusTag 
                 label={statusConfig.label} 
                 variant={statusConfig.variant}
-                className="px-2 py-1 text-[12px] leading-[16px]"
               />
             </div>
             <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">

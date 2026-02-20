@@ -1,5 +1,5 @@
-flowchart LR
-    ExternalClient --> EventController
-    EventController --> EventService
-    EventService --> MongoEvents["Event Collection"]
-    EventService --> StreamCore["Stream Service Core"]
+flowchart TD
+    Request["GET /logs"] --> BuildFilter["LogFilterCriteria"]
+    BuildFilter --> Service["LogService.queryLogs()"]
+    Service --> Mapper["LogMapper"]
+    Mapper --> Response["LogsResponse"]

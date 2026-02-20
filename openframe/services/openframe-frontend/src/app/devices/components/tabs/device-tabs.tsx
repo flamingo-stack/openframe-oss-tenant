@@ -39,8 +39,6 @@ export const DEVICE_TABS: TabItem[] = [
     id: 'security',
     label: 'Security',
     icon: ShieldIcon,
-    hasAlert: false,
-    alertType: 'error',
     component: SecurityTab
   },
   {
@@ -53,8 +51,6 @@ export const DEVICE_TABS: TabItem[] = [
     id: 'agents',
     label: 'Agents',
     icon: BotIcon,
-    hasAlert: false,
-    alertType: 'warning',
     component: AgentsTab
   },
   {
@@ -67,16 +63,12 @@ export const DEVICE_TABS: TabItem[] = [
     id: 'software',
     label: 'Software',
     icon: PackageIcon,
-    hasAlert: false,
-    alertType: 'warning',
     component: SoftwareTab
   },
   {
     id: 'vulnerabilities',
     label: 'Vulnerabilities',
     icon: AlertTriangleIcon,
-    hasAlert: false,
-    alertType: 'error',
     component: VulnerabilitiesTab
   },
   {

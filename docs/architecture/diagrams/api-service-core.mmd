@@ -1,11 +1,11 @@
-flowchart TD
-    Client["Frontend Tenant App"] --> Gateway["Gateway Service Core"]
-    Gateway --> ApiService["Api Service Core"]
+flowchart LR
+    Client["Client Application"] --> Gateway["Gateway Service Core"]
+    Gateway --> Api["Api Service Core"]
 
-    ApiService --> Authz["Authorization Service Core"]
-    ApiService --> Mongo["Data Mongo Core"]
-    ApiService --> Redis["Data Redis Core"]
-    ApiService --> Kafka["Data Kafka Core"]
+    Api --> DataMongo["Data Layer Mongo"]
+    Api --> DataCore["Data Layer Core"]
+    Api --> Kafka["Data Layer Kafka"]
 
-    ApiService --> Stream["Stream Service Core"]
-    ApiService --> Management["Management Service Core"]
+    Api --> Authz["Authorization Service Core"]
+    Api --> Mgmt["Management Service Core"]
+    Api --> Stream["Stream Service Core"]

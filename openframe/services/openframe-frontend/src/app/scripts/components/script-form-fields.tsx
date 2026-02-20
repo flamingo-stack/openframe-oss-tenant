@@ -1,12 +1,14 @@
 'use client'
 
-import { Label, OS_PLATFORMS, ScriptArguments, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
+import { Label, ScriptArguments, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
+import { useMdUp } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { CheckboxBlock, Input, Textarea } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 
 import { CATEGORIES, type EditScriptFormData } from '../types/edit-script.types'
+import { DISABLED_PLATFORMS, getAvailableOsPlatforms } from '../utils/script-utils'
 import { ScriptEditor } from './script-editor'
 
 interface ScriptFormFieldsProps {
@@ -16,30 +18,37 @@ interface ScriptFormFieldsProps {
 export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
   const { control, watch, setValue, getValues } = form
   const watchedSupportedPlatforms = watch('supported_platforms')
+  const isMdUp = useMdUp()
+  const platforms = getAvailableOsPlatforms()
 
   return (
     <>
       {/* Supported Platform Section */}
       <div>
         <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Supported Platform</Label>
-        <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-          {OS_PLATFORMS.map(p => (
-            <SelectButton
-              key={p.id}
-              title={p.name}
-              icon={<p.icon className="w-5 h-5" />}
-              selected={watchedSupportedPlatforms.includes(p.id)}
-              onClick={() => {
-                const current = getValues('supported_platforms')
-                const has = current.includes(p.id)
-                setValue(
-                  'supported_platforms',
-                  has ? current.filter(id => id !== p.id) : [...current, p.id],
-                  { shouldValidate: true }
-                )
-              }}
-            />
-          ))}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {platforms.map(p => {
+            const isDisabled = DISABLED_PLATFORMS.includes(p.id)
+            return (
+              <SelectButton
+                key={p.id}
+                title={p.name}
+                icon={<p.icon className="w-5 h-5" />}
+                selected={!isDisabled && watchedSupportedPlatforms.includes(p.id)}
+                disabled={isDisabled}
+                tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
+                onClick={isDisabled ? undefined : () => {
+                  const current = getValues('supported_platforms')
+                  const has = current.includes(p.id)
+                  setValue(
+                    'supported_platforms',
+                    has ? current.filter(id => id !== p.id) : [...current, p.id],
+                    { shouldValidate: true }
+                  )
+                }}
+              />
+            )
+          })}
           <Controller
             name="run_as_user"
             control={control}
@@ -49,7 +58,7 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
                 onCheckedChange={(checked) => field.onChange(checked)}
                 label="Run as User"
                 description="Windows Only"
-                className="col-span-3 lg:col-span-1"
+                className="col-span-2 lg:col-span-1"
               />
             )}
           />

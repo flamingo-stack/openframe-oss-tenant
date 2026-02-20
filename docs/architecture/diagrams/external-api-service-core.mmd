@@ -1,12 +1,17 @@
 flowchart LR
-    Client["External Client<br/>Automation / Integration"] --> Gateway["Gateway Service"]
+    Client["External Client"] -->|"X-API-Key"| Gateway["Gateway Service Core"]
     Gateway --> ExternalApi["External Api Service Core"]
 
-    ExternalApi --> ApiCore["Api Service Core"]
-    ExternalApi --> DataMongo["Data Mongo Core"]
-    ExternalApi --> DataKafka["Data Kafka Core"]
+    ExternalApi --> DeviceService["Device Service"]
+    ExternalApi --> EventService["Event Service"]
+    ExternalApi --> LogService["Log Service"]
+    ExternalApi --> OrgService["Organization Services"]
+    ExternalApi --> ToolService["Tool Service"]
 
-    ExternalApi --> StreamCore["Stream Service Core"]
-    ExternalApi --> ManagementCore["Management Service Core"]
+    DeviceService --> Mongo[("Mongo Data Layer")]
+    EventService --> Mongo
+    LogService --> Pinot[("Pinot / Analytics")]
+    ToolService --> Mongo
 
-    ExternalApi --> ToolProxy["Integrated Tool APIs"]
+    ExternalApi --> RestProxy["Rest Proxy Service"]
+    RestProxy --> IntegratedTool["Integrated Tool APIs"]
