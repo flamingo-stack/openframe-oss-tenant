@@ -6,16 +6,13 @@ import {
   getDeviceTypeIcon,
   LoadError,
   NotFoundError,
-  StatusTag,
 } from '@flamingo-stack/openframe-frontend-core'
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils'
-import { OSTypeBadge, OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { CheckCircleIcon, MonitorIcon, PlusCircleIcon, SearchIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { Button, getTabComponent, Input, Table, TabContent, TabNavigation, type TableColumn, type TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
-import { featureFlags } from '@lib/feature-flags'
-import { getFullImageUrl } from '@lib/image-url'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
@@ -23,9 +20,9 @@ import { DEVICE_STATUS } from '../../devices/constants/device-statuses'
 import { GET_DEVICES_QUERY } from '../../devices/queries/devices-queries'
 import type { Device, DevicesGraphQLNode, GraphQLResponse } from '../../devices/types/device.types'
 import { createDeviceListItem } from '../../devices/utils/device-transform'
-import { getDeviceStatusConfig } from '../../devices/utils/device-status'
 import { useScriptSchedule, useScriptScheduleAgents } from '../hooks/use-script-schedule'
 import { useReplaceScheduleAgents } from '../hooks/use-script-schedule-mutations'
+import { mapPlatformsToOsTypes } from '../utils/script-utils'
 import { formatScheduleDate, getRepeatLabel } from '../types/script-schedule.types'
 import { ScheduleAssignDevicesLoader } from './schedule-assign-devices-loader'
 import { ScheduleInfoBarFromData } from './schedule-info-bar'
@@ -34,9 +31,10 @@ interface ScheduleAssignDevicesViewProps {
   scheduleId: string
 }
 
-async function fetchAllDevices(): Promise<Device[]> {
+async function fetchAllDevices(osTypes: string[]): Promise<Device[]> {
   const filter = {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
+    ...(osTypes.length > 0 && { osTypes }),
   }
 
   const response = await apiClient.post<
@@ -132,10 +130,15 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true)
   }
 
+  const supportedOsTypes = useMemo(
+    () => mapPlatformsToOsTypes(schedule?.task_supported_platforms ?? []),
+    [schedule?.task_supported_platforms],
+  )
+
   const devicesQuery = useQuery({
-    queryKey: ['schedule-assign-devices', scheduleId],
-    queryFn: fetchAllDevices,
-    enabled: Boolean(scheduleId),
+    queryKey: ['schedule-assign-devices', scheduleId, supportedOsTypes],
+    queryFn: () => fetchAllDevices(supportedOsTypes),
+    enabled: Boolean(scheduleId) && Boolean(schedule),
   })
 
   // Only include devices that have a Tactical RMM agent_id
