@@ -27,6 +27,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private viewOnly = false
   private swapMouseButtons = false
   private useRemoteKeyboardMap = false
+  private invertScrollDirection = false
   private listeners: Array<() => void> = []
   private drawing = false
   private accum: Uint8Array | null = null
@@ -94,6 +95,7 @@ export class MeshDesktop implements DesktopInputHandlers {
         // pixel mode - scale roughly to notches
         delta = Math.max(-32768, Math.min(32767, Math.round(e.deltaY)))
       }
+      if (this.invertScrollDirection) delta = -delta
       this.send(this.encodeMouseWheel(x, y, delta))
       e.preventDefault()
     }
@@ -183,6 +185,10 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   setUseRemoteKeyboardMap(useRemoteMap: boolean) {
     this.useRemoteKeyboardMap = useRemoteMap
+  }
+
+  setInvertScrollDirection(invert: boolean) {
+    this.invertScrollDirection = invert
   }
 
   setSender(sender: (data: Uint8Array) => void) {

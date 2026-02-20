@@ -1,9 +1,8 @@
-flowchart LR
-    Client["Browser / Agent / External Client"] --> Gateway["Gateway Service Core"]
+flowchart TD
+    Client["Client or Agent"] --> Gateway["Gateway Service Core"]
 
-    Gateway --> Authz["Authorization Server Core"]
     Gateway --> ApiService["API Service Core"]
+    Gateway --> AuthService["Authorization Service Core"]
     Gateway --> ExternalApi["External API Service Core"]
-    Gateway --> ClientService["Client Service Core"]
-
-    Gateway --> Mongo["Data Access Mongo"]
+    Gateway --> Management["Management Service Core"]
+    Gateway --> Stream["Stream Service Core"]

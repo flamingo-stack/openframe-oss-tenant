@@ -1,6 +1,4 @@
-flowchart TD
-    Request["POST /v1/tools/{id}"] --> SaveTool["Save Integrated Tool"]
-    SaveTool --> Persist["IntegratedToolService.save"]
-    Persist --> DebeziumUpdate["DebeziumService.createOrUpdate"]
-    DebeziumUpdate --> Hooks["Execute Post Save Hooks"]
-    Hooks --> Response["Return Success"]
+flowchart LR
+    ManagementConfiguration --> ComponentScan["Component Scan com.openframe"]
+    ManagementConfiguration --> PasswordEncoder["BCryptPasswordEncoder Bean"]
+    ComponentScan --> Exclusion["Exclude CassandraHealthIndicator"]

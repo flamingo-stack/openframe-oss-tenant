@@ -1,329 +1,423 @@
 # First Steps with OpenFrame
 
-Welcome to OpenFrame! Now that you have the platform running, this guide walks you through the first 5 essential steps to get you productive with your new MSP platform.
+Congratulations! You have OpenFrame running. This guide walks you through the essential first steps to configure your OpenFrame platform, create your first tenant, and explore the key features that make OpenFrame a powerful MSP platform.
 
-## Overview
+## Your First 5 Actions
 
-After completing the quick start, you should have OpenFrame running locally. These first steps will help you:
+### 1. Access the OpenFrame Dashboard
 
-1. Complete initial tenant setup
-2. Configure your first organization
-3. Add users and set permissions
-4. Install and register your first agent
-5. Explore AI-powered features
-
-Let's dive in!
-
----
-
-## Step 1: Complete Initial Tenant Setup
-
-### Access Your OpenFrame Instance
-
-Navigate to [http://localhost:3000](http://localhost:3000) in your browser. You'll see the OpenFrame welcome screen.
-
-### Create Your Admin Account
-
-1. **Click "Sign Up"** to create your first tenant
-2. **Fill in your details**:
-   - Email address (will be your admin login)
-   - Password (minimum 8 characters)
-   - Organization name
-   - Your full name
-
-3. **Complete registration** - you'll be automatically logged in
-
-### Verify Your Setup
-
-After registration, you should see:
-- Clean dashboard interface
-- Navigation sidebar with main sections
-- Welcome tour popup (optional)
-
-> 💡 **Tip**: The first user created becomes the tenant administrator with full permissions.
-
----
-
-## Step 2: Configure Your Organization
-
-### Access Organization Settings
-
-1. Navigate to **Organizations** in the sidebar
-2. Click on your organization (created during registration)
-3. Select **Edit** or use the **General Information** tab
-
-### Complete Organization Profile
-
-Fill in essential organization details:
-
-```text
-Organization Information:
-├── Basic Details
-│   ├── Name: Your MSP Company Name
-│   ├── Description: Brief company description
-│   └── Industry: Managed Service Provider
-│
-├── Contact Information
-│   ├── Primary Email: support@your-company.com
-│   ├── Phone: +1-555-123-4567
-│   └── Website: https://your-company.com
-│
-└── Address Information
-    ├── Street: 123 Business Ave
-    ├── City: Your City
-    ├── State/Province: Your State
-    └── Country: Your Country
-```
-
-### Set Organization Preferences
-
-Configure key settings:
-- **Time Zone**: Set your primary operating timezone
-- **Default Language**: Choose interface language
-- **Security Policies**: Review and adjust as needed
-
----
-
-## Step 3: Add Users and Configure Permissions
-
-### Invite Additional Users
-
-1. Go to **Settings** → **Company and Users**
-2. Click **Add Users** or **Invite User**
-3. **Enter user details**:
-   - Email address
-   - Full name
-   - Role assignment
-
-### Understanding User Roles
-
-OpenFrame includes these built-in roles:
-
-| Role | Permissions | Best For |
-|------|-------------|----------|
-| **Administrator** | Full system access | IT directors, MSP owners |
-| **Technician** | Device management, support tools | Field technicians, support staff |
-| **Manager** | User management, reporting | Team leads, service managers |
-| **Viewer** | Read-only access to reports | Executives, auditors |
-
-### Set Up Your Team
-
-Create accounts for key team members:
-```bash
-# Example team structure:
-Admin User (you) → Full access
-Lead Technician → Technician role  
-Service Manager → Manager role
-Junior Tech → Technician role (limited)
-```
-
-### Configure SSO (Optional)
-
-If your organization uses single sign-on:
-
-1. Navigate to **Settings** → **SSO Configuration**
-2. Choose your provider:
-   - **Azure Active Directory**
-   - **Google Workspace**
-   - **Microsoft 365**
-3. Follow the setup wizard with your SSO credentials
-
----
-
-## Step 4: Install and Register Your First Agent
-
-### Download the OpenFrame Agent
-
-The OpenFrame agent connects your devices to the platform for management and monitoring.
-
-1. **Go to Devices** → **Add New Device**
-2. **Select your platform**:
-   - Windows (PowerShell installer)
-   - macOS (PKG installer)
-   - Linux (bash script)
-
-3. **Copy the installation command** - it includes your unique registration secret
-
-### Install on Windows
-
-```powershell
-# Run PowerShell as Administrator
-Invoke-WebRequest -Uri "https://your-openframe-url/agent/install.ps1" -OutFile "install.ps1"
-.\install.ps1 -Secret "your-registration-secret"
-```
-
-### Install on macOS/Linux
+Open your web browser and navigate to the OpenFrame web interface:
 
 ```bash
-# Run with sudo privileges
-curl -fsSL https://your-openframe-url/agent/install.sh | sudo bash -s -- --secret your-registration-secret
+# Open the OpenFrame dashboard
+https://localhost:8443
 ```
 
-### Verify Agent Registration
+You should see the OpenFrame login screen. The platform automatically detects your development environment and provides appropriate authentication options.
 
-After installation:
-1. **Check the Devices page** - your device should appear within 2-3 minutes
-2. **Verify connection status** - look for green "Connected" status
-3. **Review device information** - OS, hardware specs, installed software
+**Expected Result**: A clean, modern interface welcoming you to OpenFrame with authentication options visible.
 
-### Agent Capabilities
+### 2. Create Your First Tenant
 
-Once connected, your agent provides:
-- **Real-time monitoring**: CPU, memory, disk usage
-- **Remote access**: Desktop and shell access
-- **File management**: Browse and transfer files
-- **Software management**: Install, update, remove applications
-- **Security monitoring**: Compliance checking and vulnerability scanning
+OpenFrame is multi-tenant by design. Let's create your first tenant organization:
 
----
+#### Using the Web Interface
 
-## Step 5: Explore AI-Powered Features
+1. **Navigate to Tenant Registration**
+   - Click "Create New Tenant" or "Sign Up"
+   - You'll be redirected to the tenant registration flow
 
-### Meet Mingo - Your AI Assistant
+2. **Fill Tenant Information**
+   ```text
+   Organization Name: Your MSP Company
+   Domain: your-msp.local
+   Admin Email: admin@your-msp.local
+   Password: SecurePassword123!
+   ```
 
-OpenFrame includes Mingo, an AI assistant designed specifically for MSP operations.
+3. **Complete Registration**
+   - The system will create your tenant
+   - Generate OAuth2 keys automatically
+   - Set up initial database collections
 
-[![OpenFrame v0.4.4: Mingo AI Assistant with Enterprise Guardrails](https://img.youtube.com/vi/mAi4qqA8b00/maxresdefault.jpg)](https://www.youtube.com/watch?v=mAi4qqA8b00)
+#### Using the API (Alternative)
 
-### Access Mingo
-
-1. **Click the Mingo icon** in the sidebar (robot icon)
-2. **Or use the chat bubble** in the bottom-right corner
-3. **Start with a simple question** like "Show me my device overview"
-
-### Example Mingo Interactions
-
-Try these commands to explore Mingo's capabilities:
-
-```text
-"Show me all offline devices"
-→ Mingo displays devices that haven't checked in recently
-
-"Create a maintenance report for Device-001"  
-→ Generates comprehensive device status report
-
-"What security alerts need attention?"
-→ Summarizes critical security findings
-
-"Help me troubleshoot slow performance on Device-002"
-→ Provides step-by-step diagnostic guidance
+```bash
+# Create tenant via REST API
+curl -X POST https://localhost:8443/api/tenants \
+  -H "Content-Type: application/json" \
+  -d '{
+    "organizationName": "Your MSP Company",
+    "domain": "your-msp.local",
+    "adminEmail": "admin@your-msp.local",
+    "plan": "PROFESSIONAL"
+  }'
 ```
 
-### Configure AI Policies
+**Expected Result**: You'll receive a confirmation email and can log in with your tenant credentials.
 
-Set up enterprise guardrails for AI usage:
+### 3. Configure Your First Integration
 
-1. **Go to Settings** → **AI Settings**
-2. **Configure approval workflows**:
-   - Require approval for system changes
-   - Set spending limits for AI operations
-   - Define restricted actions
-3. **Set data privacy controls**:
-   - Restrict sensitive data access
-   - Configure data retention policies
-   - Enable audit logging
+OpenFrame shines when integrated with existing MSP tools. Let's set up your first integration:
 
-### AI-Powered Automation
+#### Option A: TacticalRMM Integration
 
-Explore automation capabilities:
-- **Smart Alerting**: AI prioritizes and categorizes alerts
-- **Predictive Maintenance**: Proactive issue identification
-- **Automated Responses**: Configure AI to handle routine tasks
-- **Report Generation**: Intelligent reporting and insights
+1. **Navigate to Settings → Integrated Tools**
+2. **Add TacticalRMM Connection**:
+   ```text
+   Tool Name: TacticalRMM Production
+   Base URL: https://your-tactical-rmm.com
+   API Token: [Your TacticalRMM API Token]
+   Organization: [Select your organization]
+   ```
 
----
+3. **Test Connection**:
+   - Click "Test Connection"  
+   - Verify authentication succeeds
+   - View synchronized devices (may take 1-2 minutes)
 
-## Quick Configuration Checklist
+#### Option B: Fleet MDM Integration
 
-Use this checklist to ensure you've covered the basics:
+1. **Navigate to Settings → Integrated Tools**
+2. **Add Fleet MDM Connection**:
+   ```text
+   Tool Name: Fleet Production
+   Base URL: https://your-fleet.com
+   API Token: [Your Fleet API Token]
+   ```
 
-### ✅ Initial Setup
-- [ ] Admin account created and verified
-- [ ] Organization profile completed
-- [ ] Basic preferences configured
+3. **Test Connection**:
+   - Verify fleet enrollment works
+   - Check device synchronization
 
-### ✅ User Management  
-- [ ] Key team members invited
-- [ ] Roles and permissions assigned
-- [ ] SSO configured (if applicable)
+**Expected Result**: Your integrated tool appears in the "Integrated Tools" list with a green "Connected" status.
 
-### ✅ Device Management
-- [ ] First agent installed and registered
-- [ ] Device appears in dashboard
-- [ ] Agent connectivity verified
+### 4. Add Your First Device
 
-### ✅ AI Configuration
-- [ ] Mingo assistant tested
-- [ ] AI policies configured
-- [ ] Automation preferences set
+Once integrations are configured, devices should automatically sync. You can also manually register devices:
 
-### ✅ Basic Security
-- [ ] User permissions reviewed
-- [ ] API access configured
-- [ ] Security policies enabled
+#### Automatic Registration (Recommended)
 
----
+```bash
+# On the target device, install the OpenFrame client
+# Download the appropriate binary for your platform:
+wget https://your-openframe-instance.com/downloads/openframe-client-linux
+chmod +x openframe-client-linux
 
-## Common Initial Questions
+# Register the device
+./openframe-client-linux register \
+  --tenant your-msp.local \
+  --secret [registration-secret-from-dashboard]
+```
 
-### "How do I add more devices?"
+#### Manual Device Addition
 
-Go to **Devices** → **Add Device**, select the platform, and follow the installation instructions. Each device gets a unique registration secret.
+1. **Navigate to Devices → Add Device**
+2. **Fill Device Information**:
+   ```text
+   Device Name: TEST-WORKSTATION-01
+   Device Type: Workstation
+   Operating System: Windows 11
+   Organization: [Select your organization]
+   ```
 
-### "What if an agent won't connect?"
+3. **Generate Agent Installation**:
+   - The platform generates a custom installer
+   - Download and run on target device
+   - Device appears in dashboard within 30 seconds
 
-Check:
-1. Network connectivity to OpenFrame server
-2. Firewall rules allowing outbound connections
-3. Registration secret is correct
-4. Agent service is running
+**Expected Result**: Your device appears in the Devices list with real-time status information.
 
-### "How do I configure remote access?"
+### 5. Explore AI-Powered Features
 
-Once an agent is connected:
-1. Click the device in your device list
-2. Select **Remote Desktop** or **Remote Shell**
-3. Authenticate if prompted
-4. Access is granted through the browser
+OpenFrame's AI capabilities are one of its key differentiators. Let's test them:
 
-### "Can I import existing device lists?"
+#### Chat with Mingo AI
 
-Yes! Use the **Tools** → **Import/Export** feature to bulk import device information and generate installation scripts.
+1. **Open the AI Chat Interface**:
+   - Click the "Mingo AI" button or navigate to `/mingo`
+   - This opens the AI assistant for technicians
 
----
+2. **Ask Your First Question**:
+   ```text
+   "Show me the health status of all devices"
+   ```
+
+3. **Test Device Management**:
+   ```text
+   "Create a script to update Windows devices"
+   ```
+
+4. **Ask for Analytics**:
+   ```text
+   "What are the top 5 alerts from the last 24 hours?"
+   ```
+
+**Expected Result**: Mingo AI responds with relevant information, suggested actions, and can execute authorized tasks.
+
+#### Test Event Processing
+
+1. **Generate Test Events**:
+   ```bash
+   # Trigger a test event
+   curl -X POST https://localhost:8443/api/events \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer [your-jwt-token]" \
+     -d '{
+       "eventType": "DEVICE_OFFLINE",
+       "deviceId": "test-device-01",
+       "message": "Device has not reported in 5 minutes",
+       "severity": "WARNING"
+     }'
+   ```
+
+2. **View Event Processing**:
+   - Navigate to **Logs → Events**
+   - See the event appear in real-time
+   - Notice AI enrichment and correlation
+
+**Expected Result**: Events appear in the dashboard with AI-generated insights and suggested remediation actions.
+
+## Essential Configuration
+
+### Set Up Authentication (SSO)
+
+Configure Single Sign-On for your organization:
+
+1. **Navigate to Settings → SSO Configuration**
+2. **Choose Your Provider** (Google, Microsoft, etc.):
+   ```text
+   Provider: Google Workspace
+   Client ID: [Your Google Client ID]
+   Client Secret: [Your Google Client Secret]
+   Domain: your-msp.com
+   ```
+
+3. **Test SSO Flow**:
+   - Log out of OpenFrame
+   - Click "Login with Google"
+   - Verify authentication works
+
+### Configure API Keys
+
+Set up API access for external integrations:
+
+1. **Navigate to Settings → API Keys**
+2. **Create New API Key**:
+   ```text
+   Key Name: External Integration
+   Permissions: Read Devices, Write Events
+   Rate Limit: 1000 requests/hour
+   ```
+
+3. **Test API Access**:
+   ```bash
+   # Test with your new API key
+   curl -H "X-API-Key: [your-api-key]" \
+     https://localhost:8443/external/api/v1/devices
+   ```
+
+### Enable AI Features
+
+Configure the AI components:
+
+1. **Set Anthropic API Key** (if not done during setup):
+   ```bash
+   # Add to your environment
+   export ANTHROPIC_API_KEY=your_anthropic_key_here
+   
+   # Or configure in Settings → AI Configuration
+   ```
+
+2. **Configure AI Policies**:
+   - Navigate to **Settings → AI Settings**
+   - Set approval requirements for AI actions
+   - Configure auto-approval for safe operations
+
+## Explore Key Features
+
+### Real-Time Device Monitoring
+
+1. **Navigate to Devices**
+2. **Select a Device** for detailed view:
+   - Real-time performance metrics
+   - Network connectivity status
+   - Security compliance scores
+   - Agent installation status
+
+3. **Test Remote Access**:
+   - Click "Remote Desktop" or "Remote Shell"
+   - Verify MeshCentral integration works
+   - Test file management capabilities
+
+### Event and Log Analysis
+
+1. **Navigate to Logs**
+2. **Use Advanced Filtering**:
+   ```text
+   Filter by: Last 24 hours
+   Severity: Warning and above
+   Organization: [Your organization]
+   ```
+
+3. **Test GraphQL Queries**:
+   - Open the GraphQL explorer at https://localhost:8443/graphql
+   - Run sample queries to understand the data model
+
+### Script Management
+
+1. **Navigate to Scripts**
+2. **Create Your First Script**:
+   ```powershell
+   # Example PowerShell script for Windows updates
+   Get-WUInstall -AutoSelectOnWebSites -AutoReboot
+   Write-Output "Windows updates installed successfully"
+   ```
+
+3. **Deploy to Devices**:
+   - Select target devices
+   - Schedule execution
+   - Monitor results in real-time
+
+## Verify Everything is Working
+
+Run this comprehensive check to ensure your OpenFrame setup is fully functional:
+
+### Health Check Commands
+
+```bash
+# Check all service endpoints
+echo "=== Service Health Check ==="
+curl -s https://localhost:8443/health | jq
+curl -s https://localhost:8080/actuator/health | jq
+curl -s https://localhost:9000/actuator/health | jq
+
+# Check database connectivity
+echo "=== Database Connectivity ==="
+mongosh --eval "db.runCommand('ping')" "mongodb://admin:admin123@localhost:27017/openframe"
+redis-cli ping
+
+# Check Kafka topics
+echo "=== Kafka Topics ==="
+kafka-topics.sh --list --bootstrap-server localhost:9092
+
+# Test GraphQL API
+echo "=== GraphQL API Test ==="
+curl -X POST https://localhost:8443/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer [your-jwt-token]" \
+  -d '{"query": "{ organizations { id name } }"}'
+```
+
+### Web Interface Checklist
+
+Navigate through each section and verify:
+
+- ✅ **Dashboard**: Shows summary statistics and recent activity
+- ✅ **Devices**: Lists all connected devices with status
+- ✅ **Organizations**: Shows your tenant and any sub-organizations  
+- ✅ **Logs**: Displays events and system logs with filtering
+- ✅ **Scripts**: Allows script creation and deployment
+- ✅ **Settings**: All configuration options accessible
+- ✅ **AI Chat**: Mingo AI responds to queries appropriately
+
+## Common Initial Configuration Issues
+
+### Authentication Issues
+
+**Problem**: Can't log in or token errors
+
+**Solution**:
+```bash
+# Restart authorization server
+pkill -f openframe-authorization-server
+java -jar openframe/services/openframe-authorization-server/target/openframe-authorization-server-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev &
+
+# Clear browser cache and try again
+```
+
+### Device Registration Issues  
+
+**Problem**: Devices not appearing or failing to register
+
+**Solution**:
+```bash
+# Check registration secret is valid
+curl -H "Authorization: Bearer [admin-token]" \
+  https://localhost:8443/api/agent/registration-secret/active
+
+# Verify client can reach the API
+telnet localhost 8443
+```
+
+### AI Features Not Working
+
+**Problem**: Mingo AI not responding or giving errors
+
+**Solution**:
+```bash
+# Verify Anthropic API key is set
+echo $ANTHROPIC_API_KEY
+
+# Check AI service logs
+grep -i "anthropic\|claude" openframe-api.log
+
+# Test Anthropic API directly
+curl -H "x-api-key: $ANTHROPIC_API_KEY" \
+  -H "content-type: application/json" \
+  -d '{"model":"claude-3-haiku-20240307","max_tokens":100,"messages":[{"role":"user","content":"Hello"}]}' \
+  https://api.anthropic.com/v1/messages
+```
+
+## Get Help and Support
+
+### Community Resources
+
+- **OpenMSP Slack**: https://www.openmsp.ai/ - Primary support channel
+- **Join Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **OpenFrame Website**: https://www.flamingo.run/openframe
+
+### Documentation Resources
+
+When you're ready to dive deeper:
+- Review architecture details in the development documentation
+- Explore API documentation at https://localhost:8443/swagger-ui
+- Check integration guides for specific MSP tools
+
+### Logging and Debugging
+
+Enable verbose logging for troubleshooting:
+
+```bash
+# Set debug logging
+export OPENFRAME_LOG_LEVEL=DEBUG
+
+# Watch logs in real-time
+tail -f openframe-api.log | grep ERROR
+tail -f openframe-gateway.log | grep WARN
+```
 
 ## What's Next?
 
-Now that you've completed the first steps:
+You now have a fully functional OpenFrame environment! Here's what to explore next:
 
-### Immediate Actions
-- **Install agents** on your critical devices
-- **Set up monitoring alerts** for key systems
-- **Create device groups** for easier management
-- **Configure backup and maintenance schedules**
+1. **Advanced Integrations**: Connect additional MSP tools and services
+2. **Custom Scripts**: Develop automation scripts for your specific workflows  
+3. **AI Workflows**: Create custom AI-powered workflows for common tasks
+4. **Multi-Tenant Setup**: Add additional client organizations
+5. **API Development**: Build custom applications using OpenFrame's APIs
 
-### Advanced Configuration
-- **Set up integrations** with existing tools
-- **Configure automated scripts** and policies
-- **Create custom dashboards** and reports
-- **Implement compliance monitoring**
+## Summary
 
-### Explore Documentation
-- **Development guides** for custom integrations
-- **Security best practices** for production deployment  
-- **Advanced AI configuration** for complex workflows
-- **API documentation** for custom development
+You've successfully:
 
-## Getting Help
+✅ Accessed the OpenFrame dashboard  
+✅ Created your first tenant organization  
+✅ Configured initial integrations  
+✅ Registered your first device  
+✅ Tested AI-powered features  
+✅ Verified all core functionality  
 
-### Community Support
-- **OpenMSP Slack**: [Join our community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for real-time help
-- **Documentation**: Browse guides for specific features
-- **Video Tutorials**: Check out our YouTube channel for walkthroughs
+OpenFrame is now ready to transform your MSP operations with AI-powered automation and unified management capabilities.
 
-### Professional Services
-- **Implementation Support**: Get help with complex deployments
-- **Custom Development**: Extend OpenFrame for unique requirements
-- **Training Services**: Team training and certification programs
-
-Welcome to the OpenFrame community! You're now ready to transform your MSP operations with intelligent automation and unified platform management. 🚀
+Ready to learn more? Join the OpenMSP community and start building the future of MSP operations! 🚀

@@ -1,4 +1,5 @@
-flowchart TD
-    DebeziumMsg["DeserializedDebeziumMessage"] --> Transform["transform()"]
-    Transform --> UnifiedEvent["UnifiedLogEvent"]
-    UnifiedEvent --> Save["CassandraRepository.save()"]
+flowchart LR
+    Tool["IntegratedToolType"] --> Key["tool:sourceEvent"]
+    Source["Source Event String"] --> Key
+    Key --> Lookup["Mapping Registry"]
+    Lookup --> Unified["UnifiedEventType"]

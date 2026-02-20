@@ -1,4 +1,6 @@
-flowchart LR
-    OrganizationEntity["Organization Entity (Mongo)"] --> OrganizationMapper
-    OrganizationMapper --> OrganizationResponse
-    OrganizationResponse --> Client["GraphQL / REST Client"]
+flowchart TD
+    Request["Machine IDs"] --> Service["InstalledAgentService"]
+    Service --> Repo["InstalledAgentRepository"]
+    Repo --> All["All InstalledAgents"]
+    All --> Grouped["Grouped By Machine ID"]
+    Grouped --> Result["List<List<InstalledAgent>>"]

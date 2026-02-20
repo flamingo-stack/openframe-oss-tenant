@@ -1,15 +1,11 @@
-flowchart TD
-    Client["Frontend or Internal Client"] --> Gateway["Gateway Service Core"]
+flowchart LR
+    Client["Client Application"] --> Gateway["Gateway Service Core"]
     Gateway --> Api["Api Service Core"]
 
-    Api --> Controllers["REST Controllers"]
-    Api --> GraphQL["GraphQL DataFetchers"]
+    Api --> DataMongo["Data Layer Mongo"]
+    Api --> DataCore["Data Layer Core"]
+    Api --> Kafka["Data Layer Kafka"]
 
-    Controllers --> Services["Domain Services"]
-    GraphQL --> Services
-
-    Services --> Repositories["Mongo Repositories"]
-    Services --> ExternalModules["Other Core Modules"]
-
-    ExternalModules --> Authz["Authorization Server Core"]
-    ExternalModules --> Stream["Stream Service Core"]
+    Api --> Authz["Authorization Service Core"]
+    Api --> Mgmt["Management Service Core"]
+    Api --> Stream["Stream Service Core"]

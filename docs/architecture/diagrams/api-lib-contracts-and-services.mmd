@@ -1,12 +1,10 @@
 flowchart LR
-    Frontend["Frontend / External Clients"] --> ApiService["API Service Core"]
-    Frontend --> ExternalApi["External API Service Core"]
+    Client["Client Applications"] --> ApiService["Api Service Core"]
+    Client --> ExternalApi["External Api Service Core"]
 
-    ApiService --> ApiLib["Api Lib Contracts And Services"]
-    ExternalApi --> ApiLib
+    ApiService --> Contracts["Api Lib Contracts And Services"]
+    ExternalApi --> Contracts
 
-    ApiLib --> DataAccess["Data Access (Mongo Repositories)"]
-    ApiLib --> StreamLayer["Stream Service Core"]
-
-    DataAccess --> Mongo[("MongoDB")]
-    StreamLayer --> Kafka[("Kafka")]
+    Contracts --> Mongo["Data Layer Mongo"]
+    Contracts --> Kafka["Data Layer Kafka"]
+    Contracts --> CoreData["Data Layer Core"]

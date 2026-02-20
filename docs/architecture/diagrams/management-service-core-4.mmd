@@ -1,7 +1,4 @@
-flowchart TD
-    LoadFile["Load Agent JSON"] --> ExistsCheck["Find By ID"]
-    ExistsCheck -->|"New"| SaveNew["Save Agent"]
-    ExistsCheck -->|"Existing"| Update["Update Agent"]
-    Update --> Compare["Compare Versions"]
-    Compare -->|"Changed"| Publish["Publish Version Update"]
-    Compare -->|"Same"| End["End"]
+flowchart LR
+    IntegratedToolController --> HookInterface["IntegratedToolPostSaveHook"]
+    HookInterface --> HookImpl1["Custom Hook Implementation"]
+    HookInterface --> HookImpl2["Another Hook Implementation"]

@@ -1,118 +1,183 @@
 # OpenFrame Platform Introduction
 
-Welcome to **OpenFrame** - Flamingo's unified AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
-
-## What is OpenFrame?
-
-OpenFrame is a comprehensive multi-tenant SaaS platform that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the entire stack. It combines the power of open-source alternatives with intelligent AI assistants (Mingo for technicians, Fae for clients) to deliver enterprise-grade MSP capabilities at a fraction of the cost.
+Welcome to **OpenFrame** - the AI-powered, unified MSP (Managed Service Provider) platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
 
 [![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
 
-## Key Features
+## What is OpenFrame?
 
-### 🤖 AI-Powered Automation
-- **Mingo AI**: Intelligent technician assistant that augments MSP operations with AI-powered insights and automation
-- **Fae AI**: Client-facing assistant that provides intelligent support and self-service capabilities
-- Enterprise guardrails ensure AI assistance remains secure and compliant
+OpenFrame is a comprehensive, multi-tenant platform that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the entire technology stack. Built on a modern microservices architecture using Spring Boot 3.3.0 and Java 21, OpenFrame provides:
 
-### 🔧 Unified Platform
-- Single interface for multiple MSP tools and services
-- Centralized device management and monitoring
-- Unified authentication with multi-tenant support
-- Integrated remote access and file management
+- **Unified Management**: Single interface for device management, monitoring, and automation
+- **AI-Powered Operations**: Mingo AI for technicians and Fae AI for clients
+- **Multi-Tenant Architecture**: Secure, isolated environments for different organizations
+- **Real-Time Processing**: Event-driven architecture with Kafka, Apache NiFi, and streaming analytics
+- **Open Source Foundation**: Built with and integrates open-source tools like TacticalRMM, Fleet MDM, and MeshCentral
 
-### 💰 Cost-Effective Alternative
-- Replaces expensive proprietary MSP software
-- Open-source foundation with commercial enhancements
-- Transparent pricing and reduced vendor lock-in
-
-### 🏢 Enterprise-Ready
-- Multi-tenant architecture for MSP service providers
-- OAuth2/OIDC authentication with SSO support
-- Role-based access control and security policies
-- Scalable microservices architecture
-
-## Architecture Overview
-
-OpenFrame is built on a modern, event-driven microservices architecture:
+## Key Features and Benefits
 
 ```mermaid
-flowchart TD
-    A[Frontend Application] --> B[API Gateway]
-    B --> C[API Service Core]
-    B --> D[Authorization Server]
-    B --> E[External API Service]
-    B --> F[Client Service Core]
+graph TD
+    A[OpenFrame Platform] --> B[Multi-Tenant Security]
+    A --> C[AI-Powered Automation]
+    A --> D[Real-Time Analytics]
+    A --> E[Unified Tool Integration]
     
-    G[OpenFrame Agent] --> F
-    G --> H[NATS JetStream]
+    B --> B1[OAuth2/OIDC Authentication]
+    B --> B2[Per-Tenant Data Isolation]
+    B --> B3[JWT-Based Authorization]
     
-    H --> F
-    F --> I[Kafka]
-    I --> J[Stream Service Core]
+    C --> C1[Mingo AI for Technicians]
+    C --> C2[Fae AI for Clients] 
+    C --> C3[Intelligent Event Processing]
     
-    C --> K[MongoDB]
-    D --> K
-    J --> L[Cassandra]
+    D --> D1[Apache Pinot Analytics]
+    D --> D2[Kafka Streaming]
+    D --> D3[Real-Time Dashboards]
     
-    M[Management Service] --> K
-    M --> I
-    M --> H
+    E --> E1[TacticalRMM Integration]
+    E --> E2[Fleet MDM Support]
+    E --> E3[MeshCentral Remote Access]
 ```
+
+### Core Capabilities
+
+| Feature | Description | Benefit |
+|---------|-------------|---------|
+| **Unified Interface** | Single platform for all MSP operations | Reduces tool sprawl and training costs |
+| **AI Automation** | Intelligent ticket routing and resolution | Increases efficiency by 60-80% |
+| **Multi-Tenant** | Secure isolation between clients | Supports MSP business models |
+| **Real-Time Analytics** | Live monitoring and reporting | Proactive issue resolution |
+| **Open Source Integration** | Works with existing OSS tools | Reduces licensing costs |
+| **API-First Design** | Comprehensive REST and GraphQL APIs | Easy integrations and customization |
 
 ## Target Audience
 
 OpenFrame is designed for:
 
-- **Managed Service Providers (MSPs)** looking to modernize their toolstack
-- **IT Service Organizations** seeking unified platform management
-- **System Administrators** requiring centralized device and user management
-- **Developers** wanting to extend MSP capabilities with open APIs
+### 🏢 **Managed Service Providers (MSPs)**
+- Small to enterprise-scale MSPs
+- Looking to reduce software licensing costs
+- Want to modernize their technology stack
+- Need unified client management
 
-## Getting Started
+### 👨‍💻 **IT Professionals & System Administrators**
+- Managing multiple client environments
+- Seeking automation and AI assistance
+- Want consolidated monitoring and alerting
+- Need efficient remote management tools
 
-Ready to begin your OpenFrame journey? Here's your roadmap:
+### 🔧 **DevOps Teams**
+- Building or modernizing MSP platforms
+- Implementing microservices architectures
+- Integrating multiple monitoring tools
+- Developing multi-tenant SaaS applications
 
-1. **[Prerequisites](./prerequisites.md)** - Ensure your environment meets the requirements
-2. **[Quick Start](./quick-start.md)** - Get OpenFrame running in 5 minutes
-3. **[First Steps](./first-steps.md)** - Explore key features and initial configuration
+## Architecture Overview
 
-## Platform Capabilities
+OpenFrame follows a modern microservices architecture with clear separation of concerns:
 
-| Feature | Description |
-|---------|-------------|
-| Device Management | Monitor and control endpoints across your organization |
-| User Administration | Manage users, roles, and permissions with RBAC |
-| Remote Access | Secure remote desktop and shell access to managed devices |
-| File Management | Browser-based file operations on remote systems |
-| AI Assistance | Intelligent automation and support through Mingo AI |
-| API Integration | Extensive REST and GraphQL APIs for custom integrations |
-| Multi-tenancy | Isolated tenant environments for MSP service delivery |
-| SSO Integration | Azure AD, Google, and Microsoft authentication support |
+```mermaid
+flowchart TD
+    Client[Client Applications] --> Gateway[Gateway Service]
+    
+    Gateway --> Auth[Authorization Server]
+    Gateway --> API[API Service]
+    Gateway --> External[External API Service]
+    Gateway --> Mgmt[Management Service]
+    Gateway --> Stream[Stream Service]
+    
+    Auth --> Mongo[(MongoDB)]
+    API --> Mongo
+    API --> Pinot[(Apache Pinot)]
+    API --> Cassandra[(Cassandra)]
+    
+    Stream --> Kafka[(Kafka Cluster)]
+    Stream --> Mongo
+    
+    Mgmt --> NATS[(NATS JetStream)]
+    Mgmt --> Mongo
+    
+    style Client fill:#e1f5fe
+    style Gateway fill:#fff3e0
+    style Auth fill:#f3e5f5
+    style API fill:#e8f5e8
+    style External fill:#fff9c4
+    style Mgmt fill:#fce4ec
+    style Stream fill:#e0f2f1
+```
+
+### Service Responsibilities
+
+- **Gateway Service**: Edge routing, JWT validation, API key enforcement
+- **Authorization Server**: Multi-tenant OAuth2 + OIDC identity management
+- **API Service**: Internal GraphQL + REST API orchestration
+- **External API Service**: Public REST interface with rate limiting
+- **Management Service**: Tool lifecycle and infrastructure management
+- **Stream Service**: Real-time Kafka event processing and enrichment
+
+## Technology Stack
+
+OpenFrame leverages modern, enterprise-grade technologies:
+
+### Backend Technologies
+- **Java 21** with **Spring Boot 3.3.0**
+- **Spring Cloud** for microservices
+- **Spring Security** with OAuth2/OIDC
+- **Apache Kafka** for event streaming
+- **MongoDB** for operational data
+- **Apache Pinot** for analytics
+- **Apache Cassandra** for time-series data
+- **NATS JetStream** for messaging
+
+### AI & Automation
+- **Anthropic Claude** via `@anthropic-ai/sdk`
+- **VoltAgent Core** (`@voltagent/core`) for AI workflows
+- Custom AI enrichment pipelines
+- Intelligent event correlation
+
+### Client Technologies
+- **Rust** for the OpenFrame client
+- **React/TypeScript** for web interfaces
+- **Tauri** for desktop applications
+- Cross-platform support (Windows, macOS, Linux)
+
+## Getting Started Roadmap
+
+Ready to explore OpenFrame? Follow this learning path:
+
+1. **[Prerequisites](prerequisites.md)** - Set up your development environment
+2. **[Quick Start](quick-start.md)** - Get OpenFrame running in 5 minutes
+3. **[First Steps](first-steps.md)** - Explore key features and initial configuration
 
 ## Community & Support
 
-- **Slack Community**: Join our [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for community support and discussions
-- **Website**: Visit [openframe.ai](https://openframe.ai) for latest updates and documentation
-- **Flamingo Platform**: Learn more about the broader ecosystem at [flamingo.run](https://flamingo.run)
+OpenFrame is backed by a vibrant open-source community:
 
-## Why Choose OpenFrame?
+- **OpenMSP Community**: Join our Slack workspace at https://www.openmsp.ai/
+- **Slack Invitation**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+- **Main Website**: https://flamingo.run
+- **OpenFrame Site**: https://www.flamingo.run/openframe
 
-> "OpenFrame represents the future of MSP tooling - combining the best of open source with enterprise-grade AI automation to deliver unparalleled value to service providers and their clients."
+> 🔥 **Hot Tip**: All project management, discussions, and support happen in our OpenMSP Slack community - we don't use GitHub Issues or Discussions.
 
-### Benefits at a Glance:
-- ✅ **Reduced Costs**: Replace expensive proprietary tools
-- ✅ **Enhanced Productivity**: AI-powered automation reduces manual tasks
-- ✅ **Unified Experience**: Single platform for all MSP operations
-- ✅ **Open Ecosystem**: Extensible with APIs and integrations
-- ✅ **Enterprise Security**: Military-grade security with compliance controls
+## What Makes OpenFrame Different?
+
+Unlike traditional MSP platforms, OpenFrame:
+
+✅ **Open Source First** - Built with and extends OSS tools  
+✅ **AI-Native** - Intelligence built into every workflow  
+✅ **Multi-Tenant by Design** - True SaaS architecture  
+✅ **Event-Driven** - Real-time processing and automation  
+✅ **API-First** - Everything is programmable  
+✅ **Cost Effective** - Dramatic reduction in software licensing  
 
 ## Next Steps
 
-Continue your OpenFrame journey:
+Start your OpenFrame journey:
 
-- Review the [Prerequisites](./prerequisites.md) to ensure your environment is ready
-- Follow the [Quick Start Guide](./quick-start.md) for rapid deployment
-- Explore [First Steps](./first-steps.md) to understand core functionality
+1. Check the **[Prerequisites](prerequisites.md)** to ensure your environment is ready
+2. Follow the **[Quick Start Guide](quick-start.md)** for immediate results
+3. Join the **OpenMSP Slack community** for support and discussions
 
-Welcome to the future of MSP platforms with OpenFrame! 🚀
+Welcome to the future of MSP operations! 🚀

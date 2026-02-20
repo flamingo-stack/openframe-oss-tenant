@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Log Query Request"] --> BuildQuery["PinotQueryBuilder"]
+    BuildQuery --> AddFilters["Apply Filters"]
+    AddFilters --> ApplySort["Apply Sorting"]
+    ApplySort --> Limit["Apply Limit"]
+    Limit --> Execute["Execute via Pinot Connection"]
+    Execute --> MapResults["Map ResultSet to Projection"]
+    MapResults --> Response["Return LogProjection List"]

@@ -71,7 +71,6 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
     
     if (action.action === 'error') {
       onError(action.error, isAdmin)
-      return
     }
 
     const id = `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`
@@ -153,7 +152,20 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
           } as any,
         }
         break
-        
+
+      case 'error': {
+        const errorDetails = 'details' in action ? action.details : undefined
+        message = {
+          ...createBaseMessage(false),
+          messageData: {
+            type: 'ERROR',
+            error: action.error,
+            details: errorDetails,
+          } as any,
+        }
+        break
+      }
+
       default:
         // Ignore metadata and other non-content actions
         return

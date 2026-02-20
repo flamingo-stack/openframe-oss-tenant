@@ -1,252 +1,369 @@
 # Quick Start Guide
 
-Get OpenFrame running locally in 5 minutes! This guide will have you up and running with a development instance of the OpenFrame platform using shell scripts and local development setup.
+Get OpenFrame up and running in under 5 minutes! This guide provides the fastest path to a working OpenFrame installation using shell scripts and Docker containers.
 
-## TL;DR - 5 Minute Setup
+[![OpenFrame v0.5.2: Live Demo of AI-Powered IT Management for MSPs](https://img.youtube.com/vi/a45pzxtg27k/maxresdefault.jpg)](https://www.youtube.com/watch?v=a45pzxtg27k)
 
-```bash
-# 1. Clone the repository
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-cd openframe-oss-tenant
+## Before You Start
 
-# 2. Run development setup script
-./clients/openframe-client/scripts/setup_dev_init_config.sh
+Ensure you have completed the [Prerequisites](prerequisites.md) setup:
+- ✅ Java 21 installed and configured
+- ✅ Maven 3.6+ available  
+- ✅ Docker and Docker Compose running
+- ✅ Node.js 18+ for frontend components
+- ✅ Rust toolchain for client components
 
-# 3. Start infrastructure services
-docker-compose up -d mongodb kafka redis nats cassandra
+## Option 1: Docker Compose Setup (Recommended)
 
-# 4. Build and run backend services
-mvn clean install -DskipTests
-mvn spring-boot:run -pl openframe/services/openframe-gateway &
-mvn spring-boot:run -pl openframe/services/openframe-authorization-server &
-mvn spring-boot:run -pl openframe/services/openframe-api &
+The fastest way to get OpenFrame running locally for development and testing.
 
-# 5. Start frontend
-cd openframe/services/openframe-frontend
-npm install
-npm run dev
-
-# Access at http://localhost:3000
-```
-
-[![OpenFrame v0.3.0 - Remote File Manager &amp; Unified Authentication Architecture](https://img.youtube.com/vi/mibUHvcVIHs/maxresdefault.jpg)](https://www.youtube.com/watch?v=mibUHvcVIHs)
-
-## Detailed Setup Steps
-
-### Step 1: Clone and Setup
-
-Clone the OpenFrame repository:
+### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+# Clone the OpenFrame repository
+git clone https://github.com/your-org/openframe-oss-tenant.git
 cd openframe-oss-tenant
 ```
-
-Run the development initialization script:
-
-```bash
-./clients/openframe-client/scripts/setup_dev_init_config.sh
-```
-
-This script will:
-- Configure initial client settings
-- Set up development environment variables
-- Initialize local certificates and keys
 
 ### Step 2: Start Infrastructure Services
 
-OpenFrame requires several infrastructure services. Start them using Docker Compose:
-
 ```bash
-# Start core infrastructure
-docker-compose up -d mongodb
-docker-compose up -d kafka
-docker-compose up -d redis
-docker-compose up -d nats
-docker-compose up -d cassandra
+# Create and start all required infrastructure
+docker-compose -f docker/docker-compose.dev.yml up -d
 
 # Verify services are running
-docker-compose ps
+docker-compose -f docker/docker-compose.dev.yml ps
 ```
 
-Expected output:
-```text
-NAME                  COMMAND                  SERVICE             STATUS              PORTS
-openframe-mongodb     "docker-entrypoint.s…"   mongodb             running             0.0.0.0:27017->27017/tcp
-openframe-kafka       "/etc/confluent/dock…"   kafka               running             0.0.0.0:9092->9092/tcp
-openframe-redis       "redis-server"           redis               running             0.0.0.0:6379->6379/tcp
-openframe-nats        "/nats-server -c /et…"   nats                running             0.0.0.0:4222->4222/tcp
-openframe-cassandra   "docker-entrypoint.s…"   cassandra           running             0.0.0.0:9042->9042/tcp
-```
+This starts:
+- MongoDB (port 27017)
+- Redis (port 6379) 
+- Kafka + Zookeeper (port 9092)
+- NATS JetStream (port 4222)
 
-### Step 3: Build Backend Services
-
-Build the entire project:
+### Step 3: Build the Platform
 
 ```bash
-# Build all modules (skip tests for faster startup)
+# Build all services using Maven
 mvn clean install -DskipTests
+
+# This compiles all Spring Boot services:
+# - Gateway Service (port 8443)
+# - API Service (port 8080)
+# - Authorization Server (port 9000)
+# - Management Service (port 8082)
+# - Stream Service (port 8083)
+# - External API Service (port 8084)
 ```
 
-This compiles:
-- Spring Boot 3.3.0 backend services
-- Java 21 microservices architecture
-- All OpenFrame OSS libraries
+### Step 4: Initialize Configuration
 
-### Step 4: Start Backend Services
-
-Start the core backend services in the correct order:
+Run the development setup script to configure your local environment:
 
 ```bash
-# Start Authorization Server (OAuth2/OIDC provider)
-mvn spring-boot:run -pl openframe/services/openframe-authorization-server &
+# Make the script executable
+chmod +x clients/openframe-client/scripts/setup_dev_init_config.sh
 
-# Start API Gateway (routing and security)
-mvn spring-boot:run -pl openframe/services/openframe-gateway &
-
-# Start API Service (main backend APIs)
-mvn spring-boot:run -pl openframe/services/openframe-api &
-
-# Start Client Service (agent management)
-mvn spring-boot:run -pl openframe/services/openframe-client &
-
-# Start Management Service (operational control)
-mvn spring-boot:run -pl openframe/services/openframe-management &
+# Run the setup script
+./clients/openframe-client/scripts/setup_dev_init_config.sh
 ```
 
-Wait for all services to start (look for "Started Application in X seconds" messages).
+The script will:
+1. Prompt for an access token (use `dev-token-123` for local development)
+2. Fetch registration secrets from the API
+3. Generate initial configuration files
 
-### Step 5: Start Frontend Application
-
-Navigate to the frontend directory and start the development server:
+### Step 5: Start OpenFrame Services  
 
 ```bash
-cd openframe/services/openframe-frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
+# Start all services in development mode
+java -jar openframe/services/openframe-gateway/target/openframe-gateway-1.0.0-SNAPSHOT.jar &
+java -jar openframe/services/openframe-authorization-server/target/openframe-authorization-server-1.0.0-SNAPSHOT.jar &
+java -jar openframe/services/openframe-api/target/openframe-api-1.0.0-SNAPSHOT.jar &
+java -jar openframe/services/openframe-management/target/openframe-management-1.0.0-SNAPSHOT.jar &
+java -jar openframe/services/openframe-stream/target/openframe-stream-1.0.0-SNAPSHOT.jar &
+java -jar openframe/services/openframe-external-api/target/openframe-external-api-1.0.0-SNAPSHOT.jar &
 ```
 
-The frontend uses:
-- VoltAgent core for AI agent functionality
-- Anthropic SDK for AI integration
-- Zod for validation
-- Glob for file operations
+### Step 6: Verify Installation
 
-### Step 6: Access OpenFrame
+```bash
+# Test the API endpoint
+curl -k https://localhost:8443/health
+# Expected: {"status":"UP"}
 
-1. **Open your browser** to [http://localhost:3000](http://localhost:3000)
-2. **Create your first tenant** by registering an admin account
-3. **Explore the platform** with the initial setup wizard
+# Test the authorization server
+curl -k https://localhost:9000/.well-known/openid-configuration
+# Expected: JSON configuration response
 
-## Service Endpoints
+# Test MongoDB connection
+docker exec openframe-mongodb mongosh --eval "db.runCommand('ping')"
+# Expected: { "ok" : 1 }
+```
 
-Once running, these endpoints are available:
+## Option 2: Manual Build and Run
 
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **Frontend** | http://localhost:3000 | Main application UI |
-| **API Gateway** | http://localhost:8080 | API routing and security |
-| **Auth Server** | http://localhost:8081 | OAuth2/OIDC authentication |
-| **API Service** | http://localhost:8082 | REST and GraphQL APIs |
-| **Management** | http://localhost:8083 | Operational control |
+For developers who prefer step-by-step control over the build process.
+
+### Step 1: Set Environment Variables
+
+```bash
+# Create environment configuration
+export OPENFRAME_ENV=development
+export MONGODB_URI=mongodb://admin:admin123@localhost:27017/openframe
+export REDIS_URL=redis://localhost:6379
+export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+export NATS_URL=nats://localhost:4222
+export ANTHROPIC_API_KEY=your_anthropic_key_here
+```
+
+### Step 2: Build Individual Services
+
+```bash
+# Build core libraries first
+cd openframe-oss-lib
+mvn clean install -DskipTests
+
+# Build service applications
+cd ../openframe/services
+
+# Build each service
+mvn clean install -DskipTests -pl openframe-gateway
+mvn clean install -DskipTests -pl openframe-authorization-server  
+mvn clean install -DskipTests -pl openframe-api
+mvn clean install -DskipTests -pl openframe-management
+mvn clean install -DskipTests -pl openframe-stream
+mvn clean install -DskipTests -pl openframe-external-api
+```
+
+### Step 3: Initialize Database
+
+```bash
+# Run database initialization scripts
+mongosh "mongodb://admin:admin123@localhost:27017/openframe" < scripts/db/init-mongo.js
+
+# Create Kafka topics
+kafka-topics.sh --create --topic openframe.events --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+kafka-topics.sh --create --topic openframe.unified --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+```
+
+### Step 4: Start Services with Spring Profiles
+
+```bash
+# Start services with development profile
+java -jar openframe-gateway/target/openframe-gateway-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev &
+java -jar openframe-authorization-server/target/openframe-authorization-server-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev &
+java -jar openframe-api/target/openframe-api-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev &
+```
 
 ## Expected Results
 
-After successful setup, you should see:
+After successful startup, you should have:
 
-### 1. Welcome Screen
-The OpenFrame tenant registration page where you can create your first organization and admin user.
+### ✅ **Running Services**
 
-### 2. Dashboard
-A clean, modern dashboard showing:
-- Device overview (initially empty)
-- Organization summary
-- Quick action tiles
-- AI assistant (Mingo) integration
+| Service | URL | Status Check |
+|---------|-----|--------------|
+| Gateway | https://localhost:8443 | `curl -k https://localhost:8443/health` |
+| API Service | https://localhost:8080 | `curl https://localhost:8080/actuator/health` |
+| Authorization Server | https://localhost:9000 | `curl https://localhost:9000/actuator/health` |
+| External API | https://localhost:8084 | `curl https://localhost:8084/actuator/health` |
 
-### 3. Navigation Menu
-- Dashboard
-- Devices
-- Organizations  
-- Users & Settings
-- Logs & Events
-- Policies & Queries
-- Scripts
+### ✅ **Database Connections**
 
-## Common Issues & Quick Fixes
+```bash
+# MongoDB - should show databases
+mongosh "mongodb://admin:admin123@localhost:27017" --eval "show dbs"
+
+# Redis - should return PONG
+redis-cli ping
+
+# Kafka - should list topics
+kafka-topics.sh --list --bootstrap-server localhost:9092
+```
+
+### ✅ **GraphQL API Access**
+
+```bash
+# Test GraphQL endpoint
+curl -X POST https://localhost:8443/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dev-token-123" \
+  -d '{"query": "{ __schema { types { name } } }"}'
+```
+
+### ✅ **Log Output**
+
+You should see log output similar to:
+
+```text
+2024-01-15 10:30:00.000  INFO --- [main] com.openframe.gateway.GatewayApplication: Starting GatewayApplication
+2024-01-15 10:30:05.000  INFO --- [main] com.openframe.gateway.GatewayApplication: Started GatewayApplication in 8.234 seconds
+2024-01-15 10:30:10.000  INFO --- [main] com.openframe.api.ApiApplication: Starting ApiApplication  
+2024-01-15 10:30:15.000  INFO --- [main] com.openframe.api.ApiApplication: Started ApiApplication in 12.567 seconds
+```
+
+## Build the OpenFrame Client
+
+The OpenFrame client provides agent functionality for managed devices.
+
+### Client Build (Rust)
+
+```bash
+# Navigate to client directory
+cd clients/openframe-client
+
+# Build the client
+cargo build --release
+
+# The binary will be available at:
+# target/release/openframe-client
+```
+
+### Chat Application (Tauri)
+
+```bash
+# Navigate to chat client
+cd clients/openframe-chat
+
+# Install Node.js dependencies
+npm install
+
+# Build the Tauri application
+npm run tauri build
+
+# The app will be available in src-tauri/target/release/
+```
+
+## Troubleshooting Common Issues
 
 ### Port Conflicts
-```bash
-# Check if ports are in use
-lsof -i :3000  # Frontend
-lsof -i :8080  # Gateway
-lsof -i :8081  # Auth Server
 
-# Kill conflicting processes
-sudo kill -9 <PID>
+**Problem**: "Port already in use" errors
+
+**Solution**:
+```bash
+# Find and kill processes using required ports
+lsof -ti:8443 | xargs kill -9
+lsof -ti:8080 | xargs kill -9
+lsof -ti:9000 | xargs kill -9
+```
+
+### Database Connection Issues
+
+**Problem**: Cannot connect to MongoDB or Redis
+
+**Solution**:
+```bash
+# Restart Docker containers
+docker restart openframe-mongodb openframe-redis openframe-kafka
+
+# Wait 30 seconds for startup
+sleep 30
+
+# Test connections
+mongosh "mongodb://admin:admin123@localhost:27017" --eval "db.runCommand('ping')"
+redis-cli ping
+```
+
+### Java Version Issues
+
+**Problem**: "Unsupported Java version" errors
+
+**Solution**:
+```bash
+# Verify Java 21 is active
+java -version
+
+# If wrong version, switch using SDKMAN
+sdk use java 21.0.1-tem
+
+# Verify JAVA_HOME
+echo $JAVA_HOME
 ```
 
 ### Maven Build Failures
+
+**Problem**: Compilation or dependency resolution errors
+
+**Solution**:
 ```bash
-# Clean and rebuild
+# Clean Maven cache and rebuild
 mvn clean
+rm -rf ~/.m2/repository/com/openframe
 mvn install -DskipTests -U
-
-# Check Java version
-java --version  # Should be Java 21
 ```
 
-### Docker Services Not Starting
+## Performance Tuning
+
+For better development experience:
+
+### JVM Options
+
 ```bash
-# Check Docker daemon
-sudo systemctl status docker
+# Set JVM options for faster startup
+export MAVEN_OPTS="-Xmx2g -XX:+UseG1GC -XX:+UseStringDeduplication"
 
-# Restart Docker services
-docker-compose down
-docker-compose up -d
-
-# Check service logs
-docker-compose logs mongodb
+# For service JVMs
+export JVM_ARGS="-Xmx1g -XX:+UseG1GC -Dspring.jmx.enabled=false"
 ```
 
-### Frontend Build Issues
+### Docker Resources
+
 ```bash
-# Clear node modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-
-# Check Node.js version
-node --version  # Should be 18+
+# Allocate more resources to Docker
+docker system prune -a  # Clean up unused resources
 ```
+
+Update Docker Desktop settings:
+- CPU: 4+ cores
+- Memory: 8+ GB
+- Disk: 50+ GB
 
 ## Next Steps
 
 Now that OpenFrame is running:
 
-1. **Follow the [First Steps Guide](./first-steps.md)** to explore key features
-2. **Set up your first organization and users**
-3. **Install the OpenFrame agent on test devices**
-4. **Configure integrations and tools**
-5. **Explore the AI assistant capabilities**
+1. **[First Steps Guide](first-steps.md)** - Configure your first tenant and explore features
+2. **Web Interface** - Open https://localhost:8443 to access the OpenFrame dashboard
+3. **API Documentation** - Visit https://localhost:8443/swagger-ui for API docs
+4. **Join Community** - Connect with other developers at https://www.openmsp.ai/
 
-## Development Notes
+## Quick Reference
 
-This quick start sets up OpenFrame in development mode with:
-- Hot reloading for frontend changes
-- Debug logging enabled
-- Test databases with sample data
-- Local authentication (no external SSO required)
+### Essential Commands
 
-For production deployment, refer to the development section for proper configuration, security hardening, and infrastructure setup.
+```bash
+# Start all infrastructure
+docker-compose -f docker/docker-compose.dev.yml up -d
 
-## Need Help?
+# Build platform
+mvn clean install -DskipTests
 
-- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **Documentation**: Continue with [First Steps](./first-steps.md)
-- **Issues**: GitHub Issues (for bug reports only)
+# Health checks
+curl -k https://localhost:8443/health
+curl https://localhost:8080/actuator/health
 
-Congratulations! You now have OpenFrame running locally. Time to explore what this powerful MSP platform can do! 🎉
+# View logs
+docker logs openframe-mongodb
+tail -f openframe-api.log
+
+# Stop everything
+docker-compose -f docker/docker-compose.dev.yml down
+pkill -f "openframe"
+```
+
+### Default Credentials
+
+| Service | Username | Password |
+|---------|----------|----------|
+| MongoDB | admin | admin123 |
+| Development Token | dev-token-123 | (no password) |
+
+> ⚠️ **Security Note**: These are development-only credentials. Never use these in production environments.
+
+## Success! 🎉
+
+You now have a fully functional OpenFrame development environment. The platform is running with all microservices, databases, and the AI-powered features ready for use.
+
+Next: Follow the [First Steps Guide](first-steps.md) to create your first tenant and start exploring OpenFrame's capabilities!

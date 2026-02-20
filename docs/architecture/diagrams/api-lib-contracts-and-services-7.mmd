@@ -1,8 +1,4 @@
 flowchart TD
-    CreateRequest["CreateOrganizationRequest"] --> OrganizationMapper
-    OrganizationMapper --> OrganizationEntity["Organization Entity"]
-
-    UpdateRequest["UpdateOrganizationRequest"] --> OrganizationMapper
-
-    OrganizationEntity --> OrganizationMapper
-    OrganizationMapper --> OrganizationResponse
+    StatusUpdate["Machine Status Updated"] --> Processor["DeviceStatusProcessor"]
+    Processor --> Default["DefaultDeviceStatusProcessor"]
+    Processor --> Custom["Custom Implementation (Optional)"]

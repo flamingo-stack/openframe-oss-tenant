@@ -1,6 +1,5 @@
-classDiagram
-    class GenericQueryResult~T~
-    class CountedGenericQueryResult~T~ {
-        int filteredCount
-    }
-    GenericQueryResult <|-- CountedGenericQueryResult
+flowchart LR
+    MongoEntity["Organization Entity"] --> Mapper["OrganizationMapper"]
+    Mapper --> Response["OrganizationResponse DTO"]
+    Response --> GraphQL["GraphQL API"]
+    Response --> REST["REST API"]

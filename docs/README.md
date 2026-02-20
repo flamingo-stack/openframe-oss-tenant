@@ -1,241 +1,176 @@
-# OpenFrame Documentation
+# OpenFrame OSS Tenant Documentation
 
-Welcome to the comprehensive documentation for **OpenFrame** - the unified AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
+Welcome to the comprehensive documentation for **OpenFrame OSS Tenant** - the complete, production-grade multi-tenant backend stack for the OpenFrame platform.
 
 ## 📚 Table of Contents
 
 ### Getting Started
+Quick setup and introduction guides to get you running with OpenFrame:
 
-Step-by-step guides to get you up and running with OpenFrame:
-
-- **[Introduction](./getting-started/introduction.md)** - What is OpenFrame and why use it
-- **[Prerequisites](./getting-started/prerequisites.md)** - System requirements and dependencies  
-- **[Quick Start](./getting-started/quick-start.md)** - Get running in 5 minutes
-- **[First Steps](./getting-started/first-steps.md)** - Explore key features and initial configuration
+- [Introduction](./getting-started/introduction.md) - Platform overview and key concepts
+- [Prerequisites](./getting-started/prerequisites.md) - Development environment setup requirements
+- [Quick Start](./getting-started/quick-start.md) - Get OpenFrame running in under 5 minutes
+- [First Steps](./getting-started/first-steps.md) - Initial configuration and feature exploration
 
 ### Development
+Development workflows, environment setup, and contribution guidelines:
 
-Comprehensive guides for developers and contributors:
+- [README](./development/README.md) - Development documentation overview
+- [Environment Setup](./development/setup/environment.md) - IDE and development tools configuration
+- [Local Development](./development/setup/local-development.md) - Running OpenFrame locally for development
+- [Contributing Guidelines](./development/contributing/guidelines.md) - How to contribute to the project
+- [Architecture Overview](./development/architecture/README.md) - Development architecture patterns
+- [Security Guidelines](./development/security/README.md) - Security best practices for development
+- [Testing Overview](./development/testing/README.md) - Testing strategies and frameworks
 
-- **[Development Overview](./development/README.md)** - Development section introduction and navigation
-- **[Environment Setup](./development/setup/environment.md)** - IDE configuration and development tools
-- **[Local Development](./development/setup/local-development.md)** - Running OpenFrame locally for development
-- **[Architecture Overview](./development/architecture/README.md)** - System architecture and design patterns
-- **[Security Best Practices](./development/security/README.md)** - Authentication, authorization, and security implementation
-- **[Testing Guide](./development/testing/README.md)** - Testing strategies and running tests
-- **[Contributing Guidelines](./development/contributing/guidelines.md)** - Code standards, PR process, and contribution workflow
+### Reference
+Technical reference documentation for each service and component:
 
-### Reference Documentation
-
-Technical reference documentation for all OpenFrame services and components:
-
-- **[Repository Overview](./architecture/README.md)** - Complete system architecture and component relationships
-- **[API Service Core](./architecture/api-service-core/api-service-core.md)** - Primary internal API layer with REST and GraphQL
-- **[Authorization Server Core](./architecture/authorization-server-core/authorization-server-core.md)** - Multi-tenant OAuth2/OIDC identity provider
-- **[Gateway Service Core](./architecture/gateway-service-core/gateway-service-core.md)** - Reactive API gateway with security enforcement
-- **[External API Service Core](./architecture/external-api-service-core/external-api-service-core.md)** - Public REST API for third-party integrations
-- **[Client Service Core](./architecture/client-service-core/client-service-core.md)** - Agent control plane and device management
-- **[Management Service Core](./architecture/management-service-core/management-service-core.md)** - Operational control plane and orchestration
-- **[Stream Service Core](./architecture/stream-service-core/stream-service-core.md)** - Event ingestion, normalization, and processing
-- **[Data Access - MongoDB](./architecture/data-access-mongo/data-access-mongo.md)** - MongoDB persistence layer and repositories
-- **[Data Access - Kafka](./architecture/data-access-kafka/data-access-kafka.md)** - Kafka integration for event streaming
-- **[Security Core & OAuth BFF](./architecture/security-core-and-oauth-bff/security-core-and-oauth-bff.md)** - Frontend OAuth orchestration and security
-- **[Service Applications](./architecture/service-applications/service-applications.md)** - Deployable Spring Boot service configurations
-- **[Tenant Frontend App Core](./architecture/tenant-frontend-app-core/tenant-frontend-app-core.md)** - Browser-based SaaS tenant interface
-- **[API Lib - Contracts and Services](./architecture/api-lib-contracts-and-services/api-lib-contracts-and-services.md)** - Shared DTOs, contracts, and service interfaces
+- [Architecture Overview](./architecture/README.md) - Complete system architecture documentation
+- [API Service Core](./architecture/api-service-core/api-service-core.md) - GraphQL and REST API service
+- [API Lib Contracts and Services](./architecture/api-lib-contracts-and-services/api-lib-contracts-and-services.md) - Shared contracts and service interfaces
+- [Authorization Service Core](./architecture/authorization-service-core/authorization-service-core.md) - Multi-tenant OAuth2/OIDC identity management
+- [Gateway Service Core](./architecture/gateway-service-core/gateway-service-core.md) - Edge routing, JWT validation, and API gateway
+- [Stream Service Core](./architecture/stream-service-core/stream-service-core.md) - Kafka event processing and real-time streaming
+- [External API Service Core](./architecture/external-api-service-core/external-api-service-core.md) - Public REST API with rate limiting
+- [Management Service Core](./architecture/management-service-core/management-service-core.md) - Tool lifecycle and infrastructure management
+- [Data Layer Core](./architecture/data-layer-core/data-layer-core.md) - Core data structures and repository patterns
+- [Data Layer Mongo](./architecture/data-layer-mongo/data-layer-mongo.md) - MongoDB integration and multi-tenant data access
+- [Data Layer Kafka](./architecture/data-layer-kafka/data-layer-kafka.md) - Kafka integration and stream processing
+- [Service Applications](./architecture/service-applications/service-applications.md) - Executable Spring Boot microservices
 
 ### Diagrams
-
 Visual architecture documentation and system diagrams:
 
-- **Location**: `./architecture/diagrams/`
-- **Format**: Mermaid diagrams (`.mmd` files)
-- **Coverage**: Component relationships, data flow, sequence diagrams, and system interactions
+Architecture diagrams are available in Mermaid format at:
+- **Diagram Directory**: `./architecture/diagrams/`
+- **Main Architecture Diagram**: [README.mmd](./architecture/diagrams/README.mmd)
 
-View Mermaid diagrams in any Markdown viewer or GitHub for detailed visual representations of:
-- Service interactions and dependencies
-- Authentication and authorization flows  
-- Data processing pipelines
-- Event streaming architectures
-- Multi-tenant isolation patterns
+**Service-Specific Diagrams:**
+- API Service Core diagrams
+- Authorization Service Core diagrams  
+- Gateway Service Core diagrams
+- Stream Service Core diagrams
+- Data Layer diagrams
+- Management Service Core diagrams
+- External API Service Core diagrams
+
+> **Note**: Diagrams can be viewed in any Mermaid-compatible viewer or rendered directly in GitHub.
 
 ### CLI Tools
 
-The **OpenFrame CLI** is maintained in a separate repository:
-
+The OpenFrame CLI tools are maintained in a separate repository:
 - **Repository**: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)
 - **Installation**: [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation)
 - **Documentation**: [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
 
-**Note**: CLI tools are NOT located in this repository. Always refer to the external repository for installation and usage instructions.
+**Note**: CLI tools are NOT located in this repository. Always refer to the external repository for installation and usage.
 
-## 🎯 Documentation Organization
+## 🚀 Quick Links
 
-### By User Type
+- [Project README](../README.md) - Main project overview and quick start
+- [Contributing](../CONTRIBUTING.md) - Comprehensive contribution guidelines
+- [License](../LICENSE.md) - License information and terms
 
-**🚀 New Users**
-1. Start with [Introduction](./getting-started/introduction.md)
-2. Check [Prerequisites](./getting-started/prerequisites.md)
-3. Follow [Quick Start](./getting-started/quick-start.md)
-4. Explore [First Steps](./getting-started/first-steps.md)
+## 🏗️ Architecture Quick Reference
 
-**👩‍💻 Developers**
-1. Review [Development Overview](./development/README.md)
-2. Set up [Local Development Environment](./development/setup/local-development.md)
-3. Understand [Architecture](./development/architecture/README.md)
-4. Read [Contributing Guidelines](./development/contributing/guidelines.md)
+OpenFrame follows a modern microservices architecture with these core components:
 
-**🏗️ Architects & Engineers**
-1. Study [Repository Overview](./architecture/README.md)
-2. Explore individual service documentation in Reference section
-3. Review architecture diagrams for visual understanding
-4. Examine security and data access patterns
+### Core Services
+- **Gateway Service** (Port 8443) - Edge routing, JWT validation, API key enforcement
+- **Authorization Server** (Port 9000) - Multi-tenant OAuth2 + OIDC identity management
+- **API Service** (Port 8080) - Internal GraphQL + REST API orchestration
+- **External API Service** (Port 8084) - Public REST interface with rate limiting
+- **Management Service** (Port 8082) - Tool lifecycle + infrastructure initialization
+- **Stream Service** (Port 8083) - Kafka-based real-time processing & event enrichment
 
-### By Component
+### Data Persistence
+- **MongoDB** - Operational data storage with multi-tenant isolation
+- **Apache Kafka** - Event streaming and Change Data Capture (CDC)
+- **Apache Pinot** - Real-time analytics and OLAP queries
+- **Apache Cassandra** - Time-series data and high-volume writes
+- **NATS JetStream** - Messaging and job coordination
 
-**Frontend Development**
-- [Tenant Frontend App Core](./architecture/tenant-frontend-app-core/tenant-frontend-app-core.md)
-- [Security Core & OAuth BFF](./architecture/security-core-and-oauth-bff/security-core-and-oauth-bff.md)
-- [Local Development Setup](./development/setup/local-development.md)
+### Key Features
+- 🏢 **Multi-Tenant Architecture** with complete tenant isolation
+- 🔐 **Enterprise Security** via OAuth2/OIDC and JWT validation
+- 🌊 **Event-Driven Processing** with Kafka streams and real-time analytics
+- 🤖 **AI Integration** with Anthropic Claude and VoltAgent Core
+- 🔌 **Extensible Design** with plugin architecture for MSP tool integrations
 
-**Backend Services**
-- [API Service Core](./architecture/api-service-core/api-service-core.md) - Main REST/GraphQL APIs
-- [Gateway Service Core](./architecture/gateway-service-core/gateway-service-core.md) - Request routing and security
-- [Authorization Server Core](./architecture/authorization-server-core/authorization-server-core.md) - Authentication
-- [Service Applications](./architecture/service-applications/service-applications.md) - Deployment configurations
+## 📖 Documentation Conventions
 
-**Data & Events**
-- [Data Access - MongoDB](./architecture/data-access-mongo/data-access-mongo.md) - Primary storage
-- [Data Access - Kafka](./architecture/data-access-kafka/data-access-kafka.md) - Event streaming
-- [Stream Service Core](./architecture/stream-service-core/stream-service-core.md) - Event processing
+### Service Documentation Structure
+Each service follows a consistent documentation pattern:
 
-**Infrastructure & Operations**
-- [Management Service Core](./architecture/management-service-core/management-service-core.md) - System orchestration
-- [Client Service Core](./architecture/client-service-core/client-service-core.md) - Agent management
-- [External API Service Core](./architecture/external-api-service-core/external-api-service-core.md) - Public APIs
+```text
+service-name/
+├── service-name.md          # Main service documentation
+├── README.md               # Service overview (if applicable)
+└── diagrams/               # Service-specific Mermaid diagrams
+```
 
-## 🛠️ Technology Stack
+### Code Examples
+Code examples follow these conventions:
+- **Java**: Spring Boot 3.3.0 with Java 21 syntax
+- **Configuration**: YAML format for Spring configuration
+- **API Examples**: cURL commands with realistic examples
+- **Docker**: Docker Compose for service orchestration
 
-OpenFrame is built on modern, enterprise-grade technologies:
+### Getting Started Path
 
-### Backend Technologies
-| Component | Technology | Version | Purpose |
-|-----------|------------|---------|---------|
-| **Runtime** | Java | 21+ | Application runtime environment |
-| **Framework** | Spring Boot | 3.3.0 | Microservices framework |
-| **Build Tool** | Maven | 3.8+ | Dependency management and builds |
-| **Architecture** | Microservices | Event-driven | Scalable, distributed system design |
+New to OpenFrame? Follow this recommended learning path:
 
-### Frontend Technologies  
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **AI Core** | VoltAgent Core | AI agent functionality and LLM integration |
-| **Validation** | Zod | Runtime type checking and schema validation |
-| **File Operations** | Glob | File pattern matching and operations |
-| **AI Integration** | Anthropic SDK | Claude AI integration for intelligent features |
+1. **[Introduction](./getting-started/introduction.md)** - Understand what OpenFrame is and its key concepts
+2. **[Prerequisites](./getting-started/prerequisites.md)** - Set up your development environment
+3. **[Quick Start](./getting-started/quick-start.md)** - Get the platform running locally
+4. **[Architecture Overview](./architecture/README.md)** - Learn the system design
+5. **[API Service Core](./architecture/api-service-core/api-service-core.md)** - Understand the API layer
+6. **[Development Environment](./development/setup/environment.md)** - Configure for development
 
-### Infrastructure Components
-| Component | Technology | Version | Purpose |
-|-----------|------------|---------|---------|
-| **Database** | MongoDB | 5.0+ | Primary application data storage |
-| **Audit Storage** | Apache Cassandra | 4.0+ | Immutable audit logs and compliance data |
-| **Caching** | Redis | 6.0+ | Session storage and performance optimization |
-| **Event Streaming** | Apache Kafka | 3.6.0+ | Durable event streaming and processing |
-| **Real-time Messaging** | NATS JetStream | 2.9+ | Real-time agent communication |
+## 🎯 Common Use Cases
 
-### Agent Technology
-| Component | Technology | Platform |
-|-----------|------------|----------|
-| **Language** | Rust | Cross-platform agent development |
-| **Supported OS** | Windows, macOS, Linux | Universal device support |
+### For MSP Developers
+- **Building integrations** - See [API Service Core](./architecture/api-service-core/api-service-core.md) and [External API Service](./architecture/external-api-service-core/external-api-service-core.md)
+- **Adding new MSP tools** - Check [Management Service Core](./architecture/management-service-core/management-service-core.md)
+- **Custom authentication** - Review [Authorization Service Core](./architecture/authorization-service-core/authorization-service-core.md)
 
-## 🏛️ Architectural Principles
+### For Platform Engineers
+- **Deployment strategies** - See [Service Applications](./architecture/service-applications/service-applications.md)
+- **Scaling considerations** - Review architecture diagrams and [Stream Service Core](./architecture/stream-service-core/stream-service-core.md)
+- **Data persistence** - Check [Data Layer documentation](./architecture/data-layer-core/data-layer-core.md)
 
-OpenFrame follows these key architectural principles:
+### For Contributors
+- **Code standards** - See [Contributing Guidelines](./development/contributing/guidelines.md)
+- **Testing practices** - Review [Testing Overview](./development/testing/README.md)
+- **Security requirements** - Check [Security Guidelines](./development/security/README.md)
 
-### 🔄 Event-Driven Architecture
-- **Asynchronous Communication**: Services communicate via events, not direct calls
-- **Event Sourcing**: Complete audit trail of all system changes
-- **Real-time Updates**: Live notifications via NATS JetStream
-- **Durable Streaming**: Kafka for reliable event processing and replay
+## 💬 Community & Support
 
-### 🏢 Multi-Tenant Design
-- **Tenant Isolation**: Complete data segregation between tenants
-- **Per-Tenant Configuration**: Customizable settings and branding per tenant
-- **Scalable Provisioning**: Dynamic tenant creation and resource allocation
-- **Security Boundaries**: Authentication and authorization respect tenant boundaries
+### Primary Community Hub
+- **OpenMSP Slack**: https://www.openmsp.ai/
+- **Join Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
 
-### 🔐 Security-First Approach
-- **Zero-Trust Architecture**: Every request is authenticated and authorized
-- **OAuth2/OIDC Standards**: Industry-standard authentication protocols
-- **JWT-Based Authorization**: Stateless, scalable token-based security
-- **Role-Based Access Control (RBAC)**: Granular permissions and policy enforcement
+### Important Note
+> **All project management, feature discussions, bug reports, and support happen in our OpenMSP Slack community.** We don't use GitHub Issues or GitHub Discussions - join Slack for the most active and responsive community support!
 
-### 🧩 Microservices Pattern
-- **Domain-Driven Design**: Services organized around business capabilities
-- **API-First**: All services expose well-defined REST and GraphQL APIs
-- **Independent Deployment**: Services can be deployed and scaled independently
-- **Resilient Design**: Circuit breakers, retries, and graceful degradation
+### Useful Channels
+- `#general` - General OpenFrame discussions and announcements
+- `#development` - Technical development discussions and architecture
+- `#help` - Support, troubleshooting, and getting started assistance  
+- `#contributions` - Contribution coordination and code reviews
 
-## 🚀 Getting Started Paths
+## 🔄 Frequently Updated Sections
 
-Choose your journey based on your goals:
+The following documentation sections are updated frequently and should be checked for the latest information:
 
-### For Platform Evaluation
-1. **[Introduction](./getting-started/introduction.md)** - Understand OpenFrame's value proposition
-2. **[Quick Start](./getting-started/quick-start.md)** - Get a demo running quickly
-3. **[First Steps](./getting-started/first-steps.md)** - Explore key capabilities
-
-### For Development & Contribution
-1. **[Prerequisites](./getting-started/prerequisites.md)** - Ensure your environment is ready
-2. **[Development Environment](./development/setup/environment.md)** - Set up your IDE and tools
-3. **[Local Development](./development/setup/local-development.md)** - Run OpenFrame locally
-4. **[Contributing Guidelines](./development/contributing/guidelines.md)** - Learn our development workflow
-
-### For Architecture Understanding
-1. **[Repository Overview](./architecture/README.md)** - High-level system architecture
-2. **Service-specific documentation** - Deep dive into individual components
-3. **[Architecture diagrams](./architecture/diagrams/)** - Visual system representations
-4. **[Development Architecture](./development/architecture/README.md)** - Design patterns and principles
-
-### For Integration & API Usage
-1. **[External API Service Core](./architecture/external-api-service-core/external-api-service-core.md)** - Public API documentation
-2. **[API Service Core](./architecture/api-service-core/api-service-core.md)** - Internal APIs (REST + GraphQL)
-3. **[Client Service Core](./architecture/client-service-core/client-service-core.md)** - Agent integration patterns
-4. **[CLI Tools](https://github.com/flamingo-stack/openframe-cli)** - Command-line interface
-
-## 📖 Quick Links
-
-### Essential Documentation
-- **[Project README](../README.md)** - Main project overview and quick start
-- **[Contributing Guidelines](../CONTRIBUTING.md)** - How to contribute to the project
-- **[License Information](../LICENSE.md)** - Flamingo AI Unified License v1.0
-
-### External Resources
-- **[OpenFrame Website](https://openframe.ai)** - Official product website
-- **[Flamingo Platform](https://flamingo.run)** - Parent platform and ecosystem
-- **[OpenMSP Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)** - Slack community for support and discussions
-
-### Development Resources
-- **[GitHub Repository](https://github.com/flamingo-stack/openframe-oss-tenant)** - Source code and issue tracking
-- **[CLI Repository](https://github.com/flamingo-stack/openframe-cli)** - Command-line tools
-- **[Development Slack Channel](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)** - #development channel for technical discussions
-
-## 🤝 Community & Support
-
-### Getting Help
-- **Community Support**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) - Join our community for help and discussions
-- **Documentation Issues**: GitHub Issues for documentation bugs or requests
-- **Feature Requests**: Discuss new ideas in Slack before creating GitHub issues
-
-### Contributing Back
-- **Code Contributions**: See [Contributing Guidelines](../CONTRIBUTING.md)
-- **Documentation**: Help improve these docs - every improvement matters!
-- **Community**: Answer questions, share knowledge, help onboard new users
-- **Feedback**: Share your experience and suggestions for improvements
+- **[Quick Start Guide](./getting-started/quick-start.md)** - Setup procedures and commands
+- **[API Service Core](./architecture/api-service-core/api-service-core.md)** - GraphQL schema and REST endpoints
+- **[Contributing Guidelines](./development/contributing/guidelines.md)** - Development workflows and standards
+- **[Architecture Diagrams](./architecture/diagrams/)** - System design visualization
 
 ---
 
 *Documentation generated by [OpenFrame Doc Orchestrator](https://github.com/flamingo-stack/openframe-oss-tenant)*
 
-**Last Updated**: Generated from CodeWiki analysis of OpenFrame OSS Tenant repository
+**Questions or suggestions for improving this documentation?** Join our [OpenMSP Slack community](https://www.openmsp.ai/) and let us know in the `#general` channel!

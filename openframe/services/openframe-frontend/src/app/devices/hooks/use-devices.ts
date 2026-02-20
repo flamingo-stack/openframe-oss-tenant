@@ -37,7 +37,8 @@ export function useDevices(filters: DeviceFilterInput = {}) {
         variables: {
           filter: filtersRef.current,
           pagination: { limit: 10, cursor: cursor || null },
-          search: searchTerm || ''
+          search: searchTerm || '',
+          sort: { field: 'status', direction: 'DESC' }
         }
       })
 

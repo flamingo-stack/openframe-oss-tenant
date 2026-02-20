@@ -1,9 +1,4 @@
-flowchart TD
-    Client["WebSocket Client"] --> Route["WebSocket Route Locator"]
-    Route --> AgentRoute["Agent WS Route"]
-    Route --> ApiRoute["Tool API WS Route"]
-    Route --> NatsRoute["NATS WS Route"]
-
-    AgentRoute --> SecurityDecorator["WebSocket Security Decorator"]
-    ApiRoute --> SecurityDecorator
-    NatsRoute --> SecurityDecorator
+flowchart LR
+    WebClientConfig["WebClientConfig"] --> HttpClient["Reactor HttpClient"]
+    HttpClient --> Timeouts["Connect and Read Write Timeouts"]
+    WebClientConfig --> WebClientBuilder["WebClient Builder Bean"]

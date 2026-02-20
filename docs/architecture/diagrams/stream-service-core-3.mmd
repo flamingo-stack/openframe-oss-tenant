@@ -1,3 +1,9 @@
 flowchart TD
-    Base["DebeziumMessageHandler<T>"] --> KafkaImpl["DebeziumKafkaMessageHandler"]
-    Base --> CassandraImpl["DebeziumCassandraMessageHandler"]
+    Message["Incoming Debezium Message"] --> Validate["isValidMessage()"]
+    Validate --> Transform["transform()"]
+    Transform --> Op["getOperationType()"]
+    Op --> Route["pushData()"]
+    Route --> Create["handleCreate()"]
+    Route --> Update["handleUpdate()"]
+    Route --> Delete["handleDelete()"]
+    Route --> Read["handleRead()"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Config["Configuration Layer"] --> Documents["Document Models"]
+    Documents --> Repositories["Repository Layer"]
+    Repositories --> MongoTemplate["MongoTemplate / Spring Data"]
+    MongoTemplate --> Database[("MongoDB")]

@@ -1,334 +1,417 @@
 # Stream Service Core
 
-The **Stream Service Core** module is the event-driven backbone of the OpenFrame platform. It ingests, enriches, transforms, and routes high-volume event streams from integrated tools (MeshCentral, Tactical RMM, Fleet MDM, etc.) into unified, normalized events for downstream systems.
+## Overview
 
-This module is responsible for:
+The **Stream Service Core** module is the real-time event processing engine of the OpenFrame platform. It is responsible for:
 
-- Consuming Debezium-based change events from Kafka
-- Enriching events with tenant, organization, and device metadata
-- Mapping heterogeneous source event types into unified domain event types
-- Persisting events to Cassandra
-- Republishing normalized events to Kafka
-- Performing stream joins and enrichment using Kafka Streams
+- Consuming events from Kafka topics (including Debezium CDC streams and integrated tool events)
+- Enriching and transforming raw messages into unified domain events
+- Normalizing heterogeneous tool-specific event types into platform-wide unified event types
+- Performing stream processing and joins using Kafka Streams
+- Publishing enriched events back to Kafka for downstream services
 
-It enables a consistent, multi-tenant event processing pipeline across the OpenFrame ecosystem.
+This module acts as the backbone for real-time telemetry, activity tracking, and cross-tool event standardization within the multi-tenant OpenFrame architecture.
+
+It is packaged and bootstrapped by the `StreamApplication` in the `service-applications` module.
 
 ---
 
-## Architectural Overview
+## Architectural Context
 
-At a high level, the Stream Service Core sits between inbound tool event topics and downstream consumers (datastores, services, analytics, and external APIs).
+The Stream Service Core integrates tightly with:
+
+- **Data Layer Kafka** – Topic configuration, Debezium models, Kafka headers
+- **Data Layer Mongo / Redis** – Cached machine and organization metadata
+- **Management Service Core** – Tool lifecycle and integration configuration
+- **External API / API Service Core** – Downstream consumers of enriched events
+
+### High-Level Flow
 
 ```mermaid
 flowchart LR
-    InboundTopics["Inbound Tool Topics<br/>MeshCentral / Tactical / Fleet"] --> JsonListener["JsonKafkaListener"]
-    JsonListener --> Processor["GenericJsonMessageProcessor"]
-    Processor --> Enrichment["IntegratedToolDataEnrichmentService"]
-    Enrichment --> HandlerRouter["DebeziumMessageHandler (Polymorphic)"]
+    subgraph tools["Integrated Tools"]
+        Mesh["MeshCentral"]
+        Tactical["Tactical RMM"]
+        Fleet["Fleet MDM"]
+    end
 
-    HandlerRouter -->|"Destination.KAFKA"| KafkaHandler["DebeziumKafkaMessageHandler"]
-    HandlerRouter -->|"Destination.CASSANDRA"| CassandraHandler["DebeziumCassandraMessageHandler"]
+    subgraph kafka["Kafka Topics"]
+        RawEvents["Inbound Tool Events"]
+        Activities["Fleet Activities"]
+        HostActivities["Fleet Host Activities"]
+    end
 
-    KafkaHandler --> OutboundTopic["Outbound IntegratedToolEvents Topic"]
-    CassandraHandler --> CassandraDB[("Cassandra UnifiedLogEvent Table")]
+    subgraph stream["Stream Service Core"]
+        Listener["JsonKafkaListener"]
+        Processor["Generic / Debezium Handlers"]
+        Enrichment["Data Enrichment Services"]
+        Streams["Kafka Streams Enrichment"]
+        Mapper["EventTypeMapper"]
+    end
 
-    FleetActivityTopics["Fleet Activity & Host Activity Topics"] --> Streams["ActivityEnrichmentService<br/>Kafka Streams"]
-    Streams --> EnrichedFleetTopic["Enriched Fleet Events Topic"]
+    subgraph output["Enriched Topics"]
+        UnifiedEvents["Unified Events Topic"]
+    end
+
+    Mesh --> RawEvents
+    Tactical --> RawEvents
+    Fleet --> Activities
+    Fleet --> HostActivities
+
+    RawEvents --> Listener
+    Listener --> Processor
+    Processor --> Enrichment
+    Enrichment --> Mapper
+    Activities --> Streams
+    HostActivities --> Streams
+    Streams --> UnifiedEvents
+    Mapper --> UnifiedEvents
 ```
-
-The processing pipeline consists of three main layers:
-
-1. **Consumption Layer** – Kafka listeners ingest raw Debezium events.
-2. **Enrichment & Mapping Layer** – Events are enriched with Redis-backed metadata and mapped to unified types.
-3. **Destination Layer** – Events are routed to Kafka or Cassandra depending on handler type.
 
 ---
 
 ## Core Responsibilities
 
-### 1. Kafka Configuration
+The module is organized around five primary concerns:
 
-#### KafkaConfig
+1. **Kafka Configuration & Streams Setup**
+2. **Message Consumption & Routing**
+3. **Generic Message Handling Framework**
+4. **Event Type Normalization**
+5. **Activity & Tool Data Enrichment**
 
-The `KafkaConfig` class provides infrastructure-level configuration for Kafka consumers.
-
-Key responsibility:
-
-- Defines a `Converter<byte[], MessageType>` that converts Kafka header bytes into the internal `MessageType` enum.
-
-This allows headers such as `MESSAGE_TYPE_HEADER` to be automatically mapped and injected into listener methods.
+Each area is described below.
 
 ---
 
-### 2. Kafka Streams Processing
+# 1. Kafka Configuration & Streams Setup
 
-#### KafkaStreamsConfig
+## KafkaConfig
 
-Enables Kafka Streams processing using Spring’s `@EnableKafkaStreams`.
+**Component:** `KafkaConfig`
 
-Key features:
+Provides infrastructure-level configuration for Kafka consumers.
 
-- Dynamically builds the `application.id` using `spring.application.name` and optional `cluster-id`
-- Configures:
-  - `AT_LEAST_ONCE` processing guarantee
-  - State directory
-  - Stream threads
-  - Consumer and producer tuning
-- Defines SerDes for:
+### Key Responsibilities
+
+- Registers a `Converter<byte[], MessageType>`
+- Converts Kafka header values into strongly typed `MessageType` enums
+- Gracefully handles unknown or malformed header values
+
+This enables type-safe routing of inbound events based on message headers.
+
+---
+
+## KafkaStreamsConfig
+
+**Component:** `KafkaStreamsConfig`
+
+Enables and configures Kafka Streams processing for the service.
+
+### Key Features
+
+- `@EnableKafkaStreams`
+- Custom SerDes for:
   - `ActivityMessage`
   - `HostActivityMessage`
+- Multi-tenant `application.id` construction
+- Stream processing guarantees: `AT_LEAST_ONCE`
+- Controlled consumer / producer tuning
+- Explicit state store directory configuration
 
-This configuration powers stateful stream joins inside the module.
+### Multi-Tenant Application ID Strategy
+
+```text
+If clusterId is empty:
+    application.id = applicationName
+Else:
+    application.id = applicationName-clusterId
+```
+
+This ensures isolated stream processing per tenant/cluster.
 
 ---
 
-### 3. JSON Kafka Listener
+# 2. Message Consumption & Routing
 
-#### JsonKafkaListener
+## JsonKafkaListener
 
-Consumes inbound tool event topics:
+**Component:** `JsonKafkaListener`
+
+Acts as the main inbound Kafka consumer for integrated tool events.
+
+### Subscribed Topics
+
+Configured via properties:
 
 - MeshCentral events
 - Tactical RMM events
 - Fleet MDM events
 - Fleet query result events
 
+### Processing Flow
+
 ```mermaid
-flowchart TD
-    Topic["Inbound Topic"] --> Listener["JsonKafkaListener"]
-    Listener --> Processor["GenericJsonMessageProcessor"]
+sequenceDiagram
+    participant Kafka
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+
+    Kafka->>Listener: CommonDebeziumMessage + MESSAGE_TYPE_HEADER
+    Listener->>Processor: process(message, messageType)
 ```
 
 The listener:
 
-- Accepts `CommonDebeziumMessage`
-- Reads the `MessageType` header
-- Delegates processing to `GenericJsonMessageProcessor`
-
-This keeps the listener thin and delegates business logic to the processing layer.
+- Extracts the `MESSAGE_TYPE_HEADER`
+- Delegates message processing to `GenericJsonMessageProcessor`
+- Keeps the consumption layer thin and focused
 
 ---
 
-### 4. Debezium Message Handling Framework
+# 3. Generic Message Handling Framework
 
-#### DebeziumMessageHandler (Abstract)
+This module defines a reusable, extensible framework for processing Debezium-style change events.
 
-Provides a generic base class for handling Debezium events.
+## GenericMessageHandler
 
-Responsibilities:
+**Component:** `GenericMessageHandler<T, U, V>`
 
-- Extracts operation type (`c`, `r`, `u`, `d`) and maps to internal `OperationType`
-- Defines abstract `transform()` method
-- Provides lifecycle hooks:
+An abstract base class implementing the full lifecycle of event processing.
+
+### Responsibilities
+
+- Validates messages
+- Transforms raw CDC payloads
+- Determines operation type
+- Routes to operation-specific handlers:
   - `handleCreate`
   - `handleRead`
   - `handleUpdate`
   - `handleDelete`
 
-```mermaid
-flowchart TD
-    Base["DebeziumMessageHandler<T>"] --> KafkaImpl["DebeziumKafkaMessageHandler"]
-    Base --> CassandraImpl["DebeziumCassandraMessageHandler"]
-```
-
-Concrete handlers specialize transformation and routing logic.
-
----
-
-### 5. Kafka Destination Handler
-
-#### DebeziumKafkaMessageHandler
-
-Transforms enriched Debezium events into `IntegratedToolEvent` objects and publishes them to Kafka.
-
-Key characteristics:
-
-- Publishes to configurable outbound topic
-- Uses `OssTenantRetryingKafkaProducer`
-- Builds deterministic partition key based on:
-  - `deviceId`
-  - `userId`
-  - `toolType`
-- Filters out non-visible messages (`isValidMessage` override)
-
-This handler enables event fan-out to downstream services, APIs, and analytics pipelines.
-
----
-
-### 6. Cassandra Destination Handler
-
-#### DebeziumCassandraMessageHandler
-
-Transforms enriched Debezium events into `UnifiedLogEvent` objects and persists them using a `CassandraRepository`.
-
-Key logic:
-
-- Constructs composite key (`UnifiedLogEventKey`):
-  - ingest day
-  - tool type
-  - unified event type
-  - timestamp
-  - tool event ID
-- Sets organization, device, and severity fields
-- Handles create/read/update operations as upserts
+### Processing Template
 
 ```mermaid
 flowchart TD
-    DebeziumMsg["DeserializedDebeziumMessage"] --> Transform["transform()"]
-    Transform --> UnifiedEvent["UnifiedLogEvent"]
-    UnifiedEvent --> Save["CassandraRepository.save()"]
+    Message["Incoming Debezium Message"] --> Validate["isValidMessage()"]
+    Validate --> Transform["transform()"]
+    Transform --> Op["getOperationType()"]
+    Op --> Route["pushData()"]
+    Route --> Create["handleCreate()"]
+    Route --> Update["handleUpdate()"]
+    Route --> Delete["handleDelete()"]
+    Route --> Read["handleRead()"]
 ```
 
-This ensures durable, queryable event storage for audit and historical analysis.
+This enforces consistency across all tool-specific handlers.
 
 ---
 
-### 7. Event Type Mapping
+## DebeziumMessageHandler
 
-#### EventTypeMapper
+**Component:** `DebeziumMessageHandler`
 
-Central registry that maps:
+Specialized abstract class for handling Debezium CDC events.
 
-```
-IntegratedToolType + SourceEventType → UnifiedEventType
-```
+### Responsibilities
 
-It supports:
+- Extracts CDC operation type (`c`, `r`, `u`, `d`)
+- Maps it to internal `OperationType` enum
+- Delegates transformation to subclasses
 
-- MeshCentral
-- Tactical RMM
-- Fleet MDM
-
-If no mapping exists, the event defaults to `UnifiedEventType.UNKNOWN`.
-
-This abstraction:
-
-- Decouples external tool semantics from internal domain model
-- Allows adding new tool mappings without modifying handlers
-- Ensures consistent cross-tool event taxonomy
-
-#### SourceEventTypes
-
-Defines constant namespaces per tool:
-
-- `MeshCentral`
-- `Tactical`
-- `Fleet`
-
-This centralizes string-based source event types and avoids hardcoded literals.
+This abstraction isolates CDC semantics from domain logic.
 
 ---
 
-### 8. Integrated Tool Data Enrichment
+# 4. Event Type Normalization
 
-#### IntegratedToolDataEnrichmentService
+Integrated tools emit heterogeneous event types. The platform requires unified event semantics.
 
-Enriches raw Debezium events using Redis-backed caches.
+## SourceEventTypes
 
-Dependencies:
+Defines structured constants for:
 
-- `MachineIdCacheService`
+- MeshCentral event types
+- Tactical RMM event types
+- Fleet MDM event types
 
-Enrichment flow:
+This avoids hardcoded strings and improves maintainability.
+
+---
+
+## EventTypeMapper
+
+Central mapping registry converting:
+
+```text
+(IntegratedToolType + SourceEventType) -> UnifiedEventType
+```
+
+### Mapping Strategy
 
 ```mermaid
 flowchart LR
-    DebeziumMsg["DeserializedDebeziumMessage"] --> AgentId["agentId"]
-    AgentId --> CacheLookup["MachineIdCacheService"]
-    CacheLookup --> Machine["CachedMachineInfo"]
-    CacheLookup --> Org["CachedOrganizationInfo"]
-    Machine --> Enriched["IntegratedToolEnrichedData"]
-    Org --> Enriched
+    Tool["IntegratedToolType"] --> Key["tool:sourceEvent"]
+    Source["Source Event String"] --> Key
+    Key --> Lookup["Mapping Registry"]
+    Lookup --> Unified["UnifiedEventType"]
 ```
 
-Adds:
+If no mapping is found:
 
-- Machine ID
-- Hostname
-- Organization ID
-- Organization name
+```text
+UnifiedEventType.UNKNOWN
+```
 
-This allows downstream handlers to operate without additional database lookups.
+### Why This Matters
+
+- Enables cross-tool analytics
+- Standardizes audit events
+- Simplifies UI and reporting
+- Decouples tool evolution from platform semantics
 
 ---
 
-### 9. Fleet Activity Enrichment (Kafka Streams)
+# 5. Activity & Tool Data Enrichment
 
-#### ActivityEnrichmentService
+The Stream Service Core performs two major enrichment operations:
 
-Implements a stateful Kafka Streams topology to join:
+1. Activity enrichment via Kafka Streams joins
+2. Tool event enrichment via Redis-based machine lookup
 
-- `ActivityMessage`
-- `HostActivityMessage`
+---
 
-Using a 5-second time window.
+## ActivityEnrichmentService
+
+Processes Fleet MDM activity streams.
+
+### Input Topics
+
+- Fleet activities
+- Fleet host activities
+
+### Processing Steps
+
+1. Re-key streams by activity ID
+2. Left join activity with host activity
+3. Enrich activity with hostId and agentId
+4. Add required Kafka headers
+5. Publish enriched message to outbound topic
+
+### Join Logic
 
 ```mermaid
-flowchart LR
-    Activity["Activity Topic"] --> Join["Left Join (5s Window)"]
-    HostActivity["HostActivity Topic"] --> Join
-    Join --> Enriched["ActivityMessage (with hostId)"]
+flowchart TD
+    Activity["ActivityMessage"] --> ReKeyA["Key by Activity ID"]
+    HostActivity["HostActivityMessage"] --> ReKeyH["Key by Activity ID"]
+
+    ReKeyA --> Join["Left Join (5s window)"]
+    ReKeyH --> Join
+
+    Join --> Enriched["Set hostId + agentId"]
     Enriched --> Header["Add MESSAGE_TYPE_HEADER"]
-    Header --> Output["Enriched Fleet Events Topic"]
+    Header --> Output["Publish to Enriched Topic"]
 ```
 
-Key details:
+### Characteristics
 
-- Uses `JoinWindows.ofTimeDifferenceWithNoGrace(5s)`
-- Propagates constant headers using modern `FixedKeyProcessor`
-- Publishes enriched messages to output topic
-
-This is a stateful stream enrichment separate from Debezium-based processing.
-
----
-
-## Multi-Tenant Considerations
-
-The module is designed for SaaS multi-tenancy:
-
-- Kafka Streams `application.id` is suffixed with `cluster-id`
-- Kafka producers are tenant-aware
-- Enrichment uses tenant-scoped cache lookups
-- Topics are injected via tenant-specific configuration
-
-This ensures logical isolation while allowing shared infrastructure.
+- Windowed join: 5 seconds
+- No grace period
+- Adds `FLEET_MDM_EVENT` message type header
+- Preserves Debezium compatibility headers
 
 ---
 
-## How Stream Service Core Fits in the Platform
+## IntegratedToolDataEnrichmentService
+
+Enriches integrated tool CDC events using Redis-backed caches.
+
+### Responsibilities
+
+- Lookup machine metadata by `agentId`
+- Resolve organization information
+- Populate:
+  - machineId
+  - hostname
+  - organizationId
+  - organizationName
+
+### Enrichment Flow
+
+```mermaid
+flowchart TD
+    Message["DeserializedDebeziumMessage"] --> Agent["Extract agentId"]
+    Agent --> Cache["MachineIdCacheService"]
+    Cache --> Machine["CachedMachineInfo"]
+    Machine --> Org["CachedOrganizationInfo"]
+    Org --> Enriched["IntegratedToolEnrichedData"]
+```
+
+If no machine is found:
+
+```text
+Event proceeds without enrichment
+```
+
+This design ensures resilience even when cache entries are missing.
+
+---
+
+# Operational Characteristics
+
+## Processing Guarantees
+
+- Kafka Streams: `AT_LEAST_ONCE`
+- Controlled batch sizes and poll settings
+- Explicit state directory configuration
+
+## Multi-Tenancy
+
+- Tenant-aware Kafka topics
+- Tenant-aware stream `application.id`
+- Cache lookups scoped by organization
+
+## Extensibility Model
+
+To support a new integrated tool:
+
+1. Add source event constants in `SourceEventTypes`
+2. Register mappings in `EventTypeMapper`
+3. Implement tool-specific `DebeziumMessageHandler`
+4. Configure inbound topic in `JsonKafkaListener`
+
+---
+
+# How Stream Service Core Fits Into the Platform
 
 ```mermaid
 flowchart TB
-    Tools["Integrated Tools"] --> KafkaInbound["Kafka Inbound Topics"]
-    KafkaInbound --> StreamCore["Stream Service Core"]
-    StreamCore --> Cassandra["Cassandra (Audit Storage)"]
-    StreamCore --> KafkaOutbound["Normalized Event Topics"]
-    KafkaOutbound --> ApiLayer["API & External Services"]
-    KafkaOutbound --> Analytics["Analytics / Automation"]
+    Tools["Integrated Tools"] --> Kafka["Kafka Cluster"]
+    Kafka --> Stream["Stream Service Core"]
+    Stream --> Mongo["MongoDB"]
+    Stream --> ExternalAPI["External API Service Core"]
+    Stream --> ApiService["API Service Core"]
 ```
 
-The Stream Service Core acts as:
+The Stream Service Core is:
 
-- **Normalizer** – unifies tool-specific events
-- **Enricher** – injects tenant and device context
-- **Router** – forwards to appropriate destinations
-- **Persistence Gateway** – writes canonical audit events
-- **Stream Processor** – performs windowed joins and transformations
+- The normalization engine for tool telemetry
+- The enrichment layer for activity intelligence
+- The real-time transformation hub between raw events and domain events
 
-Without this module, the platform would need to handle heterogeneous tool semantics across every service.
+Without this module, the platform would receive fragmented, tool-specific, non-normalized event streams.
 
 ---
 
-## Summary
+# Summary
 
-The **Stream Service Core** is the event processing engine of OpenFrame. It combines:
+The **Stream Service Core** module provides:
 
-- Kafka consumer infrastructure
-- Debezium event handling abstraction
-- Redis-backed metadata enrichment
-- Cassandra persistence
-- Kafka re-publication
-- Kafka Streams stateful processing
-- Unified event taxonomy mapping
+- Kafka consumer and stream processing infrastructure
+- A reusable Debezium-based message handling framework
+- A centralized event normalization registry
+- Real-time enrichment pipelines
+- Multi-tenant aware stream isolation
 
-It transforms raw, heterogeneous tool events into structured, enriched, and normalized domain events that power the rest of the platform.
+It forms the foundation of OpenFrame’s real-time observability, unified event modeling, and integrated tool intelligence.

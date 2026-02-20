@@ -1,434 +1,76 @@
 # Contributing Guidelines
 
-Welcome to the OpenFrame contributing guidelines! This document outlines the development workflow, code standards, pull request process, and quality requirements for contributing to OpenFrame.
+Welcome to the OpenFrame open-source community! This guide outlines the standards, processes, and best practices for contributing to the OpenFrame project. We appreciate your interest in making OpenFrame better for everyone.
 
 ## Code of Conduct
 
-OpenFrame is an open and welcoming project. All contributors are expected to:
+OpenFrame follows a community-driven approach with respect and collaboration at its core:
 
-- **Be Respectful**: Treat all community members with respect and courtesy
-- **Be Collaborative**: Work together constructively and share knowledge
-- **Be Professional**: Maintain professional communication in all interactions
+- **Be Respectful**: Treat all community members with respect and kindness
+- **Be Collaborative**: Work together to build the best possible MSP platform
+- **Be Patient**: Remember that everyone is learning and contributing in their own way
 - **Be Inclusive**: Welcome newcomers and help them get started
+
+## Getting Started
+
+### Before You Contribute
+
+1. **Join the Community**: Connect with us on the OpenMSP Slack workspace
+   - **Join**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+   - **Website**: https://www.openmsp.ai/
+
+2. **Read the Documentation**: Familiarize yourself with:
+   - [Architecture Overview](../architecture/README.md)
+   - [Development Environment Setup](../setup/environment.md)
+   - [Local Development Guide](../setup/local-development.md)
+
+3. **Set Up Your Development Environment**: Follow the setup guides to get OpenFrame running locally
 
 ## Development Workflow
 
-### 1. Fork and Clone
+### Git Workflow
 
-```bash
-# Fork the repository on GitHub
-# Then clone your fork
-git clone https://github.com/YOUR_USERNAME/openframe-oss-tenant.git
-cd openframe-oss-tenant
+OpenFrame follows the **GitFlow** branching model with some modifications:
 
-# Add upstream remote
-git remote add upstream https://github.com/flamingo-stack/openframe-oss-tenant.git
-
-# Verify remotes
-git remote -v
+```mermaid
+gitgraph
+    commit id: "Initial"
+    branch develop
+    checkout develop
+    commit id: "Dev work"
+    
+    branch feature/new-api
+    checkout feature/new-api
+    commit id: "API changes"
+    commit id: "Add tests"
+    commit id: "Documentation"
+    
+    checkout develop
+    merge feature/new-api
+    commit id: "Merge feature"
+    
+    checkout main
+    merge develop
+    commit id: "Release v1.0.1"
 ```
 
-### 2. Set Up Development Environment
+### Branch Naming Convention
 
-Follow the [Environment Setup](../setup/environment.md) guide to configure your development environment.
-
-### 3. Create Feature Branch
-
-```bash
-# Sync with upstream
-git checkout main
-git pull upstream main
-
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Or for bug fixes
-git checkout -b fix/issue-description
-
-# Or for documentation
-git checkout -b docs/documentation-improvement
-```
-
-## Branch Naming Conventions
-
-Use descriptive branch names that follow these patterns:
+Use descriptive branch names that follow this pattern:
 
 | Type | Pattern | Example |
 |------|---------|---------|
-| **Feature** | `feature/description` | `feature/user-profile-management` |
-| **Bug Fix** | `fix/issue-description` | `fix/authentication-token-expiry` |
-| **Documentation** | `docs/section-name` | `docs/api-documentation-update` |
-| **Refactoring** | `refactor/component-name` | `refactor/user-service-cleanup` |
-| **Performance** | `perf/optimization-area` | `perf/database-query-optimization` |
-| **CI/CD** | `ci/workflow-name` | `ci/automated-testing-pipeline` |
+| **Feature** | `feature/description-of-feature` | `feature/device-status-alerts` |
+| **Bug Fix** | `fix/description-of-fix` | `fix/authentication-timeout` |
+| **Hotfix** | `hotfix/critical-issue` | `hotfix/security-vulnerability` |
+| **Documentation** | `docs/description` | `docs/api-documentation-update` |
+| **Refactor** | `refactor/component-name` | `refactor/user-service-cleanup` |
 
-## Code Style and Conventions
+### Commit Message Format
 
-### Java/Spring Boot Backend
+Follow the **Conventional Commits** specification:
 
-#### Code Formatting
-
-**Use Google Java Style:**
-```bash
-# Configure IntelliJ IDEA
-# File → Settings → Code Style → Java → Import Scheme
-# Select: GoogleStyle.xml
-```
-
-**Key formatting rules:**
-- 2 spaces for indentation
-- Line length: 100 characters
-- No trailing whitespace
-- Unix line endings (LF)
-
-#### Naming Conventions
-
-```java
-// Classes: PascalCase
-public class UserService {
-
-    // Constants: UPPER_SNAKE_CASE
-    private static final String DEFAULT_ROLE = "USER";
-    
-    // Fields and methods: camelCase
-    private UserRepository userRepository;
-    
-    public UserResponse createUser(CreateUserRequest request) {
-        // Local variables: camelCase
-        String hashedPassword = passwordEncoder.encode(request.getPassword());
-        
-        return UserResponse.builder()
-            .id(savedUser.getId())
-            .email(savedUser.getEmail())
-            .build();
-    }
-}
-```
-
-#### Method Structure
-
-```java
-@Service
-@Transactional
-public class UserService {
-    
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final TenantContext tenantContext;
-    
-    // Constructor injection (preferred)
-    public UserService(UserRepository userRepository,
-                      PasswordEncoder passwordEncoder,
-                      TenantContext tenantContext) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.tenantContext = tenantContext;
-    }
-    
-    /**
-     * Creates a new user with the specified details.
-     * 
-     * @param request the user creation request containing user details
-     * @return the created user response with generated ID
-     * @throws UserAlreadyExistsException if user with email already exists
-     * @throws ValidationException if request validation fails
-     */
-    public UserResponse createUser(CreateUserRequest request) {
-        // Input validation
-        validateCreateUserRequest(request);
-        
-        // Business logic
-        String tenantId = tenantContext.getCurrentTenant();
-        checkUserNotExists(request.getEmail(), tenantId);
-        
-        User user = buildUserFromRequest(request, tenantId);
-        User savedUser = userRepository.save(user);
-        
-        // Return response
-        return userMapper.toResponse(savedUser);
-    }
-    
-    private void validateCreateUserRequest(CreateUserRequest request) {
-        // Validation logic
-    }
-    
-    private void checkUserNotExists(String email, String tenantId) {
-        if (userRepository.existsByEmailAndTenantId(email, tenantId)) {
-            throw new UserAlreadyExistsException(
-                "User with email '" + email + "' already exists");
-        }
-    }
-}
-```
-
-### TypeScript/Frontend
-
-#### Code Formatting
-
-**Use Prettier configuration:**
-```json
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false
-}
-```
-
-#### Component Structure
-
-```typescript
-// UserProfile.tsx
-import { useState, useCallback } from 'react';
-import { z } from 'zod';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-// Type definitions
-interface UserProfileProps {
-  userId: string;
-  onUpdateSuccess?: () => void;
-}
-
-// Validation schema
-const updateProfileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().email('Invalid email format'),
-});
-
-type UpdateProfileData = z.infer<typeof updateProfileSchema>;
-
-// Component
-export const UserProfile: React.FC<UserProfileProps> = ({
-  userId,
-  onUpdateSuccess,
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const { profile, updateProfile, isLoading } = useUserProfile(userId);
-
-  const handleSave = useCallback(async (data: UpdateProfileData) => {
-    try {
-      await updateProfile(data);
-      setIsEditing(false);
-      onUpdateSuccess?.();
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-    }
-  }, [updateProfile, onUpdateSuccess]);
-
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
-
-  return (
-    <div className="user-profile">
-      {isEditing ? (
-        <EditForm 
-          profile={profile} 
-          onSave={handleSave}
-          onCancel={() => setIsEditing(false)}
-        />
-      ) : (
-        <ViewMode 
-          profile={profile}
-          onEdit={() => setIsEditing(true)}
-        />
-      )}
-    </div>
-  );
-};
-```
-
-#### Hook Patterns
-
-```typescript
-// useUserProfile.ts
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-
-export const useUserProfile = (userId: string) => {
-  const queryClient = useQueryClient();
-
-  const {
-    data: profile,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ['user-profile', userId],
-    queryFn: () => apiClient.getUser(userId),
-    enabled: !!userId,
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: UpdateProfileData) => 
-      apiClient.updateUser(userId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['user-profile', userId]);
-    },
-  });
-
-  const updateProfile = useCallback(
-    (data: UpdateProfileData) => updateMutation.mutateAsync(data),
-    [updateMutation]
-  );
-
-  return {
-    profile,
-    isLoading: isLoading || updateMutation.isPending,
-    error: error || updateMutation.error,
-    updateProfile,
-  };
-};
-```
-
-### Database and API Patterns
-
-#### Repository Layer
-
-```java
-@Repository
-public interface UserRepository extends MongoRepository<User, String>, CustomUserRepository {
-    
-    Optional<User> findByEmailAndTenantId(String email, String tenantId);
-    
-    List<User> findByTenantIdAndRolesContaining(String tenantId, String role);
-    
-    boolean existsByEmailAndTenantId(String email, String tenantId);
-    
-    @Query("{ 'tenantId': ?0, 'active': true, 'lastLoginAt': { $gte: ?1 } }")
-    List<User> findActiveUsersSince(String tenantId, LocalDateTime since);
-}
-
-public interface CustomUserRepository {
-    List<User> findUsersWithComplexCriteria(UserSearchCriteria criteria);
-}
-
-@Component
-public class CustomUserRepositoryImpl implements CustomUserRepository {
-    
-    private final MongoTemplate mongoTemplate;
-    
-    @Override
-    public List<User> findUsersWithComplexCriteria(UserSearchCriteria criteria) {
-        Criteria mongoCriteria = new Criteria();
-        
-        if (criteria.getTenantId() != null) {
-            mongoCriteria.and("tenantId").is(criteria.getTenantId());
-        }
-        
-        if (criteria.getSearchTerm() != null) {
-            Criteria searchCriteria = new Criteria().orOperator(
-                Criteria.where("firstName").regex(criteria.getSearchTerm(), "i"),
-                Criteria.where("lastName").regex(criteria.getSearchTerm(), "i"),
-                Criteria.where("email").regex(criteria.getSearchTerm(), "i")
-            );
-            mongoCriteria.andOperator(searchCriteria);
-        }
-        
-        Query query = new Query(mongoCriteria);
-        
-        if (criteria.getPageable() != null) {
-            query.with(criteria.getPageable());
-        }
-        
-        return mongoTemplate.find(query, User.class);
-    }
-}
-```
-
-#### API Controller Standards
-
-```java
-@RestController
-@RequestMapping("/api/users")
-@PreAuthorize("hasRole('USER')")
-@Validated
-public class UserController {
-    
-    private final UserService userService;
-    
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
-    public ResponseEntity<PageResponse<UserResponse>> getUsers(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) String role) {
-        
-        UserSearchCriteria criteria = UserSearchCriteria.builder()
-            .searchTerm(search)
-            .role(role)
-            .pageable(PageRequest.of(page, size))
-            .build();
-            
-        PageResponse<UserResponse> users = userService.findUsers(criteria);
-        return ResponseEntity.ok(users);
-    }
-    
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        
-        UserResponse user = userService.createUser(request);
-        
-        URI location = ServletUriComponentsBuilder
-            .fromCurrentRequest()
-            .path("/{id}")
-            .buildAndExpand(user.getId())
-            .toUri();
-            
-        return ResponseEntity.created(location).body(user);
-    }
-    
-    @GetMapping("/{userId}")
-    @PreAuthorize("@userSecurityService.canView(authentication, #userId)")
-    public ResponseEntity<UserResponse> getUser(@PathVariable String userId) {
-        UserResponse user = userService.getUser(userId);
-        return ResponseEntity.ok(user);
-    }
-    
-    @PutMapping("/{userId}")
-    @PreAuthorize("@userSecurityService.canModify(authentication, #userId)")
-    public ResponseEntity<UserResponse> updateUser(
-            @PathVariable String userId,
-            @Valid @RequestBody UpdateUserRequest request) {
-        
-        UserResponse user = userService.updateUser(userId, request);
-        return ResponseEntity.ok(user);
-    }
-    
-    @DeleteMapping("/{userId}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteUser(@PathVariable String userId) {
-        userService.deleteUser(userId);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
-        ErrorResponse error = ErrorResponse.builder()
-            .code("USER_NOT_FOUND")
-            .message(e.getMessage())
-            .timestamp(LocalDateTime.now())
-            .build();
-            
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
-    }
-}
-```
-
-## Commit Message Format
-
-Use conventional commit format for clear change tracking:
-
-### Format
-```
+```text
 <type>[optional scope]: <description>
 
 [optional body]
@@ -436,73 +78,113 @@ Use conventional commit format for clear change tracking:
 [optional footer(s)]
 ```
 
-### Types
-- **feat**: New feature
-- **fix**: Bug fix
-- **docs**: Documentation changes
-- **style**: Code style changes (formatting, etc.)
-- **refactor**: Code refactoring
-- **perf**: Performance improvements
-- **test**: Adding or updating tests
-- **ci**: CI/CD changes
-- **chore**: Maintenance tasks
+#### Commit Types
 
-### Examples
-```bash
-feat(auth): add multi-factor authentication support
+| Type | Description |
+|------|-------------|
+| **feat** | New feature for the user |
+| **fix** | Bug fix for the user |
+| **docs** | Documentation changes |
+| **style** | Code style changes (formatting, etc.) |
+| **refactor** | Code refactoring without feature changes |
+| **perf** | Performance improvements |
+| **test** | Adding or updating tests |
+| **chore** | Build process or auxiliary tool changes |
 
-Add support for TOTP-based MFA using authenticator apps.
-Includes user enrollment, verification, and recovery codes.
-
-Closes #123
-
-fix(api): handle null pointer in user profile endpoint
-
-The user profile endpoint was throwing NPE when profile 
-image was null. Added proper null checks and default values.
-
-Fixes #456
-
-docs(setup): update development environment guide
-
-Added section for Docker setup and troubleshooting common
-issues with local development environment.
-
-test(user): add integration tests for user management
-
-Added comprehensive integration tests covering user CRUD
-operations, validation, and security checks.
-```
-
-## Pull Request Process
-
-### 1. Pre-submission Checklist
-
-- [ ] **Code Quality**: Follows style guidelines and conventions
-- [ ] **Tests**: All tests pass and new tests added for changes
-- [ ] **Documentation**: Updated relevant documentation
-- [ ] **Security**: No security vulnerabilities introduced
-- [ ] **Performance**: No performance regressions
-- [ ] **Breaking Changes**: Clearly documented if any
-
-### 2. Creating Pull Request
+#### Examples
 
 ```bash
-# Push your changes
-git push origin feature/your-feature-name
+# Good commit messages
+feat(api): add device status filtering endpoint
+fix(auth): resolve JWT token expiration handling
+docs(readme): update installation instructions
+test(device): add unit tests for device service
+refactor(organization): simplify organization creation flow
 
-# Create pull request on GitHub with:
-# - Descriptive title
-# - Detailed description
-# - Link to related issues
-# - Screenshots if UI changes
+# Bad commit messages
+update code
+fix bug
+changes
+wip
 ```
 
-### 3. Pull Request Template
+### Pull Request Process
+
+#### 1. Create Your Branch
+
+```bash
+# Start from the latest develop branch
+git checkout develop
+git pull origin develop
+
+# Create your feature branch
+git checkout -b feature/your-feature-name
+```
+
+#### 2. Make Your Changes
+
+Follow the coding standards outlined in this document:
+
+```bash
+# Make your changes
+# Write tests for your changes
+# Update documentation as needed
+
+# Stage your changes
+git add .
+
+# Commit with a good message
+git commit -m "feat(api): add device filtering functionality
+
+- Add new DeviceFilter class for query criteria
+- Implement filtering in DeviceService
+- Add corresponding REST endpoint
+- Include unit and integration tests"
+```
+
+#### 3. Keep Your Branch Updated
+
+```bash
+# Regularly sync with develop
+git checkout develop
+git pull origin develop
+git checkout feature/your-feature-name
+git rebase develop
+```
+
+#### 4. Run Tests and Quality Checks
+
+```bash
+# Run the full test suite
+mvn clean test
+
+# Run integration tests
+mvn verify
+
+# Check code coverage
+mvn jacoco:report
+
+# Run static analysis (if configured)
+mvn sonar:sonar
+```
+
+#### 5. Create Pull Request
+
+1. **Push Your Branch**:
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+2. **Open Pull Request on GitHub**:
+   - Use a descriptive title following conventional commit format
+   - Fill out the pull request template completely
+   - Link related issues using GitHub keywords
+
+#### Pull Request Template
 
 ```markdown
 ## Description
-Brief description of what this PR does.
+Brief description of the changes in this PR.
 
 ## Type of Change
 - [ ] Bug fix (non-breaking change which fixes an issue)
@@ -510,262 +192,871 @@ Brief description of what this PR does.
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update
 
-## Related Issues
-Closes #123
-Fixes #456
+## How Has This Been Tested?
+- [ ] Unit tests
+- [ ] Integration tests
+- [ ] Manual testing
 
-## Testing
-- [ ] Unit tests pass
-- [ ] Integration tests pass
-- [ ] Manual testing completed
-- [ ] New tests added for changes
-
-## Screenshots (if applicable)
-Before: [screenshot]
-After: [screenshot]
+## Testing Steps
+1. Step 1
+2. Step 2
+3. Step 3
 
 ## Checklist
-- [ ] My code follows the style guidelines
-- [ ] I have performed a self-review of my code
+- [ ] My code follows the style guidelines of this project
+- [ ] I have performed a self-review of my own code
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
+- [ ] Any dependent changes have been merged and published
+
+## Related Issues
+Closes #123
+Related to #456
+
+## Screenshots (if applicable)
+Add screenshots to help explain your changes.
+
+## Additional Notes
+Any additional information that reviewers should know.
 ```
 
-### 4. Review Process
+## Code Style and Standards
 
-**For Reviewers:**
-- **Code Quality**: Check adherence to style and patterns
-- **Functionality**: Verify changes work as intended
-- **Tests**: Ensure adequate test coverage
-- **Security**: Review for security implications
-- **Performance**: Check for performance impacts
-- **Documentation**: Verify docs are updated
+### Java Code Style
 
-**Review Comments Format:**
-```markdown
-**Suggestion**: Consider using Optional.ofNullable() here for better null safety.
+OpenFrame follows **Google Java Style Guide** with some modifications:
 
-**Issue**: This method is missing input validation.
-
-**Nitpick**: Variable name could be more descriptive.
-
-**Question**: Why was this approach chosen over the existing pattern?
-
-**Approval**: LGTM! Great work on the comprehensive tests.
-```
-
-## Review Checklist
-
-### Code Review Criteria
-
-#### Functionality
-- [ ] Code does what it's supposed to do
-- [ ] Edge cases are handled properly
-- [ ] Error conditions are handled gracefully
-- [ ] Performance is acceptable
-
-#### Code Quality
-- [ ] Code is readable and self-documenting
-- [ ] Functions/methods have single responsibility
-- [ ] No code duplication
-- [ ] Proper abstraction levels
-- [ ] Follows established patterns
-
-#### Security
-- [ ] Input validation is present
-- [ ] No security vulnerabilities introduced
-- [ ] Authentication/authorization properly implemented
-- [ ] Sensitive data is protected
-
-#### Testing
-- [ ] Adequate test coverage
-- [ ] Tests are meaningful and test the right things
-- [ ] Tests are maintainable
-- [ ] No flaky tests
-
-#### Documentation
-- [ ] Code is properly documented
-- [ ] API documentation is updated
-- [ ] README files are current
-- [ ] Breaking changes are documented
-
-### Common Review Issues
-
-**Backend Code:**
-```java
-// ❌ Bad: Missing input validation
-public User createUser(CreateUserRequest request) {
-    return userRepository.save(new User(request));
-}
-
-// ✅ Good: Proper validation and error handling
-public UserResponse createUser(CreateUserRequest request) {
-    validateCreateUserRequest(request);
-    
-    String tenantId = tenantContext.getCurrentTenant();
-    if (userRepository.existsByEmailAndTenantId(request.getEmail(), tenantId)) {
-        throw new UserAlreadyExistsException("User already exists");
-    }
-    
-    User user = userMapper.toEntity(request);
-    user.setTenantId(tenantId);
-    user.setPassword(passwordEncoder.encode(request.getPassword()));
-    
-    User savedUser = userRepository.save(user);
-    return userMapper.toResponse(savedUser);
-}
-```
-
-**Frontend Code:**
-```typescript
-// ❌ Bad: No error handling
-const UserProfile = ({ userId }: { userId: string }) => {
-  const [user, setUser] = useState(null);
-  
-  useEffect(() => {
-    apiClient.getUser(userId).then(setUser);
-  }, [userId]);
-  
-  return <div>{user.name}</div>;
-};
-
-// ✅ Good: Proper error handling and loading states
-const UserProfile = ({ userId }: { userId: string }) => {
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['user', userId],
-    queryFn: () => apiClient.getUser(userId),
-    enabled: !!userId,
-  });
-  
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading user</div>;
-  if (!user) return <div>User not found</div>;
-  
-  return <div>{user.name}</div>;
-};
-```
-
-## Development Best Practices
-
-### 1. Test-Driven Development (TDD)
+#### Formatting Rules
 
 ```java
-// 1. Write failing test
-@Test
-void shouldCreateUserWithHashedPassword() {
-    // Given
-    CreateUserRequest request = new CreateUserRequest("test@example.com", "password");
+// Class structure
+public class OrganizationService {
     
-    // When & Then
-    assertThatThrownBy(() -> userService.createUser(request))
-        .isInstanceOf(UserAlreadyExistsException.class);
-}
-
-// 2. Write minimal code to pass
-public UserResponse createUser(CreateUserRequest request) {
-    throw new UserAlreadyExistsException("User already exists");
-}
-
-// 3. Refactor to proper implementation
-public UserResponse createUser(CreateUserRequest request) {
-    if (userExists(request.getEmail())) {
-        throw new UserAlreadyExistsException("User already exists");
-    }
-    // ... proper implementation
-}
-```
-
-### 2. Error Handling Patterns
-
-```java
-// Custom exception hierarchy
-public abstract class OpenFrameException extends RuntimeException {
-    protected OpenFrameException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
-
-public class UserNotFoundException extends OpenFrameException {
-    public UserNotFoundException(String userId) {
-        super("User not found: " + userId, null);
-    }
-}
-
-// Global exception handler
-@ControllerAdvice
-public class GlobalExceptionHandler {
+    // Constants first
+    private static final Logger LOG = LoggerFactory.getLogger(OrganizationService.class);
+    private static final int MAX_RETRY_ATTEMPTS = 3;
     
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(new ErrorResponse("USER_NOT_FOUND", e.getMessage()));
+    // Fields
+    private final OrganizationRepository organizationRepository;
+    private final EventPublisher eventPublisher;
+    
+    // Constructor
+    public OrganizationService(OrganizationRepository organizationRepository,
+                              EventPublisher eventPublisher) {
+        this.organizationRepository = requireNonNull(organizationRepository);
+        this.eventPublisher = requireNonNull(eventPublisher);
     }
-}
-```
-
-### 3. Logging Standards
-
-```java
-@Service
-public class UserService {
     
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-    
-    public UserResponse createUser(CreateUserRequest request) {
-        logger.info("Creating user with email: {}", request.getEmail());
+    // Public methods
+    public Organization createOrganization(CreateOrganizationRequest request) {
+        validateRequest(request);
         
-        try {
-            User user = processUserCreation(request);
-            logger.info("Successfully created user with ID: {}", user.getId());
-            return userMapper.toResponse(user);
-            
-        } catch (Exception e) {
-            logger.error("Failed to create user with email: {}", 
-                request.getEmail(), e);
-            throw e;
+        Organization organization = Organization.builder()
+            .name(request.getName())
+            .domain(request.getDomain())
+            .status(OrganizationStatus.ACTIVE)
+            .createdAt(Instant.now())
+            .build();
+        
+        Organization saved = organizationRepository.save(organization);
+        eventPublisher.publishEvent(new OrganizationCreatedEvent(saved));
+        
+        return saved;
+    }
+    
+    // Private methods
+    private void validateRequest(CreateOrganizationRequest request) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Organization name is required");
+        }
+        
+        if (organizationRepository.existsByDomain(request.getDomain())) {
+            throw new DuplicateDomainException("Domain already exists: " + request.getDomain());
         }
     }
 }
 ```
 
-## Community and Support
+#### Naming Conventions
 
-### Getting Help
+| Element | Convention | Example |
+|---------|------------|---------|
+| **Classes** | PascalCase | `OrganizationService`, `DeviceController` |
+| **Methods** | camelCase | `createOrganization`, `findByDomain` |
+| **Variables** | camelCase | `organizationId`, `deviceStatus` |
+| **Constants** | UPPER_SNAKE_CASE | `MAX_RETRY_ATTEMPTS`, `DEFAULT_TIMEOUT` |
+| **Packages** | lowercase.separated | `com.openframe.api.service` |
 
-- **Slack Community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **GitHub Discussions**: For technical questions and design discussions
-- **Documentation**: This developer documentation section
-- **Office Hours**: Weekly contributor sync meetings (announced in Slack)
+### Documentation Standards
 
-### Contributing Areas
+#### JavaDoc Requirements
 
-#### High Priority
-- **Bug fixes**: Issues labeled with `bug` and `high-priority`
-- **Security improvements**: Security-related enhancements
-- **Performance optimizations**: Database queries, API response times
-- **Test coverage**: Areas with low test coverage
+All public APIs must have comprehensive JavaDoc:
 
-#### Medium Priority
-- **Feature enhancements**: New functionality for existing features
-- **Documentation**: Improving developer and user documentation
-- **Developer experience**: Tooling and workflow improvements
-- **Code quality**: Refactoring and cleanup
+```java
+/**
+ * Service for managing organizations within the OpenFrame platform.
+ * 
+ * <p>This service provides operations for creating, updating, and querying
+ * organizations while ensuring proper tenant isolation and validation.
+ * 
+ * @author OpenFrame Team
+ * @since 1.0.0
+ */
+@Service
+public class OrganizationService {
+    
+    /**
+     * Creates a new organization with the provided details.
+     * 
+     * <p>The organization domain must be unique across all tenants. After
+     * successful creation, an {@link OrganizationCreatedEvent} is published
+     * to notify other system components.
+     * 
+     * @param request the organization creation request containing name, domain, 
+     *                and other details
+     * @return the newly created organization with generated ID and timestamps
+     * @throws IllegalArgumentException if request validation fails
+     * @throws DuplicateDomainException if the domain already exists
+     * @throws DataAccessException if database operation fails
+     * 
+     * @see CreateOrganizationRequest
+     * @see OrganizationCreatedEvent
+     */
+    public Organization createOrganization(CreateOrganizationRequest request) {
+        // Implementation
+    }
+}
+```
 
-#### Great for Beginners
-- **Documentation fixes**: Typos, clarity improvements
-- **Test additions**: Adding missing unit tests
-- **UI/UX improvements**: Frontend polish and usability
-- **Good first issue**: Issues labeled specifically for newcomers
+### Testing Standards
+
+#### Test Class Organization
+
+```java
+@ExtendWith(MockitoExtension.class)
+@DisplayName("OrganizationService Tests")
+class OrganizationServiceTest {
+    
+    @Mock
+    private OrganizationRepository organizationRepository;
+    
+    @Mock  
+    private EventPublisher eventPublisher;
+    
+    @InjectMocks
+    private OrganizationService organizationService;
+    
+    @Nested
+    @DisplayName("createOrganization")
+    class CreateOrganization {
+        
+        @Test
+        @DisplayName("Should create organization with valid data")
+        void shouldCreateOrganization_WithValidData() {
+            // Arrange
+            CreateOrganizationRequest request = createValidRequest();
+            Organization expectedOrg = createExpectedOrganization();
+            
+            when(organizationRepository.save(any(Organization.class)))
+                .thenReturn(expectedOrg);
+            
+            // Act
+            Organization result = organizationService.createOrganization(request);
+            
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getName()).isEqualTo("Test Corp");
+            verify(eventPublisher).publishEvent(any(OrganizationCreatedEvent.class));
+        }
+        
+        @Test
+        @DisplayName("Should throw exception when domain exists")
+        void shouldThrowException_WhenDomainExists() {
+            // Test implementation
+        }
+    }
+    
+    @Nested
+    @DisplayName("findByDomain")
+    class FindByDomain {
+        // Nested test methods
+    }
+    
+    // Helper methods
+    private CreateOrganizationRequest createValidRequest() {
+        return CreateOrganizationRequest.builder()
+            .name("Test Corp")
+            .domain("test-corp")
+            .adminEmail("admin@test.com")
+            .build();
+    }
+}
+```
+
+#### Test Naming Convention
+
+Test methods should follow this pattern:
+```text
+should[ExpectedBehavior]_When[StateUnderTest]_Given[Conditions]
+```
+
+Examples:
+```java
+shouldCreateOrganization_WhenValidDataProvided()
+shouldThrowException_WhenDuplicateDomainProvided()
+shouldReturnEmptyList_WhenNoOrganizationsExist_GivenTenantId()
+```
+
+## Architecture Guidelines
+
+### Service Layer Design
+
+#### Service Responsibilities
+
+```java
+// ✅ Good - Single responsibility
+@Service
+public class DeviceService {
+    public Device createDevice(CreateDeviceRequest request) { }
+    public Device updateDevice(String id, UpdateDeviceRequest request) { }
+    public void deleteDevice(String id) { }
+    public Optional<Device> findById(String id) { }
+    public List<Device> findByOrganization(String orgId) { }
+}
+
+// ❌ Bad - Mixed responsibilities  
+@Service
+public class DeviceAndOrganizationService {
+    public Device createDevice(CreateDeviceRequest request) { }
+    public Organization createOrganization(CreateOrganizationRequest request) { }
+    public void sendEmailNotification(String email) { }
+    public void generateReport(String format) { }
+}
+```
+
+#### Error Handling
+
+```java
+// Custom exception hierarchy
+public abstract class OpenFrameException extends RuntimeException {
+    protected OpenFrameException(String message) {
+        super(message);
+    }
+    
+    protected OpenFrameException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+public class BusinessLogicException extends OpenFrameException {
+    public BusinessLogicException(String message) {
+        super(message);
+    }
+}
+
+public class DuplicateDomainException extends BusinessLogicException {
+    public DuplicateDomainException(String domain) {
+        super("Domain already exists: " + domain);
+    }
+}
+
+// Service implementation
+@Service
+public class OrganizationService {
+    
+    public Organization createOrganization(CreateOrganizationRequest request) {
+        try {
+            validateRequest(request);
+            return performCreation(request);
+        } catch (DataAccessException e) {
+            LOG.error("Failed to create organization: {}", request.getDomain(), e);
+            throw new DataPersistenceException("Failed to create organization", e);
+        }
+    }
+    
+    private void validateRequest(CreateOrganizationRequest request) {
+        if (organizationRepository.existsByDomain(request.getDomain())) {
+            throw new DuplicateDomainException(request.getDomain());
+        }
+    }
+}
+```
+
+### API Design Guidelines
+
+#### REST API Design
+
+```java
+// ✅ Good REST API design
+@RestController
+@RequestMapping("/api/v1/organizations")
+@Validated
+public class OrganizationController {
+    
+    @GetMapping
+    @PreAuthorize("hasRole('ORGANIZATION_VIEWER')")
+    public ResponseEntity<PagedResponse<OrganizationSummary>> getOrganizations(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String search) {
+        
+        PageRequest pageRequest = PageRequest.of(page, size);
+        Page<Organization> organizations = organizationService
+            .findOrganizations(search, pageRequest);
+        
+        PagedResponse<OrganizationSummary> response = PagedResponse.of(
+            organizations.map(OrganizationMapper::toSummary)
+        );
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping
+    @PreAuthorize("hasRole('ORGANIZATION_ADMIN')")
+    public ResponseEntity<OrganizationResponse> createOrganization(
+            @Valid @RequestBody CreateOrganizationRequest request) {
+        
+        Organization created = organizationService.createOrganization(request);
+        OrganizationResponse response = OrganizationMapper.toResponse(created);
+        
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .location(URI.create("/api/v1/organizations/" + created.getId()))
+            .body(response);
+    }
+    
+    @GetMapping("/{id}")
+    @PreAuthorize("hasPermission(#id, 'Organization', 'READ')")
+    public ResponseEntity<OrganizationResponse> getOrganization(@PathVariable String id) {
+        return organizationService.findById(id)
+            .map(OrganizationMapper::toResponse)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
+    }
+}
+```
+
+#### GraphQL Schema Design
+
+```graphql
+# Good GraphQL schema design
+type Organization {
+  id: ID!
+  name: String!
+  domain: String!
+  status: OrganizationStatus!
+  createdAt: DateTime!
+  updatedAt: DateTime
+  
+  # Related entities
+  devices(filter: DeviceFilterInput, page: PageInput): DeviceConnection!
+  users(filter: UserFilterInput, page: PageInput): UserConnection!
+  
+  # Computed fields
+  deviceCount: Int!
+  activeUserCount: Int!
+}
+
+type Query {
+  organization(id: ID!): Organization
+  organizations(
+    filter: OrganizationFilterInput
+    page: PageInput
+  ): OrganizationConnection!
+}
+
+type Mutation {
+  createOrganization(input: CreateOrganizationInput!): CreateOrganizationPayload!
+  updateOrganization(id: ID!, input: UpdateOrganizationInput!): UpdateOrganizationPayload!
+  deleteOrganization(id: ID!): DeleteOrganizationPayload!
+}
+
+# Input types
+input CreateOrganizationInput {
+  name: String!
+  domain: String!
+  adminEmail: String!
+  contactInfo: ContactInfoInput
+}
+
+# Connection types for pagination
+type OrganizationConnection {
+  edges: [OrganizationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type OrganizationEdge {
+  node: Organization!
+  cursor: String!
+}
+```
+
+### Database Design Guidelines
+
+#### MongoDB Document Design
+
+```java
+// ✅ Good document design
+@Document(collection = "organizations")
+public class Organization {
+    
+    @Id
+    private String id;
+    
+    @Indexed(unique = true)
+    private String domain;
+    
+    @Field("name")
+    private String name;
+    
+    @Field("tenant_id")
+    @Indexed
+    private String tenantId;
+    
+    @Field("status") 
+    private OrganizationStatus status;
+    
+    @Field("contact_info")
+    private ContactInfo contactInfo;
+    
+    @Field("created_at")
+    private Instant createdAt;
+    
+    @Field("updated_at")
+    private Instant updatedAt;
+    
+    // Computed fields (not stored)
+    @Transient
+    private Integer deviceCount;
+    
+    // Builder pattern
+    public static class OrganizationBuilder {
+        // Builder implementation
+    }
+}
+
+// ✅ Good embedded document
+public class ContactInfo {
+    private String email;
+    private String phone;
+    private Address address;
+    
+    public static class Address {
+        private String street;
+        private String city;  
+        private String country;
+        private String postalCode;
+    }
+}
+```
+
+#### Database Indexes
+
+```java
+// Create appropriate indexes
+@Configuration
+public class DatabaseIndexConfiguration {
+    
+    @EventListener(ApplicationReadyEvent.class)
+    public void createIndexes(MongoTemplate mongoTemplate) {
+        
+        // Organization indexes
+        mongoTemplate.indexOps(Organization.class)
+            .ensureIndex(Index.on("tenantId", Sort.Direction.ASC));
+        
+        mongoTemplate.indexOps(Organization.class)  
+            .ensureIndex(Index.on("domain", Sort.Direction.ASC).unique());
+        
+        // Device indexes
+        mongoTemplate.indexOps(Device.class)
+            .ensureIndex(Index.on("organizationId", Sort.Direction.ASC)
+                             .on("status", Sort.Direction.ASC));
+        
+        // Compound index for common queries
+        mongoTemplate.indexOps(Device.class)
+            .ensureIndex(Index.on("tenantId", Sort.Direction.ASC)
+                             .on("lastSeen", Sort.Direction.DESC));
+    }
+}
+```
+
+## Security Guidelines
+
+### Input Validation
+
+```java
+// ✅ Comprehensive validation
+@Data
+@Builder
+public class CreateOrganizationRequest {
+    
+    @NotBlank(message = "Organization name is required")
+    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
+    @Pattern(regexp = "^[\\p{L}\\p{N}\\s\\-_.]+$", 
+             message = "Name contains invalid characters")
+    private String name;
+    
+    @NotBlank(message = "Domain is required")
+    @Size(min = 3, max = 50, message = "Domain must be between 3 and 50 characters")
+    @Pattern(regexp = "^[a-z0-9][a-z0-9\\-]*[a-z0-9]$", 
+             message = "Invalid domain format")
+    @TenantDomainConstraint
+    private String domain;
+    
+    @NotBlank(message = "Admin email is required")
+    @Email(message = "Invalid email format")
+    @ValidEmailDomain
+    private String adminEmail;
+    
+    @Valid
+    private ContactInfoRequest contactInfo;
+}
+
+// Custom validator
+@Component
+public class TenantDomainValidator implements ConstraintValidator<TenantDomainConstraint, String> {
+    
+    private static final Set<String> RESERVED_DOMAINS = Set.of(
+        "admin", "api", "www", "mail", "ftp", "blog", "docs", "support"
+    );
+    
+    @Override
+    public boolean isValid(String domain, ConstraintValidatorContext context) {
+        if (domain == null) {
+            return true; // Let @NotBlank handle null
+        }
+        
+        String lowerDomain = domain.toLowerCase();
+        if (RESERVED_DOMAINS.contains(lowerDomain)) {
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate("Domain is reserved")
+                   .addConstraintViolation();
+            return false;
+        }
+        
+        return true;
+    }
+}
+```
+
+### Authentication and Authorization
+
+```java
+// ✅ Proper security implementation
+@RestController
+@RequestMapping("/api/v1/devices")
+@PreAuthorize("hasRole('DEVICE_VIEWER')")
+public class DeviceController {
+    
+    @GetMapping
+    public ResponseEntity<List<DeviceResponse>> getDevices(
+            @AuthenticationPrincipal AuthPrincipal principal,
+            @RequestParam(required = false) String organizationId) {
+        
+        // Enforce tenant isolation
+        List<Device> devices = deviceService.findByTenant(
+            principal.getTenantId(), 
+            organizationId,
+            principal.getAccessibleOrganizations()
+        );
+        
+        List<DeviceResponse> response = devices.stream()
+            .map(DeviceMapper::toResponse)
+            .collect(toList());
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping
+    @PreAuthorize("hasRole('DEVICE_MANAGER')")
+    public ResponseEntity<DeviceResponse> createDevice(
+            @Valid @RequestBody CreateDeviceRequest request,
+            @AuthenticationPrincipal AuthPrincipal principal) {
+        
+        // Verify user can access the organization
+        if (!principal.canAccessOrganization(request.getOrganizationId())) {
+            throw new AccessDeniedException("Cannot access organization");
+        }
+        
+        Device created = deviceService.createDevice(request, principal);
+        return ResponseEntity.status(HttpStatus.CREATED)
+            .body(DeviceMapper.toResponse(created));
+    }
+}
+```
+
+## Review Process
+
+### Code Review Checklist
+
+#### Functionality
+- [ ] Code accomplishes what it's supposed to do
+- [ ] Edge cases are handled appropriately
+- [ ] Error handling is comprehensive
+- [ ] Business logic is correct
+
+#### Code Quality
+- [ ] Code is readable and well-structured
+- [ ] Methods are reasonably sized (< 30 lines ideally)
+- [ ] Variable and method names are descriptive
+- [ ] No code duplication
+
+#### Testing
+- [ ] Unit tests cover the new functionality
+- [ ] Integration tests are included where appropriate
+- [ ] Tests are well-structured and understandable
+- [ ] Test coverage meets project standards (80%+)
+
+#### Security
+- [ ] Input validation is properly implemented
+- [ ] Authentication/authorization is correctly applied
+- [ ] No sensitive data is logged or exposed
+- [ ] SQL injection and XSS vulnerabilities are prevented
+
+#### Performance
+- [ ] No obvious performance issues
+- [ ] Database queries are efficient
+- [ ] Caching is used where appropriate
+- [ ] Resource usage is reasonable
+
+#### Documentation
+- [ ] Public APIs are documented with JavaDoc
+- [ ] Complex logic is commented
+- [ ] README or other docs are updated if needed
+- [ ] API documentation is updated
+
+### Review Response Guidelines
+
+#### For Authors
+
+**Responding to Feedback:**
+- Respond to all review comments
+- Ask questions if feedback is unclear
+- Make requested changes or explain why you disagree
+- Thank reviewers for their time and feedback
+
+**Example Response:**
+```markdown
+Thanks for the review! I've addressed your feedback:
+
+1. ✅ Fixed the null pointer issue in line 45
+2. ✅ Added unit tests for the edge cases you mentioned
+3. ❓ Regarding the performance concern in the loop - I tried the suggested approach but it actually performs worse in our benchmarks. Should we keep the current implementation or do you have another suggestion?
+4. ✅ Updated the JavaDoc to clarify the behavior
+
+Let me know if you need any clarification on the changes!
+```
+
+#### For Reviewers
+
+**Providing Effective Feedback:**
+- Be specific and actionable
+- Explain the reasoning behind suggestions
+- Distinguish between required changes and suggestions
+- Be respectful and constructive
+
+**Example Feedback:**
+```markdown
+Overall looks good! A few items to address:
+
+**Required Changes:**
+1. Line 23: This could throw a NullPointerException if `user.getEmail()` is null. Consider adding a null check.
+2. The `createDevice` method needs unit tests for the validation logic.
+
+**Suggestions:**
+1. Line 67: Consider extracting this complex validation logic into a separate method for better readability.
+2. You might want to cache the result of this expensive calculation since it's called frequently.
+
+**Questions:**
+1. Is there a specific reason for using `ArrayList` here instead of `List` interface?
+
+Great work on the error handling - it's comprehensive and user-friendly!
+```
+
+## Release Process
+
+### Version Management
+
+OpenFrame follows **Semantic Versioning** (SemVer):
+
+```text
+MAJOR.MINOR.PATCH
+
+MAJOR: Breaking changes
+MINOR: New features (backward compatible)  
+PATCH: Bug fixes (backward compatible)
+```
+
+### Release Types
+
+| Type | Branch | Version Bump | Example |
+|------|---------|-------------|---------|
+| **Feature Release** | `develop` → `main` | MINOR | 1.2.0 → 1.3.0 |
+| **Bug Fix Release** | `develop` → `main` | PATCH | 1.2.0 → 1.2.1 |
+| **Hotfix** | `hotfix/*` → `main` | PATCH | 1.2.0 → 1.2.1 |
+| **Breaking Change** | `develop` → `main` | MAJOR | 1.2.0 → 2.0.0 |
+
+### Changelog Format
+
+```markdown
+# Changelog
+
+All notable changes to OpenFrame will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/),
+and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [1.3.0] - 2024-02-15
+
+### Added
+- Device status filtering API endpoint
+- Real-time device alerts via WebSocket
+- Bulk device operations support
+- GraphQL subscriptions for live updates
+
+### Changed  
+- Improved organization creation performance by 40%
+- Updated authentication token expiration to 4 hours
+- Enhanced error messages for better user experience
+
+### Deprecated
+- Legacy REST API endpoints (will be removed in v2.0)
+
+### Removed
+- Support for deprecated authentication method
+
+### Fixed
+- Memory leak in event processing service
+- Race condition in tenant creation
+- GraphQL query timeout issues
+
+### Security
+- Updated dependencies with security vulnerabilities
+- Enhanced rate limiting configuration
+- Improved JWT token validation
+```
+
+## Community Guidelines
+
+### Communication Channels
+
+**Primary Communication:**
+- **OpenMSP Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+
+**Channel Guidelines:**
+- `#general` - General OpenFrame discussions
+- `#development` - Technical development discussions  
+- `#help` - Support and troubleshooting
+- `#announcements` - Project announcements
+- `#contributions` - Contribution coordination
+
+### Issue Management
+
+**All project management happens in Slack - we don't use GitHub Issues.**
+
+**Reporting Bugs:**
+1. Post in `#help` channel first to confirm it's a bug
+2. Include reproduction steps, expected vs actual behavior
+3. Provide environment details (OS, Java version, etc.)
+4. Include relevant logs or error messages
+
+**Feature Requests:**
+1. Discuss in `#general` or `#development` channel
+2. Explain the use case and business value
+3. Be open to alternative solutions
+4. Consider implementation complexity
 
 ### Recognition
 
-Contributors are recognized through:
-- **Contributor list**: In README and documentation
-- **Release notes**: Acknowledgment in version releases
-- **Community highlights**: Featured in community updates
-- **Maintainer track**: Path to becoming a project maintainer
+We appreciate all contributions to OpenFrame:
 
-Thank you for contributing to OpenFrame! Your efforts help build a better MSP platform for the community. 🚀
+**Contributor Recognition:**
+- Monthly contributor highlights in Slack
+- Contributor mentions in release notes
+- Special roles and badges in Slack community
+- Invitation to contributor-only channels
+
+**Types of Contributions We Value:**
+- Code contributions (features, bug fixes, refactoring)
+- Documentation improvements  
+- Testing and quality assurance
+- Community support and mentoring
+- Bug reports and feature suggestions
+- Performance optimizations
+- Security improvements
+
+## Getting Help
+
+### Documentation Resources
+
+- **[Architecture Overview](../architecture/README.md)** - System design and patterns
+- **[Development Environment](../setup/environment.md)** - IDE and tool setup
+- **[Local Development](../setup/local-development.md)** - Running OpenFrame locally
+- **[Security Guidelines](../security/README.md)** - Security best practices
+- **[Testing Overview](../testing/README.md)** - Testing strategies and tools
+
+### Community Support
+
+**Need Help?**
+- Ask questions in the `#help` Slack channel
+- Search previous discussions before asking
+- Provide context and details with your questions
+- Be patient - community members respond when available
+
+**Want to Help Others?**
+- Monitor the `#help` channel
+- Share your knowledge and experiences
+- Help review and test contributions
+- Mentor new contributors
+
+### Troubleshooting Common Issues
+
+**Build Issues:**
+```bash
+# Clean and rebuild
+mvn clean install -U
+
+# Check Java version
+java -version
+
+# Verify environment variables
+echo $JAVA_HOME
+```
+
+**Test Failures:**
+```bash
+# Run specific test class
+mvn test -Dtest="OrganizationServiceTest"
+
+# Run with debug output
+mvn test -X
+
+# Check test containers
+docker ps
+```
+
+**Development Environment:**
+```bash
+# Restart services
+docker-compose restart
+
+# Check service logs
+docker-compose logs -f mongodb
+
+# Verify port availability
+lsof -i :8080
+```
+
+## Thank You!
+
+Thank you for contributing to OpenFrame! Your efforts help build a better MSP platform for everyone. Together, we're creating the future of open-source IT management.
+
+**Questions about contributing?** Join us in the OpenMSP Slack community - we're here to help! 🚀
+
+---
+
+**Remember**: Every expert was once a beginner. Don't hesitate to ask questions, make mistakes, and learn from the community. We're all here to support each other in building something amazing.

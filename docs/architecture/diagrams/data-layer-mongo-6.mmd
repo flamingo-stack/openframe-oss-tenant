@@ -1,0 +1,8 @@
+flowchart TD
+    Start["Incoming Request"] --> HasCursor{"Cursor Provided?"}
+    HasCursor -->|"Yes"| AddCriteria["Add _id < cursor"]
+    HasCursor -->|"No"| Skip
+    AddCriteria --> Sort
+    Skip --> Sort
+    Sort["Apply Sort"] --> Limit["Apply Limit"]
+    Limit --> Execute["mongoTemplate.find()"]

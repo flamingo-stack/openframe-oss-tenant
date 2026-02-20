@@ -2,316 +2,394 @@
 
 ## Overview
 
-The **Api Service Core** module is the primary internal API layer of the OpenFrame platform. It exposes REST and GraphQL endpoints used by the Gateway, frontend applications, and other internal services to manage users, organizations, devices, events, logs, tools, and SSO configuration.
+The **Api Service Core** module is the internal application service responsible for:
 
-This module acts as:
+- Exposing internal REST endpoints for management and mutations
+- Providing a GraphQL API (via Netflix DGS) for rich query capabilities
+- Coordinating domain services from data and management layers
+- Acting as a secure resource server behind the Gateway
 
-- ✅ The internal REST API for command-style operations (mutations)
-- ✅ The GraphQL query layer (via Netflix DGS)
-- ✅ A resource server for JWT-based authentication
-- ✅ A bridge between domain services and transport layers
+It is designed to operate **behind the Gateway Service Core**, which handles authentication, authorization enforcement, and token propagation. The Api Service Core focuses on domain orchestration, query/mutation handling, and DTO mapping.
 
-It integrates closely with:
+---
 
-- Data persistence modules (Mongo repositories)
-- Security and OAuth infrastructure
-- Stream and event services
-- Gateway service (which handles primary authentication enforcement)
+## Architectural Context
+
+Within the OpenFrame service landscape, the Api Service Core sits between the Gateway and the underlying data and stream layers.
+
+```mermaid
+flowchart LR
+    Client["Client Application"] --> Gateway["Gateway Service Core"]
+    Gateway --> Api["Api Service Core"]
+
+    Api --> DataMongo["Data Layer Mongo"]
+    Api --> DataCore["Data Layer Core"]
+    Api --> Kafka["Data Layer Kafka"]
+
+    Api --> Authz["Authorization Service Core"]
+    Api --> Mgmt["Management Service Core"]
+    Api --> Stream["Stream Service Core"]
+```
+
+### Responsibilities Split
+
+- **Gateway Service Core**: JWT validation, API key auth, header enrichment, tenant routing
+- **Authorization Service Core**: OAuth2 authorization server, tenant registration, login flows
+- **Api Service Core**: Resource server, GraphQL queries, internal REST mutations, business orchestration
+- **Data Layers**: Persistence (MongoDB), analytics (Pinot), messaging (Kafka)
 
 ---
 
 ## High-Level Architecture
 
-The Api Service Core sits behind the Gateway and exposes both REST and GraphQL endpoints.
+The Api Service Core is structured into the following logical areas:
 
 ```mermaid
 flowchart TD
-    Client["Frontend or Internal Client"] --> Gateway["Gateway Service Core"]
-    Gateway --> Api["Api Service Core"]
+    Config["Configuration"] --> Security["Security & Resource Server"]
+    Config --> AuthConfig["Authentication Argument Resolver"]
 
-    Api --> Controllers["REST Controllers"]
-    Api --> GraphQL["GraphQL DataFetchers"]
+    Controllers["REST Controllers"] --> Services["Domain Services"]
+    DataFetchers["GraphQL DataFetchers"] --> Services
 
-    Controllers --> Services["Domain Services"]
-    GraphQL --> Services
+    Services --> Repositories["Repositories (Mongo / Data Layer)"]
+    Services --> Processors["Extension Processors"]
 
-    Services --> Repositories["Mongo Repositories"]
-    Services --> ExternalModules["Other Core Modules"]
-
-    ExternalModules --> Authz["Authorization Server Core"]
-    ExternalModules --> Stream["Stream Service Core"]
+    Repositories --> Mongo["Mongo Documents & Repos"]
 ```
 
-### Key Responsibilities
+### Main Building Blocks
 
-| Layer | Responsibility |
-|--------|----------------|
-| Configuration | Security, authentication, password encoding |
-| REST Controllers | Internal command APIs (create, update, delete) |
-| GraphQL DataFetchers | Query APIs with cursor pagination |
-| DataLoaders | Batch loading to avoid N+1 problems |
-| Services | Business logic and domain orchestration |
+1. **Configuration Layer**
+   - `ApiApplicationConfig`
+   - `AuthenticationConfig`
+   - `SecurityConfig`
+
+2. **REST Controllers**
+   - DeviceController
+   - OrganizationController
+   - MeController
+   - HealthController
+
+3. **GraphQL DataFetchers (Netflix DGS)**
+   - DeviceDataFetcher
+   - EventDataFetcher
+   - LogDataFetcher
+   - OrganizationDataFetcher
+   - ToolsDataFetcher
+
+4. **Domain Services & Processors**
+   - UserService
+   - DefaultUserProcessor
+   - DefaultInvitationProcessor
 
 ---
 
-## Security Model
+## Configuration Layer
 
-The Api Service Core is configured as a **Spring OAuth2 Resource Server**, but it does not enforce strict path-level authorization.
+### ApiApplicationConfig
 
-Authentication responsibilities are split:
+Provides core beans for the application.
 
-- ✅ Gateway validates JWT tokens and injects headers
-- ✅ Api Service Core resolves `@AuthenticationPrincipal`
-- ✅ JWT issuer resolution is cached via Caffeine
+- Defines a `PasswordEncoder` using `BCryptPasswordEncoder`
+- Used by services that manage user credentials
 
-### Security Flow
-
-```mermaid
-flowchart LR
-    Request["Incoming Request"] --> JwtResolver["JwtIssuerAuthenticationManagerResolver"]
-    JwtResolver --> Cache["Caffeine Jwt Provider Cache"]
-    Cache --> JwtDecoder["JwtDecoder per Issuer"]
-    JwtDecoder --> Principal["AuthPrincipal"]
-    Principal --> Controller["Controller or DataFetcher"]
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}
 ```
-
-### Security Components
-
-- **SecurityConfig** – Configures OAuth2 Resource Server
-- **AuthenticationConfig** – Registers `AuthPrincipalArgumentResolver`
-- **ApiApplicationConfig** – Defines password encoder bean
-
-The `/me` endpoint demonstrates principal resolution using `@AuthenticationPrincipal`.
 
 ---
 
-## REST Layer
+### AuthenticationConfig
 
-REST endpoints are primarily used for command operations (mutations).
+Registers a custom argument resolver:
 
-### Controllers
+- Adds `AuthPrincipalArgumentResolver`
+- Enables usage of `@AuthenticationPrincipal AuthPrincipal` in controllers
 
-| Controller | Responsibility |
-|------------|---------------|
-| DeviceController | Update device status |
-| OrganizationController | Create, update, delete organizations |
-| UserController | Manage users |
-| OpenFrameClientConfigurationController | Client configuration retrieval |
-| HealthController | Health checks |
-| MeController | Current user identity |
+This allows controllers like `MeController` to receive a strongly typed principal object extracted from the JWT.
 
-### REST Interaction Example
+---
+
+### SecurityConfig
+
+Configures the Api Service Core as an **OAuth2 Resource Server**.
+
+Key characteristics:
+
+- CSRF disabled (API-only service)
+- All requests permitted at HTTP level (`permitAll()`)
+- JWT validation delegated to a dynamic issuer resolver
+- Uses a Caffeine `LoadingCache` to cache `JwtAuthenticationProvider` instances per issuer
 
 ```mermaid
-sequenceDiagram
-    participant Client
-    participant Gateway
-    participant Api
-    participant Service
-    participant Repo
-
-    Client->>Gateway: PATCH /devices/{machineId}
-    Gateway->>Api: Forward with JWT
-    Api->>Service: updateStatusByMachineId()
-    Service->>Repo: Save updated device
-    Repo-->>Service: Persisted
-    Service-->>Api: Success
-    Api-->>Client: 204 No Content
+flowchart TD
+    Request["Incoming Request"] --> Resolver["JwtIssuerAuthenticationManagerResolver"]
+    Resolver --> Cache["Caffeine Jwt Provider Cache"]
+    Cache --> Provider["JwtAuthenticationProvider"]
+    Provider --> Decoder["JwtDecoder.fromIssuerLocation"]
 ```
+
+### Why `permitAll()`?
+
+The Gateway Service Core already:
+
+- Validates JWT tokens
+- Handles public vs protected routes
+- Adds `Authorization` headers from cookies
+
+The Api Service Core only needs to:
+
+- Decode JWT
+- Populate `@AuthenticationPrincipal`
+
+---
+
+## REST Controllers
+
+The REST layer is primarily used for **internal mutations and management operations**.
+
+### HealthController
+
+- `GET /health`
+- Returns `OK`
+- Used by liveness/readiness probes
+
+---
+
+### MeController
+
+- `GET /me`
+- Returns authenticated user information
+- Uses `@AuthenticationPrincipal AuthPrincipal`
+
+Response structure:
+
+```json
+{
+  "authenticated": true,
+  "user": {
+    "id": "...",
+    "email": "...",
+    "displayName": "...",
+    "roles": ["..."],
+    "tenantId": "..."
+  }
+}
+```
+
+If no principal is present, returns `401 Unauthorized`.
+
+---
+
+### DeviceController
+
+- `PATCH /devices/{machineId}`
+- Updates device status
+- Delegates to `DeviceService.updateStatusByMachineId`
+
+This endpoint is typically used internally (e.g., by automation or stream processors).
+
+---
+
+### OrganizationController
+
+Handles organization mutations:
+
+- `POST /organizations` → Create
+- `PUT /organizations/{id}` → Update
+- `DELETE /organizations/{id}` → Delete
+
+Behavioral highlights:
+
+- Uses `OrganizationCommandService`
+- Maps entities using `OrganizationMapper`
+- Returns `409 Conflict` when organization has machines
+- Returns `404 Not Found` when ID does not exist
+
+Read operations are exposed via GraphQL and the External API Service Core.
 
 ---
 
 ## GraphQL Layer (Netflix DGS)
 
-The Api Service Core provides a rich GraphQL API for querying domain entities with:
+The Api Service Core exposes a GraphQL API using Netflix DGS.
 
-- Cursor-based pagination
-- Filtering and sorting
-- Search support
-- Efficient batch loading
-
-### Main DataFetchers
-
-| DataFetcher | Domain |
-|-------------|--------|
-| DeviceDataFetcher | Devices, tags, agents, connections |
-| EventDataFetcher | Events and mutations |
-| LogDataFetcher | Audit logs |
-| OrganizationDataFetcher | Organizations |
-| ToolsDataFetcher | Integrated tools |
-
-Each DataFetcher:
-
-1. Validates input arguments
-2. Maps DTO input to filter options
-3. Calls a service layer
-4. Maps results to GraphQL connections
-
----
-
-## DataLoader Architecture
-
-To avoid N+1 query problems, the module uses DGS DataLoaders.
-
-```mermaid
-flowchart TD
-    Query["GraphQL Query"] --> DeviceFetcher["DeviceDataFetcher"]
-    DeviceFetcher --> DataLoader["DataLoader Registry"]
-
-    DataLoader --> OrgLoader["OrganizationDataLoader"]
-    DataLoader --> TagLoader["TagDataLoader"]
-    DataLoader --> ToolConnLoader["ToolConnectionDataLoader"]
-    DataLoader --> AgentLoader["InstalledAgentDataLoader"]
-
-    OrgLoader --> Mongo["Mongo Repository"]
-```
-
-### Implemented DataLoaders
-
-- InstalledAgentDataLoader
-- OrganizationDataLoader
-- TagDataLoader
-- ToolConnectionDataLoader
-
-These batch load related entities by IDs and return results in request order.
-
----
-
-## Core Service Layer
-
-Services encapsulate business logic and coordinate repositories and processors.
-
-### Notable Services
-
-#### UserService
-
-Handles:
-
-- Pagination and listing
-- Updates
-- Soft deletes
-- Owner protection
-- Self-delete prevention
-
-Business constraints enforced:
-
-- Owner accounts cannot be deleted
-- Users cannot delete themselves
-- Deletions are soft (status set to DELETED)
-
-#### SSOConfigService
-
-Responsible for:
-
-- Managing SSO provider configuration
-- Encrypting and decrypting client secrets
-- Validating allowed domains
-- Enforcing Microsoft tenant rules
-- Post-processing configuration changes
-
-### SSO Validation Logic
-
-```mermaid
-flowchart TD
-    Request["Upsert SSO Config"] --> Normalize["Normalize Domains"]
-    Normalize --> ValidateDomains["Validate Domain Existence"]
-    ValidateDomains --> CheckAuto["Check autoProvisionUsers"]
-    CheckAuto --> MicrosoftCheck["If Microsoft require msTenantId"]
-    MicrosoftCheck --> Save["Save or Update Config"]
-    Save --> PostProcess["Trigger Processor Hooks"]
-```
-
----
-
-## Integration with Other Modules
-
-The Api Service Core collaborates with several platform modules:
-
-### Authorization Server Core
-
-- Provides JWT issuance
-- Handles login and tenant discovery
-- Supplies issuer-based JWT validation support
-
-### Data Access (Mongo)
-
-- UserRepository
-- OrganizationRepository
-- SSOConfigRepository
-- OAuth token storage
-
-### Gateway Service Core
-
-- Performs authentication enforcement
-- Injects Authorization headers
-- Handles CORS and routing
-
-### Stream Service Core
-
-- Event ingestion
-- Activity enrichment
-- Change event processing
-
----
-
-## Pagination Model
-
-GraphQL queries use cursor-based pagination.
-
-Core DTOs involved:
-
-- CursorPaginationInput
-- CursorPaginationCriteria
-- CountedGenericQueryResult
-- GenericConnection
-
-Flow:
+### Query Flow
 
 ```mermaid
 flowchart LR
-    Client["GraphQL Query"] --> DataFetcher
-    DataFetcher --> Mapper
-    Mapper --> Criteria["CursorPaginationCriteria"]
-    Criteria --> Service
-    Service --> Result["QueryResult"]
-    Result --> Connection["GraphQL Connection"]
-    Connection --> Client
+    Client["GraphQL Client"] --> DGS["DGS Query / Mutation"]
+    DGS --> Mapper["GraphQL Mapper"]
+    Mapper --> Service["Domain Service"]
+    Service --> Repository["Mongo Repository"]
+    Repository --> Mongo["MongoDB"]
 ```
 
+### DeviceDataFetcher
+
+Provides:
+
+- `devices(...)` with cursor-based pagination
+- `device(machineId)`
+- `deviceFilters(...)`
+- Field resolvers using `DataLoader`:
+  - tags
+  - toolConnections
+  - installedAgents
+  - organization
+
+Uses:
+
+- `DeviceService`
+- `DeviceFilterService`
+- `GraphQLDeviceMapper`
+
+Implements N+1 mitigation via `DataLoader`.
+
 ---
 
-## Health and Observability
+### EventDataFetcher
 
-The module provides:
+Provides:
 
-- `/health` endpoint for liveness checks
-- Structured logging
-- Debug-level tracing in DataFetchers
-- Informational logs for mutation endpoints
+- `events(...)`
+- `eventById(id)`
+- `eventFilters(...)`
+- Mutations: `createEvent`, `updateEvent`
+
+Uses:
+
+- `EventService`
+- `GraphQLEventMapper`
+
+Supports:
+
+- Cursor pagination
+- Filtering
+- Sorting
+- Free-text search
 
 ---
 
-## Design Principles
+### LogDataFetcher
 
-The Api Service Core follows several architectural principles:
+Provides audit log queries:
 
-1. **Thin Controllers** – Business logic resides in services
-2. **Clear Separation of Command vs Query** – REST for commands, GraphQL for queries
-3. **Batching for Performance** – DataLoader usage to prevent N+1
-4. **Security Delegation** – Gateway handles enforcement, API resolves identity
-5. **Extensibility** – New domains can plug in via DataFetcher + Service + Mapper
+- `logs(...)`
+- `logFilters(...)`
+- `logDetails(...)`
+
+Delegates to `LogService` and `GraphQLLogMapper`.
+
+---
+
+### OrganizationDataFetcher
+
+Provides:
+
+- `organizations(...)`
+- `organization(id)`
+- `organizationByOrganizationId(organizationId)`
+
+Uses:
+
+- `OrganizationQueryService`
+- `OrganizationService`
+- `GraphQLOrganizationMapper`
+
+---
+
+### ToolsDataFetcher
+
+Provides:
+
+- `integratedTools(...)`
+- `toolFilters()`
+
+Delegates to `ToolService` and `GraphQLToolMapper`.
+
+---
+
+## User Management
+
+### UserService
+
+Encapsulates user domain logic.
+
+Key operations:
+
+- `listUsers(page, size)`
+- `getUserById(id)`
+- `updateUser(id, request)`
+- `softDeleteUser(id, requesterUserId)`
+
+### Deletion Rules
+
+```mermaid
+flowchart TD
+    Start["Soft Delete Request"] --> SelfCheck{"Requester equals Target?"}
+    SelfCheck -->|"Yes"| Error1["UserSelfDeleteNotAllowedException"]
+    SelfCheck -->|"No"| OwnerCheck{"Has OWNER Role?"}
+    OwnerCheck -->|"Yes"| Error2["OperationNotAllowedException"]
+    OwnerCheck -->|"No"| MarkDeleted["Set Status = DELETED"]
+```
+
+- Prevents self-deletion
+- Prevents deletion of OWNER accounts
+- Performs soft delete by setting status to `DELETED`
+
+---
+
+## Extension Processors
+
+The Api Service Core provides extension hooks via processors.
+
+### DefaultInvitationProcessor
+
+- Logs invitation created / revoked
+- Used when no custom `InvitationProcessor` is provided
+
+### DefaultUserProcessor
+
+- Hooks after:
+  - User fetched
+  - User updated
+  - User deleted
+
+Both use `@ConditionalOnMissingBean`, allowing override in tenant-specific services.
+
+---
+
+## Interaction With Other Modules
+
+The Api Service Core integrates with several sibling modules:
+
+- [Authorization Service Core](../authorization-service-core/authorization-service-core.md)
+- [Gateway Service Core](../gateway-service-core/gateway-service-core.md)
+- [Data Layer Mongo](../data-layer-mongo/data-layer-mongo.md)
+- [Data Layer Core](../data-layer-core/data-layer-core.md)
+- [Data Layer Kafka](../data-layer-kafka/data-layer-kafka.md)
+- [Management Service Core](../management-service-core/management-service-core.md)
+- [Stream Service Core](../stream-service-core/stream-service-core.md)
+- [External Api Service Core](../external-api-service-core/external-api-service-core.md)
+
+Each module owns its own responsibilities, and the Api Service Core orchestrates them without duplicating logic.
 
 ---
 
 ## Summary
 
-The **Api Service Core** is the central internal API module of OpenFrame. It:
+The **Api Service Core** module:
 
-- Exposes REST and GraphQL APIs
-- Resolves authenticated principals
-- Coordinates domain services
-- Implements cursor-based pagination
-- Prevents N+1 via DataLoaders
-- Manages SSO configuration and user lifecycle rules
+- Acts as a GraphQL-first internal API service
+- Exposes internal REST mutation endpoints
+- Operates as a JWT-based OAuth2 Resource Server
+- Delegates authentication enforcement to the Gateway
+- Orchestrates domain services across Mongo, Kafka, and analytics layers
+- Provides extension points via processors
 
-It plays a critical role in translating authenticated platform requests into domain operations while remaining cleanly separated from authentication enforcement, persistence mechanics, and stream processing concerns.
+It is the central application layer for tenant-scoped domain operations within the OpenFrame platform.

@@ -1,329 +1,376 @@
 # Management Service Core
 
-The **Management Service Core** module is responsible for cluster-level orchestration, tool lifecycle management, agent configuration bootstrapping, and messaging infrastructure initialization within the OpenFrame platform.
+## Overview
 
-It acts as the operational control plane for:
+The **Management Service Core** module is responsible for operational configuration and lifecycle management within the OpenFrame platform. It provides:
 
-- Integrated tool configuration and lifecycle
-- Agent configuration and version propagation
-- Debezium connector orchestration
-- NATS stream provisioning
-- Client configuration initialization
-- Cluster release coordination
+- Integrated tool configuration management
+- Post-save extension hooks for tool lifecycle events
+- Initialization of default client configurations
+- Initialization and management of NATS JetStream streams
+- Client version update orchestration
+- Core Spring configuration for the Management service
 
-This module is packaged into the `ManagementApplication` service and integrates with multiple platform components including the API Service Core, Stream Service Core, Data Access layers, and Gateway.
+This module acts as the operational control layer for tenant-aware tool integrations and client-side orchestration.
+
+It is typically bootstrapped by the `ManagementApplication` in the Service Applications module and interacts with:
+
+- Data Layer (Mongo, Kafka, Core)
+- Stream infrastructure (NATS JetStream)
+- Debezium connectors for CDC
+- Tool and client configuration services
 
 ---
 
-## Architectural Role in the Platform
+## Architectural Position in the Platform
 
-At runtime, the Management Service Core sits between persistence, messaging infrastructure, and operational services.
+The Management Service Core sits between persistent storage, streaming infrastructure, and higher-level orchestration logic.
 
 ```mermaid
 flowchart TD
-    ManagementApp["Management Application"] --> MgmtCore["Management Service Core"]
+    ManagementApp["Management Application"] --> ManagementCore["Management Service Core"]
 
-    MgmtCore --> Mongo["Data Access Mongo"]
-    MgmtCore --> Kafka["Data Access Kafka"]
-    MgmtCore --> Nats["NATS Streams"]
-    MgmtCore --> Debezium["Debezium Connectors"]
+    ManagementCore --> DataLayer["Data Layer Mongo"]
+    ManagementCore --> NatsStreams["NATS JetStream"]
+    ManagementCore --> Debezium["Debezium Connectors"]
+    ManagementCore --> ClientPublisher["Client Update Publisher"]
 
-    MgmtCore --> StreamCore["Stream Service Core"]
-    MgmtCore --> ClientCore["Client Service Core"]
-    MgmtCore --> ApiCore["API Service Core"]
+    DataLayer --> MongoDB[("MongoDB")]
+    NatsStreams --> NatsServer[("NATS Server")]
+    Debezium --> Kafka[("Kafka Cluster")]
 ```
 
 ### Key Responsibilities
 
-| Area | Responsibility |
-|------|----------------|
-| Tool Management | Persist and activate Integrated Tools |
-| CDC Management | Create and validate Debezium connectors |
-| Agent Bootstrapping | Load and update integrated tool agents |
-| Client Configuration | Initialize default OpenFrame client configuration |
-| Messaging | Provision NATS streams |
-| Cluster Lifecycle | Process release version updates |
-| Security | Provide password encoding and secure initialization |
+1. Configure and expose REST endpoints for tool management
+2. Trigger Debezium connector provisioning for integrated tools
+3. Initialize and maintain required NATS streams
+4. Bootstrap default OpenFrame client configuration
+5. Provide extension points via post-save hooks
+6. Support client version update publication
 
 ---
 
-# Core Components Overview
+## Module Structure
 
-## 1. Management Configuration
+The Management Service Core consists of the following primary components:
 
-**Component:** `ManagementConfiguration`
-
-Provides foundational Spring configuration:
-
-- Component scanning across `com.openframe`
-- Excludes Cassandra health indicator
-- Registers a `BCryptPasswordEncoder` bean
-
-This enables secure hashing for internal secrets and management workflows.
+- `ManagementConfiguration`
+- `IntegratedToolController`
+- `IntegratedToolPostSaveHook`
+- `OpenFrameClientConfigurationInitializer`
+- `NatsStreamConfigurationInitializer`
+- `OpenFrameClientVersionUpdateService`
 
 ---
 
-## 2. Integrated Tool Management
+# 1. Configuration Layer
 
-**Component:** `IntegratedToolController`
+## ManagementConfiguration
 
-**Endpoint Base:** `/v1/tools`
+**Class:** `ManagementConfiguration`
+
+This class defines the Spring configuration for the Management Service.
 
 ### Responsibilities
 
-- Retrieve all integrated tools
-- Retrieve single tool configuration
-- Save and activate tool configuration
-- Trigger Debezium connector updates
-- Execute post-save hooks
+- Enables component scanning for `com.openframe`
+- Excludes `CassandraHealthIndicator` from auto-scanning
+- Provides a `PasswordEncoder` bean using `BCryptPasswordEncoder`
 
-### Tool Save Flow
+### Design Considerations
+
+- The exclusion of `CassandraHealthIndicator` ensures that Cassandra health checks are not auto-wired into this service when not required.
+- BCrypt ensures secure password hashing if password handling is required within management flows.
 
 ```mermaid
-flowchart TD
-    Request["POST /v1/tools/{id}"] --> SaveTool["Save Integrated Tool"]
-    SaveTool --> Persist["IntegratedToolService.save"]
-    Persist --> DebeziumUpdate["DebeziumService.createOrUpdate"]
-    DebeziumUpdate --> Hooks["Execute Post Save Hooks"]
-    Hooks --> Response["Return Success"]
+flowchart LR
+    ManagementConfiguration --> ComponentScan["Component Scan com.openframe"]
+    ManagementConfiguration --> PasswordEncoder["BCryptPasswordEncoder Bean"]
+    ComponentScan --> Exclusion["Exclude CassandraHealthIndicator"]
 ```
-
-### Key Integrations
-
-- **IntegratedToolService** (Mongo persistence)
-- **DebeziumService** (CDC connector lifecycle)
-- **IntegratedToolPostSaveHook** (extensibility mechanism)
-
-This controller is the primary administrative interface for enabling and updating external integrations.
 
 ---
 
-## 3. Debezium Connector Initialization
+# 2. Integrated Tool Management
 
-**Component:** `DebeziumConnectorInitializer`
+## IntegratedToolController
 
-Triggered on `ApplicationReadyEvent` when property:
+**Base Path:** `/v1/tools`
+
+The `IntegratedToolController` exposes REST endpoints for managing integrated tools within the platform.
+
+### Dependencies
+
+- `IntegratedToolService`
+- `DebeziumService`
+- `List<IntegratedToolPostSaveHook>`
+
+### Endpoints
+
+#### Get All Tools
 
 ```text
-openframe.debezium.health-check.enabled=true
+GET /v1/tools
 ```
 
-### Behavior
+Returns:
 
-- Checks if connectors already exist
-- If none exist:
-  - Fetches all Integrated Tools
-  - Extracts Debezium connector definitions
-  - Creates connectors in Debezium
+- status
+- tools list
+
+#### Get Tool by ID
+
+```text
+GET /v1/tools/{id}
+```
+
+Returns:
+
+- status
+- tool (if found)
+- error message (if not found)
+
+#### Save Tool Configuration
+
+```text
+POST /v1/tools/{id}
+```
+
+Request Body:
+
+```json
+{
+  "tool": { ... }
+}
+```
+
+### Save Flow
+
+When saving a tool:
+
+1. ID is enforced from the path variable
+2. Tool is enabled
+3. Tool is persisted via `IntegratedToolService`
+4. Debezium connectors are created or updated
+5. All registered post-save hooks are executed
+6. Response is returned to the client
 
 ```mermaid
 flowchart TD
-    AppReady["Application Ready"] --> Check["List Existing Connectors"]
-    Check -->|"None"| LoadTools["Load Integrated Tools"]
-    LoadTools --> Create["Create Debezium Connectors"]
-    Check -->|"Exists"| Skip["Skip Initialization"]
+    Request["POST /v1/tools/{id}"] --> Validate["Assign ID & Enable Tool"]
+    Validate --> Save["Save via IntegratedToolService"]
+    Save --> DebeziumStep["Create or Update Debezium Connectors"]
+    DebeziumStep --> Hooks["Execute Post Save Hooks"]
+    Hooks --> Response["Return Success Response"]
 ```
 
-This guarantees CDC consistency after deployments or clean infrastructure startups.
+### Resilience Strategy
+
+- Post-save hooks are executed individually.
+- Exceptions in hooks are logged but do not break the main save flow.
+- Core persistence and Debezium configuration remain the critical path.
 
 ---
 
-## 4. Agent Configuration Bootstrapping
+## IntegratedToolPostSaveHook
 
-### 4.1 Agent Registration Secret
+This interface defines a lightweight extension point invoked after a tool is saved.
 
-**Component:** `AgentRegistrationSecretInitializer`
+```java
+void onToolSaved(String toolId, IntegratedTool tool);
+```
 
-- Runs at startup via `ApplicationRunner`
-- Calls `AgentRegistrationSecretManagementService.createInitialSecret()`
-- Ensures secure agent onboarding
+### Purpose
 
-This secret is required by the Client Service Core during agent registration.
+- Allows service-specific side effects
+- Avoids full Spring event infrastructure
+- Keeps tool lifecycle extensible
 
----
+### Typical Use Cases
 
-### 4.2 Integrated Tool Agent Initialization
-
-**Component:** `IntegratedToolAgentInitializer`
-
-Loads agent configuration files from classpath.
-
-### Responsibilities
-
-- Read JSON configuration files
-- Create or update `IntegratedToolAgent`
-- Preserve release versions
-- Detect version changes
-- Publish update events via `ToolAgentUpdateUpdatePublisher`
-
-### Version Update Flow
+- Provisioning additional infrastructure
+- Emitting domain events
+- Synchronizing configuration with external systems
 
 ```mermaid
-flowchart TD
-    LoadFile["Load Agent JSON"] --> ExistsCheck["Find By ID"]
-    ExistsCheck -->|"New"| SaveNew["Save Agent"]
-    ExistsCheck -->|"Existing"| Update["Update Agent"]
-    Update --> Compare["Compare Versions"]
-    Compare -->|"Changed"| Publish["Publish Version Update"]
-    Compare -->|"Same"| End["End"]
+flowchart LR
+    IntegratedToolController --> HookInterface["IntegratedToolPostSaveHook"]
+    HookInterface --> HookImpl1["Custom Hook Implementation"]
+    HookInterface --> HookImpl2["Another Hook Implementation"]
 ```
-
-Release agents are protected from accidental version overrides.
 
 ---
 
-## 5. OpenFrame Client Configuration Initialization
+# 3. Client Configuration Initialization
 
-**Component:** `OpenFrameClientConfigurationInitializer`
+## OpenFrameClientConfigurationInitializer
 
-Loads default client configuration from:
+This component ensures that a default OpenFrame client configuration exists at startup.
+
+### Trigger
+
+Executed automatically via `@PostConstruct`.
+
+### Configuration Source
 
 ```text
 agent-configurations/client-configuration.json
 ```
 
-### Behavior
+### Initialization Logic
 
-- Sets default ID
-- Preserves existing version
-- Updates publish state
-- Saves configuration
-
-This ensures consistent default client behavior across clusters.
-
----
-
-## 6. NATS Stream Provisioning
-
-**Component:** `NatsStreamConfigurationInitializer`
-
-Creates predefined NATS streams at startup.
-
-### Configured Streams
-
-| Stream | Subject Pattern |
-|--------|-----------------|
-| TOOL_INSTALLATION | machine.*.tool-installation |
-| CLIENT_UPDATE | machine.*.client-update |
-| TOOL_UPDATE | machine.*.tool.*.update |
-| TOOL_CONNECTIONS | machine.*.tool-connection |
-| INSTALLED_AGENTS | machine.*.installed-agent |
-
-```mermaid
-flowchart LR
-    Mgmt["Management Service Core"] --> SaveStream["NatsStreamManagementService.save"]
-    SaveStream --> ToolInstall["TOOL_INSTALLATION"]
-    SaveStream --> ClientUpdate["CLIENT_UPDATE"]
-    SaveStream --> ToolUpdate["TOOL_UPDATE"]
-    SaveStream --> ToolConn["TOOL_CONNECTIONS"]
-    SaveStream --> Installed["INSTALLED_AGENTS"]
-```
-
-These streams power event-driven updates consumed by the Stream Service Core and Client Service Core.
-
----
-
-## 7. Release Version Processing
-
-**Component:** `ReleaseVersionController`
-
-**Endpoint Base:** `/v1/cluster-registrations`
-
-Receives release version updates and delegates to `ReleaseVersionService`.
-
-Additionally, the module includes:
-
-- `OpenFrameClientVersionUpdateService`
-
-This service is intended to:
-
-- Process new release versions
-- Publish update notifications via `OpenFrameClientUpdatePublisher`
-- Trigger client-side updates across machines
-
----
-
-# Startup Lifecycle Overview
-
-The Management Service Core performs multiple initialization stages.
+1. Load configuration from classpath JSON
+2. Assign default ID
+3. Check if configuration already exists
+4. If exists:
+   - Preserve version
+   - Preserve publish state
+   - Update remaining fields
+5. If not exists:
+   - Save as new configuration
 
 ```mermaid
 flowchart TD
-    Start["Application Start"] --> Secret["Initialize Agent Secret"]
-    Secret --> AgentInit["Initialize Tool Agents"]
-    AgentInit --> ClientConfig["Initialize Client Config"]
-    ClientConfig --> NatsInit["Provision NATS Streams"]
-    NatsInit --> Ready["Application Ready"]
-    Ready --> DebeziumInit["Initialize Debezium Connectors"]
+    Start["Application Startup"] --> Load["Load JSON Configuration"]
+    Load --> Check["Check Existing Configuration"]
+    Check -->|"Exists"| Preserve["Preserve Version & Publish State"]
+    Check -->|"Not Exists"| SaveNew["Save New Configuration"]
+    Preserve --> SaveUpdated["Save Updated Configuration"]
+    SaveNew --> End["Initialization Complete"]
+    SaveUpdated --> End
 ```
 
-This layered initialization ensures:
+### Design Goals
 
-- Secure agent onboarding
-- Stable configuration
-- Messaging readiness
-- CDC synchronization
-
----
-
-# Interactions with Other Modules
-
-The Management Service Core coordinates with multiple platform modules:
-
-- [API Service Core](../api-service-core/api-service-core.md)
-- [Client Service Core](../client-service-core/client-service-core.md)
-- [Stream Service Core](../stream-service-core/stream-service-core.md)
-- [Data Access Mongo](../data-access-mongo/data-access-mongo.md)
-- [Data Access Kafka](../data-access-kafka/data-access-kafka.md)
-- [Gateway Service Core](../gateway-service-core/gateway-service-core.md)
-- [Authorization Server Core](../authorization-server-core/authorization-server-core.md)
-
-### Integration Patterns
-
-| Integration | Purpose |
-|-------------|----------|
-| Mongo Repositories | Persist tools and configurations |
-| Kafka / NATS | Publish update events |
-| Debezium | CDC connector management |
-| Client Service | Agent lifecycle updates |
-| Stream Service | Event enrichment and propagation |
+- Idempotent initialization
+- Version preservation to prevent unintended downgrade
+- Controlled update of publish state
 
 ---
 
-# Design Characteristics
+# 4. NATS Stream Initialization
 
-## Idempotent Initialization
+## NatsStreamConfigurationInitializer
 
-Most initializers:
+This component ensures required NATS JetStream streams are created at startup.
 
-- Check existing state
-- Preserve release versions
-- Avoid overwriting production data
+### Trigger
 
-## Event-Driven Architecture
+Executed automatically via `@PostConstruct`.
 
-Updates are propagated using publishers such as:
+### Streams Created
 
-- `ToolAgentUpdateUpdatePublisher`
+- `TOOL_INSTALLATION`
+- `CLIENT_UPDATE`
+- `TOOL_UPDATE`
+- `TOOL_CONNECTIONS`
+- `INSTALLED_AGENTS`
+
+Each stream:
+
+- Uses `StorageType.File`
+- Uses `RetentionPolicy.Limits`
+- Is subject-based (e.g., `machine.*.tool-installation`)
+
+```mermaid
+flowchart TD
+    Startup["Application Startup"] --> Iterate["Iterate Stream Configurations"]
+    Iterate --> SaveStream["NatsStreamManagementService.save"]
+    SaveStream --> NatsServer["Persist to NATS JetStream"]
+```
+
+### Messaging Domains
+
+- Tool lifecycle events
+- Client update propagation
+- Installed agent tracking
+- Tool connection events
+
+This initializer guarantees required infrastructure is present before runtime operations begin.
+
+---
+
+# 5. Client Version Update Service
+
+## OpenFrameClientVersionUpdateService
+
+This component is responsible for processing client release version updates.
+
+### Dependency
+
 - `OpenFrameClientUpdatePublisher`
 
-## Extensibility via Hooks
+Although the `process` method is currently empty, it is intended to:
 
-`IntegratedToolPostSaveHook` allows custom behavior without modifying core logic.
+- Accept a new release version
+- Publish update events to connected clients
+- Potentially trigger NATS or Kafka events
+
+```mermaid
+flowchart LR
+    VersionService["OpenFrameClientVersionUpdateService"] --> Publisher["OpenFrameClientUpdatePublisher"]
+    Publisher --> Stream["Client Update Stream"]
+```
+
+### Intended Use Case
+
+- Rolling out new agent versions
+- Broadcasting upgrade notifications
+- Coordinating tenant-aware client updates
+
+---
+
+# End-to-End Tool Lifecycle Flow
+
+The following diagram summarizes the interaction between controller, persistence, CDC, and streaming layers.
+
+```mermaid
+flowchart TD
+    Admin["Admin User"] --> API["IntegratedToolController"]
+    API --> Service["IntegratedToolService"]
+    Service --> Mongo["MongoDB"]
+
+    Service --> DebeziumStep["DebeziumService"]
+    DebeziumStep --> Kafka["Kafka Cluster"]
+
+    API --> Hooks["Post Save Hooks"]
+    Hooks --> Nats["NATS JetStream"]
+```
+
+---
+
+# Design Principles
+
+### 1. Idempotent Initialization
+
+Both configuration and stream initializers are safe to run multiple times.
+
+### 2. Extensibility via Hooks
+
+Post-save hooks allow new behaviors without modifying controller logic.
+
+### 3. Infrastructure as Code
+
+Streams and configurations are declared in code and provisioned automatically.
+
+### 4. Clear Separation of Concerns
+
+- Controller: HTTP interaction
+- Service: Domain logic
+- Initializers: Infrastructure bootstrap
+- Hooks: Extensibility layer
 
 ---
 
 # Summary
 
-The **Management Service Core** is the operational backbone of OpenFrame’s control plane.
+The **Management Service Core** module provides the operational backbone for:
 
-It ensures:
+- Tool configuration lifecycle
+- Debezium-based change data capture integration
+- NATS stream provisioning
+- Client configuration bootstrapping
+- Future client version orchestration
 
-- Tools are configured and activated
-- Debezium connectors remain synchronized
-- Agents receive version updates
-- Client configurations are initialized safely
-- Messaging infrastructure is provisioned
-- Release versions propagate across the cluster
-
-By combining idempotent initialization, event-driven updates, and CDC orchestration, this module guarantees stable and consistent cluster management across deployments.
+It ensures that both infrastructure and configuration layers are correctly initialized and maintained, enabling stable, extensible, and tenant-aware management operations across the OpenFrame platform.

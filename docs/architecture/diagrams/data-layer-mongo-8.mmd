@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client Request"] --> Service
+    Service --> Repository
+    Repository --> Query
+    Query -->|"_id < cursor"| MongoDB
+    MongoDB --> Results

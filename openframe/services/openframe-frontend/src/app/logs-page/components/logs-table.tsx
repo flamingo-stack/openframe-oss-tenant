@@ -15,7 +15,6 @@ import {
 import { useApiParams, useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils'
 import { transformOrganizationFilters } from '@lib/filter-utils'
-import { ExternalLink } from "lucide-react"
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { useLogFilters, useLogs } from '../hooks/use-logs'
 import { LogInfoModal } from './log-info-modal'
@@ -436,7 +435,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       error={error}
       background="default"
       padding="none"
-      className="pt-6"
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       currentMobileFilters={tableFilters}
