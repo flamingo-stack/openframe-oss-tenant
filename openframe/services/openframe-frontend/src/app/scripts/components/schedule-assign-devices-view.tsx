@@ -4,6 +4,7 @@ import {
   DetailPageContainer,
   DeviceType,
   getDeviceTypeIcon,
+  getOSPlatformId,
   LoadError,
   NotFoundError,
 } from '@flamingo-stack/openframe-frontend-core'
@@ -22,7 +23,6 @@ import type { Device, DevicesGraphQLNode, GraphQLResponse } from '../../devices/
 import { createDeviceListItem } from '../../devices/utils/device-transform'
 import { useScriptSchedule, useScriptScheduleAgents } from '../hooks/use-script-schedule'
 import { useReplaceScheduleAgents } from '../hooks/use-script-schedule-mutations'
-import { mapPlatformsToOsTypes } from '../utils/script-utils'
 import { formatScheduleDate, getRepeatLabel } from '../types/script-schedule.types'
 import { ScheduleAssignDevicesLoader } from './schedule-assign-devices-loader'
 import { ScheduleInfoBarFromData } from './schedule-info-bar'
@@ -31,7 +31,7 @@ interface ScheduleAssignDevicesViewProps {
   scheduleId: string
 }
 
-async function fetchAllDevices(osTypes: string[]): Promise<Device[]> {
+async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
   const filter = {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
     // ...(osTypes.length > 0 && { osTypes }),
@@ -66,7 +66,14 @@ async function fetchAllDevices(osTypes: string[]): Promise<Device[]> {
   }
 
   const nodes = graphqlResponse.data.devices.edges.map((e) => e.node)
-  return nodes.map(createDeviceListItem)
+  const devices = nodes.map(createDeviceListItem)
+
+  if (platforms.length === 0) return devices
+
+  return devices.filter((d) => {
+    const platformId = getOSPlatformId(d.osType)
+    return platformId ? platforms.includes(platformId) : false
+  })
 }
 
 type SubTab = 'available' | 'selected'
@@ -132,14 +139,11 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true)
   }
 
-  const supportedOsTypes = useMemo(
-    () => mapPlatformsToOsTypes(schedule?.task_supported_platforms ?? []),
-    [schedule?.task_supported_platforms],
-  )
+  const supportedPlatforms = schedule?.task_supported_platforms ?? []
 
   const devicesQuery = useQuery({
-    queryKey: ['schedule-assign-devices', scheduleId, supportedOsTypes],
-    queryFn: () => fetchAllDevices(supportedOsTypes),
+    queryKey: ['schedule-assign-devices', scheduleId, supportedPlatforms],
+    queryFn: () => fetchDevicesByPlatforms(supportedPlatforms),
     enabled: Boolean(scheduleId) && Boolean(schedule),
   })
 
@@ -200,7 +204,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         description: `${selectedAgentIds.size} device(s) assigned to schedule.`,
         variant: 'success',
       })
-      // router.push(`/scripts/schedules/${scheduleId}?tab=devices`)
+      router.push(`/scripts/schedules/${scheduleId}?tab=schedule-devices`)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save devices'
       toast({ title: 'Save failed', description: msg, variant: 'destructive' })
@@ -237,11 +241,11 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
                 {device.type && getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, { className: 'w-5 h-5 text-ods-text-secondary' })}
               </div>
-              <div className="flex flex-col">
-                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
+              <div className="flex flex-col truncate">
+                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
                   {device.displayName || device.hostname}
                 </span>
-                <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">
+                <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
               </div>
@@ -252,7 +256,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       {
         key: 'details',
         label: 'DETAILS',
-        hideAt: 'md' as const,
+        width: 'w-[100px] md:flex-1',
         renderCell: (device) => {
           return (
             <OSTypeBadge osType={device.osType} />
@@ -382,16 +386,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
-              endAdornment={
-                searchTerm ? (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="text-ods-text-secondary hover:text-ods-text-primary"
-                  >
-                    &times;
-                  </button>
-                ) : undefined
-              }
             />
           </div>
         </div>

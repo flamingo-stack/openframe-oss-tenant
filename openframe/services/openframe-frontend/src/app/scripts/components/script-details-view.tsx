@@ -17,12 +17,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId)
 
   const handleBack = () => {
-    const hasAppHistory = window.history.length > 1
-    if (hasAppHistory) {
-      router.back()
-    } else {
-      router.push('/scripts')
-    }
+    router.push('/scripts')
   }
 
   const handleEditScript = () => {
@@ -67,7 +62,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     <DetailPageContainer
       title={scriptDetails.name}
       backButton={{
-        label: 'Back',
+        label: 'Back to Scripts',
         onClick: handleBack
       }}
       actions={actions}

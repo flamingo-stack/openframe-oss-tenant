@@ -115,6 +115,7 @@ export function useReplaceScheduleAgents() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: scriptScheduleQueryKeys.agents(variables.id) })
       queryClient.invalidateQueries({ queryKey: scriptScheduleQueryKeys.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: scriptScheduleQueryKeys.all })
     },
   })
 }

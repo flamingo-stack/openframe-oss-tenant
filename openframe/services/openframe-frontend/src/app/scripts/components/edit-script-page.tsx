@@ -90,8 +90,6 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       actions={actions}
       padding='none'
     >
-      <ScriptFormFields form={form} />
-
       {testRuns.length > 0 && (
         <div>
           <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Test Output</Label>
@@ -102,6 +100,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           </div>
         </div>
       )}
+      <ScriptFormFields form={form} />
 
       <TestScriptModal
         isOpen={isTestModalOpen}

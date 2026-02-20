@@ -1,9 +1,7 @@
 'use client'
 
 import { LoadError, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core'
-import { PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { Button, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useRouter } from 'next/navigation'
+import { Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useMemo } from 'react'
 import { useScriptScheduleAgents } from '../hooks/use-script-schedule'
 import type { ScriptScheduleAgent, ScriptScheduleDetail } from '../types/script-schedule.types'
@@ -14,7 +12,6 @@ interface ScheduleDevicesTabProps {
 }
 
 export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabProps) {
-  const router = useRouter()
   const { agents, isLoading, error } = useScriptScheduleAgents(scheduleId)
 
   const columns: TableColumn<ScriptScheduleAgent>[] = useMemo(
@@ -48,21 +45,8 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
     return <LoadError message={`Failed to load assigned devices: ${error}`} />
   }
 
-  const handleEditDevices = () => {
-    router.push(`/scripts/schedules/${scheduleId}/devices`)
-  }
-
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          onClick={handleEditDevices}
-          leftIcon={<PenEditIcon size={18} />}
-        >
-          Edit Devices
-        </Button>
-      </div>
       <Table
         data={agents}
         columns={columns}

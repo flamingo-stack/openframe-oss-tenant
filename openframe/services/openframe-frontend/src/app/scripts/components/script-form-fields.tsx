@@ -8,7 +8,7 @@ import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types'
 import { Controller, type UseFormReturn } from 'react-hook-form'
 
 import { CATEGORIES, type EditScriptFormData } from '../types/edit-script.types'
-import { DISABLED_PLATFORMS, getAvailableOsPlatforms } from '../utils/script-utils'
+import { DISABLED_PLATFORMS, AVAILABLE_PLATFORMS } from '../utils/script-utils'
 import { ScriptEditor } from './script-editor'
 
 interface ScriptFormFieldsProps {
@@ -19,7 +19,6 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
   const { control, watch, setValue, getValues } = form
   const watchedSupportedPlatforms = watch('supported_platforms')
   const isMdUp = useMdUp()
-  const platforms = getAvailableOsPlatforms()
 
   return (
     <>
@@ -27,7 +26,7 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
       <div>
         <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Supported Platform</Label>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {platforms.map(p => {
+          {AVAILABLE_PLATFORMS.map(p => {
             const isDisabled = DISABLED_PLATFORMS.includes(p.id)
             return (
               <SelectButton
