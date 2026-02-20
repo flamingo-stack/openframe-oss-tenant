@@ -34,7 +34,9 @@ interface ScheduleAssignDevicesViewProps {
 async function fetchAllDevices(osTypes: string[]): Promise<Device[]> {
   const filter = {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
-    ...(osTypes.length > 0 && { osTypes }),
+    // ...(osTypes.length > 0 && { osTypes }),
+    // TODO: remove after macos/linux support
+    osTypes: ['WINDOWS']
   }
 
   const response = await apiClient.post<
