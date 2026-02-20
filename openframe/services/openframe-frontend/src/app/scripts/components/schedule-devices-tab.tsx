@@ -1,6 +1,6 @@
 'use client'
 
-import { LoadError, StatusTag, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core'
+import { LoadError, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core'
 import { PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { Button, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useRouter } from 'next/navigation'
@@ -33,31 +33,11 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
         ),
       },
       {
-        key: 'organization',
-        label: 'ORGANIZATION',
-        hideAt: 'sm' as const,
-        renderCell: (agent) => (
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
-              {agent.client_name}
-            </span>
-          </div>
-        ),
-      },
-      {
         key: 'details',
         label: 'DETAILS',
         hideAt: 'md' as const,
         renderCell: (agent) => (
            <OSTypeBadge osType={agent.plat} />
-        ),
-      },
-      {
-        key: 'status',
-        label: 'STATUS',
-        width: 'w-[100px]',
-        renderCell: () => (
-          <StatusTag label="ACTIVE" variant="success" className="px-2 py-1 text-[12px]" />
         ),
       },
     ],

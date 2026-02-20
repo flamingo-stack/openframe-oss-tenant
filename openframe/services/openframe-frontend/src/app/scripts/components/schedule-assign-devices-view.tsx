@@ -245,30 +245,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         },
       },
       {
-        key: 'organization',
-        label: 'ORGANIZATION',
-        hideAt: 'sm' as const,
-        renderCell: (device) => {
-          const fullImageUrl = getFullImageUrl(device.organizationImageUrl)
-          return (
-            <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon
-                  imageUrl={fullImageUrl}
-                  organizationName={device.organization || 'Organization'}
-                  size="sm"
-                />
-              )}
-              <div className="flex flex-col min-w-0">
-                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                  {device.organization || '—'}
-                </span>
-              </div>
-            </div>
-          )
-        },
-      },
-      {
         key: 'details',
         label: 'DETAILS',
         hideAt: 'md' as const,
@@ -276,15 +252,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           return (
             <OSTypeBadge osType={device.osType} />
           )
-        },
-      },
-      {
-        key: 'status',
-        label: 'STATUS',
-        width: 'w-[100px]',
-        renderCell: (device) => {
-          const statusConfig = getDeviceStatusConfig(device.status)
-          return <StatusTag label={statusConfig.label} variant={statusConfig.variant} className="px-2 py-1 text-[12px]" />
         },
       },
     ],

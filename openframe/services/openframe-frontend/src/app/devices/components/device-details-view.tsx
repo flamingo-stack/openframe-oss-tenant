@@ -211,7 +211,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
               <StatusTag
                 label={statusConfig.label}
                 variant={statusConfig.variant}
-                className="px-2 py-1 text-[12px] leading-[16px]"
               />
             )
           })()}
