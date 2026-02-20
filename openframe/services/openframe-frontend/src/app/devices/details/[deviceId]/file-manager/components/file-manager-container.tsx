@@ -2,12 +2,11 @@
 
 import React, { useRef, useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileManager } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { FileManager, FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 import { Progress, Button } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { ChevronLeft } from 'lucide-react'
 import { useMeshFileManager } from '../../../../hooks/use-mesh-file-manager'
 import type { FileItem, FileAction } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
-import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 import { NewFolderModal } from './new-folder-modal'
 import { RenameItemModal } from './rename-item-modal'
 import { DeleteConfirmationModal } from './delete-confirmation-modal'
@@ -27,7 +26,7 @@ export function FileManagerContainer({
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   const {
     files,
     currentPath,
@@ -120,7 +119,7 @@ export function FileManagerContainer({
       const pathParts = file.path.split(/[/\\]/)
       pathParts.pop()
       const directoryPath = pathParts.join(file.path.includes('\\') ? '\\' : '/')
-      
+
       navigateToPath(directoryPath || '/')
       setSearchQuery('')
     }
@@ -170,22 +169,22 @@ export function FileManagerContainer({
         event.preventDefault()
         copyToClipboard()
       }
-      
+
       if ((event.ctrlKey || event.metaKey) && event.key === 'x' && selectedFiles.length > 0) {
         event.preventDefault()
         cutFiles()
       }
-      
+
       if ((event.ctrlKey || event.metaKey) && event.key === 'v' && clipboard) {
         event.preventDefault()
         pasteFiles()
       }
-      
+
       if (event.key === 'Delete' && selectedFiles.length > 0) {
         event.preventDefault()
         handleFileAction('delete')
       }
-      
+
       if (event.key === 'Escape') {
         if (selectedFiles.length > 0) {
           selectAll(false)
@@ -252,27 +251,15 @@ export function FileManagerContainer({
   }, [deleteContext, deleteItems, closeDeleteModal])
 
   return (
-    <div className="flex flex-col h-full gap-4">
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleBackToDevice}
-          leftIcon={<ChevronLeft className="h-4 w-4" />}
-          className="self-start text-ods-text-secondary hover:text-ods-text-primary"
-        >
-          Back to Device
-        </Button>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold text-ods-text-primary">
-            File Manager
-          </h1>
-          <span className="text-sm text-ods-text-secondary">
-            {hostname || `Device ${deviceId}`}
-          </span>
-        </div>
-      </div>
-
+    <DetailPageContainer
+      title={'File Manager'}
+      subtitle={hostname || `Device ${deviceId}`}
+      backButton={{
+        label: 'Back to Device',
+        onClick: handleBackToDevice
+      }}
+      padding='none'
+    >
       <div className="flex flex-col flex-1 min-h-0">
         {showFileManagerSkeleton ? (
           <FileManagerSkeleton />
@@ -284,9 +271,9 @@ export function FileManagerContainer({
             deviceName={hostname || `Device ${deviceId}`}
             searchQuery={searchQuery}
             loading={
-              loading || 
-              connectionState === 'connecting' || 
-              connectionState === 'connected_to_server' || 
+              loading ||
+              connectionState === 'connecting' ||
+              connectionState === 'connected_to_server' ||
               (isSearching && files.length === 0) ||
               (searchQuery && files.length === 0 && isSearchActive()) ||
               (connectionState === 'connected_end_to_end' && currentPath === '' && files.length === 0 && !searchQuery)
@@ -309,7 +296,7 @@ export function FileManagerContainer({
             className="flex-1 min-h-0"
           />
         )}
-        
+
         {/* Hidden file input for uploads */}
         <input
           ref={fileInputRef}
@@ -319,7 +306,7 @@ export function FileManagerContainer({
           multiple={false}
         />
       </div>
-      
+
       {/* Upload progress */}
       {uploadProgress && (
         <div className="fixed bottom-4 right-4 bg-ods-card border border-ods-border rounded-lg p-4 shadow-lg w-80">
@@ -342,7 +329,7 @@ export function FileManagerContainer({
           </div>
         </div>
       )}
-      
+
       {/* Download progress */}
       {downloadProgress && (
         <div className="fixed bottom-4 right-4 bg-ods-card border border-ods-border rounded-lg p-4 shadow-lg w-80">
@@ -365,7 +352,7 @@ export function FileManagerContainer({
           </div>
         </div>
       )}
-      
+
       {/* Clipboard status indicator */}
       {clipboard && (
         <div className="fixed bottom-4 right-4 bg-ods-card border border-ods-border rounded-lg p-3 shadow-lg">
@@ -409,6 +396,6 @@ export function FileManagerContainer({
         onClose={closeDeleteModal}
         onConfirm={handleDeleteConfirmed}
       />
-    </div>
+    </DetailPageContainer>
   )
 }

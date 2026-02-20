@@ -1,12 +1,13 @@
 'use client'
 
-import React, { use, useEffect } from 'react'
+import { use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppLayout } from '@app/components/app-layout'
 import { FileManagerContainer } from '@/src/app/devices/details/[deviceId]/file-manager/components/file-manager-container'
 import { useDeviceDetails } from '@app/devices/hooks/use-device-details'
 import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core'
 import { getMeshCentralAgentId } from '@app/devices/utils/device-action-utils'
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
 import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager'
 import { ChevronLeft } from 'lucide-react'
 
@@ -20,23 +21,23 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
   const router = useRouter()
   const resolvedParams = use(params)
   const deviceId = resolvedParams.deviceId
-  
+
   const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails()
-  
+
   useEffect(() => {
     if (deviceId) {
       fetchDeviceById(deviceId)
     }
   }, [deviceId, fetchDeviceById])
-  
+
   const meshcentralAgentId = deviceDetails ? getMeshCentralAgentId(deviceDetails) : undefined
-  
+
   if (isLoading) {
     return (
       <FileManagerPageSkeleton onBack={() => router.push(`/devices/details/${deviceId}`)} />
     )
   }
-  
+
   if (error) {
     return (
       <AppLayout>
@@ -54,7 +55,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
       </AppLayout>
     )
   }
-  
+
   if (!meshcentralAgentId) {
     return (
       <AppLayout>
@@ -72,7 +73,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
       </AppLayout>
     )
   }
-  
+
   const hostname = deviceDetails?.hostname || deviceDetails?.displayName
 
   return (
@@ -93,24 +94,16 @@ interface FileManagerPageSkeletonProps {
 function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
     <AppLayout>
-      <div className="flex flex-col h-full gap-2">
-        <div className="flex flex-col gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            leftIcon={<ChevronLeft className="h-4 w-4" />}
-            className="self-start text-ods-text-secondary hover:text-ods-text-primary"
-          >
-            Back to Device
-          </Button>
-          <div className="flex flex-col gap-1">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-40" />
-          </div>
-        </div>
+      <DetailPageContainer
+        title={'File Manager'}
+        backButton={{
+          label: 'Back to Device',
+          onClick: onBack
+        }}
+        padding='none'
+      >
         <FileManagerSkeleton />
-      </div>
+      </DetailPageContainer>
     </AppLayout>
   )
 }
