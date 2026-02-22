@@ -1,6 +1,0 @@
-flowchart TD
-    AS["AuthorizationServerConfig"] --> JWK["JWKSource per Tenant"]
-    AS --> Encoder["JwtEncoder"]
-    AS --> Decoder["JwtDecoder"]
-    AS --> Customizer["OAuth2TokenCustomizer"]
-    AS --> UDS["UserDetailsService"]

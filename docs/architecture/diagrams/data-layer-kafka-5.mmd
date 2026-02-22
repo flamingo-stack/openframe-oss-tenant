@@ -1,6 +1,0 @@
-flowchart LR
-    TenantA["Tenant A"] -->|"bootstrap servers A"| KafkaA["Kafka Cluster A"]
-    TenantB["Tenant B"] -->|"bootstrap servers B"| KafkaB["Kafka Cluster B"]
-
-    KafkaA --> TopicsA["Tenant A Topics"]
-    KafkaB --> TopicsB["Tenant B Topics"]

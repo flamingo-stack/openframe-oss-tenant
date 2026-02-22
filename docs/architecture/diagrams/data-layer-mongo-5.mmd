@@ -1,5 +1,0 @@
-flowchart TD
-    Controller["Service Layer"] --> CustomRepo
-    CustomRepo --> QueryBuilder["Criteria Builder"]
-    QueryBuilder --> MongoTemplate
-    MongoTemplate --> MongoDB[("MongoDB")]

@@ -1,9 +1,0 @@
-flowchart LR
-    Tools["Integrated Tools"] --> Kafka["Kafka Topics"]
-
-    Kafka --> Stream["Stream Service Core"]
-    Stream --> Enrichment["Event & Activity Enrichment"]
-    Enrichment --> Unified["Unified Events Topic"]
-
-    Unified --> API["API Service"]
-    Unified --> ExternalAPI["External API"]

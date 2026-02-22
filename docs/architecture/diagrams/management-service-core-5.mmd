@@ -1,8 +1,0 @@
-flowchart TD
-    Start["Application Startup"] --> Load["Load JSON Configuration"]
-    Load --> Check["Check Existing Configuration"]
-    Check -->|"Exists"| Preserve["Preserve Version & Publish State"]
-    Check -->|"Not Exists"| SaveNew["Save New Configuration"]
-    Preserve --> SaveUpdated["Save Updated Configuration"]
-    SaveNew --> End["Initialization Complete"]
-    SaveUpdated --> End

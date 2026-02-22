@@ -1,6 +1,0 @@
-flowchart TD
-    Request["Machine IDs"] --> Service["InstalledAgentService"]
-    Service --> Repo["InstalledAgentRepository"]
-    Repo --> All["All InstalledAgents"]
-    All --> Grouped["Grouped By Machine ID"]
-    Grouped --> Result["List<List<InstalledAgent>>"]
