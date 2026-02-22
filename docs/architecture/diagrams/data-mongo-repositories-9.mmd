@@ -1,0 +1,7 @@
+flowchart TD
+    Input["cursor, limit, sortField, sortDirection"] --> ValidateCursor
+    ValidateCursor --> AddIdCriteria["_id < or > cursor"]
+    AddIdCriteria --> ValidateSortField
+    ValidateSortField --> ApplySort
+    ApplySort --> Limit
+    Limit --> ExecuteQuery

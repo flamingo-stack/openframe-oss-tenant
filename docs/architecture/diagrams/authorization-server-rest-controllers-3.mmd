@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant PasswordController as "Password Reset Controller"
+    participant ResetService as "Password Reset Service"
+
+    User->>PasswordController: POST /password-reset/request
+    PasswordController->>ResetService: createResetToken(email)
+
+    User->>PasswordController: POST /password-reset/confirm
+    PasswordController->>ResetService: resetPassword(token, newPassword)

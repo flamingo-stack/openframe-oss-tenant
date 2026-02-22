@@ -1,0 +1,7 @@
+flowchart LR
+    DebeziumMessage --> ExtractAgentId["Extract agentId"]
+    ExtractAgentId --> RedisLookup["MachineIdCacheService"]
+    RedisLookup --> MachineInfo["CachedMachineInfo"]
+    RedisLookup --> OrgInfo["CachedOrganizationInfo"]
+    MachineInfo --> EnrichedData["IntegratedToolEnrichedData"]
+    OrgInfo --> EnrichedData

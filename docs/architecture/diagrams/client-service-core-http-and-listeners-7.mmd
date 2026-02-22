@@ -1,0 +1,6 @@
+flowchart TD
+    NATS["NATS / JetStream"] --> Conn["Connection"]
+    Conn --> Heartbeat["MachineHeartbeatListener"]
+    Conn --> Installed["InstalledAgentListener"]
+    Conn --> ToolConn["ToolConnectionListener"]
+    Conn --> ClientConn["ClientConnectionListener"]

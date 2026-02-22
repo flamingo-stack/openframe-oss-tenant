@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Request Tool Connections"] --> CheckEmpty{{"machineIds empty?"}}
+    CheckEmpty -->|"Yes"| ReturnEmpty["Return empty list"]
+    CheckEmpty -->|"No"| QueryRepo["findByMachineIdIn"]
+    QueryRepo --> Group["Group by machineId"]
+    Group --> MapBack["Map results to input order"]
+    MapBack --> End["Return List<List<ToolConnection>>"]

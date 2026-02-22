@@ -1,0 +1,4 @@
+flowchart TD
+    Event["ClientConnectionEvent"] --> Listener["ClientConnectionListener"]
+    Listener --> StatusService["MachineStatusService"]
+    StatusService --> Update["Online / Offline State"]

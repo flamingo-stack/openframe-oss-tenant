@@ -1,0 +1,20 @@
+flowchart TD
+    Browser["User Browser"] --> AuthEndpoint["/oauth2/authorization/{provider}"]
+    AuthEndpoint --> Provider["External IdP<br/>Google / Microsoft"]
+    Provider --> Callback["/login/oauth2/code/{provider}"]
+
+    Callback --> AuthSuccessHandler["AuthSuccessHandler"]
+
+    AuthSuccessHandler --> InviteHandler["InviteSsoHandler"]
+    AuthSuccessHandler --> TenantRegHandler["TenantRegSsoHandler"]
+
+    InviteHandler --> InvitationService["InvitationRegistrationService"]
+    TenantRegHandler --> TenantRegistrationService["TenantRegistrationService"]
+
+    InvitationService --> MongoDB[("MongoDB")]
+    TenantRegistrationService --> MongoDB
+
+    AuthSuccessHandler --> UserService["UserService"]
+    UserService --> MongoDB
+
+    AuthSuccessHandler --> Redirects["Redirects Utility"]

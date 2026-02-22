@@ -1,0 +1,14 @@
+flowchart LR
+    KafkaInbound["Kafka Inbound Topics<br/>MeshCentral / Tactical / Fleet"] --> JsonListener["JsonKafkaListener"]
+    JsonListener --> JsonProcessor["GenericJsonMessageProcessor"]
+    JsonProcessor --> EnrichmentService["IntegratedToolDataEnrichmentService"]
+    EnrichmentService --> HandlerRouter["DebeziumMessageHandler"]
+
+    HandlerRouter --> CassandraHandler["DebeziumCassandraMessageHandler"]
+    HandlerRouter --> KafkaHandler["DebeziumKafkaMessageHandler"]
+
+    CassandraHandler --> CassandraDB[("Cassandra")]
+    KafkaHandler --> KafkaOutbound["Kafka Outbound Topic<br/>Integrated Tool Events"]
+
+    FleetActivities["Fleet Activity Topics"] --> ActivityStream["ActivityEnrichmentService"]
+    ActivityStream --> EnrichedFleet["Enriched Fleet Events Topic"]

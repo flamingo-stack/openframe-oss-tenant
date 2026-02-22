@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Application Startup"] --> Normalize["Keyspace Normalization"]
+    Normalize --> Ensure["Ensure Keyspace Exists"]
+    Ensure --> Session["Create CqlSessionFactoryBean"]
+    Session --> Repos["Enable Cassandra Repositories"]

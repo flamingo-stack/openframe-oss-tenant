@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant AuthServer
+    participant IdP as "OIDC Provider"
+
+    User->>Frontend: Start SSO tenant registration
+    Frontend->>AuthServer: POST init request
+    AuthServer->>User: Set COOKIE_SSO_REG
+    User->>IdP: Authenticate
+    IdP->>AuthServer: OIDC callback
+    AuthServer->>AuthServer: TenantRegSsoHandler.handle()
+    AuthServer->>AuthServer: TenantRegistrationService.registerTenant()
+    AuthServer->>User: Redirect to tenant context

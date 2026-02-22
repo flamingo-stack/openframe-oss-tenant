@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Delete Organization"] --> Controller["OrganizationController"]
+    Controller --> Service["OrganizationCommandService"]
+    Service -->|"Has Machines?"| Check["Business Rule"]
+    Check -->|"Yes"| Conflict["409 Conflict"]
+    Check -->|"No"| Delete["Delete Organization"]

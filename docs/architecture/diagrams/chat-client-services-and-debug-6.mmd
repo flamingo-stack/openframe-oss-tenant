@@ -1,0 +1,5 @@
+flowchart LR
+    UI["UI Layer"] --> Service["Client Service"]
+    Service --> Ensure["ensureTokenReady()"]
+    Ensure --> Token["Token Service"]
+    Service --> API["Backend Endpoint"]

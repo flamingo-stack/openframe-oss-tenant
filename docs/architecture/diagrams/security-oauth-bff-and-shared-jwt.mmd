@@ -1,0 +1,12 @@
+flowchart LR
+    Browser["Browser Client"] -->|"/oauth/login"| BFF["OAuth BFF Controller"]
+    BFF -->|"Authorize Redirect"| AuthServer["Authorization Server"]
+    AuthServer -->|"code + state"| BFF
+    BFF -->|"Token Exchange"| AuthServer
+    AuthServer -->|"access + refresh tokens"| BFF
+    BFF -->|"HTTP Only Cookies"| Browser
+
+    Browser -->|"API Request + Cookie"| Gateway["API Gateway"]
+    Gateway -->|"Validate JWT"| JwtDecoder["JwtDecoder"]
+
+    JwtEncoder["JwtEncoder"] -->|"Signs Tokens"| JwtDecoder

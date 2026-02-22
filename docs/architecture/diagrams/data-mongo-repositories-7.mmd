@@ -1,0 +1,5 @@
+flowchart LR
+    ToolFilter["ToolQueryFilter"] --> BuildToolQuery
+    BuildToolQuery --> SortValidation
+    SortValidation --> MongoFind
+    MongoFind --> Result["List<IntegratedTool>"]

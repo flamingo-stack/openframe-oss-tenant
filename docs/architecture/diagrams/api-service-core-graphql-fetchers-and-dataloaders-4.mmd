@@ -1,0 +1,6 @@
+flowchart TD
+    EventsQuery["events()"] --> MapFilter["GraphQLEventMapper"]
+    MapFilter --> EventService["EventService.queryEvents"]
+    EventService --> QueryResult["GenericQueryResult<Event>"]
+    QueryResult --> MapConn["toEventConnection()"]
+    MapConn --> Conn["GenericConnection"]

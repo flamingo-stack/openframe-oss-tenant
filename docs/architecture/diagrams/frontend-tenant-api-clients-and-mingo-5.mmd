@@ -1,0 +1,5 @@
+flowchart TD
+    Segments["Incoming Segments"] --> Accumulator["Message Segment Accumulator"]
+    Accumulator --> Processed["Processed Segments"]
+    Processed --> UpdateStore["Update Streaming Message"]
+    UpdateStore --> SyncMessages["Sync Dialog Messages"]

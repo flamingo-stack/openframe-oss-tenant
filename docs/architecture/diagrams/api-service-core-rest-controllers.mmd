@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Frontend / Gateway / Client Agents"] -->|"HTTP REST"| Controllers["Api Service Core Rest Controllers"]
+
+    Controllers -->|"Delegates"| AppServices["Application Services"]
+    AppServices -->|"Uses"| DomainServices["Domain Services"]
+    DomainServices -->|"Persists / Queries"| DataLayer["Mongo / Pinot / Kafka"]
+
+    Controllers -->|"Reads Principal"| Security["Security & Auth Context"]

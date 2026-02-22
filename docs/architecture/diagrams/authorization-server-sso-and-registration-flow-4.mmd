@@ -1,0 +1,7 @@
+flowchart TD
+    Auth["Authentication Success"] --> ExtractEmail["Resolve Email from OIDC Claims"]
+    ExtractEmail --> CheckProvider{"Google or Microsoft?"}
+    CheckProvider -->|No| Continue["Continue"]
+    CheckProvider -->|Yes| ClaimCheck{"email_verified false?"}
+    ClaimCheck -->|Yes| Continue
+    ClaimCheck -->|No| MarkVerified["Mark Email Verified"]

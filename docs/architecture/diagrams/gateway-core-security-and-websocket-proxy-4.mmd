@@ -1,0 +1,9 @@
+flowchart TD
+    JwtToken["Incoming JWT"] --> ExtractIssuer["Extract iss claim"]
+    ExtractIssuer --> CacheCheck["Issuer Managers Cache"]
+
+    CacheCheck -->|"Hit"| AuthManager["ReactiveAuthenticationManager"]
+    CacheCheck -->|"Miss"| BuildManager["Create Decoder & Validator"]
+
+    BuildManager --> AuthManager
+    AuthManager --> Validate["Signature + Claims Validation"]

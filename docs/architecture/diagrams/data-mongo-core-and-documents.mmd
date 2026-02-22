@@ -1,0 +1,8 @@
+flowchart TD
+    ApiService["API Service"] --> Repositories["Mongo Repositories"]
+    AuthServer["Authorization Server"] --> Repositories
+    ExternalApi["External API Service"] --> Repositories
+
+    Repositories --> Documents["Domain Documents"]
+    Documents --> MongoConfig["Mongo Configuration"]
+    MongoConfig --> MongoDB[("MongoDB")]

@@ -1,0 +1,11 @@
+flowchart LR
+    Agent["Device Agent"] -->|"HTTP /register"| ClientService["Client Service Core Http And Listeners"]
+    Agent -->|"Heartbeat Events"| NATS["NATS / JetStream"]
+    NATS -->|"machine.* events"| ClientService
+
+    ClientService -->|"Update Status"| DomainServices["MachineStatusService"]
+    ClientService -->|"Persist Installed Agent"| InstalledService["InstalledAgentService"]
+    ClientService -->|"Persist Tool Connection"| ToolService["ToolConnectionService"]
+
+    ClientService --> DataLayer["Mongo Repositories"]
+    ClientService --> ToolIntegrations["Fleet MDM / MeshCentral"]

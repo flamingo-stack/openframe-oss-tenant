@@ -1,0 +1,11 @@
+flowchart TD
+    Start["Incoming HTTP Request"] --> OriginCheck["OriginSanitizerFilter"]
+    OriginCheck --> AddAuth["AddAuthorizationHeaderFilter"]
+    AddAuth --> ApiKeyCheck{{"Path starts with /external-api/?"}}
+
+    ApiKeyCheck -->|"Yes"| ApiKeyFilter["ApiKeyAuthenticationFilter"]
+    ApiKeyCheck -->|"No"| JwtAuth["JWT Resource Server"]
+
+    ApiKeyFilter --> JwtAuth
+    JwtAuth --> Authz["Role & Scope Authorization"]
+    Authz --> Forward["Forward to Downstream Service"]

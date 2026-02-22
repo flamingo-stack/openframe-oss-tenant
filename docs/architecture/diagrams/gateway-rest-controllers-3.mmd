@@ -1,0 +1,7 @@
+flowchart TD
+    ClientReq["Client Request /tools/{toolId}/..."] --> Controller
+    Controller["IntegrationController"] --> ProxyService["RestProxyService.proxyApiRequest"]
+    ProxyService --> ExternalAPI["External Tool API"]
+    ExternalAPI --> ProxyService
+    ProxyService --> Controller
+    Controller --> Response["ResponseEntity<String>"]

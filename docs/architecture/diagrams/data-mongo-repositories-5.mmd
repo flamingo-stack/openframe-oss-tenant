@@ -1,0 +1,8 @@
+flowchart TD
+    DeviceFilter["MachineQueryFilter"] --> CriteriaBuilder["Criteria.where(...)"]
+    Search["Search String"] --> RegexCriteria["regex search"]
+    CriteriaBuilder --> Query
+    RegexCriteria --> Query
+    Query --> CursorLogic["ObjectId < cursor"]
+    CursorLogic --> SortLogic["Validated Sort"]
+    SortLogic --> MongoExec["mongoTemplate.find(Machine)"]

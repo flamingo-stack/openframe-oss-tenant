@@ -1,0 +1,6 @@
+flowchart TD
+    Query["devices() GraphQL Query"] --> MapFilter["GraphQLDeviceMapper"]
+    MapFilter --> DeviceService["DeviceService.queryDevices"]
+    DeviceService --> Result["CountedGenericQueryResult<Machine>"]
+    Result --> MapConnection["toDeviceConnection()"]
+    MapConnection --> Response["CountedGenericConnection"]
