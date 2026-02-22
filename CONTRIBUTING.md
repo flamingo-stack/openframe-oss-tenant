@@ -1,801 +1,508 @@
-# Contributing to OpenFrame OSS Tenant
+# Contributing to OpenFrame
 
-Welcome to the OpenFrame open-source community! This guide outlines the standards, processes, and best practices for contributing to the OpenFrame backend platform. We appreciate your interest in making OpenFrame better for MSPs and developers worldwide.
+Welcome to OpenFrame! We appreciate your interest in contributing to our AI-powered MSP platform. This guide outlines our development workflow, code standards, and contribution process.
 
-## Table of Contents
+## 🌟 Getting Started
 
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Code Style and Standards](#code-style-and-standards)
-- [Architecture Guidelines](#architecture-guidelines)
-- [Security Guidelines](#security-guidelines)
-- [Testing Standards](#testing-standards)
-- [Documentation Guidelines](#documentation-guidelines)
-- [Review Process](#review-process)
-- [Community Guidelines](#community-guidelines)
-- [Getting Help](#getting-help)
+### Prerequisites
 
-## Code of Conduct
-
-OpenFrame follows a community-driven approach with respect and collaboration at its core:
-
-- **Be Respectful**: Treat all community members with respect and kindness
-- **Be Collaborative**: Work together to build the best possible MSP platform
-- **Be Patient**: Remember that everyone is learning and contributing in their own way
-- **Be Inclusive**: Welcome newcomers and help them get started
-
-## Getting Started
-
-### Before You Contribute
-
-1. **Join the Community**: Connect with us on the OpenMSP Slack workspace
-   - **Join**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
-   - **Website**: https://www.openmsp.ai/
-
-2. **Read the Documentation**: Familiarize yourself with:
-   - [Architecture Overview](./docs/README.md#reference)
-   - [Development Environment Setup](./docs/README.md#development)
-   - [Getting Started Guide](./docs/README.md#getting-started)
-
-3. **Set Up Your Development Environment**: Follow the [Quick Start](./README.md#quick-start) guide to get OpenFrame running locally
+Before contributing, ensure you have:
+- **Java 21** or higher
+- **Node.js 18+** and npm
+- **Docker** and Docker Compose
+- **Git** for version control
+- **Maven 3.8+** for building Java services
 
 ### Development Environment Setup
 
-Ensure you have the required tools installed:
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+   cd openframe-oss-tenant
+   ```
 
-```bash
-# Verify Java 21
-java -version
+2. **Start development dependencies:**
+   ```bash
+   ./scripts/dev-start-dependencies.sh
+   ```
 
-# Verify Maven
-mvn -version
+3. **Initialize configuration:**
+   ```bash
+   ./clients/openframe-client/scripts/setup_dev_init_config.sh
+   ```
 
-# Verify Docker
-docker --version && docker-compose --version
+4. **Build and start services:**
+   ```bash
+   mvn clean install -DskipTests
+   ./scripts/start-all-services.sh
+   ```
 
-# Verify Node.js (for frontend components)
-node --version && npm --version
+For detailed setup instructions, see our [Development Environment Guide](./docs/development/setup/local-development.md).
+
+## 📝 Code Style and Conventions
+
+### Java/Spring Boot Guidelines
+
+**General Principles:**
+- Follow [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
+- Use **meaningful variable and method names**
+- Write **self-documenting code** with clear intent
+- Apply **SOLID principles** for object-oriented design
+- Maintain **consistent indentation** (4 spaces, no tabs)
+
+**Naming Conventions:**
+```java
+// Class names: PascalCase
+public class DeviceManagementService {
+    
+    // Constants: UPPER_SNAKE_CASE
+    private static final String DEFAULT_DEVICE_STATUS = "UNKNOWN";
+    private static final int MAX_RETRY_ATTEMPTS = 3;
+    
+    // Variables and methods: camelCase
+    private final OrganizationRepository organizationRepository;
+    private String tenantId;
+    
+    public DeviceResponse updateDeviceStatus(String deviceId, DeviceStatus status) {
+        // Implementation
+    }
+    
+    // Boolean methods: use is/has/can prefix
+    public boolean isDeviceOnline(String deviceId) {
+        return checkDeviceStatus(deviceId) == DeviceStatus.ONLINE;
+    }
+}
 ```
 
-**Required versions:**
-- Java 21 (OpenJDK or Oracle JDK)
-- Maven 3.6+
-- Docker & Docker Compose
-- Node.js 18+
-
-## Development Workflow
-
-### Git Workflow
-
-OpenFrame follows the **GitFlow** branching model with some modifications:
-
-```mermaid
-gitgraph
-    commit id: "Initial"
-    branch develop
-    checkout develop
-    commit id: "Dev work"
+**Spring Boot Specific Conventions:**
+```java
+// Controllers: Use @RestController and clear mappings
+@RestController
+@RequestMapping("/api/devices")
+@Validated
+public class DeviceController {
     
-    branch feature/new-api
-    checkout feature/new-api
-    commit id: "API changes"
-    commit id: "Add tests"
-    commit id: "Documentation"
+    // Constructor injection (preferred over field injection)
+    private final DeviceService deviceService;
+    private final DeviceMapper deviceMapper;
     
-    checkout develop
-    merge feature/new-api
-    commit id: "Merge feature"
+    public DeviceController(DeviceService deviceService, DeviceMapper deviceMapper) {
+        this.deviceService = deviceService;
+        this.deviceMapper = deviceMapper;
+    }
     
-    checkout main
-    merge develop
-    commit id: "Release v1.0.1"
+    // HTTP methods: clear, RESTful endpoints
+    @GetMapping("/{deviceId}")
+    public ResponseEntity<DeviceResponse> getDevice(
+            @PathVariable String deviceId,
+            @AuthenticationPrincipal AuthPrincipal principal) {
+        
+        DeviceResponse device = deviceService.getDevice(deviceId, principal.getTenantId());
+        return ResponseEntity.ok(device);
+    }
+}
 ```
+
+**Multi-Tenant Security Requirements:**
+- All database queries MUST include tenant ID scoping
+- JWT token validation MUST include tenant context
+- Add tests to prevent cross-tenant data access
+- Use `@AuthenticationPrincipal AuthPrincipal principal` for tenant context
+
+### Frontend Code Style (TypeScript/React)
+
+**TypeScript Conventions:**
+```typescript
+// Interfaces: PascalCase with descriptive names
+interface DeviceStatusProps {
+  deviceId: string;
+  status: 'online' | 'offline' | 'maintenance';
+  onStatusChange?: (deviceId: string, newStatus: string) => void;
+}
+
+// Components: PascalCase, functional components preferred
+export const DeviceStatus: React.FC<DeviceStatusProps> = ({ 
+  deviceId, 
+  status, 
+  onStatusChange 
+}) => {
+  // Use descriptive variable names
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  // Clear function names describing what they do
+  const handleStatusChange = useCallback(async (newStatus: string) => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    
+    try {
+      await deviceApi.updateStatus(deviceId, newStatus);
+      onStatusChange?.(deviceId, newStatus);
+    } catch (error) {
+      setErrorMessage('Failed to update device status');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [deviceId, onStatusChange]);
+  
+  return (
+    <div className={`device-status status-${status}`}>
+      {/* Component JSX */}
+    </div>
+  );
+};
+```
+
+## 🔄 Development Workflow
 
 ### Branch Naming Convention
 
-Use descriptive branch names that follow this pattern:
+**Format**: `<type>/<short-description>`
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| **Feature** | `feature/description-of-feature` | `feature/device-status-alerts` |
-| **Bug Fix** | `fix/description-of-fix` | `fix/authentication-timeout` |
-| **Hotfix** | `hotfix/critical-issue` | `hotfix/security-vulnerability` |
-| **Documentation** | `docs/description` | `docs/api-documentation-update` |
-| **Refactor** | `refactor/component-name` | `refactor/user-service-cleanup` |
+**Branch Types:**
+- `feature/` - New features or enhancements
+- `bugfix/` - Bug fixes  
+- `hotfix/` - Critical production fixes
+- `refactor/` - Code refactoring without functional changes
+- `docs/` - Documentation updates
+- `test/` - Test additions or improvements
+- `chore/` - Maintenance tasks, dependency updates
 
-### Commit Message Format
-
-Follow the **Conventional Commits** specification:
-
+**Examples:**
 ```text
-<type>[optional scope]: <description>
+✅ Good branch names:
+feature/multi-tenant-device-filtering
+bugfix/jwt-token-validation-error
+hotfix/memory-leak-in-stream-service
+refactor/organization-service-cleanup
+docs/api-documentation-update
+test/integration-test-for-auth-flow
 
-[optional body]
-
-[optional footer(s)]
-```
-
-#### Commit Types
-
-| Type | Description |
-|------|-------------|
-| **feat** | New feature for the user |
-| **fix** | Bug fix for the user |
-| **docs** | Documentation changes |
-| **style** | Code style changes (formatting, etc.) |
-| **refactor** | Code refactoring without feature changes |
-| **perf** | Performance improvements |
-| **test** | Adding or updating tests |
-| **chore** | Build process or auxiliary tool changes |
-
-#### Examples
-
-```bash
-# Good commit messages
-feat(api): add device status filtering endpoint
-fix(auth): resolve JWT token expiration handling
-docs(readme): update installation instructions
-test(device): add unit tests for device service
-refactor(organization): simplify organization creation flow
-
-# Bad commit messages
-update code
-fix bug
-changes
-wip
+❌ Poor branch names:
+fix
+update
+john-work
+temp-branch
+bug
 ```
 
 ### Pull Request Process
 
-#### 1. Create Your Branch
-
+**1. Before Creating a PR:**
 ```bash
-# Start from the latest develop branch
-git checkout develop
-git pull origin develop
-
-# Create your feature branch
-git checkout -b feature/your-feature-name
-```
-
-#### 2. Make Your Changes
-
-Follow the coding standards outlined in this document:
-
-```bash
-# Make your changes
-# Write tests for your changes
-# Update documentation as needed
-
-# Stage your changes
-git add .
-
-# Commit with a good message
-git commit -m "feat(api): add device filtering functionality
-
-- Add new DeviceFilter class for query criteria
-- Implement filtering in DeviceService
-- Add corresponding REST endpoint
-- Include unit and integration tests"
-```
-
-#### 3. Keep Your Branch Updated
-
-```bash
-# Regularly sync with develop
-git checkout develop
-git pull origin develop
+# Ensure your branch is up to date
+git checkout main
+git pull origin main
 git checkout feature/your-feature-name
-git rebase develop
+git rebase main
+
+# Run tests locally
+mvn clean verify
+npm test  # For frontend changes
+
+# Run code quality checks
+mvn spotbugs:check
+npm run lint
 ```
 
-#### 4. Run Tests and Quality Checks
+**2. PR Title and Description Format:**
 
-```bash
-# Run the full test suite
-mvn clean test
+**Title Format**: `[TYPE] Brief description of changes`
 
-# Run integration tests
-mvn verify
+**Types:**
+- `[FEATURE]` - New functionality
+- `[BUGFIX]` - Bug resolution
+- `[HOTFIX]` - Critical production fix
+- `[REFACTOR]` - Code improvement without functional changes
+- `[DOCS]` - Documentation updates
+- `[TEST]` - Test-related changes
 
-# Build all services
-mvn clean install -DskipTests
+**Example PR Description:**
+```markdown
+## [FEATURE] Multi-tenant device filtering
 
-# Verify services start correctly
-docker-compose -f docker/docker-compose.dev.yml up -d
+### Summary
+Implements tenant-aware device filtering to ensure users only see devices belonging to their organization and tenant.
+
+### Changes Made
+- Added tenant context validation in DeviceController
+- Implemented tenant-scoped queries in DeviceRepository
+- Updated DeviceService to enforce tenant isolation
+- Added integration tests for multi-tenant scenarios
+
+### Testing
+- [x] Unit tests pass (`mvn test`)
+- [x] Integration tests pass (`mvn verify`)
+- [x] Manual testing with multiple tenants
+- [x] Security tests for cross-tenant access prevention
+
+### Security Considerations
+- All database queries are scoped by tenant ID
+- JWT token validation includes tenant context
+- Added tests to prevent cross-tenant data access
+
+### Breaking Changes
+- None
+
+### Related Issues
+Closes #123
 ```
 
-#### 5. Create Pull Request
+### Commit Message Format
 
-1. **Push Your Branch**:
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
-2. **Open Pull Request on GitHub**:
-   - Use a descriptive title following conventional commit format
-   - Fill out the pull request template completely
-   - Link related issues using GitHub keywords
+**Format**: `<type>[optional scope]: <description>`
 
-## Code Style and Standards
+**Types:**
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation changes
+- `style:` - Code style changes (formatting, no logic changes)
+- `refactor:` - Code refactoring
+- `test:` - Adding or updating tests
+- `chore:` - Maintenance tasks
+- `perf:` - Performance improvements
+- `ci:` - CI/CD changes
+- `build:` - Build system changes
 
-### Java Code Style
+**Examples:**
+```text
+✅ Good commit messages:
+feat(auth): implement multi-tenant JWT validation
+fix(devices): resolve null pointer in device status update
+docs(api): add authentication examples to API documentation
+refactor(services): extract common tenant validation logic
+test(integration): add tests for cross-tenant data isolation
+chore(deps): upgrade Spring Boot to 3.3.0
 
-OpenFrame follows **Google Java Style Guide** with modifications for Spring Boot:
+❌ Poor commit messages:
+Update code
+Fix bug
+Changes
+WIP
+Done
+```
 
-#### Class Structure
+## 🧪 Testing Requirements
+
+### Unit Testing
+- **Coverage Target**: Minimum 70% code coverage
+- **Framework**: JUnit 5 for Java, Jest for TypeScript
+- **Naming**: Test methods should clearly describe what is being tested
+- **Isolation**: Tests must be independent and able to run in any order
 
 ```java
-@Service
-@Slf4j
-public class OrganizationService {
+@Test
+void shouldFilterDevicesByTenantId() {
+    // Given
+    String tenantId = "tenant-123";
+    List<Device> tenantDevices = Arrays.asList(
+        createDevice("device-1", tenantId),
+        createDevice("device-2", tenantId)
+    );
     
-    // Constants first
-    private static final int MAX_RETRY_ATTEMPTS = 3;
+    when(deviceRepository.findByTenantId(tenantId)).thenReturn(tenantDevices);
     
-    // Dependencies via constructor injection
-    private final OrganizationRepository organizationRepository;
-    private final EventPublisher eventPublisher;
+    // When
+    List<DeviceResponse> result = deviceService.getDevicesByTenant(tenantId);
     
-    // Constructor
-    public OrganizationService(OrganizationRepository organizationRepository,
-                              EventPublisher eventPublisher) {
-        this.organizationRepository = requireNonNull(organizationRepository);
-        this.eventPublisher = requireNonNull(eventPublisher);
-    }
-    
-    // Public methods
-    public Organization createOrganization(CreateOrganizationRequest request) {
-        validateRequest(request);
-        
-        Organization organization = Organization.builder()
-            .name(request.getName())
-            .domain(request.getDomain())
-            .status(OrganizationStatus.ACTIVE)
-            .createdAt(Instant.now())
-            .build();
-        
-        Organization saved = organizationRepository.save(organization);
-        eventPublisher.publishEvent(new OrganizationCreatedEvent(saved));
-        
-        return saved;
-    }
-    
-    // Private methods last
-    private void validateRequest(CreateOrganizationRequest request) {
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
-            throw new IllegalArgumentException("Organization name is required");
-        }
-    }
+    // Then
+    assertThat(result).hasSize(2);
+    assertThat(result.get(0).getTenantId()).isEqualTo(tenantId);
 }
 ```
 
-#### Naming Conventions
+### Integration Testing
+- **Database**: Use TestContainers for real database testing
+- **Security**: Test cross-tenant data isolation
+- **APIs**: Test complete request/response cycles
+- **Multi-tenancy**: Verify tenant isolation at all layers
 
-| Element | Convention | Example |
-|---------|------------|---------|
-| **Classes** | PascalCase | `OrganizationService`, `DeviceController` |
-| **Methods** | camelCase | `createOrganization`, `findByDomain` |
-| **Variables** | camelCase | `organizationId`, `deviceStatus` |
-| **Constants** | UPPER_SNAKE_CASE | `MAX_RETRY_ATTEMPTS`, `DEFAULT_TIMEOUT` |
-| **Packages** | lowercase.separated | `com.openframe.api.service` |
+### End-to-End Testing
+- **Critical Paths**: User registration, authentication, device management
+- **AI Features**: Mingo AI conversations and tool execution
+- **Real-time Features**: WebSocket connections and streaming
 
-## Architecture Guidelines
+## 🔒 Security Guidelines
 
-### Service Layer Design
-
-OpenFrame follows a layered microservices architecture. Each service should have clear responsibilities:
-
-#### Service Boundaries
+### Multi-Tenant Security (CRITICAL)
+Every contribution MUST maintain strict tenant isolation:
 
 ```java
-// ✅ Good - Single responsibility
-@Service
-public class DeviceService {
-    public Device createDevice(CreateDeviceRequest request) { }
-    public Device updateDevice(String id, UpdateDeviceRequest request) { }
-    public void deleteDevice(String id) { }
-    public Optional<Device> findById(String id) { }
-    public List<Device> findByOrganization(String orgId) { }
+// ✅ CORRECT: Always include tenant scoping
+@GetMapping("/devices")
+public ResponseEntity<List<DeviceResponse>> getDevices(
+        @AuthenticationPrincipal AuthPrincipal principal) {
+    List<DeviceResponse> devices = deviceService.getDevicesByTenant(principal.getTenantId());
+    return ResponseEntity.ok(devices);
 }
 
-// ❌ Bad - Mixed responsibilities  
-@Service
-public class DeviceAndOrganizationService {
-    public Device createDevice(CreateDeviceRequest request) { }
-    public Organization createOrganization(CreateOrganizationRequest request) { }
-    public void sendEmailNotification(String email) { }
+// ❌ WRONG: Missing tenant context
+@GetMapping("/devices") 
+public ResponseEntity<List<DeviceResponse>> getDevices() {
+    List<DeviceResponse> devices = deviceService.getAllDevices(); // Security violation!
+    return ResponseEntity.ok(devices);
 }
 ```
-
-### Multi-Tenant Design Patterns
-
-All services must support multi-tenancy:
-
-```java
-@RestController
-@RequestMapping("/api/v1/devices")
-@PreAuthorize("hasRole('DEVICE_VIEWER')")
-public class DeviceController {
-    
-    @GetMapping
-    public ResponseEntity<List<DeviceResponse>> getDevices(
-            @AuthenticationPrincipal AuthPrincipal principal,
-            @RequestParam(required = false) String organizationId) {
-        
-        // Always enforce tenant isolation
-        List<Device> devices = deviceService.findByTenant(
-            principal.getTenantId(), 
-            organizationId,
-            principal.getAccessibleOrganizations()
-        );
-        
-        List<DeviceResponse> response = devices.stream()
-            .map(DeviceMapper::toResponse)
-            .collect(toList());
-        
-        return ResponseEntity.ok(response);
-    }
-}
-```
-
-### Event-Driven Patterns
-
-Use events for cross-service communication:
-
-```java
-@Component
-public class OrganizationEventHandler {
-    
-    @EventListener
-    @Async
-    public void handleOrganizationCreated(OrganizationCreatedEvent event) {
-        log.info("Organization created: {}", event.getOrganization().getDomain());
-        
-        // Initialize organization resources
-        organizationInitializer.initializeResources(event.getOrganization());
-        
-        // Publish to Kafka for other services
-        kafkaTemplate.send("organization.created", event);
-    }
-}
-```
-
-## Security Guidelines
 
 ### Input Validation
+- Validate all user inputs at the controller level
+- Use Spring Validation annotations (`@Valid`, `@NotNull`, etc.)
+- Sanitize inputs to prevent XSS and injection attacks
+- Return structured error responses without sensitive data
 
-All user inputs must be validated:
+### Authentication & Authorization
+- JWT tokens MUST include tenant claims
+- API endpoints MUST validate authentication
+- Business logic MUST enforce authorization rules
+- External APIs MUST use proper API key validation
 
-```java
-@Data
-@Builder
-public class CreateOrganizationRequest {
-    
-    @NotBlank(message = "Organization name is required")
-    @Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
-    @Pattern(regexp = "^[\\p{L}\\p{N}\\s\\-_.]+$", 
-             message = "Name contains invalid characters")
-    private String name;
-    
-    @NotBlank(message = "Domain is required")
-    @Size(min = 3, max = 50, message = "Domain must be between 3 and 50 characters")
-    @Pattern(regexp = "^[a-z0-9][a-z0-9\\-]*[a-z0-9]$", 
-             message = "Invalid domain format")
-    private String domain;
-    
-    @NotBlank(message = "Admin email is required")
-    @Email(message = "Invalid email format")
-    private String adminEmail;
-}
+## 🚀 Deployment and Release Process
+
+### Feature Development Process
+
+**1. Planning and Design:**
+- Create or review GitHub issue
+- Discuss architectural approach with team
+- Design API contracts (if applicable)
+- Consider security and multi-tenancy implications
+- Plan testing strategy
+
+**2. Development:**
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Develop incrementally with frequent commits
+git add -A
+git commit -m "feat(component): implement core functionality"
+
+# Push regularly for backup and collaboration
+git push origin feature/your-feature-name
 ```
 
-### Authentication and Authorization
+**3. Testing and Quality Assurance:**
+```bash
+# Run comprehensive test suite
+mvn clean verify
+npm run test:all
 
-Use Spring Security consistently:
+# Check code quality
+mvn spotbugs:check
+npm run lint
+npm run type-check
 
-```java
-@RestController
-@RequestMapping("/api/v1/organizations")
-@PreAuthorize("hasRole('ORGANIZATION_VIEWER')")
-public class OrganizationController {
-    
-    @PostMapping
-    @PreAuthorize("hasRole('ORGANIZATION_ADMIN')")
-    public ResponseEntity<OrganizationResponse> createOrganization(
-            @Valid @RequestBody CreateOrganizationRequest request,
-            @AuthenticationPrincipal AuthPrincipal principal) {
-        
-        // Verify tenant access
-        if (!principal.canCreateOrganization()) {
-            throw new AccessDeniedException("Cannot create organization");
-        }
-        
-        Organization created = organizationService.createOrganization(request, principal);
-        return ResponseEntity.status(HttpStatus.CREATED)
-            .body(OrganizationMapper.toResponse(created));
-    }
-}
+# Manual testing
+./scripts/start-all-services.sh
+# Test feature functionality manually
 ```
-
-## Testing Standards
-
-### Test Class Organization
-
-Use nested test classes for better organization:
-
-```java
-@ExtendWith(MockitoExtension.class)
-@DisplayName("OrganizationService Tests")
-class OrganizationServiceTest {
-    
-    @Mock
-    private OrganizationRepository organizationRepository;
-    
-    @Mock  
-    private EventPublisher eventPublisher;
-    
-    @InjectMocks
-    private OrganizationService organizationService;
-    
-    @Nested
-    @DisplayName("createOrganization")
-    class CreateOrganization {
-        
-        @Test
-        @DisplayName("Should create organization with valid data")
-        void shouldCreateOrganization_WithValidData() {
-            // Arrange
-            CreateOrganizationRequest request = createValidRequest();
-            Organization expectedOrg = createExpectedOrganization();
-            
-            when(organizationRepository.save(any(Organization.class)))
-                .thenReturn(expectedOrg);
-            
-            // Act
-            Organization result = organizationService.createOrganization(request);
-            
-            // Assert
-            assertThat(result).isNotNull();
-            assertThat(result.getName()).isEqualTo("Test Corp");
-            verify(eventPublisher).publishEvent(any(OrganizationCreatedEvent.class));
-        }
-        
-        @Test
-        @DisplayName("Should throw exception when domain exists")
-        void shouldThrowException_WhenDomainExists() {
-            // Arrange
-            CreateOrganizationRequest request = createValidRequest();
-            when(organizationRepository.existsByDomain(request.getDomain()))
-                .thenReturn(true);
-            
-            // Act & Assert
-            assertThatThrownBy(() -> organizationService.createOrganization(request))
-                .isInstanceOf(DuplicateDomainException.class)
-                .hasMessage("Domain already exists: " + request.getDomain());
-        }
-    }
-    
-    // Helper methods
-    private CreateOrganizationRequest createValidRequest() {
-        return CreateOrganizationRequest.builder()
-            .name("Test Corp")
-            .domain("test-corp")
-            .adminEmail("admin@test.com")
-            .build();
-    }
-}
-```
-
-### Test Naming Convention
-
-Test methods should follow this pattern:
-```text
-should[ExpectedBehavior]_When[StateUnderTest]_Given[Conditions]
-```
-
-Examples:
-```java
-shouldCreateOrganization_WhenValidDataProvided()
-shouldThrowException_WhenDuplicateDomainProvided()
-shouldReturnEmptyList_WhenNoOrganizationsExist_GivenTenantId()
-```
-
-### Integration Tests
-
-For testing complete workflows:
-
-```java
-@SpringBootTest
-@Testcontainers
-@TestMethodOrder(OrderAnnotation.class)
-class OrganizationIntegrationTest {
-    
-    @Container
-    static MongoDBContainer mongodb = new MongoDBContainer("mongo:5.0")
-            .withExposedPorts(27017);
-    
-    @Autowired
-    private TestRestTemplate restTemplate;
-    
-    @Test
-    @Order(1)
-    @DisplayName("Should create organization via REST API")
-    void shouldCreateOrganization_ViaRestApi() {
-        // Arrange
-        CreateOrganizationRequest request = CreateOrganizationRequest.builder()
-            .name("Integration Test Corp")
-            .domain("integration-test")
-            .adminEmail("admin@integration.test")
-            .build();
-        
-        // Act
-        ResponseEntity<OrganizationResponse> response = restTemplate
-            .postForEntity("/api/v1/organizations", request, OrganizationResponse.class);
-        
-        // Assert
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getName()).isEqualTo("Integration Test Corp");
-    }
-}
-```
-
-## Documentation Guidelines
-
-### JavaDoc Requirements
-
-All public APIs must have comprehensive JavaDoc:
-
-```java
-/**
- * Service for managing organizations within the OpenFrame platform.
- * 
- * <p>This service provides operations for creating, updating, and querying
- * organizations while ensuring proper tenant isolation and validation.
- * 
- * @author OpenFrame Team
- * @since 1.0.0
- */
-@Service
-public class OrganizationService {
-    
-    /**
-     * Creates a new organization with the provided details.
-     * 
-     * <p>The organization domain must be unique across all tenants. After
-     * successful creation, an {@link OrganizationCreatedEvent} is published
-     * to notify other system components.
-     * 
-     * @param request the organization creation request containing name, domain, 
-     *                and other details
-     * @return the newly created organization with generated ID and timestamps
-     * @throws IllegalArgumentException if request validation fails
-     * @throws DuplicateDomainException if the domain already exists
-     * @throws DataAccessException if database operation fails
-     * 
-     * @see CreateOrganizationRequest
-     * @see OrganizationCreatedEvent
-     */
-    public Organization createOrganization(CreateOrganizationRequest request) {
-        // Implementation
-    }
-}
-```
-
-### API Documentation
-
-Document REST endpoints and GraphQL schemas:
-
-```java
-@RestController
-@RequestMapping("/api/v1/organizations")
-@Tag(name = "Organizations", description = "Organization management operations")
-public class OrganizationController {
-    
-    @Operation(
-        summary = "Create a new organization",
-        description = "Creates a new organization in the current tenant with the provided details"
-    )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Organization created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "409", description = "Domain already exists")
-    })
-    @PostMapping
-    public ResponseEntity<OrganizationResponse> createOrganization(
-            @Parameter(description = "Organization creation request")
-            @Valid @RequestBody CreateOrganizationRequest request) {
-        // Implementation
-    }
-}
-```
-
-## Review Process
 
 ### Code Review Checklist
 
-#### Functionality
-- [ ] Code accomplishes what it's supposed to do
-- [ ] Edge cases are handled appropriately
-- [ ] Error handling is comprehensive
-- [ ] Business logic is correct
+**Security Review:**
+- [ ] All user inputs are validated and sanitized
+- [ ] Database queries include tenant ID scoping
+- [ ] No hardcoded secrets or credentials
+- [ ] Authentication is required for sensitive operations
+- [ ] Authorization checks are in place
+- [ ] Error messages don't leak sensitive information
 
-#### Code Quality
-- [ ] Code is readable and well-structured
-- [ ] Methods are reasonably sized (< 30 lines ideally)
-- [ ] Variable and method names are descriptive
-- [ ] No code duplication
+**Architecture Review:**
+- [ ] Follows established patterns and conventions
+- [ ] Proper separation of concerns
+- [ ] Uses dependency injection correctly
+- [ ] Transaction boundaries are appropriate
+- [ ] Error handling is consistent and comprehensive
+- [ ] Performance considerations are addressed
 
-#### Testing
-- [ ] Unit tests cover the new functionality
-- [ ] Integration tests are included where appropriate
-- [ ] Tests are well-structured and understandable
-- [ ] Test coverage meets project standards (80%+)
+**Testing Review:**
+- [ ] Unit tests cover new functionality
+- [ ] Integration tests cover service interactions
+- [ ] Edge cases and error scenarios are tested
+- [ ] Test coverage meets minimum requirements (70%+)
 
-#### Security
-- [ ] Input validation is properly implemented
-- [ ] Authentication/authorization is correctly applied
-- [ ] No sensitive data is logged or exposed
-- [ ] Multi-tenant isolation is maintained
-
-#### Performance
-- [ ] No obvious performance issues
-- [ ] Database queries are efficient
-- [ ] Caching is used where appropriate
-- [ ] Resource usage is reasonable
-
-### Pull Request Template
-
-When creating a pull request, use this template:
-
-```markdown
-## Description
-Brief description of the changes in this PR.
-
-## Type of Change
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-
-## How Has This Been Tested?
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Manual testing
-
-## Testing Steps
-1. Step 1
-2. Step 2
-3. Step 3
-
-## Checklist
-- [ ] My code follows the style guidelines of this project
-- [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings
-- [ ] I have added tests that prove my fix is effective or that my feature works
-- [ ] New and existing unit tests pass locally with my changes
-
-## Related Issues
-Closes #123
-Related to #456
-
-## Additional Notes
-Any additional information that reviewers should know.
-```
-
-## Community Guidelines
+## 💬 Community and Communication
 
 ### Communication Channels
 
-**Primary Communication:**
-- **OpenMSP Slack**: https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA
+**OpenMSP Slack Community:**
+- **General Discussion**: `#general`
+- **Development Help**: `#dev-help`
+- **Code Reviews**: `#code-review`
+- **Architecture Discussions**: `#architecture`
 
-**Channel Guidelines:**
-- `#general` - General OpenFrame discussions
-- `#development` - Technical development discussions  
-- `#help` - Support and troubleshooting
-- `#announcements` - Project announcements
-- `#contributions` - Contribution coordination
+**Join the community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
 
-### Issue Management
+### Getting Help
 
-**All project management happens in Slack - we don't use GitHub Issues.**
+**For New Contributors:**
+- Join the `#new-contributors` channel in Slack
+- Read through existing code and documentation
+- Start with "good first issue" labeled tickets
+- Ask questions in appropriate channels
+- Pair with experienced contributors when possible
 
-**Reporting Bugs:**
-1. Post in `#help` channel first to confirm it's a bug
-2. Include reproduction steps, expected vs actual behavior
-3. Provide environment details (OS, Java version, etc.)
-4. Include relevant logs or error messages
+**Issue Reporting:**
+Use our GitHub issue templates for:
+- Bug reports with reproduction steps
+- Feature requests with use cases
+- Documentation improvements
+- Performance issues
 
-**Feature Requests:**
-1. Discuss in `#general` or `#development` channel
-2. Explain the use case and business value
-3. Be open to alternative solutions
-4. Consider implementation complexity
+## 🎯 Contributing Areas
 
-### Recognition
+### High-Priority Contribution Areas
 
-We appreciate all contributions to OpenFrame:
+**AI/ML Features:**
+- Mingo AI conversation improvements
+- Intelligent alert processing
+- Automated incident response workflows
+- Tool execution optimization
 
-**Types of Contributions We Value:**
-- Code contributions (features, bug fixes, refactoring)
-- Documentation improvements  
-- Testing and quality assurance
-- Community support and mentoring
-- Bug reports and feature suggestions
-- Performance optimizations
-- Security improvements
+**Multi-Tenancy & Security:**
+- Enhanced tenant isolation
+- OAuth provider integrations
+- API security improvements
+- Cross-tenant testing
 
-## Getting Help
+**Integration & Tools:**
+- New MSP tool integrations
+- Data pipeline enhancements
+- Real-time streaming improvements
+- Agent communication protocols
 
-### Documentation Resources
+**Developer Experience:**
+- Documentation improvements
+- Testing framework enhancements
+- Development tooling
+- CI/CD pipeline optimization
 
-- **[Architecture Overview](./docs/README.md#reference)** - System design and patterns
-- **[Getting Started Guide](./docs/README.md#getting-started)** - Setup and quick start
-- **[Development Guides](./docs/README.md#development)** - Development workflows
+### Good First Issues
 
-### Community Support
+Look for issues labeled:
+- `good-first-issue` - Beginner-friendly tasks
+- `documentation` - Documentation improvements
+- `testing` - Test coverage improvements
+- `frontend` - UI/UX enhancements
 
-**Need Help?**
-- Ask questions in the `#help` Slack channel
-- Search previous discussions before asking
-- Provide context and details with your questions
-- Be patient - community members respond when available
+## 📚 Resources and Documentation
 
-**Want to Help Others?**
-- Monitor the `#help` channel
-- Share your knowledge and experiences
-- Help review and test contributions
-- Mentor new contributors
+**Essential Reading:**
+- [Architecture Overview](./docs/architecture/README.md) - Understand the system design
+- [Security Best Practices](./docs/security/README.md) - Learn security requirements
+- [Testing Guide](./docs/testing/README.md) - Comprehensive testing practices
 
-### Troubleshooting Common Issues
+**External Resources:**
+- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
+- [React Documentation](https://reactjs.org/docs)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
 
-**Build Issues:**
-```bash
-# Clean and rebuild
-mvn clean install -U
+## 📄 License
 
-# Check Java version
-java -version
-
-# Verify environment variables
-echo `$JAVA_HOME`
-```
-
-**Test Failures:**
-```bash
-# Run specific test class
-mvn test -Dtest="OrganizationServiceTest"
-
-# Run with debug output
-mvn test -X
-
-# Check Docker containers
-docker ps
-```
-
-**Development Environment:**
-```bash
-# Restart services
-docker-compose -f docker/docker-compose.dev.yml restart
-
-# Check service logs
-docker-compose -f docker/docker-compose.dev.yml logs -f mongodb
-
-# Verify port availability
-lsof -i :8080
-```
-
-## Thank You!
-
-Thank you for contributing to OpenFrame! Your efforts help build a better MSP platform for everyone. Together, we're creating the future of open-source IT management.
-
-**Questions about contributing?** Join us in the OpenMSP Slack community - we're here to help! 🚀
+By contributing to OpenFrame, you agree that your contributions will be licensed under the Flamingo AI Unified License v1.0.
 
 ---
 
-**Remember**: Every expert was once a beginner. Don't hesitate to ask questions, make mistakes, and learn from the community. We're all here to support each other in building something amazing.
+*Thank you for contributing to OpenFrame! Your efforts help build a better, more secure, and more powerful MSP platform. Together, we're creating the future of AI-powered IT operations.*
