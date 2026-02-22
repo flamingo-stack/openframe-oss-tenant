@@ -1,6 +1,0 @@
-flowchart TD
-    Kafka["Kafka Topic"] --> Listener["JsonKafkaListener"]
-    Listener --> Handler["DebeziumMessageHandler"]
-    Handler --> Mapper["EventTypeMapper"]
-    Mapper --> Enrichment["Activity Enrichment Service"]
-    Enrichment --> Mongo["MongoDB"]

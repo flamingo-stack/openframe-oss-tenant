@@ -1,4 +1,0 @@
-flowchart LR
-    TenantRepo["ReactiveTenantRepository"] --> IssuerProvider["IssuerUrlProvider"]
-    IssuerProvider --> IssuerList["Allowed Issuer List"]
-    IssuerList --> JwtValidator["Strict Issuer Validator"]

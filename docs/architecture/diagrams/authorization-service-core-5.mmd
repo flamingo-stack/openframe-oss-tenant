@@ -1,6 +1,0 @@
-flowchart TD
-    User["User"] --> Login["/login"]
-    Login -->|"Form"| AuthDB["UserDetailsService"]
-    Login -->|"OAuth2"| OIDC["OIDC Provider"]
-    OIDC --> OidcUserService["Custom OidcUserService"]
-    OidcUserService --> AutoProv["Auto Provision If Needed"]

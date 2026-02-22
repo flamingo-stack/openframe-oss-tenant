@@ -1,6 +1,0 @@
-flowchart TD
-    Gateway["Gateway Service Core"] --> ExternalApi["External Api Service Core"]
-    ExternalApi --> ApiCore["Api Service Core"]
-    ApiCore --> DataMongo["Data Layer Mongo"]
-    ApiCore --> DataCore["Data Layer Core"]
-    ApiCore --> StreamCore["Stream Service Core"]

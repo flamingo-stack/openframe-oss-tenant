@@ -1,8 +1,0 @@
-flowchart TD
-    Request["GET /api/v1/devices"] --> BuildFilter["Build DeviceFilterCriteria"]
-    BuildFilter --> BuildPagination["Build PaginationCriteria"]
-    BuildPagination --> BuildSort["Build SortCriteria"]
-    BuildSort --> Service["DeviceService.queryDevices()"]
-    Service --> Result["Cursor Result"]
-    Result --> Mapper["DeviceMapper"]
-    Mapper --> Response["DevicesResponse"]

@@ -1,5 +1,0 @@
-flowchart TD
-    Service["Service Application"] -->|"Cassandra Enabled"| CassandraMode["Distributed Storage Mode"]
-    Service -->|"Cassandra Disabled"| LightweightMode["No Cassandra"]
-
-    Service --> PinotAlways["Pinot Analytics"]

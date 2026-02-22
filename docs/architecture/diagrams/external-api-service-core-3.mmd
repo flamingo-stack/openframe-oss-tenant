@@ -1,6 +1,0 @@
-flowchart TD
-    Client["Client"] --> Query["GET /events"]
-    Query --> Filter["EventFilterCriteria"]
-    Filter --> Service["EventService.queryEvents()"]
-    Service --> Mapper["EventMapper"]
-    Mapper --> Response["EventsResponse"]

@@ -1,6 +1,0 @@
-flowchart LR
-    Client["Client"] --> Controller["OrganizationController"]
-    Controller --> QuerySvc["OrganizationQueryService"]
-    Controller --> CommandSvc["OrganizationCommandService"]
-    QuerySvc --> Mongo[("Mongo Data Layer")]
-    CommandSvc --> Mongo

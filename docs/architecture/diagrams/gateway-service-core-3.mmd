@@ -1,6 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> AddAuth["AddAuthorizationHeaderFilter"]
-    AddAuth --> JwtResolution["JWT Issuer Resolver"]
-    JwtResolution --> JwtValidation["Reactive JwtAuthenticationManager"]
-    JwtValidation --> RoleCheck["Role Based Authorization"]
-    RoleCheck --> Route["Route to Downstream Service"]
