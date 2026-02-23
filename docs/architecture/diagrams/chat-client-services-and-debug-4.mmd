@@ -1,0 +1,7 @@
+flowchart TD
+    Start["getDialogMessages()"] --> EnsureToken["ensureTokenReady()"]
+    EnsureToken --> FirstRequest["GraphQL Query"]
+    FirstRequest --> HasNext{{"hasNextPage?"}}
+    HasNext -->|"Yes"| NextRequest["Fetch Next Page"]
+    NextRequest --> HasNext
+    HasNext -->|"No"| ReturnAll["Return Aggregated Messages"]

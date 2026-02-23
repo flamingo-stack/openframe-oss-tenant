@@ -50,7 +50,7 @@ export function useScriptDetails(scriptId: string) {
 
   return {
     scriptDetails: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
   }

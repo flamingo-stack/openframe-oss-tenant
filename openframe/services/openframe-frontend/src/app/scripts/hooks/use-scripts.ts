@@ -34,7 +34,7 @@ export function useScripts() {
 
   return {
     scripts: query.data ?? [],
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
     invalidate: () => queryClient.invalidateQueries({ queryKey: scriptsQueryKeys.all }),

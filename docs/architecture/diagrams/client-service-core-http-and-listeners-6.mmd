@@ -1,0 +1,4 @@
+flowchart TD
+    Agent["Tool Agent"] -->|"GET /tool-agent/{assetId}?os=..."| Controller["ToolAgentFileController"]
+    Controller --> Resource["Classpath Resource"]
+    Resource --> Agent

@@ -1,0 +1,7 @@
+flowchart LR
+    Activities["Fleet Activities Topic"] --> AStream["KStream Activity"]
+    HostActivities["Fleet Host Activities Topic"] --> HStream["KStream HostActivity"]
+    AStream --> Join["Left Join (5s window)"]
+    HStream --> Join
+    Join --> AddHeader["HeaderAdderFixedKey"]
+    AddHeader --> Output["Enriched Fleet Events Topic"]

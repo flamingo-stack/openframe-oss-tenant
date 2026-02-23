@@ -1,5 +1,0 @@
-flowchart TD
-    Boot["Spring Boot Startup"] --> EnsureKeyspace["Ensure Keyspace Exists"]
-    EnsureKeyspace --> CreateSession["Create CqlSessionFactoryBean"]
-    CreateSession --> ConfigureBuilder["Configure Driver Options"]
-    ConfigureBuilder --> Ready["Cassandra Ready"]

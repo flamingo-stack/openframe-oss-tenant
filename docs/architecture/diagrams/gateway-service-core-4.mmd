@@ -1,5 +1,0 @@
-flowchart TD
-    JwtAuthConfig["JwtAuthConfig"] --> Cache["Caffeine LoadingCache"]
-    Cache --> Manager["ReactiveAuthenticationManager"]
-    Manager --> Decoder["NimbusReactiveJwtDecoder"]
-    Decoder --> Validator["Default and Strict Issuer Validators"]

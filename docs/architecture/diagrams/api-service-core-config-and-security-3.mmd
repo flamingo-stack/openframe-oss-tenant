@@ -1,0 +1,7 @@
+flowchart TD
+    Start["Application Startup"] --> ReadProps["Read OAuth Properties"]
+    ReadProps --> CheckClient["Find Client By ID"]
+    CheckClient -->|"Exists"| CompareSecret["Compare Secret"]
+    CompareSecret -->|"Different"| UpdateSecret["Update Secret"]
+    CompareSecret -->|"Same"| NoChange["No Action"]
+    CheckClient -->|"Not Found"| CreateClient["Create OAuth Client"]

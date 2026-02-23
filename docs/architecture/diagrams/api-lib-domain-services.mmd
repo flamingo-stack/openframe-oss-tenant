@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client Applications"] --> ApiLayer["API Service Layer"]
+    ApiLayer --> DomainServices["Api Lib Domain Services"]
+    DomainServices --> Repositories["Mongo Repositories"]
+    Repositories --> Database[("MongoDB")]

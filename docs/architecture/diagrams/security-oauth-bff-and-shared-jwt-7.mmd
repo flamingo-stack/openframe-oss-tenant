@@ -1,0 +1,6 @@
+flowchart LR
+    Frontend["Frontend"] -->|"OAuth Flow"| BFF
+    BFF --> AuthServer["Authorization Server"]
+    Frontend -->|"API Calls"| Gateway
+    Gateway -->|"JWT Validation"| JwtSecurity
+    JwtSecurity -->|"Public Key"| AuthServer

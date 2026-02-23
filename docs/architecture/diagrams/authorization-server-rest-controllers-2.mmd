@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant InvitationController as "Invitation Controller"
+    participant SsoInvitationService as "SSO Invitation Service"
+    participant OAuth2 as "Spring Security OAuth2"
+
+    Browser->>InvitationController: GET /invitations/accept/sso
+    InvitationController->>SsoInvitationService: startAccept(request)
+    SsoInvitationService-->>InvitationController: SsoAuthorizeData
+    InvitationController->>Browser: Set-Cookie sso_invite
+    InvitationController->>Browser: 303 See Other redirect
+    Browser->>OAuth2: Redirect to authorization endpoint

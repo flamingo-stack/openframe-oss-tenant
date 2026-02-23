@@ -1,0 +1,5 @@
+flowchart LR
+    HttpSecurity["HttpSecurity"] --> DisableCsrf["Disable CSRF"]
+    DisableCsrf --> PermitAll["Permit All Requests"]
+    PermitAll --> ResourceServer["Enable OAuth2 Resource Server"]
+    ResourceServer --> IssuerResolver["JwtIssuerAuthenticationManagerResolver"]

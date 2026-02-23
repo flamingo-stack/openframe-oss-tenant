@@ -1,0 +1,7 @@
+flowchart TD
+    AppName["spring.application.name"] --> BuildId["Build Streams Application ID"]
+    ClusterId["openframe.cluster-id"] --> BuildId
+    BuildId --> StreamsConfig["StreamsConfig.APPLICATION_ID_CONFIG"]
+
+    Bootstrap["bootstrap-servers"] --> StreamsConfig
+    StreamsConfig --> KafkaStreams["Kafka Streams Runtime"]

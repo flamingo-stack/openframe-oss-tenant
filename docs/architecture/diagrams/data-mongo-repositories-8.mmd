@@ -1,0 +1,4 @@
+flowchart TD
+    DomainService["Domain Service"] --> BaseApiKeyRepo["BaseApiKeyRepository Contract"]
+    BaseApiKeyRepo --> BlockingImpl["MongoRepository Implementation"]
+    BaseApiKeyRepo --> ReactiveImpl["ReactiveMongoRepository Implementation"]

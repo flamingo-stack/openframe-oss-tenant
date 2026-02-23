@@ -1,42 +1,6 @@
 flowchart TD
-    subgraph Edge["Edge Layer"]
-        Gateway
-    end
-
-    subgraph Identity["Identity Layer"]
-        Auth
-    end
-
-    subgraph Core["Core Services"]
-        Api
-        External
-        Mgmt
-    end
-
-    subgraph Streaming["Streaming"]
-        Stream
-    end
-
-    subgraph Storage["Storage"]
-        Mongo
-        Kafka
-        Cassandra
-        Pinot
-        Nats
-    end
-
-    Gateway --> Auth
-    Gateway --> Api
-    Gateway --> External
-
-    Api --> Mongo
-    Api --> Pinot
-    Api --> Cassandra
-
-    Mgmt --> Mongo
-    Mgmt --> Nats
-
-    Stream --> Kafka
-    Stream --> Mongo
-
-    Auth --> Mongo
+    Agent["Device Agent"] --> ClientService
+    ClientService --> Mongo
+    Agent --> NATS
+    NATS --> ClientService
+    ClientService --> DomainServices

@@ -1,0 +1,5 @@
+flowchart TD
+    UUID["Fleet UUID"] --> FleetClient["FleetMdmClient"]
+    FleetClient --> Hosts["Search Hosts"]
+    Hosts --> Match["Exact UUID Match"]
+    Match --> Transform["Return Host ID"]

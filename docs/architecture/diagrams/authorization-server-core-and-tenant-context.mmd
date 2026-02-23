@@ -1,0 +1,16 @@
+flowchart TD
+    Browser["Browser / OAuth2 Client"] --> AuthzEndpoints["Authorization Server Endpoints"]
+    AuthzEndpoints --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> TenantContext["TenantContext (ThreadLocal)"]
+
+    AuthzEndpoints --> SecurityChain["Spring Security Filter Chain"]
+    SecurityChain --> UserDetails["UserDetailsService"]
+    SecurityChain --> OAuth2Login["OAuth2 Login (OIDC)"]
+
+    SecurityChain --> TokenCustomizer["OAuth2TokenCustomizer"]
+    TokenCustomizer --> UserService["UserService"]
+
+    AuthzEndpoints --> JwkSource["Tenant-aware JWKSource"]
+    JwkSource --> TenantKeyService["TenantKeyService"]
+
+    OAuth2Login --> DynamicClientRepo["DynamicClientRegistrationRepository"]

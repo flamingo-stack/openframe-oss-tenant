@@ -1,5 +1,0 @@
-flowchart TD
-    WsClient["WebSocket Client"] --> Gateway["Gateway Service Core"]
-    Gateway --> AgentProxy["Tool Agent WebSocket Proxy"]
-    Gateway --> ApiProxy["Tool API WebSocket Proxy"]
-    Gateway --> Nats["NATS WebSocket Endpoint"]

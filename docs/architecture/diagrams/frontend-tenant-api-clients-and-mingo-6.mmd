@@ -1,0 +1,5 @@
+flowchart TD
+    Store["DialogDetailsStore"] --> ApiClient["ApiClient"]
+    ApiClient --> GraphQL["/chat/graphql"]
+    GraphQL --> Connection["MessageConnection"]
+    Connection --> Store

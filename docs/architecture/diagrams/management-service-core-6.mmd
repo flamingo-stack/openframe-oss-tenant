@@ -1,4 +1,0 @@
-flowchart TD
-    Startup["Application Startup"] --> Iterate["Iterate Stream Configurations"]
-    Iterate --> SaveStream["NatsStreamManagementService.save"]
-    SaveStream --> NatsServer["Persist to NATS JetStream"]

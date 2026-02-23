@@ -1,0 +1,7 @@
+flowchart TD
+    Inbound["Inbound Debezium Event"] --> Deserialize["DeserializedDebeziumMessage"]
+    Deserialize --> MapType["EventTypeMapper"]
+    MapType --> Enrich["IntegratedToolDataEnrichmentService"]
+    Enrich --> Route["DebeziumMessageHandler"]
+    Route --> CassandraDest["Cassandra"]
+    Route --> KafkaDest["Outbound Kafka Topic"]

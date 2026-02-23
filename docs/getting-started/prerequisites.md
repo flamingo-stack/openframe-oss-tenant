@@ -1,6 +1,6 @@
 # Prerequisites
 
-Before setting up OpenFrame, ensure your development environment meets these requirements. This guide covers all necessary software, system specifications, and account setup needed for a successful OpenFrame deployment.
+Before getting started with OpenFrame, ensure your development environment meets the following requirements.
 
 ## System Requirements
 
@@ -8,395 +8,309 @@ Before setting up OpenFrame, ensure your development environment meets these req
 
 | Component | Minimum | Recommended |
 |-----------|---------|-------------|
-| **CPU** | 4 cores (x64) | 8+ cores |
-| **RAM** | 8 GB | 16+ GB |
-| **Storage** | 50 GB free space | 100+ GB SSD |
-| **Network** | Stable internet connection | High-bandwidth connection |
+| CPU | 4 cores | 8+ cores |
+| RAM | 8 GB | 16+ GB |
+| Storage | 50 GB SSD | 100+ GB SSD |
+| Network | Stable internet | High-speed broadband |
 
-### Supported Operating Systems
+### Operating System Support
 
-OpenFrame supports development and deployment on:
+OpenFrame supports development on:
 
-- ✅ **Linux** (Ubuntu 20.04+, CentOS 8+, RHEL 8+)
-- ✅ **macOS** (10.15+, including Apple Silicon M1/M2)
-- ✅ **Windows** (10/11 with WSL2)
-
-> **Note**: For Windows users, WSL2 (Windows Subsystem for Linux) is strongly recommended for the best development experience.
+- **Linux** (Ubuntu 20.04+, CentOS 8+, Debian 11+)
+- **macOS** (10.15+)
+- **Windows** (Windows 10/11 with WSL2 recommended)
 
 ## Required Software
 
-### 1. Java Development Kit (JDK)
+### Java Development
 
-OpenFrame requires **Java 21** as specified in the Maven configuration.
+| Software | Version | Purpose |
+|----------|---------|---------|
+| **Java JDK** | 21+ | Backend service development |
+| **Apache Maven** | 3.8+ | Build tool for Java services |
+| **Spring Boot** | 3.3.0 | Already included in dependencies |
 
-#### Installation Options:
+**Install Java 21:**
 
-**Option A: Using SDKMAN (Recommended)**
 ```bash
-# Install SDKMAN
-curl -s "https://get.sdkman.io" | bash
-source ~/.sdkman/bin/sdkman-init.sh
-
-# Install Java 21
-sdk install java 21.0.1-tem
-sdk use java 21.0.1-tem
-```
-
-**Option B: Direct Download**
-- Download from [Eclipse Temurin](https://adoptium.net/temurin/releases/?version=21)
-- Install and set `JAVA_HOME` environment variable
-
-#### Verification:
-```bash
-java -version
-# Should output: openjdk version "21.0.1"
-echo $JAVA_HOME
-# Should point to your Java 21 installation
-```
-
-### 2. Apache Maven
-
-OpenFrame uses **Maven** for dependency management and build automation.
-
-#### Installation:
-```bash
-# macOS (using Homebrew)
-brew install maven
-
 # Ubuntu/Debian
 sudo apt update
-sudo apt install maven
+sudo apt install openjdk-21-jdk
 
-# CentOS/RHEL
-sudo yum install maven
+# macOS with Homebrew
+brew install openjdk@21
 
-# Windows (using Chocolatey)
-choco install maven
+# Windows (download from Oracle or use Chocolatey)
+choco install openjdk21
 ```
 
-#### Verification:
+**Verify Java installation:**
+
 ```bash
+java -version
+# Should show: openjdk version "21.x.x"
+
 mvn -version
-# Should show Maven 3.6+ and Java 21
+# Should show: Apache Maven 3.8.x or higher
 ```
 
-### 3. Node.js (for Frontend Components)
+### Node.js Development
 
-The OpenFrame chat client and other frontend components require Node.js.
+| Software | Version | Purpose |
+|----------|---------|---------|
+| **Node.js** | 18+ | VoltAgent core and tooling |
+| **npm** | 9+ | Package management |
 
-#### Installation:
+**Install Node.js:**
+
 ```bash
-# Using Node Version Manager (recommended)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-nvm install 18
-nvm use 18
+# Ubuntu/Debian - via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
 
-# Or direct download from https://nodejs.org/
+# macOS with Homebrew
+brew install node
+
+# Windows - download from nodejs.org or use Chocolatey
+choco install nodejs
 ```
 
-#### Verification:
+**Verify Node.js installation:**
+
 ```bash
-node --version  # Should be v18.x.x or higher
-npm --version   # Should be 8.x.x or higher
+node --version
+# Should show: v18.x.x or higher
+
+npm --version
+# Should show: 9.x.x or higher
 ```
-
-### 4. Rust (for OpenFrame Client)
-
-The OpenFrame client is written in Rust and requires the Rust toolchain.
-
-#### Installation:
-```bash
-# Install Rust using rustup
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source ~/.cargo/env
-
-# Install required targets for cross-compilation
-rustup target add x86_64-unknown-linux-gnu
-rustup target add x86_64-pc-windows-gnu
-rustup target add x86_64-apple-darwin
-```
-
-#### Verification:
-```bash
-rustc --version  # Should be 1.70+ or higher
-cargo --version  # Should be 1.70+ or higher
-```
-
-## Infrastructure Dependencies
 
 ### Database Systems
 
-OpenFrame requires multiple database systems for different use cases:
+OpenFrame requires several database systems for different purposes:
 
-#### 1. MongoDB
+| Database | Version | Purpose |
+|----------|---------|---------|
+| **MongoDB** | 6.0+ | Primary transactional storage |
+| **Apache Cassandra** | 4.0+ | Time-series and log persistence |
+| **Apache Pinot** | 1.2.0+ | Real-time analytics |
+| **Redis** | 7.0+ | Caching and session storage |
 
-**Primary operational database** for user data, organizations, devices, and configurations.
+### Message Brokers
 
-```bash
-# Using Docker (Recommended for development)
-docker run -d \
-  --name openframe-mongodb \
-  -p 27017:27017 \
-  -e MONGO_INITDB_ROOT_USERNAME=admin \
-  -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
-  mongo:7.0
+| Software | Version | Purpose |
+|----------|---------|---------|
+| **Apache Kafka** | 3.6+ | Event streaming backbone |
+| **NATS Server** | 2.10+ | Agent messaging |
 
-# Or install locally
-# macOS
-brew tap mongodb/brew
-brew install mongodb-community
+### Development Tools
 
-# Ubuntu/Debian
-wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-sudo apt update
-sudo apt install -y mongodb-org
-```
-
-#### 2. Apache Kafka
-
-**Event streaming platform** for real-time data processing.
-
-```bash
-# Using Docker Compose (Recommended)
-# Create docker-compose.yml with Kafka + Zookeeper configuration
-docker run -d \
-  --name openframe-kafka \
-  -p 9092:9092 \
-  -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 \
-  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092 \
-  confluentinc/cp-kafka:latest
-```
-
-#### 3. Redis (Optional but Recommended)
-
-**Caching and session storage**.
-
-```bash
-# Using Docker
-docker run -d \
-  --name openframe-redis \
-  -p 6379:6379 \
-  redis:7.2-alpine
-
-# Or install locally
-# macOS
-brew install redis
-
-# Ubuntu/Debian
-sudo apt install redis-server
-```
-
-### Verification Commands
-
-Test database connectivity:
-
-```bash
-# MongoDB
-mongosh "mongodb://admin:admin123@localhost:27017"
-
-# Redis
-redis-cli ping
-# Should return: PONG
-
-# Kafka (requires kafka tools)
-kafka-topics.sh --list --bootstrap-server localhost:9092
-```
-
-## Development Tools
-
-### Recommended IDEs
-
-| IDE | Best For | Notes |
-|-----|---------|-------|
-| **IntelliJ IDEA** | Java/Spring Boot development | Excellent Spring Boot support |
-| **Visual Studio Code** | Full-stack development | Great for Rust, TypeScript, and Java |
-| **Eclipse** | Java development | Free alternative to IntelliJ |
-
-### Essential Extensions/Plugins
-
-**For VS Code:**
-- Java Extension Pack
-- Spring Boot Extension Pack
-- Rust Analyzer
-- Thunder Client (API testing)
-
-**For IntelliJ IDEA:**
-- Spring Boot Plugin
-- Rust Plugin
-- Database Navigator
+| Tool | Version | Purpose |
+|------|---------|---------|
+| **Docker** | 20.10+ | Containerization (recommended for databases) |
+| **Docker Compose** | 2.0+ | Multi-container orchestration |
+| **Git** | 2.30+ | Version control |
+| **IDE** | Latest | IntelliJ IDEA, VS Code, or Eclipse |
 
 ## Environment Variables
 
-Set up these environment variables for OpenFrame development:
+Set the following environment variables for development:
+
+### Database Configuration
 
 ```bash
-# Add to ~/.bashrc, ~/.zshrc, or equivalent
+# MongoDB
+export MONGODB_URI="mongodb://localhost:27017/openframe"
+export MONGODB_DATABASE="openframe"
 
-# Java
-export JAVA_HOME=/path/to/java21
-export PATH=$JAVA_HOME/bin:$PATH
+# Cassandra
+export CASSANDRA_CONTACT_POINTS="localhost:9042"
+export CASSANDRA_KEYSPACE="openframe_logs"
 
-# Maven
-export M2_HOME=/path/to/maven
-export PATH=$M2_HOME/bin:$PATH
+# Redis
+export REDIS_HOST="localhost"
+export REDIS_PORT="6379"
 
-# Node.js (if using NVM)
-export NVM_DIR="$HOME/.nvm"
-
-# OpenFrame specific
-export OPENFRAME_ENV=development
-export OPENFRAME_LOG_LEVEL=DEBUG
-
-# Database connections
-export MONGODB_URI=mongodb://admin:admin123@localhost:27017/openframe
-export REDIS_URL=redis://localhost:6379
-export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+# Apache Pinot
+export PINOT_CONTROLLER_URL="http://localhost:9000"
+export PINOT_BROKER_URL="http://localhost:8000"
 ```
 
-## Network Configuration
-
-### Required Ports
-
-Ensure these ports are available and not blocked by firewalls:
-
-| Service | Port | Purpose |
-|---------|------|---------|
-| MongoDB | 27017 | Database connection |
-| Redis | 6379 | Caching |
-| Kafka | 9092 | Event streaming |
-| NATS | 4222 | Messaging |
-| OpenFrame API | 8080 | API service |
-| OpenFrame Gateway | 8443 | Gateway service |
-| OpenFrame Frontend | 3000 | Web interface |
-
-### Firewall Configuration
+### Message Brokers
 
 ```bash
-# Ubuntu/Debian (using UFW)
-sudo ufw allow 27017  # MongoDB
-sudo ufw allow 6379   # Redis
-sudo ufw allow 9092   # Kafka
-sudo ufw allow 4222   # NATS
-sudo ufw allow 8080   # API
-sudo ufw allow 8443   # Gateway
-sudo ufw allow 3000   # Frontend
+# Kafka
+export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+export KAFKA_GROUP_ID="openframe-dev"
 
-# macOS (using built-in firewall)
-# Usually allows local development by default
+# NATS
+export NATS_SERVERS="nats://localhost:4222"
+export NATS_CLUSTER_ID="openframe-cluster"
+```
 
-# Windows
-# Configure Windows Firewall to allow the above ports
+### Application Configuration
+
+```bash
+# OpenFrame Configuration
+export OPENFRAME_PROFILE="development"
+export OPENFRAME_CONFIG_SERVER="http://localhost:8888"
+
+# Security
+export JWT_SECRET="your-jwt-secret-key-here"
+export OAUTH2_CLIENT_SECRET="your-oauth2-client-secret"
+
+# AI Integration
+export ANTHROPIC_API_KEY="your-anthropic-api-key"
+export OPENAI_API_KEY="your-openai-api-key"
 ```
 
 ## Account Requirements
 
-### Required Service Accounts
+### Required Accounts
 
-#### 1. Anthropic API Access (for AI Features)
+While OpenFrame is open-source, you may need accounts for:
 
-OpenFrame uses Anthropic Claude for AI-powered features.
+- **Anthropic** (for Claude AI integration) - [Get API key](https://console.anthropic.com/)
+- **OpenAI** (for GPT integration) - [Get API key](https://platform.openai.com/)
+- **GitHub** (for source code access) - [Free account](https://github.com/)
 
-1. Sign up at https://console.anthropic.com/
-2. Generate an API key
-3. Set environment variable:
+### Optional Third-party Integrations
 
-```bash
-export ANTHROPIC_API_KEY=your_anthropic_key_here
-```
+Depending on your MSP needs:
 
-#### 2. GitHub Access (for CLI Tools)
+- **Google Workspace** (for SSO)
+- **Microsoft Azure AD** (for SSO)
+- **Slack** (for notifications)
+- **Various RMM/PSA tools** (TacticalRMM, ConnectWise, etc.)
 
-Some OpenFrame components download from GitHub releases.
+## Network Requirements
 
-1. Create a GitHub personal access token
-2. Set environment variable:
+### Firewall Considerations
 
-```bash
-export GITHUB_TOKEN=your_github_token_here
-```
+Ensure the following ports are accessible:
 
-### Optional but Recommended
+| Port | Service | Purpose |
+|------|---------|---------|
+| 8080 | API Service | Internal REST/GraphQL API |
+| 8081 | Gateway Service | Edge routing and security |
+| 8082 | Authorization Server | OAuth2/OIDC endpoints |
+| 8083 | External API | Public API endpoints |
+| 8888 | Config Server | Centralized configuration |
+| 3000 | Frontend UI | Web dashboard (development) |
 
-- **Docker Hub Account**: For pulling pre-built images
-- **Cloud Provider Account**: AWS/Azure/GCP for production deployment
+### Database Ports
 
-## Verification Checklist
+| Port | Database | Purpose |
+|------|----------|---------|
+| 27017 | MongoDB | Document storage |
+| 9042 | Cassandra | Time-series data |
+| 6379 | Redis | Caching |
+| 9000 | Pinot Controller | Analytics coordination |
+| 8000 | Pinot Broker | Analytics queries |
+
+### Message Broker Ports
+
+| Port | Service | Purpose |
+|------|---------|---------|
+| 9092 | Kafka | Event streaming |
+| 4222 | NATS | Agent messaging |
+| 2181 | Zookeeper | Kafka coordination |
+
+## Verification Commands
 
 Run these commands to verify your environment is ready:
 
-```bash
-# Java and Maven
-java -version | grep "21"
-mvn -version | grep "Apache Maven"
+### Check Java and Maven
 
-# Node.js ecosystem
-node --version | grep "v18"
+```bash
+java -version
+mvn -version
+```
+
+### Check Node.js
+
+```bash
+node --version
 npm --version
+```
 
-# Rust toolchain
-rustc --version
-cargo --version
+### Check Docker
 
-# Database connectivity
-mongosh --eval "db.runCommand('ping')" "mongodb://admin:admin123@localhost:27017"
+```bash
+docker --version
+docker compose version
+```
+
+### Check Git
+
+```bash
+git --version
+```
+
+### Test Database Connections
+
+```bash
+# MongoDB (if running locally)
+mongosh --eval "db.runCommand('ping')"
+
+# Redis (if running locally)
 redis-cli ping
-
-# Environment variables
-echo "Java Home: $JAVA_HOME"
-echo "MongoDB URI: $MONGODB_URI"
-echo "Anthropic Key set: ${ANTHROPIC_API_KEY:+YES}"
 ```
 
-All commands should execute successfully without errors.
+## Quick Setup with Docker
 
-## Common Issues and Solutions
+For development, you can start the required databases using Docker Compose:
 
-### Java Version Conflicts
-
-**Problem**: Multiple Java versions causing conflicts
-
-**Solution**:
 ```bash
-# List installed versions
-sdk list java
+# Create a docker-compose.yml for development dependencies
+curl -o docker-compose.dev.yml https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docker-compose.dev.yml
 
-# Switch to Java 21
-sdk use java 21.0.1-tem
+# Start development databases
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-### Port Conflicts
-
-**Problem**: Required ports already in use
-
-**Solution**:
-```bash
-# Find process using port
-lsof -i :27017
-sudo netstat -tulpn | grep :27017
-
-# Kill conflicting process
-sudo kill -9 <PID>
-```
-
-### Database Connection Issues
-
-**Problem**: Cannot connect to MongoDB/Redis
-
-**Solution**:
-```bash
-# Restart Docker containers
-docker restart openframe-mongodb openframe-redis
-
-# Check container status
-docker ps | grep openframe
-```
+This will start MongoDB, Redis, Kafka, and other required services in development mode.
 
 ## Next Steps
 
-Once all prerequisites are installed and verified:
+Once your environment meets these prerequisites:
 
-1. Proceed to the **[Quick Start Guide](quick-start.md)** for your first OpenFrame setup
-2. Join the **OpenMSP Slack community** for support: https://www.openmsp.ai/
-3. Review the **[First Steps](first-steps.md)** for initial configuration guidance
+1. **[Quick Start Guide](quick-start.md)** - Get OpenFrame running quickly
+2. **[First Steps Guide](first-steps.md)** - Explore the platform features
 
-> 💡 **Pro Tip**: Consider using Docker Compose to set up all infrastructure dependencies with a single command. This simplifies development environment management significantly.
+## Troubleshooting
+
+### Common Issues
+
+**Java Version Conflicts:**
+```bash
+# Check all Java versions
+java -version
+javac -version
+echo `$JAVA_HOME`
+```
+
+**Port Conflicts:**
+```bash
+# Check what's running on OpenFrame ports
+netstat -tulpn | grep :8080
+lsof -i :8080  # macOS
+```
+
+**Docker Issues:**
+```bash
+# Restart Docker service
+sudo systemctl restart docker  # Linux
+# Or restart Docker Desktop on macOS/Windows
+```
+
+### Getting Help
+
+If you encounter issues:
+- Join the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- Check the platform documentation for environment-specific guides
+
+---
+
+*Ready to proceed? Continue with the [Quick Start Guide](quick-start.md) to get OpenFrame running.*

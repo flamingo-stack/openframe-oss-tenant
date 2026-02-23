@@ -1,0 +1,5 @@
+flowchart TD
+    RawEvent["Raw Debezium / Tool Event"] --> ToolDeserializer["Tool-Specific Deserializer"]
+    ToolDeserializer --> ExtractFields["Extract Fields"]
+    ExtractFields --> Normalize["Normalize To Internal Model"]
+    Normalize --> TypedEvent["MessageType Assigned"]

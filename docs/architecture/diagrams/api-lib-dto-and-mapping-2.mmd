@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client"] --> FilterInput["LogFilterOptions"]
+    FilterInput --> Service["Log Service"]
+    Service --> Repo["Log Repository"]
+    Repo --> Service
+    Service --> Result["LogEvent or LogDetails"]

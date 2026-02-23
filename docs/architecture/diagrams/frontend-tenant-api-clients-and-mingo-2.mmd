@@ -1,0 +1,7 @@
+flowchart TD
+    Request["Outgoing Request"] --> Check401{"401 Response?"}
+    Check401 -->|No| ReturnOK["Return Response"]
+    Check401 -->|Yes| Refresh["Refresh Access Token"]
+    Refresh --> Success{"Refresh Success?"}
+    Success -->|Yes| Retry["Retry Original Request"]
+    Success -->|No| Logout["Force Logout"]

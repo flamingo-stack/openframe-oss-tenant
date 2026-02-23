@@ -1,0 +1,14 @@
+flowchart LR
+    subgraph core["Shared Core Libraries"]
+        Data["Data Layer"]
+        Security["Security"]
+        KafkaLib["Kafka Support"]
+        Core["Core Utilities"]
+    end
+
+    Api --> core
+    Gateway --> core
+    Authz --> core
+    Stream --> core
+    Client --> core
+    ExternalApi --> core

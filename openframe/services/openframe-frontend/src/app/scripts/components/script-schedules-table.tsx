@@ -1,5 +1,6 @@
 'use client'
 
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components'
 import { PenEditIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import {
   Button,
@@ -113,6 +114,18 @@ export function ScriptSchedulesTable() {
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">
             {getRepeatLabelFromTaskType(schedule.task_type)}
           </span>
+        ),
+      },
+      {
+        key: 'task_supported_platforms',
+        label: 'Platforms',
+        width: 'w-[100px]',
+        hideAt: 'lg',
+        renderCell: (schedule) => (
+          <OSTypeBadgeGroup
+            osTypes={schedule.task_supported_platforms}
+            iconSize="w-4 h-4"
+          />
         ),
       },
       {

@@ -1,0 +1,11 @@
+flowchart TD
+    Input["findByToken(token, type)"] --> CheckType
+    CheckType -->|"null"| TryAll["Access → Refresh → Code → State"]
+    CheckType -->|"ACCESS_TOKEN"| AccessOnly
+    CheckType -->|"REFRESH_TOKEN"| RefreshOnly
+    CheckType -->|"code"| CodeOnly
+    TryAll --> Result
+    AccessOnly --> Result
+    RefreshOnly --> Result
+    CodeOnly --> Result
+    Result["Return OAuth2Authorization"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Stream["Stream Service"] --> Pinot["Apache Pinot"]
+    Pinot --> DataPinot["Data Pinot Repositories And Models"]
+    DataPinot --> ApiCore["API Service Core"]
+    ApiCore --> Frontend["Frontend / External API"]

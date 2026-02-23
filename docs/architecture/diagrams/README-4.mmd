@@ -1,25 +1,7 @@
-flowchart TD
-    Gateway["Gateway Service Core"]
-    Auth["Authorization Service Core"]
-    Api["API Service Core"]
-    External["External API Service Core"]
-    Mgmt["Management Service Core"]
-    Stream["Stream Service Core"]
-    Mongo["Data Layer Mongo"]
-    Kafka["Data Layer Kafka"]
-    CoreData["Data Layer Core"]
-
-    Gateway --> Auth
-    Gateway --> Api
-    Gateway --> External
-
-    Api --> Mongo
-    Api --> CoreData
-
-    External --> Api
-
-    Mgmt --> Mongo
-    Mgmt --> Kafka
-
-    Stream --> Kafka
-    Stream --> Mongo
+flowchart LR
+    Tools["Fleet / Tactical / Mesh"] --> Kafka
+    MongoCDC["Debezium CDC"] --> Kafka
+    Kafka --> Stream["Stream Service"]
+    Stream --> Cassandra
+    Stream --> KafkaOut["Outbound Kafka"]
+    Stream --> Pinot

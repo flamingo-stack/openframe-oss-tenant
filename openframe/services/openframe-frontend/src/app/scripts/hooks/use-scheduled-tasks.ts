@@ -2,6 +2,7 @@
 
 import { tacticalApiClient } from '@lib/tactical-api-client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { scriptScheduleQueryKeys } from './use-script-schedule'
 
 // ============ Types ============
 
@@ -83,6 +84,7 @@ export function useScheduledTasks(scriptId: string) {
     mutationFn: deleteScheduledTaskApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scheduledTasksQueryKeys.byScript(scriptId) })
+      queryClient.invalidateQueries({ queryKey: scriptScheduleQueryKeys.all })
     },
   })
 
@@ -108,7 +110,7 @@ export function useScheduledTasks(scriptId: string) {
     scheduledTasks: scheduledTasksQuery.data ?? [],
 
     // Loading & error states
-    isLoading: scheduledTasksQuery.isLoading,
+    isLoading: scheduledTasksQuery.isFetching,
     error: scheduledTasksQuery.error?.message ?? null,
 
     // Refetch

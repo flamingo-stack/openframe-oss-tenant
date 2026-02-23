@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> ExtractIssuer["Extract JWT Issuer"]
+    ExtractIssuer --> CacheLookup["Lookup JwtAuthenticationProvider"]
+    CacheLookup -->|"Miss"| CreateDecoder["JwtDecoders.fromIssuerLocation"]
+    CreateDecoder --> StoreCache["Store In Cache"]
+    CacheLookup --> Authenticate["Authenticate JWT"]

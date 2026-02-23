@@ -1,0 +1,9 @@
+flowchart LR
+    Client["External Client"] -->|"X-API-Key"| Controller["REST Controllers"]
+    Controller --> Service["Domain Services"]
+    Service --> Repository["Data Repositories"]
+    Service --> Mapper["External Mappers"]
+    Mapper --> DTO["External DTO Responses"]
+
+    Controller --> Proxy["RestProxyService"]
+    Proxy --> IntegratedTool["Integrated Tool API"]

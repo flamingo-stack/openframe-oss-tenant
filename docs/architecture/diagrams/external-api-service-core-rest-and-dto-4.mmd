@@ -1,0 +1,6 @@
+flowchart LR
+    ExternalClient["External Integration"] --> ExternalAPI["External Api Service"]
+    ExternalAPI --> CoreAPI["API Service Core"]
+    CoreAPI --> DataLayer["Mongo / Pinot / Cassandra"]
+    CoreAPI --> Streaming["Kafka / Stream Service"]
+    ExternalAPI --> Tools["Integrated Tools"]

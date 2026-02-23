@@ -1,0 +1,5 @@
+flowchart TD
+    HeartbeatEvent["machine.*.heartbeat"] --> Listener["MachineHeartbeatListener"]
+    Listener --> Extractor["NatsTopicMachineIdExtractor"]
+    Listener --> StatusService["MachineStatusService"]
+    StatusService --> Update["processHeartbeat()"]

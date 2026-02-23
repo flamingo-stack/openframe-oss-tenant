@@ -1,6 +1,0 @@
-flowchart TD
-    Request["POST /v1/tools/{id}"] --> Validate["Assign ID & Enable Tool"]
-    Validate --> Save["Save via IntegratedToolService"]
-    Save --> DebeziumStep["Create or Update Debezium Connectors"]
-    DebeziumStep --> Hooks["Execute Post Save Hooks"]
-    Hooks --> Response["Return Success Response"]

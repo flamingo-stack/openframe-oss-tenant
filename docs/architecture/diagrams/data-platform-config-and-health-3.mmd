@@ -1,0 +1,5 @@
+flowchart LR
+    Service["Service Layer"] --> BrokerConn["Pinot Broker Connection"]
+    Service --> ControllerConn["Pinot Controller Connection"]
+    BrokerConn --> PinotBroker["Pinot Broker"]
+    ControllerConn --> PinotController["Pinot Controller"]

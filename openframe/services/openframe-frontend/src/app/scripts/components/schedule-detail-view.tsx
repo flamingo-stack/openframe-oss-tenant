@@ -52,17 +52,28 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
     router.push('/scripts/?tab=schedules')
   }
 
+  const handleEditDevices = () => {
+    router.push(`/scripts/schedules/${scheduleId}/devices`)
+  }
+
   const handleEditSchedule = () => {
     router.push(`/scripts/schedules/${scheduleId}/edit`)
   }
 
   const actions = useMemo(
-    () => [{
-      label: 'Edit Schedule',
-      onClick: handleEditSchedule,
-      icon: <PenEditIcon size={20} />,
-    }],
-    [handleEditSchedule],
+    () => [
+      {
+        label: 'Edit Devices',
+        onClick: handleEditDevices,
+        icon: <PenEditIcon size={20} />,
+      },
+      {
+        label: 'Edit Schedule',
+        onClick: handleEditSchedule,
+        icon: <PenEditIcon size={20} />,
+      },
+    ],
+    [handleEditSchedule, handleEditDevices],
   )
 
   if (isLoading) {

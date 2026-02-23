@@ -1,6 +1,0 @@
-flowchart TD
-    Message["DeserializedDebeziumMessage"] --> Agent["Extract agentId"]
-    Agent --> Cache["MachineIdCacheService"]
-    Cache --> Machine["CachedMachineInfo"]
-    Machine --> Org["CachedOrganizationInfo"]
-    Org --> Enriched["IntegratedToolEnrichedData"]
