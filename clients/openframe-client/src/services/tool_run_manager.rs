@@ -596,7 +596,12 @@ impl ToolRunManager {
                                     if let Err(e) = crate::platform::preferences_writer::write(bundle_id, prefs) {
                                         error!(tool_id = %tool.tool_agent_id, "Failed to write preferences: {:#}", e);
                                     }
-                                    vec![]
+
+                                    if tool.tool_agent_id == "openframe-chat" {
+                                        vec!["--background".to_string()]
+                                    } else {
+                                        vec![]
+                                    }
                                 }
                                 None => processed_args.clone(),
                             };
