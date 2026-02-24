@@ -3,15 +3,13 @@ use tracing::{info, warn, debug};
 use tokio::process::Command;
 use tokio::fs;
 use std::path::PathBuf;
-use crate::models::download_configuration::InstallationType;
+use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
-#[allow(unused_imports)]
-use crate::models::InstalledTool;
 
 #[derive(Clone)]
 pub struct ToolUninstallService {
@@ -107,7 +105,7 @@ impl ToolUninstallService {
         debug!("Processed uninstallation args for {}: {:?}", tool_agent_id, processed_args);
 
         let agent_path = self.directory_manager
-            .get_tool_executable_path(tool_agent_id, tool.executable_path.as_deref());
+            .get_tool_executable_path(tool_agent_id, tool.installation.executable_path());
 
         if !agent_path.exists() {
             warn!("Tool agent executable not found at {}, skipping uninstallation command", agent_path.display());
@@ -155,20 +153,19 @@ impl ToolUninstallService {
         self.tool_kill_service.stop_installed_tool(tool).await
     }
 
-    async fn cleanup_gui_app_bundle(&self, tool: &crate::models::InstalledTool) {
-        if tool.installation_type != InstallationType::GuiApp {
+    async fn cleanup_gui_app_bundle(&self, tool: &InstalledTool) {
+        let Installation::GuiApp { executable_path, .. } = &tool.installation else {
             return;
-        }
+        };
 
         #[cfg(target_os = "macos")]
         {
-            let Some(exec_path) = &tool.executable_path else { return };
-            self.remove_macos_app_bundle(exec_path).await;
+            self.remove_macos_app_bundle(executable_path).await;
         }
 
         #[cfg(not(target_os = "macos"))]
         {
-            let _ = tool;
+            let _ = executable_path;
         }
     }
 

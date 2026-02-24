@@ -7,9 +7,10 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use crate::services::AgentConfigurationService;
 use crate::models::tool_installation_message::ToolInstallationMessage;
+use crate::models::download_configuration::InstallationType;
 
 #[derive(Clone)]
 pub struct ToolInstallationMessageListener {
@@ -64,7 +65,21 @@ impl ToolInstallationMessageListener {
             let payload = String::from_utf8_lossy(&message.payload);
             info!("Received tool installation message: {:?}", payload);
 
-            let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
+            let mut tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
+
+            if tool_installation_message.tool_agent_id == "meshcentral-agent" {
+                warn!("TEMP HARDCODE: Overriding meshcentral-agent to use Service installation");
+                tool_installation_message.service_name = Some("meshagent".to_string());
+                if let Some(ref mut configs) = tool_installation_message.download_configurations {
+                    for config in configs.iter_mut() {
+                        if config.matches_current_os() {
+                            warn!("TEMP HARDCODE: Setting installationType to SERVICE for {}", config.os);
+                            config.installation_type = InstallationType::Service;
+                        }
+                    }
+                }
+            }
+
             let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 
             match self.tool_installation_service.install(tool_installation_message).await {

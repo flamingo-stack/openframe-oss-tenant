@@ -10,8 +10,6 @@ pub struct ToolInstallationMessage {
     pub version: String,
     pub reinstall: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub session_type: Option<SessionType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub download_configurations: Option<Vec<DownloadConfiguration>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation_command_args: Option<Vec<String>>,
@@ -22,16 +20,8 @@ pub struct ToolInstallationMessage {
     pub tool_agent_id_command_args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub assets: Option<Vec<Asset>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub enum SessionType {
-    #[serde(rename = "SERVICE")]
-    Service,
-    #[serde(rename = "CONSOLE")]
-    Console,
-    #[serde(rename = "USER")]
-    User,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

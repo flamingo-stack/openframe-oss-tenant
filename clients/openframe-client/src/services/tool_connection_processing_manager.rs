@@ -159,7 +159,7 @@ impl ToolConnectionProcessingManager {
                     );
 
                     let command_path = params_processor.directory_manager
-                        .get_tool_executable_path(&tool.tool_agent_id, tool.executable_path.as_deref())
+                        .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path())
                         .to_string_lossy()
                         .to_string();
 

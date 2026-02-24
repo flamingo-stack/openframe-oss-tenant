@@ -9,8 +9,7 @@ use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::models::installed_tool::ToolStatus;
-use crate::models::InstalledTool;
+use crate::models::{InstalledTool, Installation};
 use crate::platform::DirectoryManager;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
@@ -166,12 +165,18 @@ impl ToolInstallationService {
             }
         };
 
-        // Resolve the final executable path
         let file_path = self.resolve_executable_path(
             tool_agent_id,
             executable_path.as_deref(),
             installation_type,
         );
+
+        let installation = self.build_installation(
+            installation_type,
+            executable_path,
+            bundle_id,
+            tool_installation_message.service_name.clone(),
+        )?;
 
         // Download and save assets
         if let Some(ref assets) = tool_installation_message.assets {
@@ -298,14 +303,10 @@ impl ToolInstallationService {
             tool_id: tool_installation_message.tool_id.clone(),
             tool_type: tool_installation_message.tool_type.clone(),
             version: version_clone.clone(),
-            session_type: tool_installation_message.session_type.clone().unwrap_or(crate::models::SessionType::Service),
             run_command_args: run_args_clone,
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
-            status: ToolStatus::Installed,
-            executable_path,
-            installation_type,
-            bundle_id,
+            installation,
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await
@@ -356,7 +357,7 @@ impl ToolInstallationService {
             InstallationType::GuiApp => {
                 self.install_gui_app(config, tool_agent_id).await
             }
-            InstallationType::Standard => {
+            InstallationType::Standard | InstallationType::Service => {
                 self.github_download_service
                     .download_and_save(config, tool_folder_path, default_agent_path)
                     .await
@@ -408,8 +409,7 @@ impl ToolInstallationService {
                 // GuiApp: executable_path is already absolute
                 PathBuf::from(executable_path.unwrap_or_default())
             }
-            InstallationType::Standard => {
-                // Standard: resolve relative to tool folder
+            InstallationType::Standard | InstallationType::Service => {
                 self.directory_manager.get_tool_executable_path(tool_agent_id, executable_path)
             }
         }
@@ -441,4 +441,33 @@ impl ToolInstallationService {
         Ok(())
     }
 
+    fn build_installation(
+        &self,
+        installation_type: InstallationType,
+        executable_path: Option<String>,
+        bundle_id: Option<String>,
+        service_name: Option<String>,
+    ) -> Result<Installation> {
+        match installation_type {
+            InstallationType::Standard => {
+                Ok(Installation::Standard { executable_path })
+            }
+            InstallationType::GuiApp => {
+                let exec_path = executable_path
+                    .context("GuiApp installation requires executable_path")?;
+                Ok(Installation::GuiApp {
+                    executable_path: exec_path,
+                    bundle_id,
+                })
+            }
+            InstallationType::Service => {
+                let svc_name = service_name
+                    .context("Service installation requires service_name in configuration")?;
+                Ok(Installation::Service {
+                    service_name: svc_name,
+                    executable_path,
+                })
+            }
+        }
+    }
 }

@@ -1,19 +1,23 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
-use tracing::{info, debug, warn};
+use tracing::{info, warn, error};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
+use crate::models::Installation;
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
-use crate::platform::DirectoryManager;
-use tokio::fs::File;
-use tokio::io::AsyncWriteExt;
-use tokio::fs;
-#[cfg(target_family = "unix")]
-use std::os::unix::fs::PermissionsExt;
+use crate::services::ToolCommandParamsResolver;
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater};
+use std::collections::HashSet;
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
+/// HARDCODE REMOVE LATER: Tracks tools that have already received an update this session.
+/// Backend is buggy and sends duplicate update messages, so we only allow one update per tool.
+type UpdatedToolsTracker = Arc<RwLock<HashSet<String>>>;
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -25,6 +29,9 @@ pub struct ToolAgentUpdateService {
     directory_manager: DirectoryManager,
     config_service: AgentConfigurationService,
     installed_agent_publisher: InstalledAgentMessagePublisher,
+    command_params_resolver: ToolCommandParamsResolver,
+    /// HARDCODE REMOVE LATER: Tools that have already been updated this session
+    updated_tools: UpdatedToolsTracker,
 }
 
 impl ToolAgentUpdateService {
@@ -37,6 +44,7 @@ impl ToolAgentUpdateService {
         directory_manager: DirectoryManager,
         config_service: AgentConfigurationService,
         installed_agent_publisher: InstalledAgentMessagePublisher,
+        command_params_resolver: ToolCommandParamsResolver,
     ) -> Self {
         // Ensure directories exist
         directory_manager
@@ -53,6 +61,9 @@ impl ToolAgentUpdateService {
             directory_manager,
             config_service,
             installed_agent_publisher,
+            command_params_resolver,
+            // HARDCODE REMOVE LATER: Initialize empty tracker
+            updated_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -61,6 +72,16 @@ impl ToolAgentUpdateService {
         let new_version = &message.version;
 
         info!("Processing tool agent update for tool: {} to version: {}", tool_agent_id, new_version);
+
+        // HARDCODE REMOVE LATER: Check if this tool was already updated this session
+        // Backend sends duplicate update messages, so we only process the first one
+        {
+            let updated = self.updated_tools.read().await;
+            if updated.contains(tool_agent_id) {
+                info!("HARDCODE: Tool {} was already updated this session, skipping duplicate update", tool_agent_id);
+                return Ok(());
+            }
+        }
 
         // Check if tool is installed
         let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
@@ -71,112 +92,168 @@ impl ToolAgentUpdateService {
             }
         };
 
+        // TEMPORARILY DISABLED FOR TESTING - allows updating to same version
         // Check if version is different
-        if installed_tool.version == *new_version {
-            info!("Tool {} is already at version {}, no update needed", tool_agent_id, new_version);
-            return Ok(());
-        }
+        // if installed_tool.version == *new_version {
+        //     info!("Tool {} is already at version {}, no update needed", tool_agent_id, new_version);
+        //     return Ok(());
+        // }
 
         info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
 
         self.tool_run_manager.mark_updating(tool_agent_id).await;
 
-        let result = self.do_update(tool_agent_id, new_version, &message, &mut installed_tool).await;
+        let result = self.do_update(new_version, &message, &mut installed_tool).await;
 
         self.tool_run_manager.clear_updating(tool_agent_id).await;
+
+        // HARDCODE REMOVE LATER: Mark this tool as updated regardless of success/failure
+        // to prevent duplicate update attempts this session
+        {
+            let mut updated = self.updated_tools.write().await;
+            updated.insert(tool_agent_id.clone());
+            info!("HARDCODE: Marked tool {} as updated for this session", tool_agent_id);
+        }
 
         result
     }
 
     async fn do_update(
         &self,
-        tool_agent_id: &str,
         new_version: &str,
         message: &ToolAgentUpdateMessage,
         installed_tool: &mut crate::models::installed_tool::InstalledTool,
     ) -> Result<()> {
-        // Get tool directory path
+        let tool_agent_id = &installed_tool.tool_agent_id;
+
+        let download_config = if !message.download_configurations.is_empty() {
+            self.github_download_service
+                .find_config_for_current_os(&message.download_configurations)
+                .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?
+        } else {
+            return self.do_legacy_update(new_version, installed_tool).await;
+        };
+
+        let deps = ToolUpdaterDeps {
+            github_download_service: self.github_download_service.clone(),
+            tool_kill_service: self.tool_kill_service.clone(),
+            tool_run_manager: self.tool_run_manager.clone(),
+            directory_manager: self.directory_manager.clone(),
+            command_params_resolver: self.command_params_resolver.clone(),
+        };
+
+        let updater = create_updater(&installed_tool.installation, deps);
+
+        info!(tool_id = %tool_agent_id, "Phase 1: Preparing update");
+        let ctx = updater.prepare(installed_tool).await
+            .with_context(|| format!("Failed to prepare update for: {}", tool_agent_id))?;
+
+        info!(tool_id = %tool_agent_id, "Phase 2: Applying update");
+        match updater.apply(installed_tool, download_config, &ctx).await {
+            Ok(()) => {
+                installed_tool.version = new_version.to_string();
+                self.installed_tools_service.save(installed_tool.clone()).await
+                    .with_context(|| format!("Failed to save updated tool: {}", tool_agent_id))?;
+
+                info!(tool_id = %tool_agent_id, "Phase 3: Finalizing update");
+                updater.finalize(installed_tool, &ctx).await
+                    .with_context(|| format!("Failed to finalize update for: {}", tool_agent_id))?;
+
+                info!(tool_id = %tool_agent_id, version = %new_version, "Update completed successfully");
+            }
+            Err(e) => {
+                error!(tool_id = %tool_agent_id, error = %e, "Update failed, rolling back");
+                if let Err(rollback_err) = updater.rollback(installed_tool, &ctx).await {
+                    error!(tool_id = %tool_agent_id, error = %rollback_err, "Rollback also failed");
+                }
+                return Err(e).with_context(|| format!("Update failed for: {}", tool_agent_id));
+            }
+        }
+
+        self.publish_installed_agent_message(tool_agent_id, new_version).await;
+
+        Ok(())
+    }
+
+    async fn do_legacy_update(
+        &self,
+        new_version: &str,
+        installed_tool: &mut crate::models::installed_tool::InstalledTool,
+    ) -> Result<()> {
+        use tokio::fs::{self, File};
+        use tokio::io::AsyncWriteExt;
+        #[cfg(target_family = "unix")]
+        use std::os::unix::fs::PermissionsExt;
+
+        let tool_agent_id = &installed_tool.tool_agent_id;
+
+        if !matches!(installed_tool.installation, Installation::Standard { .. }) {
+            anyhow::bail!(
+                "Legacy update (without download_configurations) only supports Standard installation type. \
+                Tool {} has {:?}",
+                tool_agent_id,
+                installed_tool.installation
+            );
+        }
+
         let agent_file_path = self.directory_manager.get_agent_path(tool_agent_id);
         let backup_file_path = agent_file_path.with_extension("backup");
 
-        info!("Stopping tool process for update: {}", tool_agent_id);
+        info!(tool_id = %tool_agent_id, "Using legacy update method (Artifactory)");
+
         self.tool_kill_service.stop_tool(tool_agent_id).await
-            .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
+            .with_context(|| format!("Failed to stop tool: {}", tool_agent_id))?;
 
         if agent_file_path.exists() {
-            info!("Backing up current agent binary for tool: {}", tool_agent_id);
-            fs::copy(&agent_file_path, &backup_file_path)
-                .await
-                .with_context(|| format!("Failed to backup agent binary for tool: {}", tool_agent_id))?;
+            fs::copy(&agent_file_path, &backup_file_path).await
+                .with_context(|| "Failed to backup")?;
         }
 
-        info!("Downloading new agent binary for tool: {} version: {}", tool_agent_id, new_version);
-        let new_agent_bytes = if !message.download_configurations.is_empty() {
-            // Use GithubDownloadService with download configurations
-            info!("Using download configurations to update tool agent");
-            let download_config = self.github_download_service.find_config_for_current_os(&message.download_configurations)
-                .with_context(|| format!("Failed to find download configuration for current OS for tool: {}", tool_agent_id))?;
-
-            self.github_download_service
-                .download_and_extract(download_config)
-                .await
-                .with_context(|| format!("Failed to download and extract tool agent update for: {}", tool_agent_id))?
-        } else {
-            // Fall back to legacy method (Artifactory)
-            info!("Using legacy method to update tool agent");
-            self.tool_agent_file_client
-                .get_tool_agent_file(tool_agent_id.to_string())
-                .await
-                .with_context(|| format!("Failed to download new agent binary for tool: {}", tool_agent_id))?
-        };
+        let new_agent_bytes = self.tool_agent_file_client
+            .get_tool_agent_file(tool_agent_id.to_string())
+            .await
+            .with_context(|| "Failed to download from Artifactory")?;
 
         File::create(&agent_file_path)
             .await?
             .write_all(&new_agent_bytes)
-            .await
-            .with_context(|| format!("Failed to write new agent binary for tool: {}", tool_agent_id))?;
+            .await?;
 
-        // Set executable permissions
         #[cfg(target_family = "unix")]
         {
             let mut perms = fs::metadata(&agent_file_path).await?.permissions();
             perms.set_mode(0o755);
-            fs::set_permissions(&agent_file_path, perms)
-                .await
-                .with_context(|| format!("Failed to chmod +x {}", agent_file_path.display()))?;
+            fs::set_permissions(&agent_file_path, perms).await?;
         }
-
-        info!("New agent binary written for tool: {}", tool_agent_id);
 
         installed_tool.version = new_version.to_string();
-        self.installed_tools_service.save(installed_tool.clone()).await
-            .with_context(|| format!("Failed to update installed tool record for: {}", tool_agent_id))?;
+        self.installed_tools_service.save(installed_tool.clone()).await?;
 
         if backup_file_path.exists() {
-            fs::remove_file(&backup_file_path)
-                .await
-                .with_context(|| format!("Failed to remove backup file for tool: {}", tool_agent_id))?;
-            debug!("Removed backup file for tool: {}", tool_agent_id);
+            let _ = fs::remove_file(&backup_file_path).await;
         }
 
-        info!("Tool agent update completed for tool: {} to version: {}", tool_agent_id, new_version);
+        info!(tool_id = %tool_agent_id, version = %new_version, "Legacy update completed");
 
-        // Publish installed agent message
-        info!("Publishing installed agent message for updated tool: {}", tool_agent_id);
+        self.publish_installed_agent_message(tool_agent_id, new_version).await;
+
+        Ok(())
+    }
+
+    async fn publish_installed_agent_message(&self, tool_agent_id: &str, version: &str) {
+        info!(tool_id = %tool_agent_id, "Publishing installed agent message");
         match self.config_service.get_machine_id().await {
             Ok(machine_id) => {
                 if let Err(e) = self.installed_agent_publisher
-                    .publish(machine_id, tool_agent_id.to_string(), new_version.to_string())
+                    .publish(machine_id, tool_agent_id.to_string(), version.to_string())
                     .await
                 {
-                    warn!("Failed to publish installed agent message for {}: {:#}", tool_agent_id, e);
+                    warn!(tool_id = %tool_agent_id, error = %e, "Failed to publish installed agent message");
                 }
             }
             Err(e) => {
-                warn!("Failed to get machine_id for installed agent message: {:#}", e);
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to get machine_id");
             }
         }
-
-        Ok(())
     }
 }

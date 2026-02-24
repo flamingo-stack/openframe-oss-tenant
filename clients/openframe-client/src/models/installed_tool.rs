@@ -1,17 +1,49 @@
 use serde::{Deserialize, Serialize};
-use crate::models::SessionType;
-use crate::models::download_configuration::InstallationType;
 
-/// Installation status of the tool on the endpoint.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
-pub enum ToolStatus {
-    Installed,
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum Installation {
+    Standard {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        executable_path: Option<String>,
+    },
+    GuiApp {
+        executable_path: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        bundle_id: Option<String>,
+    },
+    Service {
+        service_name: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        executable_path: Option<String>,
+    },
 }
 
-impl Default for ToolStatus {
+impl Default for Installation {
     fn default() -> Self {
-        ToolStatus::Installed
+        Installation::Standard { executable_path: None }
+    }
+}
+
+impl Installation {
+    pub fn executable_path(&self) -> Option<&str> {
+        match self {
+            Installation::Standard { executable_path } => executable_path.as_deref(),
+            Installation::GuiApp { executable_path, .. } => Some(executable_path.as_str()),
+            Installation::Service { executable_path, .. } => executable_path.as_deref(),
+        }
+    }
+
+    pub fn is_standard(&self) -> bool {
+        matches!(self, Installation::Standard { .. })
+    }
+
+    pub fn is_gui_app(&self) -> bool {
+        matches!(self, Installation::GuiApp { .. })
+    }
+
+    pub fn is_service(&self) -> bool {
+        matches!(self, Installation::Service { .. })
     }
 }
 
@@ -21,19 +53,12 @@ pub struct InstalledTool {
     pub tool_id: String,
     pub tool_type: String,
     pub version: String,
-    pub session_type: SessionType,
     pub run_command_args: Vec<String>,
     pub tool_agent_id_command_args: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uninstallation_command_args: Option<Vec<String>>,
-    pub status: ToolStatus,
-    /// Path to executable relative to tool folder
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub executable_path: Option<String>,
     #[serde(default)]
-    pub installation_type: InstallationType,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bundle_id: Option<String>,
+    pub installation: Installation,
 }
 
 impl Default for InstalledTool {
@@ -43,14 +68,10 @@ impl Default for InstalledTool {
             tool_id: String::new(),
             tool_type: String::new(),
             version: String::new(),
-            session_type: SessionType::Service,
             run_command_args: Vec::new(),
-            status: ToolStatus::default(),
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
-            executable_path: None,
-            installation_type: InstallationType::default(),
-            bundle_id: None,
+            installation: Installation::default(),
         }
     }
 }

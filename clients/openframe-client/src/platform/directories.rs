@@ -779,6 +779,24 @@ impl DirectoryManager {
             .join(tool_agent_id)
             .join(asset_name)
     }
+
+    /// Returns the tool folder path for a specific tool
+    pub fn get_tool_folder(&self, tool_agent_id: &str) -> PathBuf {
+        self.app_support_dir().join(tool_agent_id)
+    }
+
+    /// Find .app bundle path from executable path
+    /// e.g., "/path/to/App.app/Contents/MacOS/binary" -> "/path/to/App.app"
+    pub fn find_app_bundle_path(executable_path: &Path) -> Option<PathBuf> {
+        executable_path.ancestors()
+            .find(|p| p.extension().map_or(false, |ext| ext == "app"))
+            .map(|p| p.to_path_buf())
+    }
+
+    /// Check if path is inside .app bundle
+    pub fn is_app_bundle_path(path: &Path) -> bool {
+        path.to_string_lossy().contains(".app/")
+    }
 }
 
 #[cfg(test)]

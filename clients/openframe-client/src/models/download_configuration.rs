@@ -7,6 +7,7 @@ pub enum InstallationType {
     #[default]
     Standard,
     GuiApp,
+    Service,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
