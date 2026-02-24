@@ -1,9 +1,8 @@
 'use client'
 
 import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components/features"
-import { ColorsIcon, PlusCircleIcon, TagsIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2"
 import {
-  CategoryManagementModal,
   DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
@@ -14,7 +13,6 @@ import {
 import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks"
 import { useRouter } from "next/navigation"
 import React, { useCallback, useEffect, useMemo, useState } from "react"
-import { useLabels } from '../../hooks/use-labels'
 import { usePolicies } from '../../hooks/use-policies'
 import type { Policy } from '../../types/policies.types'
 
@@ -42,8 +40,6 @@ function PolicyStatusCell({ policy }: { policy: Policy }) {
 
 export function Policies() {
   const router = useRouter()
-  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false)
-  const { labels, createLabel, deleteLabel, isCreating, isDeleting } = useLabels()
 
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
@@ -157,22 +153,13 @@ export function Policies() {
     } : null
   )
 
-  const handleOpenCategories = useCallback(() => {
-    setIsCategoriesOpen(true)
-  }, [])
-
   const actions = useMemo(() => [
-    {
-      label: 'Edit Labels',
-      icon: <ColorsIcon size={24} className="text-ods-text-secondary" />,
-      onClick: handleOpenCategories
-    },
     {
       label: 'Add Policy',
       icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
       onClick: handleAddPolicy
     }
-  ], [handleAddPolicy, handleOpenCategories])
+  ], [handleAddPolicy])
 
   return (
     <ListPageLayout
@@ -202,18 +189,6 @@ export function Policies() {
         onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
         renderRowActions={renderRowActions}
-      />
-      <CategoryManagementModal
-        isOpen={isCategoriesOpen}
-        onClose={() => setIsCategoriesOpen(false)}
-        label="Policy Labels"
-        items={labels.map(l => ({ id: String(l.id), name: l.name }))}
-        onCreate={(name) => createLabel(name)}
-        onDelete={(item) => deleteLabel(Number(item.id))}
-        onApply={() => setIsCategoriesOpen(false)}
-        inputPlaceholder="Enter Label Name"
-        inputLabel="Add New Label"
-        isSubmitting={isCreating || isDeleting}
       />
     </ListPageLayout>
   )

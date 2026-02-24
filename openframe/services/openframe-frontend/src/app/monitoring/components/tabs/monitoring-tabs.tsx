@@ -13,12 +13,12 @@ export const MONITORING_TABS: TabItem[] = [
     icon: PoliciesIcon,
     component: Policies
   },
-  {
-    id: 'checks',
-    label: 'Checks',
-    icon: PulseIcon,
-    component: Checks
-  },
+  // {
+  //   id: 'checks',
+  //   label: 'Checks',
+  //   icon: PulseIcon,
+  //   component: Checks
+  // },
   {
     id: 'queries',
     label: 'Queries',

@@ -80,15 +80,6 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
             <p className="text-ods-text-primary font-medium">{formatInterval(queryDetails.interval)}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Frequency</p>
           </div>
-
-          <div>
-            <p className="text-ods-text-primary font-medium">
-              {queryDetails.last_executed
-                ? new Date(queryDetails.last_executed).toLocaleString()
-                : 'Never'}
-            </p>
-            <p className="text-ods-text-secondary text-xs mt-1">Last Run</p>
-          </div>
         </div>
       </div>
 

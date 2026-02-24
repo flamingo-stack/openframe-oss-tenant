@@ -4,12 +4,14 @@ import { CardLoader, FormPageContainer, Label, LoadError, NotFoundError, OS_TYPE
 import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ScriptEditor } from '../../../scripts/components/script-editor'
 import { LiveTestPanel } from '../../components/live-test-panel'
+import { useLiveCampaign } from '../../hooks/use-live-campaign'
 import { usePolicies } from '../../hooks/use-policies'
 import { usePolicyDetails } from '../hooks/use-policy-details'
 
@@ -38,6 +40,9 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const isSaving = isCreating || isUpdating
 
+  const campaign = useLiveCampaign()
+  const [showTestPanel, setShowTestPanel] = useState(false)
+
   const {
     register,
     control,
@@ -56,6 +61,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   })
 
   const nameValue = watch('name')
+  const queryValue = watch('query')
 
   useEffect(() => {
     if (policyDetails && isExistingPolicy) {
@@ -69,7 +75,11 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   }, [policyDetails, isExistingPolicy, reset])
 
   const handleBack = () => {
-    router.push('/monitoring?tab=policies')
+    if (isExistingPolicy && numericId) {
+      router.push(`/monitoring/policy/${numericId}`)
+    } else {
+      router.push('/monitoring?tab=policies')
+    }
   }
 
   const onSubmit = useCallback((data: PolicyFormData) => {
@@ -98,6 +108,20 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     }
   }, [errors, toast])
 
+  const handleTestPolicy = useCallback(() => {
+    setShowTestPanel(true)
+    campaign.startCampaign(queryValue)
+  }, [campaign, queryValue])
+
+  const handleTestAgain = useCallback(() => {
+    campaign.startCampaign(queryValue)
+  }, [campaign, queryValue])
+
+  const handleCloseTestPanel = useCallback(() => {
+    campaign.stopCampaign()
+    setShowTestPanel(false)
+  }, [campaign])
+
   const actions = useMemo(() => {
     const items = []
     if (isExistingPolicy) {
@@ -108,13 +132,20 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       })
     }
     items.push({
+      label: 'Test Policy',
+      onClick: handleTestPolicy,
+      variant: 'outline' as const,
+      icon: <Play size={16} />,
+      disabled: !queryValue.trim() || campaign.isRunning,
+    })
+    items.push({
       label: 'Save Policy',
       onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
       disabled: isSaving || !nameValue.trim(),
     })
     return items
-  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, isExistingPolicy, handleBack])
+  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, isExistingPolicy, handleBack, handleTestPolicy, queryValue, campaign.isRunning])
 
   if (isLoadingPolicy && isExistingPolicy) {
     return <CardLoader items={4} />
@@ -139,6 +170,26 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       padding='none'
     >
       <div className="space-y-10">
+
+        {/* Test Policy Panel */}
+        {showTestPanel && (
+          <LiveTestPanel
+            mode="policy"
+            isRunning={campaign.isRunning}
+            startedAt={campaign.startedAt}
+            durationMs={campaign.durationMs}
+            results={campaign.results}
+            errors={campaign.errors}
+            totals={campaign.totals}
+            hostsResponded={campaign.hostsResponded}
+            hostsFailed={campaign.hostsFailed}
+            campaignStatus={campaign.campaignStatus}
+            onTestAgain={handleTestAgain}
+            onStop={campaign.stopCampaign}
+            onClose={handleCloseTestPanel}
+          />
+        )}
+        
         {/* Supported Platform */}
         <div className="space-y-1">
           <Label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Supported Platform</Label>
@@ -225,9 +276,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             )}
           />
         </div>
-
-        {/* Test Policy */}
-        <LiveTestPanel sql={watch('query')} mode="policy" />
       </div>
     </FormPageContainer>
   )

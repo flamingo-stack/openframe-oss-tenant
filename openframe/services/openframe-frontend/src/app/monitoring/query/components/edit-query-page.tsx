@@ -3,12 +3,14 @@
 import { CardLoader, FormPageContainer, Label, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Play } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { ScriptEditor } from '../../../scripts/components/script-editor'
 import { LiveTestPanel } from '../../components/live-test-panel'
+import { useLiveCampaign } from '../../hooks/use-live-campaign'
 import { useQueries } from '../../hooks/use-queries'
 import { useQueryDetails } from '../hooks/use-query-details'
 
@@ -37,6 +39,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
   const isSaving = isCreating || isUpdating
 
+  const campaign = useLiveCampaign()
+  const [showTestPanel, setShowTestPanel] = useState(false)
+
   const {
     register,
     control,
@@ -55,6 +60,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   })
 
   const nameValue = watch('name')
+  const queryValue = watch('query')
 
   useEffect(() => {
     if (queryDetails && isExistingQuery) {
@@ -68,7 +74,11 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   }, [queryDetails, isExistingQuery, reset])
 
   const handleBack = () => {
-    router.push('/monitoring?tab=queries')
+    if (isExistingQuery && numericId) {
+      router.push(`/monitoring/query/${numericId}`)
+    } else {
+      router.push('/monitoring?tab=queries')
+    }
   }
 
   const onSubmit = useCallback((data: QueryFormData) => {
@@ -97,6 +107,20 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     }
   }, [errors, toast])
 
+  const handleTestQuery = useCallback(() => {
+    setShowTestPanel(true)
+    campaign.startCampaign(queryValue)
+  }, [campaign, queryValue])
+
+  const handleTestAgain = useCallback(() => {
+    campaign.startCampaign(queryValue)
+  }, [campaign, queryValue])
+
+  const handleCloseTestPanel = useCallback(() => {
+    campaign.stopCampaign()
+    setShowTestPanel(false)
+  }, [campaign])
+
   const actions = useMemo(() => {
     const items = []
     if (isExistingQuery) {
@@ -107,13 +131,20 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       })
     }
     items.push({
+      label: 'Test Query',
+      onClick: handleTestQuery,
+      variant: 'outline' as const,
+      icon: <Play size={16} />,
+      disabled: !queryValue.trim() || campaign.isRunning,
+    })
+    items.push({
       label: 'Save Query',
       onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
       disabled: isSaving || !nameValue.trim(),
     })
     return items
-  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, isExistingQuery, handleBack])
+  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, isExistingQuery, handleBack, handleTestQuery, queryValue, campaign.isRunning])
 
   if (isLoadingQuery && isExistingQuery) {
     return <CardLoader items={4} />
@@ -138,6 +169,25 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       padding='none'
     >
       <div className="space-y-10">
+        {/* Test Query Panel */}
+        {showTestPanel && (
+          <LiveTestPanel
+            mode="query"
+            isRunning={campaign.isRunning}
+            startedAt={campaign.startedAt}
+            durationMs={campaign.durationMs}
+            results={campaign.results}
+            errors={campaign.errors}
+            totals={campaign.totals}
+            hostsResponded={campaign.hostsResponded}
+            hostsFailed={campaign.hostsFailed}
+            campaignStatus={campaign.campaignStatus}
+            onTestAgain={handleTestAgain}
+            onStop={campaign.stopCampaign}
+            onClose={handleCloseTestPanel}
+          />
+        )}
+
         {/* Name */}
         <div className="space-y-1">
           <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
@@ -200,9 +250,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             )}
           />
         </div>
-
-        {/* Test Query */}
-        <LiveTestPanel sql={watch('query')} mode="query" />
       </div>
     </FormPageContainer>
   )

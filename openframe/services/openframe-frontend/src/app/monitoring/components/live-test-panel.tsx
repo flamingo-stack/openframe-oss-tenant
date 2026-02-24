@@ -1,146 +1,167 @@
 'use client'
 
 import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core'
-import { Play, Square, RotateCcw } from 'lucide-react'
-import { useLiveCampaign } from '../hooks/use-live-campaign'
+import { RotateCcw, Square, X } from 'lucide-react'
+import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core'
+import type { CampaignError, CampaignTotals } from '../hooks/use-live-campaign'
 
-interface LiveTestPanelProps {
-  sql: string
+export interface LiveTestPanelProps {
   mode: 'query' | 'policy'
+  isRunning: boolean
+  startedAt: Date | null
+  durationMs: number
+  results: QueryResultRow[]
+  errors: CampaignError[]
+  totals: CampaignTotals | null
+  hostsResponded: number
+  hostsFailed: number
+  campaignStatus: '' | 'pending' | 'finished'
+  onTestAgain: () => void
+  onStop: () => void
+  onClose: () => void
 }
 
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000)
-  if (totalSeconds < 60) return `${totalSeconds}s`
-  const minutes = Math.floor(totalSeconds / 60)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
-  return `${minutes}m ${seconds}s`
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
 }
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export function LiveTestPanel({ sql, mode }: LiveTestPanelProps) {
-  const {
-    startCampaign,
-    stopCampaign,
-    isRunning,
-    startedAt,
-    durationMs,
-    results,
-    errors,
-    totals,
-    hostsResponded,
-    hostsFailed,
-    campaignStatus,
-  } = useLiveCampaign()
-
-  const label = mode === 'query' ? 'Query' : 'Policy'
-  const hasRun = startedAt !== null
+export function LiveTestPanel({
+  mode,
+  isRunning,
+  startedAt,
+  durationMs,
+  results,
+  errors,
+  totals,
+  hostsResponded,
+  hostsFailed,
+  campaignStatus,
+  onTestAgain,
+  onStop,
+  onClose,
+}: LiveTestPanelProps) {
+  const label = mode === 'query' ? 'QUERY' : 'POLICY'
   const isFinished = campaignStatus === 'finished'
-
-  const handleStart = () => {
-    startCampaign(sql)
-  }
-
-  const handleStop = () => {
-    stopCampaign()
-  }
-
   const totalOnlineHosts = totals?.online ?? 0
   const totalResponded = hostsResponded + hostsFailed
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h3 className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Test {label}
-          </h3>
+    <div className="space-y-3">
+      {/* Section title */}
+      <h3 className="font-mono text-xs font-medium uppercase tracking-widest text-ods-text-secondary">
+        {label} TESTING
+      </h3>
 
-          {hasRun && (
-            <div className="flex items-center gap-3 text-sm text-ods-text-secondary">
-              <span>Started: {formatTime(startedAt!)}</span>
-              <span className="text-ods-border">•</span>
-              <span>Duration: {formatDuration(durationMs)}</span>
-              {totalOnlineHosts > 0 && (
-                <>
-                  <span className="text-ods-border">•</span>
-                  <span>
-                    {totalResponded}/{totalOnlineHosts} hosts
-                  </span>
-                </>
-              )}
-              {hostsFailed > 0 && (
-                <>
-                  <span className="text-ods-border">•</span>
-                  <span className="text-[var(--ods-attention-red-error)]">
-                    {hostsFailed} failed
-                  </span>
-                </>
-              )}
+      {/* Card container */}
+      <div className="bg-ods-card border border-ods-border rounded-[6px] h-[600px] overflow-clip flex flex-col">
+        {/* Header row */}
+        <div className="flex items-center justify-between px-4 h-[56px] border-b border-ods-border shrink-0">
+          <div className="flex items-center gap-6">
+            {/* Started */}
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-ods-text-secondary">Started</span>
+              <span className="font-mono text-sm text-ods-text-primary">
+                {startedAt ? formatTime(startedAt) : '--:--:--'}
+              </span>
             </div>
-          )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          {!isRunning && (
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={hasRun ? <RotateCcw size={16} /> : <Play size={16} />}
-              onClick={handleStart}
-              disabled={!sql.trim()}
-            >
-              {hasRun ? 'Test Again' : `Test ${label}`}
-            </Button>
-          )}
-          {isRunning && (
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Square size={16} />}
-              onClick={handleStop}
-            >
-              Stop
-            </Button>
-          )}
-        </div>
-      </div>
+            {/* Duration */}
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-ods-text-secondary">Duration</span>
+              <span className="font-mono text-sm text-ods-text-primary">
+                {formatDuration(durationMs)}
+              </span>
+            </div>
 
-      {/* Error summary */}
-      {isFinished && errors.length > 0 && (
-        <div className="bg-ods-card border border-ods-border rounded-lg p-4">
-          <p className="text-sm font-medium text-[var(--ods-attention-red-error)]">
-            {errors.length} host{errors.length !== 1 ? 's' : ''} returned errors
-          </p>
-          <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-            {errors.slice(0, 10).map((err, i) => (
-              <p key={i} className="text-xs text-ods-text-secondary">
-                {err.host_display_name}: {err.error}
-              </p>
-            ))}
-            {errors.length > 10 && (
-              <p className="text-xs text-ods-text-secondary">...and {errors.length - 10} more</p>
+            {/* Hosts */}
+            {totalOnlineHosts > 0 && (
+              <div className="flex flex-col">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-ods-text-secondary">Hosts</span>
+                <span className="font-mono text-sm text-ods-text-primary">
+                  {totalResponded}/{totalOnlineHosts}
+                  {hostsFailed > 0 && (
+                    <span className="text-[var(--ods-attention-red-error)] ml-1">
+                      ({hostsFailed} failed)
+                    </span>
+                  )}
+                </span>
+              </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Results table */}
-      {hasRun && (
-        <QueryReportTable
-          title={`${label} Results`}
-          data={results}
-          loading={isRunning && results.length === 0}
-          emptyMessage={isRunning ? 'Waiting for results...' : 'No results returned'}
-          columnOrder={['host_display_name']}
-          exportFilename={`test-${mode}-results`}
-          showExport={isFinished && results.length > 0}
-        />
-      )}
+          <div className="flex items-center gap-2">
+            {!isRunning && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<RotateCcw size={14} />}
+                onClick={onTestAgain}
+              >
+                Test Again
+              </Button>
+            )}
+            {isRunning && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<Square size={14} />}
+                onClick={onStop}
+              >
+                Stop
+              </Button>
+            )}
+            <button
+              onClick={onClose}
+              className="flex items-center justify-center w-8 h-8 rounded-md text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-hover transition-colors"
+              aria-label="Close test panel"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Error summary */}
+        {isFinished && errors.length > 0 && (
+          <div className="px-4 py-3 border-b border-ods-border shrink-0">
+            <p className="text-sm font-medium text-[var(--ods-attention-red-error)]">
+              {errors.length} host{errors.length !== 1 ? 's' : ''} returned errors
+            </p>
+            <div className="mt-1 space-y-0.5 max-h-24 overflow-y-auto">
+              {errors.slice(0, 10).map((err, i) => (
+                <p key={i} className="text-xs text-ods-text-secondary">
+                  {err.host_display_name}: {err.error}
+                </p>
+              ))}
+              {errors.length > 10 && (
+                <p className="text-xs text-ods-text-secondary">...and {errors.length - 10} more</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Results table */}
+        <div className="flex-1 overflow-auto">
+          <QueryReportTable
+            title=""
+            data={results}
+            loading={isRunning && results.length === 0}
+            skeletonRows={5}
+            emptyMessage={isRunning ? 'Waiting for results...' : 'No results returned'}
+            columnOrder={['host_display_name']}
+            exportFilename={`test-${mode}-results`}
+            showExport={false}
+            variant="compact"
+          />
+        </div>
+      </div>
     </div>
   )
 }
