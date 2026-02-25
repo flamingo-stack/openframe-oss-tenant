@@ -37,6 +37,7 @@ interface UseNatsDialogSubscriptionArgs {
   onConnect?: () => void;
   onDisconnect?: () => void;
   onSubscribed?: () => void;
+  onBeforeReconnect?: () => Promise<void> | void;
 }
 
 export function useNatsDialogSubscription({
@@ -46,6 +47,7 @@ export function useNatsDialogSubscription({
   onConnect,
   onDisconnect,
   onSubscribed,
+  onBeforeReconnect,
 }: UseNatsDialogSubscriptionArgs): UseNatsDialogSubscriptionReturn {
   const [apiBaseUrl, setApiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
@@ -97,6 +99,7 @@ export function useNatsDialogSubscription({
     onConnect,
     onDisconnect,
     onSubscribed,
+    onBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
   });

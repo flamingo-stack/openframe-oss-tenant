@@ -90,7 +90,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     onError: (error, isAdmin) => {},
   });
 
-  const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering } = useChunkCatchup({
+  const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
     dialogId,
     onChunkReceived: processRealtimeChunk,
   });
@@ -150,12 +150,27 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialogId, catchUpChunks]);
 
-  useNatsDialogSubscription({
+  const handleBeforeReconnect = useCallback(async () => {
+    try {
+      await apiClient.get('/api/user/me');
+    } catch {
+      // If refresh fails, apiClient will force-logout
+    }
+  }, []);
+
+  const { reconnectionCount } = useNatsDialogSubscription({
     enabled: !!dialogId,
     dialogId,
     onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
+    onBeforeReconnect: handleBeforeReconnect,
   });
+
+  useEffect(() => {
+    if (reconnectionCount > 0 && dialogId) {
+      resetAndCatchUp();
+    }
+  }, [reconnectionCount, dialogId, resetAndCatchUp]);
 
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;
