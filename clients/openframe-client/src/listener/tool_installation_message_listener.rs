@@ -68,13 +68,17 @@ impl ToolInstallationMessageListener {
             let mut tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
 
             if tool_installation_message.tool_agent_id == "meshcentral-agent" {
-                warn!("TEMP HARDCODE: Overriding meshcentral-agent to use Service installation");
-                tool_installation_message.service_name = Some("meshagent".to_string());
+                warn!("TEMP HARDCODE: Overriding meshcentral-agent to use Service installation (simulating backend per-OS config)");
                 if let Some(ref mut configs) = tool_installation_message.download_configurations {
                     for config in configs.iter_mut() {
                         if config.matches_current_os() {
                             warn!("TEMP HARDCODE: Setting installationType to SERVICE for {}", config.os);
                             config.installation_type = InstallationType::Service;
+                            config.service_name = Some(if cfg!(target_os = "windows") {
+                                "Mesh Agent".to_string()
+                            } else {
+                                "meshagent".to_string()
+                            });
                         }
                     }
                 }

@@ -50,6 +50,13 @@ impl ToolUpdater for ServiceToolUpdater {
         self.deps.tool_kill_service.stop_installed_tool(tool).await
             .with_context(|| format!("Failed to stop service: {}", tool_agent_id))?;
 
+        // Also kill any managed processes (ToolRunManager may have spawned agent.exe
+        // if the tool was previously installed as Standard)
+        info!(tool_id = %tool_agent_id, "Killing any remaining processes by pattern");
+        if let Err(e) = self.deps.tool_kill_service.stop_tool(tool_agent_id).await {
+            warn!(tool_id = %tool_agent_id, "Failed to kill processes by pattern (non-fatal): {:#}", e);
+        }
+
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
         let exec_path = self.resolve_executable_path(tool);

@@ -145,7 +145,7 @@ impl ToolInstallationService {
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
 
         // Download and install the tool
-        let (executable_path, installation_type, bundle_id) = match &tool_installation_message.download_configurations {
+        let (executable_path, installation_type, bundle_id, config_service_name) = match &tool_installation_message.download_configurations {
             Some(configs) => {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
@@ -157,11 +157,11 @@ impl ToolInstallationService {
                     &default_agent_path,
                 ).await?;
 
-                (exec_path, config.installation_type, config.bundle_id.clone())
+                (exec_path, config.installation_type, config.bundle_id.clone(), config.service_name.clone())
             }
             None => {
                 self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;
-                (None, InstallationType::Standard, None)
+                (None, InstallationType::Standard, None, None)
             }
         };
 
@@ -171,11 +171,13 @@ impl ToolInstallationService {
             installation_type,
         );
 
+        let service_name = config_service_name.or(tool_installation_message.service_name.clone());
+
         let installation = self.build_installation(
             installation_type,
             executable_path,
             bundle_id,
-            tool_installation_message.service_name.clone(),
+            service_name,
         )?;
 
         // Download and save assets
