@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   buildNatsWsUrl,
@@ -8,17 +8,17 @@ import {
   type NatsMessageType,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { STORAGE_KEYS } from '../../tickets/constants';
-import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { CoreMessage } from '../types/message.types';
-import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { runtimeEnv } from "@/lib/runtime-config";
+import { STORAGE_KEYS } from "../../tickets/constants";
+import { useMingoMessagesStore } from "../stores/mingo-messages-store";
+import type { CoreMessage } from "../types/message.types";
+import { useMingoChunkCatchup } from "./use-mingo-chunk-catchup";
 
-const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const;
+const MINGO_TOPICS: NatsMessageType[] = ["admin-message"] as const;
 
 interface UseMingoRealtimeSubscriptionOptions {
   onChunkReceived?: (dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void;
@@ -35,7 +35,7 @@ interface UseMingoRealtimeSubscription {
   unsubscribeFromDialog: (dialogId: string) => void;
   getSubscriptionState: (dialogId: string) => DialogSubscriptionState;
   subscribedDialogs: Set<string>;
-  connectionState: 'connected' | 'disconnected' | 'connecting';
+  connectionState: "connected" | "disconnected" | "connecting";
   token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange: (dialogId: string, connected: boolean) => void;
@@ -44,12 +44,12 @@ interface UseMingoRealtimeSubscription {
 function getApiBaseUrl(): string | null {
   const envBase = runtimeEnv.tenantHostUrl();
   if (envBase) return envBase;
-  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
   return null;
 }
 
 function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null;
   } catch {
@@ -69,7 +69,7 @@ export function useMingoRealtimeSubscription(
 
   const [subscribedDialogs, setSubscribedDialogs] = useState<Set<string>>(new Set());
   const [dialogStates, setDialogStates] = useState<Map<string, DialogSubscriptionState>>(new Map());
-  const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [connectionState, setConnectionState] = useState<"connected" | "disconnected" | "connecting">("disconnected");
 
   const onChunkReceivedRef = useRef(onChunkReceived);
   const catchupRefs = useRef<Map<string, any>>(new Map());
@@ -91,12 +91,12 @@ export function useMingoRealtimeSubscription(
         setToken(getAccessToken());
       }
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, [isDevTicketEnabled]);
 
   const onConnectionChange = useCallback((dialogId: string, connected: boolean) => {
-    setConnectionState(connected ? 'connected' : 'disconnected');
+    setConnectionState(connected ? "connected" : "disconnected");
     setDialogStates(prev => {
       const newMap = new Map(prev);
       const existing = newMap.get(dialogId);
@@ -212,10 +212,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
     const assistantMessage: CoreMessage = {
       id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      role: 'assistant',
+      role: "assistant",
       content: [],
-      name: 'Mingo',
-      assistantType: 'mingo',
+      name: "Mingo",
+      assistantType: "mingo",
       timestamp: new Date(),
     };
 
@@ -227,8 +227,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     (errorText: string) => {
       const errorMessage: CoreMessage = {
         id: `error-${Date.now()}`,
-        role: 'error',
-        name: 'Mingo',
+        role: "error",
+        name: "Mingo",
         timestamp: new Date(),
         content: errorText,
       };
@@ -237,8 +237,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       const lastMessage = currentMessages[currentMessages.length - 1];
 
       if (
-        lastMessage?.role === 'assistant' &&
-        (lastMessage.content === '' || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
+        lastMessage?.role === "assistant" &&
+        (lastMessage.content === "" || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
       ) {
         updateMessage(dialogId, lastMessage.id, errorMessage);
       } else {
@@ -251,12 +251,12 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
   const incompleteState = useMemo(() => {
     const currentMessages = messagesByDialog.get(dialogId) || [];
     const assistantSegments: MessageSegment[] = [];
-    let lastAssistantId = '';
+    let lastAssistantId = "";
     let lastAssistantTimestamp = new Date();
 
     for (let i = currentMessages.length - 1; i >= 0; i--) {
       const msg = currentMessages[i];
-      if (msg.role === 'assistant') {
+      if (msg.role === "assistant") {
         if (!lastAssistantId) {
           lastAssistantId = msg.id;
           lastAssistantTimestamp = msg.timestamp || new Date();
@@ -264,9 +264,9 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
         if (Array.isArray(msg.content)) {
           assistantSegments.unshift(...msg.content);
-        } else if (typeof msg.content === 'string' && msg.content) {
+        } else if (typeof msg.content === "string" && msg.content) {
           assistantSegments.unshift({
-            type: 'text',
+            type: "text",
             text: msg.content,
             id: `${msg.id}-text`,
           } as MessageSegment);
@@ -279,9 +279,9 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     if (assistantSegments.length > 0 && lastAssistantId) {
       const completeAssistantMessage = {
         id: lastAssistantId,
-        role: 'assistant' as const,
+        role: "assistant" as const,
         content: assistantSegments,
-        name: 'Mingo',
+        name: "Mingo",
         timestamp: lastAssistantTimestamp,
       };
 
@@ -314,7 +314,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       onStreamEnd: () => {
         setTyping(dialogId, false);
         setStreamingMessage(dialogId, null);
-        queryClient.invalidateQueries({ queryKey: ['mingo-dialog-messages', dialogId] });
+        queryClient.invalidateQueries({ queryKey: ["mingo-dialog-messages", dialogId] });
       },
 
       onSegmentsUpdate: (segments: MessageSegment[]) => {
@@ -324,7 +324,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       },
 
       onError: (error: string) => {
-        console.error('[DialogSubscription] Stream error:', error);
+        console.error("[DialogSubscription] Stream error:", error);
         setTyping(dialogId, false);
         setStreamingMessage(dialogId, null);
         addErrorMessage(error);
@@ -348,7 +348,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
   const { processChunk: processorProcessChunk } = useRealtimeChunkProcessor({
     callbacks: realtimeCallbacks,
-    displayApprovalTypes: ['CLIENT', 'ADMIN'],
+    displayApprovalTypes: ["CLIENT", "ADMIN"],
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
   });
@@ -419,8 +419,8 @@ export function DialogSubscription({
   const clientConfig = useMemo(
     () => ({
       name: `openframe-frontend-mingo-${dialogId}`,
-      user: 'machine',
-      pass: '',
+      user: "machine",
+      pass: "",
     }),
     [dialogId],
   );
@@ -459,7 +459,7 @@ export function DialogSubscription({
 
   const handleBeforeReconnect = useCallback(async () => {
     try {
-      await apiClient.get('/api/user/me');
+      await apiClient.get("/api/user/me");
     } catch {
       // If refresh fails, apiClient will force-logout
     }
