@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { TabItem, PoliciesIcon, QueriesIcon } from '@flamingo-stack/openframe-frontend-core'
-import { Policies } from './policies'
-import { Checks } from './checks'
-import { Queries } from './queries'
-import { PulseIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
+import { PoliciesIcon, QueriesIcon, TabItem } from '@flamingo-stack/openframe-frontend-core';
+import { PulseIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Checks } from './checks';
+import { Policies } from './policies';
+import { Queries } from './queries';
 
 export const MONITORING_TABS: TabItem[] = [
   {
     id: 'policies',
     label: 'Policies',
     icon: PoliciesIcon,
-    component: Policies
+    component: Policies,
   },
   // {
   //   id: 'checks',
@@ -23,14 +23,13 @@ export const MONITORING_TABS: TabItem[] = [
     id: 'queries',
     label: 'Queries',
     icon: QueriesIcon,
-    component: Queries
-  }
-]
+    component: Queries,
+  },
+];
 
-export const getMonitoringTab = (tabId: string): TabItem | undefined =>
-  MONITORING_TABS.find(tab => tab.id === tabId)
+export const getMonitoringTab = (tabId: string): TabItem | undefined => MONITORING_TABS.find(tab => tab.id === tabId);
 
 export const getTabComponent = (tabId: string): React.ComponentType | null => {
-  const tab = getMonitoringTab(tabId)
-  return tab?.component || null
-}
+  const tab = getMonitoringTab(tabId);
+  return tab?.component || null;
+};

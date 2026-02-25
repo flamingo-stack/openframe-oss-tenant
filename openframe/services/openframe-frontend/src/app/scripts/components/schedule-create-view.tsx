@@ -1,49 +1,56 @@
-'use client'
+'use client';
 
-import { DetailPageContainer, LoadError, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
-import { useMdUp } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
+import {
+  DetailPageContainer,
+  LoadError,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@flamingo-stack/openframe-frontend-core';
+import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   CheckboxBlock,
   DatePickerInputSimple,
   Input,
   Label,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo } from 'react'
-import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
-import { useScriptSchedule } from '../hooks/use-script-schedule'
-import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../hooks/use-script-schedule-mutations'
-import { useScripts } from '../hooks/use-scripts'
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMdUp, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { useScriptSchedule } from '../hooks/use-script-schedule';
+import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../hooks/use-script-schedule-mutations';
+import { useScripts } from '../hooks/use-scripts';
 import {
-  REPEAT_PERIOD_OPTIONS,
   buildCreatePayload,
-  createScheduleFormSchema,
-  scheduleDetailToFormData,
   type CreateScheduleFormData,
+  createScheduleFormSchema,
   type Platform,
-} from '../types/script-schedule.types'
-import { DISABLED_PLATFORMS, AVAILABLE_PLATFORMS } from '../utils/script-utils'
-import { ScheduleActionFormCard } from './schedule-action-form-card'
-import { ScheduleCreateLoader } from './schedule-create-loader'
+  REPEAT_PERIOD_OPTIONS,
+  scheduleDetailToFormData,
+} from '../types/script-schedule.types';
+import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '../utils/script-utils';
+import { ScheduleActionFormCard } from './schedule-action-form-card';
+import { ScheduleCreateLoader } from './schedule-create-loader';
 
 interface ScheduleCreateViewProps {
-  scheduleId?: string
+  scheduleId?: string;
 }
 
 export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {}) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const isMdUp = useMdUp()
-  const isEditMode = Boolean(scheduleId)
-  const { schedule, isLoading: isLoadingSchedule } = useScriptSchedule(scheduleId ?? '')
-  const { scripts, isLoading: isLoadingScripts, error: scriptsError } = useScripts()
-  const createMutation = useCreateScriptSchedule()
-  const updateMutation = useUpdateScriptSchedule()
+  const router = useRouter();
+  const { toast } = useToast();
+  const isMdUp = useMdUp();
+  const isEditMode = Boolean(scheduleId);
+  const { schedule, isLoading: isLoadingSchedule } = useScriptSchedule(scheduleId ?? '');
+  const { scripts, error: scriptsError } = useScripts();
+  const createMutation = useCreateScriptSchedule();
+  const updateMutation = useUpdateScriptSchedule();
 
   const methods = useForm<CreateScheduleFormData>({
     resolver: zodResolver(createScheduleFormSchema),
@@ -67,50 +74,50 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         },
       ],
     },
-  })
+  });
 
   const {
     control,
     handleSubmit,
     watch,
     formState: { isSubmitting },
-  } = methods
+  } = methods;
 
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'actions',
-  })
+  });
 
   useEffect(() => {
     if (isEditMode && schedule) {
-      const formData = scheduleDetailToFormData(schedule)
-      methods.reset(formData)
+      const formData = scheduleDetailToFormData(schedule);
+      methods.reset(formData);
     }
-  }, [isEditMode, schedule, methods])
+  }, [isEditMode, schedule, methods]);
 
-  const repeatEnabled = watch('repeatEnabled')
-  const supportedPlatforms = watch('supportedPlatforms')
+  const repeatEnabled = watch('repeatEnabled');
+  const supportedPlatforms = watch('supportedPlatforms');
 
   const handleBack = useCallback(() => {
-    isEditMode ? router.push(`/scripts/schedules/${scheduleId}`) : router.push('/scripts/?tab=schedules')
-  }, [router, isEditMode, scheduleId])
+    isEditMode ? router.push(`/scripts/schedules/${scheduleId}`) : router.push('/scripts/?tab=schedules');
+  }, [router, isEditMode, scheduleId]);
 
   const togglePlatform = useCallback(
     (platform: Platform) => {
-      const current = methods.getValues('supportedPlatforms')
+      const current = methods.getValues('supportedPlatforms');
       if (current.includes(platform)) {
         if (current.length > 1) {
           methods.setValue(
             'supportedPlatforms',
-            current.filter((p) => p !== platform),
-          )
+            current.filter(p => p !== platform),
+          );
         }
       } else {
-        methods.setValue('supportedPlatforms', [...current, platform])
+        methods.setValue('supportedPlatforms', [...current, platform]);
       }
     },
     [methods],
-  )
+  );
 
   const addAction = useCallback(() => {
     append({
@@ -119,62 +126,61 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       timeout: 90,
       script_args: [],
       env_vars: [],
-    })
-  }, [append])
+    });
+  }, [append]);
 
   const onSubmit = useCallback(
     async (data: CreateScheduleFormData) => {
       try {
         // Validate that selected scripts are compatible with supported platforms
         for (const action of data.actions) {
-          const script = scripts.find((s) => s.id === action.script)
+          const script = scripts.find(s => s.id === action.script);
           if (script && script.supported_platforms?.length) {
-            const hasMatch = script.supported_platforms.some((p) => data.supportedPlatforms.includes(p))
+            const hasMatch = script.supported_platforms.some(p => data.supportedPlatforms.includes(p));
             if (!hasMatch) {
               toast({
                 title: 'Platform conflict',
                 description: `Script "${script.name}" does not support any of the selected platforms.`,
                 variant: 'destructive',
-              })
-              return
+              });
+              return;
             }
           }
         }
 
-        const payload = buildCreatePayload(data)
+        const payload = buildCreatePayload(data);
         if (isEditMode && scheduleId) {
-          await updateMutation.mutateAsync({ id: scheduleId, payload })
+          await updateMutation.mutateAsync({ id: scheduleId, payload });
           toast({
             title: 'Schedule updated',
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
-          })
+          });
         } else {
-          const result = await createMutation.mutateAsync(payload)
+          const result = await createMutation.mutateAsync(payload);
           toast({
             title: 'Schedule created',
             description: `Schedule "${data.name}" created successfully.`,
             variant: 'success',
-          })
-          router.push(`/scripts/schedules/${result.id}`)
+          });
+          router.push(`/scripts/schedules/${result.id}`);
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`
-        toast({ title: `${isEditMode ? 'Update' : 'Creation'} failed`, description: msg, variant: 'destructive' })
+        const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`;
+        toast({ title: `${isEditMode ? 'Update' : 'Creation'} failed`, description: msg, variant: 'destructive' });
       }
     },
     [isEditMode, scheduleId, scripts, createMutation, updateMutation, toast, router],
-  )
+  );
 
   const onFormError = useCallback(
     (errors: any) => {
-      const firstError = Object.values(errors)[0] as any
-      const message =
-        firstError?.message || firstError?.root?.message || 'Please fix validation errors'
-      toast({ title: 'Validation error', description: message, variant: 'destructive' })
+      const firstError = Object.values(errors)[0] as any;
+      const message = firstError?.message || firstError?.root?.message || 'Please fix validation errors';
+      toast({ title: 'Validation error', description: message, variant: 'destructive' });
     },
     [toast],
-  )
+  );
 
   const actions = useMemo(
     () => [
@@ -191,15 +197,24 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         loading: isSubmitting || createMutation.isPending || updateMutation.isPending,
       },
     ],
-    [isEditMode, handleSubmit, onSubmit, onFormError, isSubmitting, createMutation.isPending, updateMutation.isPending],
-  )
+    [
+      isEditMode,
+      handleSubmit,
+      onSubmit,
+      onFormError,
+      isSubmitting,
+      createMutation.isPending,
+      updateMutation.isPending,
+      handleBack,
+    ],
+  );
 
   if (scriptsError) {
-    return <LoadError message={`Error loading scripts: ${scriptsError}`} />
+    return <LoadError message={`Error loading scripts: ${scriptsError}`} />;
   }
 
   if (isEditMode && isLoadingSchedule) {
-    return <ScheduleCreateLoader />
+    return <ScheduleCreateLoader />;
   }
 
   return (
@@ -215,9 +230,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         <div className="flex flex-col gap-6 overflow-auto">
           {/* Schedule Name */}
           <div className="flex flex-col gap-1">
-            <Label className="text-ods-text-secondary font-medium text-[14px]">
-              Schedule Name
-            </Label>
+            <Label className="text-ods-text-secondary font-medium text-[14px]">Schedule Name</Label>
             <Controller
               name="name"
               control={control}
@@ -290,7 +303,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                         type="number"
                         className="w-[100px]"
                         value={field.value}
-                        onChange={(e) => field.onChange(Number(e.target.value) || 1)}
+                        onChange={e => field.onChange(Number(e.target.value) || 1)}
                       />
                     )}
                   />
@@ -305,7 +318,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {REPEAT_PERIOD_OPTIONS.map((opt) => (
+                        {REPEAT_PERIOD_OPTIONS.map(opt => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
@@ -320,12 +333,10 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
 
           {/* Supported Platforms */}
           <div className="flex flex-col gap-2">
-            <Label className="text-ods-text-secondary font-medium text-[14px]">
-              Supported Platform
-            </Label>
+            <Label className="text-ods-text-secondary font-medium text-[14px]">Supported Platform</Label>
             <div className="flex gap-3 max-w-[920px]">
-              {AVAILABLE_PLATFORMS.map((p) => {
-                const isDisabled = DISABLED_PLATFORMS.includes(p.id)
+              {AVAILABLE_PLATFORMS.map(p => {
+                const isDisabled = DISABLED_PLATFORMS.includes(p.id);
                 return (
                   <SelectButton
                     key={p.id}
@@ -336,7 +347,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                     tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
                     onClick={isDisabled ? undefined : () => togglePlatform(p.id)}
                   />
-                )
+                );
               })}
             </div>
           </div>
@@ -370,5 +381,5 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         </div>
       </DetailPageContainer>
     </FormProvider>
-  )
+  );
 }

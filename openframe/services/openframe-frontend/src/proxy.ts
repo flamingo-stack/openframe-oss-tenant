@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
-type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared'
+type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared';
 
 function getMode(): AppMode {
-  const raw = process.env.NEXT_PUBLIC_APP_MODE as AppMode | undefined
-  return (raw as AppMode) || 'oss-tenant'
+  const raw = process.env.NEXT_PUBLIC_APP_MODE as AppMode | undefined;
+  return (raw as AppMode) || 'oss-tenant';
 }
 
 function isAllowed(pathname: string): boolean {
-  const mode = getMode()
+  const mode = getMode();
 
   if (
     pathname.startsWith('/_next') ||
@@ -17,43 +17,39 @@ function isAllowed(pathname: string): boolean {
     pathname.startsWith('/assets') ||
     pathname.startsWith('/icons')
   ) {
-    return true
+    return true;
   }
 
   if (mode === 'saas-shared') {
-    return pathname.startsWith('/auth') || pathname === '/'
+    return pathname.startsWith('/auth') || pathname === '/';
   }
 
   if (mode === 'saas-tenant') {
-    return !pathname.startsWith('/auth')
+    return !pathname.startsWith('/auth');
   }
 
-  return true
+  return true;
 }
 
 function defaultRedirect(): string {
-  const mode = getMode()
-  if (mode === 'saas-shared') return '/auth'
-  if (mode === 'saas-tenant') return '/dashboard'
-  return '/auth'
+  const mode = getMode();
+  if (mode === 'saas-shared') return '/auth';
+  if (mode === 'saas-tenant') return '/dashboard';
+  return '/auth';
 }
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname } = request.nextUrl;
 
   if (!isAllowed(pathname)) {
-    const url = request.nextUrl.clone()
-    url.pathname = defaultRedirect()
-    return NextResponse.redirect(url)
+    const url = request.nextUrl.clone();
+    url.pathname = defaultRedirect();
+    return NextResponse.redirect(url);
   }
 
-  return NextResponse.next()
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/|static/|favicon|assets/|icons/).*)',
-  ],
-}
-
-
+  matcher: ['/((?!_next/|static/|favicon|assets/|icons/).*)'],
+};

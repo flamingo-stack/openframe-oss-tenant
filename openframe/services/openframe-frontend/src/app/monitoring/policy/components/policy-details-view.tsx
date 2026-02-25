@@ -1,41 +1,47 @@
-'use client'
+'use client';
 
-import { CardLoader, DetailPageContainer, LoadError, MoreActionsMenu, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { Edit2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { ScriptEditor } from '../../../scripts/components/script-editor'
-import { usePolicyDetails } from '../hooks/use-policy-details'
+import {
+  CardLoader,
+  DetailPageContainer,
+  LoadError,
+  MoreActionsMenu,
+  NotFoundError,
+} from '@flamingo-stack/openframe-frontend-core';
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Edit2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { usePolicyDetails } from '../hooks/use-policy-details';
 
 interface PolicyDetailsViewProps {
-  policyId: string
+  policyId: string;
 }
 
 export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
-  const router = useRouter()
-  const numericId = parseInt(policyId, 10)
-  const isValidId = !isNaN(numericId)
+  const router = useRouter();
+  const numericId = parseInt(policyId, 10);
+  const isValidId = !isNaN(numericId);
 
-  const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null)
+  const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
 
   const handleBack = () => {
-    router.push('/monitoring?tab=policies')
-  }
+    router.push('/monitoring?tab=policies');
+  };
 
   const handleEditPolicy = () => {
-    router.push(`/monitoring/policy/edit/${policyId}`)
-  }
+    router.push(`/monitoring/policy/edit/${policyId}`);
+  };
 
   if (isLoading) {
-    return <CardLoader items={4} />
+    return <CardLoader items={4} />;
   }
 
   if (error) {
-    return <LoadError message={`Error loading policy: ${error}`} />
+    return <LoadError message={`Error loading policy: ${error}`} />;
   }
 
   if (!policyDetails) {
-    return <NotFoundError message="Policy not found" />
+    return <NotFoundError message="Policy not found" />;
   }
 
   return (
@@ -46,13 +52,15 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         onClick: handleBack,
       }}
       headerActions={
-        <MoreActionsMenu items={[
-          {
-            label: 'Edit Policy',
-            icon: <Edit2 size={20} />,
-            onClick: handleEditPolicy,
-          },
-        ]} />
+        <MoreActionsMenu
+          items={[
+            {
+              label: 'Edit Policy',
+              icon: <Edit2 size={20} />,
+              onClick: handleEditPolicy,
+            },
+          ]}
+        />
       }
     >
       {/* Policy Info */}
@@ -67,7 +75,12 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         <div className="border-t border-ods-border pt-4 grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
             {policyDetails.platform ? (
-              <OSTypeBadgeGroup osTypes={policyDetails.platform.split(',').map(p => p.trim()).filter(Boolean)} />
+              <OSTypeBadgeGroup
+                osTypes={policyDetails.platform
+                  .split(',')
+                  .map(p => p.trim())
+                  .filter(Boolean)}
+              />
             ) : (
               <p className="text-ods-text-primary font-medium">All Platforms</p>
             )}
@@ -75,11 +88,13 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           </div>
 
           <div>
-            <span className={`px-2 py-1 rounded-md text-sm font-medium border ${
-              policyDetails.critical
-                ? 'border-[var(--ods-attention-red-error)] text-[var(--ods-attention-red-error)]'
-                : 'border-ods-border text-ods-text-secondary'
-            }`}>
+            <span
+              className={`px-2 py-1 rounded-md text-sm font-medium border ${
+                policyDetails.critical
+                  ? 'border-[var(--ods-attention-red-error)] text-[var(--ods-attention-red-error)]'
+                  : 'border-ods-border text-ods-text-secondary'
+              }`}
+            >
               {policyDetails.critical ? 'Yes' : 'No'}
             </span>
             <p className="text-ods-text-secondary text-xs mt-1">Critical</p>
@@ -110,14 +125,9 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           <div className="p-4 border-b border-ods-border">
             <h3 className="text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
           </div>
-          <ScriptEditor
-            value={policyDetails.query}
-            shell="sql"
-            readOnly
-            height="300px"
-          />
+          <ScriptEditor value={policyDetails.query} shell="sql" readOnly height="300px" />
         </div>
       )}
     </DetailPageContainer>
-  )
+  );
 }

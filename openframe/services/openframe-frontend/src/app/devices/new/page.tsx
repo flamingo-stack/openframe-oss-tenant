@@ -1,151 +1,157 @@
-'use client'
+'use client';
 
-import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
-import { CommandBox, OPENFRAME_PATHS, OrganizationSelector, OSPlatformSelector, PathsDisplay } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils'
-import { AlertTriangle, Copy, Play } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { AppLayout } from '../../components/app-layout'
-import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min'
-import { useRegistrationSecret } from '../hooks/use-registration-secret'
-import { useReleaseVersion } from '../hooks/use-release-version'
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import {
+  CommandBox,
+  OPENFRAME_PATHS,
+  OrganizationSelector,
+  OSPlatformSelector,
+  PathsDisplay,
+} from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
+import { AlertTriangle, Copy, Play } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AppLayout } from '../../components/app-layout';
+import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min';
+import { useRegistrationSecret } from '../hooks/use-registration-secret';
+import { useReleaseVersion } from '../hooks/use-release-version';
 
 // Force dynamic rendering for this page due to useSearchParams in AppLayout
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-type Platform = OSPlatformId
+type Platform = OSPlatformId;
 
-const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases'
-const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz'
-const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip'
+const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases';
+const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz';
+const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip';
 
 const buildBinaryUrl = (version: string, assetName: string) => {
   if (!version) {
-    return `${RELEASES_BASE_URL}/latest/download/${assetName}`
+    return `${RELEASES_BASE_URL}/latest/download/${assetName}`;
   }
 
-  return `${RELEASES_BASE_URL}/download/${version}/${assetName}`
-}
+  return `${RELEASES_BASE_URL}/download/${version}/${assetName}`;
+};
 
 export default function NewDevicePage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [platform, setPlatform] = useState<Platform>(DEFAULT_OS_PLATFORM)
-  const { initialKey } = useRegistrationSecret()
-  const { releaseVersion } = useReleaseVersion()
-  const [argInput, setArgInput] = useState('')
-  const [args, setArgs] = useState<string[]>([])
-  const [selectedOrgId, setSelectedOrgId] = useState<string>('')
-  const { items: orgs, isLoading: isOrgsLoading, fetch: fetchOrgs } = useOrganizationsMin(100)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [platform, setPlatform] = useState<Platform>(DEFAULT_OS_PLATFORM);
+  const { initialKey } = useRegistrationSecret();
+  const { releaseVersion } = useReleaseVersion();
+  const [argInput, setArgInput] = useState('');
+  const [args, setArgs] = useState<string[]>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>('');
+  const { items: orgs, isLoading: isOrgsLoading, fetch: fetchOrgs } = useOrganizationsMin(100);
 
   const serverUrl = useMemo(() => {
-    if (typeof window === 'undefined')
-      return 'localhost'
-    const { protocol, hostname } = window.location
+    if (typeof window === 'undefined') return 'localhost';
+    const { hostname } = window.location;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'localhost --localMode'
+      return 'localhost --localMode';
     }
-    return hostname
-  }, [])
+    return hostname;
+  }, []);
 
   useEffect(() => {
-    fetchOrgs('').catch(() => { })
-  }, [fetchOrgs])
+    fetchOrgs('').catch(() => {});
+  }, [fetchOrgs]);
 
   // Auto-select first or "Default" organization when orgs load
   useEffect(() => {
     if (orgs.length > 0 && !selectedOrgId) {
       // Try to find "Default" organization first
-      const defaultOrg = orgs.find(o => o.isDefault)
-      const orgToSelect = defaultOrg || orgs[0]
+      const defaultOrg = orgs.find(o => o.isDefault);
+      const orgToSelect = defaultOrg || orgs[0];
 
       if (orgToSelect) {
-        setSelectedOrgId(orgToSelect.organizationId)
+        setSelectedOrgId(orgToSelect.organizationId);
       }
     }
-  }, [orgs, selectedOrgId])
+  }, [orgs, selectedOrgId]);
 
   const addArgument = useCallback(() => {
-    const trimmed = argInput.trim()
-    if (!trimmed) return
-    setArgs((prev) => [...prev, trimmed])
-    setArgInput('')
-  }, [argInput])
+    const trimmed = argInput.trim();
+    if (!trimmed) return;
+    setArgs(prev => [...prev, trimmed]);
+    setArgInput('');
+  }, [argInput]);
 
   const removeArg = useCallback((idx: number) => {
-    setArgs((prev) => prev.filter((_, i) => i !== idx))
-  }, [])
+    setArgs(prev => prev.filter((_, i) => i !== idx));
+  }, []);
 
-  const onArgKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addArgument()
-    }
-  }, [addArgument])
+  const onArgKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addArgument();
+      }
+    },
+    [addArgument],
+  );
 
-  const macBinaryUrl = useMemo(
-    () => buildBinaryUrl(releaseVersion, MACOS_BINARY_NAME),
-    [releaseVersion]
-  )
+  const macBinaryUrl = useMemo(() => buildBinaryUrl(releaseVersion, MACOS_BINARY_NAME), [releaseVersion]);
 
-  const windowsBinaryUrl = useMemo(
-    () => buildBinaryUrl(releaseVersion, WINDOWS_BINARY_NAME),
-    [releaseVersion]
-  )
+  const windowsBinaryUrl = useMemo(() => buildBinaryUrl(releaseVersion, WINDOWS_BINARY_NAME), [releaseVersion]);
 
   const command = useMemo(() => {
-    const orgIdArg = selectedOrgId
-    const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgIdArg}`
-    const extras = args.length ? ' ' + args.join(' ') : ''
+    const orgIdArg = selectedOrgId;
+    const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgIdArg}`;
+    const extras = args.length ? ' ' + args.join(' ') : '';
 
     if (platform === 'windows') {
-      const argString = `${baseArgs}${extras}`
-      return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`
+      const argString = `${baseArgs}${extras}`;
+      return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`;
     }
 
-    return `cd ~ && rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`
-  }, [initialKey, args, platform, selectedOrgId, serverUrl, macBinaryUrl, windowsBinaryUrl])
+    return `cd ~ && rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`;
+  }, [initialKey, args, platform, selectedOrgId, serverUrl, macBinaryUrl, windowsBinaryUrl]);
 
   const copyCommand = useCallback(async () => {
     try {
       if (!initialKey) {
-        toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' })
-        return
+        toast({
+          title: 'Secret unavailable',
+          description: 'Registration secret not loaded yet',
+          variant: 'destructive',
+        });
+        return;
       }
-      await navigator.clipboard.writeText(command)
-      toast({ title: 'Command copied', description: 'Installer command copied to clipboard', variant: 'default' })
-    } catch (e) {
-      toast({ title: 'Copy failed', description: 'Could not copy command', variant: 'destructive' })
+      await navigator.clipboard.writeText(command);
+      toast({ title: 'Command copied', description: 'Installer command copied to clipboard', variant: 'default' });
+    } catch (_e) {
+      toast({ title: 'Copy failed', description: 'Could not copy command', variant: 'destructive' });
     }
-  }, [command, toast, initialKey])
+  }, [command, toast, initialKey]);
 
   const runOnCurrentMachine = useCallback(async () => {
     // Detect OS from browser
-    const userAgent = navigator.userAgent.toLowerCase()
-    const isMac = userAgent.includes('mac')
-    const isWindows = userAgent.includes('win')
-    const isLinux = userAgent.includes('linux')
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+    const isWindows = userAgent.includes('win');
+    const isLinux = userAgent.includes('linux');
 
     // Validate platform matches user's actual OS
     if (isMac && platform !== 'darwin') {
       toast({
         title: 'Platform Mismatch',
         description: 'Please select macOS platform for your current machine',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (isWindows && platform !== 'windows') {
       toast({
         title: 'Platform Mismatch',
         description: 'Please select Windows platform for your current machine',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (isLinux && platform !== 'darwin') {
@@ -153,22 +159,22 @@ export default function NewDevicePage() {
       toast({
         title: 'Platform Mismatch',
         description: 'Please select macOS/Linux platform for your current machine',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
     if (!initialKey) {
-      toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' })
-      return
+      toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' });
+      return;
     }
 
     // Generate and download a script file for the user to run
     // Use platform state (not browser detection) to match command content
     try {
-      let scriptContent: string
-      let fileName: string
-      let mimeType: string
+      let scriptContent: string;
+      let fileName: string;
+      let mimeType: string;
 
       if (platform === 'windows') {
         // PowerShell script for Windows
@@ -180,9 +186,9 @@ ${command}
 Write-Host "OpenFrame client installation complete!" -ForegroundColor Green
 Write-Host "Press any key to exit..."
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-`
-        fileName = 'install-openframe.ps1'
-        mimeType = 'application/x-powershell'
+`;
+        fileName = 'install-openframe.ps1';
+        mimeType = 'application/x-powershell';
       } else {
         // Shell script for macOS
         scriptContent = `#!/bin/bash
@@ -193,21 +199,21 @@ ${command}
 
 echo ""
 echo "OpenFrame client installation complete!"
-`
-        fileName = 'install-openframe.sh'
-        mimeType = 'application/x-sh'
+`;
+        fileName = 'install-openframe.sh';
+        mimeType = 'application/x-sh';
       }
 
       // Create and download the script file
-      const blob = new Blob([scriptContent], { type: mimeType })
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = fileName
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      const blob = new Blob([scriptContent], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
       toast({
         title: 'Script Downloaded',
@@ -215,38 +221,45 @@ echo "OpenFrame client installation complete!"
           ? 'Right-click the file and select "Run with PowerShell" as Administrator'
           : 'Open Terminal, navigate to Downloads, run: chmod +x install-openframe.sh && ./install-openframe.sh',
         variant: 'default',
-        duration: 8000
-      })
-    } catch (e) {
-      toast({ title: 'Download failed', description: 'Could not generate installation script', variant: 'destructive' })
+        duration: 8000,
+      });
+    } catch (_e) {
+      toast({
+        title: 'Download failed',
+        description: 'Could not generate installation script',
+        variant: 'destructive',
+      });
     }
-  }, [command, platform, toast, initialKey])
+  }, [command, platform, toast, initialKey]);
 
-  const copyPath = useCallback(async (path: string) => {
-    try {
-      await navigator.clipboard.writeText(path)
-      toast({ title: 'Path copied', description: 'Folder path copied to clipboard', variant: 'default' })
-    } catch (e) {
-      toast({ title: 'Copy failed', description: 'Could not copy path', variant: 'destructive' })
-    }
-  }, [toast])
+  const copyPath = useCallback(
+    async (path: string) => {
+      try {
+        await navigator.clipboard.writeText(path);
+        toast({ title: 'Path copied', description: 'Folder path copied to clipboard', variant: 'default' });
+      } catch (_e) {
+        toast({ title: 'Copy failed', description: 'Could not copy path', variant: 'destructive' });
+      }
+    },
+    [toast],
+  );
 
   // Get antivirus exclusion paths from unified constants
   const antivirusPaths = useMemo(() => {
     if (platform === 'windows') {
-      return OPENFRAME_PATHS.windows
+      return OPENFRAME_PATHS.windows;
     } else if (platform === 'darwin') {
-      return OPENFRAME_PATHS.darwin
+      return OPENFRAME_PATHS.darwin;
     }
-    return [] // Linux typically doesn't need AV exclusions
-  }, [platform])
+    return []; // Linux typically doesn't need AV exclusions
+  }, [platform]);
 
   return (
     <AppLayout>
       <DetailPageContainer
         title="New Device"
         backButton={{ label: 'Back to Devices', onClick: () => router.push('/devices') }}
-        padding='none'
+        padding="none"
       >
         <div className="flex flex-col gap-6">
           {/* Top row: Organization and Platform */}
@@ -270,7 +283,7 @@ echo "OpenFrame client installation complete!"
               options={[
                 { platformId: 'windows' },
                 { platformId: 'darwin' },
-                { platformId: 'linux', disabled: true, badge: { text: 'Coming Soon', colorScheme: 'cyan' } }
+                { platformId: 'linux', disabled: true, badge: { text: 'Coming Soon', colorScheme: 'cyan' } },
               ]}
             />
           </div>
@@ -282,7 +295,7 @@ echo "OpenFrame client installation complete!"
               className="w-full bg-ods-card border border-ods-border rounded-[6px] px-3 py-2 text-ods-text-primary"
               placeholder="Press enter after each argument"
               value={argInput}
-              onChange={(e) => setArgInput(e.target.value)}
+              onChange={e => setArgInput(e.target.value)}
               onKeyDown={onArgKeyDown}
             />
             {args.length > 0 && (
@@ -316,13 +329,13 @@ echo "OpenFrame client installation complete!"
               label: 'Copy Command',
               onClick: copyCommand,
               icon: <Copy className="w-5 h-5" />,
-              variant: 'primary'
+              variant: 'primary',
             }}
             secondaryAction={{
               label: 'Run on Current Machine',
               onClick: runOnCurrentMachine,
               icon: <Play className="w-5 h-5" />,
-              variant: 'outline'
+              variant: 'outline',
             }}
           />
 
@@ -346,15 +359,13 @@ echo "OpenFrame client installation complete!"
 
               {/* Additional note */}
               <p className="text-ods-text-secondary text-[14px] md:text-[16px]">
-                Or temporarily disable protection during installation. OpenFrame is safe open-source software.
-                Blocks happen because new software needs time to build reputation with security vendors.
+                Or temporarily disable protection during installation. OpenFrame is safe open-source software. Blocks
+                happen because new software needs time to build reputation with security vendors.
               </p>
             </div>
           )}
         </div>
       </DetailPageContainer>
     </AppLayout>
-  )
+  );
 }
-
-

@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   Button,
@@ -7,21 +7,16 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 interface ExecutionStartedModalProps {
-  isOpen: boolean
-  onClose: () => void
-  scriptName: string
-  onViewLogs: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  scriptName: string;
+  onViewLogs: () => void;
 }
 
-export function ExecutionStartedModal({
-  isOpen,
-  onClose,
-  scriptName,
-  onViewLogs,
-}: ExecutionStartedModalProps) {
+export function ExecutionStartedModal({ isOpen, onClose, scriptName, onViewLogs }: ExecutionStartedModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
       <ModalHeader>
@@ -29,10 +24,8 @@ export function ExecutionStartedModal({
       </ModalHeader>
       <ModalContent className="px-6 py-4">
         <p className="font-['DM_Sans'] font-medium text-lg text-ods-text-primary leading-6">
-          Script{' '}
-          <span className="text-ods-accent">{scriptName}</span>{' '}
-          has been accepted for execution. You can track the progress and view
-          the results in the activity logs section.
+          Script <span className="text-ods-accent">{scriptName}</span> has been accepted for execution. You can track
+          the progress and view the results in the activity logs section.
         </p>
       </ModalContent>
       <ModalFooter className="gap-6">
@@ -44,5 +37,5 @@ export function ExecutionStartedModal({
         </Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }

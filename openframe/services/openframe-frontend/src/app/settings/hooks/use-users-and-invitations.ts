@@ -1,38 +1,37 @@
-'use client'
+'use client';
 
-import { invitationsQueryKeys, useInvitations } from './use-invitations'
-import { useUsers, usersQueryKeys } from './use-users'
-
-import type { InvitationRecord, InvitationStatus } from './use-invitations'
-import type { UserRecord, UserStatus } from './use-users'
+import type { InvitationRecord, InvitationStatus } from './use-invitations';
+import { invitationsQueryKeys, useInvitations } from './use-invitations';
+import type { UserRecord, UserStatus } from './use-users';
+import { usersQueryKeys, useUsers } from './use-users';
 
 // ============ Types ============
 
 export enum RecordType {
-  USER = 'user',
-  INVITATION = 'invitation',
+  User = 'user',
+  Invitation = 'invitation',
 }
 
-export type UnifiedUserStatus = UserStatus | InvitationStatus
+export type UnifiedUserStatus = UserStatus | InvitationStatus;
 
 export type UnifiedUserRecord = {
-  id: string
-  email: string
-  firstName?: string
-  lastName?: string
-  roles: string[]
-  status: UnifiedUserStatus
-  createdAt?: string
-  updatedAt?: string
-  expiresAt?: string
-  type: RecordType
-  originalUser?: UserRecord
-  originalInvitation?: InvitationRecord
-}
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  roles: string[];
+  status: UnifiedUserStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  expiresAt?: string;
+  type: RecordType;
+  originalUser?: UserRecord;
+  originalInvitation?: InvitationRecord;
+};
 
 // Re-export types for convenience
-export { invitationsQueryKeys, usersQueryKeys }
-export type { InvitationRecord, InvitationStatus, UserRecord }
+export { invitationsQueryKeys, usersQueryKeys };
+export type { InvitationRecord, InvitationStatus, UserRecord };
 
 // ============ Helpers ============
 
@@ -46,9 +45,9 @@ function userToUnified(user: UserRecord): UnifiedUserRecord {
     status: user.status,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    type: RecordType.USER,
+    type: RecordType.User,
     originalUser: user,
-  }
+  };
 }
 
 function invitationToUnified(invitation: InvitationRecord): UnifiedUserRecord {
@@ -61,28 +60,28 @@ function invitationToUnified(invitation: InvitationRecord): UnifiedUserRecord {
     status: invitation.status,
     createdAt: invitation.createdAt,
     expiresAt: invitation.expiresAt,
-    type: RecordType.INVITATION,
+    type: RecordType.Invitation,
     originalInvitation: invitation,
-  }
+  };
 }
 
 // ============ Combined Hook ============
 
 export function useUsersAndInvitations(page: number = 0, size: number = 20) {
-  const usersHook = useUsers(page, size)
-  const invitationsHook = useInvitations(page, size)
+  const usersHook = useUsers(page, size);
+  const invitationsHook = useInvitations(page, size);
 
   const records: UnifiedUserRecord[] = [
     ...usersHook.users.map(userToUnified),
     ...invitationsHook.invitations.map(invitationToUnified),
-  ]
+  ];
 
-  const isLoading = usersHook.isLoading || invitationsHook.isLoading
-  const error = usersHook.error || invitationsHook.error
+  const isLoading = usersHook.isLoading || invitationsHook.isLoading;
+  const error = usersHook.error || invitationsHook.error;
 
   const refetchAll = async () => {
-    await Promise.all([usersHook.refetch(), invitationsHook.refetch()])
-  }
+    await Promise.all([usersHook.refetch(), invitationsHook.refetch()]);
+  };
 
   return {
     // Data
@@ -119,5 +118,5 @@ export function useUsersAndInvitations(page: number = 0, size: number = 20) {
     // Raw hooks for advanced use cases
     usersHook,
     invitationsHook,
-  }
+  };
 }

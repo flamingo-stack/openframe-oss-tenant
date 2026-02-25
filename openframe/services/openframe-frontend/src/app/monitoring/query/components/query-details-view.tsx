@@ -1,52 +1,59 @@
-'use client'
+'use client';
 
-import { CardLoader, DetailPageContainer, LoadError, MoreActionsMenu, NotFoundError, QueryReportTable } from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { Edit2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { ScriptEditor } from '../../../scripts/components/script-editor'
-import { useQueryDetails } from '../hooks/use-query-details'
-import { useQueryReport } from '../hooks/use-query-report'
+import {
+  CardLoader,
+  DetailPageContainer,
+  LoadError,
+  MoreActionsMenu,
+  NotFoundError,
+  QueryReportTable,
+} from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { Edit2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { useQueryDetails } from '../hooks/use-query-details';
+import { useQueryReport } from '../hooks/use-query-report';
 
 function formatInterval(seconds: number): string {
-  if (seconds === 0) return 'Manual'
-  if (seconds < 60) return `Every ${seconds}s`
-  if (seconds < 3600) return `Every ${Math.floor(seconds / 60)}m`
-  if (seconds < 86400) return `Every ${Math.floor(seconds / 3600)}h`
-  return `Every ${Math.floor(seconds / 86400)}d`
+  if (seconds === 0) return 'Manual';
+  if (seconds < 60) return `Every ${seconds}s`;
+  if (seconds < 3600) return `Every ${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `Every ${Math.floor(seconds / 3600)}h`;
+  return `Every ${Math.floor(seconds / 86400)}d`;
 }
 
 interface QueryDetailsViewProps {
-  queryId: string
+  queryId: string;
 }
 
 export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
-  const router = useRouter()
-  const numericId = parseInt(queryId, 10)
-  const isValidId = !isNaN(numericId)
+  const router = useRouter();
+  const numericId = parseInt(queryId, 10);
+  const isValidId = !isNaN(numericId);
 
-  const { toast } = useToast()
-  const { queryDetails, isLoading, error } = useQueryDetails(isValidId ? numericId : null)
-  const { rows, isLoading: isReportLoading } = useQueryReport(isValidId ? numericId : null)
+  const { toast } = useToast();
+  const { queryDetails, isLoading, error } = useQueryDetails(isValidId ? numericId : null);
+  const { rows, isLoading: isReportLoading } = useQueryReport(isValidId ? numericId : null);
 
   const handleBack = () => {
-    router.push('/monitoring?tab=queries')
-  }
+    router.push('/monitoring?tab=queries');
+  };
 
   const handleEditQuery = () => {
-    router.push(`/monitoring/query/edit/${queryId}`)
-  }
+    router.push(`/monitoring/query/edit/${queryId}`);
+  };
 
   if (isLoading) {
-    return <CardLoader items={4} />
+    return <CardLoader items={4} />;
   }
 
   if (error) {
-    return <LoadError message={`Error loading query: ${error}`} />
+    return <LoadError message={`Error loading query: ${error}`} />;
   }
 
   if (!queryDetails) {
-    return <NotFoundError message="Query not found" />
+    return <NotFoundError message="Query not found" />;
   }
 
   return (
@@ -57,13 +64,15 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         onClick: handleBack,
       }}
       headerActions={
-        <MoreActionsMenu items={[
-          {
-            label: 'Edit Query',
-            icon: <Edit2 size={20} />,
-            onClick: handleEditQuery,
-          },
-        ]} />
+        <MoreActionsMenu
+          items={[
+            {
+              label: 'Edit Query',
+              icon: <Edit2 size={20} />,
+              onClick: handleEditQuery,
+            },
+          ]}
+        />
       }
     >
       {/* Query Info */}
@@ -89,12 +98,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
           <div className="p-4 border-b border-ods-border">
             <h3 className="text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
           </div>
-          <ScriptEditor
-            value={queryDetails.query}
-            shell="sql"
-            readOnly
-            height="300px"
-          />
+          <ScriptEditor value={queryDetails.query} shell="sql" readOnly height="300px" />
         </div>
       )}
 
@@ -108,10 +112,10 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
           columnOrder={['host_name', 'last_fetched']}
           exportFilename={`query-${queryDetails.name}-report`}
           onExport={() => {
-            toast({ title: 'Report Exported', description: 'Query report exported as CSV', variant: 'success' })
+            toast({ title: 'Report Exported', description: 'Query report exported as CSV', variant: 'success' });
           }}
         />
       </div>
     </DetailPageContainer>
-  )
+  );
 }

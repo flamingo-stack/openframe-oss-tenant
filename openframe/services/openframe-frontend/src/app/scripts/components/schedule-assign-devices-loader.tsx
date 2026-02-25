@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * ScheduleInfoBarFromData skeleton — Name/Note top row + Date/Time/Repeat/Platform bottom row
@@ -9,7 +9,7 @@ function InfoBarSkeleton() {
   return (
     <div className="flex flex-col gap-0 bg-ods-card border border-ods-border rounded-[6px] overflow-clip w-full">
       <div className="grid grid-cols-2 border-b border-ods-border">
-        {[1, 2].map((i) => (
+        {[1, 2].map(i => (
           <div key={i} className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
             <Skeleton className="h-6 w-32 mb-1" />
             <Skeleton className="h-5 w-24" />
@@ -17,7 +17,7 @@ function InfoBarSkeleton() {
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
           <div key={i} className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
             <Skeleton className="h-6 w-24 mb-1" />
             <Skeleton className="h-5 w-16" />
@@ -25,7 +25,7 @@ function InfoBarSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -50,7 +50,7 @@ function SelectionModeSkeleton() {
         <Skeleton className="h-7 w-[100px] rounded-[4px]" />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -69,7 +69,7 @@ function DeviceRowSkeleton() {
       <Skeleton className="h-8 w-[80px] hidden md:block rounded-md" />
       <Skeleton className="h-10 w-10 rounded-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -118,5 +118,5 @@ export function ScheduleAssignDevicesLoader() {
         </div>
       </div>
     </div>
-  )
+  );
 }

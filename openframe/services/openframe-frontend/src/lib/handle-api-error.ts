@@ -1,17 +1,16 @@
-
 /**
  * Extracts error message from API response or error object
  */
 export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    return error.message
+    return error.message;
   }
-  
+
   if (typeof error === 'string') {
-    return error
+    return error;
   }
-  
-  return 'An unexpected error occurred'
+
+  return 'An unexpected error occurred';
 }
 
 /**
@@ -21,13 +20,13 @@ export function getErrorMessage(error: unknown): string {
 export function handleApiError(
   error: unknown,
   toast: (options: { title: string; description: string; variant: 'destructive' }) => void,
-  defaultMessage: string = 'Operation failed'
+  defaultMessage: string = 'Operation failed',
 ): void {
-  const message = getErrorMessage(error)
-  
+  const message = getErrorMessage(error);
+
   toast({
     title: defaultMessage,
     description: message,
     variant: 'destructive',
-  })
+  });
 }

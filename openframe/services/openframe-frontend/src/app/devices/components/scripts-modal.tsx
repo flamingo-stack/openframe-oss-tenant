@@ -1,70 +1,77 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react'
-import { Search, Check } from 'lucide-react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { getOSPlatformId, OS_TYPES } from '@flamingo-stack/openframe-frontend-core'
-import { useScripts } from '../../scripts/hooks/use-scripts'
-import { ScriptEntry } from '../../scripts/stores/scripts-store'
-import { Device } from '../types/device.types'
-import { tacticalApiClient } from '../../../lib/tactical-api-client'
-import { ListLoader, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import {
+  Button,
+  getOSPlatformId,
+  Modal,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+  OS_TYPES,
+} from '@flamingo-stack/openframe-frontend-core';
+import { ListLoader, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { Check, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { tacticalApiClient } from '../../../lib/tactical-api-client';
+import { useScripts } from '../../scripts/hooks/use-scripts';
+import { ScriptEntry } from '../../scripts/stores/scripts-store';
+import { Device } from '../types/device.types';
 
-const scrollbarStyles = {
+const _scrollbarStyles = {
   scrollbarWidth: 'thin' as const,
-  scrollbarColor: 'var(--color-text-secondary) var(--color-border-default)'
-}
+  scrollbarColor: 'var(--color-text-secondary) var(--color-border-default)',
+};
 
 interface ScriptsModalProps {
-  isOpen: boolean
-  onClose: () => void
-  deviceId: string
-  device: Partial<Device> | null
-  onRunScripts: (scriptIds: string[]) => void
-  onDeviceLogs?: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  deviceId: string;
+  device: Partial<Device> | null;
+  onRunScripts: (scriptIds: string[]) => void;
+  onDeviceLogs?: () => void;
 }
 
 const getCategoriesFromScripts = (scripts: ScriptEntry[]): string[] => {
   const categories = scripts.reduce((acc, script) => {
     if (script.category && !acc.includes(script.category.toUpperCase())) {
-      acc.push(script.category.toUpperCase())
+      acc.push(script.category.toUpperCase());
     }
-    return acc
-  }, [] as string[])
-  return categories.sort().slice(0, 3)
-}
+    return acc;
+  }, [] as string[]);
+  return categories.sort().slice(0, 3);
+};
 
 // Filter scripts based on device platform compatibility
 // Uses centralized OS type system from ui-kit
 const filterScriptsByPlatform = (scripts: ScriptEntry[], devicePlatform: string): ScriptEntry[] => {
-  if (!devicePlatform) return scripts
+  if (!devicePlatform) return scripts;
 
   // Get the normalized platform ID using centralized OS types
-  const platformId = getOSPlatformId(devicePlatform)
-  if (!platformId) return scripts
+  const platformId = getOSPlatformId(devicePlatform);
+  if (!platformId) return scripts;
 
   // Get all aliases for this platform from centralized OS_TYPES
-  const osTypeDef = OS_TYPES.find(os => os.platformId === platformId)
-  const compatiblePlatforms = osTypeDef ? osTypeDef.aliases : []
+  const osTypeDef = OS_TYPES.find(os => os.platformId === platformId);
+  const compatiblePlatforms = osTypeDef ? osTypeDef.aliases : [];
 
   return scripts.filter(script => {
     if (!script.supported_platforms || script.supported_platforms.length === 0) {
-      return true
+      return true;
     }
 
     return script.supported_platforms.some(platform =>
-      compatiblePlatforms.some(compatiblePlatform =>
-        platform.toLowerCase().includes(compatiblePlatform) ||
-        compatiblePlatform.includes(platform.toLowerCase())
-      )
-    )
-  })
-}
+      compatiblePlatforms.some(
+        compatiblePlatform =>
+          platform.toLowerCase().includes(compatiblePlatform) || compatiblePlatform.includes(platform.toLowerCase()),
+      ),
+    );
+  });
+};
 
 interface CheckboxProps {
-  active?: boolean
-  state?: 'default' | 'hover' | 'action'
+  active?: boolean;
+  state?: 'default' | 'hover' | 'action';
 }
 
 function CustomCheckbox({ active = true, state = 'default' }: CheckboxProps) {
@@ -75,7 +82,7 @@ function CustomCheckbox({ active = true, state = 'default' }: CheckboxProps) {
           <div className="absolute border-2 border-ods-border inset-0 rounded-[6px]" />
         </div>
       </div>
-    )
+    );
   }
   return (
     <div className="relative w-6 h-6">
@@ -84,68 +91,66 @@ function CustomCheckbox({ active = true, state = 'default' }: CheckboxProps) {
         <Check className="h-3 w-3 text-black" />
       </div>
     </div>
-  )
+  );
 }
 
 export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, onDeviceLogs }: ScriptsModalProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [selectedScripts, setSelectedScripts] = useState<string[]>([])
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedScripts, setSelectedScripts] = useState<string[]>([]);
+  const [_isExecuting, setIsExecuting] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const { scripts, isLoading, error } = useScripts()
-  const { toast } = useToast()
+  const { scripts, isLoading, error } = useScripts();
+  const { toast } = useToast();
 
-  const platformCompatibleScripts = device 
-    ? filterScriptsByPlatform(scripts, device.plat || '')
-    : scripts
+  const platformCompatibleScripts = device ? filterScriptsByPlatform(scripts, device.plat || '') : scripts;
 
-  const categories = getCategoriesFromScripts(platformCompatibleScripts)
+  const categories = getCategoriesFromScripts(platformCompatibleScripts);
 
   const filteredScripts = platformCompatibleScripts.filter(script => {
-    const matchesSearch = script.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         script.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || (script.category && script.category.toUpperCase() === selectedCategory)
-    return matchesSearch && matchesCategory
-  })
+    const matchesSearch =
+      script.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      script.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      !selectedCategory || (script.category && script.category.toUpperCase() === selectedCategory);
+    return matchesSearch && matchesCategory;
+  });
 
   const handleScriptToggle = (scriptId: number) => {
-    const scriptIdStr = scriptId.toString()
-    setSelectedScripts(prev => 
-      prev.includes(scriptIdStr) 
-        ? prev.filter(id => id !== scriptIdStr)
-        : [...prev, scriptIdStr]
-    )
-  }
+    const scriptIdStr = scriptId.toString();
+    setSelectedScripts(prev =>
+      prev.includes(scriptIdStr) ? prev.filter(id => id !== scriptIdStr) : [...prev, scriptIdStr],
+    );
+  };
 
   const handleSelectAll = () => {
     if (selectedScripts.length === filteredScripts.length) {
-      setSelectedScripts([])
+      setSelectedScripts([]);
     } else {
-      setSelectedScripts(filteredScripts.map(script => script.id.toString()))
+      setSelectedScripts(filteredScripts.map(script => script.id.toString()));
     }
-  }
+  };
 
   const handleRunScripts = async () => {
     if (selectedScripts.length === 0) {
       toast({
         title: 'No scripts selected',
         description: 'Please select at least one script to run.',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setIsExecuting(true)
+    setIsExecuting(true);
 
     try {
-      const executionPromises = selectedScripts.map(async (scriptId) => {
+      const executionPromises = selectedScripts.map(async scriptId => {
         try {
           const response = await tacticalApiClient.runScript(deviceId, {
-            output: "forget",
+            output: 'forget',
             emails: [],
-            emailMode: "default",
+            emailMode: 'default',
             custom_field: null,
             save_all_output: false,
             script: parseInt(scriptId),
@@ -153,84 +158,83 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
             env_vars: [],
             timeout: 120,
             run_as_user: false,
-            run_on_server: false
-          })
+            run_on_server: false,
+          });
 
           if (!response.ok) {
-            throw new Error(response.error || `Failed to execute script ${scriptId}`)
+            throw new Error(response.error || `Failed to execute script ${scriptId}`);
           }
 
-          console.log(`Script ${scriptId} execution initiated:`, response)
-          return { scriptId, success: true }
+          console.log(`Script ${scriptId} execution initiated:`, response);
+          return { scriptId, success: true };
         } catch (error) {
-          console.error(`Script ${scriptId} execution failed:`, error)
-          return { scriptId, success: false }
+          console.error(`Script ${scriptId} execution failed:`, error);
+          return { scriptId, success: false };
         }
-      })
+      });
 
-      Promise.all(executionPromises).then((results) => {
-        const successes = results.filter(result => result.success).length
-        const failures = results.filter(result => !result.success).length
+      Promise.all(executionPromises).then(results => {
+        const successes = results.filter(result => result.success).length;
+        const failures = results.filter(result => !result.success).length;
 
         if (failures === 0) {
           toast({
             title: 'Scripts submitted successfully',
             description: `${successes} script${successes > 1 ? 's' : ''} submitted for execution. Check device logs for results.`,
-            variant: 'default'
-          })
+            variant: 'default',
+          });
         } else if (successes > 0) {
           toast({
             title: 'Partial submission success',
             description: `${successes} script${successes > 1 ? 's' : ''} submitted successfully, ${failures} failed to submit.`,
-            variant: 'destructive'
-          })
+            variant: 'destructive',
+          });
         } else {
           toast({
             title: 'Script submission failed',
             description: `Failed to submit ${failures} script${failures > 1 ? 's' : ''}.`,
-            variant: 'destructive'
-          })
+            variant: 'destructive',
+          });
         }
-      })
+      });
 
-      onRunScripts(selectedScripts)
+      onRunScripts(selectedScripts);
 
       // Show loading state and wait 3 seconds before redirecting
-      setIsRedirecting(true)
+      setIsRedirecting(true);
 
       setTimeout(() => {
         // Redirect to logs tab and close modal
         if (onDeviceLogs) {
-          onDeviceLogs()
+          onDeviceLogs();
         }
-        onClose()
-        setIsRedirecting(false)
-      }, 3000)
-
+        onClose();
+        setIsRedirecting(false);
+      }, 3000);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to submit scripts'
-      console.error('Script submission error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit scripts';
+      console.error('Script submission error:', error);
 
       toast({
         title: 'Script submission failed',
         description: errorMessage,
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
 
       // Reset states on error
-      setIsRedirecting(false)
+      setIsRedirecting(false);
     } finally {
-      setIsExecuting(false)
+      setIsExecuting(false);
     }
-  }
+  };
 
   const handleCategoryFilter = (category: string) => {
-    setSelectedCategory(selectedCategory === category ? null : category)
-  }
+    setSelectedCategory(selectedCategory === category ? null : category);
+  };
 
   const handleShowAll = () => {
-    setSelectedCategory(null)
-  }
+    setSelectedCategory(null);
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[800px] flex flex-col">
@@ -270,7 +274,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                   type="text"
                   placeholder="Search for Script"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="bg-transparent text-ods-text-secondary font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-ods-text-secondary focus:outline-none"
                 />
               </div>
@@ -330,7 +334,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                   ) : (
                     <div className="flex flex-col">
                       {filteredScripts.map((script, index) => {
-                        const isSelected = selectedScripts.includes(script.id.toString())
+                        const isSelected = selectedScripts.includes(script.id.toString());
                         return (
                           <div
                             key={script.id}
@@ -343,9 +347,11 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                               <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
                                 {script.name}
                               </div>
-                              <div className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
-                                isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
-                              }`}>
+                              <div
+                                className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
+                                  isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
+                                }`}
+                              >
                                 {script.description}
                               </div>
                             </div>
@@ -353,7 +359,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                               <CustomCheckbox active={isSelected} />
                             </div>
                           </div>
-                        )
+                        );
                       })}
                     </div>
                   )}
@@ -368,13 +374,10 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
         <Button variant="outline" onClick={onClose} disabled={isRedirecting}>
           Cancel
         </Button>
-        <Button
-          onClick={handleRunScripts}
-          disabled={selectedScripts.length === 0 || isRedirecting}
-        >
+        <Button onClick={handleRunScripts} disabled={selectedScripts.length === 0 || isRedirecting}>
           {isRedirecting ? 'Redirecting...' : `Run Script${selectedScripts.length !== 1 ? 's' : ''}`}
         </Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }

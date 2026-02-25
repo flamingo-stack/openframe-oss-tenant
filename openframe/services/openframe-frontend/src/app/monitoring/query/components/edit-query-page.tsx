@@ -1,46 +1,56 @@
-'use client'
+'use client';
 
-import { CardLoader, FormPageContainer, Label, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Play } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { ScriptEditor } from '../../../scripts/components/script-editor'
-import { LiveTestPanel } from '../../components/live-test-panel'
-import { useLiveCampaign } from '../../hooks/use-live-campaign'
-import { useQueries } from '../../hooks/use-queries'
-import { useQueryDetails } from '../hooks/use-query-details'
+import {
+  CardLoader,
+  FormPageContainer,
+  Label,
+  LoadError,
+  NotFoundError,
+} from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Play } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { LiveTestPanel } from '../../components/live-test-panel';
+import { useLiveCampaign } from '../../hooks/use-live-campaign';
+import { useQueries } from '../../hooks/use-queries';
+import { useQueryDetails } from '../hooks/use-query-details';
 
 const queryFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   query: z.string(),
   interval: z.number().min(0),
-})
+});
 
-type QueryFormData = z.infer<typeof queryFormSchema>
+type QueryFormData = z.infer<typeof queryFormSchema>;
 
 interface EditQueryPageProps {
-  queryId: string | null
+  queryId: string | null;
 }
 
 export function EditQueryPage({ queryId }: EditQueryPageProps) {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const numericId = queryId ? parseInt(queryId, 10) : null
-  const isExistingQuery = numericId !== null && !isNaN(numericId)
+  const numericId = queryId ? parseInt(queryId, 10) : null;
+  const isExistingQuery = numericId !== null && !isNaN(numericId);
 
-  const { queryDetails, isLoading: isLoadingQuery, error: queryError } = useQueryDetails(isExistingQuery ? numericId : null)
-  const { createQuery, isCreating, updateQuery, isUpdating } = useQueries()
+  const {
+    queryDetails,
+    isLoading: isLoadingQuery,
+    error: queryError,
+  } = useQueryDetails(isExistingQuery ? numericId : null);
+  const { createQuery, isCreating, updateQuery, isUpdating } = useQueries();
 
-  const isSaving = isCreating || isUpdating
+  const isSaving = isCreating || isUpdating;
 
-  const campaign = useLiveCampaign()
-  const [showTestPanel, setShowTestPanel] = useState(false)
+  const campaign = useLiveCampaign();
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   const {
     register,
@@ -57,10 +67,10 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       query: '',
       interval: 0,
     },
-  })
+  });
 
-  const nameValue = watch('name')
-  const queryValue = watch('query')
+  const nameValue = watch('name');
+  const queryValue = watch('query');
 
   useEffect(() => {
     if (queryDetails && isExistingQuery) {
@@ -69,66 +79,69 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         description: queryDetails.description || '',
         query: queryDetails.query || '',
         interval: queryDetails.interval ?? 0,
-      })
+      });
     }
-  }, [queryDetails, isExistingQuery, reset])
+  }, [queryDetails, isExistingQuery, reset]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (isExistingQuery && numericId) {
-      router.push(`/monitoring/query/${numericId}`)
+      router.push(`/monitoring/query/${numericId}`);
     } else {
-      router.push('/monitoring?tab=queries')
+      router.push('/monitoring?tab=queries');
     }
-  }
+  }, [isExistingQuery, numericId, router]);
 
-  const onSubmit = useCallback((data: QueryFormData) => {
-    const payload = {
-      name: data.name,
-      description: data.description,
-      query: data.query,
-      interval: data.interval,
-    }
+  const onSubmit = useCallback(
+    (data: QueryFormData) => {
+      const payload = {
+        name: data.name,
+        description: data.description,
+        query: data.query,
+        interval: data.interval,
+      };
 
-    if (isExistingQuery && numericId) {
-      updateQuery(numericId, payload, {
-        onSuccess: () => router.push(`/monitoring/query/${numericId}`),
-      })
-    } else {
-      createQuery(payload, {
-        onSuccess: () => router.push('/monitoring?tab=queries'),
-      })
-    }
-  }, [isExistingQuery, numericId, createQuery, updateQuery, router])
+      if (isExistingQuery && numericId) {
+        updateQuery(numericId, payload, {
+          onSuccess: () => router.push(`/monitoring/query/${numericId}`),
+        });
+      } else {
+        createQuery(payload, {
+          onSuccess: () => router.push('/monitoring?tab=queries'),
+        });
+      }
+    },
+    [isExistingQuery, numericId, createQuery, updateQuery, router],
+  );
 
   const onFormError = useCallback(() => {
-    const firstError = Object.values(errors)[0]
+    const firstError = Object.values(errors)[0];
     if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' })
+      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
     }
-  }, [errors, toast])
+  }, [errors, toast]);
 
   const handleTestQuery = useCallback(() => {
-    setShowTestPanel(true)
-    campaign.startCampaign(queryValue)
-  }, [campaign, queryValue])
+    setShowTestPanel(true);
+    campaign.startCampaign(queryValue);
+  }, [campaign, queryValue]);
 
   const handleTestAgain = useCallback(() => {
-    campaign.startCampaign(queryValue)
-  }, [campaign, queryValue])
+    campaign.startCampaign(queryValue);
+  }, [campaign, queryValue]);
 
   const handleCloseTestPanel = useCallback(() => {
-    campaign.stopCampaign()
-    setShowTestPanel(false)
-  }, [campaign])
+    campaign.stopCampaign();
+    setShowTestPanel(false);
+  }, [campaign]);
 
   const actions = useMemo(() => {
-    const items = []
+    const items = [];
     if (isExistingQuery) {
       items.push({
         label: 'Cancel',
         onClick: handleBack,
         variant: 'outline' as const,
-      })
+      });
     }
     items.push({
       label: 'Test Query',
@@ -136,26 +149,37 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       variant: 'outline' as const,
       icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
-    })
+    });
     items.push({
       label: 'Save Query',
       onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
       disabled: isSaving || !nameValue.trim(),
-    })
-    return items
-  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, isExistingQuery, handleBack, handleTestQuery, queryValue, campaign.isRunning])
+    });
+    return items;
+  }, [
+    handleSubmit,
+    onSubmit,
+    onFormError,
+    isSaving,
+    nameValue,
+    isExistingQuery,
+    handleBack,
+    handleTestQuery,
+    queryValue,
+    campaign.isRunning,
+  ]);
 
   if (isLoadingQuery && isExistingQuery) {
-    return <CardLoader items={4} />
+    return <CardLoader items={4} />;
   }
 
   if (queryError && isExistingQuery) {
-    return <LoadError message={`Error loading query: ${queryError}`} />
+    return <LoadError message={`Error loading query: ${queryError}`} />;
   }
 
   if (isExistingQuery && !queryDetails && !isLoadingQuery) {
-    return <NotFoundError message="Query not found" />
+    return <NotFoundError message="Query not found" />;
   }
 
   return (
@@ -166,7 +190,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         onClick: handleBack,
       }}
       actions={actions}
-      padding='none'
+      padding="none"
     >
       <div className="space-y-10">
         {/* Test Query Panel */}
@@ -191,7 +215,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         {/* Name */}
         <div className="space-y-1">
           <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
-          <div className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}>
+          <div
+            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
+          >
             <input
               type="text"
               {...register('name')}
@@ -199,15 +225,17 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
               placeholder="Enter Query Name"
             />
           </div>
-          {errors.name && (
-            <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{errors.name.message}</p>}
         </div>
 
         {/* Frequency */}
         <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Frequency</label>
-          <div className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.interval ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}>
+          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
+            Frequency
+          </label>
+          <div
+            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.interval ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
+          >
             <input
               type="number"
               min={0}
@@ -223,7 +251,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
         {/* Description */}
         <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Description</label>
+          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
+            Description
+          </label>
           <div className="bg-ods-card rounded-md border border-ods-border relative">
             <textarea
               {...register('description')}
@@ -241,16 +271,11 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             name="query"
             control={control}
             render={({ field }) => (
-              <ScriptEditor
-                value={field.value}
-                onChange={field.onChange}
-                shell="sql"
-                height="300px"
-              />
+              <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
             )}
           />
         </div>
       </div>
     </FormPageContainer>
-  )
+  );
 }

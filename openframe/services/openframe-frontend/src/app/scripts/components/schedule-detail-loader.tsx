@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * ScheduleInfoBar skeleton — 4 cols: Date, Time, Repeat, Platform
@@ -8,17 +8,14 @@ import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
 function InfoBarSkeleton() {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 bg-ods-card border border-ods-border rounded-[6px] overflow-clip w-full">
-      {[1, 2, 3, 4].map((i) => (
-        <div
-          key={i}
-          className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]"
-        >
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
           <Skeleton className="h-6 w-24 mb-1" />
           <Skeleton className="h-5 w-16" />
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -31,7 +28,7 @@ function TabsSkeleton() {
       <Skeleton className="h-10 w-[160px] rounded-t-md" />
       <Skeleton className="h-10 w-[170px] rounded-t-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -44,7 +41,7 @@ function TableRowSkeleton() {
       <Skeleton className="h-6 w-[120px] hidden sm:block" />
       <Skeleton className="h-6 w-[100px] hidden md:block" />
     </div>
-  )
+  );
 }
 
 /**
@@ -82,5 +79,5 @@ export function ScheduleDetailLoader() {
         </div>
       </div>
     </div>
-  )
+  );
 }

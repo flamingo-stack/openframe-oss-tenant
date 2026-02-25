@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   DetailPageContainer,
@@ -6,44 +6,40 @@ import {
   NotFoundError,
   ScriptArguments,
   ScriptInfoSection,
-} from '@flamingo-stack/openframe-frontend-core'
-import {
-  Input,
-  Label,
-  ListLoader,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { tacticalApiClient } from '@lib/tactical-api-client'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { getTacticalAgentId } from '../../devices/utils/device-action-utils'
-import { useDeviceFilter } from '../hooks/use-device-filter'
-import { useDeviceSelection } from '../hooks/use-device-selection'
-import { useRunScriptData } from '../hooks/use-run-script-data'
-import { scriptArgumentSchema } from '../types/edit-script.types'
-import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../utils/device-helpers'
-import { parseKeyValues, serializeKeyValues } from '../utils/script-key-values'
-import { DeviceSelectionPanel } from './device-selection-panel'
-import { ExecutionStartedModal } from './execution-started-modal'
+} from '@flamingo-stack/openframe-frontend-core';
+import { Input, Label, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { getTacticalAgentId } from '../../devices/utils/device-action-utils';
+import { useDeviceFilter } from '../hooks/use-device-filter';
+import { useDeviceSelection } from '../hooks/use-device-selection';
+import { useRunScriptData } from '../hooks/use-run-script-data';
+import { scriptArgumentSchema } from '../types/edit-script.types';
+import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../utils/device-helpers';
+import { parseKeyValues, serializeKeyValues } from '../utils/script-key-values';
+import { DeviceSelectionPanel } from './device-selection-panel';
+import { ExecutionStartedModal } from './execution-started-modal';
 
 interface RunScriptViewProps {
-  scriptId: string
+  scriptId: string;
 }
 
 const runFormSchema = z.object({
   timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
   scriptArgs: z.array(scriptArgumentSchema),
   envVars: z.array(scriptArgumentSchema),
-})
+});
 
-type RunFormData = z.infer<typeof runFormSchema>
+type RunFormData = z.infer<typeof runFormSchema>;
 
 export function RunScriptView({ scriptId }: RunScriptViewProps) {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
   const {
     scriptDetails,
@@ -52,19 +48,12 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     devices: allDevices,
     isLoadingDevices,
     devicesError,
-  } = useRunScriptData({ scriptId })
+  } = useRunScriptData({ scriptId });
 
-  const {
-    searchTerm, setSearchTerm,
-    selectedOrgIds, setSelectedOrgIds,
-    organizationOptions,
-    filteredDevices,
-  } = useDeviceFilter({ devices: allDevices })
+  const { searchTerm, setSearchTerm, selectedOrgIds, setSelectedOrgIds, organizationOptions, filteredDevices } =
+    useDeviceFilter({ devices: allDevices });
 
-  const {
-    selectedIds, selectedCount,
-    toggleSelect, selectAllDisplayed, clearSelection,
-  } = useDeviceSelection()
+  const { selectedIds, selectedCount, toggleSelect, selectAllDisplayed, clearSelection } = useDeviceSelection();
 
   const {
     control,
@@ -74,9 +63,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   } = useForm<RunFormData>({
     resolver: zodResolver(runFormSchema),
     defaultValues: { timeout: 90, scriptArgs: [], envVars: [] },
-  })
+  });
 
-  const [showExecutionModal, setShowExecutionModal] = useState(false)
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
 
   useEffect(() => {
     if (scriptDetails) {
@@ -84,105 +73,120 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         timeout: Number(scriptDetails.default_timeout) || 90,
         scriptArgs: parseKeyValues(scriptDetails.args),
         envVars: parseKeyValues(scriptDetails.env_vars),
-      })
+      });
     }
-  }, [scriptDetails, reset])
+  }, [scriptDetails, reset]);
 
   const handleBack = useCallback(() => {
-    router.push(`/scripts/details/${scriptId}`)
-  }, [router, scriptId])
+    router.push(`/scripts/details/${scriptId}`);
+  }, [router, scriptId]);
 
-  const onSubmit = useCallback(async (data: RunFormData) => {
-    if (selectedCount === 0) {
-      toast({ title: 'No devices selected', description: 'Please select at least one device.', variant: 'destructive' })
-      return
-    }
-
-    try {
-      const selectedDevices = filteredDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)))
-      const selectedAgentIds = selectedDevices
-        .map(d => getTacticalAgentId(d))
-        .filter((id): id is string => !!id)
-
-      if (selectedAgentIds.length === 0) {
-        toast({ title: 'No compatible agents', description: 'Selected devices have no Tactical agent IDs.', variant: 'destructive' })
-        return
+  const onSubmit = useCallback(
+    async (data: RunFormData) => {
+      if (selectedCount === 0) {
+        toast({
+          title: 'No devices selected',
+          description: 'Please select at least one device.',
+          variant: 'destructive',
+        });
+        return;
       }
 
-      const osType = resolveOsTypeFromDevices(selectedDevices)
-      const shell = resolveShellForExecution(osType, scriptDetails?.shell)
+      try {
+        const selectedDevices = filteredDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)));
+        const selectedAgentIds = selectedDevices.map(d => getTacticalAgentId(d)).filter((id): id is string => !!id);
 
-      const payload = {
-        mode: 'script',
-        target: 'agents',
-        monType: 'all',
-        osType,
-        cmd: '',
-        shell,
-        custom_shell: null,
-        custom_field: null,
-        collector_all_output: false,
-        save_to_agent_note: false,
-        patchMode: 'scan',
-        offlineAgents: false,
-        client: null,
-        site: null,
-        agents: selectedAgentIds,
-        script: Number(scriptDetails?.id),
-        timeout: data.timeout,
-        args: serializeKeyValues(data.scriptArgs),
-        env_vars: serializeKeyValues(data.envVars),
-        run_as_user: Boolean(scriptDetails?.run_as_user) || false,
+        if (selectedAgentIds.length === 0) {
+          toast({
+            title: 'No compatible agents',
+            description: 'Selected devices have no Tactical agent IDs.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        const osType = resolveOsTypeFromDevices(selectedDevices);
+        const shell = resolveShellForExecution(osType, scriptDetails?.shell);
+
+        const payload = {
+          mode: 'script',
+          target: 'agents',
+          monType: 'all',
+          osType,
+          cmd: '',
+          shell,
+          custom_shell: null,
+          custom_field: null,
+          collector_all_output: false,
+          save_to_agent_note: false,
+          patchMode: 'scan',
+          offlineAgents: false,
+          client: null,
+          site: null,
+          agents: selectedAgentIds,
+          script: Number(scriptDetails?.id),
+          timeout: data.timeout,
+          args: serializeKeyValues(data.scriptArgs),
+          env_vars: serializeKeyValues(data.envVars),
+          run_as_user: Boolean(scriptDetails?.run_as_user) || false,
+        };
+
+        const res = await tacticalApiClient.runBulkAction(payload);
+        if (!res.ok) {
+          throw new Error(res.error || `Bulk action failed with status ${res.status}`);
+        }
+
+        setShowExecutionModal(true);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to submit script';
+        toast({ title: 'Submission failed', description: msg, variant: 'destructive' });
       }
-
-      const res = await tacticalApiClient.runBulkAction(payload)
-      if (!res.ok) {
-        throw new Error(res.error || `Bulk action failed with status ${res.status}`)
-      }
-
-      setShowExecutionModal(true)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to submit script'
-      toast({ title: 'Submission failed', description: msg, variant: 'destructive' })
-    }
-  }, [selectedCount, filteredDevices, selectedIds, scriptDetails, toast])
+    },
+    [selectedCount, filteredDevices, selectedIds, scriptDetails, toast],
+  );
 
   const handleCloseExecutionModal = useCallback(() => {
-    setShowExecutionModal(false)
-  }, [])
+    setShowExecutionModal(false);
+  }, []);
 
   const handleViewLogs = useCallback(() => {
-    setShowExecutionModal(false)
-    router.push(`/logs-page`)
-  }, [router])
+    setShowExecutionModal(false);
+    router.push(`/logs-page`);
+  }, [router]);
 
-  const onFormError = useCallback((formErrors: Record<string, { message?: string }>) => {
-    const firstError = Object.values(formErrors)[0]
-    if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' })
-    }
-  }, [toast])
+  const onFormError = useCallback(
+    (formErrors: Record<string, { message?: string }>) => {
+      const firstError = Object.values(formErrors)[0];
+      if (firstError?.message) {
+        toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      }
+    },
+    [toast],
+  );
 
-  const actions = useMemo(() => [
-    {
-      label: 'Run Script',
-      onClick: handleSubmit(onSubmit, onFormError),
-      variant: 'primary' as const,
-      disabled: selectedCount === 0,
-      loading: isSubmitting,
-    }
-  ], [handleSubmit, onSubmit, onFormError, selectedCount, isSubmitting])
+  const actions = useMemo(
+    () => [
+      {
+        label: 'Run Script',
+        onClick: handleSubmit(onSubmit, onFormError),
+        variant: 'primary' as const,
+        disabled: selectedCount === 0,
+        loading: isSubmitting,
+      },
+    ],
+    [handleSubmit, onSubmit, onFormError, selectedCount, isSubmitting],
+  );
 
   if (isLoadingScript) {
-    return <ListLoader />
+    return <ListLoader />;
   }
 
   if (scriptError) {
-    return <LoadError message={`Error loading script: ${scriptError}`} />
+    return <LoadError message={`Error loading script: ${scriptError}`} />;
   }
 
   if (!scriptDetails) {
-    return <NotFoundError message="Script not found" />
+    return <NotFoundError message="Script not found" />;
   }
 
   return (
@@ -211,7 +215,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
                 type="number"
                 className="md:max-w-[320px] w-full"
                 value={field.value}
-                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
+                onChange={e => field.onChange(Number(e.target.value) || 0)}
                 endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
               />
             )}
@@ -274,7 +278,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         onViewLogs={handleViewLogs}
       />
     </DetailPageContainer>
-  )
+  );
 }
 
-export default RunScriptView
+export default RunScriptView;

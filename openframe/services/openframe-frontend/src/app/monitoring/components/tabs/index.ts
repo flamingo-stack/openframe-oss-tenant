@@ -1,1 +1,1 @@
-export { MONITORING_TABS, getMonitoringTab, getTabComponent } from './monitoring-tabs'
+export { getMonitoringTab, getTabComponent, MONITORING_TABS } from './monitoring-tabs';

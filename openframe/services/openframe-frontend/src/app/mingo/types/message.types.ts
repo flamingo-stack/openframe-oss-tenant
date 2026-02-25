@@ -1,64 +1,64 @@
-import type { ChatType, OwnerType } from '../../tickets/constants'
-import type { MessageContent, AssistantType } from '@flamingo-stack/openframe-frontend-core'
+import type { AssistantType, MessageContent } from '@flamingo-stack/openframe-frontend-core';
+import type { ChatType, OwnerType } from '../../tickets/constants';
 
-export interface GraphQLMessage {
-  id: string
-  dialogId: string
-  chatType: ChatType
-  dialogMode: string
-  createdAt: string
+export interface GraphQlMessage {
+  id: string;
+  dialogId: string;
+  chatType: ChatType;
+  dialogMode: string;
+  createdAt: string;
   owner: {
-    type: OwnerType
-    model?: string
-  }
-  messageData: any
+    type: OwnerType;
+    model?: string;
+  };
+  messageData: any;
 }
 
 export interface CoreMessage {
-  id: string
-  role: 'user' | 'assistant' | 'error'
-  content: MessageContent
-  name?: string
-  assistantType?: AssistantType
-  timestamp?: Date
-  avatar?: string | null
+  id: string;
+  role: 'user' | 'assistant' | 'error';
+  content: MessageContent;
+  name?: string;
+  assistantType?: AssistantType;
+  timestamp?: Date;
+  avatar?: string | null;
 }
 
-export type Message = CoreMessage
+export type Message = CoreMessage;
 
 export interface MessageConnection {
   edges: Array<{
-    cursor: string
-    node: GraphQLMessage
-  }>
+    cursor: string;
+    node: GraphQlMessage;
+  }>;
   pageInfo: {
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-    startCursor?: string
-    endCursor?: string
-  }
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+  };
 }
 
 export interface MessagesResponse {
   data: {
-    messages: MessageConnection
-  }
+    messages: MessageConnection;
+  };
 }
 
 export interface MessagePage {
-  messages: GraphQLMessage[]
+  messages: GraphQlMessage[];
   pageInfo: {
-    hasNextPage: boolean
-    hasPreviousPage: boolean
-    startCursor?: string
-    endCursor?: string
-  }
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+  };
 }
 
-export function isGraphQLMessage(message: any): message is GraphQLMessage {
-  return 'messageData' in message
+export function isGraphQlMessage(message: any): message is GraphQlMessage {
+  return 'messageData' in message;
 }
 
 export function isCoreMessage(message: any): message is CoreMessage {
-  return 'content' in message
+  return 'content' in message;
 }

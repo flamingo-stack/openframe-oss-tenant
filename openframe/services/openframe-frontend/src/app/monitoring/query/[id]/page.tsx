@@ -1,28 +1,28 @@
-'use client'
+'use client';
 
-import { AppLayout } from '../../../components/app-layout'
-import { QueryDetailsView } from '../components/query-details-view'
-import { useParams, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { AppLayout } from '../../../components/app-layout';
+import { QueryDetailsView } from '../components/query-details-view';
 
 export default function QueryPageWrapper() {
-  const params = useParams<{ id?: string }>()
-  const router = useRouter()
-  const rawId = params?.id
+  const params = useParams<{ id?: string }>();
+  const router = useRouter();
+  const rawId = params?.id;
 
   useEffect(() => {
     if (rawId === 'new') {
-      router.replace('/monitoring/query/edit/new')
+      router.replace('/monitoring/query/edit/new');
     }
-  }, [rawId, router])
+  }, [rawId, router]);
 
   if (rawId === 'new') {
-    return null
+    return null;
   }
 
   return (
     <AppLayout>
       <QueryDetailsView queryId={rawId || ''} />
     </AppLayout>
-  )
+  );
 }

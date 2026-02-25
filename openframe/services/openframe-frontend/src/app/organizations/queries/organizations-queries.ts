@@ -35,7 +35,7 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
       filteredCount
     }
   }
-`
+`;
 
 export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
   query GetOrganizationsMin($search: String, $pagination: CursorPaginationInput) {
@@ -53,7 +53,7 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
       }
     }
   }
-`
+`;
 
 export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
   query GetOrganizationById($id: String!) {
@@ -103,4 +103,4 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
       deletedAt
     }
   }
-`
+`;

@@ -9,6 +9,10 @@
     "build:local": "next build --webpack",
     "start": "next start -p ${PORT:-3000}",
     "lint": "next lint",
+    "lint:biome": "biome check .",
+    "lint:biome:fix": "biome check --fix .",
+    "format": "biome format .",
+    "format:fix": "biome format --fix .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
@@ -35,6 +39,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@types/node": "^22.15.21",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

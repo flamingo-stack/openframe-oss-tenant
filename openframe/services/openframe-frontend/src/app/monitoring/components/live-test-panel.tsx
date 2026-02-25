@@ -1,36 +1,36 @@
-'use client'
+'use client';
 
-import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core'
-import { RotateCcw, Square, X } from 'lucide-react'
-import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core'
-import type { CampaignError, CampaignTotals } from '../hooks/use-live-campaign'
+import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
+import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core';
+import { RotateCcw, Square, X } from 'lucide-react';
+import type { CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
 
 export interface LiveTestPanelProps {
-  mode: 'query' | 'policy'
-  isRunning: boolean
-  startedAt: Date | null
-  durationMs: number
-  results: QueryResultRow[]
-  errors: CampaignError[]
-  totals: CampaignTotals | null
-  hostsResponded: number
-  hostsFailed: number
-  campaignStatus: '' | 'pending' | 'finished'
-  onTestAgain: () => void
-  onStop: () => void
-  onClose: () => void
+  mode: 'query' | 'policy';
+  isRunning: boolean;
+  startedAt: Date | null;
+  durationMs: number;
+  results: QueryResultRow[];
+  errors: CampaignError[];
+  totals: CampaignTotals | null;
+  hostsResponded: number;
+  hostsFailed: number;
+  campaignStatus: '' | 'pending' | 'finished';
+  onTestAgain: () => void;
+  onStop: () => void;
+  onClose: () => void;
 }
 
 function formatDuration(ms: number): string {
-  const totalSeconds = Math.floor(ms / 1000)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 export function LiveTestPanel({
@@ -48,10 +48,10 @@ export function LiveTestPanel({
   onStop,
   onClose,
 }: LiveTestPanelProps) {
-  const label = mode === 'query' ? 'QUERY' : 'POLICY'
-  const isFinished = campaignStatus === 'finished'
-  const totalOnlineHosts = totals?.online ?? 0
-  const totalResponded = hostsResponded + hostsFailed
+  const label = mode === 'query' ? 'QUERY' : 'POLICY';
+  const isFinished = campaignStatus === 'finished';
+  const totalOnlineHosts = totals?.online ?? 0;
+  const totalResponded = hostsResponded + hostsFailed;
 
   return (
     <div className="space-y-3">
@@ -76,9 +76,7 @@ export function LiveTestPanel({
             {/* Duration */}
             <div className="flex flex-col">
               <span className="font-mono text-[10px] uppercase tracking-wider text-ods-text-secondary">Duration</span>
-              <span className="font-mono text-sm text-ods-text-primary">
-                {formatDuration(durationMs)}
-              </span>
+              <span className="font-mono text-sm text-ods-text-primary">{formatDuration(durationMs)}</span>
             </div>
 
             {/* Hosts */}
@@ -88,9 +86,7 @@ export function LiveTestPanel({
                 <span className="font-mono text-sm text-ods-text-primary">
                   {totalResponded}/{totalOnlineHosts}
                   {hostsFailed > 0 && (
-                    <span className="text-[var(--ods-attention-red-error)] ml-1">
-                      ({hostsFailed} failed)
-                    </span>
+                    <span className="text-[var(--ods-attention-red-error)] ml-1">({hostsFailed} failed)</span>
                   )}
                 </span>
               </div>
@@ -99,22 +95,12 @@ export function LiveTestPanel({
 
           <div className="flex items-center gap-2">
             {!isRunning && (
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<RotateCcw size={14} />}
-                onClick={onTestAgain}
-              >
+              <Button variant="outline" size="sm" leftIcon={<RotateCcw size={14} />} onClick={onTestAgain}>
                 Test Again
               </Button>
             )}
             {isRunning && (
-              <Button
-                variant="outline"
-                size="sm"
-                leftIcon={<Square size={14} />}
-                onClick={onStop}
-              >
+              <Button variant="outline" size="sm" leftIcon={<Square size={14} />} onClick={onStop}>
                 Stop
               </Button>
             )}
@@ -163,5 +149,5 @@ export function LiveTestPanel({
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,26 +1,31 @@
-'use client'
+'use client';
 
 import {
   DetailPageContainer,
+  getTabComponent,
   LoadError,
   NotFoundError,
   TabContent,
-  TabNavigation,
-  getTabComponent,
   type TabItem,
-} from '@flamingo-stack/openframe-frontend-core'
-import { BracketCurlyIcon, ClockHistoryIcon, MonitorIcon, PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { useRouter } from 'next/navigation'
-import { useMemo } from 'react'
-import { useScriptSchedule } from '../hooks/use-script-schedule'
-import { ScheduleDetailLoader } from './schedule-detail-loader'
-import { ScheduleInfoBar } from './schedule-info-bar'
-import { ScheduleScriptsTab } from './schedule-scripts-tab'
-import { ScheduleDevicesTab } from './schedule-devices-tab'
-import { ScheduleHistoryTab } from './schedule-history-tab'
+  TabNavigation,
+} from '@flamingo-stack/openframe-frontend-core';
+import {
+  BracketCurlyIcon,
+  ClockHistoryIcon,
+  MonitorIcon,
+  PenEditIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { useScriptSchedule } from '../hooks/use-script-schedule';
+import { ScheduleDetailLoader } from './schedule-detail-loader';
+import { ScheduleDevicesTab } from './schedule-devices-tab';
+import { ScheduleHistoryTab } from './schedule-history-tab';
+import { ScheduleInfoBar } from './schedule-info-bar';
+import { ScheduleScriptsTab } from './schedule-scripts-tab';
 
 interface ScheduleDetailViewProps {
-  scheduleId: string
+  scheduleId: string;
 }
 
 const SCHEDULE_TABS: TabItem[] = [
@@ -42,23 +47,23 @@ const SCHEDULE_TABS: TabItem[] = [
     icon: ClockHistoryIcon,
     component: ScheduleHistoryTab,
   },
-]
+];
 
 export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
-  const router = useRouter()
-  const { schedule, isLoading, error } = useScriptSchedule(scheduleId)
+  const router = useRouter();
+  const { schedule, isLoading, error } = useScriptSchedule(scheduleId);
 
-  const handleBack = () => {
-    router.push('/scripts/?tab=schedules')
-  }
+  const handleBack = useCallback(() => {
+    router.push('/scripts/?tab=schedules');
+  }, [router]);
 
-  const handleEditDevices = () => {
-    router.push(`/scripts/schedules/${scheduleId}/devices`)
-  }
+  const handleEditDevices = useCallback(() => {
+    router.push(`/scripts/schedules/${scheduleId}/devices`);
+  }, [router, scheduleId]);
 
-  const handleEditSchedule = () => {
-    router.push(`/scripts/schedules/${scheduleId}/edit`)
-  }
+  const handleEditSchedule = useCallback(() => {
+    router.push(`/scripts/schedules/${scheduleId}/edit`);
+  }, [router, scheduleId]);
 
   const actions = useMemo(
     () => [
@@ -74,18 +79,18 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
       },
     ],
     [handleEditSchedule, handleEditDevices],
-  )
+  );
 
   if (isLoading) {
-    return <ScheduleDetailLoader />
+    return <ScheduleDetailLoader />;
   }
 
   if (error) {
-    return <LoadError message={`Error loading schedule: ${error}`} />
+    return <LoadError message={`Error loading schedule: ${error}`} />;
   }
 
   if (!schedule) {
-    return <NotFoundError message="Schedule not found" />
+    return <NotFoundError message="Schedule not found" />;
   }
 
   return (
@@ -105,7 +110,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
         {/* Tab Navigation */}
         <div className="mt-6">
           <TabNavigation tabs={SCHEDULE_TABS} defaultTab="schedule-scripts" urlSync={true}>
-            {(activeTab) => (
+            {activeTab => (
               <div className="pt-6">
                 <TabContent
                   activeTab={activeTab}
@@ -118,5 +123,5 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
         </div>
       </div>
     </DetailPageContainer>
-  )
+  );
 }

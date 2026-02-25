@@ -12,10 +12,9 @@ export const GET_LOG_FILTERS_QUERY = `
         id
         name
       }
-      __typename
     }
   }
-`
+`;
 
 export const GET_LOGS_QUERY = `
   query GetLogs($filter: LogFilterInput, $pagination: CursorPaginationInput, $search: String) {
@@ -34,21 +33,17 @@ export const GET_LOGS_QUERY = `
           organizationId
           summary
           timestamp
-          __typename
         }
-        __typename
       }
       pageInfo {
         hasNextPage
         hasPreviousPage
         startCursor
         endCursor
-        __typename
       }
-      __typename
     }
   }
-`
+`;
 
 export const GET_LOG_DETAILS_QUERY = `
   query GetLogDetails($logId: ID!, $ingestDay: String!, $toolType: String!, $eventType: String!, $timestamp: Instant!) {
@@ -72,7 +67,6 @@ export const GET_LOG_DETAILS_QUERY = `
       message
       timestamp
       details
-      __typename
     }
   }
-`
+`;

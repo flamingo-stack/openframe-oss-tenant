@@ -1,16 +1,16 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { getTabComponent } from '@flamingo-stack/openframe-frontend-core'
-import { SETTINGS_TABS } from './tabs'
+import { getTabComponent } from '@flamingo-stack/openframe-frontend-core';
+import React from 'react';
+import { SETTINGS_TABS } from './tabs';
 
 interface SettingsTabContentProps {
-  activeTab: string
+  activeTab: string;
 }
 
 export function SettingsTabContent({ activeTab }: SettingsTabContentProps) {
-  const TabComponent = getTabComponent(SETTINGS_TABS, activeTab)
-  
+  const TabComponent = getTabComponent(SETTINGS_TABS, activeTab);
+
   if (!TabComponent) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
@@ -19,14 +19,12 @@ export function SettingsTabContent({ activeTab }: SettingsTabContentProps) {
           <p className="text-ods-text-secondary">The selected tab &quot;{activeTab}&quot; could not be found.</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="min-h-[400px]">
       <TabComponent />
     </div>
-  )
+  );
 }
-
-

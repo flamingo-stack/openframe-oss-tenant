@@ -1,55 +1,58 @@
-'use client'
+'use client';
 
-import { OS_PLATFORMS, ScriptArguments, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@flamingo-stack/openframe-frontend-core'
-import { TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useMemo } from 'react'
-import { Controller, useFormContext } from 'react-hook-form'
-import type { ScriptEntry } from '../stores/scripts-store'
-import type { CreateScheduleFormData } from '../types/script-schedule.types'
+import {
+  OS_PLATFORMS,
+  ScriptArguments,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@flamingo-stack/openframe-frontend-core';
+import { TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMemo } from 'react';
+import { Controller, useFormContext } from 'react-hook-form';
+import type { ScriptEntry } from '../stores/scripts-store';
+import type { CreateScheduleFormData } from '../types/script-schedule.types';
 
 interface ScheduleActionFormCardProps {
-  index: number
-  scripts: ScriptEntry[]
-  supportedPlatforms: string[]
-  onRemove: () => void
+  index: number;
+  scripts: ScriptEntry[];
+  supportedPlatforms: string[];
+  onRemove: () => void;
 }
 
 function ScriptPlatformIcons({ platforms }: { platforms: string[] }) {
   return (
     <span className="inline-flex gap-0.5 ml-1.5">
-      {OS_PLATFORMS.filter((p) => platforms?.includes(p.id)).map((p) => (
+      {OS_PLATFORMS.filter(p => platforms?.includes(p.id)).map(p => (
         <p.icon key={p.id} className="w-3.5 h-3.5 text-ods-text-secondary opacity-60" />
       ))}
     </span>
-  )
+  );
 }
 
-export function ScheduleActionFormCard({
-  index,
-  scripts,
-  supportedPlatforms,
-  onRemove,
-}: ScheduleActionFormCardProps) {
-  const { control, setValue, watch } = useFormContext<CreateScheduleFormData>()
-  const selectedScriptId = watch(`actions.${index}.script`)
+export function ScheduleActionFormCard({ index, scripts, supportedPlatforms, onRemove }: ScheduleActionFormCardProps) {
+  const { control, setValue, watch } = useFormContext<CreateScheduleFormData>();
+  const selectedScriptId = watch(`actions.${index}.script`);
 
   const filteredScripts = useMemo(
     () =>
-      scripts.filter((s) =>
-        s.id === selectedScriptId || s.supported_platforms?.some((p) => supportedPlatforms.includes(p)),
+      scripts.filter(
+        s => s.id === selectedScriptId || s.supported_platforms?.some(p => supportedPlatforms.includes(p)),
       ),
     [scripts, supportedPlatforms, selectedScriptId],
-  )
+  );
 
   const handleScriptChange = (scriptId: number) => {
-    const script = scripts.find((s) => s.id === scriptId)
+    const script = scripts.find(s => s.id === scriptId);
     if (script) {
-      setValue(`actions.${index}.script`, script.id)
-      setValue(`actions.${index}.name`, script.name)
-      setValue(`actions.${index}.timeout`, script.default_timeout || 90)
+      setValue(`actions.${index}.script`, script.id);
+      setValue(`actions.${index}.name`, script.name);
+      setValue(`actions.${index}.timeout`, script.default_timeout || 90);
     }
-  }
+  };
 
   return (
     <div className="border border-ods-border rounded-[6px] p-4 flex flex-col gap-4">
@@ -62,13 +65,13 @@ export function ScheduleActionFormCard({
             render={({ field }) => (
               <Select
                 value={field.value ? String(field.value) : ''}
-                onValueChange={(val) => handleScriptChange(Number(val))}
+                onValueChange={val => handleScriptChange(Number(val))}
               >
                 <SelectTrigger className="w-full bg-ods-card border border-ods-border">
                   <SelectValue placeholder="Select a script..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredScripts.map((s) => (
+                  {filteredScripts.map(s => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       <span className="inline-flex items-center">
                         {s.name}
@@ -81,12 +84,7 @@ export function ScheduleActionFormCard({
             )}
           />
         </div>
-        <Button
-          variant="card"
-          size="icon"
-          onClick={onRemove}
-          className="text-[var(--ods-attention-red-error,#f36666)]"
-        >
+        <Button variant="card" size="icon" onClick={onRemove} className="text-[var(--ods-attention-red-error,#f36666)]">
           <TrashIcon size={20} />
         </Button>
       </div>
@@ -102,10 +100,8 @@ export function ScheduleActionFormCard({
               type="number"
               className="w-full"
               value={field.value}
-              onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-              endAdornment={
-                <span className="text-ods-text-secondary text-sm">Seconds</span>
-              }
+              onChange={e => field.onChange(Number(e.target.value) || 0)}
+              endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
             />
           )}
         />
@@ -121,13 +117,13 @@ export function ScheduleActionFormCard({
             render={({ field }) => (
               <Select
                 value={field.value ? String(field.value) : ''}
-                onValueChange={(val) => handleScriptChange(Number(val))}
+                onValueChange={val => handleScriptChange(Number(val))}
               >
                 <SelectTrigger className="w-full bg-ods-card border border-ods-border">
                   <SelectValue placeholder="Select a script..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredScripts.map((s) => (
+                  {filteredScripts.map(s => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       <span className="inline-flex items-center">
                         {s.name}
@@ -151,21 +147,14 @@ export function ScheduleActionFormCard({
                 type="number"
                 className="w-[160px]"
                 value={field.value}
-                onChange={(e) => field.onChange(Number(e.target.value) || 0)}
-                endAdornment={
-                  <span className="text-ods-text-secondary text-sm">Seconds</span>
-                }
+                onChange={e => field.onChange(Number(e.target.value) || 0)}
+                endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
               />
             )}
           />
         </div>
 
-        <Button
-          variant="card"
-          size="icon"
-          onClick={onRemove}
-          className="text-[var(--ods-attention-red-error,#f36666)]"
-        >
+        <Button variant="card" size="icon" onClick={onRemove} className="text-[var(--ods-attention-red-error,#f36666)]">
           <TrashIcon size={20} />
         </Button>
       </div>
@@ -204,5 +193,5 @@ export function ScheduleActionFormCard({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * Schedule Name input skeleton
@@ -11,7 +11,7 @@ function NameFieldSkeleton() {
       <Skeleton className="h-5 w-28" />
       <Skeleton className="h-12 w-full rounded-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -23,7 +23,7 @@ function DateRepeatSkeleton() {
       <Skeleton className="h-12 w-[220px] rounded-md" />
       <Skeleton className="h-14 w-[220px] rounded-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -34,12 +34,12 @@ function PlatformsSkeleton() {
     <div className="flex flex-col gap-2">
       <Skeleton className="h-5 w-36" />
       <div className="flex gap-3 max-w-[920px]">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <Skeleton key={i} className="h-14 w-[140px] rounded-md" />
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -58,7 +58,7 @@ function ActionCardSkeleton() {
         <Skeleton className="h-12 flex-1 rounded-md" />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -97,5 +97,5 @@ export function ScheduleCreateLoader() {
         <Skeleton className="h-6 w-28" />
       </div>
     </div>
-  )
+  );
 }

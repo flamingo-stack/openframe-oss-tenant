@@ -8,35 +8,29 @@ export const GET_DEVICE_FILTERS_QUERY = `
       statuses {
         value
         count
-        __typename
       }
       deviceTypes {
         value
         count
-        __typename
       }
       osTypes {
         value
         count
-        __typename
       }
       organizationIds {
         value
         label
         count
-        __typename
       }
       tags {
         value
         label
         count
-        __typename
       }
       filteredCount
-      __typename
     }
   }
-`
+`;
 
 export const GET_DEVICES_QUERY = `
   query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String, $sort: SortInput) {
@@ -81,7 +75,6 @@ export const GET_DEVICES_QUERY = `
             connectedAt
             lastSyncAt
             disconnectedAt
-            __typename
           }
           tags {
             id
@@ -91,25 +84,20 @@ export const GET_DEVICES_QUERY = `
             organizationId
             createdAt
             createdBy
-            __typename
           }
-          __typename
         }
         cursor
-        __typename
       }
       pageInfo {
         hasNextPage
         hasPreviousPage
         startCursor
         endCursor
-        __typename
       }
       filteredCount
-      __typename
     }
   }
-`
+`;
 
 export const GET_DEVICE_QUERY = `
   query GetDevice($machineId: String!) {
@@ -172,7 +160,7 @@ export const GET_DEVICE_QUERY = `
       }
     }
   }
-`
+`;
 
 export const GET_DEVICES_OVERVIEW_QUERY = `
   query GetDevicesOverview($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
@@ -180,16 +168,12 @@ export const GET_DEVICES_OVERVIEW_QUERY = `
       edges {
         node {
           status
-          __typename
         }
-        __typename
       }
       pageInfo {
         hasNextPage
         endCursor
-        __typename
       }
-      __typename
     }
   }
-`
+`;
