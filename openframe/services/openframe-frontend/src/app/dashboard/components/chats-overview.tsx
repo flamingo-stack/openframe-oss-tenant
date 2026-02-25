@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
-import { useChatsOverview } from '../hooks/use-dashboard-stats'
+import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useChatsOverview } from '../hooks/use-dashboard-stats';
 
 export function ChatsOverviewSection() {
-  const chats = useChatsOverview()
+  const chats = useChatsOverview();
 
   if (chats.isLoading) {
     return (
@@ -13,7 +13,7 @@ export function ChatsOverviewSection() {
           Chats Overview
         </h2>
         <Skeleton className="h-5 w-48" />
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -21,7 +21,7 @@ export function ChatsOverviewSection() {
           <Skeleton className="h-20 w-full" />
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -48,21 +48,11 @@ export function ChatsOverviewSection() {
           showProgress
           href="/mingo"
         />
-        <DashboardInfoCard
-          title="Avg. Resolve Time"
-          value={chats.avgResolveTime}
-          href="/mingo"
-        />
-        <DashboardInfoCard
-          title="Avg. Fae Rate"
-          value={`${chats.avgFaeRate}/5`}
-          href="/mingo"
-        />
+        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} href="/mingo" />
+        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} href="/mingo" />
       </div>
     </div>
-  )
+  );
 }
 
-export default ChatsOverviewSection
-
-
+export default ChatsOverviewSection;

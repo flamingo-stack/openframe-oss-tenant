@@ -1,65 +1,73 @@
-'use client'
+'use client';
 
-import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-frontend-core'
-import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { ArrowLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useCallback, useMemo, useState } from 'react'
-
-import { EditScriptLoader } from './edit-script-loader'
-import { useEditScriptForm } from '../hooks/use-edit-script-form'
-import { useScriptDetails } from '../hooks/use-script-details'
-import { useTestRuns } from '../hooks/use-test-runs'
-import { ScriptFormFields } from './script-form-fields'
-import { TestRunCard } from './test-run-card'
-import { TestScriptModal, type SelectedTestDevice } from './test-script-modal'
+import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-frontend-core';
+import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
+import { useEditScriptForm } from '../hooks/use-edit-script-form';
+import { useScriptDetails } from '../hooks/use-script-details';
+import { useTestRuns } from '../hooks/use-test-runs';
+import { EditScriptLoader } from './edit-script-loader';
+import { ScriptFormFields } from './script-form-fields';
+import { TestRunCard } from './test-run-card';
+import { type SelectedTestDevice, TestScriptModal } from './test-script-modal';
 
 interface EditScriptPageProps {
-  scriptId: string | null
+  scriptId: string | null;
 }
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
-  const router = useRouter()
-  const isEditMode = Boolean(scriptId)
-  const backButton = useMemo(() => isEditMode
-    ? { label: 'Back to Script Details', onClick: () => router.push(`/scripts/details/${scriptId}`) } 
-    : { label: "Back to Scripts", onClick: () => router.push('/scripts') }
-  , [isEditMode, scriptId, router])
+  const router = useRouter();
+  const isEditMode = Boolean(scriptId);
+  const backButton = useMemo(
+    () =>
+      isEditMode
+        ? { label: 'Back to Script Details', onClick: () => router.push(`/scripts/details/${scriptId}`) }
+        : { label: 'Back to Scripts', onClick: () => router.push('/scripts') },
+    [isEditMode, scriptId, router],
+  );
 
-  const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || '')
-  const { form, isSubmitting, handleSave } = useEditScriptForm({ scriptId, scriptDetails, isEditMode })
-  const { testRuns, handleRunTest, handleStopRun } = useTestRuns(form.getValues)
+  const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || '');
+  const { form, isSubmitting, handleSave } = useEditScriptForm({ scriptId, scriptDetails, isEditMode });
+  const { testRuns, handleRunTest, handleStopRun } = useTestRuns(form.getValues);
 
-  const [isTestModalOpen, setIsTestModalOpen] = useState(false)
+  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
-  const watchedName = form.watch('name')
-  const watchedSupportedPlatforms = form.watch('supported_platforms')
+  const watchedName = form.watch('name');
+  const watchedSupportedPlatforms = form.watch('supported_platforms');
 
   const handleBack = useCallback(() => {
-    router.push('/scripts')
-  }, [router])
+    router.push('/scripts');
+  }, [router]);
 
-  const handleDeviceSelected = useCallback((device: SelectedTestDevice) => {
-    handleRunTest(device)
-  }, [handleRunTest])
-
-  const actions = useMemo(() => [
-    {
-      label: 'Test Script',
-      onClick: () => setIsTestModalOpen(true),
-      variant: 'outline' as const,
+  const handleDeviceSelected = useCallback(
+    (device: SelectedTestDevice) => {
+      handleRunTest(device);
     },
-    {
-      label: 'Save Script',
-      onClick: handleSave,
-      variant: 'primary' as const,
-      disabled: isSubmitting || !watchedName.trim(),
-      loading: isSubmitting,
-    }
-  ], [handleSave, isSubmitting, watchedName])
+    [handleRunTest],
+  );
+
+  const actions = useMemo(
+    () => [
+      {
+        label: 'Test Script',
+        onClick: () => setIsTestModalOpen(true),
+        variant: 'outline' as const,
+      },
+      {
+        label: 'Save Script',
+        onClick: handleSave,
+        variant: 'primary' as const,
+        disabled: isSubmitting || !watchedName.trim(),
+        loading: isSubmitting,
+      },
+    ],
+    [handleSave, isSubmitting, watchedName],
+  );
 
   if (isLoadingScript) {
-    return <EditScriptLoader />
+    return <EditScriptLoader />;
   }
 
   if (scriptError && isEditMode) {
@@ -69,32 +77,28 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           <Card className="bg-error/20 border border-error p-6">
             <h2 className="text-error text-xl font-semibold mb-2">Error Loading Script</h2>
             <p className="text-error">{scriptError}</p>
-            <Button
-              onClick={handleBack}
-              variant="destructive"
-              className="mt-4"
-            >
+            <Button onClick={handleBack} variant="destructive" className="mt-4">
               <ArrowLeft className="w-4 h-4" />
               Back to Scripts
             </Button>
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <FormPageContainer
-      title={isEditMode && scriptDetails ? "Edit Script" : 'New Script'}
+      title={isEditMode && scriptDetails ? 'Edit Script' : 'New Script'}
       backButton={backButton}
       actions={actions}
-      padding='none'
+      padding="none"
     >
       {testRuns.length > 0 && (
         <div>
           <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Test Output</Label>
           <div className="flex flex-col gap-3">
-            {testRuns.map((run) => (
+            {testRuns.map(run => (
               <TestRunCard key={run.id} run={run} onStop={handleStopRun} />
             ))}
           </div>
@@ -109,5 +113,5 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         supportedPlatforms={watchedSupportedPlatforms}
       />
     </FormPageContainer>
-  )
+  );
 }

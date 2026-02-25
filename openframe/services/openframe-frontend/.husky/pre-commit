@@ -1,0 +1,2 @@
+cd openframe/services/openframe-frontend
+npm run lint:biome && npm run type-check

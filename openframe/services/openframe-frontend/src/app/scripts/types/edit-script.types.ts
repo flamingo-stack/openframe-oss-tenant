@@ -1,10 +1,10 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
 export const scriptArgumentSchema = z.object({
   id: z.string(),
   key: z.string(),
   value: z.string(),
-})
+});
 
 export const editScriptSchema = z.object({
   name: z.string().min(1, 'Script name is required'),
@@ -17,11 +17,11 @@ export const editScriptSchema = z.object({
   description: z.string(),
   supported_platforms: z.array(z.string()).min(1, 'Select at least one platform'),
   category: z.string().min(1, 'Category is required'),
-})
+});
 
-export type EditScriptFormData = z.infer<typeof editScriptSchema>
+export type EditScriptFormData = z.infer<typeof editScriptSchema>;
 
-export const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom']
+export const CATEGORIES = ['System Maintenance', 'Security', 'Network', 'Monitoring', 'Backup', 'Custom'];
 
 export const EDIT_SCRIPT_DEFAULT_VALUES: EditScriptFormData = {
   name: '',
@@ -34,4 +34,4 @@ export const EDIT_SCRIPT_DEFAULT_VALUES: EditScriptFormData = {
   description: '',
   supported_platforms: ['windows'],
   category: 'System Maintenance',
-}
+};

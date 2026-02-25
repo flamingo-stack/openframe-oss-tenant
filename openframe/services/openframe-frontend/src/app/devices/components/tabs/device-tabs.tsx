@@ -1,88 +1,87 @@
-'use client'
+'use client';
 
-import { TabItem } from '@flamingo-stack/openframe-frontend-core'
 import {
-  CpuIcon,
-  NetworkIcon,
-  ShieldIcon,
-  FileCheckIcon,
-  BotIcon,
-  UsersIcon,
-  PackageIcon,
   AlertTriangleIcon,
-  FileTextIcon
-} from '@flamingo-stack/openframe-frontend-core'
-import { HardwareTab } from './hardware-tab'
-import { NetworkTab } from './network-tab'
-import { SecurityTab } from './security-tab'
-import { ComplianceTab } from './compliance-tab'
-import { AgentsTab } from './agents-tab'
-import { UsersTab } from './users-tab'
-import { SoftwareTab } from './software-tab'
-import { VulnerabilitiesTab } from './vulnerabilities-tab'
-import { LogsTab } from './logs-tab'
+  BotIcon,
+  CpuIcon,
+  FileCheckIcon,
+  FileTextIcon,
+  NetworkIcon,
+  PackageIcon,
+  ShieldIcon,
+  TabItem,
+  UsersIcon,
+} from '@flamingo-stack/openframe-frontend-core';
+import { AgentsTab } from './agents-tab';
+import { ComplianceTab } from './compliance-tab';
+import { HardwareTab } from './hardware-tab';
+import { LogsTab } from './logs-tab';
+import { NetworkTab } from './network-tab';
+import { SecurityTab } from './security-tab';
+import { SoftwareTab } from './software-tab';
+import { UsersTab } from './users-tab';
+import { VulnerabilitiesTab } from './vulnerabilities-tab';
 
 export const DEVICE_TABS: TabItem[] = [
   {
     id: 'hardware',
     label: 'Hardware',
     icon: CpuIcon,
-    component: HardwareTab
+    component: HardwareTab,
   },
   {
     id: 'network',
     label: 'Network',
     icon: NetworkIcon,
-    component: NetworkTab
+    component: NetworkTab,
   },
   {
     id: 'security',
     label: 'Security',
     icon: ShieldIcon,
-    component: SecurityTab
+    component: SecurityTab,
   },
   {
     id: 'compliance',
     label: 'Compliance',
     icon: FileCheckIcon,
-    component: ComplianceTab
+    component: ComplianceTab,
   },
   {
     id: 'agents',
     label: 'Agents',
     icon: BotIcon,
-    component: AgentsTab
+    component: AgentsTab,
   },
   {
     id: 'users',
     label: 'Users',
     icon: UsersIcon,
-    component: UsersTab
+    component: UsersTab,
   },
   {
     id: 'software',
     label: 'Software',
     icon: PackageIcon,
-    component: SoftwareTab
+    component: SoftwareTab,
   },
   {
     id: 'vulnerabilities',
     label: 'Vulnerabilities',
     icon: AlertTriangleIcon,
-    component: VulnerabilitiesTab
+    component: VulnerabilitiesTab,
   },
   {
     id: 'logs',
     label: 'Logs',
     icon: FileTextIcon,
-    component: LogsTab
-  }
-]
+    component: LogsTab,
+  },
+];
 
-export const getDeviceTab = (tabId: string): TabItem | undefined =>
-  DEVICE_TABS.find(tab => tab.id === tabId)
+export const getDeviceTab = (tabId: string): TabItem | undefined => DEVICE_TABS.find(tab => tab.id === tabId);
 
 export const getTabComponent = (tabId: string): React.ComponentType<{ device: any }> | null => {
-  const tab = getDeviceTab(tabId)
-  return tab?.component || null
-}
+  const tab = getDeviceTab(tabId);
+  return tab?.component || null;
+};

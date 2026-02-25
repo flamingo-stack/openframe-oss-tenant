@@ -1,115 +1,115 @@
-import { format } from 'date-fns'
-import { z } from 'zod'
+import { format } from 'date-fns';
+import { z } from 'zod';
 
 // ============ API Response Types ============
 
 export interface ScriptScheduleAction {
-  type: 'script'
-  script: number
-  name: string
-  timeout: number
-  script_args: string[]
-  env_vars: string[]
+  type: 'script';
+  script: number;
+  name: string;
+  timeout: number;
+  script_args: string[];
+  env_vars: string[];
 }
 
 export interface ScriptScheduleListItem {
-  id: number
-  name: string
-  task_type: ScriptScheduleTaskType
-  run_time_date: string
-  enabled: boolean
-  task_supported_platforms: string[]
-  actions_count: number
-  agents_count: number
+  id: number;
+  name: string;
+  task_type: ScriptScheduleTaskType;
+  run_time_date: string;
+  enabled: boolean;
+  task_supported_platforms: string[];
+  actions_count: number;
+  agents_count: number;
 }
 
 export interface ScriptScheduleAgent {
-  agent_id: string
-  hostname: string
-  plat: string
-  operating_system: string
-  time_zone: string
-  client_name: string
-  site_name: string
+  agent_id: string;
+  hostname: string;
+  plat: string;
+  operating_system: string;
+  time_zone: string;
+  client_name: string;
+  site_name: string;
 }
 
 export interface ScriptScheduleHistoryEntry {
-  id: number
-  agent_id: string
-  agent_hostname: string
-  agent_platform: string
-  organization: string
-  retcode: number
-  stdout: string
-  stderr: string
-  execution_time: string
-  last_run: string
-  status: 'passing' | 'failing' | 'pending'
-  sync_status: 'synced' | 'not_synced' | 'pending'
+  id: number;
+  agent_id: string;
+  agent_hostname: string;
+  agent_platform: string;
+  organization: string;
+  retcode: number;
+  stdout: string;
+  stderr: string;
+  execution_time: string;
+  last_run: string;
+  status: 'passing' | 'failing' | 'pending';
+  sync_status: 'synced' | 'not_synced' | 'pending';
 }
 
 export interface ScriptScheduleHistoryResponse {
-  total: number
-  limit: number
-  offset: number
-  results: ScriptScheduleHistoryEntry[]
+  total: number;
+  limit: number;
+  offset: number;
+  results: ScriptScheduleHistoryEntry[];
 }
 
 export interface ScriptScheduleDetail {
-  id: number
-  managed_task_id: number
-  name: string
-  task_type: ScriptScheduleTaskType
-  run_time_date: string
-  daily_interval: number | null
-  weekly_interval: number | null
-  run_time_bit_weekdays: number | null
-  monthly_days_of_month: number | null
-  monthly_months_of_year: number | null
-  monthly_weeks_of_month: number | null
-  task_supported_platforms: string[]
-  enabled: boolean
-  actions: ScriptScheduleAction[]
-  assigned_agents: ScriptScheduleAgent[]
-  last_runs: ScriptScheduleHistoryEntry[]
+  id: number;
+  managed_task_id: number;
+  name: string;
+  task_type: ScriptScheduleTaskType;
+  run_time_date: string;
+  daily_interval: number | null;
+  weekly_interval: number | null;
+  run_time_bit_weekdays: number | null;
+  monthly_days_of_month: number | null;
+  monthly_months_of_year: number | null;
+  monthly_weeks_of_month: number | null;
+  task_supported_platforms: string[];
+  enabled: boolean;
+  actions: ScriptScheduleAction[];
+  assigned_agents: ScriptScheduleAgent[];
+  last_runs: ScriptScheduleHistoryEntry[];
 }
 
 export interface AgentsModifyResponse {
-  agents_count: number
-  task_results_created: number
-  task_results_deleted: number
+  agents_count: number;
+  task_results_created: number;
+  task_results_deleted: number;
 }
 
 // ============ Request Payload Types ============
 
-export type ScriptScheduleTaskType = 'runonce' | 'daily' | 'weekly' | 'monthly' | 'monthlydow'
+export type ScriptScheduleTaskType = 'runonce' | 'daily' | 'weekly' | 'monthly' | 'monthlydow';
 
 export interface CreateScriptSchedulePayload {
-  name: string
-  task_type: ScriptScheduleTaskType
-  run_time_date: string
-  daily_interval?: number | null
-  weekly_interval?: number | null
-  run_time_bit_weekdays?: number | null
-  monthly_days_of_month?: number | null
-  monthly_months_of_year?: number | null
-  monthly_weeks_of_month?: number | null
-  task_supported_platforms?: string[]
-  enabled: boolean
-  actions: ScriptScheduleAction[]
+  name: string;
+  task_type: ScriptScheduleTaskType;
+  run_time_date: string;
+  daily_interval?: number | null;
+  weekly_interval?: number | null;
+  run_time_bit_weekdays?: number | null;
+  monthly_days_of_month?: number | null;
+  monthly_months_of_year?: number | null;
+  monthly_weeks_of_month?: number | null;
+  task_supported_platforms?: string[];
+  enabled: boolean;
+  actions: ScriptScheduleAction[];
 }
 
-export type UpdateScriptSchedulePayload = Partial<CreateScriptSchedulePayload>
+export type UpdateScriptSchedulePayload = Partial<CreateScriptSchedulePayload>;
 
 // ============ Form Types ============
 
-export type RepeatPeriod = 'day' | 'week' | 'month'
+export type RepeatPeriod = 'day' | 'week' | 'month';
 
 export const REPEAT_PERIOD_OPTIONS: { label: string; value: RepeatPeriod }[] = [
   { label: 'Day', value: 'day' },
   { label: 'Week', value: 'week' },
   { label: 'Month', value: 'month' },
-]
+];
 
 export const WEEKDAYS = [
   { label: 'Mon', bit: 0 },
@@ -119,16 +119,16 @@ export const WEEKDAYS = [
   { label: 'Fri', bit: 4 },
   { label: 'Sat', bit: 5 },
   { label: 'Sun', bit: 6 },
-] as const
+] as const;
 
-export const PLATFORMS = ['windows', 'linux', 'darwin'] as const
-export type Platform = (typeof PLATFORMS)[number]
+export const PLATFORMS = ['windows', 'linux', 'darwin'] as const;
+export type Platform = (typeof PLATFORMS)[number];
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
   windows: 'Windows',
   linux: 'Linux',
   darwin: 'MacOS',
-}
+};
 
 // ============ Zod Schemas ============
 
@@ -138,9 +138,9 @@ const scheduleActionSchema = z.object({
   timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
   script_args: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
   env_vars: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
-})
+});
 
-export type ScheduleActionFormData = z.infer<typeof scheduleActionSchema>
+export type ScheduleActionFormData = z.infer<typeof scheduleActionSchema>;
 
 export const createScheduleFormSchema = z.object({
   name: z.string().min(1, 'Schedule name is required').max(255),
@@ -153,9 +153,9 @@ export const createScheduleFormSchema = z.object({
   supportedPlatforms: z.array(z.string()).min(1, 'Select at least one platform'),
   enabled: z.boolean(),
   actions: z.array(scheduleActionSchema).min(1, 'Add at least one script action'),
-})
+});
 
-export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>
+export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>;
 
 // ============ Utility Functions ============
 
@@ -165,7 +165,7 @@ export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>
  * Output: "yyyy-MM-dd'T'HH:mm:ss'Z'"
  */
 export function toZuluDateString(date: Date): string {
-  return format(date, "yyyy-MM-dd'T'HH:mm:ss'Z'")
+  return format(date, "yyyy-MM-dd'T'HH:mm:ss'Z'");
 }
 
 /**
@@ -173,7 +173,7 @@ export function toZuluDateString(date: Date): string {
  * match the UTC values. Ensures the date picker shows the same time as stored.
  */
 export function parseZuluToLocalDate(isoString: string): Date {
-  const d = new Date(isoString)
+  const d = new Date(isoString);
   return new Date(
     d.getUTCFullYear(),
     d.getUTCMonth(),
@@ -181,82 +181,75 @@ export function parseZuluToLocalDate(isoString: string): Date {
     d.getUTCHours(),
     d.getUTCMinutes(),
     d.getUTCSeconds(),
-  )
+  );
 }
 
 export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
   switch (schedule.task_type) {
     case 'runonce':
-      return 'Once'
+      return 'Once';
     case 'daily':
-      return schedule.daily_interval === 1
-        ? '1 Day'
-        : `${schedule.daily_interval} Days`
+      return schedule.daily_interval === 1 ? '1 Day' : `${schedule.daily_interval} Days`;
     case 'weekly':
-      return schedule.weekly_interval === 1
-        ? '1 Week'
-        : `${schedule.weekly_interval} Weeks`
+      return schedule.weekly_interval === 1 ? '1 Week' : `${schedule.weekly_interval} Weeks`;
     case 'monthly':
     case 'monthlydow':
-      return 'Monthly'
+      return 'Monthly';
     default:
-      return schedule.task_type
+      return schedule.task_type;
   }
 }
 
 export function formatScheduleDate(isoDate: string): { date: string; time: string } {
-  const d = new Date(isoDate)
-  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' })
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' })
-  return { date, time }
+  const d = new Date(isoDate);
+  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
+  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+  return { date, time };
 }
 
-export function buildTaskTypeFromForm(
-  repeatEnabled: boolean,
-  repeatPeriod: RepeatPeriod,
-): ScriptScheduleTaskType {
-  if (!repeatEnabled) return 'runonce'
+export function buildTaskTypeFromForm(repeatEnabled: boolean, repeatPeriod: RepeatPeriod): ScriptScheduleTaskType {
+  if (!repeatEnabled) return 'runonce';
   switch (repeatPeriod) {
     case 'day':
-      return 'daily'
+      return 'daily';
     case 'week':
-      return 'weekly'
+      return 'weekly';
     case 'month':
-      return 'monthly'
+      return 'monthly';
     default:
-      return 'runonce'
+      return 'runonce';
   }
 }
 
 export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): CreateScheduleFormData {
-  const repeatEnabled = schedule.task_type !== 'runonce'
+  const repeatEnabled = schedule.task_type !== 'runonce';
 
-  let repeatPeriod: RepeatPeriod = 'day'
-  let repeatInterval = 1
+  let repeatPeriod: RepeatPeriod = 'day';
+  let repeatInterval = 1;
   if (schedule.task_type === 'daily') {
-    repeatPeriod = 'day'
-    repeatInterval = schedule.daily_interval ?? 1
+    repeatPeriod = 'day';
+    repeatInterval = schedule.daily_interval ?? 1;
   } else if (schedule.task_type === 'weekly') {
-    repeatPeriod = 'week'
-    repeatInterval = schedule.weekly_interval ?? 1
+    repeatPeriod = 'week';
+    repeatInterval = schedule.weekly_interval ?? 1;
   } else if (schedule.task_type === 'monthly' || schedule.task_type === 'monthlydow') {
-    repeatPeriod = 'month'
-    repeatInterval = 1
+    repeatPeriod = 'month';
+    repeatInterval = 1;
   }
 
-  const actions: ScheduleActionFormData[] = schedule.actions.map((a) => ({
+  const actions: ScheduleActionFormData[] = schedule.actions.map(a => ({
     script: a.script,
     name: a.name,
     timeout: a.timeout,
-    script_args: a.script_args.map((arg) => {
-      const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg]
-      return { id: crypto.randomUUID(), key, value: rest.join('=') }
+    script_args: a.script_args.map(arg => {
+      const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
+      return { id: crypto.randomUUID(), key, value: rest.join('=') };
     }),
-    env_vars: a.env_vars.map((env) => {
-      const [key, ...rest] = env.includes('=') ? env.split('=') : [env]
-      return { id: crypto.randomUUID(), key, value: rest.join('=') }
+    env_vars: a.env_vars.map(env => {
+      const [key, ...rest] = env.includes('=') ? env.split('=') : [env];
+      return { id: crypto.randomUUID(), key, value: rest.join('=') };
     }),
-  }))
+  }));
 
   return {
     name: schedule.name,
@@ -269,24 +262,22 @@ export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): Create
     supportedPlatforms: schedule.task_supported_platforms,
     enabled: schedule.enabled,
     actions,
-  }
+  };
 }
 
 export function buildCreatePayload(formData: CreateScheduleFormData): CreateScriptSchedulePayload {
-  const taskType = buildTaskTypeFromForm(formData.repeatEnabled, formData.repeatPeriod)
+  const taskType = buildTaskTypeFromForm(formData.repeatEnabled, formData.repeatPeriod);
 
-  const actions: ScriptScheduleAction[] = formData.actions.map((a) => ({
+  const actions: ScriptScheduleAction[] = formData.actions.map(a => ({
     type: 'script' as const,
     script: a.script,
     name: a.name,
     timeout: a.timeout,
     script_args: a.script_args
-      .filter((arg) => arg.key.trim())
-      .map((arg) => (arg.value ? `${arg.key}=${arg.value}` : arg.key)),
-    env_vars: a.env_vars
-      .filter((env) => env.key.trim())
-      .map((env) => (env.value ? `${env.key}=${env.value}` : env.key)),
-  }))
+      .filter(arg => arg.key.trim())
+      .map(arg => (arg.value ? `${arg.key}=${arg.value}` : arg.key)),
+    env_vars: a.env_vars.filter(env => env.key.trim()).map(env => (env.value ? `${env.key}=${env.value}` : env.key)),
+  }));
 
   const payload: CreateScriptSchedulePayload = {
     name: formData.name,
@@ -295,17 +286,17 @@ export function buildCreatePayload(formData: CreateScheduleFormData): CreateScri
     task_supported_platforms: formData.supportedPlatforms,
     enabled: formData.enabled,
     actions,
-  }
+  };
 
   if (taskType === 'daily') {
-    payload.daily_interval = formData.repeatInterval
+    payload.daily_interval = formData.repeatInterval;
   } else if (taskType === 'weekly') {
-    payload.weekly_interval = formData.repeatInterval
-    payload.run_time_bit_weekdays = formData.weekdays || null
+    payload.weekly_interval = formData.repeatInterval;
+    payload.run_time_bit_weekdays = formData.weekdays || null;
   } else if (taskType === 'monthly') {
-    payload.monthly_months_of_year = 4095 // all months by default
-    payload.monthly_days_of_month = null
+    payload.monthly_months_of_year = 4095; // all months by default
+    payload.monthly_days_of_month = null;
   }
 
-  return payload
+  return payload;
 }

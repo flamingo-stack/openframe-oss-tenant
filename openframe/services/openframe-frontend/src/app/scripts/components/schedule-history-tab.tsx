@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { LoadError, StatusTag } from '@flamingo-stack/openframe-frontend-core'
+import { LoadError, StatusTag } from '@flamingo-stack/openframe-frontend-core';
 import {
   Button,
   Sheet,
@@ -10,64 +10,67 @@ import {
   SheetTitle,
   Table,
   type TableColumn,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useCallback, useMemo, useState } from 'react'
-import { useScriptScheduleHistory } from '../hooks/use-script-schedule'
-import type { ScriptScheduleDetail, ScriptScheduleHistoryEntry } from '../types/script-schedule.types'
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useCallback, useMemo, useState } from 'react';
+import { useScriptScheduleHistory } from '../hooks/use-script-schedule';
+import type { ScriptScheduleDetail, ScriptScheduleHistoryEntry } from '../types/script-schedule.types';
 
 interface ScheduleHistoryTabProps {
-  schedule: ScriptScheduleDetail
-  scheduleId: string
+  schedule: ScriptScheduleDetail;
+  scheduleId: string;
 }
 
 function getStatusVariant(status: string): 'success' | 'error' | 'warning' | 'info' {
   switch (status) {
     case 'passing':
-      return 'success'
+      return 'success';
     case 'failing':
-      return 'error'
+      return 'error';
     default:
-      return 'info'
+      return 'info';
   }
 }
 
 function getStatusLabel(entry: ScriptScheduleHistoryEntry): string {
-  if (entry.retcode === 0) return 'OK'
-  if (entry.status === 'failing') return 'FAILING'
-  return entry.status.toUpperCase()
+  if (entry.retcode === 0) return 'OK';
+  if (entry.status === 'failing') return 'FAILING';
+  return entry.status.toUpperCase();
 }
 
 function formatDateTime(isoDate: string): string {
-  const d = new Date(isoDate)
+  const d = new Date(isoDate);
   return (
     d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }) +
     ', ' +
     d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
-  )
+  );
 }
 
 const InfoField = ({ label, value }: { label: string; value: string | React.ReactNode }) => (
   <div className="flex flex-col gap-1">
-    <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
-      {label}
-    </span>
+    <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">{label}</span>
     <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary break-all">
       {value || '—'}
     </span>
   </div>
-)
+);
 
 // ─── Drawer ────────────────────────────────────────────────────────
 
 interface ScheduleHistoryDrawerProps {
-  isOpen: boolean
-  onClose: () => void
-  entry: ScriptScheduleHistoryEntry | null
+  isOpen: boolean;
+  onClose: () => void;
+  entry: ScriptScheduleHistoryEntry | null;
 }
 
 function ScheduleHistoryDrawer({ isOpen, onClose, entry }: ScheduleHistoryDrawerProps) {
   return (
-    <Sheet open={isOpen && !!entry} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Sheet
+      open={isOpen && !!entry}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+    >
       <SheetContent
         side="right"
         className="w-full max-w-[480px] bg-ods-card border-l border-ods-border p-0 flex flex-col gap-0"
@@ -81,10 +84,7 @@ function ScheduleHistoryDrawer({ isOpen, onClose, entry }: ScheduleHistoryDrawer
               </SheetTitle>
               <SheetDescription asChild>
                 <div className="flex items-center gap-2">
-                  <StatusTag
-                    label={getStatusLabel(entry)}
-                    variant={getStatusVariant(entry.status)}
-                  />
+                  <StatusTag label={getStatusLabel(entry)} variant={getStatusVariant(entry.status)} />
                   <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
                     {entry.last_run ? formatDateTime(entry.last_run) : '—'}
                   </span>
@@ -133,38 +133,38 @@ function ScheduleHistoryDrawer({ isOpen, onClose, entry }: ScheduleHistoryDrawer
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 // ─── Tab ───────────────────────────────────────────────────────────
 
 export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabProps) {
-  const [offset, setOffset] = useState(0)
-  const [selectedEntry, setSelectedEntry] = useState<ScriptScheduleHistoryEntry | null>(null)
-  const limit = 50
+  const [offset, setOffset] = useState(0);
+  const [selectedEntry, setSelectedEntry] = useState<ScriptScheduleHistoryEntry | null>(null);
+  const limit = 50;
 
   const { history, total, isLoading, error } = useScriptScheduleHistory(scheduleId, {
     limit,
     offset,
-  })
+  });
 
   const handleNextPage = useCallback(() => {
     if (offset + limit < total) {
-      setOffset((prev) => prev + limit)
+      setOffset(prev => prev + limit);
     }
-  }, [offset, limit, total])
+  }, [offset, total]);
 
   const handlePrevPage = useCallback(() => {
-    setOffset((prev) => Math.max(0, prev - limit))
-  }, [limit])
+    setOffset(prev => Math.max(0, prev - limit));
+  }, []);
 
   const handleRowClick = useCallback((entry: ScriptScheduleHistoryEntry) => {
-    setSelectedEntry(entry)
-  }, [])
+    setSelectedEntry(entry);
+  }, []);
 
   const handleCloseDrawer = useCallback(() => {
-    setSelectedEntry(null)
-  }, [])
+    setSelectedEntry(null);
+  }, []);
 
   const columns: TableColumn<ScriptScheduleHistoryEntry>[] = useMemo(
     () => [
@@ -172,7 +172,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         key: 'log_id',
         label: 'LOG ID',
         width: 'w-[160px]',
-        renderCell: (entry) => (
+        renderCell: entry => (
           <div className="flex flex-col">
             <span className="font-['Azeret_Mono'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
               LOG-{String(entry.id).padStart(3, '0')}
@@ -200,7 +200,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         key: 'status',
         label: 'STATUS',
         width: 'w-[120px]',
-        renderCell: (entry) => (
+        renderCell: entry => (
           <StatusTag
             label={getStatusLabel(entry)}
             variant={getStatusVariant(entry.status)}
@@ -212,7 +212,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         key: 'device',
         label: 'DEVICE',
         hideAt: 'sm' as const,
-        renderCell: (entry) => (
+        renderCell: entry => (
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
@@ -226,7 +226,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         key: 'details',
         label: 'LOG DETAILS',
         hideAt: 'md' as const,
-        renderCell: (entry) => (
+        renderCell: entry => (
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
               {entry.stdout || entry.stderr || 'No output'}
@@ -239,10 +239,10 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
       },
     ],
     [],
-  )
+  );
 
   if (error) {
-    return <LoadError message={`Failed to load execution history: ${error}`} />
+    return <LoadError message={`Failed to load execution history: ${error}`} />;
   }
 
   return (
@@ -272,11 +272,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         </div>
       )}
 
-      <ScheduleHistoryDrawer
-        isOpen={!!selectedEntry}
-        onClose={handleCloseDrawer}
-        entry={selectedEntry}
-      />
+      <ScheduleHistoryDrawer isOpen={!!selectedEntry} onClose={handleCloseDrawer} entry={selectedEntry} />
     </div>
-  )
+  );
 }

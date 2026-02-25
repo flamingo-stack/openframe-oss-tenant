@@ -1,69 +1,74 @@
-'use client'
+'use client';
 
-import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
-import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
-import { Button, DetailLoader, DetailPageContainer, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
-import { ChevronLeft } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { DeviceInfoSection } from '../../components/shared'
-import { useLogDetails } from '../hooks/use-log-details'
-import { DetailsSection } from './details-section'
-import { FullInformationSection } from './full-information-section'
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  Button,
+  DetailLoader,
+  DetailPageContainer,
+  StatusTag,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
+import { ChevronLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { DeviceInfoSection } from '../../components/shared';
+import { useLogDetails } from '../hooks/use-log-details';
+import { DetailsSection } from './details-section';
+import { FullInformationSection } from './full-information-section';
 
 interface LogDetailsViewProps {
-  logId: string
-  ingestDay: string
-  toolType: string
-  eventType: string
-  timestamp: string
+  logId: string;
+  ingestDay: string;
+  toolType: string;
+  eventType: string;
+  timestamp: string;
 }
 
 const getSeverityVariant = (severity: string): 'success' | 'warning' | 'error' | 'info' | 'critical' => {
   switch (severity?.toUpperCase()) {
     case 'ERROR':
-      return 'error'
+      return 'error';
     case 'WARNING':
-      return 'warning'
+      return 'warning';
     case 'INFO':
-      return 'info'
+      return 'info';
     case 'CRITICAL':
-      return 'critical'
+      return 'critical';
     case 'DEBUG':
     default:
-      return 'info'
+      return 'info';
   }
-}
+};
 
 export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestamp }: LogDetailsViewProps) {
-  const router = useRouter()
-  const { logDetails, isLoading, error, fetchLogDetailsByID } = useLogDetails()
+  const router = useRouter();
+  const { logDetails, isLoading, error, fetchLogDetailsById } = useLogDetails();
 
   useEffect(() => {
     if (logId && ingestDay && toolType && eventType && timestamp) {
-      fetchLogDetailsByID(logId, ingestDay, toolType, eventType, timestamp)
+      fetchLogDetailsById(logId, ingestDay, toolType, eventType, timestamp);
     } else {
-      router.replace('/logs-page')
+      router.replace('/logs-page');
     }
-  }, [logId, ingestDay, toolType, eventType, timestamp, fetchLogDetailsByID, router])
+  }, [logId, ingestDay, toolType, eventType, timestamp, fetchLogDetailsById, router]);
 
   const handleBackToLogs = () => {
-    router.push('/logs-page')
-  }
+    router.push('/logs-page');
+  };
 
   const handleCopyLogDetails = () => {
     if (logDetails) {
       // Copy log details to clipboard
-      const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || 'No message available'}\nDetails: ${logDetails.details || 'No details available'}`
-      navigator.clipboard.writeText(details)
-      console.log('Log details copied to clipboard')
+      const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || 'No message available'}\nDetails: ${logDetails.details || 'No details available'}`;
+      navigator.clipboard.writeText(details);
+      console.log('Log details copied to clipboard');
     }
-  }
+  };
 
   // Loading state
   if (isLoading) {
-    return <DetailLoader />
+    return <DetailLoader />;
   }
 
   // Error state
@@ -74,9 +79,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] text-ods-text-primary mb-2">
             Log Not Found
           </h2>
-          <p className="text-ods-text-secondary mb-4">
-            {error || `Could not find log with ID: ${logId}`}
-          </p>
+          <p className="text-ods-text-secondary mb-4">{error || `Could not find log with ID: ${logId}`}</p>
           <Button
             onClick={handleBackToLogs}
             className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
@@ -86,7 +89,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   const customHeaderContent = (
@@ -121,14 +124,10 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         </Button>
       </div>
     </div>
-  )
+  );
 
   return (
-    <DetailPageContainer
-      headerContent={customHeaderContent}
-      padding="none"
-      className="pt-6"
-    >
+    <DetailPageContainer headerContent={customHeaderContent} padding="none" className="pt-6">
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
@@ -156,11 +155,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
         {/* Device Info Section */}
         {logDetails.deviceId && (
-          <DeviceInfoSection
-            deviceId={logDetails.deviceId}
-            userId={logDetails.userId}
-            device={logDetails.device}
-          />
+          <DeviceInfoSection deviceId={logDetails.deviceId} userId={logDetails.userId} device={logDetails.device} />
         )}
 
         {/* Full Information Section */}
@@ -170,5 +165,5 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         <DetailsSection logDetails={logDetails} />
       </div>
     </DetailPageContainer>
-  )
+  );
 }

@@ -1,21 +1,21 @@
-'use client'
+'use client';
 
-import React, { useEffect } from 'react'
 import {
+  Button,
   Modal,
-  ModalHeader,
-  ModalTitle,
   ModalContent,
   ModalFooter,
-  Button
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
+  ModalHeader,
+  ModalTitle,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React, { useEffect } from 'react';
 
 interface DeleteConfirmationModalProps {
-  isOpen: boolean
-  itemCount: number
-  submitting?: boolean
-  onConfirm: () => void
-  onClose: () => void
+  isOpen: boolean;
+  itemCount: number;
+  submitting?: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
 }
 
 export function DeleteConfirmationModal({
@@ -23,26 +23,26 @@ export function DeleteConfirmationModal({
   itemCount,
   submitting = false,
   onConfirm,
-  onClose
+  onClose,
 }: DeleteConfirmationModalProps) {
-  const title = itemCount === 1 ? 'Delete Item' : 'Delete Items'
+  const title = itemCount === 1 ? 'Delete Item' : 'Delete Items';
   const description =
     itemCount === 1
       ? 'Are you sure you want to delete this item? This action cannot be undone.'
-      : `Are you sure you want to delete ${itemCount} items? This action cannot be undone.`
+      : `Are you sure you want to delete ${itemCount} items? This action cannot be undone.`;
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Enter' && !submitting) {
-        event.preventDefault()
-        onConfirm()
+        event.preventDefault();
+        onConfirm();
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, submitting, onConfirm])
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, submitting, onConfirm]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -61,6 +61,5 @@ export function DeleteConfirmationModal({
         </Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }
-

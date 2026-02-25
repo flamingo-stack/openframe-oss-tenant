@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { isSaasTenantMode } from '@lib/app-mode'
-import { ChatsOverviewSection } from './chats-overview'
-import { DevicesOverviewSection } from './devices-overview'
-import { OnboardingSection } from './onboarding-section'
-import { OrganizationsOverviewSection } from './organizations-overview'
+import { isSaasTenantMode } from '@/lib/app-mode';
+import { ChatsOverviewSection } from './chats-overview';
+import { DevicesOverviewSection } from './devices-overview';
+import { OnboardingSection } from './onboarding-section';
+import { OrganizationsOverviewSection } from './organizations-overview';
 
 /**
  * Dashboard content component - extracted for dynamic import with loading skeleton
  * Contains all dashboard sections: Onboarding, Devices, Chats (SaaS only), Organizations
  */
 export default function DashboardContent() {
-  const showChats = isSaasTenantMode()
+  const showChats = isSaasTenantMode();
 
   return (
     <div className="space-y-10">
@@ -20,5 +20,5 @@ export default function DashboardContent() {
       {showChats && <ChatsOverviewSection />}
       <OrganizationsOverviewSection />
     </div>
-  )
+  );
 }

@@ -1,85 +1,91 @@
-'use client'
+'use client';
 
-import { useState, useCallback } from 'react'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { apiClient } from '@lib/api-client'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 interface UseDeviceActionsOptions {
-  onSuccess?: () => void
+  onSuccess?: () => void;
 }
 
 export function useDeviceActions(options?: UseDeviceActionsOptions) {
-  const { toast } = useToast()
-  const [isArchiving, setIsArchiving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const { toast } = useToast();
+  const [isArchiving, setIsArchiving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const archiveDevice = useCallback(async (deviceId: string, deviceName?: string): Promise<boolean> => {
-    setIsArchiving(true)
-    try {
-      const response = await apiClient.patch(`/api/devices/${deviceId}`, {
-        status: 'ARCHIVED'
-      })
+  const archiveDevice = useCallback(
+    async (deviceId: string, deviceName?: string): Promise<boolean> => {
+      setIsArchiving(true);
+      try {
+        const response = await apiClient.patch(`/api/devices/${deviceId}`, {
+          status: 'ARCHIVED',
+        });
 
-      if (!response.ok) {
-        throw new Error(response.error || 'Failed to archive device')
+        if (!response.ok) {
+          throw new Error(response.error || 'Failed to archive device');
+        }
+
+        toast({
+          title: 'Device archived',
+          description: `${deviceName || deviceId} has been archived`,
+        });
+
+        options?.onSuccess?.();
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to archive device';
+        toast({
+          title: 'Archive failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        return false;
+      } finally {
+        setIsArchiving(false);
       }
+    },
+    [toast, options],
+  );
 
-      toast({
-        title: 'Device archived',
-        description: `${deviceName || deviceId} has been archived`
-      })
+  const deleteDevice = useCallback(
+    async (deviceId: string, deviceName?: string): Promise<boolean> => {
+      setIsDeleting(true);
+      try {
+        const response = await apiClient.patch(`/api/devices/${deviceId}`, {
+          status: 'DELETED',
+        });
 
-      options?.onSuccess?.()
-      return true
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to archive device'
-      toast({
-        title: 'Archive failed',
-        description: errorMessage,
-        variant: 'destructive'
-      })
-      return false
-    } finally {
-      setIsArchiving(false)
-    }
-  }, [toast, options])
+        if (!response.ok) {
+          throw new Error(response.error || 'Failed to delete device');
+        }
 
-  const deleteDevice = useCallback(async (deviceId: string, deviceName?: string): Promise<boolean> => {
-    setIsDeleting(true)
-    try {
-      const response = await apiClient.patch(`/api/devices/${deviceId}`, {
-        status: 'DELETED'
-      })
+        toast({
+          title: 'Device deleted',
+          description: `${deviceName || deviceId} has been deleted`,
+        });
 
-      if (!response.ok) {
-        throw new Error(response.error || 'Failed to delete device')
+        options?.onSuccess?.();
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete device';
+        toast({
+          title: 'Delete failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        return false;
+      } finally {
+        setIsDeleting(false);
       }
-
-      toast({
-        title: 'Device deleted',
-        description: `${deviceName || deviceId} has been deleted`
-      })
-
-      options?.onSuccess?.()
-      return true
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete device'
-      toast({
-        title: 'Delete failed',
-        description: errorMessage,
-        variant: 'destructive'
-      })
-      return false
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [toast, options])
+    },
+    [toast, options],
+  );
 
   return {
     archiveDevice,
     deleteDevice,
     isArchiving,
     isDeleting,
-    isProcessing: isArchiving || isDeleting
-  }
+    isProcessing: isArchiving || isDeleting,
+  };
 }

@@ -1,240 +1,251 @@
-'use client'
+'use client';
 
-import { useEffect, useRef, useState, use, useMemo } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { Monitor, MoreHorizontal, Settings, Loader2 } from 'lucide-react'
-import { Button, DetailPageContainer, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { AppLayout } from '@app/components/app-layout'
-import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
-import { MeshTunnel, TunnelState } from '@lib/meshcentral/meshcentral-tunnel'
-import { MeshDesktop } from '@lib/meshcentral/meshcentral-desktop'
-import { RemoteSettingsModal } from './remote-settings-modal'
-import { RemoteSettingsConfig, DEFAULT_SETTINGS, RemoteDesktopSettings } from '@lib/meshcentral/remote-settings'
-import { createActionsMenuGroups, ActionHandlers } from './actions-menu-config'
-import { DisplayInfo } from '@lib/meshcentral/meshcentral-desktop'
-import { useDeviceDetails } from '@app/devices/hooks/use-device-details'
+import {
+  ActionsMenu,
+  ActionsMenuGroup,
+  Button,
+  DetailPageContainer,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { Loader2, Monitor, MoreHorizontal, Settings } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { use, useEffect, useMemo, useRef, useState } from 'react';
+import { AppLayout } from '@/app/components/app-layout';
+import { useDeviceDetails } from '@/app/devices/hooks/use-device-details';
+import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
+import { DisplayInfo, MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
+import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
+import { DEFAULT_SETTINGS, RemoteDesktopSettings, RemoteSettingsConfig } from '@/lib/meshcentral/remote-settings';
+import { ActionHandlers, createActionsMenuGroups } from './actions-menu-config';
+import { RemoteSettingsModal } from './remote-settings-modal';
 
 interface RemoteDesktopPageProps {
   params: Promise<{
-    deviceId: string
-  }>
+    deviceId: string;
+  }>;
 }
 
 interface LegacyDeviceData {
-  id: string
-  meshcentralAgentId?: string
-  hostname?: string
-  organization?: string | { name?: string }
+  id: string;
+  meshcentralAgentId?: string;
+  hostname?: string;
+  organization?: string | { name?: string };
 }
 
 export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { toast } = useToast()
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
 
-  const resolvedParams = use(params)
-  const deviceId = resolvedParams.deviceId
+  const resolvedParams = use(params);
+  const deviceId = resolvedParams.deviceId;
 
   // Check for legacy deviceData query param (backward compatibility)
-  const deviceDataParam = searchParams.get('deviceData')
+  const deviceDataParam = searchParams.get('deviceData');
   const legacyDeviceData = useMemo((): LegacyDeviceData | null => {
-    if (!deviceDataParam) return null
+    if (!deviceDataParam) return null;
     try {
-      return JSON.parse(deviceDataParam)
+      return JSON.parse(deviceDataParam);
     } catch {
-      return null
+      return null;
     }
-  }, [deviceDataParam])
+  }, [deviceDataParam]);
 
   // Fetch device data internally if no legacy data provided
-  const { deviceDetails, isLoading: isDeviceLoading, error: deviceError, fetchDeviceById } = useDeviceDetails()
+  const { deviceDetails, isLoading: isDeviceLoading, error: deviceError, fetchDeviceById } = useDeviceDetails();
 
   // Fetch device on mount if no legacy data
   useEffect(() => {
     if (!legacyDeviceData && deviceId) {
-      fetchDeviceById(deviceId)
+      fetchDeviceById(deviceId);
     }
-  }, [deviceId, legacyDeviceData, fetchDeviceById])
+  }, [deviceId, legacyDeviceData, fetchDeviceById]);
 
   // Extract device info from either legacy data or fetched data
   const meshcentralAgentId = useMemo(() => {
     if (legacyDeviceData?.meshcentralAgentId) {
-      return legacyDeviceData.meshcentralAgentId
+      return legacyDeviceData.meshcentralAgentId;
     }
-    return deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId
-  }, [legacyDeviceData, deviceDetails])
+    return deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;
+  }, [legacyDeviceData, deviceDetails]);
 
   const hostname = useMemo(() => {
     if (legacyDeviceData?.hostname) {
-      return legacyDeviceData.hostname
+      return legacyDeviceData.hostname;
     }
-    return deviceDetails?.hostname || deviceDetails?.displayName
-  }, [legacyDeviceData, deviceDetails])
+    return deviceDetails?.hostname || deviceDetails?.displayName;
+  }, [legacyDeviceData, deviceDetails]);
 
   const organizationName = useMemo(() => {
     if (legacyDeviceData?.organization) {
       return typeof legacyDeviceData.organization === 'string'
         ? legacyDeviceData.organization
-        : legacyDeviceData.organization?.name
+        : legacyDeviceData.organization?.name;
     }
-    return deviceDetails?.organization
-  }, [legacyDeviceData, deviceDetails])
+    return deviceDetails?.organization;
+  }, [legacyDeviceData, deviceDetails]);
 
   // Remote desktop state
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const desktopRef = useRef<MeshDesktop | null>(null)
-  const tunnelRef = useRef<MeshTunnel | null>(null)
-  const controlRef = useRef<MeshControlClient | null>(null)
-  const initializingRef = useRef(false)
-  const remoteSettingsRef = useRef<RemoteSettingsConfig>(DEFAULT_SETTINGS)
-  const [state, setState] = useState<TunnelState>(0)
-  const [connecting, setConnecting] = useState(false)
-  const [enableInput, setEnableInput] = useState(true)
-  const [isPageReady, setIsPageReady] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS)
-  const [isReconnecting, setIsReconnecting] = useState(false)
-  const [reconnectAttempt, setReconnectAttempt] = useState(0)
-  const [displays, setDisplays] = useState<DisplayInfo[]>([])
-  const [currentDisplay, setCurrentDisplay] = useState(0)
-  const [firstFrameReceived, setFirstFrameReceived] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const desktopRef = useRef<MeshDesktop | null>(null);
+  const tunnelRef = useRef<MeshTunnel | null>(null);
+  const controlRef = useRef<MeshControlClient | null>(null);
+  const initializingRef = useRef(false);
+  const remoteSettingsRef = useRef<RemoteSettingsConfig>(DEFAULT_SETTINGS);
+  const [state, setState] = useState<TunnelState>(0);
+  const [connecting, setConnecting] = useState(false);
+  const [enableInput, setEnableInput] = useState(true);
+  const [isPageReady, setIsPageReady] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS);
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [reconnectAttempt, setReconnectAttempt] = useState(0);
+  const [displays, setDisplays] = useState<DisplayInfo[]>([]);
+  const [currentDisplay, setCurrentDisplay] = useState(0);
+  const [firstFrameReceived, setFirstFrameReceived] = useState(false);
 
   useEffect(() => {
-    remoteSettingsRef.current = remoteSettings
-  }, [remoteSettings])
+    remoteSettingsRef.current = remoteSettings;
+  }, [remoteSettings]);
 
   // Set page ready when we have meshcentralAgentId
   useEffect(() => {
     if (meshcentralAgentId) {
-      const timer = setTimeout(() => setIsPageReady(true), 0)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setIsPageReady(true), 0);
+      return () => clearTimeout(timer);
     }
-  }, [meshcentralAgentId])
+  }, [meshcentralAgentId]);
 
   useEffect(() => {
-    if (!isPageReady) return
+    if (!isPageReady) return;
 
-    const desktop = new MeshDesktop()
-    desktopRef.current = desktop
+    const desktop = new MeshDesktop();
+    desktopRef.current = desktop;
 
-    desktop.onFirstFrame?.(() => setFirstFrameReceived(true))
+    desktop.onFirstFrame?.(() => setFirstFrameReceived(true));
 
     // Set up display list change callback
-    desktop.onDisplayListChange?.((newDisplays) => {
-      setDisplays(newDisplays)
+    desktop.onDisplayListChange?.(newDisplays => {
+      setDisplays(newDisplays);
       // Auto-select primary display if available
-      const primaryDisplay = newDisplays.find(d => d.primary)
+      const primaryDisplay = newDisplays.find(d => d.primary);
       if (primaryDisplay && currentDisplay === 0) {
-        setCurrentDisplay(primaryDisplay.id)
+        setCurrentDisplay(primaryDisplay.id);
       }
-    })
+    });
 
-    const canvas = canvasRef.current
+    const canvas = canvasRef.current;
     if (canvas) {
-      desktop.attach(canvas)
-      desktop.setViewOnly(!enableInput)
+      desktop.attach(canvas);
+      desktop.setViewOnly(!enableInput);
       return () => {
-        desktop.detach()
-      }
+        desktop.detach();
+      };
     }
-  }, [isPageReady])
+  }, [isPageReady, currentDisplay, enableInput]);
 
   useEffect(() => {
-    if (!isPageReady || !meshcentralAgentId || initializingRef.current) return
+    if (!isPageReady || !meshcentralAgentId || initializingRef.current) return;
 
-    initializingRef.current = true
-    setFirstFrameReceived(false)
-    let control: MeshControlClient | undefined
-    ;(async () => {
-      setConnecting(true)
+    initializingRef.current = true;
+    setFirstFrameReceived(false);
+    let control: MeshControlClient | undefined;
+    (async () => {
+      setConnecting(true);
       try {
-        control = new MeshControlClient()
-        controlRef.current = control
-        const { authCookie } = await control.getAuthCookies()
+        control = new MeshControlClient();
+        controlRef.current = control;
+        const { authCookie } = await control.getAuthCookies();
         const tunnel = new MeshTunnel({
           authCookie,
           nodeId: meshcentralAgentId,
           protocol: 2,
           onData: () => {},
-          onBinaryData: (bytes) => { desktopRef.current?.onBinaryFrame(bytes) },
+          onBinaryData: bytes => {
+            desktopRef.current?.onBinaryFrame(bytes);
+          },
           onCtrlMessage: () => {},
-          onConsoleMessage: (msg) => { toast({ title: 'Remote Desktop', description: msg, variant: 'default' }) },
-          onRequestPairing: async (relayId) => {
+          onConsoleMessage: msg => {
+            toast({ title: 'Remote Desktop', description: msg, variant: 'default' });
+          },
+          onRequestPairing: async relayId => {
             try {
-              const ctrl = controlRef.current
-              if (!ctrl) return
-              await ctrl.openSession()
-              ctrl.sendDesktopTunnel(meshcentralAgentId, relayId)
+              const ctrl = controlRef.current;
+              if (!ctrl) return;
+              await ctrl.openSession();
+              ctrl.sendDesktopTunnel(meshcentralAgentId, relayId);
             } catch {}
           },
-          onStateChange: (s) => {
-            setState(s)
+          onStateChange: s => {
+            setState(s);
             if (s === 1 && tunnelRef.current?.getState() === 0) {
-              setIsReconnecting(true)
-              setReconnectAttempt(prev => prev + 1)
+              setIsReconnecting(true);
+              setReconnectAttempt(prev => prev + 1);
               toast({
                 title: 'Connection Lost',
                 description: 'Attempting to reconnect...',
-                variant: 'info'
-              })
+                variant: 'info',
+              });
             } else if (s === 3 && isReconnecting) {
-              setIsReconnecting(false)
+              setIsReconnecting(false);
               toast({
                 title: 'Reconnected',
                 description: 'Connection restored successfully',
-                variant: 'success'
-              })
+                variant: 'success',
+              });
             } else if (s === 0 && isReconnecting) {
-              setIsReconnecting(false)
+              setIsReconnecting(false);
               toast({
                 title: 'Reconnection Failed',
                 description: 'Unable to restore connection. Please try again.',
-                variant: 'destructive'
-              })
+                variant: 'destructive',
+              });
             }
-          }
-        })
-        tunnelRef.current = tunnel
-        desktopRef.current?.setSender((data) => {
-          tunnel.sendBinary(data)
-        })
+          },
+        });
+        tunnelRef.current = tunnel;
+        desktopRef.current?.setSender(data => {
+          tunnel.sendBinary(data);
+        });
         try {
-          await control.openSession()
+          await control.openSession();
         } catch {}
-        tunnel.start()
+        tunnel.start();
       } catch (e) {
-        toast({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' })
+        toast({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' });
       } finally {
-        setConnecting(false)
+        setConnecting(false);
       }
-    })()
+    })();
     return () => {
-      initializingRef.current = false
-      controlRef.current = null
+      initializingRef.current = false;
+      controlRef.current = null;
       control?.close();
-      tunnelRef.current?.stop()
-    }
-  }, [isPageReady, meshcentralAgentId, toast])
+      tunnelRef.current?.stop();
+    };
+  }, [isPageReady, meshcentralAgentId, toast, isReconnecting]);
 
   useEffect(() => {
-    if (state !== 3) return
-    const tunnel = tunnelRef.current
-    if (!tunnel) return
+    if (state !== 3) return;
+    const tunnel = tunnelRef.current;
+    if (!tunnel) return;
 
     try {
-      const settingsManager = new RemoteDesktopSettings(remoteSettingsRef.current)
-      settingsManager.setWebSocket(tunnel)
-      settingsManager.applySettings()
+      const settingsManager = new RemoteDesktopSettings(remoteSettingsRef.current);
+      settingsManager.setWebSocket(tunnel);
+      settingsManager.applySettings();
     } catch (error) {
-      console.error('Failed to apply initial settings:', error)
+      console.error('Failed to apply initial settings:', error);
     }
-  }, [state])
+  }, [state]);
 
   const handleBack = () => {
-    tunnelRef.current?.stop()
-    router.push(`/devices/details/${deviceId}`)
-  }
+    tunnelRef.current?.stop();
+    router.push(`/devices/details/${deviceId}`);
+  };
 
   const statusText = isReconnecting
     ? `Reconnecting... (Attempt ${reconnectAttempt})`
@@ -244,143 +255,155 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         ? 'Open'
         : state === 1
           ? 'Connecting'
-          : 'Idle'
+          : 'Idle';
   const statusColor = isReconnecting
     ? 'text-ods-text-secondary animate-pulse'
     : state === 3
       ? 'text-ods-attention-green-success'
       : state === 1 || state === 2
         ? 'text-ods-text-secondary'
-        : 'text-ods-text-secondary'
+        : 'text-ods-text-secondary';
 
   const sendPower = async (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => {
-    if (!meshcentralAgentId) return
+    if (!meshcentralAgentId) return;
     try {
-      const client = controlRef.current || new MeshControlClient()
-      if (!controlRef.current) controlRef.current = client
-      await client.powerAction(meshcentralAgentId, action)
-      toast({ title: 'Power action', description: `${action} sent`, variant: 'success' })
+      const client = controlRef.current || new MeshControlClient();
+      if (!controlRef.current) controlRef.current = client;
+      await client.powerAction(meshcentralAgentId, action);
+      toast({ title: 'Power action', description: `${action} sent`, variant: 'success' });
     } catch (e) {
-      toast({ title: 'Power action failed', description: (e as Error).message, variant: 'destructive' })
+      toast({ title: 'Power action failed', description: (e as Error).message, variant: 'destructive' });
     }
-  }
+  };
 
   const sendKey = (keyCode: number, isUp: boolean = false) => {
-    if (!desktopRef.current || !tunnelRef.current || state !== 3) return
+    if (!desktopRef.current || !tunnelRef.current || state !== 3) return;
     // 6-byte message: [type=0x0001][size=0x0006][action][vk]
-    const buf = new Uint8Array(6)
-    buf[0] = 0x00
-    buf[1] = 0x01 // MNG_KVM_KEY command
-    buf[2] = 0x00
-    buf[3] = 0x06 // Total size (header + payload)
-    buf[4] = isUp ? 0x01 : 0x00 // Action: 0=down, 1=up
-    buf[5] = keyCode & 0xff // Virtual-Key code
-    tunnelRef.current.sendBinary(buf)
-  }
+    const buf = new Uint8Array(6);
+    buf[0] = 0x00;
+    buf[1] = 0x01; // MNG_KVM_KEY command
+    buf[2] = 0x00;
+    buf[3] = 0x06; // Total size (header + payload)
+    buf[4] = isUp ? 0x01 : 0x00; // Action: 0=down, 1=up
+    buf[5] = keyCode & 0xff; // Virtual-Key code
+    tunnelRef.current.sendBinary(buf);
+  };
 
   const sendKeyCombo = (keys: number[]) => {
-    if (!desktopRef.current) return
+    if (!desktopRef.current) return;
 
     const keyMappings: Record<string, string> = {
-      [`${0x5B},${0x4D}`]: 'win+m',
-      [`${0x5B},${0x28}`]: 'win+down',
-      [`${0x5B},${0x26}`]: 'win+up',
-      [`${0x10},${0x5B},${0x4D}`]: 'shift+win+m',
-      [`${0x5B},${0x4C}`]: 'win+l',
-      [`${0x5B},${0x52}`]: 'win+r',
+      [`${0x5b},${0x4d}`]: 'win+m',
+      [`${0x5b},${0x28}`]: 'win+down',
+      [`${0x5b},${0x26}`]: 'win+up',
+      [`${0x10},${0x5b},${0x4d}`]: 'shift+win+m',
+      [`${0x5b},${0x4c}`]: 'win+l',
+      [`${0x5b},${0x52}`]: 'win+r',
       [`${0x11},${0x57}`]: 'ctrl+w',
-    }
+    };
 
-    const keyString = keys.join(',')
-    const comboString = keyMappings[keyString]
+    const keyString = keys.join(',');
+    const comboString = keyMappings[keyString];
 
     if (comboString) {
-      desktopRef.current.sendKeyCombo(comboString)
+      desktopRef.current.sendKeyCombo(comboString);
     } else {
-      console.warn('Unmapped key combination:', keys, 'keyString:', keyString)
+      console.warn('Unmapped key combination:', keys, 'keyString:', keyString);
       // Fallback to manual key sequence for unmapped combinations
       keys.forEach((key, index) => {
-        setTimeout(() => sendKey(key, false), index * 50)
-      })
-      keys.slice().reverse().forEach((key, index) => {
-        setTimeout(() => sendKey(key, true), (keys.length + index) * 50)
-      })
+        setTimeout(() => sendKey(key, false), index * 50);
+      });
+      keys
+        .slice()
+        .reverse()
+        .forEach((key, index) => {
+          setTimeout(() => sendKey(key, true), (keys.length + index) * 50);
+        });
     }
-  }
+  };
 
   const sendCtrlAltDel = () => {
-    if (!tunnelRef.current || state !== 3) return
-    const buffer = new ArrayBuffer(4)
-    const view = new DataView(buffer)
-    view.setUint16(0, 0x000A, false) // MNG_CTRLALTDEL command (big-endian)
-    view.setUint16(2, 0x0000, false) // Size = 0 (no data payload)
+    if (!tunnelRef.current || state !== 3) return;
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    view.setUint16(0, 0x000a, false); // MNG_CTRLALTDEL command (big-endian)
+    view.setUint16(2, 0x0000, false); // Size = 0 (no data payload)
 
-    const buf = new Uint8Array(buffer)
-    tunnelRef.current.sendBinary(buf)
+    const buf = new Uint8Array(buffer);
+    tunnelRef.current.sendBinary(buf);
 
     toast({
-      title: "Ctrl+Alt+Del",
-      description: "Shortcut sent",
-      variant: "success",
-      duration: 2000
-    })
-  }
+      title: 'Ctrl+Alt+Del',
+      description: 'Shortcut sent',
+      variant: 'success',
+      duration: 2000,
+    });
+  };
 
   const handleDisplayChange = (displayId: number) => {
     try {
-      desktopRef.current?.switchDisplay?.(displayId)
-      setCurrentDisplay(displayId)
+      desktopRef.current?.switchDisplay?.(displayId);
+      setCurrentDisplay(displayId);
       toast({
-        title: "Display Switched",
+        title: 'Display Switched',
         description: `Switched to display ${displayId}`,
-        variant: "success",
-        duration: 2000
-      })
+        variant: 'success',
+        duration: 2000,
+      });
     } catch (error) {
       toast({
-        title: "Display Switch Failed",
-        description: error instanceof Error ? error.message : "Unable to switch display",
-        variant: "destructive",
-        duration: 4000
-      })
+        title: 'Display Switch Failed',
+        description: error instanceof Error ? error.message : 'Unable to switch display',
+        variant: 'destructive',
+        duration: 4000,
+      });
     }
-  }
+  };
 
   const actionHandlers: ActionHandlers = {
     sendCtrlAltDel,
     sendKeyCombo,
     sendPower,
     setEnableInput: (enabled: boolean) => {
-      setEnableInput(enabled)
-      desktopRef.current?.setViewOnly(!enabled)
+      setEnableInput(enabled);
+      desktopRef.current?.setViewOnly(!enabled);
     },
-    toast
-  }
+    toast,
+  };
 
-  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput)
+  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput);
 
-  const displayMenuGroups: ActionsMenuGroup[] = displays.length > 1 ? [
-    {
-      items: [
-        ...(displays.some(d => d.id === 0) || displays.length > 1 ? [{
-          id: 'display-all',
-          label: 'All Displays',
-          icon: <Monitor className="w-4 h-4" />,
-          type: 'checkbox' as const,
-          checked: currentDisplay === 0,
-          onClick: () => handleDisplayChange(0)
-        }] : []),
-        ...displays.filter(d => d.id !== 0).map((display) => ({
-          id: `display-${display.id}`,
-          label: `Display ${display.id}${display.primary ? ' (Primary)' : ''}`,
-          icon: <Monitor className="w-4 h-4" />,
-          type: 'checkbox' as const,
-          checked: currentDisplay === display.id,
-          onClick: () => handleDisplayChange(display.id)
-        }))
-      ]
-    }
-  ] : []
+  const displayMenuGroups: ActionsMenuGroup[] =
+    displays.length > 1
+      ? [
+          {
+            items: [
+              ...(displays.some(d => d.id === 0) || displays.length > 1
+                ? [
+                    {
+                      id: 'display-all',
+                      label: 'All Displays',
+                      icon: <Monitor className="w-4 h-4" />,
+                      type: 'checkbox' as const,
+                      checked: currentDisplay === 0,
+                      onClick: () => handleDisplayChange(0),
+                    },
+                  ]
+                : []),
+              ...displays
+                .filter(d => d.id !== 0)
+                .map(display => ({
+                  id: `display-${display.id}`,
+                  label: `Display ${display.id}${display.primary ? ' (Primary)' : ''}`,
+                  icon: <Monitor className="w-4 h-4" />,
+                  type: 'checkbox' as const,
+                  checked: currentDisplay === display.id,
+                  onClick: () => handleDisplayChange(display.id),
+                })),
+            ],
+          },
+        ]
+      : [];
 
   // Loading skeleton that matches the actual remote desktop layout
   if (!legacyDeviceData && isDeviceLoading) {
@@ -429,7 +452,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           </div>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   // Error state - device not found
@@ -437,15 +460,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     return (
       <AppLayout>
         <div className="h-full flex flex-col items-center justify-center gap-4">
-          <div className="text-ods-attention-red-error text-lg">
-            Error: {deviceError}
-          </div>
-          <Button onClick={() => router.push('/devices')}>
-            Back to Devices
-          </Button>
+          <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
+          <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   // Error state - MeshCentral agent not available
@@ -456,25 +475,21 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           <div className="text-ods-attention-red-error text-lg">
             Error: MeshCentral Agent ID not available for this device
           </div>
-          <p className="text-ods-text-secondary">
-            Remote desktop requires MeshCentral agent to be connected.
-          </p>
-          <Button onClick={() => router.push(`/devices/details/${deviceId}`)}>
-            Back to Device
-          </Button>
+          <p className="text-ods-text-secondary">Remote desktop requires MeshCentral agent to be connected.</p>
+          <Button onClick={() => router.push(`/devices/details/${deviceId}`)}>Back to Device</Button>
         </div>
       </AppLayout>
-    )
+    );
   }
 
   return (
     <AppLayout>
       <DetailPageContainer
-        className='h-full'
-        contentClassName='flex flex-col'
+        className="h-full"
+        contentClassName="flex flex-col"
         backButton={{
           label: 'Back to Device',
-          onClick: handleBack
+          onClick: handleBack,
         }}
       >
         <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
@@ -487,12 +502,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
             {/* Device Info */}
             <div className="flex flex-col">
-              <h1 className="text-ods-text-primary text-lg font-medium">
-                {hostname || `Device ${deviceId}`}
-              </h1>
-              <p className="text-ods-text-secondary text-sm">
-                Desktop • {organizationName || 'Unknown Organization'}
-              </p>
+              <h1 className="text-ods-text-primary text-lg font-medium">{hostname || `Device ${deviceId}`}</h1>
+              <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Organization'}</p>
             </div>
           </div>
 
@@ -501,26 +512,21 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             {/* Actions Dropdown */}
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="device-action"
-                  leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}
-                >
+                <Button variant="device-action" leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}>
                   Actions
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
                 className="p-0 border-none"
-                onInteractOutside={(e) => {
-                  const target = e.target as HTMLElement
+                onInteractOutside={e => {
+                  const target = e.target as HTMLElement;
                   if (target.closest('.fixed.z-\\[9999\\]')) {
-                    e.preventDefault()
+                    e.preventDefault();
                   }
                 }}
               >
-                <ActionsMenu
-                  groups={actionsMenuGroups}
-                />
+                <ActionsMenu groups={actionsMenuGroups} />
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -528,26 +534,21 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             {displays.length > 1 && (
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="device-action"
-                    leftIcon={<Monitor className="w-6 h-6 mr-2" />}
-                  >
+                  <Button variant="device-action" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
                     Display {currentDisplay === 0 ? 'All' : currentDisplay}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
                   className="p-0 border-none"
-                  onInteractOutside={(e) => {
-                    const target = e.target as HTMLElement
+                  onInteractOutside={e => {
+                    const target = e.target as HTMLElement;
                     if (target.closest('.fixed.z-\\[9999\\]')) {
-                      e.preventDefault()
+                      e.preventDefault();
                     }
                   }}
                 >
-                  <ActionsMenu
-                    groups={displayMenuGroups}
-                  />
+                  <ActionsMenu groups={displayMenuGroups} />
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
@@ -579,8 +580,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             <canvas
               ref={canvasRef}
               className="block max-w-full max-h-full"
-              onContextMenu={(e) => {
-                e.preventDefault()
+              onContextMenu={e => {
+                e.preventDefault();
               }}
             />
             {!firstFrameReceived && state >= 1 && (
@@ -606,5 +607,5 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         />
       </DetailPageContainer>
     </AppLayout>
-  )
+  );
 }

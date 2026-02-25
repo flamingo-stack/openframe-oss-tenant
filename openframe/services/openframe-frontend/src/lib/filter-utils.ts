@@ -8,9 +8,9 @@
  * Filter option structure
  */
 export interface FilterOption {
-  id: string
-  label: string
-  value: any
+  id: string;
+  label: string;
+  value: any;
 }
 
 /**
@@ -32,23 +32,21 @@ export interface FilterOption {
  * deduplicateFilterOptions(options)
  * // Returns: [{ id: 'uuid-1', ... }, { id: 'uuid-2', ... }]
  */
-export function deduplicateFilterOptions<T extends FilterOption>(
-  options: T[] | undefined | null
-): T[] {
+export function deduplicateFilterOptions<T extends FilterOption>(options: T[] | undefined | null): T[] {
   if (!options || !Array.isArray(options)) {
-    return []
+    return [];
   }
 
-  const uniqueMap = new Map<string, T>()
+  const uniqueMap = new Map<string, T>();
 
-  options.forEach((option) => {
+  options.forEach(option => {
     // Only add if we haven't seen this ID before
     if (!uniqueMap.has(option.id)) {
-      uniqueMap.set(option.id, option)
+      uniqueMap.set(option.id, option);
     }
-  })
+  });
 
-  return Array.from(uniqueMap.values())
+  return Array.from(uniqueMap.values());
 }
 
 /**
@@ -64,22 +62,25 @@ export function deduplicateFilterOptions<T extends FilterOption>(
  * @returns Deduplicated filter options
  */
 export function transformOrganizationFilters(
-  organizations: Array<{
-    id?: string
-    name?: string
-    value?: string
-    label?: string
-  }> | undefined | null
+  organizations:
+    | Array<{
+        id?: string;
+        name?: string;
+        value?: string;
+        label?: string;
+      }>
+    | undefined
+    | null,
 ): FilterOption[] {
   if (!organizations || !Array.isArray(organizations)) {
-    return []
+    return [];
   }
 
-  const mapped = organizations.map((org) => ({
+  const mapped = organizations.map(org => ({
     id: org.id || org.value || 'system',
     label: (org.name === 'null' ? 'System' : org.name) || org.label || 'Unknown',
-    value: org.id || org.value || 'system'
-  }))
+    value: org.id || org.value || 'system',
+  }));
 
-  return deduplicateFilterOptions(mapped)
+  return deduplicateFilterOptions(mapped);
 }

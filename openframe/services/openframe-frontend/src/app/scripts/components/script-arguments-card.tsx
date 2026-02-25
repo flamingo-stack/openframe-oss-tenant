@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { InfoCard, Label } from '@flamingo-stack/openframe-frontend-core'
+import { InfoCard, Label } from '@flamingo-stack/openframe-frontend-core';
 
 interface ScriptArgumentsCardProps {
-  title: string
-  args: string[]
+  title: string;
+  args: string[];
 }
 
 export function ScriptArgumentsCard({ title, args }: ScriptArgumentsCardProps) {
   if (!args || args.length === 0) {
-    return null
+    return null;
   }
 
   return (
@@ -20,12 +20,12 @@ export function ScriptArgumentsCard({ title, args }: ScriptArgumentsCardProps) {
       <InfoCard
         data={{
           items: args.map((arg: string) => {
-            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg]
-            const value = rest.length > 0 ? rest.join('=') : ''
-            return { label: key, value: value || '' }
-          })
+            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
+            const value = rest.length > 0 ? rest.join('=') : '';
+            return { label: key, value: value || '' };
+          }),
         }}
       />
     </div>
-  )
+  );
 }

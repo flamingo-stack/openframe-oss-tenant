@@ -1,9 +1,9 @@
-'use client'
+'use client';
 
-import Editor, { type Monaco } from '@monaco-editor/react'
-import { useCallback, useRef } from 'react'
+import Editor, { type Monaco } from '@monaco-editor/react';
+import { useCallback, useRef } from 'react';
 
-const ODS_THEME_NAME = 'ods-dark'
+const ODS_THEME_NAME = 'ods-dark';
 
 const SHELL_TO_LANGUAGE: Record<string, string> = {
   powershell: 'powershell',
@@ -14,7 +14,7 @@ const SHELL_TO_LANGUAGE: Record<string, string> = {
   deno: 'typescript',
   shell: 'shell',
   sql: 'sql',
-}
+};
 
 function defineOdsTheme(monaco: Monaco) {
   monaco.editor.defineTheme(ODS_THEME_NAME, {
@@ -70,20 +70,20 @@ function defineOdsTheme(monaco: Monaco) {
       'input.background': '#212121',
       'input.border': '#3a3a3a',
       'input.foreground': '#fafafa',
-      'focusBorder': '#ffc008',
+      focusBorder: '#ffc008',
       'list.activeSelectionBackground': '#ffc00820',
       'list.hoverBackground': '#2b2b2b',
       'minimap.background': '#161616',
     },
-  })
+  });
 }
 
 interface ScriptEditorProps {
-  value: string
-  onChange?: (value: string) => void
-  shell?: string
-  readOnly?: boolean
-  height?: string
+  value: string;
+  onChange?: (value: string) => void;
+  shell?: string;
+  readOnly?: boolean;
+  height?: string;
 }
 
 export function ScriptEditor({
@@ -93,27 +93,24 @@ export function ScriptEditor({
   readOnly = false,
   height = '400px',
 }: ScriptEditorProps) {
-  const editorRef = useRef<ReturnType<Monaco['editor']['create']> | null>(null)
+  const editorRef = useRef<ReturnType<Monaco['editor']['create']> | null>(null);
 
-  const language = SHELL_TO_LANGUAGE[shell.toLowerCase()] || 'shell'
+  const language = SHELL_TO_LANGUAGE[shell.toLowerCase()] || 'shell';
 
   const handleBeforeMount = useCallback((monaco: Monaco) => {
-    defineOdsTheme(monaco)
-  }, [])
+    defineOdsTheme(monaco);
+  }, []);
 
-  const handleMount = useCallback(
-    (editor: ReturnType<Monaco['editor']['create']>) => {
-      editorRef.current = editor
-    },
-    [],
-  )
+  const handleMount = useCallback((editor: ReturnType<Monaco['editor']['create']>) => {
+    editorRef.current = editor;
+  }, []);
 
   const handleChange = useCallback(
     (val: string | undefined) => {
-      onChange?.(val ?? '')
+      onChange?.(val ?? '');
     },
     [onChange],
-  )
+  );
 
   return (
     <div className="rounded-md border border-ods-border overflow-hidden">
@@ -166,5 +163,5 @@ export function ScriptEditor({
         }}
       />
     </div>
-  )
+  );
 }

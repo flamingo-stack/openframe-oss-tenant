@@ -1,63 +1,46 @@
-'use client'
+'use client';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-import { useEffect, useCallback, useState, useMemo } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { AppLayout } from '../components/app-layout'
 import {
+  ChatInput,
   ChatMessageList,
+  ChatSidebar,
   ContentPageContainer,
   MingoIcon,
-} from '@flamingo-stack/openframe-frontend-core'
-import {
-  ChatSidebar,
-  ChatInput
-} from '@flamingo-stack/openframe-frontend-core'
-import { isSaasTenantMode } from '@lib/app-mode'
-import { useMingoDialog } from './hooks/use-mingo-dialog'
-import { useMingoDialogs } from './hooks/use-mingo-dialogs'
-import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection'
-import { useMingoChat } from './hooks/use-mingo-chat'
-import { useMingoRealtimeSubscription, DialogSubscription } from './hooks/use-mingo-realtime-subscription'
-import { useMingoMessagesStore } from './stores/mingo-messages-store'
+} from '@flamingo-stack/openframe-frontend-core';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { isSaasTenantMode } from '@/lib/app-mode';
+import { AppLayout } from '../components/app-layout';
+import { useMingoChat } from './hooks/use-mingo-chat';
+import { useMingoDialog } from './hooks/use-mingo-dialog';
+import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
+import { useMingoDialogs } from './hooks/use-mingo-dialogs';
+import { DialogSubscription, useMingoRealtimeSubscription } from './hooks/use-mingo-realtime-subscription';
+import { useMingoMessagesStore } from './stores/mingo-messages-store';
 
 export default function Mingo() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [isDraftChat, setIsDraftChat] = useState(false)
+  const [isDraftChat, setIsDraftChat] = useState(false);
 
-  const {
-    activeDialogId,
-    setActiveDialogId,
-    resetUnread,
-    addMessage,
-  } = useMingoMessagesStore()
+  const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
 
-  const {
-    isCreatingDialog: legacyCreatingDialog,
-    resetDialog
-  } = useMingoDialog()
+  const { resetDialog } = useMingoDialog();
 
-  const {
-    dialogs,
-    isLoading: isLoadingDialogs,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage
-  } = useMingoDialogs()
+  const { dialogs, isLoading: isLoadingDialogs, hasNextPage, fetchNextPage, isFetchingNextPage } = useMingoDialogs();
 
   const {
     selectDialog,
     isLoadingDialog,
     isLoadingMessages,
     isSelectingDialog,
-    rawMessagesCount,
     handleApprove,
     handleReject,
-    approvalStatuses
-  } = useMingoDialogSelection()
+    approvalStatuses,
+  } = useMingoDialogSelection();
 
   const {
     messages: processedMessages,
@@ -66,143 +49,161 @@ export default function Mingo() {
     approvals: pendingApprovals,
     isCreatingDialog,
     isTyping,
-    assistantType
-  } = useMingoChat(activeDialogId)
+    assistantType,
+  } = useMingoChat(activeDialogId);
 
-  const {
-    subscribeToDialog,
-    subscribedDialogs
-  } = useMingoRealtimeSubscription(activeDialogId)
+  const { subscribeToDialog, subscribedDialogs } = useMingoRealtimeSubscription(activeDialogId);
 
-  const draftWelcomeMessages = useMemo(() => [{
-    id: 'welcome-draft',
-    role: 'assistant' as const,
-    name: 'Mingo',
-    content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
-    assistantType: 'mingo' as const,
-    timestamp: new Date(),
-  }], [])
+  const draftWelcomeMessages = useMemo(
+    () => [
+      {
+        id: 'welcome-draft',
+        role: 'assistant' as const,
+        name: 'Mingo',
+        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+        assistantType: 'mingo' as const,
+        timestamp: new Date(),
+      },
+    ],
+    [],
+  );
 
-  const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog
+  const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog;
 
   const displayMessages = useMemo(() => {
-    if (isDraftChat) return draftWelcomeMessages
+    if (isDraftChat) return draftWelcomeMessages;
 
     if (activeDialogId && processedMessages.length === 0 && !isAnyLoading) {
-      return draftWelcomeMessages
+      return draftWelcomeMessages;
     }
 
-    return processedMessages
-  }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages])
+    return processedMessages;
+  }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         if (isDraftChat) {
-          setIsDraftChat(false)
+          setIsDraftChat(false);
         } else if (activeDialogId) {
-          const currentUrl = new URL(window.location.href)
-          currentUrl.searchParams.delete('dialogId')
-          router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.delete('dialogId');
+          router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
         }
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeDialogId, isDraftChat, router])
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeDialogId, isDraftChat, router]);
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/dashboard')
-      return
+      router.replace('/dashboard');
+      return;
     }
-  }, [router])
+  }, [router]);
 
-  const handleDialogSelect = useCallback(async (dialogId: string) => {
-    if (dialogId === activeDialogId) return
+  const handleDialogSelect = useCallback(
+    async (dialogId: string) => {
+      if (dialogId === activeDialogId) return;
 
-    setIsDraftChat(false)
+      setIsDraftChat(false);
 
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.set('dialogId', dialogId)
-    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('dialogId', dialogId);
+      router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
 
-    setActiveDialogId(dialogId)
-    resetUnread(dialogId)
-    subscribeToDialog(dialogId)
+      setActiveDialogId(dialogId);
+      resetUnread(dialogId);
+      subscribeToDialog(dialogId);
 
-    selectDialog(dialogId)
-  }, [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog])
+      selectDialog(dialogId);
+    },
+    [activeDialogId, router, setActiveDialogId, resetUnread, subscribeToDialog, selectDialog],
+  );
 
   useEffect(() => {
-    const urlDialogId = searchParams.get('dialogId')
+    const urlDialogId = searchParams.get('dialogId');
 
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
-        setIsDraftChat(false)
-        setActiveDialogId(urlDialogId)
-        resetUnread(urlDialogId)
-        subscribeToDialog(urlDialogId)
-        selectDialog(urlDialogId)
+        setIsDraftChat(false);
+        setActiveDialogId(urlDialogId);
+        resetUnread(urlDialogId);
+        subscribeToDialog(urlDialogId);
+        selectDialog(urlDialogId);
       } else {
-        setActiveDialogId(null)
+        setActiveDialogId(null);
       }
     }
-  }, [searchParams])
+  }, [searchParams, activeDialogId, resetUnread, selectDialog, setActiveDialogId, subscribeToDialog]);
 
   const handleNewChat = useCallback(() => {
-    resetDialog()
-    setActiveDialogId(null)
-    setIsDraftChat(true)
+    resetDialog();
+    setActiveDialogId(null);
+    setIsDraftChat(true);
 
-    const currentUrl = new URL(window.location.href)
-    currentUrl.searchParams.delete('dialogId')
-    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
-  }, [resetDialog, setActiveDialogId, router])
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('dialogId');
+    router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
+  }, [resetDialog, setActiveDialogId, router]);
 
-  const handleSendMessage = useCallback(async (message: string) => {
-    if (!message.trim()) return
+  const handleSendMessage = useCallback(
+    async (message: string) => {
+      if (!message.trim()) return;
 
-    if (isDraftChat) {
-      const newDialogId = await createDialog()
-      if (!newDialogId) return
+      if (isDraftChat) {
+        const newDialogId = await createDialog();
+        if (!newDialogId) return;
 
-      addMessage(newDialogId, {
-        id: `welcome-${newDialogId}`,
-        role: 'assistant',
-        name: 'Mingo',
-        timestamp: new Date(),
-        content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
-        assistantType: 'mingo',
-      })
+        addMessage(newDialogId, {
+          id: `welcome-${newDialogId}`,
+          role: 'assistant',
+          name: 'Mingo',
+          timestamp: new Date(),
+          content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
+          assistantType: 'mingo',
+        });
 
-      setIsDraftChat(false)
-      setActiveDialogId(newDialogId)
-      resetUnread(newDialogId)
-      subscribeToDialog(newDialogId)
+        setIsDraftChat(false);
+        setActiveDialogId(newDialogId);
+        resetUnread(newDialogId);
+        subscribeToDialog(newDialogId);
 
-      const currentUrl = new URL(window.location.href)
-      currentUrl.searchParams.set('dialogId', newDialogId)
-      router.replace(currentUrl.pathname + currentUrl.search, { scroll: false })
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('dialogId', newDialogId);
+        router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
 
-      const success = await sendMessage(message.trim(), newDialogId)
-      if (!success) {
-        console.warn('[Mingo] Failed to send message')
+        const success = await sendMessage(message.trim(), newDialogId);
+        if (!success) {
+          console.warn('[Mingo] Failed to send message');
+        }
+        return;
       }
-      return
-    }
 
-    if (!activeDialogId) return
+      if (!activeDialogId) return;
 
-    const success = await sendMessage(message.trim())
-    if (!success) {
-      console.warn('[Mingo] Failed to send message')
-    }
-  }, [isDraftChat, activeDialogId, createDialog, sendMessage, setActiveDialogId, resetUnread, subscribeToDialog, router, addMessage])
+      const success = await sendMessage(message.trim());
+      if (!success) {
+        console.warn('[Mingo] Failed to send message');
+      }
+    },
+    [
+      isDraftChat,
+      activeDialogId,
+      createDialog,
+      sendMessage,
+      setActiveDialogId,
+      resetUnread,
+      subscribeToDialog,
+      router,
+      addMessage,
+    ],
+  );
 
   if (!isSaasTenantMode()) {
-    return null
+    return null;
   }
 
   return (
@@ -245,7 +246,7 @@ export default function Mingo() {
           {/* Main Chat Area */}
           <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-              {(activeDialogId || isDraftChat) ? (
+              {activeDialogId || isDraftChat ? (
                 <ChatMessageList
                   messages={displayMessages}
                   dialogId={activeDialogId || 'draft'}
@@ -262,11 +263,13 @@ export default function Mingo() {
                   <div className="text-center space-y-6">
                     <div className="space-y-4">
                       <div className="flex justify-center">
-                        <MingoIcon className="w-10 h-10" eyesColor='var(--ods-flamingo-cyan-base)' cornerColor='var(--ods-flamingo-cyan-base)' />
+                        <MingoIcon
+                          className="w-10 h-10"
+                          eyesColor="var(--ods-flamingo-cyan-base)"
+                          cornerColor="var(--ods-flamingo-cyan-base)"
+                        />
                       </div>
-                      <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">
-                        Hi! I'm Mingo AI
-                      </h1>
+                      <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">Hi! I'm Mingo AI</h1>
                       <p className="font-['DM_Sans'] font-medium text-base text-ods-text-secondary leading-relaxed">
                         Ready to help with your technical tasks. Start a new conversation to get started.
                       </p>
@@ -293,5 +296,5 @@ export default function Mingo() {
         </div>
       </ContentPageContainer>
     </AppLayout>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { OSTypeLabel } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { Device } from '../types/device.types'
+import { OSTypeLabel } from '@flamingo-stack/openframe-frontend-core/components/features';
+import React from 'react';
+import { Device } from '../types/device.types';
 
 interface DeviceInfoSectionProps {
-  device: Device | null
+  device: Device | null;
 }
 
 export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
@@ -14,7 +14,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
         <div className="text-center text-ods-text-secondary">No device data available</div>
       </div>
-    )
+    );
   }
 
   return (
@@ -33,14 +33,16 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           <p className="text-ods-text-secondary text-xs mt-1">Model</p>
         </div>
         <div>
-          <p className="text-ods-text-primary font-medium">{device.serialNumber || device.serial_number || 'Unknown'}</p>
+          <p className="text-ods-text-primary font-medium">
+            {device.serialNumber || device.serial_number || 'Unknown'}
+          </p>
           <p className="text-ods-text-secondary text-xs mt-1">Serial Number</p>
         </div>
       </div>
 
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div>
-        <p className="text-ods-text-primary font-medium">{device.hostname || 'Unknown'}</p>
+          <p className="text-ods-text-primary font-medium">{device.hostname || 'Unknown'}</p>
           <p className="text-ods-text-secondary text-sm mb-1">Host Name</p>
         </div>
         <div>
@@ -49,21 +51,19 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.updatedAt ?
-              `${new Date(device.updatedAt).toLocaleDateString()} ${new Date(device.updatedAt).toLocaleTimeString()}` :
-              device.lastSeen ?
-                `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}` :
-                'Unknown'
-            }
+            {device.updatedAt
+              ? `${new Date(device.updatedAt).toLocaleDateString()} ${new Date(device.updatedAt).toLocaleTimeString()}`
+              : device.lastSeen
+                ? `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}`
+                : 'Unknown'}
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Last Seen</p>
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.boot_time ?
-              `${new Date(device.boot_time * 1000).toLocaleDateString()} ${new Date(device.boot_time * 1000).toLocaleTimeString()}` :
-              'Unknown'
-            }
+            {device.boot_time
+              ? `${new Date(device.boot_time * 1000).toLocaleDateString()} ${new Date(device.boot_time * 1000).toLocaleTimeString()}`
+              : 'Unknown'}
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Last Boot</p>
         </div>
@@ -78,9 +78,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           <p className="text-ods-text-secondary text-xs mt-1">Operating System</p>
         </div>
         <div>
-          <p className="text-ods-text-primary font-medium">
-            {device.needs_reboot ? 'Yes' : 'No'}
-          </p>
+          <p className="text-ods-text-primary font-medium">{device.needs_reboot ? 'Yes' : 'No'}</p>
           <p className="text-ods-text-secondary text-xs mt-1">Requires Reboot</p>
         </div>
         <div>
@@ -90,12 +88,10 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           <p className="text-ods-text-secondary text-xs mt-1">UUID</p>
         </div>
         <div>
-          <p className="text-ods-text-primary font-medium break-all">
-            {device.macAddress || 'Unknown'}
-          </p>
+          <p className="text-ods-text-primary font-medium break-all">{device.macAddress || 'Unknown'}</p>
           <p className="text-ods-text-secondary text-xs mt-1">MAC Address</p>
         </div>
       </div>
     </div>
-  )
+  );
 }

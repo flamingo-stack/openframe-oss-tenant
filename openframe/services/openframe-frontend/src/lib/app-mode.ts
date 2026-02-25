@@ -3,18 +3,18 @@
  * Controls whether the app runs in auth-only mode or full application mode
  */
 
-import { featureFlags } from "./feature-flags"
-import { runtimeEnv } from "./runtime-config"
+import { featureFlags } from './feature-flags';
+import { runtimeEnv } from './runtime-config';
 
-export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared'
+export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared';
 
 /**
  * Get the current application mode from environment variable
  * @returns The current app mode, defaults to 'oss-tenant'
  */
 export function getAppMode(): AppMode {
-  const mode = runtimeEnv.appMode() as AppMode
-  return (mode as AppMode) || 'oss-tenant'
+  const mode = runtimeEnv.appMode() as AppMode;
+  return (mode as AppMode) || 'oss-tenant';
 }
 
 /**
@@ -23,19 +23,19 @@ export function getAppMode(): AppMode {
  */
 export function isAuthOnlyMode(): boolean {
   // Backward-compatible alias for auth-only behavior
-  return getAppMode() === 'saas-shared'
+  return getAppMode() === 'saas-shared';
 }
 
 export function isOssTenantMode(): boolean {
-  return getAppMode() === 'oss-tenant'
+  return getAppMode() === 'oss-tenant';
 }
 
 export function isSaasTenantMode(): boolean {
-  return getAppMode() === 'saas-tenant'
+  return getAppMode() === 'saas-tenant';
 }
 
 export function isSaasSharedMode(): boolean {
-  return getAppMode() === 'saas-shared'
+  return getAppMode() === 'saas-shared';
 }
 
 /**
@@ -44,21 +44,21 @@ export function isSaasSharedMode(): boolean {
  */
 export function isFullAppMode(): boolean {
   // Kept for compatibility: means app pages are enabled
-  return isOssTenantMode() || isSaasTenantMode()
+  return isOssTenantMode() || isSaasTenantMode();
 }
 
 /**
  * Whether authentication features (auth pages/flows) are enabled in current mode
  */
 export function isAuthEnabled(): boolean {
-  return isOssTenantMode() || isSaasSharedMode()
+  return isOssTenantMode() || isSaasSharedMode();
 }
 
 /**
  * Whether application pages are enabled in current mode
  */
 export function isAppEnabled(): boolean {
-  return isOssTenantMode() || isSaasTenantMode()
+  return isOssTenantMode() || isSaasTenantMode();
 }
 
 /**
@@ -67,7 +67,7 @@ export function isAppEnabled(): boolean {
  * @returns True if the route is allowed in current mode
  */
 export function isRouteAllowedInCurrentMode(pathname: string): boolean {
-  const mode = getAppMode()
+  const mode = getAppMode();
 
   // Always allow Next.js internals and static assets
   if (
@@ -77,31 +77,31 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
     pathname.startsWith('/assets') ||
     pathname.startsWith('/icons')
   ) {
-    return true
+    return true;
   }
 
   if (mode === 'saas-shared') {
     // Auth-only mode: only auth routes and root
-    return pathname.startsWith('/auth') || pathname === '/'
+    return pathname.startsWith('/auth') || pathname === '/';
   }
 
   if (mode === 'saas-tenant') {
     // App-only mode: block all auth routes
-    return !pathname.startsWith('/auth')
+    return !pathname.startsWith('/auth');
   }
 
   if (mode === 'oss-tenant') {
     if (pathname.startsWith('/mingo')) {
-      return false
+      return false;
     }
   }
 
   // Feature flag: monitoring pages
   if (pathname.startsWith('/monitoring') && !featureFlags.monitoring.enabled()) {
-    return false
+    return false;
   }
 
-  return true
+  return true;
 }
 
 /**
@@ -110,19 +110,19 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
  * @returns The path to redirect to
  */
 export function getDefaultRedirectPath(isAuthenticated: boolean): string {
-  const mode = getAppMode()
+  const mode = getAppMode();
 
   if (mode === 'saas-shared') {
-    return '/auth'
+    return '/auth';
   }
 
   if (mode === 'saas-tenant') {
     // App-only: send users to the app landing (no auth pages)
-    return '/dashboard'
+    return '/dashboard';
   }
 
   // oss-tenant: auth + app
-  return isAuthenticated ? '/dashboard' : '/auth'
+  return isAuthenticated ? '/dashboard' : '/auth';
 }
 
 /**
@@ -130,7 +130,7 @@ export function getDefaultRedirectPath(isAuthenticated: boolean): string {
  * @returns True if sidebar should be shown
  */
 export function shouldShowNavigationSidebar(): boolean {
-  return isAppEnabled()
+  return isAppEnabled();
 }
 
 /**
@@ -138,5 +138,5 @@ export function shouldShowNavigationSidebar(): boolean {
  * @returns True if app pages should be accessible
  */
 export function shouldShowAppPages(): boolean {
-  return isAppEnabled()
+  return isAppEnabled();
 }

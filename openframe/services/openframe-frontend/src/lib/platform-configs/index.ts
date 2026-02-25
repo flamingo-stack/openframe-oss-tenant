@@ -1,1 +1,1 @@
-export { openframeConfig } from './openframe.config'
+export { openframeConfig } from './openframe.config';

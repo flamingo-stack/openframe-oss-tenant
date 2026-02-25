@@ -1,1 +1,1 @@
-export { DeviceInfoSection } from './device-info-section'
+export { DeviceInfoSection } from './device-info-section';

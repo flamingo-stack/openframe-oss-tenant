@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * Supported Platform section skeleton
@@ -11,13 +11,13 @@ function PlatformSkeleton() {
     <div>
       <Skeleton className="h-6 w-40 mb-2" />
       <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <Skeleton key={i} className="h-14 rounded-md" />
         ))}
         <Skeleton className="h-14 col-span-3 lg:col-span-1 rounded-md" />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -27,14 +27,14 @@ function PlatformSkeleton() {
 function FormFieldsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-      {[1, 2, 3, 4].map((i) => (
+      {[1, 2, 3, 4].map(i => (
         <div key={i} className="space-y-1">
           <Skeleton className="h-6 w-20" />
           <Skeleton className="h-12 w-full rounded-md" />
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 /**
@@ -46,7 +46,7 @@ function DescriptionSkeleton() {
       <Skeleton className="h-6 w-24 mb-2" />
       <Skeleton className="h-28 w-full rounded-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -61,7 +61,7 @@ function ArgumentsSkeleton() {
         <Skeleton className="h-5 w-36" />
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -73,7 +73,7 @@ function EditorSkeleton() {
       <Skeleton className="h-6 w-16 mb-2" />
       <Skeleton className="h-[300px] lg:h-[600px] w-full rounded-md" />
     </div>
-  )
+  );
 }
 
 /**
@@ -115,5 +115,5 @@ export function EditScriptLoader() {
         <EditorSkeleton />
       </div>
     </div>
-  )
+  );
 }

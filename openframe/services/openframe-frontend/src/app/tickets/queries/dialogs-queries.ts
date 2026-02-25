@@ -37,7 +37,7 @@ export const GET_DIALOGS_QUERY = `
    }
   }
  }
-`
+`;
 
 export const GET_DIALOG_QUERY = `
   query GetDialog($id: ID!) {
@@ -66,7 +66,7 @@ export const GET_DIALOG_QUERY = `
     }
     }
   }
-`
+`;
 
 export const GET_DIALOG_STATISTICS_QUERY = `
   query GetDialogStatistics {
@@ -80,7 +80,7 @@ export const GET_DIALOG_STATISTICS_QUERY = `
       averageRating
     }
   }
-`
+`;
 
 export const GET_DIALOG_MESSAGES_QUERY = `
   query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int) {
@@ -154,4 +154,4 @@ export const GET_DIALOG_MESSAGES_QUERY = `
       }
     }
   }
-`
+`;

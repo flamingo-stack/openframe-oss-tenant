@@ -1,153 +1,153 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { isSaasSharedMode } from '@lib/app-mode'
-import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@lib/auth-api-client'
-import { ForgotPasswordModal } from './forgot-password-modal'
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useState } from 'react';
+import { isSaasSharedMode } from '@/lib/app-mode';
+import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
+import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface AuthChoiceSectionProps {
-  onCreateOrganization: (orgName: string, domain: string, accessCode: string, email: string) => void
-  onSignIn: (email: string) => Promise<void>
-  isLoading?: boolean
+  onCreateOrganization: (orgName: string, domain: string, accessCode: string, email: string) => void;
+  onSignIn: (email: string) => Promise<void>;
+  isLoading?: boolean;
 }
 
 /**
  * Auth choice section with Create Organization and Sign In forms
  */
 export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }: AuthChoiceSectionProps) {
-  const { toast } = useToast()
-  const isSaasShared = isSaasSharedMode()
+  const { toast } = useToast();
+  const isSaasShared = isSaasSharedMode();
 
-  const [orgName, setOrgName] = useState('')
-  const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost')
-  const [orgEmail, setOrgEmail] = useState('')
-  const [signInEmail, setSignInEmail] = useState('')
-  const [accessCode, setAccessCode] = useState('')
-  const [accessCodeError, setAccessCodeError] = useState<string | null>(null)
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  const [isCheckingDomain, setIsCheckingDomain] = useState(false)
-  const [isValidatingAccessCode, setIsValidatingAccessCode] = useState(false)
-  const [suggestedDomains, setSuggestedDomains] = useState<string[]>([])
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [orgName, setOrgName] = useState('');
+  const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [accessCode, setAccessCode] = useState('');
+  const [accessCodeError, setAccessCodeError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isCheckingDomain, setIsCheckingDomain] = useState(false);
+  const [isValidatingAccessCode, setIsValidatingAccessCode] = useState(false);
+  const [suggestedDomains, setSuggestedDomains] = useState<string[]>([]);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
-  const orgNameRegex = /^[\p{L}\p{M}0-9&\.,'"()\- ]{2,100}$/u
-  const isOrgNameValid = orgNameRegex.test(orgName.trim())
+  const orgNameRegex = /^[\p{L}\p{M}0-9&\.,'"()\- ]{2,100}$/u;
+  const isOrgNameValid = orgNameRegex.test(orgName.trim());
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isOrgEmailValid = emailRegex.test(orgEmail.trim())
-  const isSignInEmailValid = emailRegex.test(signInEmail.trim())
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isOrgEmailValid = emailRegex.test(orgEmail.trim());
+  const isSignInEmailValid = emailRegex.test(signInEmail.trim());
 
   const handleCreateOrganization = async () => {
-    if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return
-    
+    if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return;
+
     if (isSaasShared) {
       if (!accessCode.trim()) {
-        setAccessCodeError('Access code is required')
-        return
+        setAccessCodeError('Access code is required');
+        return;
       }
-      setAccessCodeError(null)
-      
-      setIsValidatingAccessCode(true)
+      setAccessCodeError(null);
+
+      setIsValidatingAccessCode(true);
       try {
-        const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim())
-        
+        const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim());
+
         if (!validateResponse.ok || !validateResponse.data) {
-          const error = validateResponse?.data?.code || 'Failed to validate access code'
-          
+          const error = validateResponse?.data?.code || 'Failed to validate access code';
+
           if (error.includes('ACCESS_CODE_ALREADY_USED')) {
-            setAccessCodeError('This access code has already been used')
+            setAccessCodeError('This access code has already been used');
             toast({
-              title: "Access Code Already Used",
-              description: "This access code has already been used.",
-              variant: "destructive"
-            })
+              title: 'Access Code Already Used',
+              description: 'This access code has already been used.',
+              variant: 'destructive',
+            });
           } else if (['ACCESS_CODE_VALIDATION_FAILED', 'INVALID_ACCESS_CODE'].includes(error)) {
-            setAccessCodeError('Invalid access code')
+            setAccessCodeError('Invalid access code');
             toast({
-              title: "Invalid Access Code",
-              description: "The access code is not valid.",
-              variant: "destructive"
-            })
+              title: 'Invalid Access Code',
+              description: 'The access code is not valid.',
+              variant: 'destructive',
+            });
           } else {
-            setAccessCodeError('Access code validation failed')
+            setAccessCodeError('Access code validation failed');
             toast({
-              title: "Validation Failed",
+              title: 'Validation Failed',
               description: error,
-              variant: "destructive"
-            })
+              variant: 'destructive',
+            });
           }
-          return
+          return;
         }
       } catch (error) {
-        console.error('Access code validation error:', error)
-        setAccessCodeError('Failed to validate access code')
+        console.error('Access code validation error:', error);
+        setAccessCodeError('Failed to validate access code');
         toast({
-          title: "Validation Error",
-          description: "Unable to validate access code.",
-          variant: "destructive"
-        })
-        return
+          title: 'Validation Error',
+          description: 'Unable to validate access code.',
+          variant: 'destructive',
+        });
+        return;
       } finally {
-        setIsValidatingAccessCode(false)
+        setIsValidatingAccessCode(false);
       }
     }
 
     if (isSaasShared && domain.trim()) {
-      setIsCheckingDomain(true)
-      setSuggestedDomains([])
-      
+      setIsCheckingDomain(true);
+      setSuggestedDomains([]);
+
       try {
-        const subdomain = domain.trim()
-        const response = await authApiClient.checkDomainAvailability(subdomain, orgName.trim())
-        
+        const subdomain = domain.trim();
+        const response = await authApiClient.checkDomainAvailability(subdomain, orgName.trim());
+
         if (response.ok && response.data) {
-          const { available, suggestedUrl } = response.data as { available: boolean, suggestedUrl?: string[] }
-          
+          const { available, suggestedUrl } = response.data as { available: boolean; suggestedUrl?: string[] };
+
           if (available) {
-            const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`
-            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '', orgEmail.trim())
+            const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`;
+            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '', orgEmail.trim());
           } else {
             toast({
-              title: "Domain Not Available",
+              title: 'Domain Not Available',
               description: `The subdomain '${subdomain}' is already taken. Please try another one.`,
-              variant: "destructive"
-            })
-            
+              variant: 'destructive',
+            });
+
             if (suggestedUrl && suggestedUrl.length > 0) {
-              const suggestions = suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, ''))
-              setSuggestedDomains(suggestions)
+              const suggestions = suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, ''));
+              setSuggestedDomains(suggestions);
             }
           }
         } else {
-          throw new Error(response.error || 'Failed to check domain availability')
+          throw new Error(response.error || 'Failed to check domain availability');
         }
       } catch (error) {
-        console.error('Domain check error:', error)
+        console.error('Domain check error:', error);
         toast({
-          title: "Error",
-          description: "Failed to check domain availability. Please try again.",
-          variant: "destructive"
-        })
+          title: 'Error',
+          description: 'Failed to check domain availability. Please try again.',
+          variant: 'destructive',
+        });
       } finally {
-        setIsCheckingDomain(false)
+        setIsCheckingDomain(false);
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain || 'localhost', '', orgEmail.trim())
+      onCreateOrganization(orgName.trim(), domain || 'localhost', '', orgEmail.trim());
     }
-  }
+  };
 
   const handleSignIn = async () => {
     if (isSignInEmailValid && !isSigningIn) {
-      setIsSigningIn(true)
+      setIsSigningIn(true);
       try {
-        await onSignIn(signInEmail.trim())
+        await onSignIn(signInEmail.trim());
       } finally {
-        setIsSigningIn(false)
+        setIsSigningIn(false);
       }
     }
-  }
+  };
 
   return (
     <>
@@ -171,13 +171,13 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               <Input
                 type="email"
                 value={orgEmail}
-                onChange={(e) => setOrgEmail(e.target.value)}
+                onChange={e => setOrgEmail(e.target.value)}
                 placeholder="username@mail.com"
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter' && !isLoading && isOrgEmailValid && isOrgNameValid) {
-                    handleCreateOrganization()
+                    handleCreateOrganization();
                   }
                 }}
               />
@@ -189,18 +189,21 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               <Label>Organization Name</Label>
               <Input
                 value={orgName}
-                onChange={(e) => setOrgName(e.target.value)}
+                onChange={e => setOrgName(e.target.value)}
                 placeholder="Your Company Name"
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Enter' && !isLoading && isOrgNameValid) {
-                    handleCreateOrganization()
+                    handleCreateOrganization();
                   }
                 }}
               />
               {orgName.trim() && !isOrgNameValid && (
-                <p className="text-xs text-error mt-1">Organization Name must be 2-100 characters and may include letters, numbers, spaces, and &.,&apos;&quot;()-</p>
+                <p className="text-xs text-error mt-1">
+                  Organization Name must be 2-100 characters and may include letters, numbers, spaces, and
+                  &.,&apos;&quot;()-
+                </p>
               )}
             </div>
           </div>
@@ -212,15 +215,15 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               {isSaasShared ? (
                 <Input
                   value={domain}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter' && !isLoading) {
-                      handleCreateOrganization()
+                      handleCreateOrganization();
                     }
                   }}
-                  onChange={(e) => {
-                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                    setDomain(value)
-                    setSuggestedDomains([])
+                  onChange={e => {
+                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                    setDomain(value);
+                    setSuggestedDomains([]);
                   }}
                   placeholder="localhost"
                   disabled={isLoading}
@@ -234,14 +237,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               ) : (
                 <Input
                   value={domain}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter' && !isLoading) {
-                      handleCreateOrganization()
+                      handleCreateOrganization();
                     }
                   }}
-                  onChange={(e) => {
-                    setDomain(e.target.value)
-                    setSuggestedDomains([])
+                  onChange={e => {
+                    setDomain(e.target.value);
+                    setSuggestedDomains([]);
                   }}
                   placeholder="localhost"
                   disabled={isLoading}
@@ -256,8 +259,8 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                       <Button
                         key={index}
                         onClick={() => {
-                          setDomain(suggestion)
-                          setSuggestedDomains([])
+                          setDomain(suggestion);
+                          setSuggestedDomains([]);
                         }}
                         variant="outline"
                         size="sm"
@@ -278,19 +281,20 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               <Label>Access Code</Label>
               <Input
                 value={accessCode}
-                onChange={(e) => { setAccessCode(e.target.value); if (accessCodeError) setAccessCodeError(null) }}
-                onKeyDown={(e) => {
+                onChange={e => {
+                  setAccessCode(e.target.value);
+                  if (accessCodeError) setAccessCodeError(null);
+                }}
+                onKeyDown={e => {
                   if (e.key === 'Enter' && !isLoading) {
-                    handleCreateOrganization()
+                    handleCreateOrganization();
                   }
                 }}
                 placeholder="Enter Code Here"
                 disabled={isLoading}
                 className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
               />
-              {accessCodeError && (
-                <p className="text-xs text-error mt-1">{accessCodeError}</p>
-              )}
+              {accessCodeError && <p className="text-xs text-error mt-1">{accessCodeError}</p>}
             </div>
           )}
 
@@ -300,7 +304,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <div className="flex-1">
               <Button
                 onClick={handleCreateOrganization}
-                disabled={!orgName.trim() || !isOrgEmailValid || (isSaasShared && (!domain.trim() || !accessCode.trim())) || isLoading || isValidatingAccessCode || isCheckingDomain}
+                disabled={
+                  !orgName.trim() ||
+                  !isOrgEmailValid ||
+                  (isSaasShared && (!domain.trim() || !accessCode.trim())) ||
+                  isLoading ||
+                  isValidatingAccessCode ||
+                  isCheckingDomain
+                }
                 loading={isLoading || isValidatingAccessCode || isCheckingDomain}
                 variant="primary"
                 className="!w-full sm:!w-full"
@@ -331,10 +342,10 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             <Input
               type="email"
               value={signInEmail}
-              onChange={(e) => setSignInEmail(e.target.value)}
-              onKeyDown={(e) => {
+              onChange={e => setSignInEmail(e.target.value)}
+              onKeyDown={e => {
                 if (e.key === 'Enter' && !isLoading && isSignInEmailValid) {
-                  handleSignIn()
+                  handleSignIn();
                 }
               }}
               placeholder="username@mail.com"
@@ -349,11 +360,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           {/* Button Row with Forgot Password */}
           <div className="flex gap-6 items-center">
             <div className="flex-1 flex items-center">
-              <Button
-                onClick={() => setShowForgotPassword(true)}
-                variant="ghost"
-                className="!w-full sm:!w-full"
-              >
+              <Button onClick={() => setShowForgotPassword(true)} variant="ghost" className="!w-full sm:!w-full">
                 Forgot password?
               </Button>
             </div>
@@ -373,11 +380,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
       </div>
 
       {/* Forgot Password Modal */}
-      <ForgotPasswordModal
-        open={showForgotPassword}
-        onOpenChange={setShowForgotPassword}
-        defaultEmail={signInEmail}
-      />
+      <ForgotPasswordModal open={showForgotPassword} onOpenChange={setShowForgotPassword} defaultEmail={signInEmail} />
     </>
-  )
+  );
 }
