@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { immer } from 'zustand/middleware/immer';
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { immer } from "zustand/middleware/immer";
 
 /**
  * Devices Store
@@ -10,8 +10,8 @@ import { immer } from 'zustand/middleware/immer';
 export interface Device {
   id: string;
   name: string;
-  type: 'desktop' | 'laptop' | 'server' | 'mobile' | 'iot' | 'unknown';
-  status: 'online' | 'offline' | 'idle' | 'error';
+  type: "desktop" | "laptop" | "server" | "mobile" | "iot" | "unknown";
+  status: "online" | "offline" | "idle" | "error";
   lastSeen: string;
   agentVersion?: string;
   osName?: string;
@@ -28,8 +28,8 @@ export interface Device {
 }
 
 export interface DeviceFilter {
-  status?: Device['status'][];
-  type?: Device['type'][];
+  status?: Device["status"][];
+  type?: Device["type"][];
   tags?: string[];
   searchQuery?: string;
 }
@@ -39,8 +39,8 @@ export interface DevicesState {
   devices: Device[];
   selectedDevice: Device | null;
   filter: DeviceFilter;
-  sortBy: 'name' | 'lastSeen' | 'status' | 'type';
-  sortOrder: 'asc' | 'desc';
+  sortBy: "name" | "lastSeen" | "status" | "type";
+  sortOrder: "asc" | "desc";
   isLoading: boolean;
   error: string | null;
   lastFetch: string | null;
@@ -52,7 +52,7 @@ export interface DevicesState {
   removeDevice: (id: string) => void;
   selectDevice: (device: Device | null) => void;
   setFilter: (filter: DeviceFilter) => void;
-  setSorting: (sortBy: DevicesState['sortBy'], sortOrder?: DevicesState['sortOrder']) => void;
+  setSorting: (sortBy: DevicesState["sortBy"], sortOrder?: DevicesState["sortOrder"]) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   refreshDevices: () => void;
@@ -64,8 +64,8 @@ const initialState = {
   devices: [],
   selectedDevice: null,
   filter: {},
-  sortBy: 'name' as const,
-  sortOrder: 'asc' as const,
+  sortBy: "name" as const,
+  sortOrder: "asc" as const,
   isLoading: false,
   error: null,
   lastFetch: null,
@@ -127,9 +127,9 @@ export const useDevicesStore = create<DevicesState>()(
           } else {
             // Toggle order if same field
             if (state.sortBy === sortBy) {
-              state.sortOrder = state.sortOrder === 'asc' ? 'desc' : 'asc';
+              state.sortOrder = state.sortOrder === "asc" ? "desc" : "asc";
             } else {
-              state.sortOrder = 'asc';
+              state.sortOrder = "asc";
             }
           }
         }),
@@ -161,7 +161,7 @@ export const useDevicesStore = create<DevicesState>()(
       reset: () => set(() => initialState),
     })),
     {
-      name: 'devices-store',
+      name: "devices-store",
     },
   ),
 );
@@ -207,21 +207,21 @@ export const selectFilteredDevices = (state: DevicesState) => {
     let comparison = 0;
 
     switch (state.sortBy) {
-      case 'name':
+      case "name":
         comparison = a.name.localeCompare(b.name);
         break;
-      case 'lastSeen':
+      case "lastSeen":
         comparison = new Date(a.lastSeen).getTime() - new Date(b.lastSeen).getTime();
         break;
-      case 'status':
+      case "status":
         comparison = a.status.localeCompare(b.status);
         break;
-      case 'type':
+      case "type":
         comparison = a.type.localeCompare(b.type);
         break;
     }
 
-    return state.sortOrder === 'asc' ? comparison : -comparison;
+    return state.sortOrder === "asc" ? comparison : -comparison;
   });
 
   return filtered;
@@ -229,8 +229,8 @@ export const selectFilteredDevices = (state: DevicesState) => {
 
 export const selectDeviceStats = (state: DevicesState) => ({
   total: state.devices.length,
-  online: state.devices.filter(d => d.status === 'online').length,
-  offline: state.devices.filter(d => d.status === 'offline').length,
-  idle: state.devices.filter(d => d.status === 'idle').length,
-  error: state.devices.filter(d => d.status === 'error').length,
+  online: state.devices.filter(d => d.status === "online").length,
+  offline: state.devices.filter(d => d.status === "offline").length,
+  idle: state.devices.filter(d => d.status === "idle").length,
+  error: state.devices.filter(d => d.status === "error").length,
 });

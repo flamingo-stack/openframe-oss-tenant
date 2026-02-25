@@ -3,13 +3,13 @@
  * Unified logic for determining device action availability
  */
 
-import type { Device, ToolConnection } from '../types/device.types';
+import type { Device, ToolConnection } from "../types/device.types";
 
 /**
  * Check if a device is online (case-insensitive)
  */
 export function isDeviceOnline(status: string | undefined): boolean {
-  return status?.toUpperCase() === 'ONLINE';
+  return status?.toUpperCase() === "ONLINE";
 }
 
 /**
@@ -17,14 +17,14 @@ export function isDeviceOnline(status: string | undefined): boolean {
  */
 export function canArchiveDevice(status: string | undefined): boolean {
   const upperStatus = status?.toUpperCase();
-  return upperStatus !== 'ARCHIVED' && upperStatus !== 'DELETED';
+  return upperStatus !== "ARCHIVED" && upperStatus !== "DELETED";
 }
 
 /**
  * Check if a device can be deleted
  */
 export function canDeleteDevice(status: string | undefined): boolean {
-  return status?.toUpperCase() !== 'DELETED';
+  return status?.toUpperCase() !== "DELETED";
 }
 
 /**
@@ -32,7 +32,7 @@ export function canDeleteDevice(status: string | undefined): boolean {
  */
 export function getToolConnection(
   toolConnections: ToolConnection[] | undefined,
-  toolType: 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM',
+  toolType: "MESHCENTRAL" | "TACTICAL_RMM" | "FLEET_MDM",
 ): ToolConnection | undefined {
   return toolConnections?.find(tc => tc.toolType === toolType);
 }
@@ -41,14 +41,14 @@ export function getToolConnection(
  * Get MeshCentral agent ID
  */
 export function getMeshCentralAgentId(device: Device): string | undefined {
-  return getToolConnection(device.toolConnections, 'MESHCENTRAL')?.agentToolId;
+  return getToolConnection(device.toolConnections, "MESHCENTRAL")?.agentToolId;
 }
 
 /**
  * Get Tactical RMM agent ID
  */
 export function getTacticalAgentId(device: Device): string | undefined {
-  return getToolConnection(device.toolConnections, 'TACTICAL_RMM')?.agentToolId;
+  return getToolConnection(device.toolConnections, "TACTICAL_RMM")?.agentToolId;
 }
 
 /**

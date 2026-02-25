@@ -3,21 +3,21 @@
  */
 
 export type FileErrorType =
-  | 'autherror'
-  | 'sessionerror'
-  | 'sessiontimeout'
-  | 'connectionerror'
-  | 'permissiondenied'
-  | 'filenotfound'
-  | 'diskfull'
-  | 'quotaexceeded'
-  | 'unziperror'
-  | 'uploadfailed'
-  | 'downloadfailed'
-  | 'invalidpath'
-  | 'invalidname'
-  | 'operationfailed'
-  | 'unknown';
+  | "autherror"
+  | "sessionerror"
+  | "sessiontimeout"
+  | "connectionerror"
+  | "permissiondenied"
+  | "filenotfound"
+  | "diskfull"
+  | "quotaexceeded"
+  | "unziperror"
+  | "uploadfailed"
+  | "downloadfailed"
+  | "invalidpath"
+  | "invalidname"
+  | "operationfailed"
+  | "unknown";
 
 export interface FileError {
   type: FileErrorType;
@@ -39,36 +39,36 @@ export class FileErrorHandler {
   }
 
   private setupDefaultHandlers(): void {
-    this.registerHandler('autherror', error => {
-      console.error('Authentication failed:', error.message);
+    this.registerHandler("autherror", error => {
+      console.error("Authentication failed:", error.message);
     });
 
-    this.registerHandler('sessionerror', error => {
-      console.error('Session error:', error.message);
+    this.registerHandler("sessionerror", error => {
+      console.error("Session error:", error.message);
     });
 
-    this.registerHandler('sessiontimeout', error => {
-      console.error('Session timeout:', error.message);
+    this.registerHandler("sessiontimeout", error => {
+      console.error("Session timeout:", error.message);
     });
 
-    this.registerHandler('connectionerror', error => {
-      console.error('Connection error:', error.message);
+    this.registerHandler("connectionerror", error => {
+      console.error("Connection error:", error.message);
     });
 
-    this.registerHandler('permissiondenied', error => {
-      console.error('Permission denied:', error.message);
+    this.registerHandler("permissiondenied", error => {
+      console.error("Permission denied:", error.message);
     });
 
-    this.registerHandler('filenotfound', error => {
-      console.error('File not found:', error.message);
+    this.registerHandler("filenotfound", error => {
+      console.error("File not found:", error.message);
     });
 
-    this.registerHandler('diskfull', error => {
-      console.error('Disk full:', error.message);
+    this.registerHandler("diskfull", error => {
+      console.error("Disk full:", error.message);
     });
 
-    this.registerHandler('quotaexceeded', error => {
-      console.error('Quota exceeded:', error.message);
+    this.registerHandler("quotaexceeded", error => {
+      console.error("Quota exceeded:", error.message);
     });
   }
 
@@ -107,31 +107,31 @@ export class FileErrorHandler {
 
   private mapErrorType(error: string): FileErrorType {
     const errorMap: Record<string, FileErrorType> = {
-      autherror: 'autherror',
-      'authentication failed': 'autherror',
-      unauthorized: 'autherror',
-      sessionerror: 'sessionerror',
-      'session expired': 'sessionerror',
-      sessiontimeout: 'sessiontimeout',
-      timeout: 'sessiontimeout',
-      connectionerror: 'connectionerror',
-      'connection lost': 'connectionerror',
-      disconnected: 'connectionerror',
-      'permission denied': 'permissiondenied',
-      'access denied': 'permissiondenied',
-      'file not found': 'filenotfound',
-      'not found': 'filenotfound',
-      'disk full': 'diskfull',
-      'no space': 'diskfull',
-      'quota exceeded': 'quotaexceeded',
-      'over quota': 'quotaexceeded',
-      'unzip error': 'unziperror',
-      'extract failed': 'unziperror',
-      'upload failed': 'uploadfailed',
-      'download failed': 'downloadfailed',
-      'invalid path': 'invalidpath',
-      'invalid name': 'invalidname',
-      'operation failed': 'operationfailed',
+      autherror: "autherror",
+      "authentication failed": "autherror",
+      unauthorized: "autherror",
+      sessionerror: "sessionerror",
+      "session expired": "sessionerror",
+      sessiontimeout: "sessiontimeout",
+      timeout: "sessiontimeout",
+      connectionerror: "connectionerror",
+      "connection lost": "connectionerror",
+      disconnected: "connectionerror",
+      "permission denied": "permissiondenied",
+      "access denied": "permissiondenied",
+      "file not found": "filenotfound",
+      "not found": "filenotfound",
+      "disk full": "diskfull",
+      "no space": "diskfull",
+      "quota exceeded": "quotaexceeded",
+      "over quota": "quotaexceeded",
+      "unzip error": "unziperror",
+      "extract failed": "unziperror",
+      "upload failed": "uploadfailed",
+      "download failed": "downloadfailed",
+      "invalid path": "invalidpath",
+      "invalid name": "invalidname",
+      "operation failed": "operationfailed",
     };
 
     const lowerError = error.toLowerCase();
@@ -141,26 +141,26 @@ export class FileErrorHandler {
       }
     }
 
-    return 'unknown';
+    return "unknown";
   }
 
   getErrorMessage(errorType: FileErrorType, originalError?: string): string {
     const messages: Record<FileErrorType, string> = {
-      autherror: 'Authentication failed. Please reconnect.',
-      sessionerror: 'Session expired. Please login again.',
-      sessiontimeout: 'Session timed out.',
-      connectionerror: 'Connection lost. Attempting to reconnect...',
-      permissiondenied: 'Permission denied for this operation.',
-      filenotfound: 'File or folder not found.',
-      diskfull: 'Insufficient disk space.',
-      quotaexceeded: 'Storage quota exceeded.',
-      unziperror: 'Failed to extract archive.',
-      uploadfailed: 'Upload failed. Please try again.',
-      downloadfailed: 'Download failed. Please try again.',
-      invalidpath: 'Invalid file path.',
-      invalidname: 'Invalid file or folder name.',
-      operationfailed: 'Operation failed. Please try again.',
-      unknown: originalError || 'An unexpected error occurred.',
+      autherror: "Authentication failed. Please reconnect.",
+      sessionerror: "Session expired. Please login again.",
+      sessiontimeout: "Session timed out.",
+      connectionerror: "Connection lost. Attempting to reconnect...",
+      permissiondenied: "Permission denied for this operation.",
+      filenotfound: "File or folder not found.",
+      diskfull: "Insufficient disk space.",
+      quotaexceeded: "Storage quota exceeded.",
+      unziperror: "Failed to extract archive.",
+      uploadfailed: "Upload failed. Please try again.",
+      downloadfailed: "Download failed. Please try again.",
+      invalidpath: "Invalid file path.",
+      invalidname: "Invalid file or folder name.",
+      operationfailed: "Operation failed. Please try again.",
+      unknown: originalError || "An unexpected error occurred.",
     };
 
     return messages[errorType];
@@ -168,11 +168,11 @@ export class FileErrorHandler {
 
   isRetryable(errorType: FileErrorType): boolean {
     const retryableErrors: FileErrorType[] = [
-      'connectionerror',
-      'sessiontimeout',
-      'uploadfailed',
-      'downloadfailed',
-      'operationfailed',
+      "connectionerror",
+      "sessiontimeout",
+      "uploadfailed",
+      "downloadfailed",
+      "operationfailed",
     ];
 
     return retryableErrors.includes(errorType);

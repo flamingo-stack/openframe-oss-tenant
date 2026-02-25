@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core';
-import { useCallback, useState } from 'react';
-import { apiClient } from '../../../lib/api-client';
+import { useToast } from "@flamingo-stack/openframe-frontend-core";
+import { useCallback, useState } from "react";
+import { apiClient } from "../../../lib/api-client";
 
 // GraphQL query based on provided payload
 const GET_INTEGRATED_TOOLS_QUERY = `
@@ -82,11 +82,11 @@ export function useIntegratedTools() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchIntegratedTools = useCallback(
-    async (filter: Record<string, any> = { enabled: true, category: null }, search: string = '') => {
+    async (filter: Record<string, any> = { enabled: true, category: null }, search: string = "") => {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await apiClient.post<GraphQlResponse<IntegratedToolsResponse>>('/api/graphql', {
+        const response = await apiClient.post<GraphQlResponse<IntegratedToolsResponse>>("/api/graphql", {
           query: GET_INTEGRATED_TOOLS_QUERY,
           variables: { filter, search },
         });
@@ -104,9 +104,9 @@ export function useIntegratedTools() {
         setTools(result);
         return result;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to fetch integrated tools';
+        const message = err instanceof Error ? err.message : "Failed to fetch integrated tools";
         setError(message);
-        toast({ title: 'Error fetching tools', description: message, variant: 'destructive' });
+        toast({ title: "Error fetching tools", description: message, variant: "destructive" });
         throw err;
       } finally {
         setIsLoading(false);

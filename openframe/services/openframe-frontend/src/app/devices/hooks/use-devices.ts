@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { GET_DEVICE_FILTERS_QUERY, GET_DEVICES_QUERY } from '../queries/devices-queries';
-import { Device, DeviceFilterInput, DeviceFilters, DevicesGraphQlNode, GraphQlResponse } from '../types/device.types';
-import { createDeviceListItem } from '../utils/device-transform';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { GET_DEVICE_FILTERS_QUERY, GET_DEVICES_QUERY } from "../queries/devices-queries";
+import { Device, DeviceFilterInput, DeviceFilters, DevicesGraphQlNode, GraphQlResponse } from "../types/device.types";
+import { createDeviceListItem } from "../utils/device-transform";
 
 export function useDevices(filters: DeviceFilterInput = {}) {
   const { toast } = useToast();
@@ -37,13 +37,13 @@ export function useDevices(filters: DeviceFilterInput = {}) {
               filteredCount: number;
             };
           }>
-        >('/api/graphql', {
+        >("/api/graphql", {
           query: GET_DEVICES_QUERY,
           variables: {
             filter: filtersRef.current,
             pagination: { limit: 10, cursor: cursor || null },
-            search: searchTerm || '',
-            sort: { field: 'status', direction: 'DESC' },
+            search: searchTerm || "",
+            sort: { field: "status", direction: "DESC" },
           },
         });
 
@@ -53,10 +53,10 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
         const graphqlResponse = response.data;
         if (!graphqlResponse?.data) {
-          throw new Error('No data received from server');
+          throw new Error("No data received from server");
         }
         if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
+          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
         }
 
         const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
@@ -68,13 +68,13 @@ export function useDevices(filters: DeviceFilterInput = {}) {
         setPageInfo(graphqlResponse.data.devices.pageInfo);
         setFilteredCount(graphqlResponse.data.devices.filteredCount);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch devices';
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch devices";
         setError(errorMessage);
 
         toast({
-          title: 'Failed to Load Devices',
+          title: "Failed to Load Devices",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
       } finally {
         setIsLoading(false);
@@ -85,7 +85,7 @@ export function useDevices(filters: DeviceFilterInput = {}) {
 
   const fetchDeviceFilters = useCallback(async () => {
     try {
-      const response = await apiClient.post<GraphQlResponse<{ deviceFilters: DeviceFilters }>>('/api/graphql', {
+      const response = await apiClient.post<GraphQlResponse<{ deviceFilters: DeviceFilters }>>("/api/graphql", {
         query: GET_DEVICE_FILTERS_QUERY,
         variables: {
           filter: filtersRef.current,
@@ -99,13 +99,13 @@ export function useDevices(filters: DeviceFilterInput = {}) {
       const graphqlResponse = response.data;
       if (!graphqlResponse?.data) return;
       if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
+        throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
       }
 
       setDeviceFilters(graphqlResponse.data.deviceFilters);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device filters';
-      console.error('Device filters error:', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch device filters";
+      console.error("Device filters error:", errorMessage);
     }
   }, []);
 

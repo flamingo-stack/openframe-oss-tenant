@@ -2,7 +2,7 @@
  * MeshCentral File Downloader
  */
 
-import type { DownloadRequest, FileTransferProgress } from './file-manager-types';
+import type { DownloadRequest, FileTransferProgress } from "./file-manager-types";
 
 export interface DownloadTask {
   id: string;
@@ -11,7 +11,7 @@ export interface DownloadTask {
   chunks: Uint8Array[];
   totalSize: number;
   receivedSize: number;
-  status: 'pending' | 'requested' | 'negotiating' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+  status: "pending" | "requested" | "negotiating" | "downloading" | "completed" | "failed" | "cancelled";
   error?: Error;
 }
 
@@ -57,9 +57,9 @@ export class FileDownloader {
     if (this.activeDownloadId) {
       const activeTask = this.downloads.get(this.activeDownloadId);
       if (activeTask) {
-        if (['requested', 'negotiating', 'downloading'].includes(activeTask.status)) {
-          activeTask.status = 'failed';
-          activeTask.error = new Error('Download timeout or stuck');
+        if (["requested", "negotiating", "downloading"].includes(activeTask.status)) {
+          activeTask.status = "failed";
+          activeTask.error = new Error("Download timeout or stuck");
         }
       }
       this.activeDownloadId = null;
@@ -69,13 +69,13 @@ export class FileDownloader {
   downloadFile(remotePath: string, fileName?: string, fileSize?: number): string {
     if (this.activeDownloadId) {
       const activeTask = this.downloads.get(this.activeDownloadId);
-      if (activeTask && ['requested', 'negotiating', 'downloading'].includes(activeTask.status)) {
+      if (activeTask && ["requested", "negotiating", "downloading"].includes(activeTask.status)) {
         this.resetActiveDownload();
       }
     }
 
     const downloadId = this.generateRequestId();
-    const resolvedFileName = fileName || remotePath.split(/[\\/]/).pop() || 'download';
+    const resolvedFileName = fileName || remotePath.split(/[\\/]/).pop() || "download";
 
     const task: DownloadTask = {
       id: downloadId,
@@ -84,27 +84,27 @@ export class FileDownloader {
       chunks: [],
       totalSize: fileSize || 0,
       receivedSize: 0,
-      status: 'requested',
+      status: "requested",
     };
 
     this.downloads.set(downloadId, task);
     this.activeDownloadId = downloadId;
 
     const downloadRequest: DownloadRequest = {
-      action: 'download',
-      sub: 'start',
+      action: "download",
+      sub: "start",
       id: downloadId,
       path: remotePath,
     };
 
     if (this.sendMessage) {
       this.sendMessage(JSON.stringify(downloadRequest));
-      task.status = 'negotiating';
+      task.status = "negotiating";
     } else {
-      task.status = 'failed';
-      task.error = new Error('No connection available');
+      task.status = "failed";
+      task.error = new Error("No connection available");
       this.activeDownloadId = null;
-      throw new Error('Cannot send download request - no connection');
+      throw new Error("Cannot send download request - no connection");
     }
 
     return downloadId;
@@ -115,14 +115,14 @@ export class FileDownloader {
     if (!downloadId) return;
 
     switch (message.sub) {
-      case 'start':
+      case "start":
         this.handleServerStart(downloadId, message);
         break;
-      case 'cancel':
+      case "cancel":
         this.handleServerCancel(downloadId, message.reason);
         break;
-      case 'error':
-        this.handleDownloadError(downloadId, message.error || 'Download failed');
+      case "error":
+        this.handleDownloadError(downloadId, message.error || "Download failed");
         break;
       default:
         break;
@@ -133,18 +133,18 @@ export class FileDownloader {
     const task = this.downloads.get(downloadId);
     if (!task) return;
 
-    task.status = 'downloading';
-    if (typeof payload.size === 'number') {
+    task.status = "downloading";
+    if (typeof payload.size === "number") {
       task.totalSize = payload.size;
     }
-    if (typeof payload.name === 'string') {
+    if (typeof payload.name === "string") {
       task.fileName = payload.name;
     }
 
     if (this.sendMessage) {
       const ack: DownloadRequest = {
-        action: 'download',
-        sub: 'startack',
+        action: "download",
+        sub: "startack",
         id: downloadId,
         path: task.remotePath,
       };
@@ -156,7 +156,7 @@ export class FileDownloader {
     if (!this.activeDownloadId) return;
 
     const task = this.downloads.get(this.activeDownloadId);
-    if (!task || task.status !== 'downloading') return;
+    if (!task || task.status !== "downloading") return;
 
     // MeshCentral Protocol: First 4 bytes are a big-endian integer with bit 0 indicating final chunk
     if (data.byteLength < 4) return;
@@ -174,8 +174,8 @@ export class FileDownloader {
 
     if (!isLastChunk && this.sendMessage) {
       const ack: DownloadRequest = {
-        action: 'download',
-        sub: 'ack',
+        action: "download",
+        sub: "ack",
         id: task.id,
         path: task.remotePath,
       };
@@ -187,7 +187,7 @@ export class FileDownloader {
       progress: task.totalSize > 0 ? Math.round((task.receivedSize / task.totalSize) * 100) : 0,
       bytesTransferred: task.receivedSize,
       totalBytes: task.totalSize,
-      type: 'download',
+      type: "download",
     };
     this.onProgress?.(progress);
 
@@ -200,7 +200,7 @@ export class FileDownloader {
     const task = this.downloads.get(downloadId);
     if (!task) return;
 
-    task.status = 'completed';
+    task.status = "completed";
     this.activeDownloadId = null;
 
     const progress: FileTransferProgress = {
@@ -208,7 +208,7 @@ export class FileDownloader {
       progress: 100,
       bytesTransferred: task.receivedSize,
       totalBytes: task.totalSize,
-      type: 'download',
+      type: "download",
     };
     this.onProgress?.(progress);
 
@@ -218,7 +218,7 @@ export class FileDownloader {
 
   getFileBlob(downloadId: string): Blob | null {
     const task = this.downloads.get(downloadId);
-    if (!task || task.status !== 'completed') return null;
+    if (!task || task.status !== "completed") return null;
 
     if (task.chunks.length === 0) return null;
 
@@ -236,16 +236,16 @@ export class FileDownloader {
 
   saveFile(downloadId: string): void {
     const task = this.downloads.get(downloadId);
-    if (!task || task.status !== 'completed') return;
+    if (!task || task.status !== "completed") return;
 
     const blob = this.getFileBlob(downloadId);
     if (!blob) return;
 
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = task.fileName;
-    a.style.display = 'none';
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -258,15 +258,15 @@ export class FileDownloader {
     const task = this.downloads.get(downloadId);
     if (!task) return;
 
-    task.status = 'cancelled';
+    task.status = "cancelled";
     if (this.activeDownloadId === downloadId) {
       this.activeDownloadId = null;
     }
 
     if (this.sendMessage) {
       const cancelMessage: DownloadRequest = {
-        action: 'download',
-        sub: 'cancel',
+        action: "download",
+        sub: "cancel",
         id: downloadId,
         path: task.remotePath,
       };
@@ -280,7 +280,7 @@ export class FileDownloader {
     const task = this.downloads.get(downloadId);
     if (!task) return;
 
-    task.status = 'failed';
+    task.status = "failed";
     task.error = new Error(error);
 
     if (this.activeDownloadId === downloadId) {
@@ -291,7 +291,7 @@ export class FileDownloader {
   private handleServerCancel(downloadId: string, reason?: string): void {
     const task = this.downloads.get(downloadId);
     if (!task) return;
-    task.status = 'cancelled';
+    task.status = "cancelled";
     task.error = reason ? new Error(reason) : undefined;
 
     if (this.onServerCancel) {

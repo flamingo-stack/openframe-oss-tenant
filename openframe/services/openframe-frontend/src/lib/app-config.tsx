@@ -1,15 +1,15 @@
-import React from 'react';
-import { openframeConfig } from './platform-configs/openframe.config';
-import { runtimeEnv } from './runtime-config';
+import React from "react";
+import { openframeConfig } from "./platform-configs/openframe.config";
+import { runtimeEnv } from "./runtime-config";
 
-export type AppType = 'openframe-auth' | 'openframe-dashboard';
+export type AppType = "openframe-auth" | "openframe-dashboard";
 
 export interface NavigationMenuItem {
   id: string;
   label: string;
   href?: string;
   icon?: React.ReactElement;
-  badge?: 'vendorCount' | 'selectionsCount' | number;
+  badge?: "vendorCount" | "selectionsCount" | number;
   isExternal?: boolean;
   onClick?: () => void;
   children?: NavigationMenuItem[];
@@ -19,7 +19,7 @@ export interface NavigationSection {
   id: string;
   title?: string;
   items: NavigationMenuItem[];
-  type?: 'single' | 'dropdown';
+  type?: "single" | "dropdown";
   showInHeader?: boolean;
   showInMobile?: boolean;
   icon?: React.ReactElement;
@@ -71,7 +71,7 @@ export interface AppConfig {
   url: string;
   logo: string;
   slogan: string;
-  platform: 'openframe';
+  platform: "openframe";
   brandColors: {
     primary: string;
     accent: string;
@@ -91,7 +91,7 @@ export interface AppConfig {
     showFooter: boolean;
     showAnnouncement: boolean;
     showSidebar: boolean;
-    headerType: 'platform' | 'admin';
+    headerType: "platform" | "admin";
     backgroundColor?: string;
   };
   navigation: {
@@ -114,12 +114,12 @@ export interface AppConfig {
     showUserMenu: boolean;
     showMobileNav: boolean;
     showSearchBar: boolean;
-    headerStyle: 'default' | 'minimal' | 'admin';
+    headerStyle: "default" | "minimal" | "admin";
     headerAutoHide: boolean;
     headerCta?: {
       text: string;
       href: string;
-      variant?: 'primary' | 'secondary' | 'outline';
+      variant?: "primary" | "secondary" | "outline";
       isExternal?: boolean;
       getElement?: () => React.ReactElement;
     };
@@ -154,20 +154,20 @@ export interface AppConfig {
     slack?: string;
   };
   blog?: {
-    cardVariant?: 'default' | 'flamingo';
+    cardVariant?: "default" | "flamingo";
   };
 }
 
 // For pure frontend, we only have one OpenFrame configuration
 const APP_CONFIGS: Record<AppType, AppConfig> = {
-  'openframe-auth': openframeConfig,
-  'openframe-dashboard': openframeConfig,
+  "openframe-auth": openframeConfig,
+  "openframe-dashboard": openframeConfig,
 };
 
 // Get current app type from environment
 export function getCurrentAppType(): AppType {
   const appType = runtimeEnv.appType() as AppType;
-  return (appType as AppType) || 'openframe-dashboard';
+  return (appType as AppType) || "openframe-dashboard";
 }
 
 // Get app configuration for current or specified app
@@ -187,14 +187,14 @@ export function isCurrentApp(appType: AppType): boolean {
 }
 
 // Get platform name for current app
-export function getCurrentPlatform(): 'openframe' {
-  return 'openframe';
+export function getCurrentPlatform(): "openframe" {
+  return "openframe";
 }
 
 // Get metadata base URL function for client-side
 export function getMetadataBaseUrl(): string {
   // Decide based on window presence rather than NODE_ENV to allow runtime
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // In browser, prefer appUrl, else devUrl
     return runtimeEnv.appUrl() || runtimeEnv.devUrl();
   }
@@ -221,36 +221,36 @@ export function generateStructuredData(config: AppConfig) {
   const baseUrl = getMetadataBaseUrl();
 
   const schemaLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
+    "@context": "https://schema.org",
+    "@type": "WebSite",
     name: config.name,
-    alternateName: ['Open Frame', 'OpenFrame Framework'],
+    alternateName: ["Open Frame", "OpenFrame Framework"],
     url: baseUrl,
     description: config.description,
     potentialAction: {
-      '@type': 'SearchAction',
+      "@type": "SearchAction",
       target: {
-        '@type': 'EntryPoint',
+        "@type": "EntryPoint",
         urlTemplate: `${baseUrl}/search?q={search_term_string}`,
       },
-      'query-input': 'required name=search_term_string',
+      "query-input": "required name=search_term_string",
     },
   };
 
   const organizationLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
+    "@context": "https://schema.org",
+    "@type": "Organization",
     name: config.name,
     legalName: config.legalName,
-    alternateName: ['Open Frame', 'OpenFrame Framework'],
+    alternateName: ["Open Frame", "OpenFrame Framework"],
     url: baseUrl,
     description: config.description,
     slogan: config.slogan,
-    foundingDate: '2022-06-01',
-    industry: 'Information Technology',
+    foundingDate: "2022-06-01",
+    industry: "Information Technology",
     logo: {
-      '@type': 'ImageObject',
-      url: `${baseUrl}${config.logo.startsWith('/') ? '' : '/'}${config.logo}`,
+      "@type": "ImageObject",
+      url: `${baseUrl}${config.logo.startsWith("/") ? "" : "/"}${config.logo}`,
       width: 512,
       height: 512,
       caption: `${config.name} Logo`,
@@ -258,17 +258,17 @@ export function generateStructuredData(config: AppConfig) {
     sameAs: Object.values(config.social).filter(Boolean),
     contactPoint: [
       {
-        '@type': 'ContactPoint',
-        contactType: 'customer service',
-        areaServed: 'US',
-        availableLanguage: ['en'],
+        "@type": "ContactPoint",
+        contactType: "customer service",
+        areaServed: "US",
+        availableLanguage: ["en"],
         email: config.contact.email,
         url: config.contact.supportUrl,
       },
     ],
     address: {
-      '@type': 'PostalAddress',
-      addressCountry: 'US',
+      "@type": "PostalAddress",
+      addressCountry: "US",
     },
   };
 
@@ -278,23 +278,23 @@ export function generateStructuredData(config: AppConfig) {
 // Utility functions for app-aware UI decisions
 export function shouldShowAdminMenu(userRole?: string): boolean {
   const config = getAppConfig();
-  return config.navigation.showAdminMenuInHeader && userRole === 'super_admin';
+  return config.navigation.showAdminMenuInHeader && userRole === "super_admin";
 }
 
 export function shouldShowComponent(
-  component: 'userMenu' | 'mobileNav' | 'searchBar' | 'platformNav' | 'adminNav',
+  component: "userMenu" | "mobileNav" | "searchBar" | "platformNav" | "adminNav",
 ): boolean {
   const config = getAppConfig();
   switch (component) {
-    case 'userMenu':
+    case "userMenu":
       return config.ui.showUserMenu;
-    case 'mobileNav':
+    case "mobileNav":
       return config.ui.showMobileNav;
-    case 'searchBar':
+    case "searchBar":
       return config.ui.showSearchBar;
-    case 'platformNav':
+    case "platformNav":
       return config.navigation.showPlatformNav;
-    case 'adminNav':
+    case "adminNav":
       return config.navigation.showAdminNav;
     default:
       return false;
@@ -305,7 +305,7 @@ export function isRouteAllowed(pathname: string): boolean {
   const config = getAppConfig();
 
   // Check if route is explicitly restricted
-  if (config.navigation.restrictedRoutes.includes('*')) {
+  if (config.navigation.restrictedRoutes.includes("*")) {
     return config.navigation.allowedRoutes.includes(pathname);
   }
 
@@ -315,12 +315,12 @@ export function isRouteAllowed(pathname: string): boolean {
 
   // Check if route is in allowed routes (if specified)
   if (config.navigation.allowedRoutes.length > 0) {
-    return config.navigation.allowedRoutes.some(route => pathname === route || pathname.startsWith(route + '/'));
+    return config.navigation.allowedRoutes.some(route => pathname === route || pathname.startsWith(route + "/"));
   }
 
   return true;
 }
 
-export function getHeaderStyle(): 'default' | 'minimal' | 'admin' {
+export function getHeaderStyle(): "default" | "minimal" | "admin" {
   return getAppConfig().ui.headerStyle;
 }

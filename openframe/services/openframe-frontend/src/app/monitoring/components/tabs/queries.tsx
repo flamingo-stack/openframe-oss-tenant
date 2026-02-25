@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
 import {
   DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
   Table,
   type TableColumn,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useQueries } from '../../hooks/use-queries';
-import type { Query } from '../../types/queries.types';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useQueries } from "../../hooks/use-queries";
+import type { Query } from "../../types/queries.types";
 
 const PAGE_SIZE = 10;
 
 function formatInterval(seconds: number): string {
-  if (seconds === 0) return 'Manual';
+  if (seconds === 0) return "Manual";
   if (seconds < 60) return `Every ${seconds}s`;
   if (seconds < 3600) return `Every ${Math.floor(seconds / 60)}m`;
   if (seconds < 86400) return `Every ${Math.floor(seconds / 3600)}h`;
@@ -28,8 +28,8 @@ export function Queries() {
   const router = useRouter();
 
   const { params, setParam, setParams } = useApiParams({
-    search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
+    search: { type: "string", default: "" },
+    page: { type: "number", default: 1 },
   });
 
   const [searchInput, setSearchInput] = useState(params.search);
@@ -46,7 +46,7 @@ export function Queries() {
   const { queries, isLoading, error } = useQueries();
 
   const filteredQueries = useMemo(() => {
-    if (!params.search || params.search.trim() === '') return queries;
+    if (!params.search || params.search.trim() === "") return queries;
 
     const searchLower = params.search.toLowerCase().trim();
     return queries.filter(
@@ -64,15 +64,15 @@ export function Queries() {
   const columns: TableColumn<Query>[] = useMemo(
     () => [
       {
-        key: 'name',
-        label: 'Name',
+        key: "name",
+        label: "Name",
         renderCell: query => <DeviceCardCompact deviceName={query.name} organization={query.description} />,
       },
       {
-        key: 'frequency',
-        label: 'Frequency',
-        width: 'w-[120px]',
-        hideAt: 'md',
+        key: "frequency",
+        label: "Frequency",
+        width: "w-[120px]",
+        hideAt: "md",
         renderCell: query => (
           <span className="font-medium leading-[20px] text-ods-text-primary">{formatInterval(query.interval)}</span>
         ),
@@ -84,7 +84,7 @@ export function Queries() {
   const rowActions = useCallback(
     (query: Query) => [
       {
-        label: 'Query Details',
+        label: "Query Details",
         onClick: () => router.push(`/monitoring/query/${query.id}`),
       },
     ],
@@ -103,13 +103,13 @@ export function Queries() {
   );
 
   const handleAddQuery = useCallback(() => {
-    router.push('/monitoring/query/edit/new');
+    router.push("/monitoring/query/edit/new");
   }, [router]);
 
   const actions = useMemo(
     () => [
       {
-        label: 'Add Query',
+        label: "Add Query",
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddQuery,
       },
@@ -120,13 +120,13 @@ export function Queries() {
   const cursorPagination = useTablePagination(
     totalPages > 1
       ? {
-          type: 'client',
+          type: "client",
           currentPage: params.page,
           totalPages,
           itemCount: paginatedQueries.length,
-          itemName: 'queries',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
+          itemName: "queries",
+          onNext: () => setParam("page", Math.min(params.page + 1, totalPages)),
+          onPrevious: () => setParam("page", Math.max(params.page - 1, 1)),
           showInfo: true,
         }
       : null,
@@ -153,7 +153,7 @@ export function Queries() {
         emptyMessage={
           params.search
             ? `No queries found matching "${params.search}". Try adjusting your search.`
-            : 'No queries found.'
+            : "No queries found."
         }
         showFilters={false}
         rowClassName="mb-1"

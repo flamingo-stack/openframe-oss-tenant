@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ContentPageContainer } from "@flamingo-stack/openframe-frontend-core/components/ui";
 
 export default function NotFound() {
   return (

@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { tacticalApiClient } from "@/lib/tactical-api-client";
 import type {
   AgentsModifyResponse,
   CreateScriptSchedulePayload,
   ScriptScheduleDetail,
   UpdateScriptSchedulePayload,
-} from '../types/script-schedule.types';
-import { scriptScheduleQueryKeys } from './use-script-schedule';
+} from "../types/script-schedule.types";
+import { scriptScheduleQueryKeys } from "./use-script-schedule";
 
 // ============ API Functions ============
 

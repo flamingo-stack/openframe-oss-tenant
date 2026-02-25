@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { GET_DIALOGS_QUERY } from '../queries/dialogs-queries';
-import { CursorPageInfo, Dialog, DialogConnection } from '../types/dialog.types';
-import { type DialogsQueryParams, dialogsQueryKeys } from '../utils/query-keys';
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { GET_DIALOGS_QUERY } from "../queries/dialogs-queries";
+import { CursorPageInfo, Dialog, DialogConnection } from "../types/dialog.types";
+import { type DialogsQueryParams, dialogsQueryKeys } from "../utils/query-keys";
 
 interface DialogsResponse {
   dialogs: DialogConnection;
@@ -30,23 +30,23 @@ export function useDialogsQuery({ archived, search, statusFilters, cursor }: Dia
       if (statusFilters && statusFilters.length > 0) {
         statuses = statusFilters;
       } else if (archived) {
-        statuses = ['ARCHIVED'];
+        statuses = ["ARCHIVED"];
       } else {
-        statuses = ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED'];
+        statuses = ["ACTIVE", "ACTION_REQUIRED", "ON_HOLD", "RESOLVED"];
       }
 
       const paginationVars: any = { limit: 10 };
-      if (cursor && cursor.trim() !== '') {
+      if (cursor && cursor.trim() !== "") {
         paginationVars.cursor = cursor;
       }
 
-      const response = await apiClient.post<GraphQlResponse<DialogsResponse>>('/chat/graphql', {
+      const response = await apiClient.post<GraphQlResponse<DialogsResponse>>("/chat/graphql", {
         query: GET_DIALOGS_QUERY,
         variables: {
-          filter: { statuses, agentTypes: ['CLIENT'] },
+          filter: { statuses, agentTypes: ["CLIENT"] },
           pagination: paginationVars,
           search: search || undefined,
-          slaSort: 'ASC',
+          slaSort: "ASC",
         },
       });
 
@@ -57,11 +57,11 @@ export function useDialogsQuery({ archived, search, statusFilters, cursor }: Dia
       const graphqlResponse = response.data;
 
       if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
+        throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
       }
 
       if (!graphqlResponse?.data) {
-        throw new Error('No data received from server');
+        throw new Error("No data received from server");
       }
 
       const connection = graphqlResponse.data.dialogs;

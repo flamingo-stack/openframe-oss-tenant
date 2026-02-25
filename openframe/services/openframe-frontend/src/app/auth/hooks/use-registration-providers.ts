@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { authApiClient } from '@/lib/auth-api-client';
+import { useEffect, useState } from "react";
+import { authApiClient } from "@/lib/auth-api-client";
 
 export interface SsoProvider {
   provider: string;
@@ -33,12 +33,12 @@ export function useRegistrationProviders() {
           setProviders(formattedProviders);
         } else {
           setProviders([]);
-          setError(response.error || 'Failed to fetch providers');
+          setError(response.error || "Failed to fetch providers");
         }
       } catch (err) {
-        console.error('Failed to fetch SSO providers:', err);
+        console.error("Failed to fetch SSO providers:", err);
         setProviders([]);
-        setError(err instanceof Error ? err.message : 'Failed to fetch providers');
+        setError(err instanceof Error ? err.message : "Failed to fetch providers");
       } finally {
         setLoading(false);
       }

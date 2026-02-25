@@ -3,24 +3,24 @@
  * Extends the base API client with Tactical-specific functionality
  */
 
-import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
-import { runtimeEnv } from './runtime-config';
+import { type ApiRequestOptions, type ApiResponse, apiClient } from "./api-client";
+import { runtimeEnv } from "./runtime-config";
 
 class TacticalApiClient {
   private baseUrl: string;
 
   constructor() {
     // Build base from tenant host when provided; otherwise relative paths via apiClient
-    const tenantHost = runtimeEnv.tenantHostUrl() || '';
+    const tenantHost = runtimeEnv.tenantHostUrl() || "";
     this.baseUrl = `${tenantHost}/tools/tactical-rmm`;
   }
 
   private buildTacticalUrl(path: string): string {
-    if (path.startsWith('http://') || path.startsWith('https://')) {
+    if (path.startsWith("http://") || path.startsWith("https://")) {
       return path;
     }
 
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    const cleanPath = path.startsWith("/") ? path : `/${path}`;
     return `${this.baseUrl}${cleanPath}`;
   }
 
@@ -31,13 +31,13 @@ class TacticalApiClient {
   }
 
   async get<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: 'GET' });
+    return this.request<T>(path, { ...options, method: "GET" });
   }
 
   async post<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: 'POST',
+      method: "POST",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -45,7 +45,7 @@ class TacticalApiClient {
   async put<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: 'PUT',
+      method: "PUT",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -53,19 +53,19 @@ class TacticalApiClient {
   async patch<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: 'PATCH',
+      method: "PATCH",
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
   async delete<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: 'DELETE' });
+    return this.request<T>(path, { ...options, method: "DELETE" });
   }
 
   // Tactical RMM specific methods
 
   async getAgents(): Promise<ApiResponse<any[]>> {
-    return this.get('/agents/');
+    return this.get("/agents/");
   }
 
   async getAgent(agentId: string): Promise<ApiResponse<any>> {
@@ -92,11 +92,11 @@ class TacticalApiClient {
   }
 
   async runBulkAction(payload: any): Promise<ApiResponse<any>> {
-    return this.post('/agents/actions/bulk/', payload);
+    return this.post("/agents/actions/bulk/", payload);
   }
 
   async getScripts(): Promise<ApiResponse<any[]>> {
-    return this.get('/scripts/');
+    return this.get("/scripts/");
   }
 
   async getScript(scriptId: string): Promise<ApiResponse<any>> {
@@ -115,7 +115,7 @@ class TacticalApiClient {
     supported_platforms: string[];
     category: string;
   }): Promise<ApiResponse<any>> {
-    return this.post('/scripts/', scriptData);
+    return this.post("/scripts/", scriptData);
   }
 
   async updateScript(
@@ -145,9 +145,9 @@ class TacticalApiClient {
     },
   ): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.search) queryParams.append('search', params.search);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
+    if (params?.search) queryParams.append("search", params.search);
 
     const queryString = queryParams.toString();
     const path = queryString ? `/agents/${agentId}/logs/?${queryString}` : `/agents/${agentId}/logs/`;
@@ -188,9 +188,9 @@ class TacticalApiClient {
     },
   ): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.level) queryParams.append('level', params.level);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
+    if (params?.level) queryParams.append("level", params.level);
 
     const queryString = queryParams.toString();
     const path = queryString ? `/agents/${agentId}/eventlogs/?${queryString}` : `/agents/${agentId}/eventlogs/`;
@@ -231,8 +231,8 @@ class TacticalApiClient {
     },
   ): Promise<ApiResponse<any[]>> {
     const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
 
     const queryString = queryParams.toString();
     const path = queryString
@@ -245,7 +245,7 @@ class TacticalApiClient {
   // Script Schedule methods
 
   async getScriptSchedules(): Promise<ApiResponse<any[]>> {
-    return this.get('/script-schedules/');
+    return this.get("/script-schedules/");
   }
 
   async getScriptSchedule(id: number | string): Promise<ApiResponse<any>> {
@@ -253,7 +253,7 @@ class TacticalApiClient {
   }
 
   async createScriptSchedule(data: any): Promise<ApiResponse<any>> {
-    return this.post('/script-schedules/', data);
+    return this.post("/script-schedules/", data);
   }
 
   async updateScriptSchedule(id: number | string, data: any): Promise<ApiResponse<any>> {
@@ -278,7 +278,7 @@ class TacticalApiClient {
 
   async removeScriptScheduleAgents(id: number | string, agents: string[]): Promise<ApiResponse<any>> {
     return this.request(`/script-schedules/${id}/agents/`, {
-      method: 'DELETE',
+      method: "DELETE",
       body: JSON.stringify({ agents }),
     });
   }
@@ -291,8 +291,8 @@ class TacticalApiClient {
     },
   ): Promise<ApiResponse<any>> {
     const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.offset) queryParams.append("offset", params.offset.toString());
 
     const queryString = queryParams.toString();
     const path = queryString ? `/script-schedules/${id}/history/?${queryString}` : `/script-schedules/${id}/history/`;
@@ -301,7 +301,7 @@ class TacticalApiClient {
   }
 
   async getScheduledTasks(): Promise<ApiResponse<any[]>> {
-    return this.get('/tasks/');
+    return this.get("/tasks/");
   }
 
   async getScheduledTask(taskId: string): Promise<ApiResponse<any>> {
@@ -316,7 +316,7 @@ class TacticalApiClient {
     agentId: string,
     taskData: {
       actions: Array<{
-        type: 'script';
+        type: "script";
         name: string;
         script: number;
         timeout: number;
@@ -325,7 +325,7 @@ class TacticalApiClient {
         run_as_user: boolean;
       }>;
       name: string;
-      task_type: 'daily' | 'weekly' | 'monthly' | 'runonce';
+      task_type: "daily" | "weekly" | "monthly" | "runonce";
       run_time_date: string;
       expire_date?: string | null;
       daily_interval?: number;
@@ -342,14 +342,14 @@ class TacticalApiClient {
       run_asap_after_missed?: boolean;
       remove_if_not_scheduled?: boolean;
       continue_on_error?: boolean;
-      alert_severity?: 'info' | 'warning' | 'error';
+      alert_severity?: "info" | "warning" | "error";
       collector_all_output?: boolean;
       custom_field?: any;
       assigned_check?: any;
       task_supported_platforms?: string[];
     },
   ): Promise<ApiResponse<any>> {
-    return this.post('/tasks/', {
+    return this.post("/tasks/", {
       ...taskData,
       agent: agentId,
     });

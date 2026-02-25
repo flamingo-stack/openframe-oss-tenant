@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { GET_ORGANIZATIONS_MIN_QUERY } from '../queries/organizations-queries';
+import { useCallback, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { GET_ORGANIZATIONS_MIN_QUERY } from "../queries/organizations-queries";
 
 export interface OrganizationMin {
   id: string;
@@ -18,11 +18,11 @@ export function useOrganizationsMin(limit: number = 10) {
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(
-    async (search: string = '') => {
+    async (search: string = "") => {
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.post<any>('/api/graphql', {
+        const response = await apiClient.post<any>("/api/graphql", {
           query: GET_ORGANIZATIONS_MIN_QUERY,
           variables: { search, pagination: { limit, cursor: null } },
         });
@@ -43,7 +43,7 @@ export function useOrganizationsMin(limit: number = 10) {
         setItems(mapped);
         return mapped;
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Failed to fetch organizations';
+        const msg = e instanceof Error ? e.message : "Failed to fetch organizations";
         setError(msg);
         throw e;
       } finally {

@@ -1,34 +1,34 @@
-'use client';
+"use client";
 
-import { DetailPageContainer, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Info as InfoIcon, UsersRound as UsersGroupIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import React, { useMemo, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { useCreateOrganization } from '../hooks/use-create-organization';
-import { useOrganizationDetails } from '../hooks/use-organization-details';
-import { useUpdateOrganization } from '../hooks/use-update-organization';
+import { DetailPageContainer, type TabItem, TabNavigation } from "@flamingo-stack/openframe-frontend-core";
+import { Button } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { Info as InfoIcon, UsersRound as UsersGroupIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useMemo, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { useCreateOrganization } from "../hooks/use-create-organization";
+import { useOrganizationDetails } from "../hooks/use-organization-details";
+import { useUpdateOrganization } from "../hooks/use-update-organization";
 
 interface NewOrganizationPageProps {
   organizationId: string | null;
 }
 
-import { ContactInformationTab, type ContactInfoState } from './tabs/contact-information';
-import { GeneralInformationTab, type GeneralInfoState } from './tabs/general-information';
+import { ContactInformationTab, type ContactInfoState } from "./tabs/contact-information";
+import { GeneralInformationTab, type GeneralInfoState } from "./tabs/general-information";
 
 const DEFAULT_GENERAL: GeneralInfoState = {
-  name: '',
-  category: '',
-  employees: '',
-  serviceTier: 'Enterprise',
-  sla: 'Critical',
-  mrr: '',
-  website: '',
-  contractStart: '',
-  contractEnd: '',
-  notes: '',
+  name: "",
+  category: "",
+  employees: "",
+  serviceTier: "Enterprise",
+  sla: "Critical",
+  mrr: "",
+  website: "",
+  contractStart: "",
+  contractEnd: "",
+  notes: "",
 };
 
 export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps) {
@@ -41,20 +41,20 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
 
   const [general, setGeneral] = useState<GeneralInfoState>(DEFAULT_GENERAL);
   const [contact, setContact] = useState<ContactInfoState>({
-    primaryName: '',
-    primaryTitle: '',
-    primaryPhone: '',
-    primaryEmail: '',
-    billingName: '',
-    billingTitle: '',
-    billingPhone: '',
-    billingEmail: '',
-    technicalName: '',
-    technicalTitle: '',
-    technicalPhone: '',
-    technicalEmail: '',
-    physicalAddress: '',
-    mailingAddress: '',
+    primaryName: "",
+    primaryTitle: "",
+    primaryPhone: "",
+    primaryEmail: "",
+    billingName: "",
+    billingTitle: "",
+    billingPhone: "",
+    billingEmail: "",
+    technicalName: "",
+    technicalTitle: "",
+    technicalPhone: "",
+    technicalEmail: "",
+    physicalAddress: "",
+    mailingAddress: "",
     mailingSameAsPhysical: true,
   });
 
@@ -69,35 +69,35 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
     if (organizationId && organization && !didPrefill) {
       setGeneral(prev => ({
         ...prev,
-        name: organization.name || '',
-        category: organization.industry || '',
-        employees: organization.employees != null ? String(organization.employees) : '',
-        mrr: organization.mrrUsd != null ? String(organization.mrrUsd) : '',
-        website: organization.website || '',
+        name: organization.name || "",
+        category: organization.industry || "",
+        employees: organization.employees != null ? String(organization.employees) : "",
+        mrr: organization.mrrUsd != null ? String(organization.mrrUsd) : "",
+        website: organization.website || "",
         contractStart: organization.contractStart
           ? new Date(organization.contractStart).toISOString().slice(0, 10)
-          : '',
-        contractEnd: organization.contractEnd ? new Date(organization.contractEnd).toISOString().slice(0, 10) : '',
-        notes: (organization.notes || []).join('\n'),
+          : "",
+        contractEnd: organization.contractEnd ? new Date(organization.contractEnd).toISOString().slice(0, 10) : "",
+        notes: (organization.notes || []).join("\n"),
         imageUrl: organization.imageUrl || undefined,
       }));
 
       setContact(prev => ({
         ...prev,
-        primaryName: organization.primary.name || '',
-        primaryTitle: organization.primary.title || '',
-        primaryPhone: organization.primary.phone || '',
-        primaryEmail: organization.primary.email || '',
-        billingName: organization.billing.name || '',
-        billingTitle: organization.billing.title || '',
-        billingPhone: organization.billing.phone || '',
-        billingEmail: organization.billing.email || '',
-        technicalName: organization.technical.name || '',
-        technicalTitle: organization.technical.title || '',
-        technicalPhone: organization.technical.phone || '',
-        technicalEmail: organization.technical.email || '',
-        physicalAddress: organization.physicalAddress || '',
-        mailingAddress: organization.mailingAddress || '',
+        primaryName: organization.primary.name || "",
+        primaryTitle: organization.primary.title || "",
+        primaryPhone: organization.primary.phone || "",
+        primaryEmail: organization.primary.email || "",
+        billingName: organization.billing.name || "",
+        billingTitle: organization.billing.title || "",
+        billingPhone: organization.billing.phone || "",
+        billingEmail: organization.billing.email || "",
+        technicalName: organization.technical.name || "",
+        technicalTitle: organization.technical.title || "",
+        technicalPhone: organization.technical.phone || "",
+        technicalEmail: organization.technical.email || "",
+        physicalAddress: organization.physicalAddress || "",
+        mailingAddress: organization.mailingAddress || "",
         mailingSameAsPhysical: prev.mailingSameAsPhysical,
       }));
 
@@ -107,8 +107,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
 
   const tabs = useMemo<TabItem[]>(
     () => [
-      { id: 'general', label: 'General Information', icon: InfoIcon as TabItem['icon'] },
-      { id: 'contact', label: 'Contact Information', icon: UsersGroupIcon as TabItem['icon'] },
+      { id: "general", label: "General Information", icon: InfoIcon as TabItem["icon"] },
+      { id: "contact", label: "Contact Information", icon: UsersGroupIcon as TabItem["icon"] },
     ],
     [],
   );
@@ -116,8 +116,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   const saveDisabled = !general.name.trim() || isSubmitting;
 
   const toNumberOrNull = (value: string): number | null => {
-    const cleaned = (value || '').toString().replace(/,/g, '').trim();
-    if (cleaned === '') return null;
+    const cleaned = (value || "").toString().replace(/,/g, "").trim();
+    if (cleaned === "") return null;
     const num = Number(cleaned);
     return Number.isFinite(num) ? num : null;
   };
@@ -152,12 +152,12 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   };
 
   const buildAddressDto = (raw: string) => ({
-    street1: raw || '',
-    street2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: '',
+    street1: raw || "",
+    street2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
   });
 
   const handleSave = async () => {
@@ -190,39 +190,39 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         createdOrganizationId = response?.organizationId || response?.id || null;
       }
 
-      if (!organizationId && createdOrganizationId && general.logoUrl && general.logoUrl.startsWith('data:')) {
+      if (!organizationId && createdOrganizationId && general.logoUrl && general.logoUrl.startsWith("data:")) {
         try {
           const response = await fetch(general.logoUrl);
           const blob = await response.blob();
 
           const formData = new FormData();
-          formData.append('file', blob, 'logo.png');
+          formData.append("file", blob, "logo.png");
 
           const uploadResponse = await apiClient.request(`/organizations/${createdOrganizationId}/image`, {
-            method: 'POST',
+            method: "POST",
             body: formData,
           });
 
           if (!uploadResponse.ok) {
-            throw new Error('Failed to upload logo');
+            throw new Error("Failed to upload logo");
           }
         } catch (_imageError) {
           toast({
-            title: 'Warning',
-            description: 'Organization was created but logo upload failed',
-            variant: 'warning',
+            title: "Warning",
+            description: "Organization was created but logo upload failed",
+            variant: "warning",
           });
         }
       }
 
       toast({
-        title: organizationId ? 'Organization updated' : 'Organization created',
-        description: `${general.name} has been ${organizationId ? 'updated' : 'created'}`,
+        title: organizationId ? "Organization updated" : "Organization created",
+        description: `${general.name} has been ${organizationId ? "updated" : "created"}`,
       });
-      router.push('/organizations');
+      router.push("/organizations");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to create organization';
-      toast({ title: 'Create failed', description: msg, variant: 'destructive' });
+      const msg = e instanceof Error ? e.message : "Failed to create organization";
+      toast({ title: "Create failed", description: msg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
@@ -230,8 +230,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
 
   return (
     <DetailPageContainer
-      title={organizationId ? 'Edit Organization' : 'New Organization'}
-      backButton={{ label: 'Back to Organizations', onClick: () => router.push('/organizations') }}
+      title={organizationId ? "Edit Organization" : "New Organization"}
+      backButton={{ label: "Back to Organizations", onClick: () => router.push("/organizations") }}
       padding="none"
       className="pt-6"
       headerActions={
@@ -241,7 +241,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
           onClick={handleSave}
           className="bg-ods-accent text-ods-text-on-accent font-['DM_Sans'] font-bold text-[16px] px-4 py-2.5 h-12"
         >
-          {isSubmitting ? 'Saving...' : 'Save Organization'}
+          {isSubmitting ? "Saving..." : "Save Organization"}
         </Button>
       }
     >
@@ -249,7 +249,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         <TabNavigation tabs={tabs} defaultTab="general" urlSync={true}>
           {activeTab => (
             <>
-              {activeTab === 'general' && (
+              {activeTab === "general" && (
                 <GeneralInformationTab
                   value={general}
                   onChange={setGeneral}
@@ -257,7 +257,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
                 />
               )}
 
-              {activeTab === 'contact' && <ContactInformationTab value={contact} onChange={setContact} />}
+              {activeTab === "contact" && <ContactInformationTab value={contact} onChange={setContact} />}
             </>
           )}
         </TabNavigation>

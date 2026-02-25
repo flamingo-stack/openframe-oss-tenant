@@ -1,6 +1,6 @@
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
-import { type ApiResponse, apiClient } from '@/lib/api-client';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useMutation } from "@tanstack/react-query";
+import { type ApiResponse, apiClient } from "@/lib/api-client";
 
 export interface CreateDialogResponse {
   id: string;
@@ -19,18 +19,18 @@ export interface SendMessageResponse {
 
 export interface ApprovalResponse {
   requestId: string;
-  status: 'approved' | 'rejected';
+  status: "approved" | "rejected";
   timestamp: string;
 }
 
 export interface CreateDialogRequest {
-  agentType: 'ADMIN';
+  agentType: "ADMIN";
 }
 
 export interface SendMessageRequest {
   dialogId: string;
   content: string;
-  chatType: 'ADMIN_AI_CHAT';
+  chatType: "ADMIN_AI_CHAT";
 }
 
 /**
@@ -44,8 +44,8 @@ export interface SendMessageRequest {
 export function useCreateDialogMutation() {
   return useMutation({
     mutationFn: async (): Promise<CreateDialogResponse> => {
-      const response = await apiClient.post<CreateDialogResponse>('/chat/api/v1/dialogs', {
-        agentType: 'ADMIN',
+      const response = await apiClient.post<CreateDialogResponse>("/chat/api/v1/dialogs", {
+        agentType: "ADMIN",
       } as CreateDialogRequest);
 
       if (!response.ok) {
@@ -53,7 +53,7 @@ export function useCreateDialogMutation() {
       }
 
       if (!response.data?.id) {
-        throw new Error('Invalid response: dialog id not found');
+        throw new Error("Invalid response: dialog id not found");
       }
 
       return response.data;
@@ -67,10 +67,10 @@ export function useCreateDialogMutation() {
 export function useSendMessageMutation() {
   return useMutation({
     mutationFn: async ({ dialogId, content }: { dialogId: string; content: string }) => {
-      const response = await apiClient.post('/chat/api/v1/messages', {
+      const response = await apiClient.post("/chat/api/v1/messages", {
         dialogId,
         content,
-        chatType: 'ADMIN_AI_CHAT',
+        chatType: "ADMIN_AI_CHAT",
       } as SendMessageRequest);
 
       if (!response.ok) {
@@ -95,18 +95,18 @@ export function useApproveRequestMutation() {
       });
 
       if (!response.ok) {
-        throw new Error(response.error || 'Failed to approve request');
+        throw new Error(response.error || "Failed to approve request");
       }
 
       return response.data;
     },
     onSuccess: () => {},
     onError: error => {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to approve request';
+      const errorMessage = error instanceof Error ? error.message : "Failed to approve request";
       toast({
-        title: 'Approval Failed',
+        title: "Approval Failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
         duration: 5000,
       });
     },
@@ -126,18 +126,18 @@ export function useRejectRequestMutation() {
       });
 
       if (!response.ok) {
-        throw new Error(response.error || 'Failed to reject request');
+        throw new Error(response.error || "Failed to reject request");
       }
 
       return response.data;
     },
     onSuccess: () => {},
     onError: error => {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to reject request';
+      const errorMessage = error instanceof Error ? error.message : "Failed to reject request";
       toast({
-        title: 'Rejection Failed',
+        title: "Rejection Failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
         duration: 5000,
       });
     },

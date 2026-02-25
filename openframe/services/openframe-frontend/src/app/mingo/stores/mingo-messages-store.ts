@@ -1,11 +1,11 @@
-import type { MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import type { MessageSegment } from "@flamingo-stack/openframe-frontend-core";
 import {
   createMessageSegmentAccumulator,
   type MessageSegmentAccumulator,
-} from '@flamingo-stack/openframe-frontend-core';
-import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import type { DialogNode, Message } from '../types';
+} from "@flamingo-stack/openframe-frontend-core";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import type { DialogNode, Message } from "../types";
 
 interface MingoMessagesStore {
   // Unified message storage - key is dialogId
@@ -44,7 +44,7 @@ interface MingoMessagesStore {
   addMessage: (dialogId: string, message: Message) => void;
   updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (dialogId: string, messageId: string) => void;
-  updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
+  updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: "approved" | "rejected") => void;
   getMessages: (dialogId: string) => Message[];
 
   // Real-time State Management
@@ -65,7 +65,7 @@ interface MingoMessagesStore {
     approvalHandlers?: { onApprove?: (requestId?: string) => void; onReject?: (requestId?: string) => void },
   ) => MessageSegmentAccumulator;
   resetAccumulator: (dialogId: string) => void;
-  updateAccumulatorApprovalStatus: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
+  updateAccumulatorApprovalStatus: (dialogId: string, requestId: string, status: "approved" | "rejected") => void;
 
   // Utility Actions
   removeWelcomeMessages: (dialogId: string) => void;
@@ -170,15 +170,15 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         });
       },
 
-      updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
+      updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: "approved" | "rejected") => {
         set(state => {
           const newMap = new Map(state.messagesByDialog);
           const currentMessages = newMap.get(dialogId) || [];
 
           const updatedMessages = currentMessages.map(message => {
-            if (message.role === 'assistant' && Array.isArray(message.content)) {
+            if (message.role === "assistant" && Array.isArray(message.content)) {
               const updatedContent = message.content.map(segment => {
-                if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
+                if (segment.type === "approval_request" && segment.data?.requestId === requestId) {
                   return { ...segment, status };
                 }
                 return segment;
@@ -255,24 +255,24 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
 
           const accumulator = state.segmentAccumulators.get(dialogId);
           if (!accumulator) {
-            console.warn('[MingoStore] No accumulator found for dialog:', dialogId);
+            console.warn("[MingoStore] No accumulator found for dialog:", dialogId);
             return state;
           }
 
           // Process segments through accumulator
           accumulator.reset();
           segments.forEach(segment => {
-            if (segment.type === 'text' && segment.text) {
+            if (segment.type === "text" && segment.text) {
               accumulator.appendText(segment.text);
-            } else if (segment.type === 'tool_execution') {
+            } else if (segment.type === "tool_execution") {
               accumulator.addToolExecution(segment);
-            } else if (segment.type === 'approval_request') {
+            } else if (segment.type === "approval_request") {
               const { data, status } = segment;
               accumulator.addApprovalRequest(
-                data.requestId || '',
+                data.requestId || "",
                 data.command,
                 data.explanation,
-                data.approvalType || '',
+                data.approvalType || "",
                 status,
               );
             }
@@ -337,12 +337,12 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         }
       },
 
-      updateAccumulatorApprovalStatus: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
+      updateAccumulatorApprovalStatus: (dialogId: string, requestId: string, status: "approved" | "rejected") => {
         const state = get();
         const accumulator = state.segmentAccumulators.get(dialogId);
 
         if (!accumulator) {
-          console.warn('[MingoStore] No accumulator found for approval status update:', dialogId);
+          console.warn("[MingoStore] No accumulator found for approval status update:", dialogId);
           return;
         }
 
@@ -380,7 +380,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         set(state => {
           const newMap = new Map(state.messagesByDialog);
           const currentMessages = newMap.get(dialogId) || [];
-          const filteredMessages = currentMessages.filter(msg => !msg.id.startsWith('welcome-'));
+          const filteredMessages = currentMessages.filter(msg => !msg.id.startsWith("welcome-"));
           newMap.set(dialogId, filteredMessages);
           return { messagesByDialog: newMap };
         });
@@ -461,7 +461,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       },
     }),
     {
-      name: 'mingo-messages-store',
+      name: "mingo-messages-store",
     },
   ),
 );

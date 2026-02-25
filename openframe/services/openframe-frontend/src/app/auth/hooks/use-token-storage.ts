@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
 // Constants for localStorage keys
-export const ACCESS_TOKEN_KEY = 'of_access_token';
-export const REFRESH_TOKEN_KEY = 'of_refresh_token';
+export const ACCESS_TOKEN_KEY = "of_access_token";
+export const REFRESH_TOKEN_KEY = "of_refresh_token";
 
 /**
  * Hook for managing token storage in localStorage
@@ -13,10 +13,10 @@ export function useTokenStorage() {
   const storeAccessToken = useCallback((token: string) => {
     try {
       localStorage.setItem(ACCESS_TOKEN_KEY, token);
-      console.log('🔐 [Token Storage] Access token stored');
+      console.log("🔐 [Token Storage] Access token stored");
       return true;
     } catch (error) {
-      console.error('❌ [Token Storage] Failed to store access token:', error);
+      console.error("❌ [Token Storage] Failed to store access token:", error);
       return false;
     }
   }, []);
@@ -25,10 +25,10 @@ export function useTokenStorage() {
   const storeRefreshToken = useCallback((token: string) => {
     try {
       localStorage.setItem(REFRESH_TOKEN_KEY, token);
-      console.log('🔐 [Token Storage] Refresh token stored');
+      console.log("🔐 [Token Storage] Refresh token stored");
       return true;
     } catch (error) {
-      console.error('❌ [Token Storage] Failed to store refresh token:', error);
+      console.error("❌ [Token Storage] Failed to store refresh token:", error);
       return false;
     }
   }, []);
@@ -36,8 +36,8 @@ export function useTokenStorage() {
   // Store both tokens from response headers
   const storeTokensFromHeaders = useCallback(
     (headers: Headers) => {
-      const accessToken = headers.get('Access-Token');
-      const refreshToken = headers.get('Refresh-Token');
+      const accessToken = headers.get("Access-Token");
+      const refreshToken = headers.get("Refresh-Token");
 
       let stored = false;
 
@@ -52,7 +52,7 @@ export function useTokenStorage() {
       }
 
       if (!stored) {
-        console.log('⚠️ [Token Storage] No tokens found in response headers');
+        console.log("⚠️ [Token Storage] No tokens found in response headers");
       }
 
       return { accessToken, refreshToken };
@@ -65,7 +65,7 @@ export function useTokenStorage() {
     try {
       return localStorage.getItem(ACCESS_TOKEN_KEY);
     } catch (error) {
-      console.error('❌ [Token Storage] Failed to get access token:', error);
+      console.error("❌ [Token Storage] Failed to get access token:", error);
       return null;
     }
   }, []);
@@ -75,7 +75,7 @@ export function useTokenStorage() {
     try {
       return localStorage.getItem(REFRESH_TOKEN_KEY);
     } catch (error) {
-      console.error('❌ [Token Storage] Failed to get refresh token:', error);
+      console.error("❌ [Token Storage] Failed to get refresh token:", error);
       return null;
     }
   }, []);
@@ -85,10 +85,10 @@ export function useTokenStorage() {
     try {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
       localStorage.removeItem(REFRESH_TOKEN_KEY);
-      console.log('🔐 [Token Storage] Tokens cleared');
+      console.log("🔐 [Token Storage] Tokens cleared");
       return true;
     } catch (error) {
-      console.error('❌ [Token Storage] Failed to clear tokens:', error);
+      console.error("❌ [Token Storage] Failed to clear tokens:", error);
       return false;
     }
   }, []);

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -8,10 +8,10 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-  StatusTag,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React from 'react';
-import type { ApiKeyRecord } from '../hooks/use-api-keys';
+  Tag,
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import React from "react";
+import type { ApiKeyRecord } from "../hooks/use-api-keys";
 
 interface ApiKeyDetailsModalProps {
   isOpen: boolean;
@@ -25,7 +25,7 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
   const createdDate = new Date(apiKey.createdAt);
   const expiresDate = apiKey.expiresAt ? new Date(apiKey.expiresAt) : null;
   const lastUsed = apiKey.lastUsed ? new Date(apiKey.lastUsed) : null;
-  const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : '—');
+  const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : "—");
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
@@ -39,9 +39,9 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
         <div className="flex items-center justify-between pb-2 border-b border-ods-border">
           <div>
             <div className="text-lg font-semibold text-ods-text-primary">{apiKey.name}</div>
-            <div className="text-sm text-ods-text-secondary mt-1">{apiKey.description || '—'}</div>
+            <div className="text-sm text-ods-text-secondary mt-1">{apiKey.description || "—"}</div>
           </div>
-          <StatusTag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'info'} />
+          <Tag label={apiKey.enabled ? "ACTIVE" : "INACTIVE"} variant={apiKey.enabled ? "success" : "grey"} />
         </div>
 
         {/* Two Column Layout */}

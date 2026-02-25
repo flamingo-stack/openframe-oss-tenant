@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   AllowedDomainsInput,
@@ -9,15 +9,15 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core';
-import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { validateEmailDomain } from '@flamingo-stack/openframe-frontend-core/utils';
-import { Copy, Eye, EyeOff } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { getProviderIcon } from '../utils/get-provider-icon';
+} from "@flamingo-stack/openframe-frontend-core";
+import { Input } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { validateEmailDomain } from "@flamingo-stack/openframe-frontend-core/utils";
+import { Copy, Eye, EyeOff } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { featureFlags } from "@/lib/feature-flags";
+import { runtimeEnv } from "@/lib/runtime-config";
+import { getProviderIcon } from "../utils/get-provider-icon";
 
 // Feature flag: enabled by default, can disable with env var
 const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
@@ -57,10 +57,10 @@ export function SsoConfigModal({
   onSubmit,
   onDisable,
 }: SsoConfigModalProps) {
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [isSingleTenant, setIsSingleTenant] = useState(false);
-  const [msTenantId, setMsTenantId] = useState('');
+  const [msTenantId, setMsTenantId] = useState("");
   const [autoProvisionUsers, setAutoProvisionUsers] = useState(false);
   const [allowedDomains, setAllowedDomains] = useState<string[]>([]);
   const [domainError, setDomainError] = useState<string | null>(null);
@@ -68,10 +68,10 @@ export function SsoConfigModal({
   const [showSecret, setShowSecret] = useState(false);
   const { toast } = useToast();
 
-  const isMicrosoft = providerKey.toLowerCase() === 'microsoft';
+  const isMicrosoft = providerKey.toLowerCase() === "microsoft";
 
   const redirectUrl = useMemo(() => {
-    const sharedHost = runtimeEnv.sharedHostUrl() || (typeof window !== 'undefined' ? window.location.origin : '');
+    const sharedHost = runtimeEnv.sharedHostUrl() || (typeof window !== "undefined" ? window.location.origin : "");
     return `${sharedHost}/sas/login/oauth2/code/${providerKey.toLowerCase()}`;
   }, [providerKey]);
 
@@ -79,16 +79,16 @@ export function SsoConfigModal({
     try {
       await navigator.clipboard.writeText(redirectUrl);
       toast({
-        title: 'Copied',
-        description: 'Redirect URL copied to clipboard',
-        variant: 'success',
+        title: "Copied",
+        description: "Redirect URL copied to clipboard",
+        variant: "success",
         duration: 2000,
       });
     } catch (_error) {
       toast({
-        title: 'Copy Failed',
-        description: 'Unable to copy redirect URL',
-        variant: 'destructive',
+        title: "Copy Failed",
+        description: "Unable to copy redirect URL",
+        variant: "destructive",
         duration: 3000,
       });
     }
@@ -96,9 +96,9 @@ export function SsoConfigModal({
 
   useEffect(() => {
     if (isOpen) {
-      setClientId(initialClientId || '');
-      setClientSecret(initialClientSecret || '');
-      setMsTenantId(initialMsTenantId || '');
+      setClientId(initialClientId || "");
+      setClientSecret(initialClientSecret || "");
+      setMsTenantId(initialMsTenantId || "");
       setIsSingleTenant(!!initialMsTenantId);
       setAutoProvisionUsers(initialAutoProvisionUsers || false);
       setAllowedDomains(initialAllowedDomains || []);
@@ -150,16 +150,16 @@ export function SsoConfigModal({
       }
       await onSubmit(data);
       toast({
-        title: 'SSO Enabled',
+        title: "SSO Enabled",
         description: `${providerDisplayName} configuration saved and enabled`,
-        variant: 'success',
+        variant: "success",
       });
       onClose();
     } catch (err) {
       toast({
-        title: 'Update failed',
-        description: err instanceof Error ? err.message : 'Failed to update SSO configuration',
-        variant: 'destructive',
+        title: "Update failed",
+        description: err instanceof Error ? err.message : "Failed to update SSO configuration",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -172,16 +172,16 @@ export function SsoConfigModal({
     try {
       await onDisable();
       toast({
-        title: 'SSO Disabled',
+        title: "SSO Disabled",
         description: `${providerDisplayName} has been disabled`,
-        variant: 'success',
+        variant: "success",
       });
       onClose();
     } catch (err) {
       toast({
-        title: 'Action failed',
-        description: err instanceof Error ? err.message : 'Failed to disable SSO',
-        variant: 'destructive',
+        title: "Action failed",
+        description: err instanceof Error ? err.message : "Failed to disable SSO",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -192,7 +192,7 @@ export function SsoConfigModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      className={isDomainAllowlistEnabled ? 'max-w-5xl w-full' : 'max-w-2xl w-full'}
+      className={isDomainAllowlistEnabled ? "max-w-5xl w-full" : "max-w-2xl w-full"}
     >
       <ModalHeader>
         <div className="flex items-center gap-3">
@@ -204,7 +204,7 @@ export function SsoConfigModal({
 
       {/* 2-Column Layout when domain allowlist is enabled, single column otherwise */}
       <div className="px-6 py-4">
-        <div className={isDomainAllowlistEnabled ? 'grid grid-cols-1 lg:grid-cols-2 gap-8' : ''}>
+        <div className={isDomainAllowlistEnabled ? "grid grid-cols-1 lg:grid-cols-2 gap-8" : ""}>
           {/* Left Column: SSO Configuration */}
           <div className="space-y-6">
             {/* Redirect URL Section */}
@@ -239,7 +239,7 @@ export function SsoConfigModal({
               <Label>Client Secret *</Label>
               <div className="relative">
                 <Input
-                  type={showSecret ? 'text' : 'password'}
+                  type={showSecret ? "text" : "password"}
                   placeholder="Enter OAuth Client Secret"
                   value={clientSecret}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
@@ -264,7 +264,7 @@ export function SsoConfigModal({
                   onCheckedChange={checked => {
                     setIsSingleTenant(checked);
                     if (!checked) {
-                      setMsTenantId('');
+                      setMsTenantId("");
                     }
                   }}
                   title="Single Tenant"
@@ -326,7 +326,7 @@ export function SsoConfigModal({
       <ModalFooter className="justify-between">
         {isEnabled && onDisable ? (
           <Button onClick={handleDisable} variant="outline" className="border-error text-error" disabled={isSubmitting}>
-            {isSubmitting ? 'Disabling...' : 'Disable'}
+            {isSubmitting ? "Disabling..." : "Disable"}
           </Button>
         ) : (
           <div />
@@ -336,7 +336,7 @@ export function SsoConfigModal({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save & Enable'}
+            {isSubmitting ? "Saving..." : "Save & Enable"}
           </Button>
         </div>
       </ModalFooter>

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useMutation } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { API_ENDPOINTS, APPROVAL_STATUS, type ApprovalStatus } from '../constants';
+import { useMutation } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api-client";
+import { API_ENDPOINTS, APPROVAL_STATUS, type ApprovalStatus } from "../constants";
 
 // ============ Types ============
 
@@ -18,7 +18,7 @@ async function approveRequest(requestId: string, approve: boolean): Promise<void
     approve,
   });
   if (!res.ok) {
-    throw new Error(res.error || `Failed to ${approve ? 'approve' : 'reject'} request (${res.status})`);
+    throw new Error(res.error || `Failed to ${approve ? "approve" : "reject"} request (${res.status})`);
   }
 }
 

@@ -1,13 +1,13 @@
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect } from 'react';
-import { type FieldErrors, useForm } from 'react-hook-form';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
-import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../types/edit-script.types';
-import type { ScriptDetails } from './use-script-details';
-import { scriptDetailsQueryKeys } from './use-script-details';
-import { scriptsQueryKeys } from './use-scripts';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect } from "react";
+import { type FieldErrors, useForm } from "react-hook-form";
+import { tacticalApiClient } from "@/lib/tactical-api-client";
+import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from "../types/edit-script.types";
+import type { ScriptDetails } from "./use-script-details";
+import { scriptDetailsQueryKeys } from "./use-script-details";
+import { scriptsQueryKeys } from "./use-scripts";
 
 interface UseEditScriptFormOptions {
   scriptId: string | null;
@@ -35,7 +35,7 @@ interface ScriptPayload {
 async function createScriptApi(payload: ScriptPayload) {
   const response = await tacticalApiClient.createScript(payload);
   if (!response.ok) {
-    throw new Error(response.error || 'Failed to create script');
+    throw new Error(response.error || "Failed to create script");
   }
   return response.data;
 }
@@ -43,7 +43,7 @@ async function createScriptApi(payload: ScriptPayload) {
 async function updateScriptApi(params: { id: string; payload: ScriptPayload }) {
   const response = await tacticalApiClient.updateScript(params.id, params.payload);
   if (!response.ok) {
-    throw new Error(String(response.data) || response.error || 'Failed to update script');
+    throw new Error(String(response.data) || response.error || "Failed to update script");
   }
   return response.data;
 }
@@ -69,15 +69,15 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         default_timeout: scriptDetails.default_timeout,
         args:
           scriptDetails.args?.map((arg: string, i: number) => {
-            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-            return { id: String(i), key: key || '', value: rest.join('=') || '' };
+            const [key, ...rest] = arg.includes("=") ? arg.split("=") : [arg];
+            return { id: String(i), key: key || "", value: rest.join("=") || "" };
           }) || [],
-        script_body: scriptDetails.script_body || '',
+        script_body: scriptDetails.script_body || "",
         run_as_user: scriptDetails.run_as_user,
         env_vars:
           scriptDetails.env_vars?.map((envVar: string, i: number) => {
-            const [name, ...rest] = envVar.split('=');
-            return { id: String(i), key: name || '', value: rest.join('=') || '' };
+            const [name, ...rest] = envVar.split("=");
+            return { id: String(i), key: name || "", value: rest.join("=") || "" };
           }) || [],
         description: scriptDetails.description,
         supported_platforms: scriptDetails.supported_platforms || [],
@@ -90,13 +90,13 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
     mutationFn: createScriptApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: scriptsQueryKeys.all });
-      toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
+      toast({ title: "Success", description: "Script created successfully", variant: "success" });
     },
     onError: err => {
       toast({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to create script',
-        variant: 'destructive',
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to create script",
+        variant: "destructive",
       });
     },
   });
@@ -108,21 +108,21 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
       if (scriptId) {
         queryClient.invalidateQueries({ queryKey: scriptDetailsQueryKeys.detail(scriptId) });
       }
-      toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
+      toast({ title: "Success", description: "Script updated successfully", variant: "success" });
     },
     onError: err => {
       toast({
-        title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to update script',
-        variant: 'destructive',
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to update script",
+        variant: "destructive",
       });
     },
   });
 
   const onSubmit = useCallback(
     (data: EditScriptFormData) => {
-      const filteredArgs = data.args.filter(arg => arg.key.trim() !== '');
-      const filteredEnvVars = data.env_vars.filter(envVar => envVar.key.trim() !== '');
+      const filteredArgs = data.args.filter(arg => arg.key.trim() !== "");
+      const filteredEnvVars = data.env_vars.filter(envVar => envVar.key.trim() !== "");
 
       const payload = {
         name: data.name,
@@ -153,9 +153,9 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         .filter(Boolean);
 
       toast({
-        title: 'Validation Error',
-        description: messages.join(', '),
-        variant: 'destructive',
+        title: "Validation Error",
+        description: messages.join(", "),
+        variant: "destructive",
       });
     },
     [toast],

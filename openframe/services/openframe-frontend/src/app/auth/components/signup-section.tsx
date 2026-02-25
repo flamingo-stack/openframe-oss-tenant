@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useState } from 'react';
-import { useRegistrationProviders } from '@/app/auth/hooks/use-registration-providers';
-import { isSaasSharedMode } from '@/lib/app-mode';
+import { AuthProvidersList } from "@flamingo-stack/openframe-frontend-core/components/features";
+import { Button, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useState } from "react";
+import { useRegistrationProviders } from "@/app/auth/hooks/use-registration-providers";
+import { isSaasSharedMode } from "@/lib/app-mode";
 
 interface RegisterRequest {
   tenantName: string;
@@ -43,21 +43,21 @@ export function AuthSignupSection({
   const isSaasShared = isSaasSharedMode();
   const { providers: ssoProviders, loading: loadingProviders } = useRegistrationProviders();
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState(prefillEmail || '');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [, setSignupMethod] = useState<'form' | 'sso'>('form');
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState(prefillEmail || "");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [, setSignupMethod] = useState<"form" | "sso">("form");
 
   const displayDomain = isSaasShared ? domain : domain;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmailValid = emailRegex.test(email.trim());
 
-  const getTitle = () => 'Create Organization';
-  const getSubtitle = () => 'Start your journey with OpenFrame';
-  const getButtonText = () => (isSaasShared ? 'Start Free Trial' : 'Create Organization');
+  const getTitle = () => "Create Organization";
+  const getSubtitle = () => "Start your journey with OpenFrame";
+  const getButtonText = () => (isSaasShared ? "Start Free Trial" : "Create Organization");
 
   const handleSubmit = () => {
     if (!firstName.trim() || !lastName.trim() || !isEmailValid || !password || password !== confirmPassword) {
@@ -78,13 +78,13 @@ export function AuthSignupSection({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isLoading && isFormValid) {
+    if (e.key === "Enter" && !isLoading && isFormValid) {
       handleSubmit();
     }
   };
 
   const handleSsoClick = async (provider: string) => {
-    setSignupMethod('sso');
+    setSignupMethod("sso");
     if (onSso) {
       onSso(provider);
     }
@@ -125,7 +125,7 @@ export function AuthSignupSection({
             </div>
           )}
 
-          <div className="space-y-6" onClick={() => setSignupMethod('form')}>
+          <div className="space-y-6" onClick={() => setSignupMethod("form")}>
             {/* Organization details (disabled) */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 flex flex-col gap-1">
@@ -196,7 +196,7 @@ export function AuthSignupSection({
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={'Choose a Strong Password'}
+                  placeholder={"Choose a Strong Password"}
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />

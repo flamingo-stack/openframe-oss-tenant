@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
-import type { Device } from '../../devices/types/device.types';
-import { getDevicePrimaryId } from '../utils/device-helpers';
+import { useCallback, useState } from "react";
+import type { Device } from "../../devices/types/device.types";
+import { getDevicePrimaryId } from "../utils/device-helpers";
 
 export function useDeviceSelection() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

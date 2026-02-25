@@ -37,7 +37,7 @@ export class FileBinaryProtocol {
 
   private readHeader(headerBytes: Uint8Array): { length: number; final: boolean } {
     if (headerBytes.length < 4) {
-      throw new Error('Incomplete binary header');
+      throw new Error("Incomplete binary header");
     }
 
     // Original protocol: bits 1-31 = length, bit 0 = final
@@ -60,7 +60,7 @@ export class FileBinaryProtocol {
     return (
       data instanceof ArrayBuffer ||
       data instanceof Uint8Array ||
-      (data && data.constructor && data.constructor.name === 'ArrayBuffer')
+      (data && data.constructor && data.constructor.name === "ArrayBuffer")
     );
   }
 }

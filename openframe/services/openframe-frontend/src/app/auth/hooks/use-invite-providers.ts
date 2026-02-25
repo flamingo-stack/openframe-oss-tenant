@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { authApiClient } from '@/lib/auth-api-client';
+import { useEffect, useState } from "react";
+import { authApiClient } from "@/lib/auth-api-client";
 
 export interface SsoProvider {
   provider: string;
@@ -39,14 +39,14 @@ export function useInviteProviders(invitationId: string | null) {
           setProviders(formattedProviders);
         } else {
           setProviders([]);
-          const errorMessage = (response.data as any)?.message || response.error || 'Failed to fetch providers';
+          const errorMessage = (response.data as any)?.message || response.error || "Failed to fetch providers";
           console.log({ response });
           setError(errorMessage);
         }
       } catch (err) {
-        console.error('Failed to fetch SSO providers for invitation:', err);
+        console.error("Failed to fetch SSO providers for invitation:", err);
         setProviders([]);
-        setError(err instanceof Error ? err.message : 'Failed to fetch providers');
+        setError(err instanceof Error ? err.message : "Failed to fetch providers");
       } finally {
         setLoading(false);
       }

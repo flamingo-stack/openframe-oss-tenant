@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { parseChunkToAction } from '@flamingo-stack/openframe-frontend-core';
-import { useCallback } from 'react';
-import { CHAT_TYPE, MESSAGE_TYPE, type NatsMessageType, OWNER_TYPE } from '../constants';
-import type { Message } from '../types/dialog.types';
+import { parseChunkToAction } from "@flamingo-stack/openframe-frontend-core";
+import { useCallback } from "react";
+import { CHAT_TYPE, MESSAGE_TYPE, type NatsMessageType, OWNER_TYPE } from "../constants";
+import type { Message } from "../types/dialog.types";
 
 interface UseDialogRealtimeProcessorOptions {
   dialogId: string | null;
@@ -17,21 +17,21 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
   const { dialogId, onStreamStart, onStreamEnd, onMessageAdd, onError } = options;
 
   const processChunk = useCallback(
-    (payload: unknown, messageType: NatsMessageType = 'message') => {
+    (payload: unknown, messageType: NatsMessageType = "message") => {
       if (!dialogId) return;
 
       const asAny = payload as any;
       const nowIso = new Date().toISOString();
-      const isAdmin = messageType === 'admin-message';
-      const chatType = isAdmin ? 'ADMIN_AI_CHAT' : 'CLIENT_CHAT';
+      const isAdmin = messageType === "admin-message";
+      const chatType = isAdmin ? "ADMIN_AI_CHAT" : "CLIENT_CHAT";
 
       const ADMIN_CHAT_TYPE = CHAT_TYPE.ADMIN;
 
       const isMessageObject =
         asAny &&
-        typeof asAny === 'object' &&
-        typeof asAny.id === 'string' &&
-        typeof asAny.dialogId === 'string' &&
+        typeof asAny === "object" &&
+        typeof asAny.id === "string" &&
+        typeof asAny.dialogId === "string" &&
         asAny.messageData != null &&
         asAny.owner != null;
 
@@ -47,17 +47,17 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
       const action = parseChunkToAction(payload);
       if (!action) return;
 
-      if (action.action === 'message_start') {
+      if (action.action === "message_start") {
         onStreamStart(isAdmin);
         return;
       }
 
-      if (action.action === 'message_end') {
+      if (action.action === "message_end") {
         onStreamEnd(isAdmin);
         return;
       }
 
-      if (action.action === 'error') {
+      if (action.action === "error") {
         onError(action.error, isAdmin);
       }
 
@@ -65,40 +65,40 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
       const createBaseMessage = (isUserMessage: boolean): Message => {
         let owner: any;
         if (isUserMessage) {
-          owner = isAdmin ? { type: 'ADMIN' as const, userId: '' } : { type: 'CLIENT' as const, machineId: '' };
+          owner = isAdmin ? { type: "ADMIN" as const, userId: "" } : { type: "CLIENT" as const, machineId: "" };
         } else {
-          owner = { type: 'ASSISTANT' as const, model: '' };
+          owner = { type: "ASSISTANT" as const, model: "" };
         }
 
         return {
           id,
-          dialogId: dialogId || '',
+          dialogId: dialogId || "",
           chatType: chatType as any,
-          dialogMode: 'DEFAULT',
+          dialogMode: "DEFAULT",
           createdAt: nowIso,
           owner: owner as any,
-          messageData: { type: 'TEXT', text: '' } as any,
+          messageData: { type: "TEXT", text: "" } as any,
         };
       };
 
       let message: Message | null = null;
 
       switch (action.action) {
-        case 'message_request':
+        case "message_request":
           message = {
             ...createBaseMessage(true),
-            messageData: { type: 'TEXT', text: action.text } as any,
+            messageData: { type: "TEXT", text: action.text } as any,
           };
           break;
 
-        case 'text':
+        case "text":
           message = {
             ...createBaseMessage(false),
-            messageData: { type: 'TEXT', text: action.text } as any,
+            messageData: { type: "TEXT", text: action.text } as any,
           };
           break;
 
-        case 'tool_execution': {
+        case "tool_execution": {
           const toolData = action.segment.data;
           message = {
             ...createBaseMessage(false),
@@ -114,11 +114,11 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
           break;
         }
 
-        case 'approval_request':
+        case "approval_request":
           message = {
             ...createBaseMessage(false),
             messageData: {
-              type: 'APPROVAL_REQUEST',
+              type: "APPROVAL_REQUEST",
               approvalType: action.approvalType,
               command: action.command,
               approvalRequestId: action.requestId,
@@ -127,11 +127,11 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
           };
           break;
 
-        case 'approval_result':
+        case "approval_result":
           message = {
             ...createBaseMessage(false),
             messageData: {
-              type: 'APPROVAL_RESULT',
+              type: "APPROVAL_RESULT",
               approvalRequestId: action.requestId,
               approved: action.approved,
               approvalType: action.approvalType,
@@ -139,12 +139,12 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
           };
           break;
 
-        case 'error': {
-          const errorDetails = 'details' in action ? action.details : undefined;
+        case "error": {
+          const errorDetails = "details" in action ? action.details : undefined;
           message = {
             ...createBaseMessage(false),
             messageData: {
-              type: 'ERROR',
+              type: "ERROR",
               error: action.error,
               details: errorDetails,
             } as any,

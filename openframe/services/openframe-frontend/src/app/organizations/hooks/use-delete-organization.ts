@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useCallback } from "react";
+import { apiClient } from "@/lib/api-client";
 
 export function useDeleteOrganization() {
   const deleteOrganization = useCallback(async (id: string) => {

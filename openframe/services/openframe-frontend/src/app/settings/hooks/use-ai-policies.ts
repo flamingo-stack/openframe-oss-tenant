@@ -1,14 +1,14 @@
-import type { ApprovalLevel } from '@flamingo-stack/openframe-frontend-core';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
+import type { ApprovalLevel } from "@flamingo-stack/openframe-frontend-core";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { apiClient } from "@/lib/api-client";
 
 import {
   CUSTOM_CREATION_TEMPLATE_ID,
   type CustomPolicyRequest,
   type PolicyTemplateDetail,
   type PolicyTemplateSummary,
-} from '../types/ai-policies';
+} from "../types/ai-policies";
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -27,8 +27,8 @@ export function useAiPolicies() {
 
   const fetchTemplates = useCallback(async () => {
     try {
-      const res = await apiClient.get<PolicyTemplateSummary[]>('/chat/api/v1/policies');
-      if (!res.ok) throw new Error(res.error || 'Failed to fetch policy templates');
+      const res = await apiClient.get<PolicyTemplateSummary[]>("/chat/api/v1/policies");
+      if (!res.ok) throw new Error(res.error || "Failed to fetch policy templates");
 
       const list = res.data || [];
       setTemplates(list);
@@ -43,9 +43,9 @@ export function useAiPolicies() {
       });
     } catch (error) {
       toast({
-        title: 'Failed to Load AI Policies',
-        description: getErrorMessage(error, 'Unable to load policy templates'),
-        variant: 'destructive',
+        title: "Failed to Load AI Policies",
+        description: getErrorMessage(error, "Unable to load policy templates"),
+        variant: "destructive",
         duration: 5000,
       });
       throw error;
@@ -57,14 +57,14 @@ export function useAiPolicies() {
       setIsLoadingTemplate(true);
       try {
         const res = await apiClient.get<PolicyTemplateDetail>(`/chat/api/v1/policies/${encodeURIComponent(policyId)}`);
-        if (!res.ok) throw new Error(res.error || 'Failed to fetch policy template');
+        if (!res.ok) throw new Error(res.error || "Failed to fetch policy template");
         setSelectedTemplate(res.data || null);
         return res.data || null;
       } catch (error) {
         toast({
-          title: 'Failed to Load Policy',
-          description: getErrorMessage(error, 'Unable to load policy'),
-          variant: 'destructive',
+          title: "Failed to Load Policy",
+          description: getErrorMessage(error, "Unable to load policy"),
+          variant: "destructive",
           duration: 5000,
         });
         throw error;
@@ -80,12 +80,12 @@ export function useAiPolicies() {
       setIsActivating(true);
       try {
         const res = await apiClient.post(`/chat/api/v1/policies/${encodeURIComponent(policyId)}/activate`);
-        if (!res.ok) throw new Error(res.error || 'Failed to activate policy template');
+        if (!res.ok) throw new Error(res.error || "Failed to activate policy template");
 
         toast({
-          title: 'Guardrails Saved',
-          description: 'Policy template activated successfully',
-          variant: 'success',
+          title: "Guardrails Saved",
+          description: "Policy template activated successfully",
+          variant: "success",
           duration: 4000,
         });
 
@@ -93,9 +93,9 @@ export function useAiPolicies() {
         await fetchTemplate(policyId);
       } catch (error) {
         toast({
-          title: 'Save Failed',
-          description: getErrorMessage(error, 'Unable to activate policy template'),
-          variant: 'destructive',
+          title: "Save Failed",
+          description: getErrorMessage(error, "Unable to activate policy template"),
+          variant: "destructive",
           duration: 5000,
         });
         throw error;
@@ -155,24 +155,24 @@ export function useAiPolicies() {
           overrides,
         };
 
-        const res = await apiClient.put('/chat/api/v1/policies/custom', requestBody);
-        if (!res.ok) throw new Error(res.error || 'Failed to save custom policy');
+        const res = await apiClient.put("/chat/api/v1/policies/custom", requestBody);
+        if (!res.ok) throw new Error(res.error || "Failed to save custom policy");
 
         toast({
-          title: 'Custom Policy Saved',
-          description: 'Your custom policy has been created successfully',
-          variant: 'success',
+          title: "Custom Policy Saved",
+          description: "Your custom policy has been created successfully",
+          variant: "success",
           duration: 4000,
         });
 
         await fetchTemplates();
 
-        return 'custom';
+        return "custom";
       } catch (error) {
         toast({
-          title: 'Save Failed',
-          description: getErrorMessage(error, 'Unable to save custom policy'),
-          variant: 'destructive',
+          title: "Save Failed",
+          description: getErrorMessage(error, "Unable to save custom policy"),
+          variant: "destructive",
           duration: 5000,
         });
         throw error;

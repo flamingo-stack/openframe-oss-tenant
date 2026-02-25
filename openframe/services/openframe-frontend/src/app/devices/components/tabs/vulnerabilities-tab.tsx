@@ -1,16 +1,9 @@
-'use client';
+"use client";
 
-import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
-import {
-  Badge,
-  CveLink,
-  SoftwareInfo,
-  SoftwareSourceBadge,
-  StatusTag,
-  Table,
-} from '@flamingo-stack/openframe-frontend-core';
-import React, { useCallback, useMemo } from 'react';
-import { Device, Software, Vulnerability } from '../../types/device.types';
+import type { SoftwareSource, TableColumn } from "@flamingo-stack/openframe-frontend-core";
+import { Badge, CveLink, SoftwareInfo, SoftwareSourceBadge, Table, Tag } from "@flamingo-stack/openframe-frontend-core";
+import React, { useCallback, useMemo } from "react";
+import type { Device, Software, Vulnerability } from "../../types/device.types";
 
 interface VulnerabilitiesTabProps {
   device: Device | null;
@@ -20,7 +13,7 @@ interface VulnerabilityWithSoftware extends Vulnerability {
   software_name: string;
   software_version: string;
   software_vendor?: string;
-  software_source: Software['source'];
+  software_source: Software["source"];
   unique_key: string; // Unique identifier for React keys
 }
 
@@ -49,78 +42,78 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
   // Format date for display
   const formatDate = useCallback((dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   }, []);
 
   // Get severity from CVE (simple heuristic based on year and CVE format)
-  const getSeverity = useCallback((_cve: string): 'critical' | 'high' | 'medium' | 'low' => {
+  const getSeverity = useCallback((_cve: string): "critical" | "high" | "medium" | "low" => {
     // This is a simplified heuristic - in production you'd fetch CVSS scores
     // For now, we'll use a simple rule: newer CVEs are more severe
-    const year = parseInt(_cve.match(/CVE-(\d{4})/)?.[1] || '0');
+    const year = parseInt(_cve.match(/CVE-(\d{4})/)?.[1] || "0");
     const currentYear = new Date().getFullYear();
 
-    if (currentYear - year === 0) return 'critical';
-    if (currentYear - year <= 1) return 'high';
-    if (currentYear - year <= 3) return 'medium';
-    return 'low';
+    if (currentYear - year === 0) return "critical";
+    if (currentYear - year <= 1) return "high";
+    if (currentYear - year <= 3) return "medium";
+    return "low";
   }, []);
 
   // Define table columns
   const columns: TableColumn<VulnerabilityWithSoftware>[] = useMemo(
     () => [
       {
-        key: 'cve',
-        label: 'CVE ID',
-        width: 'w-[15%]',
+        key: "cve",
+        label: "CVE ID",
+        width: "w-[15%]",
         sortable: true,
         renderCell: (item: VulnerabilityWithSoftware) => <CveLink cveId={item.cve} />,
       },
       {
-        key: 'software_name',
-        label: 'SOFTWARE',
-        width: 'w-[30%]',
+        key: "software_name",
+        label: "SOFTWARE",
+        width: "w-[30%]",
         sortable: true,
         renderCell: (item: VulnerabilityWithSoftware) => (
           <SoftwareInfo name={item.software_name} vendor={item.software_vendor} version={item.software_version} />
         ),
       },
       {
-        key: 'software_source',
-        label: 'SOURCE',
-        width: 'w-[15%]',
+        key: "software_source",
+        label: "SOURCE",
+        width: "w-[15%]",
         sortable: true,
         renderCell: (item: VulnerabilityWithSoftware) => (
           <SoftwareSourceBadge source={item.software_source as SoftwareSource} />
         ),
       },
       {
-        key: 'severity',
-        label: 'SEVERITY',
-        width: 'w-[15%]',
+        key: "severity",
+        label: "SEVERITY",
+        width: "w-[15%]",
         sortable: true,
         sortValue: (item: VulnerabilityWithSoftware) => {
           const severity = getSeverity(item.cve);
-          return severity === 'critical' ? 4 : severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
+          return severity === "critical" ? 4 : severity === "high" ? 3 : severity === "medium" ? 2 : 1;
         },
         renderCell: (item: VulnerabilityWithSoftware) => {
           const severity = getSeverity(item.cve);
           const variantMap = {
-            critical: 'critical' as const,
-            high: 'error' as const,
-            medium: 'warning' as const,
-            low: 'info' as const,
+            critical: "critical" as const,
+            high: "error" as const,
+            medium: "warning" as const,
+            low: "grey" as const,
           };
-          return <StatusTag label={severity.toUpperCase()} variant={variantMap[severity]} />;
+          return <Tag label={severity.toUpperCase()} variant={variantMap[severity]} />;
         },
       },
       {
-        key: 'created_at',
-        label: 'DISCOVERED',
-        width: 'w-[25%]',
+        key: "created_at",
+        label: "DISCOVERED",
+        width: "w-[25%]",
         sortable: true,
         renderCell: (item: VulnerabilityWithSoftware) => (
           <div className="font-['DM_Sans'] font-medium text-ods-text-primary">{formatDate(item.created_at)}</div>
@@ -174,7 +167,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
           <div className="flex items-center gap-2">
             <span
               className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--ods-attention-red-error)' }}
+              style={{ color: "var(--ods-attention-red-error)" }}
             >
               CRITICAL
             </span>
@@ -187,7 +180,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
           <div className="flex items-center gap-2">
             <span
               className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--ods-attention-red-error)' }}
+              style={{ color: "var(--ods-attention-red-error)" }}
             >
               HIGH
             </span>
@@ -200,7 +193,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
           <div className="flex items-center gap-2">
             <span
               className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--color-warning)' }}
+              style={{ color: "var(--color-warning)" }}
             >
               MEDIUM
             </span>

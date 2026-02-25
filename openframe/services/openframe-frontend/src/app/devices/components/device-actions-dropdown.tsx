@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import type { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core';
+import type { ActionsMenuGroup } from "@flamingo-stack/openframe-frontend-core";
 import {
   ActionsMenu,
   AlertDialog,
@@ -19,8 +19,8 @@ import {
   ModalHeader,
   ModalTitle,
   normalizeOSType,
-} from '@flamingo-stack/openframe-frontend-core';
-import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
+} from "@flamingo-stack/openframe-frontend-core";
+import { CommandBox } from "@flamingo-stack/openframe-frontend-core/components/features";
 import {
   ArchiveIcon,
   CmdIcon,
@@ -28,21 +28,21 @@ import {
   RemoteControlIcon,
   ScriptIcon,
   ShellIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Copy, Folder, MoreVertical, PackageX, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import React, { useCallback, useMemo, useState } from 'react';
-import { useDeviceActions } from '../hooks/use-device-actions';
-import { useReleaseVersion } from '../hooks/use-release-version';
-import type { Device } from '../types/device.types';
-import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config';
-import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils';
+} from "@flamingo-stack/openframe-frontend-core/components/icons";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { Copy, Folder, MoreVertical, PackageX, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useMemo, useState } from "react";
+import { useDeviceActions } from "../hooks/use-device-actions";
+import { useReleaseVersion } from "../hooks/use-release-version";
+import type { Device } from "../types/device.types";
+import { getDeviceActionButtons, toActionsMenuItem } from "../utils/device-action-config";
+import { getDeviceActionAvailability } from "../utils/device-action-utils";
+import { buildUninstallCommand, normalizeDevicePlatform } from "../utils/device-command-utils";
 
 interface DeviceActionsDropdownProps {
   device: Device;
-  context: 'table' | 'detail';
+  context: "table" | "detail";
   onActionComplete?: () => void;
   // Handlers for actions (used to integrate with parent component modals)
   onRunScript?: () => void;
@@ -59,7 +59,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen });
 
-  const deviceName = device.displayName || device.hostname || 'this device';
+  const deviceName = device.displayName || device.hostname || "this device";
   const deviceId = device.machineId || device.id;
 
   // Get device platform for uninstall command
@@ -69,7 +69,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   );
 
   const uninstallCommand = useMemo(() => {
-    if (!dropdownOpen && !showUninstallDialog) return '';
+    if (!dropdownOpen && !showUninstallDialog) return "";
     return buildUninstallCommand({ platform: devicePlatform, releaseVersion });
   }, [devicePlatform, releaseVersion, dropdownOpen, showUninstallDialog]);
 
@@ -78,14 +78,14 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     try {
       await navigator.clipboard.writeText(uninstallCommand);
       toast({
-        title: 'Command copied',
-        description: 'Uninstall command copied to clipboard',
+        title: "Command copied",
+        description: "Uninstall command copied to clipboard",
       });
     } catch {
       toast({
-        title: 'Copy failed',
-        description: 'Could not copy command to clipboard',
-        variant: 'destructive',
+        title: "Copy failed",
+        description: "Could not copy command to clipboard",
+        variant: "destructive",
       });
     }
   }, [uninstallCommand, toast]);
@@ -96,7 +96,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   // Check if Windows for shell type selection
   const isWindows = useMemo(() => {
     const osType = device.platform || device.osType || device.operating_system;
-    return normalizeOSType(osType) === 'WINDOWS';
+    return normalizeOSType(osType) === "WINDOWS";
   }, [device.platform, device.osType, device.operating_system]);
 
   // Action handlers - always use machineId for URL routing
@@ -119,7 +119,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   }, [deviceId, onRunScript, router]);
 
   const handleRemoteShell = useCallback(
-    (type: 'cmd' | 'powershell' | 'bash') => {
+    (type: "cmd" | "powershell" | "bash") => {
       setDropdownOpen(false);
       if (actionAvailability.meshcentralAgentId) {
         router.push(`/devices/details/${deviceId}/remote-shell?shellType=${type}`);
@@ -139,9 +139,9 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     const success = await archiveDevice(deviceId, deviceName);
     setShowArchiveConfirm(false);
     if (success) {
-      if (context === 'detail') {
+      if (context === "detail") {
         // From device detail page - navigate back to devices list
-        router.push('/devices');
+        router.push("/devices");
       } else {
         // From table - just refresh the list, no navigation
         onActionComplete?.();
@@ -153,9 +153,9 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     const success = await deleteDevice(deviceId, deviceName);
     setShowDeleteConfirm(false);
     if (success) {
-      if (context === 'detail') {
+      if (context === "detail") {
         // From device detail page - navigate back to devices list
-        router.push('/devices');
+        router.push("/devices");
       } else {
         // From table - just refresh the list, no navigation
         onActionComplete?.();
@@ -176,12 +176,12 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     // In table context, include all remote actions
     // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
-    if (context === 'table') {
+    if (context === "table") {
       // Use unified config for action buttons
       actionItems.push(
         toActionsMenuItem(actionButtons.remoteShell, deviceId, {
           onShellSelect: handleRemoteShell,
-          onClick: () => handleRemoteShell('bash'),
+          onClick: () => handleRemoteShell("bash"),
         }),
       );
 
@@ -200,8 +200,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     // Run Script is always in the dropdown
     actionItems.push({
-      id: 'run-script',
-      label: 'Run Script',
+      id: "run-script",
+      label: "Run Script",
       icon: <ScriptIcon className="w-6 h-6" />,
       disabled: !actionAvailability.runScriptEnabled,
       onClick: handleRunScript,
@@ -219,8 +219,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     // Uninstall Device - always available (shows command to run on device)
     destructiveItems.push({
-      id: 'uninstall',
-      label: 'Uninstall Device',
+      id: "uninstall",
+      label: "Uninstall Device",
       icon: <PackageX className="w-6 h-6" />,
       onClick: () => {
         setDropdownOpen(false);
@@ -230,8 +230,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     if (actionAvailability.archiveEnabled) {
       destructiveItems.push({
-        id: 'archive',
-        label: 'Archive Device',
+        id: "archive",
+        label: "Archive Device",
         icon: <ArchiveIcon className="w-6 h-6" />,
         onClick: () => {
           setDropdownOpen(false);
@@ -242,8 +242,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
     if (actionAvailability.deleteEnabled) {
       destructiveItems.push({
-        id: 'delete',
-        label: 'Delete Device',
+        id: "delete",
+        label: "Delete Device",
         icon: <Trash2 className="w-6 h-6 text-ods-attention-red-error" />,
         onClick: () => {
           setDropdownOpen(false);
@@ -279,7 +279,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   }, []);
 
   const renderTrigger = () => {
-    if (context === 'table') {
+    if (context === "table") {
       return <Button variant="outline" centerIcon={<MoreVertical />} onClick={handleTriggerClick}></Button>;
     }
 
@@ -322,7 +322,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
               disabled={isArchiving}
               className="flex-1 bg-ods-accent text-black hover:bg-ods-accent/90 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
             >
-              {isArchiving ? 'Archiving...' : 'Archive Device'}
+              {isArchiving ? "Archiving..." : "Archive Device"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -336,7 +336,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
               Delete Device
             </AlertDialogTitle>
             <AlertDialogDescription className="font-['DM_Sans'] text-[16px] leading-[24px] text-ods-text-secondary mt-2">
-              Are you sure you want to delete{' '}
+              Are you sure you want to delete{" "}
               <span className="text-ods-attention-red-error font-medium">{deviceName}</span>? This action cannot be
               undone.
             </AlertDialogDescription>
@@ -350,7 +350,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
               disabled={isDeleting}
               className="flex-1 border border-error text-error bg-transparent hover:bg-error/10 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
             >
-              {isDeleting ? 'Deleting...' : 'Delete Device'}
+              {isDeleting ? "Deleting..." : "Delete Device"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -373,10 +373,10 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
           <CommandBox
             command={uninstallCommand}
             primaryAction={{
-              label: 'Copy Command',
+              label: "Copy Command",
               onClick: copyUninstallCommand,
               icon: <Copy className="w-5 h-5" />,
-              variant: 'primary',
+              variant: "primary",
             }}
           />
         </div>

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   InfoCard,
@@ -6,9 +6,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { Info as InfoIcon } from 'lucide-react';
-import React from 'react';
+} from "@flamingo-stack/openframe-frontend-core";
+import { Info as InfoIcon } from "lucide-react";
+import React from "react";
 
 interface SecurityTabProps {
   device: any;
@@ -41,7 +41,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'Encryption Status',
+                title: "Encryption Status",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -57,12 +57,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Disk Encryption',
-                    value: device.disk_encryption_enabled ? 'Enabled' : 'Disabled',
+                    label: "Disk Encryption",
+                    value: device.disk_encryption_enabled ? "Enabled" : "Disabled",
                   },
                   {
-                    label: 'Encryption Key',
-                    value: mdm.encryption_key_available ? 'Available' : 'Not Available',
+                    label: "Encryption Key",
+                    value: mdm.encryption_key_available ? "Available" : "Not Available",
                   },
                 ],
               }}
@@ -70,7 +70,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
             <InfoCard
               data={{
-                title: 'MDM Status',
+                title: "MDM Status",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -86,20 +86,20 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Enrollment',
-                    value: mdm.enrollment_status || 'Unknown',
+                    label: "Enrollment",
+                    value: mdm.enrollment_status || "Unknown",
                   },
                   {
-                    label: 'Device Status',
-                    value: mdm.device_status || 'Unknown',
+                    label: "Device Status",
+                    value: mdm.device_status || "Unknown",
                   },
                   {
-                    label: 'Pending Action',
-                    value: mdm.pending_action || 'None',
+                    label: "Pending Action",
+                    value: mdm.pending_action || "None",
                   },
                   {
-                    label: 'Connected to Fleet',
-                    value: mdm.connected_to_fleet ? 'Yes' : 'No',
+                    label: "Connected to Fleet",
+                    value: mdm.connected_to_fleet ? "Yes" : "No",
                   },
                 ],
               }}
@@ -107,7 +107,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
             <InfoCard
               data={{
-                title: 'System Security',
+                title: "System Security",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -123,12 +123,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Reboot Required',
-                    value: device.needs_reboot ? 'Yes' : 'No',
+                    label: "Reboot Required",
+                    value: device.needs_reboot ? "Yes" : "No",
                   },
                   {
-                    label: 'Maintenance Mode',
-                    value: device.maintenance_mode ? 'Active' : 'Inactive',
+                    label: "Maintenance Mode",
+                    value: device.maintenance_mode ? "Active" : "Inactive",
                   },
                 ],
               }}
@@ -145,7 +145,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'Active Users',
+                title: "Active Users",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -161,19 +161,19 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Current User',
-                    value: device.logged_in_username || 'None',
+                    label: "Current User",
+                    value: device.logged_in_username || "None",
                   },
                   {
-                    label: 'Last Logged In',
-                    value: device.last_logged_in_user || 'Unknown',
+                    label: "Last Logged In",
+                    value: device.last_logged_in_user || "Unknown",
                   },
                   {
-                    label: 'Root Users',
+                    label: "Root Users",
                     value: rootUserCount.toString(),
                   },
                   {
-                    label: 'Total Users',
+                    label: "Total Users",
                     value: users.length.toString(),
                   },
                 ],
@@ -191,7 +191,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'OpenFrame Agent',
+                title: "OpenFrame Agent",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -207,12 +207,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Version',
-                    value: device.version || device.agentVersion || 'Unknown',
+                    label: "Version",
+                    value: device.version || device.agentVersion || "Unknown",
                   },
                   {
-                    label: 'Last Seen',
-                    value: device.last_seen ? new Date(device.last_seen).toLocaleString() : 'Unknown',
+                    label: "Last Seen",
+                    value: device.last_seen ? new Date(device.last_seen).toLocaleString() : "Unknown",
                   },
                 ],
               }}
@@ -220,7 +220,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
             <InfoCard
               data={{
-                title: 'osquery',
+                title: "osquery",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -236,12 +236,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Version',
-                    value: device.osquery_version || 'Unknown',
+                    label: "Version",
+                    value: device.osquery_version || "Unknown",
                   },
                   {
-                    label: 'Status',
-                    value: device.osquery_version ? 'Active' : 'Inactive',
+                    label: "Status",
+                    value: device.osquery_version ? "Active" : "Inactive",
                   },
                 ],
               }}
@@ -249,7 +249,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
             <InfoCard
               data={{
-                title: 'Orbit Agent',
+                title: "Orbit Agent",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -265,12 +265,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Version',
-                    value: device.orbit_version || 'Unknown',
+                    label: "Version",
+                    value: device.orbit_version || "Unknown",
                   },
                   {
-                    label: 'Status',
-                    value: device.orbit_version && device.orbit_version !== 'unknown' ? 'Active' : 'Unknown',
+                    label: "Status",
+                    value: device.orbit_version && device.orbit_version !== "unknown" ? "Active" : "Unknown",
                   },
                 ],
               }}
@@ -287,7 +287,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'Network Interfaces',
+                title: "Network Interfaces",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -303,18 +303,18 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Primary IP',
-                    value: device.primary_ip || 'Unknown',
+                    label: "Primary IP",
+                    value: device.primary_ip || "Unknown",
                     copyable: true,
                   },
                   {
-                    label: 'Public IP',
-                    value: device.public_ip || 'Unknown',
+                    label: "Public IP",
+                    value: device.public_ip || "Unknown",
                     copyable: true,
                   },
                   {
-                    label: 'MAC Address',
-                    value: device.primary_mac || device.macAddress || 'Unknown',
+                    label: "MAC Address",
+                    value: device.primary_mac || device.macAddress || "Unknown",
                     copyable: true,
                   },
                 ],
@@ -332,7 +332,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'Alert Settings',
+                title: "Alert Settings",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -348,20 +348,20 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Email Alerts',
-                    value: device.overdue_email_alert ? 'Enabled' : 'Disabled',
+                    label: "Email Alerts",
+                    value: device.overdue_email_alert ? "Enabled" : "Disabled",
                   },
                   {
-                    label: 'Text Alerts',
-                    value: device.overdue_text_alert ? 'Enabled' : 'Disabled',
+                    label: "Text Alerts",
+                    value: device.overdue_text_alert ? "Enabled" : "Disabled",
                   },
                   {
-                    label: 'Dashboard Alerts',
-                    value: device.overdue_dashboard_alert ? 'Enabled' : 'Disabled',
+                    label: "Dashboard Alerts",
+                    value: device.overdue_dashboard_alert ? "Enabled" : "Disabled",
                   },
                   {
-                    label: 'Alert Template',
-                    value: device.alert_template || 'None',
+                    label: "Alert Template",
+                    value: device.alert_template || "None",
                   },
                 ],
               }}
@@ -369,7 +369,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
             <InfoCard
               data={{
-                title: 'Offline Thresholds',
+                title: "Offline Thresholds",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -385,12 +385,12 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Offline Time',
-                    value: device.offline_time ? `${device.offline_time} minutes` : 'Not set',
+                    label: "Offline Time",
+                    value: device.offline_time ? `${device.offline_time} minutes` : "Not set",
                   },
                   {
-                    label: 'Overdue Time',
-                    value: device.overdue_time ? `${device.overdue_time} minutes` : 'Not set',
+                    label: "Overdue Time",
+                    value: device.overdue_time ? `${device.overdue_time} minutes` : "Not set",
                   },
                 ],
               }}
@@ -407,7 +407,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: 'Boot Times',
+                title: "Boot Times",
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -423,16 +423,16 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 ),
                 items: [
                   {
-                    label: 'Boot Time',
-                    value: device.boot_time ? new Date(device.boot_time * 1000).toLocaleString() : 'Unknown',
+                    label: "Boot Time",
+                    value: device.boot_time ? new Date(device.boot_time * 1000).toLocaleString() : "Unknown",
                   },
                   {
-                    label: 'Last Restarted',
-                    value: device.last_restarted_at ? new Date(device.last_restarted_at).toLocaleString() : 'Unknown',
+                    label: "Last Restarted",
+                    value: device.last_restarted_at ? new Date(device.last_restarted_at).toLocaleString() : "Unknown",
                   },
                   {
-                    label: 'Uptime',
-                    value: device.uptime ? `${Math.floor(device.uptime / 1000000000 / 3600)} hours` : 'Unknown',
+                    label: "Uptime",
+                    value: device.uptime ? `${Math.floor(device.uptime / 1000000000 / 3600)} hours` : "Unknown",
                   },
                 ],
               }}

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
 
 /**
  * Auth loading skeleton that matches the actual auth page EXACTLY:
@@ -91,7 +91,7 @@ export default function AuthLoading() {
             <div className="bg-ods-bg border border-ods-border rounded-md w-full">
               {/* 3 BenefitCards with border-b between first two - auth-figma variant uses p-6, gap-4, text-[18px] leading-6 */}
               {[0, 1, 2].map(i => (
-                <div key={i} className={`p-6 ${i < 2 ? 'border-b border-ods-border' : ''}`}>
+                <div key={i} className={`p-6 ${i < 2 ? "border-b border-ods-border" : ""}`}>
                   <div className="flex gap-4 items-start">
                     <Skeleton className="h-6 w-6 flex-shrink-0 rounded" /> {/* Icon - w-6 h-6 */}
                     <div className="flex-1 space-y-2">

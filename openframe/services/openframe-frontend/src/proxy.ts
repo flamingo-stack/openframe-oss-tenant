@@ -1,31 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared';
+type AppMode = "oss-tenant" | "saas-tenant" | "saas-shared";
 
 function getMode(): AppMode {
   const raw = process.env.NEXT_PUBLIC_APP_MODE as AppMode | undefined;
-  return (raw as AppMode) || 'oss-tenant';
+  return (raw as AppMode) || "oss-tenant";
 }
 
 function isAllowed(pathname: string): boolean {
   const mode = getMode();
 
   if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/static') ||
-    pathname.startsWith('/favicon') ||
-    pathname.startsWith('/assets') ||
-    pathname.startsWith('/icons')
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/assets") ||
+    pathname.startsWith("/icons")
   ) {
     return true;
   }
 
-  if (mode === 'saas-shared') {
-    return pathname.startsWith('/auth') || pathname === '/';
+  if (mode === "saas-shared") {
+    return pathname.startsWith("/auth") || pathname === "/";
   }
 
-  if (mode === 'saas-tenant') {
-    return !pathname.startsWith('/auth');
+  if (mode === "saas-tenant") {
+    return !pathname.startsWith("/auth");
   }
 
   return true;
@@ -33,9 +33,9 @@ function isAllowed(pathname: string): boolean {
 
 function defaultRedirect(): string {
   const mode = getMode();
-  if (mode === 'saas-shared') return '/auth';
-  if (mode === 'saas-tenant') return '/dashboard';
-  return '/auth';
+  if (mode === "saas-shared") return "/auth";
+  if (mode === "saas-tenant") return "/dashboard";
+  return "/auth";
 }
 
 export function proxy(request: NextRequest) {
@@ -51,5 +51,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|static/|favicon|assets/|icons/).*)'],
+  matcher: ["/((?!_next/|static/|favicon|assets/|icons/).*)"],
 };

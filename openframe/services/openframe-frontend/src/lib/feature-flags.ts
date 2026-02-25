@@ -1,4 +1,4 @@
-import { runtimeEnv } from './runtime-config';
+import { runtimeEnv } from "./runtime-config";
 
 /**
  * Feature flags management

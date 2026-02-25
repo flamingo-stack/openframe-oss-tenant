@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useMemo, useState } from 'react';
-import { SettingsTabContent } from './settings-tab-content';
-import { getSettingsTabs, SettingsTabNavigation } from './tabs';
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { SettingsTabContent } from "./settings-tab-content";
+import { getSettingsTabs, SettingsTabNavigation } from "./tabs";
 
-type TabId = 'ai-settings' | 'architecture' | 'company-and-users' | 'api-keys' | 'sso-configuration' | 'profile';
+type TabId = "ai-settings" | "architecture" | "company-and-users" | "api-keys" | "sso-configuration" | "profile";
 
-const DEFAULT_TAB: TabId = 'ai-settings';
-const TAB_PARAM = 'tab';
+const DEFAULT_TAB: TabId = "ai-settings";
+const TAB_PARAM = "tab";
 
 export function SettingsView() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export function SettingsView() {
   const validTabIds = useMemo(() => new Set(getSettingsTabs().map(t => t.id)), []);
 
   const initialTab = useMemo<TabId>(() => {
-    const fromUrl = (searchParams?.get(TAB_PARAM) || '').toLowerCase();
+    const fromUrl = (searchParams?.get(TAB_PARAM) || "").toLowerCase();
     return validTabIds.has(fromUrl) ? (fromUrl as TabId) : DEFAULT_TAB;
   }, [searchParams, validTabIds]);
 
@@ -26,7 +26,7 @@ export function SettingsView() {
 
   // Keep state in sync when the URL changes (e.g., back/forward navigation)
   useEffect(() => {
-    const fromUrl = (searchParams?.get(TAB_PARAM) || '').toLowerCase();
+    const fromUrl = (searchParams?.get(TAB_PARAM) || "").toLowerCase();
     const next = validTabIds.has(fromUrl) ? (fromUrl as TabId) : DEFAULT_TAB;
     if (next !== activeTab) {
       setActiveTab(next);

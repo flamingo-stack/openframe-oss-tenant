@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { CHAT_TYPE } from '../../tickets/constants';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { CHAT_TYPE } from "../../tickets/constants";
 
 interface CreateDialogResponse {
   id: string;
@@ -18,7 +18,7 @@ interface CreateDialogResponse {
 }
 
 interface CreateDialogRequest {
-  agentType: 'ADMIN';
+  agentType: "ADMIN";
 }
 
 interface SendMessageRequest {
@@ -42,8 +42,8 @@ export function useMingoDialog() {
 
   const createDialogMutation = useMutation({
     mutationFn: async (): Promise<CreateDialogResponse> => {
-      const response = await apiClient.post<CreateDialogResponse>('/chat/api/v1/dialogs', {
-        agentType: 'ADMIN',
+      const response = await apiClient.post<CreateDialogResponse>("/chat/api/v1/dialogs", {
+        agentType: "ADMIN",
       } as CreateDialogRequest);
 
       if (!response.ok) {
@@ -51,7 +51,7 @@ export function useMingoDialog() {
       }
 
       if (!response.data?.id) {
-        throw new Error('Invalid response: dialog id not found');
+        throw new Error("Invalid response: dialog id not found");
       }
 
       return response.data;
@@ -59,25 +59,25 @@ export function useMingoDialog() {
     onSuccess: data => {
       setCurrentDialogId(data.id);
       dialogIdRef.current = data.id;
-      queryClient.invalidateQueries({ queryKey: ['mingo-dialogs'] });
+      queryClient.invalidateQueries({ queryKey: ["mingo-dialogs"] });
     },
     onError: error => {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create new chat';
+      const errorMessage = error instanceof Error ? error.message : "Failed to create new chat";
 
       toast({
-        title: 'Failed to Create Chat',
+        title: "Failed to Create Chat",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
         duration: 5000,
       });
 
-      console.error('Failed to create dialog:', error);
+      console.error("Failed to create dialog:", error);
     },
   });
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ dialogId, content }: { dialogId: string; content: string }) => {
-      const response = await apiClient.post('/chat/api/v1/messages', {
+      const response = await apiClient.post("/chat/api/v1/messages", {
         dialogId,
         content,
         chatType: CHAT_TYPE.ADMIN,
@@ -90,16 +90,16 @@ export function useMingoDialog() {
       return response.data;
     },
     onError: error => {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      const errorMessage = error instanceof Error ? error.message : "Failed to send message";
 
       toast({
-        title: 'Send Failed',
+        title: "Send Failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
         duration: 5000,
       });
 
-      console.error('Failed to send message:', error);
+      console.error("Failed to send message:", error);
     },
   });
 
@@ -121,9 +121,9 @@ export function useMingoDialog() {
       const trimmedContent = content.trim();
       if (!trimmedContent) {
         toast({
-          title: 'Empty Message',
-          description: 'Please enter a message to send',
-          variant: 'destructive',
+          title: "Empty Message",
+          description: "Please enter a message to send",
+          variant: "destructive",
           duration: 3000,
         });
         return false;

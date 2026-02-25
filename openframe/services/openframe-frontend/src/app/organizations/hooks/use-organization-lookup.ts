@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useCallback, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
 
 const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
   query GetOrganizationsMin {
@@ -59,12 +59,12 @@ export function useOrganizationLookup() {
 
       const fetchPromise = (async () => {
         try {
-          const response = await apiClient.post<any>('/api/graphql', {
+          const response = await apiClient.post<any>("/api/graphql", {
             query: GET_ORGANIZATIONS_MIN_QUERY,
           });
 
           if (!response.ok) {
-            console.error('Failed to fetch organizations for lookup');
+            console.error("Failed to fetch organizations for lookup");
             return;
           }
 
@@ -84,7 +84,7 @@ export function useOrganizationLookup() {
             hasFetched: true,
           });
         } catch (error) {
-          console.error('Error fetching organization lookup:', error);
+          console.error("Error fetching organization lookup:", error);
           setState(prev => ({ ...prev, isLoading: false }));
         }
       })();

@@ -1,80 +1,80 @@
-'use client';
+"use client";
 
 import {
-  AlertTriangleIcon,
-  BotIcon,
-  CpuIcon,
-  FileCheckIcon,
-  FileTextIcon,
-  NetworkIcon,
-  PackageIcon,
+  AuditIcon,
+  BracketSquareCheckIcon,
+  ClipboardListIcon,
+  HardDrivesIcon,
+  Hierarchy02Icon,
   ShieldIcon,
-  TabItem,
+  TerminalBrowserIcon,
   UsersIcon,
-} from '@flamingo-stack/openframe-frontend-core';
-import { AgentsTab } from './agents-tab';
-import { ComplianceTab } from './compliance-tab';
-import { HardwareTab } from './hardware-tab';
-import { LogsTab } from './logs-tab';
-import { NetworkTab } from './network-tab';
-import { SecurityTab } from './security-tab';
-import { SoftwareTab } from './software-tab';
-import { UsersTab } from './users-tab';
-import { VulnerabilitiesTab } from './vulnerabilities-tab';
+  WebDesignIcon,
+} from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import type { TabItem } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { AgentsTab } from "./agents-tab";
+import { ComplianceTab } from "./compliance-tab";
+import { HardwareTab } from "./hardware-tab";
+import { LogsTab } from "./logs-tab";
+import { NetworkTab } from "./network-tab";
+import { SecurityTab } from "./security-tab";
+import { SoftwareTab } from "./software-tab";
+import { UsersTab } from "./users-tab";
+import { VulnerabilitiesTab } from "./vulnerabilities-tab";
 
 export const DEVICE_TABS: TabItem[] = [
   {
-    id: 'hardware',
-    label: 'Hardware',
-    icon: CpuIcon,
+    id: "hardware",
+    label: "Hardware",
+    icon: HardDrivesIcon,
     component: HardwareTab,
   },
   {
-    id: 'network',
-    label: 'Network',
-    icon: NetworkIcon,
+    id: "network",
+    label: "Network",
+    icon: Hierarchy02Icon,
     component: NetworkTab,
   },
   {
-    id: 'security',
-    label: 'Security',
+    id: "security",
+    label: "Security",
     icon: ShieldIcon,
     component: SecurityTab,
   },
   {
-    id: 'compliance',
-    label: 'Compliance',
-    icon: FileCheckIcon,
+    id: "compliance",
+    label: "Compliance",
+    icon: AuditIcon,
     component: ComplianceTab,
   },
   {
-    id: 'agents',
-    label: 'Agents',
-    icon: BotIcon,
+    id: "agents",
+    label: "Agents",
+    icon: TerminalBrowserIcon,
     component: AgentsTab,
   },
   {
-    id: 'users',
-    label: 'Users',
+    id: "users",
+    label: "Users",
     icon: UsersIcon,
     component: UsersTab,
   },
   {
-    id: 'software',
-    label: 'Software',
-    icon: PackageIcon,
+    id: "software",
+    label: "Software",
+    icon: WebDesignIcon,
     component: SoftwareTab,
   },
   {
-    id: 'vulnerabilities',
-    label: 'Vulnerabilities',
-    icon: AlertTriangleIcon,
+    id: "vulnerabilities",
+    label: "Vulnerabilities",
+    icon: BracketSquareCheckIcon,
     component: VulnerabilitiesTab,
   },
   {
-    id: 'logs',
-    label: 'Logs',
-    icon: FileTextIcon,
+    id: "logs",
+    label: "Logs",
+    icon: ClipboardListIcon,
     component: LogsTab,
   },
 ];

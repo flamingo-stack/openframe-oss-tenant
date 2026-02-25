@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
-import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { Alert, AlertDescription } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React, { useEffect, useState } from 'react';
+import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from "@flamingo-stack/openframe-frontend-core";
+import { AlertTriangleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
+import { Alert, AlertDescription } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import React, { useEffect, useState } from "react";
 
 interface ApiKeyCreatedModalProps {
   isOpen: boolean;
@@ -14,11 +14,11 @@ interface ApiKeyCreatedModalProps {
 
 export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedModalProps) {
   const { toast } = useToast();
-  const [localKey, setLocalKey] = useState('');
+  const [localKey, setLocalKey] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
-      setLocalKey('');
+      setLocalKey("");
     } else if (fullKey) {
       setLocalKey(fullKey);
     }
@@ -27,9 +27,9 @@ export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedMo
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(localKey);
-      toast({ title: 'Copied', description: 'API key copied to clipboard', variant: 'success' });
+      toast({ title: "Copied", description: "API key copied to clipboard", variant: "success" });
     } catch {
-      toast({ title: 'Copy failed', description: 'Unable to copy API key', variant: 'destructive' });
+      toast({ title: "Copy failed", description: "Unable to copy API key", variant: "destructive" });
     }
   };
 

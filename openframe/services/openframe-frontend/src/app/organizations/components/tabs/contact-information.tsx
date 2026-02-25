@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Checkbox, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useCallback, useEffect } from 'react';
+import { Checkbox, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import React, { useCallback, useEffect } from "react";
 
 export type ContactInfoState = {
   primaryName: string;

@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
-import { scriptScheduleQueryKeys } from './use-script-schedule';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { tacticalApiClient } from "@/lib/tactical-api-client";
+import { scriptScheduleQueryKeys } from "./use-script-schedule";
 
 // ============ Types ============
 
 export interface ScheduledTaskAction {
-  type: 'script';
+  type: "script";
   name: string;
   script: number;
   timeout: number;
@@ -19,7 +19,7 @@ export interface ScheduledTaskAction {
 export interface ScheduledTask {
   id: number;
   name: string;
-  task_type: 'daily' | 'weekly' | 'monthly' | 'runonce';
+  task_type: "daily" | "weekly" | "monthly" | "runonce";
   run_time_date: string;
   expire_date: string | null;
   daily_interval: number;
@@ -40,8 +40,8 @@ export interface ScheduledTask {
 // ============ Query Keys ============
 
 export const scheduledTasksQueryKeys = {
-  all: ['scheduled-tasks'] as const,
-  byScript: (scriptId: string) => [...scheduledTasksQueryKeys.all, 'by-script', scriptId] as const,
+  all: ["scheduled-tasks"] as const,
+  byScript: (scriptId: string) => [...scheduledTasksQueryKeys.all, "by-script", scriptId] as const,
 };
 
 // ============ API Functions ============
@@ -58,7 +58,7 @@ async function fetchScheduledTasksByScript(scriptId: string): Promise<ScheduledT
 
   // Filter tasks that have at least one action referencing this script
   return allTasks.filter(task =>
-    task.actions.some(action => action.type === 'script' && action.script === scriptIdNum),
+    task.actions.some(action => action.type === "script" && action.script === scriptIdNum),
   );
 }
 

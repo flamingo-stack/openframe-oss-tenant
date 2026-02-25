@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useQuery } from '@tanstack/react-query';
-import { isSaasTenantMode } from '@/lib/app-mode';
-import { dashboardApiService } from '../services/dashboard-api-service';
-import { dashboardQueryKeys } from '../utils/query-keys';
+import { useQuery } from "@tanstack/react-query";
+import { isSaasTenantMode } from "@/lib/app-mode";
+import { dashboardApiService } from "../services/dashboard-api-service";
+import { dashboardQueryKeys } from "../utils/query-keys";
 
 export function useDevicesOverview() {
   const query = useQuery({
@@ -44,7 +44,7 @@ export function useChatsOverview() {
     total: query.data?.total ?? 0,
     active: query.data?.active ?? 0,
     resolved: query.data?.resolved ?? 0,
-    avgResolveTime: query.data?.avgResolveTime ?? '—',
+    avgResolveTime: query.data?.avgResolveTime ?? "—",
     avgFaeRate: query.data?.avgFaeRate ?? 0,
     activePercentage: query.data?.activePercentage ?? 0,
     resolvedPercentage: query.data?.resolvedPercentage ?? 0,

@@ -53,7 +53,7 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    this.ctx = canvas.getContext("2d");
     this.stopped = false;
     // Input listeners (scaffold): implement binary encoders per MeshCentral desktop protocol later
     const onMouseMove = (e: MouseEvent) => {
@@ -144,25 +144,25 @@ export class MeshDesktop implements DesktopInputHandlers {
       for (const k of keys) this.send(this.encodeKeyEvent(2, k.vk, k.extended));
     };
 
-    canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('mousedown', onMouseDown);
-    canvas.addEventListener('mouseup', onMouseUp);
-    canvas.addEventListener('wheel', onWheel);
-    canvas.addEventListener('dblclick', onDblClick);
-    window.addEventListener('keydown', onKeyDown);
-    window.addEventListener('keypress', onKeyPress);
-    window.addEventListener('keyup', onKeyUp);
-    window.addEventListener('blur', onWindowBlur);
+    canvas.addEventListener("mousemove", onMouseMove);
+    canvas.addEventListener("mousedown", onMouseDown);
+    canvas.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("wheel", onWheel);
+    canvas.addEventListener("dblclick", onDblClick);
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keypress", onKeyPress);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onWindowBlur);
 
-    this.listeners.push(() => canvas.removeEventListener('mousemove', onMouseMove));
-    this.listeners.push(() => canvas.removeEventListener('mousedown', onMouseDown));
-    this.listeners.push(() => canvas.removeEventListener('mouseup', onMouseUp));
-    this.listeners.push(() => canvas.removeEventListener('wheel', onWheel));
-    this.listeners.push(() => canvas.removeEventListener('dblclick', onDblClick));
-    this.listeners.push(() => window.removeEventListener('keydown', onKeyDown));
-    this.listeners.push(() => window.removeEventListener('keypress', onKeyPress));
-    this.listeners.push(() => window.removeEventListener('keyup', onKeyUp));
-    this.listeners.push(() => window.removeEventListener('blur', onWindowBlur));
+    this.listeners.push(() => canvas.removeEventListener("mousemove", onMouseMove));
+    this.listeners.push(() => canvas.removeEventListener("mousedown", onMouseDown));
+    this.listeners.push(() => canvas.removeEventListener("mouseup", onMouseUp));
+    this.listeners.push(() => canvas.removeEventListener("wheel", onWheel));
+    this.listeners.push(() => canvas.removeEventListener("dblclick", onDblClick));
+    this.listeners.push(() => window.removeEventListener("keydown", onKeyDown));
+    this.listeners.push(() => window.removeEventListener("keypress", onKeyPress));
+    this.listeners.push(() => window.removeEventListener("keyup", onKeyUp));
+    this.listeners.push(() => window.removeEventListener("blur", onWindowBlur));
   }
 
   detach() {
@@ -371,7 +371,7 @@ export class MeshDesktop implements DesktopInputHandlers {
       Meta: 0x5b,
 
       // Special character keys by name
-      ' ': 0x20,
+      " ": 0x20,
       Backspace: 0x08,
       Tab: 0x09,
       Enter: 0x0d,
@@ -400,29 +400,29 @@ export class MeshDesktop implements DesktopInputHandlers {
   }
 
   private extendedKeyTable: string[] = [
-    'ShiftRight',
-    'AltRight',
-    'ControlRight',
-    'Home',
-    'End',
-    'Insert',
-    'Delete',
-    'PageUp',
-    'PageDown',
-    'NumpadDivide',
-    'NumpadEnter',
-    'NumLock',
-    'Pause',
+    "ShiftRight",
+    "AltRight",
+    "ControlRight",
+    "Home",
+    "End",
+    "Insert",
+    "Delete",
+    "PageUp",
+    "PageDown",
+    "NumpadDivide",
+    "NumpadEnter",
+    "NumLock",
+    "Pause",
   ];
 
   private convertKeyCode(e: KeyboardEvent): number | undefined {
-    if (e.code && e.code.startsWith('Key') && e.code.length === 4) return e.code.charCodeAt(3);
-    if (e.code && e.code.startsWith('Digit') && e.code.length === 6) return e.code.charCodeAt(5);
+    if (e.code && e.code.startsWith("Key") && e.code.length === 4) return e.code.charCodeAt(3);
+    if (e.code && e.code.startsWith("Digit") && e.code.length === 6) return e.code.charCodeAt(5);
     if (e.code && /^F([1-9]|1[0-2])$/.test(e.code)) {
       const n = parseInt(e.code.substring(1), 10);
       return 111 + n; // F1=112 (0x70) to F12=123 (0x7B)
     }
-    if (e.code && e.code.startsWith('Numpad') && e.code.length === 7 && /[0-9]/.test(e.code.charAt(6))) {
+    if (e.code && e.code.startsWith("Numpad") && e.code.length === 7 && /[0-9]/.test(e.code.charAt(6))) {
       return parseInt(e.code.charAt(6)) + 96; // Numpad 0-9 are 96-105
     }
 
@@ -488,41 +488,41 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   private isExtendedKey(e: KeyboardEvent): boolean {
     if (!e.code) return false;
-    if (e.code.startsWith('Arrow')) return true;
-    if (e.code === 'MetaLeft' || e.code === 'MetaRight') return true;
-    if (e.code === 'ShiftRight' || e.code === 'AltRight' || e.code === 'ControlRight') return true;
+    if (e.code.startsWith("Arrow")) return true;
+    if (e.code === "MetaLeft" || e.code === "MetaRight") return true;
+    if (e.code === "ShiftRight" || e.code === "AltRight" || e.code === "ControlRight") return true;
 
     return this.extendedKeyTable.includes(e.code);
   }
 
   private shouldPreventDefault(e: KeyboardEvent): boolean {
     const prevent = [
-      'F1',
-      'F2',
-      'F3',
-      'F4',
-      'F5',
-      'F6',
-      'F7',
-      'F8',
-      'F9',
-      'F10',
-      'F11',
-      'F12',
-      'Tab',
-      'Enter',
-      'Escape',
-      'Backspace',
-      'Delete',
-      'Home',
-      'End',
-      'PageUp',
-      'PageDown',
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12",
+      "Tab",
+      "Enter",
+      "Escape",
+      "Backspace",
+      "Delete",
+      "Home",
+      "End",
+      "PageUp",
+      "PageDown",
     ];
     // Do not prevent default for pure modifier keys
-    if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') return false;
+    if (e.key === "Control" || e.key === "Shift" || e.key === "Alt" || e.key === "Meta") return false;
     if (prevent.includes(e.key)) return true;
-    if (e.code && e.code.startsWith('Arrow')) return true;
+    if (e.code && e.code.startsWith("Arrow")) return true;
     if (e.ctrlKey || e.altKey || e.metaKey) return true;
     return false;
   }
@@ -600,85 +600,85 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   sendKeyCombo(combo: string) {
     const sequences: Record<string, Array<{ action: number; keyCode: number; extended: boolean }>> = {
-      'ctrl+c': [
+      "ctrl+c": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x43, extended: false },
         { action: 2, keyCode: 0x43, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'ctrl+v': [
+      "ctrl+v": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x56, extended: false },
         { action: 2, keyCode: 0x56, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'ctrl+a': [
+      "ctrl+a": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x41, extended: false },
         { action: 2, keyCode: 0x41, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'ctrl+x': [
+      "ctrl+x": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x58, extended: false },
         { action: 2, keyCode: 0x58, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'ctrl+z': [
+      "ctrl+z": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x5a, extended: false },
         { action: 2, keyCode: 0x5a, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'ctrl+w': [
+      "ctrl+w": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x57, extended: false },
         { action: 2, keyCode: 0x57, extended: false },
         { action: 2, keyCode: 0x11, extended: false },
       ],
-      'alt+f4': [
+      "alt+f4": [
         { action: 1, keyCode: 0x12, extended: false },
         { action: 1, keyCode: 0x73, extended: false },
         { action: 2, keyCode: 0x73, extended: false },
         { action: 2, keyCode: 0x12, extended: false },
       ],
-      'alt+tab': [
+      "alt+tab": [
         { action: 1, keyCode: 0x12, extended: false },
         { action: 1, keyCode: 0x09, extended: false },
         { action: 2, keyCode: 0x09, extended: false },
         { action: 2, keyCode: 0x12, extended: false },
       ],
-      'win+l': [
+      "win+l": [
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x4c, extended: false },
         { action: 2, keyCode: 0x4c, extended: false },
         { action: 2, keyCode: 0x5b, extended: true },
       ],
-      'win+m': [
+      "win+m": [
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x4d, extended: false },
         { action: 2, keyCode: 0x4d, extended: false },
         { action: 2, keyCode: 0x5b, extended: true },
       ],
-      'win+r': [
+      "win+r": [
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x52, extended: false },
         { action: 2, keyCode: 0x52, extended: false },
         { action: 2, keyCode: 0x5b, extended: true },
       ],
-      'win+up': [
+      "win+up": [
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x26, extended: false },
         { action: 2, keyCode: 0x26, extended: false },
         { action: 2, keyCode: 0x5b, extended: true },
       ],
-      'win+down': [
+      "win+down": [
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x28, extended: false },
         { action: 2, keyCode: 0x28, extended: false },
         { action: 2, keyCode: 0x5b, extended: true },
       ],
-      'shift+win+m': [
+      "shift+win+m": [
         { action: 1, keyCode: 0x10, extended: false },
         { action: 1, keyCode: 0x5b, extended: true },
         { action: 1, keyCode: 0x4d, extended: false },
@@ -686,7 +686,7 @@ export class MeshDesktop implements DesktopInputHandlers {
         { action: 2, keyCode: 0x5b, extended: true },
         { action: 2, keyCode: 0x10, extended: false },
       ],
-      'ctrl+shift+esc': [
+      "ctrl+shift+esc": [
         { action: 1, keyCode: 0x11, extended: false },
         { action: 1, keyCode: 0x10, extended: false },
         { action: 1, keyCode: 0x1b, extended: false },
@@ -701,7 +701,7 @@ export class MeshDesktop implements DesktopInputHandlers {
       for (const key of sequence) {
         this.send(this.encodeKeyEvent(key.action, key.keyCode, key.extended));
       }
-    } else if (combo.toLowerCase() === 'ctrl+alt+del') {
+    } else if (combo.toLowerCase() === "ctrl+alt+del") {
       this.sendCtrlAltDel();
     }
   }
@@ -709,11 +709,11 @@ export class MeshDesktop implements DesktopInputHandlers {
   drawPlaceholderFrame() {
     if (!this.ctx || !this.canvas) return;
     const { ctx, canvas } = this;
-    ctx.fillStyle = '#000';
+    ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#0f0';
-    ctx.font = '16px monospace';
-    ctx.fillText('Receiving desktop frames... (decoder integration pending)', 10, 24);
+    ctx.fillStyle = "#0f0";
+    ctx.font = "16px monospace";
+    ctx.fillText("Receiving desktop frames... (decoder integration pending)", 10, 24);
   }
 
   // Minimal decoder (big-endian):
@@ -829,7 +829,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private async decodeTile(task: { x: number; y: number; bytes: Uint8Array }) {
     if (this.stopped) return;
     try {
-      const blob = new Blob([task.bytes.buffer as ArrayBuffer], { type: 'image/jpeg' });
+      const blob = new Blob([task.bytes.buffer as ArrayBuffer], { type: "image/jpeg" });
       let bitmap: ImageBitmap | HTMLImageElement | null = null;
       try {
         bitmap = await createImageBitmap(blob);
@@ -877,7 +877,7 @@ export class MeshDesktop implements DesktopInputHandlers {
             this.onFirstFrameCallback?.();
           }
         } catch {}
-        if ('close' in it.bitmap && typeof (it.bitmap as any).close === 'function') {
+        if ("close" in it.bitmap && typeof (it.bitmap as any).close === "function") {
           try {
             (it.bitmap as any).close();
           } catch {}

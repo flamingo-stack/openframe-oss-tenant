@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
-import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core';
-import { RotateCcw, Square, X } from 'lucide-react';
-import type { CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
+import type { QueryResultRow } from "@flamingo-stack/openframe-frontend-core";
+import { Button, QueryReportTable } from "@flamingo-stack/openframe-frontend-core";
+import { RotateCcw, Square, X } from "lucide-react";
+import type { CampaignError, CampaignTotals } from "../hooks/use-live-campaign";
 
 export interface LiveTestPanelProps {
-  mode: 'query' | 'policy';
+  mode: "query" | "policy";
   isRunning: boolean;
   startedAt: Date | null;
   durationMs: number;
@@ -15,7 +15,7 @@ export interface LiveTestPanelProps {
   totals: CampaignTotals | null;
   hostsResponded: number;
   hostsFailed: number;
-  campaignStatus: '' | 'pending' | 'finished';
+  campaignStatus: "" | "pending" | "finished";
   onTestAgain: () => void;
   onStop: () => void;
   onClose: () => void;
@@ -26,11 +26,11 @@ function formatDuration(ms: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 export function LiveTestPanel({
@@ -48,8 +48,8 @@ export function LiveTestPanel({
   onStop,
   onClose,
 }: LiveTestPanelProps) {
-  const label = mode === 'query' ? 'QUERY' : 'POLICY';
-  const isFinished = campaignStatus === 'finished';
+  const label = mode === "query" ? "QUERY" : "POLICY";
+  const isFinished = campaignStatus === "finished";
   const totalOnlineHosts = totals?.online ?? 0;
   const totalResponded = hostsResponded + hostsFailed;
 
@@ -69,7 +69,7 @@ export function LiveTestPanel({
             <div className="flex flex-col">
               <span className="font-mono text-[10px] uppercase tracking-wider text-ods-text-secondary">Started</span>
               <span className="font-mono text-sm text-ods-text-primary">
-                {startedAt ? formatTime(startedAt) : '--:--:--'}
+                {startedAt ? formatTime(startedAt) : "--:--:--"}
               </span>
             </div>
 
@@ -118,7 +118,7 @@ export function LiveTestPanel({
         {isFinished && errors.length > 0 && (
           <div className="px-4 py-3 border-b border-ods-border shrink-0">
             <p className="text-sm font-medium text-[var(--ods-attention-red-error)]">
-              {errors.length} host{errors.length !== 1 ? 's' : ''} returned errors
+              {errors.length} host{errors.length !== 1 ? "s" : ""} returned errors
             </p>
             <div className="mt-1 space-y-0.5 max-h-24 overflow-y-auto">
               {errors.slice(0, 10).map((err, i) => (
@@ -140,8 +140,8 @@ export function LiveTestPanel({
             data={results}
             loading={isRunning && results.length === 0}
             skeletonRows={5}
-            emptyMessage={isRunning ? 'Waiting for results...' : 'No results returned'}
-            columnOrder={['host_display_name']}
+            emptyMessage={isRunning ? "Waiting for results..." : "No results returned"}
+            columnOrder={["host_display_name"]}
             exportFilename={`test-${mode}-results`}
             showExport={false}
             variant="compact"

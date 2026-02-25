@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { apiClient } from '@/lib/api-client';
-import type { CreateOrganizationRequest } from './use-create-organization';
+import { useCallback } from "react";
+import { apiClient } from "@/lib/api-client";
+import type { CreateOrganizationRequest } from "./use-create-organization";
 
 export function useUpdateOrganization() {
   const updateOrganization = useCallback(async (id: string, request: CreateOrganizationRequest) => {

@@ -4,7 +4,7 @@
  * Uses hostname patterns for consistent detection
  */
 
-export type DeploymentType = 'self-hosted' | 'cloud' | 'development';
+export type DeploymentType = "self-hosted" | "cloud" | "development";
 
 interface DeploymentInfo {
   type: DeploymentType;
@@ -19,13 +19,13 @@ interface DeploymentInfo {
  */
 export function detectDeployment(): DeploymentInfo {
   // Get current hostname (only available in browser)
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
 
   // Cloud deployment patterns
-  const cloudPatterns = ['openframe.ai', 'auth.openframe.ai', 'app.openframe'];
+  const cloudPatterns = ["openframe.ai", "auth.openframe.ai", "app.openframe"];
 
   // Development patterns
-  const devPatterns = ['localhost', '127.0.0.1', '0.0.0.0', '.local'];
+  const devPatterns = ["localhost", "127.0.0.1", "0.0.0.0", ".local"];
 
   // Check if hostname matches cloud patterns
   const isCloud = cloudPatterns.some(pattern => hostname.includes(pattern));
@@ -36,18 +36,18 @@ export function detectDeployment(): DeploymentInfo {
   // Determine type
   let type: DeploymentType;
   if (isCloud) {
-    type = 'cloud';
+    type = "cloud";
   } else if (isDevelopment) {
-    type = 'development';
+    type = "development";
   } else {
     // Default to self-hosted for custom domains
-    type = 'self-hosted';
+    type = "self-hosted";
   }
 
   return {
     type,
     isCloud,
-    isSelfHosted: type === 'self-hosted',
+    isSelfHosted: type === "self-hosted",
     isDevelopment,
     hostname,
   };

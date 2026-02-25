@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -7,41 +7,41 @@ import {
   CardHeader,
   Input,
   Label,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { authApiClient } from '@/lib/auth-api-client';
-import { AuthLayout } from '../layouts';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { authApiClient } from "@/lib/auth-api-client";
+import { AuthLayout } from "../layouts";
 
 export default function PasswordResetPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
 
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!token) {
       toast({
-        title: 'Invalid Reset Link',
-        description: 'No reset token provided. Please use the link from your password reset email.',
-        variant: 'destructive',
+        title: "Invalid Reset Link",
+        description: "No reset token provided. Please use the link from your password reset email.",
+        variant: "destructive",
       });
-      router.push('/auth');
+      router.push("/auth");
     }
   }, [token, router, toast]);
 
   const handleSubmit = async () => {
     if (!password || !confirmPassword) {
       toast({
-        title: 'Validation Error',
-        description: 'Please fill in both password fields.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Please fill in both password fields.",
+        variant: "destructive",
       });
       return;
     }
@@ -49,17 +49,17 @@ export default function PasswordResetPage() {
     if (password !== confirmPassword) {
       toast({
         title: "Passwords Don't Match",
-        description: 'Please ensure both passwords are the same.',
-        variant: 'destructive',
+        description: "Please ensure both passwords are the same.",
+        variant: "destructive",
       });
       return;
     }
 
     if (password.length < 8) {
       toast({
-        title: 'Password Too Short',
-        description: 'Password must be at least 8 characters long.',
-        variant: 'destructive',
+        title: "Password Too Short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
       });
       return;
     }
@@ -74,27 +74,27 @@ export default function PasswordResetPage() {
 
       if (!response.ok) {
         const error = response.data as any;
-        throw new Error(error?.message || response.error || 'Failed to reset password');
+        throw new Error(error?.message || response.error || "Failed to reset password");
       }
 
       toast({
-        title: 'Password Reset Successful!',
-        description: 'Your password has been updated. Redirecting to login...',
-        variant: 'success',
+        title: "Password Reset Successful!",
+        description: "Your password has been updated. Redirecting to login...",
+        variant: "success",
       });
 
       setTimeout(() => {
-        router.push('/auth');
+        router.push("/auth");
       }, 2000);
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error("Password reset error:", error);
       toast({
-        title: 'Reset Failed',
+        title: "Reset Failed",
         description:
           error instanceof Error
             ? error.message
-            : 'Failed to reset password. Please try again or request a new reset link.',
-        variant: 'destructive',
+            : "Failed to reset password. Please try again or request a new reset link.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -149,7 +149,7 @@ export default function PasswordResetPage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center pt-4">
                 <Button
-                  onClick={() => router.push('/auth')}
+                  onClick={() => router.push("/auth")}
                   disabled={isLoading}
                   variant="outline"
                   className="w-full sm:flex-1"

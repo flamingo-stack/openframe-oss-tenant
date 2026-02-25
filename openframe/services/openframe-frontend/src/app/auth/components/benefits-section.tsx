@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   AutomateEverythingIcon,
@@ -7,15 +7,15 @@ import {
   OpenFrameText,
   OpenmspLogo,
   ReclaimProfitsIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { BenefitCard, Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { getSlackCommunityJoinUrl } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useState } from 'react';
-import { runtimeEnv } from '@/lib/runtime-config';
+} from "@flamingo-stack/openframe-frontend-core/components/icons";
+import { BenefitCard, Button, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { getSlackCommunityJoinUrl } from "@flamingo-stack/openframe-frontend-core/utils";
+import { useState } from "react";
+import { runtimeEnv } from "@/lib/runtime-config";
 
 export function AuthBenefitsSection() {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const appMode = runtimeEnv.appMode();
@@ -28,9 +28,9 @@ export function AuthBenefitsSection() {
   const handleJoinWaitlist = async () => {
     if (!email || !isValidEmail(email)) {
       toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
+        title: "Invalid Email",
+        description: "Please enter a valid email address",
+        variant: "destructive",
         duration: 3000,
       });
       return;
@@ -38,43 +38,43 @@ export function AuthBenefitsSection() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('https://content-api.openframe.ai/api/waitlist', {
-        method: 'POST',
+      const response = await fetch("https://content-api.openframe.ai/api/waitlist", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, platform: 'openframe' }),
+        body: JSON.stringify({ email, platform: "openframe" }),
       });
 
       if (response.ok) {
         toast({
-          title: 'Success!',
+          title: "Success!",
           description: "You've been added to the waitlist.",
-          variant: 'success',
+          variant: "success",
           duration: 5000,
         });
-        setEmail('');
+        setEmail("");
       } else {
         const errorData = await response.json();
 
-        if (errorData.code === 'DUPLICATE_EMAIL') {
+        if (errorData.code === "DUPLICATE_EMAIL") {
           toast({
-            title: 'Already Registered',
-            description: 'This email is already on the waitlist',
-            variant: 'info',
+            title: "Already Registered",
+            description: "This email is already on the waitlist",
+            variant: "info",
             duration: 5000,
           });
           return;
         }
 
-        throw new Error(errorData.error || 'Failed to join waitlist');
+        throw new Error(errorData.error || "Failed to join waitlist");
       }
     } catch (error) {
-      if (error instanceof Error && !error.message.includes('DUPLICATE_EMAIL')) {
+      if (error instanceof Error && !error.message.includes("DUPLICATE_EMAIL")) {
         toast({
-          title: 'Submission Failed',
-          description: 'Unable to join the waitlist. Please try again later.',
-          variant: 'destructive',
+          title: "Submission Failed",
+          description: "Unable to join the waitlist. Please try again later.",
+          variant: "destructive",
           duration: 5000,
         });
       }
@@ -84,10 +84,10 @@ export function AuthBenefitsSection() {
   };
 
   const handleJoinCommunity = () => {
-    window.open(getSlackCommunityJoinUrl(), '_blank');
+    window.open(getSlackCommunityJoinUrl(), "_blank");
   };
 
-  if (appMode === 'saas-shared') {
+  if (appMode === "saas-shared") {
     return (
       <div className="bg-ods-card border-l border-ods-border w-full h-full min-h-screen flex items-center justify-center p-6 lg:p-20">
         <div className="flex flex-col items-center justify-center gap-10 w-full max-w-lg">
@@ -98,7 +98,7 @@ export function AuthBenefitsSection() {
               lowerPathColor="var(--color-accent-primary)"
               upperPathColor="var(--color-text-primary)"
             />
-            <OpenFrameText textColor="#FAFAFA" style={{ width: '174px', height: '30px' }} />
+            <OpenFrameText textColor="#FAFAFA" style={{ width: "174px", height: "30px" }} />
           </div>
 
           {/* Waitlist Form Container */}
@@ -135,7 +135,7 @@ export function AuthBenefitsSection() {
 
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
                 <Button onClick={handleJoinWaitlist} disabled={isSubmitting || !isValidEmail(email)}>
-                  {isSubmitting ? 'Joining...' : 'Join Waitlist'}
+                  {isSubmitting ? "Joining..." : "Join Waitlist"}
                 </Button>
                 <Button
                   onClick={handleJoinCommunity}
@@ -170,7 +170,7 @@ export function AuthBenefitsSection() {
             upperPathColor="var(--color-text-primary)"
           />
           <span className="p-4 font-heading fon-[Azeret_Mono] font-semibold text-[24px] text-ods-text-primary">
-            OpenFrame{' '}
+            OpenFrame{" "}
           </span>
         </div>
 

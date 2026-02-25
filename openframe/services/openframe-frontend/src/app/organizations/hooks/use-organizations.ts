@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { GET_ORGANIZATIONS_QUERY } from '../queries/organizations-queries';
-import { OrganizationEntry, useOrganizationsStore } from '../stores/organizations-store';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { GET_ORGANIZATIONS_QUERY } from "../queries/organizations-queries";
+import { OrganizationEntry, useOrganizationsStore } from "../stores/organizations-store";
 
 type LooseString<T extends string> = T | (string & {});
 
 interface OrganizationsFilterInput {
-  tiers?: LooseString<OrganizationEntry['tier']>[];
+  tiers?: LooseString<OrganizationEntry["tier"]>[];
   industries?: string[];
 }
 
@@ -50,10 +50,10 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
       setError(null);
 
       try {
-        const response = await apiClient.post<any>('/api/graphql', {
+        const response = await apiClient.post<any>("/api/graphql", {
           query: GET_ORGANIZATIONS_QUERY,
           variables: {
-            search: searchTerm || '',
+            search: searchTerm || "",
             pagination: {
               limit: 10,
               cursor: cursor || null,
@@ -75,13 +75,13 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
           (o: any): OrganizationEntry => ({
             id: o.id,
             organizationId: o.organizationId,
-            name: o.name ?? '-',
-            websiteUrl: o.websiteUrl ?? '-',
-            contact: { name: '', email: '' },
-            tier: 'Basic',
-            industry: o.category ?? '-',
+            name: o.name ?? "-",
+            websiteUrl: o.websiteUrl ?? "-",
+            contact: { name: "", email: "" },
+            tier: "Basic",
+            industry: o.category ?? "-",
             mrrUsd: o.monthlyRevenue ?? 0,
-            contractDue: o.contractEndDate ?? '',
+            contractDue: o.contractEndDate ?? "",
             lastActivity: new Date().toISOString(),
             imageUrl: o.image?.imageUrl || null,
           }),
@@ -101,13 +101,13 @@ export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
 
         return mapped;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizations';
-        console.error('Failed to fetch organizations:', error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to fetch organizations";
+        console.error("Failed to fetch organizations:", error);
         setError(errorMessage);
         toast({
-          title: 'Error fetching organizations',
+          title: "Error fetching organizations",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
         throw error;
       } finally {

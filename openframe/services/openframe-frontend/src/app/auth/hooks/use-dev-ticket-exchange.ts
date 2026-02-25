@@ -1,10 +1,10 @@
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { authApiClient } from '@/lib/auth-api-client';
-import { useTokenStorage } from '../hooks/use-token-storage';
-import { useAuthStore } from '../stores/auth-store';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useRouter } from "next/navigation";
+import { useCallback } from "react";
+import { apiClient } from "@/lib/api-client";
+import { authApiClient } from "@/lib/auth-api-client";
+import { useTokenStorage } from "../hooks/use-token-storage";
+import { useAuthStore } from "../stores/auth-store";
 
 /**
  * Hook for exchanging devTicket via API
@@ -20,10 +20,10 @@ export function useDevTicketExchange() {
   const exchangeTicket = useCallback(
     async (ticket: string) => {
       try {
-        console.log('🎫 [DevTicket Exchange] Initiating exchange for ticket:', ticket);
+        console.log("🎫 [DevTicket Exchange] Initiating exchange for ticket:", ticket);
         const response = await authApiClient.devExchange(ticket);
 
-        console.log('🎫 [DevTicket Exchange] API call completed, status:', response.status);
+        console.log("🎫 [DevTicket Exchange] API call completed, status:", response.status);
 
         if (!response.ok) {
           throw new Error(`DevTicket exchange failed with status ${response.status}`);
@@ -33,7 +33,7 @@ export function useDevTicketExchange() {
         const tokens = storeTokensFromHeaders(response.headers);
 
         if (tokens.accessToken || tokens.refreshToken) {
-          console.log('🎫 [DevTicket Exchange] Tokens stored, fetching user data...');
+          console.log("🎫 [DevTicket Exchange] Tokens stored, fetching user data...");
 
           const meResponse = await apiClient.me();
 
@@ -43,17 +43,17 @@ export function useDevTicketExchange() {
             if (userData && userData.email) {
               // Update auth store with user data
               const user = {
-                id: userData.id || userData.userId || '',
-                email: userData.email || '',
+                id: userData.id || userData.userId || "",
+                email: userData.email || "",
                 name:
                   userData.name ||
                   userData.displayName ||
-                  `${userData.firstName || ''} ${userData.lastName || ''}`.trim() ||
+                  `${userData.firstName || ""} ${userData.lastName || ""}`.trim() ||
                   userData.email ||
-                  '',
+                  "",
                 organizationId: userData.organizationId || userData.tenantId,
                 organizationName: userData.organizationName || userData.tenantName,
-                role: userData.role || 'user',
+                role: userData.role || "user",
               };
 
               // Store user in auth store
@@ -66,20 +66,20 @@ export function useDevTicketExchange() {
               }
 
               toast({
-                title: 'Welcome!',
+                title: "Welcome!",
                 description: `Successfully signed in as ${user.name || user.email}`,
-                variant: 'success',
+                variant: "success",
               });
 
               // Redirect to dashboard
-              console.log('🔄 [DevTicket Exchange] Redirecting to dashboard...');
-              router.push('/dashboard');
+              console.log("🔄 [DevTicket Exchange] Redirecting to dashboard...");
+              router.push("/dashboard");
             }
           } else {
             toast({
-              title: 'Authentication Successful',
-              description: 'Tokens have been stored securely',
-              variant: 'success',
+              title: "Authentication Successful",
+              description: "Tokens have been stored securely",
+              variant: "success",
             });
           }
         }
@@ -90,13 +90,13 @@ export function useDevTicketExchange() {
           tokens,
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to exchange devTicket';
-        console.error('❌ [DevTicket Exchange] Exchange failed:', error);
+        const message = error instanceof Error ? error.message : "Failed to exchange devTicket";
+        console.error("❌ [DevTicket Exchange] Exchange failed:", error);
 
         toast({
-          title: 'Exchange Failed',
+          title: "Exchange Failed",
           description: message,
-          variant: 'destructive',
+          variant: "destructive",
         });
 
         return {

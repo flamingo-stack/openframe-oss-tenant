@@ -4,29 +4,29 @@
  * Uses SHARED_HOST_URL when provided; otherwise uses relative URLs.
  */
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
-import { isSaasSharedMode } from './app-mode';
-import { clearStoredTokens, forceLogout } from './force-logout';
-import { runtimeEnv } from './runtime-config';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/app/auth/hooks/use-token-storage";
+import { isSaasSharedMode } from "./app-mode";
+import { clearStoredTokens, forceLogout } from "./force-logout";
+import { runtimeEnv } from "./runtime-config";
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl();
   if (!sharedUrl) {
-    if (typeof window !== 'undefined' && window.location?.hostname) {
+    if (typeof window !== "undefined" && window.location?.hostname) {
       const hostname = window.location.hostname;
-      const parts = hostname.split('.');
+      const parts = hostname.split(".");
       if (parts.length >= 2) {
-        return parts.slice(-2).join('.');
+        return parts.slice(-2).join(".");
       }
       return hostname;
     }
-    return 'localhost';
+    return "localhost";
   }
 
-  const withoutProtocol = sharedUrl.replace(/^https?:\/\//, '');
-  const domain = withoutProtocol.split('/')[0].split(':')[0];
+  const withoutProtocol = sharedUrl.replace(/^https?:\/\//, "");
+  const domain = withoutProtocol.split("/")[0].split(":")[0];
 
-  return domain || 'localhost';
+  return domain || "localhost";
 }
 
 export const SAAS_DOMAIN_SUFFIX = getDomainSuffix();
@@ -40,9 +40,9 @@ export interface AuthApiResponse<T = any> {
 
 function buildAuthUrl(path: string): string {
   const base = runtimeEnv.sharedHostUrl();
-  if (!base) return path.startsWith('/') ? path : `/${path}`;
+  if (!base) return path.startsWith("/") ? path : `/${path}`;
 
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${base}${cleanPath}`;
 }
 
@@ -61,12 +61,12 @@ class AuthApiClient {
       try {
         let tenantId: string | undefined;
         try {
-          const { useAuthStore } = await import('../app/auth/stores/auth-store');
+          const { useAuthStore } = await import("../app/auth/stores/auth-store");
           const authState = useAuthStore.getState();
           tenantId = authState.tenantId || (authState.user as any)?.organizationId || (authState.user as any)?.tenantId;
         } catch {}
 
-        const refreshResponse = await this.refresh(tenantId || '');
+        const refreshResponse = await this.refresh(tenantId || "");
 
         if (refreshResponse.status === 401) {
           clearStoredTokens();
@@ -111,7 +111,7 @@ class AuthApiClient {
 
   private async forceLogout(): Promise<void> {
     await forceLogout({
-      reason: 'Auth API Client - Token refresh failed',
+      reason: "Auth API Client - Token refresh failed",
     });
   }
 
@@ -124,21 +124,21 @@ class AuthApiClient {
 
     if (refreshSuccess) {
       if (runtimeEnv.enableDevTicketObserver()) {
-        const newToken = localStorage.getItem('of_access_token');
+        const newToken = localStorage.getItem("of_access_token");
         if (newToken) {
           headers.Authorization = `Bearer ${newToken}`;
         }
       }
 
       const retryRes = await fetch(url, {
-        credentials: 'include',
+        credentials: "include",
         headers,
         ...init,
       });
 
       let retryData: T | undefined;
-      const retryContentType = retryRes.headers.get('content-type') || '';
-      if (retryContentType.includes('application/json')) {
+      const retryContentType = retryRes.headers.get("content-type") || "";
+      if (retryContentType.includes("application/json")) {
         try {
           retryData = await retryRes.json();
         } catch {}
@@ -157,23 +157,23 @@ class AuthApiClient {
   }
 
   refresh<T = any>(tenantId?: string) {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
-    return requestRefresh<T>(`/oauth/refresh${query}`, { method: 'POST' });
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : "";
+    return requestRefresh<T>(`/oauth/refresh${query}`, { method: "POST" });
   }
 
   devExchange(ticket: string): Promise<Response> {
-    const base = runtimeEnv.sharedHostUrl() || '';
+    const base = runtimeEnv.sharedHostUrl() || "";
     const url = `${base}/oauth/dev-exchange?ticket=${encodeURIComponent(ticket)}`;
     return fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
+      method: "GET",
+      credentials: "include",
+      headers: { Accept: "application/json" },
     });
   }
 
   oauth<T = any>(path: string, body?: any, init: RequestInit = {}) {
-    return request<T>(`/oauth/${path.replace(/^\//, '')}`, {
-      method: body ? 'POST' : init.method || 'GET',
+    return request<T>(`/oauth/${path.replace(/^\//, "")}`, {
+      method: body ? "POST" : init.method || "GET",
       body: body ? JSON.stringify(body) : init.body,
       ...init,
     });
@@ -181,23 +181,23 @@ class AuthApiClient {
 
   discoverTenants<T = any>(email: string) {
     const path = `/sas/tenant/discover?email=${encodeURIComponent(email)}`;
-    return requestPublic<T>(path, { method: 'GET' });
+    return requestPublic<T>(path, { method: "GET" });
   }
 
   checkDomainAvailability<T = any>(subdomain: string, organizationName: string) {
     const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`;
     const path = `/api/tenant/availability?domain=${encodeURIComponent(fullDomain)}&organizationName=${encodeURIComponent(organizationName)}`;
-    return requestPublic<T>(path, { method: 'GET' });
+    return requestPublic<T>(path, { method: "GET" });
   }
 
   validateAccessCode<T = any>(email: string, code: string) {
     const path = `/sas/oauth/access-code/validate?email=${encodeURIComponent(email)}&code=${encodeURIComponent(code)}`;
-    return requestPublic<T>(path, { method: 'GET' });
+    return requestPublic<T>(path, { method: "GET" });
   }
 
   resendVerificationEmail<T = any>(email: string) {
     const path = `/sas/email/verify/resend?email=${encodeURIComponent(email)}`;
-    return requestPublic<T>(path, { method: 'POST' });
+    return requestPublic<T>(path, { method: "POST" });
   }
 
   registerOrganization<T = any>(payload: {
@@ -210,7 +210,7 @@ class AuthApiClient {
     accessCode?: string;
   }) {
     return request<T>(`/sas/oauth/register`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(payload),
     });
   }
@@ -219,7 +219,7 @@ class AuthApiClient {
     tenantName: string;
     tenantDomain: string;
     email: string;
-    provider: 'google' | 'microsoft';
+    provider: "google" | "microsoft";
     accessCode: string;
     redirectTo?: string;
   }) {
@@ -232,7 +232,7 @@ class AuthApiClient {
     });
 
     if (payload.redirectTo) {
-      params.append('redirectTo', payload.redirectTo);
+      params.append("redirectTo", payload.redirectTo);
     }
 
     const url = buildAuthUrl(`/sas/oauth/register/sso?${params.toString()}`);
@@ -243,13 +243,13 @@ class AuthApiClient {
 
   getRegistrationProviders<T = any>() {
     return request<T>(`/sas/sso/providers/registration`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
   getInviteProviders<T = any>(invitationId: string) {
     return request<T>(`/sas/sso/providers/invite?invitationId=${encodeURIComponent(invitationId)}`, {
-      method: 'GET',
+      method: "GET",
     });
   }
 
@@ -261,7 +261,7 @@ class AuthApiClient {
     switchTenant?: boolean;
   }) {
     return request<T>(`/sas/invitations/accept`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({
         ...payload,
         switchTenant: payload.switchTenant || false,
@@ -271,7 +271,7 @@ class AuthApiClient {
 
   acceptInvitationSso(payload: {
     invitationId: string;
-    provider: 'google' | 'microsoft';
+    provider: "google" | "microsoft";
     switchTenant?: boolean;
     redirectTo?: string;
   }) {
@@ -281,11 +281,11 @@ class AuthApiClient {
     });
 
     if (payload.switchTenant !== undefined) {
-      params.append('switchTenant', payload.switchTenant.toString());
+      params.append("switchTenant", payload.switchTenant.toString());
     }
 
     if (payload.redirectTo) {
-      params.append('redirectTo', payload.redirectTo);
+      params.append("redirectTo", payload.redirectTo);
     }
 
     const url = buildAuthUrl(`/sas/invitations/accept/sso?${params.toString()}`);
@@ -296,20 +296,20 @@ class AuthApiClient {
 
   confirmPasswordReset<T = any>(payload: { token: string; newPassword: string }) {
     return request<T>(`/sas/password-reset/confirm`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(payload),
     });
   }
 
   requestPasswordReset<T = any>(payload: { email: string }) {
     return request<T>(`/sas/password-reset/request`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(payload),
     });
   }
 
   loginUrl(tenantId: string, redirectTo: string, provider?: string) {
-    const providerParam = provider && provider !== 'openframe-sso' ? `&provider=${encodeURIComponent(provider)}` : '';
+    const providerParam = provider && provider !== "openframe-sso" ? `&provider=${encodeURIComponent(provider)}` : "";
     const base = `/oauth/login?tenantId=${encodeURIComponent(tenantId)}${providerParam}`;
     console.log(isSaasSharedMode());
     const path = isSaasSharedMode() ? base : `${base}&redirectTo=${redirectTo}`;
@@ -317,7 +317,7 @@ class AuthApiClient {
   }
 
   logout(tenantId?: string) {
-    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : "";
     const logoutUrl = buildAuthUrl(`/oauth/logout${query}`);
 
     try {
@@ -333,8 +333,8 @@ const authApiClient = new AuthApiClient();
 async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Promise<AuthApiResponse<T>> {
   const url = buildAuthUrl(path);
   const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
+    Accept: "application/json",
+    "Content-Type": "application/json",
     ...(init.headers || ({} as any)),
   };
 
@@ -342,29 +342,29 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
     try {
       const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
       if (refreshToken) {
-        headers['Refresh-Token'] = refreshToken;
+        headers["Refresh-Token"] = refreshToken;
       }
     } catch (_error) {}
   }
 
   try {
     const res = await fetch(url, {
-      credentials: 'include',
+      credentials: "include",
       headers,
       ...init,
     });
 
     let data: T | undefined;
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
       try {
         data = await res.json();
       } catch {}
     }
 
     if (runtimeEnv.enableDevTicketObserver() && res.ok) {
-      const accessToken = res.headers.get('Access-Token') || res.headers.get('access-token');
-      const refreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token');
+      const accessToken = res.headers.get("Access-Token") || res.headers.get("access-token");
+      const refreshToken = res.headers.get("Refresh-Token") || res.headers.get("refresh-token");
 
       if (accessToken || refreshToken) {
         data = {
@@ -382,20 +382,20 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
       ok: res.ok,
     };
   } catch (e) {
-    return { ok: false, status: 0, error: e instanceof Error ? e.message : 'Network error' };
+    return { ok: false, status: 0, error: e instanceof Error ? e.message : "Network error" };
   }
 }
 
 async function request<T = any>(path: string, init: RequestInit = {}): Promise<AuthApiResponse<T>> {
   const url = buildAuthUrl(path);
   const headers: Record<string, string> = {
-    Accept: 'application/json',
-    'Content-Type': 'application/json',
+    Accept: "application/json",
+    "Content-Type": "application/json",
     ...(init.headers || ({} as any)),
   };
   if (runtimeEnv.enableDevTicketObserver()) {
     try {
-      const token = localStorage.getItem('of_access_token');
+      const token = localStorage.getItem("of_access_token");
       if (token && !headers.Authorization) {
         headers.Authorization = `Bearer ${token}`;
       }
@@ -403,7 +403,7 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
   }
   try {
     const res = await fetch(url, {
-      credentials: 'include',
+      credentials: "include",
       headers,
       ...init,
     });
@@ -415,7 +415,7 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
       } else {
         return {
           data: undefined,
-          error: 'Authentication failed - please login again',
+          error: "Authentication failed - please login again",
           status: 401,
           ok: false,
         };
@@ -423,8 +423,8 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
     }
 
     let data: T | undefined;
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
       try {
         data = await res.json();
       } catch {}
@@ -437,7 +437,7 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
       ok: res.ok,
     };
   } catch (e) {
-    return { ok: false, status: 0, error: e instanceof Error ? e.message : 'Network error' };
+    return { ok: false, status: 0, error: e instanceof Error ? e.message : "Network error" };
   }
 }
 
@@ -445,17 +445,17 @@ async function requestPublic<T = any>(path: string, init: RequestInit = {}): Pro
   const url = buildAuthUrl(path);
   try {
     const res = await fetch(url, {
-      credentials: 'omit',
+      credentials: "omit",
       headers: {
-        Accept: 'application/json',
+        Accept: "application/json",
         ...(init.headers || ({} as any)),
       },
       ...init,
     });
 
     let data: T | undefined;
-    const contentType = res.headers.get('content-type') || '';
-    if (contentType.includes('application/json')) {
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
       try {
         data = await res.json();
       } catch {}
@@ -468,7 +468,7 @@ async function requestPublic<T = any>(path: string, init: RequestInit = {}): Pro
       ok: res.ok,
     };
   } catch (e) {
-    return { ok: false, status: 0, error: e instanceof Error ? e.message : 'Network error' };
+    return { ok: false, status: 0, error: e instanceof Error ? e.message : "Network error" };
   }
 }
 

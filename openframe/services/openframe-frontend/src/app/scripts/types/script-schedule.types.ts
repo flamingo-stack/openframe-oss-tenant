@@ -1,10 +1,10 @@
-import { format } from 'date-fns';
-import { z } from 'zod';
+import { format } from "date-fns";
+import { z } from "zod";
 
 // ============ API Response Types ============
 
 export interface ScriptScheduleAction {
-  type: 'script';
+  type: "script";
   script: number;
   name: string;
   timeout: number;
@@ -44,8 +44,8 @@ export interface ScriptScheduleHistoryEntry {
   stderr: string;
   execution_time: string;
   last_run: string;
-  status: 'passing' | 'failing' | 'pending';
-  sync_status: 'synced' | 'not_synced' | 'pending';
+  status: "passing" | "failing" | "pending";
+  sync_status: "synced" | "not_synced" | "pending";
 }
 
 export interface ScriptScheduleHistoryResponse {
@@ -82,7 +82,7 @@ export interface AgentsModifyResponse {
 
 // ============ Request Payload Types ============
 
-export type ScriptScheduleTaskType = 'runonce' | 'daily' | 'weekly' | 'monthly' | 'monthlydow';
+export type ScriptScheduleTaskType = "runonce" | "daily" | "weekly" | "monthly" | "monthlydow";
 
 export interface CreateScriptSchedulePayload {
   name: string;
@@ -103,39 +103,39 @@ export type UpdateScriptSchedulePayload = Partial<CreateScriptSchedulePayload>;
 
 // ============ Form Types ============
 
-export type RepeatPeriod = 'day' | 'week' | 'month';
+export type RepeatPeriod = "day" | "week" | "month";
 
 export const REPEAT_PERIOD_OPTIONS: { label: string; value: RepeatPeriod }[] = [
-  { label: 'Day', value: 'day' },
-  { label: 'Week', value: 'week' },
-  { label: 'Month', value: 'month' },
+  { label: "Day", value: "day" },
+  { label: "Week", value: "week" },
+  { label: "Month", value: "month" },
 ];
 
 export const WEEKDAYS = [
-  { label: 'Mon', bit: 0 },
-  { label: 'Tue', bit: 1 },
-  { label: 'Wed', bit: 2 },
-  { label: 'Thu', bit: 3 },
-  { label: 'Fri', bit: 4 },
-  { label: 'Sat', bit: 5 },
-  { label: 'Sun', bit: 6 },
+  { label: "Mon", bit: 0 },
+  { label: "Tue", bit: 1 },
+  { label: "Wed", bit: 2 },
+  { label: "Thu", bit: 3 },
+  { label: "Fri", bit: 4 },
+  { label: "Sat", bit: 5 },
+  { label: "Sun", bit: 6 },
 ] as const;
 
-export const PLATFORMS = ['windows', 'linux', 'darwin'] as const;
+export const PLATFORMS = ["windows", "linux", "darwin"] as const;
 export type Platform = (typeof PLATFORMS)[number];
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
-  windows: 'Windows',
-  linux: 'Linux',
-  darwin: 'MacOS',
+  windows: "Windows",
+  linux: "Linux",
+  darwin: "MacOS",
 };
 
 // ============ Zod Schemas ============
 
 const scheduleActionSchema = z.object({
-  script: z.number().min(1, 'Please select a script'),
-  name: z.string().min(1, 'Name is required'),
-  timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
+  script: z.number().min(1, "Please select a script"),
+  name: z.string().min(1, "Name is required"),
+  timeout: z.number().min(1, "Timeout must be at least 1 second").max(86400, "Timeout cannot exceed 24 hours"),
   script_args: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
   env_vars: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
 });
@@ -143,16 +143,16 @@ const scheduleActionSchema = z.object({
 export type ScheduleActionFormData = z.infer<typeof scheduleActionSchema>;
 
 export const createScheduleFormSchema = z.object({
-  name: z.string().min(1, 'Schedule name is required').max(255),
+  name: z.string().min(1, "Schedule name is required").max(255),
   note: z.string().optional(),
-  scheduledDate: z.date({ message: 'Please select a schedule date' }),
+  scheduledDate: z.date({ message: "Please select a schedule date" }),
   repeatEnabled: z.boolean(),
   repeatInterval: z.number().min(1),
-  repeatPeriod: z.enum(['day', 'week', 'month']),
+  repeatPeriod: z.enum(["day", "week", "month"]),
   weekdays: z.number(),
-  supportedPlatforms: z.array(z.string()).min(1, 'Select at least one platform'),
+  supportedPlatforms: z.array(z.string()).min(1, "Select at least one platform"),
   enabled: z.boolean(),
-  actions: z.array(scheduleActionSchema).min(1, 'Add at least one script action'),
+  actions: z.array(scheduleActionSchema).min(1, "Add at least one script action"),
 });
 
 export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>;
@@ -186,15 +186,15 @@ export function parseZuluToLocalDate(isoString: string): Date {
 
 export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
   switch (schedule.task_type) {
-    case 'runonce':
-      return 'Once';
-    case 'daily':
-      return schedule.daily_interval === 1 ? '1 Day' : `${schedule.daily_interval} Days`;
-    case 'weekly':
-      return schedule.weekly_interval === 1 ? '1 Week' : `${schedule.weekly_interval} Weeks`;
-    case 'monthly':
-    case 'monthlydow':
-      return 'Monthly';
+    case "runonce":
+      return "Once";
+    case "daily":
+      return schedule.daily_interval === 1 ? "1 Day" : `${schedule.daily_interval} Days`;
+    case "weekly":
+      return schedule.weekly_interval === 1 ? "1 Week" : `${schedule.weekly_interval} Weeks`;
+    case "monthly":
+    case "monthlydow":
+      return "Monthly";
     default:
       return schedule.task_type;
   }
@@ -202,38 +202,38 @@ export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
 
 export function formatScheduleDate(isoDate: string): { date: string; time: string } {
   const d = new Date(isoDate);
-  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+  const date = d.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric", timeZone: "UTC" });
+  const time = d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "UTC" });
   return { date, time };
 }
 
 export function buildTaskTypeFromForm(repeatEnabled: boolean, repeatPeriod: RepeatPeriod): ScriptScheduleTaskType {
-  if (!repeatEnabled) return 'runonce';
+  if (!repeatEnabled) return "runonce";
   switch (repeatPeriod) {
-    case 'day':
-      return 'daily';
-    case 'week':
-      return 'weekly';
-    case 'month':
-      return 'monthly';
+    case "day":
+      return "daily";
+    case "week":
+      return "weekly";
+    case "month":
+      return "monthly";
     default:
-      return 'runonce';
+      return "runonce";
   }
 }
 
 export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): CreateScheduleFormData {
-  const repeatEnabled = schedule.task_type !== 'runonce';
+  const repeatEnabled = schedule.task_type !== "runonce";
 
-  let repeatPeriod: RepeatPeriod = 'day';
+  let repeatPeriod: RepeatPeriod = "day";
   let repeatInterval = 1;
-  if (schedule.task_type === 'daily') {
-    repeatPeriod = 'day';
+  if (schedule.task_type === "daily") {
+    repeatPeriod = "day";
     repeatInterval = schedule.daily_interval ?? 1;
-  } else if (schedule.task_type === 'weekly') {
-    repeatPeriod = 'week';
+  } else if (schedule.task_type === "weekly") {
+    repeatPeriod = "week";
     repeatInterval = schedule.weekly_interval ?? 1;
-  } else if (schedule.task_type === 'monthly' || schedule.task_type === 'monthlydow') {
-    repeatPeriod = 'month';
+  } else if (schedule.task_type === "monthly" || schedule.task_type === "monthlydow") {
+    repeatPeriod = "month";
     repeatInterval = 1;
   }
 
@@ -242,18 +242,18 @@ export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): Create
     name: a.name,
     timeout: a.timeout,
     script_args: a.script_args.map(arg => {
-      const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-      return { id: crypto.randomUUID(), key, value: rest.join('=') };
+      const [key, ...rest] = arg.includes("=") ? arg.split("=") : [arg];
+      return { id: crypto.randomUUID(), key, value: rest.join("=") };
     }),
     env_vars: a.env_vars.map(env => {
-      const [key, ...rest] = env.includes('=') ? env.split('=') : [env];
-      return { id: crypto.randomUUID(), key, value: rest.join('=') };
+      const [key, ...rest] = env.includes("=") ? env.split("=") : [env];
+      return { id: crypto.randomUUID(), key, value: rest.join("=") };
     }),
   }));
 
   return {
     name: schedule.name,
-    note: '',
+    note: "",
     scheduledDate: parseZuluToLocalDate(schedule.run_time_date),
     repeatEnabled: Boolean(repeatEnabled),
     repeatInterval,
@@ -269,7 +269,7 @@ export function buildCreatePayload(formData: CreateScheduleFormData): CreateScri
   const taskType = buildTaskTypeFromForm(formData.repeatEnabled, formData.repeatPeriod);
 
   const actions: ScriptScheduleAction[] = formData.actions.map(a => ({
-    type: 'script' as const,
+    type: "script" as const,
     script: a.script,
     name: a.name,
     timeout: a.timeout,
@@ -288,12 +288,12 @@ export function buildCreatePayload(formData: CreateScheduleFormData): CreateScri
     actions,
   };
 
-  if (taskType === 'daily') {
+  if (taskType === "daily") {
     payload.daily_interval = formData.repeatInterval;
-  } else if (taskType === 'weekly') {
+  } else if (taskType === "weekly") {
     payload.weekly_interval = formData.repeatInterval;
     payload.run_time_bit_weekdays = formData.weekdays || null;
-  } else if (taskType === 'monthly') {
+  } else if (taskType === "monthly") {
     payload.monthly_months_of_year = 4095; // all months by default
     payload.monthly_days_of_month = null;
   }

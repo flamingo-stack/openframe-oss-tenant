@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components';
+import { HeroImageUploader } from "@flamingo-stack/openframe-frontend-core/components";
 import {
   Input,
   Label,
@@ -10,20 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
   Textarea,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React from 'react';
-import { featureFlags } from '@/lib/feature-flags';
-import { getFullImageUrl } from '@/lib/image-url';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import React from "react";
+import { featureFlags } from "@/lib/feature-flags";
+import { getFullImageUrl } from "@/lib/image-url";
+import { runtimeEnv } from "@/lib/runtime-config";
+import { deleteWithAuth, uploadWithAuth } from "@/lib/upload-with-auth";
 
 export type GeneralInfoState = {
   name: string;
   category: string;
   employees: string;
-  serviceTier: 'Basic' | 'Premium' | 'Enterprise';
-  sla: 'Low' | 'Medium' | 'High' | 'Critical';
+  serviceTier: "Basic" | "Premium" | "Enterprise";
+  sla: "Low" | "Medium" | "High" | "Critical";
   mrr: string;
   website: string;
   contractStart: string;
@@ -43,16 +43,16 @@ interface GeneralInformationTabProps {
 export function GeneralInformationTab({ value, onChange, organizationId }: GeneralInformationTabProps) {
   const set = (partial: Partial<GeneralInfoState>) => onChange({ ...value, ...partial });
   const { toast } = useToast();
-  const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
+  const isSaasTenant = runtimeEnv.appMode() === "saas-tenant";
   const displayImageUrl = getFullImageUrl(value.imageUrl);
 
   const handleAuthenticatedUpload = async (file: File): Promise<string> => {
     try {
       const uploadedUrl = await uploadWithAuth(`/api/organizations/${organizationId}/image`, file);
       toast({
-        title: 'Upload successful',
-        description: 'Organization image has been updated',
-        variant: 'success',
+        title: "Upload successful",
+        description: "Organization image has been updated",
+        variant: "success",
       });
       return uploadedUrl;
     } catch (error) {
@@ -73,16 +73,16 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
       });
 
       toast({
-        title: 'Delete successful',
-        description: 'Organization image has been deleted',
-        variant: 'success',
+        title: "Delete successful",
+        description: "Organization image has been deleted",
+        variant: "success",
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete image';
+      const errorMessage = error instanceof Error ? error.message : "Failed to delete image";
       toast({
-        title: 'Delete failed',
+        title: "Delete failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
       throw error;
     }
@@ -180,12 +180,12 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
           <div className="w-full lg:w-80 shrink-0 self-start">
             <div className="flex flex-col gap-2">
               <Label>Organization Logo</Label>
-              <div style={{ maxHeight: '200px' }}>
+              <div style={{ maxHeight: "200px" }}>
                 {organizationId ? (
                   <HeroImageUploader
                     imageUrl={displayImageUrl}
                     onChange={url => {
-                      if (url && url.startsWith('/images/')) {
+                      if (url && url.startsWith("/images/")) {
                         set({
                           imageUrl: url,
                           logoUrl: undefined,

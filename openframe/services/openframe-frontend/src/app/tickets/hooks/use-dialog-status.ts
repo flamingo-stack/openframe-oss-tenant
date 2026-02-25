@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { DialogStatus } from '../types/dialog.types';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useCallback, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { DialogStatus } from "../types/dialog.types";
 
 interface UpdateStatusResponse {
   success: boolean;
@@ -34,21 +34,21 @@ export function useDialogStatus() {
         }
 
         toast({
-          title: 'Success',
-          description: `Dialog ${status === 'ON_HOLD' ? 'put on hold' : status === 'RESOLVED' ? 'resolved' : 'status updated'} successfully`,
-          variant: 'success',
+          title: "Success",
+          description: `Dialog ${status === "ON_HOLD" ? "put on hold" : status === "RESOLVED" ? "resolved" : "status updated"} successfully`,
+          variant: "success",
           duration: 3000,
         });
 
         return true;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to update dialog status';
-        console.error('Failed to update dialog status:', error);
+        const errorMessage = error instanceof Error ? error.message : "Failed to update dialog status";
+        console.error("Failed to update dialog status:", error);
 
         toast({
-          title: 'Error',
+          title: "Error",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
           duration: 5000,
         });
 
@@ -62,21 +62,21 @@ export function useDialogStatus() {
 
   const putOnHold = useCallback(
     async (dialogId: string) => {
-      return updateDialogStatus(dialogId, 'ON_HOLD');
+      return updateDialogStatus(dialogId, "ON_HOLD");
     },
     [updateDialogStatus],
   );
 
   const resolve = useCallback(
     async (dialogId: string) => {
-      return updateDialogStatus(dialogId, 'RESOLVED');
+      return updateDialogStatus(dialogId, "RESOLVED");
     },
     [updateDialogStatus],
   );
 
   const activate = useCallback(
     async (dialogId: string) => {
-      return updateDialogStatus(dialogId, 'ACTIVE');
+      return updateDialogStatus(dialogId, "ACTIVE");
     },
     [updateDialogStatus],
   );

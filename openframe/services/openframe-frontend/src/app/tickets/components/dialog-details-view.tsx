@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -13,15 +13,15 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { DetailLoader, ProcessedMessage } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { CheckCircle, Clock } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { DeviceInfoSection } from '../../components/shared';
+} from "@flamingo-stack/openframe-frontend-core";
+import { DetailLoader, ProcessedMessage } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { cn } from "@flamingo-stack/openframe-frontend-core/utils";
+import { CheckCircle, Clock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { DeviceInfoSection } from "../../components/shared";
 import {
   API_ENDPOINTS,
   APPROVAL_STATUS,
@@ -31,14 +31,14 @@ import {
   DIALOG_STATUS,
   MESSAGE_TYPE,
   type NatsMessageType,
-} from '../constants';
-import { useApprovalRequests } from '../hooks/use-approval-requests';
-import { useChunkCatchup } from '../hooks/use-chunk-catchup';
-import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
-import { useDialogStatus } from '../hooks/use-dialog-status';
-import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
-import type { ClientDialogOwner, DialogOwner, Message } from '../types/dialog.types';
+} from "../constants";
+import { useApprovalRequests } from "../hooks/use-approval-requests";
+import { useChunkCatchup } from "../hooks/use-chunk-catchup";
+import { useDialogRealtimeProcessor } from "../hooks/use-dialog-realtime-processor";
+import { useDialogStatus } from "../hooks/use-dialog-status";
+import { useNatsDialogSubscription } from "../hooks/use-nats-dialog-subscription";
+import { useDialogDetailsStore } from "../stores/dialog-details-store";
+import type { ClientDialogOwner, DialogOwner, Message } from "../types/dialog.types";
 
 interface DialogDetailsViewProps {
   dialogId: string;
@@ -49,7 +49,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { toast } = useToast();
 
   const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
-    return owner != null && typeof owner === 'object' && 'machineId' in owner;
+    return owner != null && typeof owner === "object" && "machineId" in owner;
   };
 
   const {
@@ -73,7 +73,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
-  const [activeChatTab, setActiveChatTab] = useState('client');
+  const [activeChatTab, setActiveChatTab] = useState("client");
   const hasCaughtUp = useRef(false);
 
   const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
@@ -137,7 +137,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   // NATS subscription
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
-      const processed = processChunk(payload as any, messageType as 'message' | 'admin-message');
+      const processed = processChunk(payload as any, messageType as "message" | "admin-message");
       if (!processed) return;
     },
     [processChunk],
@@ -202,9 +202,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         }));
       } catch (error) {
         toast({
-          title: 'Approval Failed',
-          description: error instanceof Error ? error.message : 'Unable to approve request',
-          variant: 'destructive',
+          title: "Approval Failed",
+          description: error instanceof Error ? error.message : "Unable to approve request",
+          variant: "destructive",
           duration: 5000,
         });
       }
@@ -224,9 +224,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         }));
       } catch (error) {
         toast({
-          title: 'Rejection Failed',
-          description: error instanceof Error ? error.message : 'Unable to reject request',
-          variant: 'destructive',
+          title: "Rejection Failed",
+          description: error instanceof Error ? error.message : "Unable to reject request",
+          variant: "destructive",
           duration: 5000,
         });
       }
@@ -248,9 +248,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         });
       } catch (error) {
         toast({
-          title: 'Send Failed',
-          description: error instanceof Error ? error.message : 'Unable to send message',
-          variant: 'destructive',
+          title: "Send Failed",
+          description: error instanceof Error ? error.message : "Unable to send message",
+          variant: "destructive",
           duration: 5000,
         });
       } finally {
@@ -287,9 +287,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       const pendingApprovalSegments: MessageSegment[] = [];
       const filteredMessages = processed.filter((msg: ProcessedMessage) => {
-        if (msg.id.startsWith('pending-approvals-') && Array.isArray(msg.content)) {
+        if (msg.id.startsWith("pending-approvals-") && Array.isArray(msg.content)) {
           msg.content.forEach((segment: MessageSegment) => {
-            if (segment.type === 'approval_request' && segment.status === 'pending') {
+            if (segment.type === "approval_request" && segment.status === "pending") {
               pendingApprovalSegments.push(segment as MessageSegment);
             }
           });
@@ -301,9 +301,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       const processedMessages = filteredMessages.map((msg: ProcessedMessage) => ({
         id: msg.id,
         content: msg.content as string | MessageSegment[],
-        role: msg.role as 'user' | 'assistant' | 'error',
+        role: msg.role as "user" | "assistant" | "error",
         name: msg.name,
-        assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
+        assistantType: msg.assistantType as "fae" | "mingo" | undefined,
         timestamp: msg.timestamp,
       }));
 
@@ -340,7 +340,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             disabled={isUpdating}
           >
             <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-              {isUpdating ? 'Updating...' : 'Put On Hold'}
+              {isUpdating ? "Updating..." : "Put On Hold"}
             </span>
           </Button>
         )}
@@ -353,7 +353,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             disabled={isUpdating}
           >
             <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-              {isUpdating ? 'Updating...' : 'Resolve'}
+              {isUpdating ? "Updating..." : "Resolve"}
             </span>
           </Button>
         )}
@@ -369,8 +369,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     <DetailPageContainer
       title={dialog.title}
       backButton={{
-        label: 'Back to Chats',
-        onClick: () => router.push('/tickets'),
+        label: "Back to Chats",
+        onClick: () => router.push("/tickets"),
       }}
       padding="none"
       className="h-full gap-2"
@@ -413,8 +413,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           {/* Client Chat */}
           <div
             className={cn(
-              'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
-              activeChatTab !== 'client' ? 'hidden lg:flex' : 'flex',
+              "flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0",
+              activeChatTab !== "client" ? "hidden lg:flex" : "flex",
             )}
           >
             <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
@@ -449,8 +449,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           {/* Technician Chat */}
           <div
             className={cn(
-              'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
-              activeChatTab !== 'technician' ? 'hidden lg:flex' : 'flex',
+              "flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0",
+              activeChatTab !== "technician" ? "hidden lg:flex" : "flex",
             )}
           >
             <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">

@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { ArchiveIcon, MessageCircleIcon, TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { usePathname, useRouter } from 'next/navigation';
-import React, { useCallback } from 'react';
-import { ArchivedChats, CurrentChats } from './chats-table';
+import { ArchiveIcon, MessageCircleIcon, TabItem, TabNavigation } from "@flamingo-stack/openframe-frontend-core";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useCallback } from "react";
+import { ArchivedChats, CurrentChats } from "./chats-table";
 
 export const TICKETS_TABS: TabItem[] = [
   {
-    id: 'current',
-    label: 'Current Chats',
+    id: "current",
+    label: "Current Chats",
     icon: MessageCircleIcon,
     component: CurrentChats,
   },
   {
-    id: 'archived',
-    label: 'Archived Chats',
+    id: "archived",
+    label: "Archived Chats",
     icon: ArchiveIcon,
     component: ArchivedChats,
   },
@@ -50,7 +50,7 @@ export function TicketsTabNavigation({ activeTab, onTabChange }: TicketsTabNavig
   return (
     <TabNavigation
       urlSync={false}
-      activeTab={activeTab || 'current'}
+      activeTab={activeTab || "current"}
       tabs={TICKETS_TABS}
       onTabChange={handleTabChange}
     />

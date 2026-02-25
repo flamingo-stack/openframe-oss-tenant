@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
-import React from 'react';
+import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from "@flamingo-stack/openframe-frontend-core";
+import React from "react";
 
 interface DisableApiKeyModalProps {
   isOpen: boolean;
@@ -20,8 +20,8 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
 
       <div className="px-6 py-4">
         <p className="text-ods-text-primary">
-          Are you sure you want to deactivate{' '}
-          <span className="text-error font-semibold">{apiKeyName || 'this API Key'}</span>? This key will stop working
+          Are you sure you want to deactivate{" "}
+          <span className="text-error font-semibold">{apiKeyName || "this API Key"}</span>? This key will stop working
           until you reactivate it.
         </p>
       </div>

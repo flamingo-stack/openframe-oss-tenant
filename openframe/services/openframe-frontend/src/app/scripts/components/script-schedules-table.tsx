@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
-import { PenEditIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useScriptSchedules } from '../hooks/use-script-schedule';
-import type { ScriptScheduleListItem, ScriptScheduleTaskType } from '../types/script-schedule.types';
-import { formatScheduleDate } from '../types/script-schedule.types';
+import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components";
+import { PenEditIcon, PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import { Button, ListPageLayout, Table, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useScriptSchedules } from "../hooks/use-script-schedule";
+import type { ScriptScheduleListItem, ScriptScheduleTaskType } from "../types/script-schedule.types";
+import { formatScheduleDate } from "../types/script-schedule.types";
 
 function getRepeatLabelFromTaskType(taskType: ScriptScheduleTaskType): string {
   switch (taskType) {
-    case 'runonce':
-      return 'Once';
-    case 'daily':
-      return 'Daily';
-    case 'weekly':
-      return 'Weekly';
-    case 'monthly':
-    case 'monthlydow':
-      return 'Monthly';
+    case "runonce":
+      return "Once";
+    case "daily":
+      return "Daily";
+    case "weekly":
+      return "Weekly";
+    case "monthly":
+    case "monthlydow":
+      return "Monthly";
     default:
       return taskType;
   }
@@ -30,8 +30,8 @@ export function ScriptSchedulesTable() {
   const router = useRouter();
 
   const { params, setParam } = useApiParams({
-    search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
+    search: { type: "string", default: "" },
+    page: { type: "number", default: 1 },
   });
   const pageSize = 10;
 
@@ -40,14 +40,14 @@ export function ScriptSchedulesTable() {
 
   useEffect(() => {
     if (debouncedSearchInput !== params.search) {
-      setParam('search', debouncedSearchInput);
+      setParam("search", debouncedSearchInput);
     }
   }, [debouncedSearchInput, params.search, setParam]);
 
   const { schedules, isLoading, error } = useScriptSchedules();
 
   const filteredSchedules = useMemo(() => {
-    if (!params.search || params.search.trim() === '') return schedules;
+    if (!params.search || params.search.trim() === "") return schedules;
 
     const searchLower = params.search.toLowerCase().trim();
     return schedules.filter(s => s.name.toLowerCase().includes(searchLower));
@@ -65,15 +65,15 @@ export function ScriptSchedulesTable() {
   useEffect(() => {
     if (params.search !== lastSearchRef.current) {
       lastSearchRef.current = params.search;
-      setParam('page', 1);
+      setParam("page", 1);
     }
   }, [params.search, setParam]);
 
   const columns: TableColumn<ScriptScheduleListItem>[] = useMemo(
     () => [
       {
-        key: 'name',
-        label: 'Script',
+        key: "name",
+        label: "Script",
         renderCell: schedule => (
           <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {schedule.name}
@@ -81,10 +81,10 @@ export function ScriptSchedulesTable() {
         ),
       },
       {
-        key: 'run_time_date',
-        label: 'Date & Time',
-        width: 'w-[160px]',
-        hideAt: 'sm',
+        key: "run_time_date",
+        label: "Date & Time",
+        width: "w-[160px]",
+        hideAt: "sm",
         renderCell: schedule => {
           const { date, time } = formatScheduleDate(schedule.run_time_date);
           return (
@@ -96,10 +96,10 @@ export function ScriptSchedulesTable() {
         },
       },
       {
-        key: 'task_type',
-        label: 'Repeat',
-        width: 'w-[120px]',
-        hideAt: 'md',
+        key: "task_type",
+        label: "Repeat",
+        width: "w-[120px]",
+        hideAt: "md",
         renderCell: schedule => (
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">
             {getRepeatLabelFromTaskType(schedule.task_type)}
@@ -107,17 +107,17 @@ export function ScriptSchedulesTable() {
         ),
       },
       {
-        key: 'task_supported_platforms',
-        label: 'Platforms',
-        width: 'w-[100px]',
-        hideAt: 'lg',
+        key: "task_supported_platforms",
+        label: "Platforms",
+        width: "w-[100px]",
+        hideAt: "lg",
         renderCell: schedule => <OSTypeBadgeGroup osTypes={schedule.task_supported_platforms} iconSize="w-4 h-4" />,
       },
       {
-        key: 'agents_count',
-        label: 'Devices',
-        width: 'w-[100px]',
-        hideAt: 'lg',
+        key: "agents_count",
+        label: "Devices",
+        width: "w-[100px]",
+        hideAt: "lg",
         renderCell: schedule => (
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">{schedule.agents_count}</span>
         ),
@@ -134,7 +134,7 @@ export function ScriptSchedulesTable() {
   );
 
   const handleAddSchedule = useCallback(() => {
-    router.push('/scripts/schedules/create');
+    router.push("/scripts/schedules/create");
   }, [router]);
 
   const renderRowActions = useMemo(() => {
@@ -156,13 +156,13 @@ export function ScriptSchedulesTable() {
   const cursorPagination = useTablePagination(
     totalPages > 1
       ? {
-          type: 'client',
+          type: "client",
           currentPage: params.page,
           totalPages,
           itemCount: paginatedSchedules.length,
-          itemName: 'schedules',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
+          itemName: "schedules",
+          onNext: () => setParam("page", Math.min(params.page + 1, totalPages)),
+          onPrevious: () => setParam("page", Math.max(params.page - 1, 1)),
           showInfo: true,
         }
       : null,
@@ -171,7 +171,7 @@ export function ScriptSchedulesTable() {
   const actions = useMemo(
     () => [
       {
-        label: 'Add Schedule',
+        label: "Add Schedule",
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddSchedule,
       },
@@ -200,7 +200,7 @@ export function ScriptSchedulesTable() {
         emptyMessage={
           params.search
             ? `No schedules found matching "${params.search}". Try adjusting your search.`
-            : 'No schedules found. Create a new schedule to get started.'
+            : "No schedules found. Create a new schedule to get started."
         }
         rowClassName="mb-1"
         onRowClick={handleRowClick}

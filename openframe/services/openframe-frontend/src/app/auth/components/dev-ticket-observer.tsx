@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import { useDevTicketExchange } from '@/app/auth/hooks/use-dev-ticket-exchange';
-import { useAuthStore } from '@/app/auth/stores/auth-store';
-import { runtimeEnv } from '@/lib/runtime-config';
+import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useRef } from "react";
+import { useDevTicketExchange } from "@/app/auth/hooks/use-dev-ticket-exchange";
+import { useAuthStore } from "@/app/auth/stores/auth-store";
+import { runtimeEnv } from "@/lib/runtime-config";
 
 /**
  * Global DevTicket Observer Component
@@ -29,7 +29,7 @@ export function DevTicketObserver() {
   // Log initialization on mount
   useEffect(() => {
     if (isEnabled) {
-      console.log('🎫 [DevTicket Observer] Initialized and monitoring for devTicket parameters');
+      console.log("🎫 [DevTicket Observer] Initialized and monitoring for devTicket parameters");
     }
   }, [isEnabled]);
 
@@ -39,12 +39,12 @@ export function DevTicketObserver() {
       return;
     }
     // Check if devTicket exists in URL
-    const devTicket = searchParams?.get('devTicket');
+    const devTicket = searchParams?.get("devTicket");
 
     if (!devTicket) {
       // Clear the last ticket reference when no ticket is present
       if (lastTicket.current) {
-        console.log('🎫 [DevTicket Observer] DevTicket cleared from URL');
+        console.log("🎫 [DevTicket Observer] DevTicket cleared from URL");
         lastTicket.current = null;
       }
       return;
@@ -52,7 +52,7 @@ export function DevTicketObserver() {
 
     // Only process if this is a new ticket (prevent duplicate processing)
     if (devTicket !== lastTicket.current) {
-      console.log('🎫 [DevTicket Observer] DevTicket detected:', {
+      console.log("🎫 [DevTicket Observer] DevTicket detected:", {
         ticket: devTicket,
         pathname: pathname,
         isAuthenticated: isAuthenticated,

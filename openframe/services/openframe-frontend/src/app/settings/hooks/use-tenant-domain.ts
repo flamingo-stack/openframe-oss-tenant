@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback, useState } from 'react';
-import { apiClient } from '../../../lib/api-client';
+import { useCallback, useState } from "react";
+import { apiClient } from "../../../lib/api-client";
 
 export type TenantDomainInfo = {
   domain: string;
@@ -28,7 +28,7 @@ export function useTenantDomain() {
   const fetchTenantDomain = useCallback(async (): Promise<TenantDomainInfo> => {
     setIsLoading(true);
     try {
-      const res = await apiClient.get<TenantDomainInfo>('api/config/global/domain');
+      const res = await apiClient.get<TenantDomainInfo>("api/config/global/domain");
       if (!res.ok || !res.data) {
         throw new Error(res.error || `Failed to load tenant domain (${res.status})`);
       }
@@ -47,7 +47,7 @@ export function useTenantDomain() {
     async (enabled: boolean): Promise<UpdateSharedAutoProvisionResponse> => {
       setIsUpdating(true);
       try {
-        const res = await apiClient.post<UpdateSharedAutoProvisionResponse>('api/config/global/domain', {
+        const res = await apiClient.post<UpdateSharedAutoProvisionResponse>("api/config/global/domain", {
           autoAllow: enabled,
         });
 
@@ -56,15 +56,15 @@ export function useTenantDomain() {
           if (res.data?.error) {
             return {
               error: {
-                code: res.data.error.code || 'BAD_REQUEST',
-                message: res.data.error.message || 'Failed to update auto provision setting',
+                code: res.data.error.code || "BAD_REQUEST",
+                message: res.data.error.message || "Failed to update auto provision setting",
               },
             };
           }
 
           // Handle generic domain error from response body
           const errorData = res.data as any;
-          if (errorData?.code === 'BAD_REQUEST' && errorData?.message) {
+          if (errorData?.code === "BAD_REQUEST" && errorData?.message) {
             return {
               error: {
                 code: errorData.code,

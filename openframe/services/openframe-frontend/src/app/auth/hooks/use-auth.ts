@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useLocalStorage, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { isSaasSharedMode } from '@/lib/app-mode';
-import { authApiClient } from '@/lib/auth-api-client';
-import { clearStoredTokens } from '@/lib/force-logout';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { useAuthStore } from '../stores/auth-store';
-import { useTokenStorage } from './use-token-storage';
+import { useLocalStorage, useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/lib/api-client";
+import { isSaasSharedMode } from "@/lib/app-mode";
+import { authApiClient } from "@/lib/auth-api-client";
+import { clearStoredTokens } from "@/lib/force-logout";
+import { runtimeEnv } from "@/lib/runtime-config";
+import { useAuthStore } from "../stores/auth-store";
+import { useTokenStorage } from "./use-token-storage";
 
 interface TenantInfo {
   tenantId?: string;
@@ -38,7 +38,7 @@ interface SsoRegisterRequest {
   tenantName: string;
   tenantDomain: string;
   email: string;
-  provider: 'google' | 'microsoft';
+  provider: "google" | "microsoft";
   accessCode: string;
   redirectTo?: string;
 }
@@ -57,10 +57,10 @@ export function useAuth() {
   const { getAccessToken, storeAccessToken, storeRefreshToken, clearTokens } = useTokenStorage();
 
   // Use UI Kit's localStorage hook for persistent state
-  const [email, setEmail] = useLocalStorage('auth:email', '');
-  const [tenantInfo, setTenantInfo] = useLocalStorage<TenantInfo | null>('auth:tenantInfo', null);
-  const [hasDiscoveredTenants, setHasDiscoveredTenants] = useLocalStorage('auth:hasDiscoveredTenants', false);
-  const [availableProviders, setAvailableProviders] = useLocalStorage<string[]>('auth:availableProviders', []);
+  const [email, setEmail] = useLocalStorage("auth:email", "");
+  const [tenantInfo, setTenantInfo] = useLocalStorage<TenantInfo | null>("auth:tenantInfo", null);
+  const [hasDiscoveredTenants, setHasDiscoveredTenants] = useLocalStorage("auth:hasDiscoveredTenants", false);
+  const [availableProviders, setAvailableProviders] = useLocalStorage<string[]>("auth:availableProviders", []);
 
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -69,7 +69,7 @@ export function useAuth() {
   // Handle successful authentication from any source
   const handleAuthenticationSuccess = useCallback(
     async (token: string, userData: any, redirectPath?: string) => {
-      console.log('✅ [Auth] Handling successful authentication');
+      console.log("✅ [Auth] Handling successful authentication");
 
       // Store token in localStorage using the token storage hook
       storeAccessToken(token);
@@ -81,15 +81,15 @@ export function useAuth() {
 
       // Format user data for auth store
       const user = {
-        id: userData.id || userData.userId || '',
-        email: userData.email || email || '',
+        id: userData.id || userData.userId || "",
+        email: userData.email || email || "",
         tenantId: userData.tenantId || tenantInfo?.tenantId,
         tenantName: userData.tenantName || tenantInfo?.tenantName,
-        role: userData.role || 'user',
+        role: userData.role || "user",
       };
 
-      console.log('🔐 [Auth] User data:', userData);
-      console.log('🔐 [Auth] Token:', token);
+      console.log("🔐 [Auth] User data:", userData);
+      console.log("🔐 [Auth] Token:", token);
 
       // Store in auth store
       storeLogin(user);
@@ -103,12 +103,12 @@ export function useAuth() {
       // Fetch full profile data in background
       const fullProfile = await fetchFullProfile();
 
-      const displayName = `${fullProfile?.firstName || ''} ${fullProfile?.lastName || ''}`.trim();
+      const displayName = `${fullProfile?.firstName || ""} ${fullProfile?.lastName || ""}`.trim();
 
       toast({
-        title: 'Welcome!',
+        title: "Welcome!",
         description: `Successfully signed in as ${displayName}`,
-        variant: 'success',
+        variant: "success",
       });
 
       // Clear auth flow data
@@ -119,10 +119,10 @@ export function useAuth() {
       // Redirect if specified or if on auth page
       if (redirectPath) {
         router.push(redirectPath);
-      } else if (pathname?.startsWith('/auth')) {
+      } else if (pathname?.startsWith("/auth")) {
         // If on auth page and successfully authenticated, redirect to dashboard
-        console.log('🔄 [Auth] Redirecting to dashboard after successful authentication');
-        router.push('/dashboard');
+        console.log("🔄 [Auth] Redirecting to dashboard after successful authentication");
+        router.push("/dashboard");
       }
     },
     [
@@ -150,19 +150,19 @@ export function useAuth() {
   // Check for existing authentication on mount and periodically
   useEffect(() => {
     // Check if we just returned from OAuth (has devTicket or state parameter)
-    const hasOauthCallback = searchParams?.has('devTicket') || searchParams?.has('state') || searchParams?.has('code');
+    const hasOauthCallback = searchParams?.has("devTicket") || searchParams?.has("state") || searchParams?.has("code");
 
     // Skip auth checks when on auth pages UNLESS we just returned from OAuth
-    const isAuthPage = pathname?.startsWith('/auth');
+    const isAuthPage = pathname?.startsWith("/auth");
     const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
     if (isAuthPage && isDevTicketEnabled && !hasOauthCallback) {
-      console.log('🔐 [Auth] Skipping auth check on auth page:', pathname);
+      console.log("🔐 [Auth] Skipping auth check on auth page:", pathname);
       return;
     }
 
     // If we have OAuth callback parameters, force an immediate auth check
     if (hasOauthCallback) {
-      console.log('🔐 [Auth] OAuth callback detected, forcing auth check');
+      console.log("🔐 [Auth] OAuth callback detected, forcing auth check");
     }
 
     const checkExistingAuth = async (isPeriodicCheck = false) => {
@@ -173,7 +173,7 @@ export function useAuth() {
 
       try {
         if (!isPeriodicCheck) {
-          console.log('🔐 [Auth] Initial authentication check via /me endpoint...');
+          console.log("🔐 [Auth] Initial authentication check via /me endpoint...");
         }
 
         // Call auth service for /me (shared host if provided, else relative); includes cookies and header token (dev)
@@ -183,17 +183,17 @@ export function useAuth() {
           const userData = response.data.user;
 
           if (!isPeriodicCheck) {
-            console.log('✅ [Auth] User authenticated via /me endpoint:', userData);
+            console.log("✅ [Auth] User authenticated via /me endpoint:", userData);
           }
 
           // Get token from localStorage if DevTicket is enabled, otherwise use placeholder
           const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-          const token = isDevTicketEnabled ? getAccessToken() : 'cookie-auth';
+          const token = isDevTicketEnabled ? getAccessToken() : "cookie-auth";
 
           if (userData && userData.email) {
             // For initial check or if user data changed, update auth store
             if (!isPeriodicCheck || !isAuthenticated) {
-              await handleAuthenticationSuccess(token || 'cookie-auth', userData);
+              await handleAuthenticationSuccess(token || "cookie-auth", userData);
             }
           }
         } else if (response.status === 401) {
@@ -204,12 +204,12 @@ export function useAuth() {
             clearStoredTokens();
 
             toast({
-              title: 'Session Expired',
-              description: 'Your session has expired. Please sign in again.',
-              variant: 'destructive',
+              title: "Session Expired",
+              description: "Your session has expired. Please sign in again.",
+              variant: "destructive",
             });
 
-            import('../../../lib/app-mode').then(({ getDefaultRedirectPath }) => {
+            import("../../../lib/app-mode").then(({ getDefaultRedirectPath }) => {
               router.push(getDefaultRedirectPath(false));
             });
           } else if (!isPeriodicCheck) {
@@ -223,13 +223,13 @@ export function useAuth() {
           }
         } else if (isPeriodicCheck && isAuthenticated && response.status >= 400) {
           // Some error occurred during periodic check
-          console.log('⚠️ [Auth] Periodic auth check failed with status:', response.status);
+          console.log("⚠️ [Auth] Periodic auth check failed with status:", response.status);
         }
       } catch (error) {
         if (isPeriodicCheck) {
-          console.error('❌ [Auth] Periodic auth check failed:', error);
+          console.error("❌ [Auth] Periodic auth check failed:", error);
         } else {
-          console.error('❌ [Auth] Initial auth check failed:', error);
+          console.error("❌ [Auth] Initial auth check failed:", error);
         }
       }
     };
@@ -274,16 +274,16 @@ export function useAuth() {
       }
 
       const data = response.data as TenantDiscoveryResponse;
-      console.log('🔍 [Tenant Discovery] Response:', data);
+      console.log("🔍 [Tenant Discovery] Response:", data);
 
       // Check if user has existing accounts
       if (data.has_existing_accounts && data.tenant_id) {
         const tenantInfo = {
           tenantId: data.tenant_id,
-          tenantName: '', // Not provided by API
-          tenantDomain: 'localhost', // Default for local development
+          tenantName: "", // Not provided by API
+          tenantDomain: "localhost", // Default for local development
         };
-        const providers = data.auth_providers || ['openframe-sso'];
+        const providers = data.auth_providers || ["openframe-sso"];
 
         setTenantInfo(tenantInfo);
         setAvailableProviders(providers);
@@ -292,10 +292,10 @@ export function useAuth() {
         // Store tenant ID in auth store (in memory) for token refresh
         setTenantId(data.tenant_id);
 
-        console.log('✅ [Tenant Discovery] Found existing account:', data.tenant_id);
+        console.log("✅ [Tenant Discovery] Found existing account:", data.tenant_id);
       } else {
         setHasDiscoveredTenants(false);
-        console.log('🔍 [Tenant Discovery] No existing accounts found for email:', userEmail);
+        console.log("🔍 [Tenant Discovery] No existing accounts found for email:", userEmail);
       }
 
       // Mark discovery as attempted after successful API call
@@ -304,12 +304,12 @@ export function useAuth() {
       // Return the response data
       return data;
     } catch (error) {
-      console.error('Tenant discovery failed:', error);
+      console.error("Tenant discovery failed:", error);
 
       toast({
-        title: 'Discovery Failed',
-        description: error instanceof Error ? error.message : 'Unable to check for existing accounts',
-        variant: 'destructive',
+        title: "Discovery Failed",
+        description: error instanceof Error ? error.message : "Unable to check for existing accounts",
+        variant: "destructive",
       });
       setHasDiscoveredTenants(false);
       // Mark as attempted even on error to prevent spam
@@ -325,7 +325,7 @@ export function useAuth() {
     setIsLoading(true);
 
     try {
-      console.log('📝 [Auth] Attempting organization registration:', data.tenantName);
+      console.log("📝 [Auth] Attempting organization registration:", data.tenantName);
 
       const response = await authApiClient.registerOrganization({
         email: data.email,
@@ -333,34 +333,34 @@ export function useAuth() {
         lastName: data.lastName,
         password: data.password,
         tenantName: data.tenantName,
-        tenantDomain: data.tenantDomain || 'localhost',
+        tenantDomain: data.tenantDomain || "localhost",
         accessCode: isSaasSharedMode() ? data.accessCode : undefined,
       });
 
       if (!response.ok) {
         const code = (response.data as any)?.code;
-        const message = (response.data as any)?.message || response.error || 'Registration failed';
-        let userMessage = 'Registration failed';
-        let title = 'Registration Failed';
-        const variant: any = 'destructive';
+        const message = (response.data as any)?.message || response.error || "Registration failed";
+        let userMessage = "Registration failed";
+        let title = "Registration Failed";
+        const variant: any = "destructive";
 
         switch (code) {
-          case 'INVALID_ARGUMENT':
-            userMessage = 'Access code is required';
+          case "INVALID_ARGUMENT":
+            userMessage = "Access code is required";
             break;
-          case 'INVALID_ACCESS_CODE':
-            userMessage = 'The access code you entered is invalid. Please check and try again.';
+          case "INVALID_ACCESS_CODE":
+            userMessage = "The access code you entered is invalid. Please check and try again.";
             break;
-          case 'ACCESS_CODE_ALREADY_USED':
-            userMessage = 'This access code has already been used. Please contact support for a new code.';
+          case "ACCESS_CODE_ALREADY_USED":
+            userMessage = "This access code has already been used. Please contact support for a new code.";
             break;
-          case 'ACCESS_CODE_VALIDATION_FAILED':
-            userMessage = 'Unable to verify access code. Please try again in a moment.';
-            console.error('[Auth] Access code validation failed:', message);
+          case "ACCESS_CODE_VALIDATION_FAILED":
+            userMessage = "Unable to verify access code. Please try again in a moment.";
+            console.error("[Auth] Access code validation failed:", message);
             break;
-          case 'TENANT_REGISTRATION_BLOCKED':
-            title = 'Service Unavailable';
-            userMessage = 'Registration is temporarily unavailable. Please try again later.';
+          case "TENANT_REGISTRATION_BLOCKED":
+            title = "Service Unavailable";
+            userMessage = "Registration is temporarily unavailable. Please try again later.";
             break;
           default:
             userMessage = message;
@@ -371,27 +371,27 @@ export function useAuth() {
       }
 
       const result = response.data;
-      console.log('✅ [Auth] Registration successful:', result);
+      console.log("✅ [Auth] Registration successful:", result);
 
       toast({
-        title: 'Success!',
-        description: 'Organization created successfully. You can now sign in.',
-        variant: 'success',
+        title: "Success!",
+        description: "Organization created successfully. You can now sign in.",
+        variant: "success",
       });
 
       const discoveryResult = await discoverTenants(data.email);
 
       if (discoveryResult && discoveryResult.has_existing_accounts) {
-        window.location.href = '/auth/login';
+        window.location.href = "/auth/login";
       } else {
-        window.location.href = '/auth';
+        window.location.href = "/auth";
       }
     } catch (error: any) {
-      console.error('❌ [Auth] Registration failed:', error);
+      console.error("❌ [Auth] Registration failed:", error);
       toast({
-        title: 'Registration Failed',
-        description: error instanceof Error ? error.message : 'Unable to create organization',
-        variant: 'destructive',
+        title: "Registration Failed",
+        description: error instanceof Error ? error.message : "Unable to create organization",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -406,9 +406,9 @@ export function useAuth() {
       return true;
     } catch (error: any) {
       toast({
-        title: 'SSO Registration Failed',
-        description: error instanceof Error ? error.message : 'Unable to register organization with SSO',
-        variant: 'destructive',
+        title: "SSO Registration Failed",
+        description: error instanceof Error ? error.message : "Unable to register organization with SSO",
+        variant: "destructive",
       });
       setIsLoading(false);
       return false;
@@ -419,7 +419,7 @@ export function useAuth() {
     setIsLoading(true);
 
     try {
-      console.log('🔄 [Auth] Starting SSO login with provider:', provider);
+      console.log("🔄 [Auth] Starting SSO login with provider:", provider);
 
       // Redirect to Gateway OAuth login for any provider listed by backend.
       if (tenantInfo?.tenantId) {
@@ -430,8 +430,8 @@ export function useAuth() {
         const getReturnUrl = () => {
           const hostname = window.location.hostname;
           const protocol = window.location.protocol;
-          const port = window.location.port ? `:${window.location.port}` : '';
-          if (hostname === 'localhost' || hostname === '127.0.0.1') {
+          const port = window.location.port ? `:${window.location.port}` : "";
+          if (hostname === "localhost" || hostname === "127.0.0.1") {
             return `${protocol}//${hostname}${port}/dashboard`;
           }
           return `${window.location.origin}/dashboard`;
@@ -441,14 +441,14 @@ export function useAuth() {
         const loginUrl = authApiClient.loginUrl(tenantInfo.tenantId, returnUrl, provider);
         window.location.href = loginUrl;
       } else {
-        throw new Error('No tenant information available for SSO login');
+        throw new Error("No tenant information available for SSO login");
       }
     } catch (error) {
-      console.error('❌ [Auth] SSO login failed:', error);
+      console.error("❌ [Auth] SSO login failed:", error);
       toast({
-        title: 'Login Failed',
-        description: error instanceof Error ? error.message : 'Unable to sign in with SSO',
-        variant: 'destructive',
+        title: "Login Failed",
+        description: error instanceof Error ? error.message : "Unable to sign in with SSO",
+        variant: "destructive",
       });
       setIsLoading(false); // Only set loading false on error, success will navigate away
     }
@@ -467,7 +467,7 @@ export function useAuth() {
       clearTokens();
     }
 
-    setEmail('');
+    setEmail("");
     setTenantInfo(null);
     setHasDiscoveredTenants(false);
     setDiscoveryAttempted(false);
@@ -483,7 +483,7 @@ export function useAuth() {
   }, [clearTokens, setEmail, setTenantInfo, setHasDiscoveredTenants, setAvailableProviders, tenantInfo]);
 
   const reset = () => {
-    setEmail('');
+    setEmail("");
     setTenantInfo(null);
     setHasDiscoveredTenants(false);
     setDiscoveryAttempted(false);

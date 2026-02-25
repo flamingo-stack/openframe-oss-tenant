@@ -1,6 +1,6 @@
-import { runtimeEnv } from '../runtime-config';
-import { buildWsUrl } from './meshcentral-config';
-import { WebSocketManager } from './websocket-manager';
+import { runtimeEnv } from "../runtime-config";
+import { buildWsUrl } from "./meshcentral-config";
+import { WebSocketManager } from "./websocket-manager";
 
 export type TunnelState = 0 | 1 | 2 | 3; // 0: stopped, 1: connecting, 2: open, 3: connected
 
@@ -45,20 +45,20 @@ export class MeshTunnel {
   start() {
     const protocol = this.params.protocol ?? 1;
     const qs = new URLSearchParams({
-      browser: '1',
+      browser: "1",
       p: String(protocol),
       nodeid: this.params.nodeId,
       id: this.id,
     });
-    if (this.params.authCookie) qs.append('auth', this.params.authCookie);
+    if (this.params.authCookie) qs.append("auth", this.params.authCookie);
 
     const buildUrl = () => {
       let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`);
 
       try {
         const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-        if (isDevTicketEnabled && typeof window !== 'undefined') {
-          const token = localStorage.getItem('of_access_token');
+        if (isDevTicketEnabled && typeof window !== "undefined") {
+          const token = localStorage.getItem("of_access_token");
           if (token) url += `&authorization=${encodeURIComponent(token)}`;
         }
       } catch (_error) {
@@ -73,25 +73,25 @@ export class MeshTunnel {
 
     this.wsManager = new WebSocketManager({
       url: buildUrl,
-      binaryType: 'arraybuffer',
+      binaryType: "arraybuffer",
       enableMessageQueue: true,
       refreshTokenBeforeReconnect: true,
 
       onStateChange: wsState => {
         // Map WebSocketManager states to TunnelState
-        if (wsState === 'connecting' || wsState === 'reconnecting') {
+        if (wsState === "connecting" || wsState === "reconnecting") {
           this.setState(1);
           this.isHandshakeComplete = false;
-        } else if (wsState === 'connected') {
+        } else if (wsState === "connected") {
           this.setState(2);
           // Ask caller to re-send pairing via control connection on reconnect
           try {
             this.params.onRequestPairing?.(this.id);
           } catch (e) {
-            console.error('[MeshTunnel] Error calling onRequestPairing:', e);
+            console.error("[MeshTunnel] Error calling onRequestPairing:", e);
           }
           this.initializeHandshake();
-        } else if (wsState === 'disconnected' || wsState === 'failed') {
+        } else if (wsState === "disconnected" || wsState === "failed") {
           this.setState(0);
           this.clearLatencyTimer();
         }
@@ -119,10 +119,10 @@ export class MeshTunnel {
   }
 
   private initializeHandshake() {
-    this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() });
+    this.sendCtrl({ ctrlChannel: 102938, type: "rtt", time: Date.now() });
     this.clearLatencyTimer();
     this.latencyTimer = setInterval(() => {
-      this.sendCtrl({ ctrlChannel: 102938, type: 'rtt', time: Date.now() });
+      this.sendCtrl({ ctrlChannel: 102938, type: "rtt", time: Date.now() });
     }, 10000);
   }
 
@@ -138,7 +138,7 @@ export class MeshTunnel {
 
     try {
       if (this.wsManager?.isConnected()) {
-        this.sendCtrl({ ctrlChannel: 102938, type: 'close' });
+        this.sendCtrl({ ctrlChannel: 102938, type: "close" });
       }
     } catch (_error) {
       // noop
@@ -153,11 +153,11 @@ export class MeshTunnel {
   private onMessage(e: MessageEvent) {
     if (!this.isHandshakeComplete) {
       const data = e.data;
-      if (data === 'c' || data === 'cr') {
-        console.log('[MeshTunnel] Handshake received, sending protocol:', this.params.protocol);
+      if (data === "c" || data === "cr") {
+        console.log("[MeshTunnel] Handshake received, sending protocol:", this.params.protocol);
         const options = this.params.options;
         if (options && (options.cols || options.rows || options.requireLogin)) {
-          this.sendCtrl({ ...options, type: 'options', ctrlChannel: 102938 });
+          this.sendCtrl({ ...options, type: "options", ctrlChannel: 102938 });
         }
         this.sendRaw(String(this.params.protocol ?? 1));
         this.setState(3);
@@ -168,7 +168,7 @@ export class MeshTunnel {
       return;
     }
 
-    if (typeof e.data === 'string') {
+    if (typeof e.data === "string") {
       const s = e.data as string;
 
       // Ignore empty messages
@@ -176,18 +176,18 @@ export class MeshTunnel {
         return;
       }
 
-      if (s[0] === '~') {
+      if (s[0] === "~") {
         this.params.onData(s.substring(1));
         return;
       }
       try {
         const j = JSON.parse(s);
-        if (j && (j.ctrlChannel === 102938 || j.ctrlChannel === '102938')) {
-          if (j.type === 'console' && this.params.onConsoleMessage) {
+        if (j && (j.ctrlChannel === 102938 || j.ctrlChannel === "102938")) {
+          if (j.type === "console" && this.params.onConsoleMessage) {
             this.params.onConsoleMessage(j.msg);
           }
-          if (j.type === 'ping') {
-            this.sendCtrl({ ctrlChannel: 102938, type: 'pong' });
+          if (j.type === "ping") {
+            this.sendCtrl({ ctrlChannel: 102938, type: "pong" });
           }
           if (this.params.onCtrlMessage) {
             this.params.onCtrlMessage(j);
@@ -220,7 +220,7 @@ export class MeshTunnel {
       const data = JSON.stringify(obj);
       this.wsManager?.send(data);
     } catch (error) {
-      console.error('[MeshTunnel] Error sending control message:', error);
+      console.error("[MeshTunnel] Error sending control message:", error);
     }
   }
 
@@ -230,7 +230,7 @@ export class MeshTunnel {
         return;
       }
 
-      if (typeof x === 'string') {
+      if (typeof x === "string") {
         // Send string as text frame (opcode=1)
         this.wsManager.send(x);
       } else {
@@ -238,7 +238,7 @@ export class MeshTunnel {
         this.wsManager.send(x.buffer as ArrayBuffer);
       }
     } catch (error) {
-      console.error('[MeshTunnel] Error sending raw data:', error);
+      console.error("[MeshTunnel] Error sending raw data:", error);
     }
   }
 

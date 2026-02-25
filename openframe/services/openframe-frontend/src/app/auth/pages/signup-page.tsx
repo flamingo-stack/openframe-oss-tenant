@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { AuthSignupSection } from '@/app/auth/components/signup-section';
-import { useAuth } from '@/app/auth/hooks/use-auth';
-import { AuthLayout } from '@/app/auth/layouts';
-import { useAuthStore } from '@/app/auth/stores/auth-store';
-import { isAuthOnlyMode } from '../../../lib/app-mode';
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { AuthSignupSection } from "@/app/auth/components/signup-section";
+import { useAuth } from "@/app/auth/hooks/use-auth";
+import { AuthLayout } from "@/app/auth/layouts";
+import { useAuthStore } from "@/app/auth/stores/auth-store";
+import { isAuthOnlyMode } from "../../../lib/app-mode";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -20,15 +20,15 @@ export default function SignupPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
-      router.push('/dashboard');
+      router.push("/dashboard");
     }
   }, [isAuthenticated, router]);
 
-  const storedOrgName = typeof window !== 'undefined' ? sessionStorage.getItem('auth:org_name') || '' : '';
+  const storedOrgName = typeof window !== "undefined" ? sessionStorage.getItem("auth:org_name") || "" : "";
   const storedDomain =
-    typeof window !== 'undefined' ? sessionStorage.getItem('auth:domain') || 'localhost' : 'localhost';
-  const storedAccessCode = typeof window !== 'undefined' ? sessionStorage.getItem('auth:access_code') || '' : '';
-  const storedEmail = typeof window !== 'undefined' ? sessionStorage.getItem('auth:email') || '' : '';
+    typeof window !== "undefined" ? sessionStorage.getItem("auth:domain") || "localhost" : "localhost";
+  const storedAccessCode = typeof window !== "undefined" ? sessionStorage.getItem("auth:access_code") || "" : "";
+  const storedEmail = typeof window !== "undefined" ? sessionStorage.getItem("auth:email") || "" : "";
 
   const handleSignupSubmit = (data: any) => {
     registerOrganization(data);
@@ -40,21 +40,21 @@ export default function SignupPage() {
         tenantName: storedOrgName,
         tenantDomain: storedDomain,
         email: storedEmail,
-        provider: provider as 'google' | 'microsoft',
-        redirectTo: '/auth/login',
+        provider: provider as "google" | "microsoft",
+        redirectTo: "/auth/login",
         accessCode: storedAccessCode,
       });
     } else {
       if (storedOrgName) {
-        sessionStorage.setItem('auth:signup_org', storedOrgName);
-        sessionStorage.setItem('auth:signup_domain', storedDomain);
+        sessionStorage.setItem("auth:signup_org", storedOrgName);
+        sessionStorage.setItem("auth:signup_domain", storedDomain);
       }
       await loginWithSso(provider);
     }
   };
 
   const handleBack = () => {
-    router.push('/auth/');
+    router.push("/auth/");
   };
 
   return (

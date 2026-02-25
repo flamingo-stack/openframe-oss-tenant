@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { apiClient } from '@/lib/api-client';
-import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../../devices/constants/device-statuses';
-import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries';
-import type { GraphQlResponse } from '../../devices/types/device.types';
-import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries';
-import { DIALOG_STATUS } from '../../tickets/constants';
-import { GET_DIALOG_STATISTICS_QUERY } from '../../tickets/queries/dialogs-queries';
+import { apiClient } from "@/lib/api-client";
+import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from "../../devices/constants/device-statuses";
+import { GET_DEVICE_FILTERS_QUERY } from "../../devices/queries/devices-queries";
+import type { GraphQlResponse } from "../../devices/types/device.types";
+import { GET_LOGS_QUERY } from "../../logs-page/queries/logs-queries";
+import { DIALOG_STATUS } from "../../tickets/constants";
+import { GET_DIALOG_STATISTICS_QUERY } from "../../tickets/queries/dialogs-queries";
 
 // ============ Types ============
 
@@ -70,7 +70,7 @@ class DashboardApiService {
    */
   async fetchDeviceStats(): Promise<DashboardDeviceStats> {
     try {
-      const response = await apiClient.post<GraphQlResponse<DeviceFiltersResponse>>('/api/graphql', {
+      const response = await apiClient.post<GraphQlResponse<DeviceFiltersResponse>>("/api/graphql", {
         query: GET_DEVICE_FILTERS_QUERY,
         variables: { filter: { statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE] } },
       });
@@ -81,7 +81,7 @@ class DashboardApiService {
 
       const data = response.data?.data?.deviceFilters;
       if (!data) {
-        throw new Error('Invalid device stats response structure');
+        throw new Error("Invalid device stats response structure");
       }
 
       const total = data.filteredCount || 0;
@@ -97,7 +97,7 @@ class DashboardApiService {
         inactivePercentage: total > 0 ? Math.round((inactive / total) * 100) : 0,
       };
     } catch (error) {
-      throw this.handleApiError(error, 'Device stats fetch');
+      throw this.handleApiError(error, "Device stats fetch");
     }
   }
 
@@ -106,7 +106,7 @@ class DashboardApiService {
    */
   async fetchChatStats(): Promise<DashboardChatStats> {
     try {
-      const response = await apiClient.post<GraphQlResponse<ChatStatsResponse>>('/chat/graphql', {
+      const response = await apiClient.post<GraphQlResponse<ChatStatsResponse>>("/chat/graphql", {
         query: GET_DIALOG_STATISTICS_QUERY,
       });
 
@@ -116,7 +116,7 @@ class DashboardApiService {
 
       const data = response.data?.data?.dialogStatistics;
       if (!data) {
-        throw new Error('Invalid chat stats response structure');
+        throw new Error("Invalid chat stats response structure");
       }
 
       const total = data.totalCount || 0;
@@ -127,13 +127,13 @@ class DashboardApiService {
         total,
         active,
         resolved,
-        avgResolveTime: data.averageResolutionTimeFormatted || '—',
-        avgFaeRate: typeof data.averageRating === 'number' ? Number(data.averageRating.toFixed(1)) : 0,
+        avgResolveTime: data.averageResolutionTimeFormatted || "—",
+        avgFaeRate: typeof data.averageRating === "number" ? Number(data.averageRating.toFixed(1)) : 0,
         activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
         resolvedPercentage: total > 0 ? Math.round((resolved / total) * 100) : 0,
       };
     } catch (error) {
-      throw this.handleApiError(error, 'Chat stats fetch');
+      throw this.handleApiError(error, "Chat stats fetch");
     }
   }
 }

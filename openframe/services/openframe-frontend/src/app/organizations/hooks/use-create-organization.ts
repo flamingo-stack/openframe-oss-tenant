@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useCallback } from "react";
+import { apiClient } from "@/lib/api-client";
 
 export interface ContactPersonDto {
   contactName: string;
@@ -40,7 +40,7 @@ export interface CreateOrganizationRequest {
 
 export function useCreateOrganization() {
   const createOrganization = useCallback(async (request: CreateOrganizationRequest) => {
-    const resp = await apiClient.post('/api/organizations', request);
+    const resp = await apiClient.post("/api/organizations", request);
     if (!resp.ok) {
       throw new Error(resp.error || `Request failed with status ${resp.status}`);
     }

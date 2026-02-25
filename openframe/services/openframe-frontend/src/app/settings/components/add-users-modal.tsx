@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
-import { IconsXIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from "@flamingo-stack/openframe-frontend-core";
+import { IconsXIcon, PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
 import {
   Input,
   Select,
@@ -9,9 +9,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React, { useEffect, useMemo, useState } from 'react';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import React, { useEffect, useMemo, useState } from "react";
 
 type InviteRow = { email: string; role: string };
 
@@ -23,17 +23,17 @@ interface AddUsersModalProps {
 }
 
 export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersModalProps) {
-  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Admin' }]);
+  const [rows, setRows] = useState<InviteRow[]>([{ email: "", role: "Admin" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
   const canSubmit = useMemo(() => rows.some(r => emailRegex.test(r.email.trim())), [rows, emailRegex]);
-  const roleOptions = useMemo(() => [{ value: 'Admin', label: 'Admin' }], []);
+  const roleOptions = useMemo(() => [{ value: "Admin", label: "Admin" }], []);
 
   useEffect(() => {
     if (!isOpen) {
-      setRows([{ email: '', role: 'Admin' }]);
+      setRows([{ email: "", role: "Admin" }]);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -42,7 +42,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
     setRows(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
-  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Admin' }]);
+  const addRow = () => setRows(prev => [...prev, { email: "", role: "Admin" }]);
   const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async () => {
@@ -52,14 +52,14 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
     setIsSubmitting(true);
     try {
       await invite(payload);
-      toast({ title: 'Invites sent', description: `${payload.length} user(s) invited`, variant: 'success' });
+      toast({ title: "Invites sent", description: `${payload.length} user(s) invited`, variant: "success" });
       onClose();
       await onInvited?.();
     } catch (err) {
       toast({
-        title: 'Invite failed',
-        description: err instanceof Error ? err.message : 'Failed to send invites',
-        variant: 'destructive',
+        title: "Invite failed",
+        description: err instanceof Error ? err.message : "Failed to send invites",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -127,7 +127,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
           Cancel
         </Button>
         <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
-          {isSubmitting ? 'Sending...' : 'Send Invites'}
+          {isSubmitting ? "Sending..." : "Send Invites"}
         </Button>
       </ModalFooter>
     </Modal>

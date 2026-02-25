@@ -1,9 +1,8 @@
-'use client';
+"use client";
 
 import {
   ActionsMenu,
   Button,
-  CardLoader,
   DetailPageContainer,
   DropdownMenu,
   DropdownMenuContent,
@@ -12,27 +11,28 @@ import {
   LoadError,
   NotFoundError,
   normalizeOSType,
-  StatusTag,
   TabContent,
   TabNavigation,
-} from '@flamingo-stack/openframe-frontend-core';
+  Tag,
+} from "@flamingo-stack/openframe-frontend-core";
 import {
   CmdIcon,
   PowerShellIcon,
   RemoteControlIcon,
   ShellIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { ChevronDown, Folder } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useMemo, useState } from 'react';
-import { useDeviceDetails } from '../hooks/use-device-details';
-import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { getDeviceStatusConfig } from '../utils/device-status';
-import { DeviceActionsDropdown } from './device-actions-dropdown';
-import { DeviceInfoSection } from './device-info-section';
-import { ScriptsModal } from './scripts-modal';
-import { DEVICE_TABS } from './tabs/device-tabs';
+} from "@flamingo-stack/openframe-frontend-core/components/icons";
+import { formatRelativeTime } from "@flamingo-stack/openframe-frontend-core/utils";
+import { ChevronDown, Folder } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useDeviceDetails } from "../hooks/use-device-details";
+import { getDeviceActionAvailability } from "../utils/device-action-utils";
+import { getDeviceStatusConfig } from "../utils/device-status";
+import { DeviceActionsDropdown } from "./device-actions-dropdown";
+import { DeviceDetailsSkeleton } from "./device-details-skeleton";
+import { DeviceInfoSection } from "./device-info-section";
+import { ScriptsModal } from "./scripts-modal";
+import { DEVICE_TABS } from "./tabs/device-tabs";
 
 interface DeviceDetailsViewProps {
   deviceId: string;
@@ -65,15 +65,15 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   // Handle action params from URL (e.g., from table dropdown navigation)
   useEffect(() => {
-    const action = searchParams.get('action');
+    const action = searchParams.get("action");
     if (!action || isLoading) return;
 
-    if (action === 'runScript') {
+    if (action === "runScript") {
       setIsScriptsModalOpen(true);
       // Clear the action param to avoid re-triggering
       const newParams = new URLSearchParams(searchParams.toString());
-      newParams.delete('action');
-      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
+      newParams.delete("action");
+      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ""}`);
     }
   }, [searchParams, isLoading, deviceId, router]);
 
@@ -86,7 +86,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   );
 
   const handleBack = () => {
-    router.push('/devices');
+    router.push("/devices");
   };
 
   const handleRunScript = () => {
@@ -94,19 +94,19 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   };
 
   const handleRunScripts = (scriptIds: string[]) => {
-    console.log('Running scripts:', scriptIds, 'on device:', deviceId);
+    console.log("Running scripts:", scriptIds, "on device:", deviceId);
   };
 
   const handleDeviceLogs = () => {
     const params = new URLSearchParams(window.location.search);
-    params.set('tab', 'logs');
+    params.set("tab", "logs");
     // Add timestamp to force logs refresh
-    params.set('refresh', Date.now().toString());
+    params.set("refresh", Date.now().toString());
     router.push(`${window.location.pathname}?${params.toString()}`);
   };
 
   if (isLoading) {
-    return <CardLoader items={4} />;
+    return <DeviceDetailsSkeleton />;
   }
 
   if (error) {
@@ -120,7 +120,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   // Check if Windows for shell type selection
   const isWindows = (() => {
     const osType = normalizedDevice.platform || normalizedDevice.osType || normalizedDevice.operating_system;
-    return normalizeOSType(osType) === 'WINDOWS';
+    return normalizeOSType(osType) === "WINDOWS";
   })();
 
   // Header actions - separate buttons for Remote Control and Remote Shell, plus dropdown for more
@@ -156,8 +156,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                 {
                   items: [
                     {
-                      id: 'cmd',
-                      label: 'CMD',
+                      id: "cmd",
+                      label: "CMD",
                       icon: <CmdIcon className="w-6 h-6" />,
                       href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
                       showExternalLinkOnHover: true,
@@ -167,8 +167,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
                       },
                     },
                     {
-                      id: 'powershell',
-                      label: 'PowerShell',
+                      id: "powershell",
+                      label: "PowerShell",
                       icon: <PowerShellIcon className="w-6 h-6" />,
                       href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
                       showExternalLinkOnHover: true,
@@ -215,10 +215,10 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   return (
     <DetailPageContainer
       title={
-        normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'
+        normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || "Unknown Device"
       }
       backButton={{
-        label: 'Back to Devices',
+        label: "Back to Devices",
         onClick: handleBack,
       }}
       subtitle={
@@ -226,7 +226,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           {normalizedDevice?.status &&
             (() => {
               const statusConfig = getDeviceStatusConfig(normalizedDevice.status);
-              return <StatusTag label={statusConfig.label} variant={statusConfig.variant} />;
+              return <Tag label={statusConfig.label} variant={statusConfig.variant} />;
             })()}
           {lastUpdated && (
             <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>

@@ -1,23 +1,23 @@
-'use client';
+"use client";
 
-import { getTabComponent, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { BracketCurlyIcon, CalendarIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { usePathname, useRouter } from 'next/navigation';
-import { useCallback } from 'react';
-import { ScriptSchedulesTable } from './script-schedules-table';
-import { ScriptsTable } from './scripts-table';
+import { getTabComponent, type TabItem, TabNavigation } from "@flamingo-stack/openframe-frontend-core";
+import { BracketCurlyIcon, CalendarIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import { useApiParams } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback } from "react";
+import { ScriptSchedulesTable } from "./script-schedules-table";
+import { ScriptsTable } from "./scripts-table";
 
 const SCRIPTS_TABS: TabItem[] = [
   {
-    id: 'list',
-    label: 'Scripts List',
+    id: "list",
+    label: "Scripts List",
     icon: BracketCurlyIcon,
     component: ScriptsTable,
   },
   {
-    id: 'schedules',
-    label: 'Scripts Schedules',
+    id: "schedules",
+    label: "Scripts Schedules",
     icon: CalendarIcon,
     component: ScriptSchedulesTable,
   },
@@ -28,7 +28,7 @@ export function ScriptsView() {
   const pathname = usePathname();
 
   const { params } = useApiParams({
-    tab: { type: 'string', default: 'list' },
+    tab: { type: "string", default: "list" },
   });
 
   const handleTabChange = useCallback(

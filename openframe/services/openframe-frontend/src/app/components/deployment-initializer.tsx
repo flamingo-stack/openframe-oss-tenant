@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useDeployment } from '@/app/hooks/use-deployment';
+import { useEffect } from "react";
+import { useDeployment } from "@/app/hooks/use-deployment";
 
 /**
  * Deployment Initializer Component
@@ -14,7 +14,7 @@ export function DeploymentInitializer() {
   useEffect(() => {
     if (isInitialized && deployment) {
       // Log deployment info once initialized
-      console.log('🌐 [DeploymentInitializer] Application deployment detected:', {
+      console.log("🌐 [DeploymentInitializer] Application deployment detected:", {
         type: deployment.type,
         hostname: deployment.hostname,
         isCloud: deployment.isCloud,
@@ -23,9 +23,9 @@ export function DeploymentInitializer() {
       });
 
       // Add deployment type to document for debugging/styling
-      if (typeof document !== 'undefined') {
-        document.documentElement.setAttribute('data-deployment', deployment.type);
-        document.documentElement.setAttribute('data-hostname', deployment.hostname);
+      if (typeof document !== "undefined") {
+        document.documentElement.setAttribute("data-deployment", deployment.type);
+        document.documentElement.setAttribute("data-hostname", deployment.hostname);
       }
     }
   }, [isInitialized, deployment]);

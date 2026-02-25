@@ -77,9 +77,9 @@ export function transformOrganizationFilters(
   }
 
   const mapped = organizations.map(org => ({
-    id: org.id || org.value || 'system',
-    label: (org.name === 'null' ? 'System' : org.name) || org.label || 'Unknown',
-    value: org.id || org.value || 'system',
+    id: org.id || org.value || "system",
+    label: (org.name === "null" ? "System" : org.name) || org.label || "Unknown",
+    value: org.id || org.value || "system",
   }));
 
   return deduplicateFilterOptions(mapped);

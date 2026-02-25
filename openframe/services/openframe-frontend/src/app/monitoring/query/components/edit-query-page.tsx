@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   CardLoader,
@@ -6,22 +6,22 @@ import {
   Label,
   LoadError,
   NotFoundError,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Play } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { ScriptEditor } from '../../../scripts/components/script-editor';
-import { LiveTestPanel } from '../../components/live-test-panel';
-import { useLiveCampaign } from '../../hooks/use-live-campaign';
-import { useQueries } from '../../hooks/use-queries';
-import { useQueryDetails } from '../hooks/use-query-details';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Play } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { ScriptEditor } from "../../../scripts/components/script/script-editor";
+import { LiveTestPanel } from "../../components/live-test-panel";
+import { useLiveCampaign } from "../../hooks/use-live-campaign";
+import { useQueries } from "../../hooks/use-queries";
+import { useQueryDetails } from "../hooks/use-query-details";
 
 const queryFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, "Name is required"),
   description: z.string(),
   query: z.string(),
   interval: z.number().min(0),
@@ -62,22 +62,22 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   } = useForm<QueryFormData>({
     resolver: zodResolver(queryFormSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      query: '',
+      name: "",
+      description: "",
+      query: "",
       interval: 0,
     },
   });
 
-  const nameValue = watch('name');
-  const queryValue = watch('query');
+  const nameValue = watch("name");
+  const queryValue = watch("query");
 
   useEffect(() => {
     if (queryDetails && isExistingQuery) {
       reset({
         name: queryDetails.name,
-        description: queryDetails.description || '',
-        query: queryDetails.query || '',
+        description: queryDetails.description || "",
+        query: queryDetails.query || "",
         interval: queryDetails.interval ?? 0,
       });
     }
@@ -87,7 +87,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     if (isExistingQuery && numericId) {
       router.push(`/monitoring/query/${numericId}`);
     } else {
-      router.push('/monitoring?tab=queries');
+      router.push("/monitoring?tab=queries");
     }
   }, [isExistingQuery, numericId, router]);
 
@@ -106,7 +106,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         });
       } else {
         createQuery(payload, {
-          onSuccess: () => router.push('/monitoring?tab=queries'),
+          onSuccess: () => router.push("/monitoring?tab=queries"),
         });
       }
     },
@@ -116,7 +116,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   const onFormError = useCallback(() => {
     const firstError = Object.values(errors)[0];
     if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      toast({ title: "Validation error", description: firstError.message, variant: "destructive" });
     }
   }, [errors, toast]);
 
@@ -138,22 +138,22 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     const items = [];
     if (isExistingQuery) {
       items.push({
-        label: 'Cancel',
+        label: "Cancel",
         onClick: handleBack,
-        variant: 'outline' as const,
+        variant: "outline" as const,
       });
     }
     items.push({
-      label: 'Test Query',
+      label: "Test Query",
       onClick: handleTestQuery,
-      variant: 'outline' as const,
+      variant: "outline" as const,
       icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
     });
     items.push({
-      label: 'Save Query',
+      label: "Save Query",
       onClick: handleSubmit(onSubmit, onFormError),
-      variant: 'primary' as const,
+      variant: "primary" as const,
       disabled: isSaving || !nameValue.trim(),
     });
     return items;
@@ -184,9 +184,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
   return (
     <FormPageContainer
-      title={isExistingQuery && queryDetails ? queryDetails.name : 'New Query'}
+      title={isExistingQuery && queryDetails ? queryDetails.name : "New Query"}
       backButton={{
-        label: 'Back to Queries',
+        label: "Back to Queries",
         onClick: handleBack,
       }}
       actions={actions}
@@ -216,11 +216,11 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         <div className="space-y-1">
           <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
           <div
-            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
+            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? "border-[var(--ods-attention-red-error)]" : "border-ods-border"}`}
           >
             <input
               type="text"
-              {...register('name')}
+              {...register("name")}
               className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
               placeholder="Enter Query Name"
             />
@@ -234,12 +234,12 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             Frequency
           </label>
           <div
-            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.interval ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
+            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.interval ? "border-[var(--ods-attention-red-error)]" : "border-ods-border"}`}
           >
             <input
               type="number"
               min={0}
-              {...register('interval', { valueAsNumber: true })}
+              {...register("interval", { valueAsNumber: true })}
               className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
               placeholder="Interval in seconds (0 = manual)"
             />
@@ -256,7 +256,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
           </label>
           <div className="bg-ods-card rounded-md border border-ods-border relative">
             <textarea
-              {...register('description')}
+              {...register("description")}
               rows={4}
               className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
               placeholder="Enter Query Description"

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -13,18 +13,18 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React, { useEffect, useState } from 'react';
-import { MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
-import { MeshTunnel } from '@/lib/meshcentral/meshcentral-tunnel';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import React, { useEffect, useState } from "react";
+import { MeshDesktop } from "@/lib/meshcentral/meshcentral-desktop";
+import { MeshTunnel } from "@/lib/meshcentral/meshcentral-tunnel";
 import {
   FRAME_RATE_OPTIONS,
   QUALITY_OPTIONS,
   RemoteDesktopSettings,
   RemoteSettingsConfig,
   SCALING_OPTIONS,
-} from '@/lib/meshcentral/remote-settings';
+} from "@/lib/meshcentral/remote-settings";
 
 interface RemoteSettingsModalProps {
   open: boolean;
@@ -55,9 +55,9 @@ export function RemoteSettingsModal({
   const handleSaveSettings = () => {
     if (!tunnelRef.current || connectionState !== 3) {
       toast({
-        title: 'Connection Required',
-        description: 'Please wait for the remote desktop connection to establish',
-        variant: 'destructive',
+        title: "Connection Required",
+        description: "Please wait for the remote desktop connection to establish",
+        variant: "destructive",
       });
       return;
     }
@@ -76,18 +76,18 @@ export function RemoteSettingsModal({
       onSettingsChange?.(settings);
 
       toast({
-        title: 'Settings Applied',
+        title: "Settings Applied",
         description: `Remote control settings updated. Est. bandwidth: ${settingsManager.estimateBandwidth()} KB/s`,
-        variant: 'success',
+        variant: "success",
         duration: 3000,
       });
 
       onOpenChange(false);
     } catch (_error) {
       toast({
-        title: 'Settings Failed',
-        description: 'Unable to apply remote control settings',
-        variant: 'destructive',
+        title: "Settings Failed",
+        description: "Unable to apply remote control settings",
+        variant: "destructive",
       });
     }
   };
@@ -136,7 +136,7 @@ export function RemoteSettingsModal({
             >
               <SelectTrigger id="scaling" className="bg-ods-card">
                 <SelectValue>
-                  {SCALING_OPTIONS.find(opt => opt.value === settings.scaling)?.label || '100%'}
+                  {SCALING_OPTIONS.find(opt => opt.value === settings.scaling)?.label || "100%"}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>

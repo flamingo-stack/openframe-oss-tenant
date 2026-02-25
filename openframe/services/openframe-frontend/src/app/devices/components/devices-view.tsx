@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { ViewToggle } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { Button, ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ViewToggle } from "@flamingo-stack/openframe-frontend-core/components/features";
+import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
+import { Button, ListPageLayout, Table } from "@flamingo-stack/openframe-frontend-core/components/ui";
 import {
   useApiParams,
   useCursorPaginationState,
   useTablePagination,
-} from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
-import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
-import { useDevices } from '../hooks/use-devices';
-import { type Device } from '../types/device.types';
-import { DevicesGrid } from './devices-grid';
-import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns';
+} from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useRouter } from "next/navigation";
+import { useCallback, useMemo } from "react";
+import { DEFAULT_VISIBLE_STATUSES } from "../constants/device-statuses";
+import { useDevices } from "../hooks/use-devices";
+import { type Device } from "../types/device.types";
+import { DevicesGrid } from "./devices-grid";
+import { getDeviceTableColumns, getDeviceTableRowActions } from "./devices-table-columns";
 
 export function DevicesView() {
   const router = useRouter();
@@ -25,10 +25,10 @@ export function DevicesView() {
     setParam: setExtraParam,
     setParams: setExtraParams,
   } = useApiParams({
-    statuses: { type: 'array', default: [] },
-    osTypes: { type: 'array', default: [] },
-    organizationIds: { type: 'array', default: [] },
-    viewMode: { type: 'string', default: 'table' },
+    statuses: { type: "array", default: [] },
+    osTypes: { type: "array", default: [] },
+    organizationIds: { type: "array", default: [] },
+    viewMode: { type: "string", default: "table" },
   });
 
   // Backend filters from URL params (default excludes ARCHIVED and DELETED)
@@ -101,7 +101,7 @@ export function DevicesView() {
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
       // Reset cursor and update filter params
-      setPaginationParams({ cursor: '' });
+      setPaginationParams({ cursor: "" });
       setExtraParams({
         statuses: columnFilters.status || [],
         osTypes: columnFilters.os || [],
@@ -125,13 +125,13 @@ export function DevicesView() {
   const cursorPagination = useTablePagination(
     pageInfo
       ? {
-          type: 'server',
+          type: "server",
           hasNextPage: pageInfo.hasNextPage,
           hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
           startCursor: pageInfo.startCursor,
           endCursor: pageInfo.endCursor,
           itemCount: devices.length,
-          itemName: 'devices',
+          itemName: "devices",
           onNext,
           onReset,
           showInfo: true,
@@ -152,12 +152,12 @@ export function DevicesView() {
   const viewToggle = (
     <>
       <ViewToggle
-        value={extraParams.viewMode as 'table' | 'grid'}
-        onValueChange={value => setExtraParam('viewMode', value)}
+        value={extraParams.viewMode as "table" | "grid"}
+        onValueChange={value => setExtraParam("viewMode", value)}
         className="bg-ods-card border border-ods-border h-12"
       />
       <Button
-        onClick={() => router.push('/devices/new')}
+        onClick={() => router.push("/devices/new")}
         leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay />}
         className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
       >
@@ -188,7 +188,7 @@ export function DevicesView() {
       currentMobileFilters={tableFilters}
     >
       {/* Conditional View Rendering */}
-      {extraParams.viewMode === 'table' ? (
+      {extraParams.viewMode === "table" ? (
         // Table View
         <Table
           data={devices}

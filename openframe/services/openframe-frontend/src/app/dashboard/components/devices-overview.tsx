@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { useDevicesOverview } from '../hooks/use-dashboard-stats';
+import { DashboardInfoCard, Skeleton } from "@flamingo-stack/openframe-frontend-core";
+import { useDevicesOverview } from "../hooks/use-dashboard-stats";
 
 export function DevicesOverviewSection() {
   const devices = useDevicesOverview();

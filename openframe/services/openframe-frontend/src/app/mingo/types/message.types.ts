@@ -1,5 +1,5 @@
-import type { AssistantType, MessageContent } from '@flamingo-stack/openframe-frontend-core';
-import type { ChatType, OwnerType } from '../../tickets/constants';
+import type { AssistantType, MessageContent } from "@flamingo-stack/openframe-frontend-core";
+import type { ChatType, OwnerType } from "../../tickets/constants";
 
 export interface GraphQlMessage {
   id: string;
@@ -16,7 +16,7 @@ export interface GraphQlMessage {
 
 export interface CoreMessage {
   id: string;
-  role: 'user' | 'assistant' | 'error';
+  role: "user" | "assistant" | "error";
   content: MessageContent;
   name?: string;
   assistantType?: AssistantType;
@@ -56,9 +56,9 @@ export interface MessagePage {
 }
 
 export function isGraphQlMessage(message: any): message is GraphQlMessage {
-  return 'messageData' in message;
+  return "messageData" in message;
 }
 
 export function isCoreMessage(message: any): message is CoreMessage {
-  return 'content' in message;
+  return "content" in message;
 }

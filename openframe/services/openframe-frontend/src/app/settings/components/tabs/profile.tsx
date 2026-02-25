@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { AlertCircle, Pencil } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { authApiClient } from '@/lib/auth-api-client';
-import { apiClient } from '../../../../lib/api-client';
-import { handleApiError } from '../../../../lib/handle-api-error';
-import { useAuthStore } from '../../../auth/stores';
-import { EditProfileModal } from '../edit-profile-modal';
-import { EmailVerificationModal } from '../email-verification-modal';
+import { Button, Skeleton } from "@flamingo-stack/openframe-frontend-core";
+import { PageError } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { AlertCircle, Pencil } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { authApiClient } from "@/lib/auth-api-client";
+import { apiClient } from "../../../../lib/api-client";
+import { handleApiError } from "../../../../lib/handle-api-error";
+import { useAuthStore } from "../../../auth/stores";
+import { EditProfileModal } from "../edit-profile-modal";
+import { EmailVerificationModal } from "../email-verification-modal";
 
 export function ProfileTab() {
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export function ProfileTab() {
       try {
         const res = await apiClient.put(`api/users/${encodeURIComponent(user.id)}`, data);
         if (!res.ok) {
-          throw new Error(res.error || 'Failed to update profile');
+          throw new Error(res.error || "Failed to update profile");
         }
 
         const updatedData = res.data;
@@ -44,15 +44,15 @@ export function ProfileTab() {
         });
 
         toast({
-          title: 'Profile Updated',
-          description: 'Your profile has been updated successfully.',
-          variant: 'success',
+          title: "Profile Updated",
+          description: "Your profile has been updated successfully.",
+          variant: "success",
           duration: 3000,
         });
 
         setIsEditModalOpen(false);
       } catch (error) {
-        handleApiError(error, toast, 'Failed to update profile');
+        handleApiError(error, toast, "Failed to update profile");
       } finally {
         setIsUpdating(false);
       }
@@ -63,20 +63,20 @@ export function ProfileTab() {
   const handleResendVerification = async () => {
     setIsSendingVerification(true);
     try {
-      const response = await authApiClient.resendVerificationEmail(user?.email || '');
+      const response = await authApiClient.resendVerificationEmail(user?.email || "");
 
       if (!response.ok) {
-        throw new Error(response.error || 'Failed to send verification email');
+        throw new Error(response.error || "Failed to send verification email");
       }
 
       toast({
-        title: 'Verification Email Sent',
-        description: 'Please check your inbox and follow the link to verify your email.',
-        variant: 'success',
+        title: "Verification Email Sent",
+        description: "Please check your inbox and follow the link to verify your email.",
+        variant: "success",
         duration: 5000,
       });
     } catch (error) {
-      handleApiError(error, toast, 'Failed to send verification email');
+      handleApiError(error, toast, "Failed to send verification email");
     } finally {
       setIsSendingVerification(false);
     }
@@ -84,9 +84,9 @@ export function ProfileTab() {
 
   // Get initials for avatar placeholder
   const getInitials = () => {
-    const first = user?.firstName?.charAt(0) || '';
-    const last = user?.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || 'UN';
+    const first = user?.firstName?.charAt(0) || "";
+    const last = user?.lastName?.charAt(0) || "";
+    return (first + last).toUpperCase() || "UN";
   };
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function ProfileTab() {
   }, [fetchFullProfile]);
 
   // Get display name
-  const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : '—';
+  const displayName = user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "—";
 
   if (isLoadingProfile && !user) {
     return (

@@ -3,10 +3,10 @@
  * Provides consistent status mapping across the application
  */
 
-import { getOSPlatformId, normalizeOSType, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core';
+import { getOSPlatformId, normalizeOSType, type OSPlatformId } from "@flamingo-stack/openframe-frontend-core";
 
-export type DeviceStatusVariant = 'success' | 'error' | 'warning' | 'info' | 'critical';
-export type DeviceCardStatus = 'active' | 'inactive' | 'offline' | 'warning' | 'error';
+export type DeviceStatusVariant = "success" | "error" | "warning" | "grey" | "critical";
+export type DeviceCardStatus = "active" | "inactive" | "offline" | "warning" | "error";
 
 export interface DeviceStatusConfig {
   label: string;
@@ -20,61 +20,61 @@ export interface DeviceStatusConfig {
  */
 export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
   switch (status.toUpperCase()) {
-    case 'ONLINE':
+    case "ONLINE":
       return {
-        label: 'ONLINE',
-        variant: 'success',
-        cardStatus: 'active',
+        label: "ONLINE",
+        variant: "success",
+        cardStatus: "active",
       };
-    case 'PENDING':
-    case 'ACTIVE':
+    case "PENDING":
+    case "ACTIVE":
       return {
-        label: 'PENDING',
-        variant: 'warning',
-        cardStatus: 'warning',
+        label: "PENDING",
+        variant: "warning",
+        cardStatus: "warning",
       };
-    case 'OFFLINE':
+    case "OFFLINE":
       return {
-        label: 'OFFLINE',
-        variant: 'error',
-        cardStatus: 'offline',
+        label: "OFFLINE",
+        variant: "error",
+        cardStatus: "offline",
       };
-    case 'DECOMMISSIONED':
+    case "DECOMMISSIONED":
       return {
-        label: 'DECOMMISSIONED',
-        variant: 'error',
-        cardStatus: 'offline',
+        label: "DECOMMISSIONED",
+        variant: "error",
+        cardStatus: "offline",
       };
-    case 'IDLE':
-    case 'INACTIVE':
+    case "IDLE":
+    case "INACTIVE":
       return {
-        label: 'INACTIVE',
-        variant: 'info',
-        cardStatus: 'inactive',
+        label: "INACTIVE",
+        variant: "grey",
+        cardStatus: "inactive",
       };
-    case 'MAINTENANCE':
+    case "MAINTENANCE":
       return {
-        label: 'MAINTENANCE',
-        variant: 'warning',
-        cardStatus: 'warning',
+        label: "MAINTENANCE",
+        variant: "warning",
+        cardStatus: "warning",
       };
-    case 'ARCHIVED':
+    case "ARCHIVED":
       return {
-        label: 'ARCHIVED',
-        variant: 'info',
-        cardStatus: 'inactive',
+        label: "ARCHIVED",
+        variant: "grey",
+        cardStatus: "inactive",
       };
-    case 'DELETED':
+    case "DELETED":
       return {
-        label: 'DELETED',
-        variant: 'error',
-        cardStatus: 'offline',
+        label: "DELETED",
+        variant: "error",
+        cardStatus: "offline",
       };
     default:
       return {
         label: status.toUpperCase(),
-        variant: 'info',
-        cardStatus: 'inactive',
+        variant: "grey",
+        cardStatus: "inactive",
       };
   }
 }

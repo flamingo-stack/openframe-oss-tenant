@@ -1,14 +1,14 @@
-import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core';
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
-import { Shield } from 'lucide-react';
-import type { ReactNode } from 'react';
-import type { PolicyRule } from '../types/ai-policies';
+import type { ApprovalLevel, PermissionCategory } from "@flamingo-stack/openframe-frontend-core";
+import { normalizeToolTypeWithFallback } from "@flamingo-stack/openframe-frontend-core/utils";
+import { Shield } from "lucide-react";
+import type { ReactNode } from "react";
+import type { PolicyRule } from "../types/ai-policies";
 
 function slugify(value: string) {
   return value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCategory[]> {
@@ -20,15 +20,15 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
         id: string;
         name: string;
         icon: ReactNode;
-        policies: PermissionCategory['policies'];
+        policies: PermissionCategory["policies"];
       }
     >
   >();
 
   for (const rule of rules) {
-    const policyGroupName = rule.policyGroup || 'General';
-    const categoryName = rule.category || 'Other';
-    const categoryId = slugify(`${policyGroupName}:${categoryName}`) || 'other';
+    const policyGroupName = rule.policyGroup || "General";
+    const categoryName = rule.category || "Other";
+    const categoryId = slugify(`${policyGroupName}:${categoryName}`) || "other";
 
     if (!groupedByPolicyGroup.has(policyGroupName)) {
       groupedByPolicyGroup.set(policyGroupName, new Map());

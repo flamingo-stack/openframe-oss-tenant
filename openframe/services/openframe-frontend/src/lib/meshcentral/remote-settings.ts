@@ -5,7 +5,7 @@
 export interface RemoteSettingsConfig {
   quality: number;
   scaling: number;
-  frameRate: 'smooth' | 'fast' | 'medium' | 'slow' | 'very slow';
+  frameRate: "smooth" | "fast" | "medium" | "slow" | "very slow";
   swapMouseButtons: boolean;
   useRemoteKeyboardMap: boolean;
   invertScrollDirection: boolean;
@@ -13,40 +13,40 @@ export interface RemoteSettingsConfig {
 
 // Map quality percentage to JPEG quality value (1-100)
 export const QUALITY_OPTIONS = [
-  { label: 'Ultra Low (10%)', value: 10 },
-  { label: 'Low (20%)', value: 20 },
-  { label: 'Medium (40%)', value: 40 },
-  { label: 'Balanced (50%)', value: 50 },
-  { label: 'High (60%)', value: 60 },
-  { label: 'Ultra (80%)', value: 80 },
-  { label: 'Lossless (100%)', value: 100 },
+  { label: "Ultra Low (10%)", value: 10 },
+  { label: "Low (20%)", value: 20 },
+  { label: "Medium (40%)", value: 40 },
+  { label: "Balanced (50%)", value: 50 },
+  { label: "High (60%)", value: 60 },
+  { label: "Ultra (80%)", value: 80 },
+  { label: "Lossless (100%)", value: 100 },
 ] as const;
 
 // Map scaling percentage to MeshCentral scaling values
 // MeshCentral uses: 256=25%, 512=50%, 768=75%, 1024=100%
 export const SCALING_OPTIONS = [
-  { label: '25%', value: 256 }, // 256 = 25%
-  { label: '50%', value: 512 }, // 512 = 50%
-  { label: '75%', value: 768 }, // 768 = 75%
-  { label: '100%', value: 1024 }, // 1024 = 100%
-  { label: '125%', value: 1280 }, // 1280 = 125%
-  { label: '150%', value: 1536 }, // 1536 = 150%
-  { label: '200%', value: 2048 }, // 2048 = 200%
+  { label: "25%", value: 256 }, // 256 = 25%
+  { label: "50%", value: 512 }, // 512 = 50%
+  { label: "75%", value: 768 }, // 768 = 75%
+  { label: "100%", value: 1024 }, // 1024 = 100%
+  { label: "125%", value: 1280 }, // 1280 = 125%
+  { label: "150%", value: 1536 }, // 1536 = 150%
+  { label: "200%", value: 2048 }, // 2048 = 200%
 ] as const;
 
 // Map frame rate to milliseconds between frames
 export const FRAME_RATE_OPTIONS = [
-  { label: 'Smooth (30 FPS)', value: 'smooth', ms: 33 },
-  { label: 'Fast (20 FPS)', value: 'fast', ms: 50 },
-  { label: 'Medium (10 FPS)', value: 'medium', ms: 100 },
-  { label: 'Slow (5 FPS)', value: 'slow', ms: 200 },
-  { label: 'Very Slow (2 FPS)', value: 'very slow', ms: 500 },
+  { label: "Smooth (30 FPS)", value: "smooth", ms: 33 },
+  { label: "Fast (20 FPS)", value: "fast", ms: 50 },
+  { label: "Medium (10 FPS)", value: "medium", ms: 100 },
+  { label: "Slow (5 FPS)", value: "slow", ms: 200 },
+  { label: "Very Slow (2 FPS)", value: "very slow", ms: 500 },
 ] as const;
 
 export const DEFAULT_SETTINGS: RemoteSettingsConfig = {
   quality: 50,
   scaling: 1024,
-  frameRate: 'medium',
+  frameRate: "medium",
   swapMouseButtons: false,
   useRemoteKeyboardMap: false,
   invertScrollDirection: false,
@@ -66,7 +66,7 @@ export class RemoteDesktopSettings {
 
   applySettings(settings: RemoteSettingsConfig = this.settings): void {
     if (!this.websocket) {
-      console.warn('No websocket available for applying settings');
+      console.warn("No websocket available for applying settings");
       return;
     }
 
@@ -91,7 +91,7 @@ export class RemoteDesktopSettings {
 
       this.settings = { ...settings };
     } catch (error) {
-      console.error('Failed to apply settings:', error);
+      console.error("Failed to apply settings:", error);
       throw error;
     }
   }
@@ -100,7 +100,7 @@ export class RemoteDesktopSettings {
     return { ...this.settings };
   }
 
-  static getFrameRateMs(frameRate: RemoteSettingsConfig['frameRate']): number {
+  static getFrameRateMs(frameRate: RemoteSettingsConfig["frameRate"]): number {
     const option = FRAME_RATE_OPTIONS.find(opt => opt.value === frameRate);
     return option?.ms || 100;
   }

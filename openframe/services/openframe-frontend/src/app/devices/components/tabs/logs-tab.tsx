@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useRef } from 'react';
-import { LogsTable, type LogsTableRef } from '../../../logs-page/components/logs-table';
+import { useSearchParams } from "next/navigation";
+import React, { useEffect, useRef } from "react";
+import { LogsTable, type LogsTableRef } from "../../../logs-page/components/logs-table";
 
 interface LogsTabProps {
   device: any;
@@ -10,7 +10,7 @@ interface LogsTabProps {
 
 export function LogsTab({ device }: LogsTabProps) {
   const searchParams = useSearchParams();
-  const refreshParam = searchParams?.get('refresh');
+  const refreshParam = searchParams?.get("refresh");
   const logsTableRef = useRef<LogsTableRef>(null);
 
   // Use machineId as the primary device identifier for filtering logs

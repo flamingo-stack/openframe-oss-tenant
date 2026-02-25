@@ -18,7 +18,7 @@ export interface FleetSoftware {
   id: number;
   name: string;
   version: string;
-  source: 'apps' | 'chrome_extensions' | 'vscode_extensions' | 'homebrew_packages' | 'python_packages';
+  source: "apps" | "chrome_extensions" | "vscode_extensions" | "homebrew_packages" | "python_packages";
   extension_id?: string;
   browser?: string;
   vendor?: string;
@@ -113,7 +113,7 @@ export interface FleetHost {
 
   // System status
   uptime: number;
-  status: 'online' | 'offline' | 'mia';
+  status: "online" | "offline" | "mia";
   seen_time: string;
   last_enrolled_at: string;
   last_restarted_at: string;

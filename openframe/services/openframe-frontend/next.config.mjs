@@ -3,14 +3,14 @@ const nextConfig = {
   // Pure frontend configuration - no server-side features
   // output: 'export',
   trailingSlash: true,
-  distDir: 'dist', // Output directory for static export
+  distDir: "dist", // Output directory for static export
   images: {
     unoptimized: true, // No server-side image optimization
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     // App mode configuration
-    NEXT_PUBLIC_APP_MODE: process.env.NEXT_PUBLIC_APP_MODE || 'oss-tenant',
+    NEXT_PUBLIC_APP_MODE: process.env.NEXT_PUBLIC_APP_MODE || "oss-tenant",
     NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER: process.env.NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER,
     // Hosts for API routing
     NEXT_PUBLIC_TENANT_HOST_URL: process.env.NEXT_PUBLIC_TENANT_HOST_URL,
@@ -23,10 +23,10 @@ const nextConfig = {
   reactStrictMode: true,
   // Next.js 16: esmExternals is now default, forceSwcTransforms removed
   // Turbopack is now the default bundler
-  generateBuildId: () => 'build',
+  generateBuildId: () => "build",
   // Force client-side rendering
-  basePath: '',
-  assetPrefix: '',
+  basePath: "",
+  assetPrefix: "",
 };
 
 export default nextConfig;

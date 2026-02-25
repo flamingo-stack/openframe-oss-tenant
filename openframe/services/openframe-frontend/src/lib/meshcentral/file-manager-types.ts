@@ -2,14 +2,14 @@
  * MeshCentral File Manager Types
  */
 
-import type { MeshControlClient } from './meshcentral-control';
+import type { MeshControlClient } from "./meshcentral-control";
 
 export type FileConnectionState =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected_to_server'
-  | 'connected_end_to_end'
-  | 'failed';
+  | "disconnected"
+  | "connecting"
+  | "connected_to_server"
+  | "connected_end_to_end"
+  | "failed";
 
 export interface FileEntry {
   n: string; // Name
@@ -23,7 +23,7 @@ export interface FileEntry {
 }
 
 export interface DirectoryListing {
-  action: 'ls';
+  action: "ls";
   reqid: string;
   path: string;
   dir: FileEntry[];
@@ -45,7 +45,7 @@ export interface FileOperationResponse {
 }
 
 export interface UploadRequest {
-  action: 'upload' | 'uploadhash';
+  action: "upload" | "uploadhash";
   reqid: string;
   path: string;
   name: string;
@@ -59,8 +59,8 @@ export interface UploadRequest {
 }
 
 export interface DownloadRequest {
-  action: 'download';
-  sub: 'start' | 'startack' | 'ack' | 'cancel';
+  action: "download";
+  sub: "start" | "startack" | "ack" | "cancel";
   id: string;
   path: string;
 }
@@ -70,7 +70,7 @@ export interface FileTransferProgress {
   progress: number;
   bytesTransferred: number;
   totalBytes: number;
-  type?: 'upload' | 'download';
+  type?: "upload" | "download";
 }
 
 export interface BinaryHeader {

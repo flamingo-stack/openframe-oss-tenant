@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -8,8 +8,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import React, { useEffect } from "react";
 
 interface NewFolderModalProps {
   isOpen: boolean;
@@ -24,14 +24,14 @@ export function NewFolderModal({ isOpen, folderName, submitting, onChange, onSub
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && !submitting && folderName.trim()) {
+      if (event.key === "Enter" && !submitting && folderName.trim()) {
         event.preventDefault();
         onSubmit();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, submitting, folderName, onSubmit]);
 
   return (
@@ -54,7 +54,7 @@ export function NewFolderModal({ isOpen, folderName, submitting, onChange, onSub
           Cancel
         </Button>
         <Button size="sm" onClick={onSubmit} disabled={!folderName.trim() || submitting}>
-          {submitting ? 'Creating...' : 'Create'}
+          {submitting ? "Creating..." : "Create"}
         </Button>
       </ModalFooter>
     </Modal>

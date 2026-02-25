@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { getTabComponent, TabContent, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { MONITORING_TABS } from './tabs/monitoring-tabs';
+import { getTabComponent, TabContent, TabNavigation } from "@flamingo-stack/openframe-frontend-core";
+import { MONITORING_TABS } from "./tabs/monitoring-tabs";
 
 export function MonitoringView() {
   return (

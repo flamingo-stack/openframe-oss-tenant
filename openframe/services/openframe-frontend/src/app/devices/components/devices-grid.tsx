@@ -1,9 +1,8 @@
-import { ContentLoadingContainer, DeviceCardSkeletonGrid } from '@flamingo-stack/openframe-frontend-core/components';
-import { DeviceCard, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
-import React from 'react';
-import { type Device } from '../types/device.types';
-import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status';
+import { ContentLoadingContainer, DeviceCardSkeletonGrid } from "@flamingo-stack/openframe-frontend-core/components";
+import { DeviceCard } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { useRouter } from "next/navigation";
+import type { Device } from "../types/device.types";
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from "../utils/device-status";
 
 interface DevicesGridProps {
   devices: Device[];
@@ -75,13 +74,18 @@ export function DevicesGrid({ devices, isLoading, filters }: DevicesGridProps) {
                   device={{
                     id: device.id,
                     machineId: device.machineId,
-                    name: device.displayName || device.hostname || device.description || '',
+                    name: device.displayName || device.hostname || device.description || "",
                     organization: device.organization || device.machineId,
                     lastSeen: device.lastSeen,
                     operatingSystem: getDeviceOperatingSystem(device.osType),
                   }}
-                  statusBadgeComponent={
-                    device.status && <StatusTag label={statusConfig.label} variant={statusConfig.variant} />
+                  statusTag={
+                    device.status
+                      ? {
+                          label: statusConfig.label,
+                          variant: statusConfig.variant,
+                        }
+                      : undefined
                   }
                   onDeviceClick={() => handleDeviceClick(device)}
                   actions={{

@@ -1,28 +1,28 @@
-'use client';
+"use client";
 
 import {
   buildNatsWsUrl,
   type NatsMessageType,
   type UseNatsDialogSubscriptionReturn,
   useNatsDialogSubscription as useNatsDialogSubscriptionCore,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useEffect, useMemo, useState } from 'react';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { STORAGE_KEYS } from '../constants';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useEffect, useMemo, useState } from "react";
+import { runtimeEnv } from "@/lib/runtime-config";
+import { STORAGE_KEYS } from "../constants";
 
-const ADMIN_TOPICS: NatsMessageType[] = ['message', 'admin-message'] as const;
+const ADMIN_TOPICS: NatsMessageType[] = ["message", "admin-message"] as const;
 
 export type { NatsMessageType, UseNatsDialogSubscriptionReturn };
 
 function getApiBaseUrl(): string | null {
   const envBase = runtimeEnv.tenantHostUrl();
   if (envBase) return envBase;
-  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
+  if (typeof window !== "undefined" && window.location?.origin) return window.location.origin;
   return null;
 }
 
 function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null;
   } catch {
@@ -61,8 +61,8 @@ export function useNatsDialogSubscription({
         setToken(getAccessToken());
       }
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, [isDevTicketEnabled]);
 
   useEffect(() => {
@@ -84,9 +84,9 @@ export function useNatsDialogSubscription({
 
   const clientConfig = useMemo(
     () => ({
-      name: 'openframe-frontend-mingo',
-      user: 'machine',
-      pass: '',
+      name: "openframe-frontend-mingo",
+      user: "machine",
+      pass: "",
     }),
     [],
   );

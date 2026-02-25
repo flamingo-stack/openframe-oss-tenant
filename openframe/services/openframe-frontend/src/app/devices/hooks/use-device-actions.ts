@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useCallback, useState } from "react";
+import { apiClient } from "@/lib/api-client";
 
 interface UseDeviceActionsOptions {
   onSuccess?: () => void;
@@ -18,26 +18,26 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
       setIsArchiving(true);
       try {
         const response = await apiClient.patch(`/api/devices/${deviceId}`, {
-          status: 'ARCHIVED',
+          status: "ARCHIVED",
         });
 
         if (!response.ok) {
-          throw new Error(response.error || 'Failed to archive device');
+          throw new Error(response.error || "Failed to archive device");
         }
 
         toast({
-          title: 'Device archived',
+          title: "Device archived",
           description: `${deviceName || deviceId} has been archived`,
         });
 
         options?.onSuccess?.();
         return true;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to archive device';
+        const errorMessage = error instanceof Error ? error.message : "Failed to archive device";
         toast({
-          title: 'Archive failed',
+          title: "Archive failed",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return false;
       } finally {
@@ -52,26 +52,26 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
       setIsDeleting(true);
       try {
         const response = await apiClient.patch(`/api/devices/${deviceId}`, {
-          status: 'DELETED',
+          status: "DELETED",
         });
 
         if (!response.ok) {
-          throw new Error(response.error || 'Failed to delete device');
+          throw new Error(response.error || "Failed to delete device");
         }
 
         toast({
-          title: 'Device deleted',
+          title: "Device deleted",
           description: `${deviceName || deviceId} has been deleted`,
         });
 
         options?.onSuccess?.();
         return true;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to delete device';
+        const errorMessage = error instanceof Error ? error.message : "Failed to delete device";
         toast({
-          title: 'Delete failed',
+          title: "Delete failed",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
         return false;
       } finally {

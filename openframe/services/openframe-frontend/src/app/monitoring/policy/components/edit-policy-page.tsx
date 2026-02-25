@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   CardLoader,
@@ -7,23 +7,23 @@ import {
   LoadError,
   NotFoundError,
   OS_TYPES,
-} from '@flamingo-stack/openframe-frontend-core';
-import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Play } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { ScriptEditor } from '../../../scripts/components/script-editor';
-import { LiveTestPanel } from '../../components/live-test-panel';
-import { useLiveCampaign } from '../../hooks/use-live-campaign';
-import { usePolicies } from '../../hooks/use-policies';
-import { usePolicyDetails } from '../hooks/use-policy-details';
+} from "@flamingo-stack/openframe-frontend-core";
+import { PushButtonSelector } from "@flamingo-stack/openframe-frontend-core/components/features";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Play } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { ScriptEditor } from "../../../scripts/components/script/script-editor";
+import { LiveTestPanel } from "../../components/live-test-panel";
+import { useLiveCampaign } from "../../hooks/use-live-campaign";
+import { usePolicies } from "../../hooks/use-policies";
+import { usePolicyDetails } from "../hooks/use-policy-details";
 
 const policyFormSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, "Name is required"),
   description: z.string(),
   query: z.string(),
   platform: z.string(),
@@ -64,23 +64,23 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   } = useForm<PolicyFormData>({
     resolver: zodResolver(policyFormSchema),
     defaultValues: {
-      name: '',
-      description: '',
-      query: '',
-      platform: '',
+      name: "",
+      description: "",
+      query: "",
+      platform: "",
     },
   });
 
-  const nameValue = watch('name');
-  const queryValue = watch('query');
+  const nameValue = watch("name");
+  const queryValue = watch("query");
 
   useEffect(() => {
     if (policyDetails && isExistingPolicy) {
       reset({
         name: policyDetails.name,
-        description: policyDetails.description || '',
-        query: policyDetails.query || '',
-        platform: policyDetails.platform || '',
+        description: policyDetails.description || "",
+        query: policyDetails.query || "",
+        platform: policyDetails.platform || "",
       });
     }
   }, [policyDetails, isExistingPolicy, reset]);
@@ -89,7 +89,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     if (isExistingPolicy && numericId) {
       router.push(`/monitoring/policy/${numericId}`);
     } else {
-      router.push('/monitoring?tab=policies');
+      router.push("/monitoring?tab=policies");
     }
   }, [isExistingPolicy, numericId, router]);
 
@@ -108,7 +108,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         });
       } else {
         createPolicy(payload, {
-          onSuccess: () => router.push('/monitoring?tab=policies'),
+          onSuccess: () => router.push("/monitoring?tab=policies"),
         });
       }
     },
@@ -118,7 +118,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   const onFormError = useCallback(() => {
     const firstError = Object.values(errors)[0];
     if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      toast({ title: "Validation error", description: firstError.message, variant: "destructive" });
     }
   }, [errors, toast]);
 
@@ -140,22 +140,22 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     const items = [];
     if (isExistingPolicy) {
       items.push({
-        label: 'Cancel',
+        label: "Cancel",
         onClick: handleBack,
-        variant: 'outline' as const,
+        variant: "outline" as const,
       });
     }
     items.push({
-      label: 'Test Policy',
+      label: "Test Policy",
       onClick: handleTestPolicy,
-      variant: 'outline' as const,
+      variant: "outline" as const,
       icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
     });
     items.push({
-      label: 'Save Policy',
+      label: "Save Policy",
       onClick: handleSubmit(onSubmit, onFormError),
-      variant: 'primary' as const,
+      variant: "primary" as const,
       disabled: isSaving || !nameValue.trim(),
     });
     return items;
@@ -186,9 +186,9 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   return (
     <FormPageContainer
-      title={isExistingPolicy && policyDetails ? policyDetails.name : 'New Policy'}
+      title={isExistingPolicy && policyDetails ? policyDetails.name : "New Policy"}
       backButton={{
-        label: 'Back to Policies',
+        label: "Back to Policies",
         onClick: handleBack,
       }}
       actions={actions}
@@ -226,7 +226,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
               render={({ field }) => {
                 const selectedPlatformIds = field.value
                   ? field.value
-                      .split(',')
+                      .split(",")
                       .map(p => p.trim())
                       .filter(Boolean)
                       .flatMap(platformId => {
@@ -249,7 +249,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
                           const os = OS_TYPES.find(o => o.id === id);
                           return os ? [os.platformId] : [];
                         })
-                        .join(',');
+                        .join(",");
                       field.onChange(platformStr);
                     }}
                     multiSelect={true}
@@ -264,11 +264,11 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         <div className="space-y-1">
           <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
           <div
-            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
+            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? "border-[var(--ods-attention-red-error)]" : "border-ods-border"}`}
           >
             <input
               type="text"
-              {...register('name')}
+              {...register("name")}
               className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
               placeholder="Enter Policy Name"
             />
@@ -283,7 +283,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
           </label>
           <div className="bg-ods-card rounded-md border border-ods-border relative">
             <textarea
-              {...register('description')}
+              {...register("description")}
               rows={4}
               className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
               placeholder="Enter Policy Description"

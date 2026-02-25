@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 import {
   ChatInput,
@@ -8,17 +8,17 @@ import {
   ChatSidebar,
   ContentPageContainer,
   MingoIcon,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { isSaasTenantMode } from '@/lib/app-mode';
-import { AppLayout } from '../components/app-layout';
-import { useMingoChat } from './hooks/use-mingo-chat';
-import { useMingoDialog } from './hooks/use-mingo-dialog';
-import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
-import { useMingoDialogs } from './hooks/use-mingo-dialogs';
-import { DialogSubscription, useMingoRealtimeSubscription } from './hooks/use-mingo-realtime-subscription';
-import { useMingoMessagesStore } from './stores/mingo-messages-store';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { isSaasTenantMode } from "@/lib/app-mode";
+import { AppLayout } from "../components/app-layout";
+import { useMingoChat } from "./hooks/use-mingo-chat";
+import { useMingoDialog } from "./hooks/use-mingo-dialog";
+import { useMingoDialogSelection } from "./hooks/use-mingo-dialog-selection";
+import { useMingoDialogs } from "./hooks/use-mingo-dialogs";
+import { DialogSubscription, useMingoRealtimeSubscription } from "./hooks/use-mingo-realtime-subscription";
+import { useMingoMessagesStore } from "./stores/mingo-messages-store";
 
 export default function Mingo() {
   const router = useRouter();
@@ -58,11 +58,11 @@ export default function Mingo() {
   const draftWelcomeMessages = useMemo(
     () => [
       {
-        id: 'welcome-draft',
-        role: 'assistant' as const,
-        name: 'Mingo',
+        id: "welcome-draft",
+        role: "assistant" as const,
+        name: "Mingo",
         content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
-        assistantType: 'mingo' as const,
+        assistantType: "mingo" as const,
         timestamp: new Date(),
       },
     ],
@@ -83,24 +83,24 @@ export default function Mingo() {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         if (isDraftChat) {
           setIsDraftChat(false);
         } else if (activeDialogId) {
           const currentUrl = new URL(window.location.href);
-          currentUrl.searchParams.delete('dialogId');
+          currentUrl.searchParams.delete("dialogId");
           router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [activeDialogId, isDraftChat, router]);
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/dashboard');
+      router.replace("/dashboard");
       return;
     }
   }, [router]);
@@ -112,7 +112,7 @@ export default function Mingo() {
       setIsDraftChat(false);
 
       const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('dialogId', dialogId);
+      currentUrl.searchParams.set("dialogId", dialogId);
       router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
 
       setActiveDialogId(dialogId);
@@ -125,7 +125,7 @@ export default function Mingo() {
   );
 
   useEffect(() => {
-    const urlDialogId = searchParams.get('dialogId');
+    const urlDialogId = searchParams.get("dialogId");
 
     if (urlDialogId !== activeDialogId) {
       if (urlDialogId) {
@@ -146,7 +146,7 @@ export default function Mingo() {
     setIsDraftChat(true);
 
     const currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.delete('dialogId');
+    currentUrl.searchParams.delete("dialogId");
     router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
   }, [resetDialog, setActiveDialogId, router]);
 
@@ -160,11 +160,11 @@ export default function Mingo() {
 
         addMessage(newDialogId, {
           id: `welcome-${newDialogId}`,
-          role: 'assistant',
-          name: 'Mingo',
+          role: "assistant",
+          name: "Mingo",
           timestamp: new Date(),
           content: "Hi! I'm Mingo AI, ready to help with your technical tasks. What can I do for you?",
-          assistantType: 'mingo',
+          assistantType: "mingo",
         });
 
         setIsDraftChat(false);
@@ -173,12 +173,12 @@ export default function Mingo() {
         subscribeToDialog(newDialogId);
 
         const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('dialogId', newDialogId);
+        currentUrl.searchParams.set("dialogId", newDialogId);
         router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
 
         const success = await sendMessage(message.trim(), newDialogId);
         if (!success) {
-          console.warn('[Mingo] Failed to send message');
+          console.warn("[Mingo] Failed to send message");
         }
         return;
       }
@@ -187,7 +187,7 @@ export default function Mingo() {
 
       const success = await sendMessage(message.trim());
       if (!success) {
-        console.warn('[Mingo] Failed to send message');
+        console.warn("[Mingo] Failed to send message");
       }
     },
     [
@@ -253,7 +253,7 @@ export default function Mingo() {
               {activeDialogId || isDraftChat ? (
                 <ChatMessageList
                   messages={displayMessages}
-                  dialogId={activeDialogId || 'draft'}
+                  dialogId={activeDialogId || "draft"}
                   isTyping={isDraftChat ? false : isTyping}
                   isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
                   assistantType={assistantType}

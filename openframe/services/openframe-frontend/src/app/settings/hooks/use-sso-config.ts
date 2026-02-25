@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useCallback } from 'react';
-import { apiClient } from '../../../lib/api-client';
+import { useCallback } from "react";
+import { apiClient } from "../../../lib/api-client";
 
 export type AvailableProvider = {
   provider: string;
@@ -29,7 +29,7 @@ export type UpdateSsoPayload = {
 
 export function useSsoConfig() {
   const fetchAvailableProviders = useCallback(async (): Promise<AvailableProvider[]> => {
-    const res = await apiClient.get<AvailableProvider[]>('api/sso/providers/available');
+    const res = await apiClient.get<AvailableProvider[]>("api/sso/providers/available");
     if (!res.ok || !Array.isArray(res.data)) {
       throw new Error(res.error || `Failed to load providers (${res.status})`);
     }
@@ -54,7 +54,7 @@ export function useSsoConfig() {
 
   const toggleProviderEnabled = useCallback(async (provider: string, enabled: boolean): Promise<void> => {
     const res = await apiClient.patch<void>(
-      `api/sso/${encodeURIComponent(provider)}/toggle?enabled=${enabled ? 'true' : 'false'}`,
+      `api/sso/${encodeURIComponent(provider)}/toggle?enabled=${enabled ? "true" : "false"}`,
     );
     if (!res.ok) {
       throw new Error(res.error || `Failed to toggle provider (${res.status})`);

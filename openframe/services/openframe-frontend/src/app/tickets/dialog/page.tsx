@@ -1,10 +1,10 @@
-import { AppLayout } from '../../components/app-layout';
-import { DialogDetailsView } from '../components/dialog-details-view';
+import { AppLayout } from "../../components/app-layout";
+import { DialogDetailsView } from "../components/dialog-details-view";
 
 // Force dynamic rendering due to useSearchParams in AppLayout
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 
 interface DialogDetailsPageProps {
   searchParams: Promise<{
@@ -17,7 +17,7 @@ export default async function DialogDetailsPage({ searchParams }: DialogDetailsP
   const { id } = params;
 
   if (!id) {
-    redirect('/tickets');
+    redirect("/tickets");
   }
 
   return (

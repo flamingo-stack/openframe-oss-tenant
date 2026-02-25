@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { FleetLabel } from '@/lib/fleet-api-client';
-import { fleetApiClient } from '@/lib/fleet-api-client';
-import { handleApiError } from '@/lib/handle-api-error';
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { FleetLabel } from "@/lib/fleet-api-client";
+import { fleetApiClient } from "@/lib/fleet-api-client";
+import { handleApiError } from "@/lib/handle-api-error";
 
 // ============ Query Keys ============
 
 export const labelsQueryKeys = {
-  all: ['labels'] as const,
-  list: () => [...labelsQueryKeys.all, 'list'] as const,
+  all: ["labels"] as const,
+  list: () => [...labelsQueryKeys.all, "list"] as const,
 };
 
 // ============ API Functions ============
@@ -24,7 +24,7 @@ async function fetchLabels(): Promise<FleetLabel[]> {
 }
 
 async function createLabelApi(name: string): Promise<FleetLabel> {
-  const res = await fleetApiClient.createLabel({ name, description: '' });
+  const res = await fleetApiClient.createLabel({ name, description: "" });
   if (!res.ok || !res.data) {
     throw new Error(res.error || `Failed to create label (${res.status})`);
   }
@@ -68,14 +68,14 @@ export function useLabels() {
     createLabelMutation.mutate(name, {
       onSuccess: label => {
         toast({
-          title: 'Category Created',
+          title: "Category Created",
           description: `Category "${name}" created successfully`,
-          variant: 'success',
+          variant: "success",
         });
         options?.onSuccess?.(label);
       },
       onError: error => {
-        handleApiError(error, toast, 'Failed to create category');
+        handleApiError(error, toast, "Failed to create category");
         options?.onError?.(error as Error);
       },
     });
@@ -99,14 +99,14 @@ export function useLabels() {
     deleteLabelMutation.mutate(id, {
       onSuccess: () => {
         toast({
-          title: 'Category Deleted',
-          description: 'Category deleted successfully',
-          variant: 'success',
+          title: "Category Deleted",
+          description: "Category deleted successfully",
+          variant: "success",
         });
         options?.onSuccess?.();
       },
       onError: error => {
-        handleApiError(error, toast, 'Failed to delete category');
+        handleApiError(error, toast, "Failed to delete category");
         options?.onError?.(error as Error);
       },
     });

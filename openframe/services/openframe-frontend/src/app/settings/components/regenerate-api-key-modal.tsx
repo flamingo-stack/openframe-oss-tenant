@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
-import React, { useEffect, useState } from 'react';
+import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from "@flamingo-stack/openframe-frontend-core";
+import React, { useEffect, useState } from "react";
 
 interface RegenerateApiKeyModalProps {
   isOpen: boolean;
@@ -32,8 +32,8 @@ export function RegenerateApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }
 
       <div className="px-6 py-4">
         <p className="text-ods-text-primary">
-          Are you sure you want to regenerate{' '}
-          <span className="text-ods-warning font-semibold">{apiKeyName || 'this API Key'}</span>? The current key will
+          Are you sure you want to regenerate{" "}
+          <span className="text-ods-warning font-semibold">{apiKeyName || "this API Key"}</span>? The current key will
           stop working immediately.
         </p>
       </div>
@@ -43,7 +43,7 @@ export function RegenerateApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }
           Cancel
         </Button>
         <Button onClick={handleConfirm} disabled={loading}>
-          {loading ? 'Regenerating...' : 'Regenerate API Key'}
+          {loading ? "Regenerating..." : "Regenerate API Key"}
         </Button>
       </ModalFooter>
     </Modal>

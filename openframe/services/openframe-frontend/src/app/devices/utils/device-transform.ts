@@ -1,17 +1,17 @@
-import { Device, DevicesGraphQlNode } from '../types/device.types';
+import { Device, DevicesGraphQlNode } from "../types/device.types";
 
 /**
  * Create Device list item directly from GraphQL node
  * For list view - lightweight, no external API calls
  */
 export function createDeviceListItem(node: DevicesGraphQlNode): Device {
-  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
+  const tactical = node.toolConnections?.find(tc => tc.toolType === "TACTICAL_RMM");
 
   return {
     // Core Identifiers
     id: node.id,
     machineId: node.machineId || node.id,
-    hostname: node.hostname || node.displayName || '',
+    hostname: node.hostname || node.displayName || "",
     displayName: node.displayName || node.hostname,
 
     // Hardware - CPU (not available in list view)

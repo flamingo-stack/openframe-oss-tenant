@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   Button,
@@ -8,8 +8,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+} from "@flamingo-stack/openframe-frontend-core/components/ui";
+import React, { useEffect } from "react";
 
 interface RenameItemModalProps {
   isOpen: boolean;
@@ -24,14 +24,14 @@ export function RenameItemModal({ isOpen, value, submitting, onChange, onSubmit,
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Enter' && !submitting && value.trim()) {
+      if (event.key === "Enter" && !submitting && value.trim()) {
         event.preventDefault();
         onSubmit();
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, submitting, value, onSubmit]);
 
   return (
@@ -54,7 +54,7 @@ export function RenameItemModal({ isOpen, value, submitting, onChange, onSubmit,
           Cancel
         </Button>
         <Button size="sm" onClick={onSubmit} disabled={!value.trim() || submitting}>
-          {submitting ? 'Renaming...' : 'Rename'}
+          {submitting ? "Renaming..." : "Rename"}
         </Button>
       </ModalFooter>
     </Modal>

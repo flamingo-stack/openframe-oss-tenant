@@ -1,5 +1,5 @@
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
-import { getDefaultRedirectPath, isSaasTenantMode } from './app-mode';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/app/auth/hooks/use-token-storage";
+import { getDefaultRedirectPath, isSaasTenantMode } from "./app-mode";
 
 export interface ForceLogoutOptions {
   reason?: string;
@@ -10,26 +10,26 @@ export interface ForceLogoutOptions {
 export async function forceLogout(options: ForceLogoutOptions = {}): Promise<void> {
   const { shouldRedirect = true, redirectPath } = options;
 
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
   const currentPath = window.location.pathname;
-  const isAuthPage = currentPath.startsWith('/auth');
+  const isAuthPage = currentPath.startsWith("/auth");
 
   try {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch (error) {
-    console.error('[Force Logout] Failed to clear tokens from localStorage:', error);
+    console.error("[Force Logout] Failed to clear tokens from localStorage:", error);
   }
 
   try {
-    const { useAuthStore } = await import('../app/auth/stores/auth-store');
+    const { useAuthStore } = await import("../app/auth/stores/auth-store");
     const { logout } = useAuthStore.getState();
     logout();
   } catch (error) {
-    console.error('[Force Logout] Failed to clear auth store:', error);
+    console.error("[Force Logout] Failed to clear auth store:", error);
   }
 
   if (shouldRedirect && !isAuthPage) {
@@ -40,13 +40,13 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
       const targetPath = redirectPath || getDefaultRedirectPath(false);
       window.location.href = targetPath;
     } catch (_error) {
-      window.location.href = '/auth';
+      window.location.href = "/auth";
     }
   }
 }
 
 export function hasStoredTokens(): boolean {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return false;
   }
 
@@ -60,7 +60,7 @@ export function hasStoredTokens(): boolean {
 }
 
 export function clearStoredTokens(): void {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return;
   }
 
@@ -68,6 +68,6 @@ export function clearStoredTokens(): void {
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
   } catch (error) {
-    console.error('[Token Clear] Failed to clear tokens:', error);
+    console.error("[Token Clear] Failed to clear tokens:", error);
   }
 }

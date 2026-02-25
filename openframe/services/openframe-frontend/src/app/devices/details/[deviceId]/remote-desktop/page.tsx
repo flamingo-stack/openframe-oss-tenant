@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   ActionsMenu,
@@ -8,19 +8,19 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Loader2, Monitor, MoreHorizontal, Settings } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { use, useEffect, useMemo, useRef, useState } from 'react';
-import { AppLayout } from '@/app/components/app-layout';
-import { useDeviceDetails } from '@/app/devices/hooks/use-device-details';
-import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
-import { DisplayInfo, MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
-import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
-import { DEFAULT_SETTINGS, RemoteDesktopSettings, RemoteSettingsConfig } from '@/lib/meshcentral/remote-settings';
-import { ActionHandlers, createActionsMenuGroups } from './actions-menu-config';
-import { RemoteSettingsModal } from './remote-settings-modal';
+} from "@flamingo-stack/openframe-frontend-core";
+import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
+import { Loader2, Monitor, MoreHorizontal, Settings } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { use, useEffect, useMemo, useRef, useState } from "react";
+import { AppLayout } from "@/app/components/app-layout";
+import { useDeviceDetails } from "@/app/devices/hooks/use-device-details";
+import { MeshControlClient } from "@/lib/meshcentral/meshcentral-control";
+import { DisplayInfo, MeshDesktop } from "@/lib/meshcentral/meshcentral-desktop";
+import { MeshTunnel, TunnelState } from "@/lib/meshcentral/meshcentral-tunnel";
+import { DEFAULT_SETTINGS, RemoteDesktopSettings, RemoteSettingsConfig } from "@/lib/meshcentral/remote-settings";
+import { ActionHandlers, createActionsMenuGroups } from "./actions-menu-config";
+import { RemoteSettingsModal } from "./remote-settings-modal";
 
 interface RemoteDesktopPageProps {
   params: Promise<{
@@ -44,7 +44,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const deviceId = resolvedParams.deviceId;
 
   // Check for legacy deviceData query param (backward compatibility)
-  const deviceDataParam = searchParams.get('deviceData');
+  const deviceDataParam = searchParams.get("deviceData");
   const legacyDeviceData = useMemo((): LegacyDeviceData | null => {
     if (!deviceDataParam) return null;
     try {
@@ -69,7 +69,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     if (legacyDeviceData?.meshcentralAgentId) {
       return legacyDeviceData.meshcentralAgentId;
     }
-    return deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;
+    return deviceDetails?.toolConnections?.find(tc => tc.toolType === "MESHCENTRAL")?.agentToolId;
   }, [legacyDeviceData, deviceDetails]);
 
   const hostname = useMemo(() => {
@@ -81,7 +81,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const organizationName = useMemo(() => {
     if (legacyDeviceData?.organization) {
-      return typeof legacyDeviceData.organization === 'string'
+      return typeof legacyDeviceData.organization === "string"
         ? legacyDeviceData.organization
         : legacyDeviceData.organization?.name;
     }
@@ -169,7 +169,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           },
           onCtrlMessage: () => {},
           onConsoleMessage: msg => {
-            toast({ title: 'Remote Desktop', description: msg, variant: 'default' });
+            toast({ title: "Remote Desktop", description: msg, variant: "default" });
           },
           onRequestPairing: async relayId => {
             try {
@@ -185,23 +185,23 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
               setIsReconnecting(true);
               setReconnectAttempt(prev => prev + 1);
               toast({
-                title: 'Connection Lost',
-                description: 'Attempting to reconnect...',
-                variant: 'info',
+                title: "Connection Lost",
+                description: "Attempting to reconnect...",
+                variant: "info",
               });
             } else if (s === 3 && isReconnecting) {
               setIsReconnecting(false);
               toast({
-                title: 'Reconnected',
-                description: 'Connection restored successfully',
-                variant: 'success',
+                title: "Reconnected",
+                description: "Connection restored successfully",
+                variant: "success",
               });
             } else if (s === 0 && isReconnecting) {
               setIsReconnecting(false);
               toast({
-                title: 'Reconnection Failed',
-                description: 'Unable to restore connection. Please try again.',
-                variant: 'destructive',
+                title: "Reconnection Failed",
+                description: "Unable to restore connection. Please try again.",
+                variant: "destructive",
               });
             }
           },
@@ -215,7 +215,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         } catch {}
         tunnel.start();
       } catch (e) {
-        toast({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' });
+        toast({ title: "Remote Desktop failed", description: (e as Error).message, variant: "destructive" });
       } finally {
         setConnecting(false);
       }
@@ -238,7 +238,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       settingsManager.setWebSocket(tunnel);
       settingsManager.applySettings();
     } catch (error) {
-      console.error('Failed to apply initial settings:', error);
+      console.error("Failed to apply initial settings:", error);
     }
   }, [state]);
 
@@ -250,29 +250,29 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const statusText = isReconnecting
     ? `Reconnecting... (Attempt ${reconnectAttempt})`
     : state === 3
-      ? 'Connected'
+      ? "Connected"
       : state === 2
-        ? 'Open'
+        ? "Open"
         : state === 1
-          ? 'Connecting'
-          : 'Idle';
+          ? "Connecting"
+          : "Idle";
   const statusColor = isReconnecting
-    ? 'text-ods-text-secondary animate-pulse'
+    ? "text-ods-text-secondary animate-pulse"
     : state === 3
-      ? 'text-ods-attention-green-success'
+      ? "text-ods-attention-green-success"
       : state === 1 || state === 2
-        ? 'text-ods-text-secondary'
-        : 'text-ods-text-secondary';
+        ? "text-ods-text-secondary"
+        : "text-ods-text-secondary";
 
-  const sendPower = async (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => {
+  const sendPower = async (action: "wake" | "sleep" | "reset" | "poweroff") => {
     if (!meshcentralAgentId) return;
     try {
       const client = controlRef.current || new MeshControlClient();
       if (!controlRef.current) controlRef.current = client;
       await client.powerAction(meshcentralAgentId, action);
-      toast({ title: 'Power action', description: `${action} sent`, variant: 'success' });
+      toast({ title: "Power action", description: `${action} sent`, variant: "success" });
     } catch (e) {
-      toast({ title: 'Power action failed', description: (e as Error).message, variant: 'destructive' });
+      toast({ title: "Power action failed", description: (e as Error).message, variant: "destructive" });
     }
   };
 
@@ -293,22 +293,22 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     if (!desktopRef.current) return;
 
     const keyMappings: Record<string, string> = {
-      [`${0x5b},${0x4d}`]: 'win+m',
-      [`${0x5b},${0x28}`]: 'win+down',
-      [`${0x5b},${0x26}`]: 'win+up',
-      [`${0x10},${0x5b},${0x4d}`]: 'shift+win+m',
-      [`${0x5b},${0x4c}`]: 'win+l',
-      [`${0x5b},${0x52}`]: 'win+r',
-      [`${0x11},${0x57}`]: 'ctrl+w',
+      [`${0x5b},${0x4d}`]: "win+m",
+      [`${0x5b},${0x28}`]: "win+down",
+      [`${0x5b},${0x26}`]: "win+up",
+      [`${0x10},${0x5b},${0x4d}`]: "shift+win+m",
+      [`${0x5b},${0x4c}`]: "win+l",
+      [`${0x5b},${0x52}`]: "win+r",
+      [`${0x11},${0x57}`]: "ctrl+w",
     };
 
-    const keyString = keys.join(',');
+    const keyString = keys.join(",");
     const comboString = keyMappings[keyString];
 
     if (comboString) {
       desktopRef.current.sendKeyCombo(comboString);
     } else {
-      console.warn('Unmapped key combination:', keys, 'keyString:', keyString);
+      console.warn("Unmapped key combination:", keys, "keyString:", keyString);
       // Fallback to manual key sequence for unmapped combinations
       keys.forEach((key, index) => {
         setTimeout(() => sendKey(key, false), index * 50);
@@ -333,9 +333,9 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     tunnelRef.current.sendBinary(buf);
 
     toast({
-      title: 'Ctrl+Alt+Del',
-      description: 'Shortcut sent',
-      variant: 'success',
+      title: "Ctrl+Alt+Del",
+      description: "Shortcut sent",
+      variant: "success",
       duration: 2000,
     });
   };
@@ -345,16 +345,16 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       desktopRef.current?.switchDisplay?.(displayId);
       setCurrentDisplay(displayId);
       toast({
-        title: 'Display Switched',
+        title: "Display Switched",
         description: `Switched to display ${displayId}`,
-        variant: 'success',
+        variant: "success",
         duration: 2000,
       });
     } catch (error) {
       toast({
-        title: 'Display Switch Failed',
-        description: error instanceof Error ? error.message : 'Unable to switch display',
-        variant: 'destructive',
+        title: "Display Switch Failed",
+        description: error instanceof Error ? error.message : "Unable to switch display",
+        variant: "destructive",
         duration: 4000,
       });
     }
@@ -381,10 +381,10 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
               ...(displays.some(d => d.id === 0) || displays.length > 1
                 ? [
                     {
-                      id: 'display-all',
-                      label: 'All Displays',
+                      id: "display-all",
+                      label: "All Displays",
                       icon: <Monitor className="w-4 h-4" />,
-                      type: 'checkbox' as const,
+                      type: "checkbox" as const,
                       checked: currentDisplay === 0,
                       onClick: () => handleDisplayChange(0),
                     },
@@ -394,9 +394,9 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                 .filter(d => d.id !== 0)
                 .map(display => ({
                   id: `display-${display.id}`,
-                  label: `Display ${display.id}${display.primary ? ' (Primary)' : ''}`,
+                  label: `Display ${display.id}${display.primary ? " (Primary)" : ""}`,
                   icon: <Monitor className="w-4 h-4" />,
-                  type: 'checkbox' as const,
+                  type: "checkbox" as const,
                   checked: currentDisplay === display.id,
                   onClick: () => handleDisplayChange(display.id),
                 })),
@@ -461,7 +461,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       <AppLayout>
         <div className="h-full flex flex-col items-center justify-center gap-4">
           <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
-          <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
+          <Button onClick={() => router.push("/devices")}>Back to Devices</Button>
         </div>
       </AppLayout>
     );
@@ -488,7 +488,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         className="h-full"
         contentClassName="flex flex-col"
         backButton={{
-          label: 'Back to Device',
+          label: "Back to Device",
           onClick: handleBack,
         }}
       >
@@ -503,7 +503,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             {/* Device Info */}
             <div className="flex flex-col">
               <h1 className="text-ods-text-primary text-lg font-medium">{hostname || `Device ${deviceId}`}</h1>
-              <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Organization'}</p>
+              <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || "Unknown Organization"}</p>
             </div>
           </div>
 
@@ -521,7 +521,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                 className="p-0 border-none"
                 onInteractOutside={e => {
                   const target = e.target as HTMLElement;
-                  if (target.closest('.fixed.z-\\[9999\\]')) {
+                  if (target.closest(".fixed.z-\\[9999\\]")) {
                     e.preventDefault();
                   }
                 }}
@@ -535,7 +535,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
               <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="device-action" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
-                    Display {currentDisplay === 0 ? 'All' : currentDisplay}
+                    Display {currentDisplay === 0 ? "All" : currentDisplay}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
@@ -543,7 +543,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                   className="p-0 border-none"
                   onInteractOutside={e => {
                     const target = e.target as HTMLElement;
-                    if (target.closest('.fixed.z-\\[9999\\]')) {
+                    if (target.closest(".fixed.z-\\[9999\\]")) {
                       e.preventDefault();
                     }
                   }}
@@ -588,7 +588,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
                 <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
                 <span className="text-ods-text-secondary text-sm">
-                  {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
+                  {state === 3 ? "Waiting for desktop stream..." : "Connecting to desktop..."}
                 </span>
               </div>
             )}
