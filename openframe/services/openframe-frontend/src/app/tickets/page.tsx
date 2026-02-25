@@ -25,7 +25,7 @@ export default function Tickets() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout mainClassName="pt-0 sm:pt-0">
       <ContentPageContainer padding="none" showHeader={false}>
         <TicketsView />
       </ContentPageContainer>

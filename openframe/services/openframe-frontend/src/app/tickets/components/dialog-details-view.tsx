@@ -373,7 +373,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
-      className="h-full pt-6 gap-2"
+      className="h-full gap-2"
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
@@ -426,6 +426,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 messages={chatData.messages}
                 autoScroll={true}
                 showAvatars={false}
+                isLoading={messagesLoading}
                 isTyping={isClientChatTyping}
                 pendingApprovals={chatData.pendingApprovals}
                 assistantType={chatData.assistantType}
@@ -477,6 +478,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   messages={adminChatData.messages}
                   autoScroll={true}
                   showAvatars={false}
+                  isLoading={messagesLoading}
                   isTyping={isAdminChatTyping}
                   pendingApprovals={adminChatData.pendingApprovals}
                   assistantType={adminChatData.assistantType}

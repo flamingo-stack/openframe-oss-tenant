@@ -48,6 +48,7 @@ export function ChatView() {
     resumeDialog,
     awaitingTechnicianResponse,
     isLoadingHistory,
+    dialogId,
   } = useChat({
     useApi: true,
     useNats: features.nats,
@@ -96,7 +97,13 @@ export function ChatView() {
 
       <ChatContent>
         {hasMessages ? (
-          <ChatMessageList messages={messages} isTyping={isTyping} isLoading={isLoadingHistory} autoScroll={true} />
+          <ChatMessageList
+            messages={messages}
+            dialogId={dialogId || undefined}
+            isTyping={isTyping}
+            isLoading={isLoadingHistory}
+            autoScroll={true}
+          />
         ) : (
           <div className="flex-1 flex flex-col justify-center items-center px-4">
             <div className="text-center mb-8">
