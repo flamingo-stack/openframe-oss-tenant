@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   DetailPageContainer,
@@ -8,24 +8,24 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@flamingo-stack/openframe-frontend-core";
-import { SelectButton } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+} from '@flamingo-stack/openframe-frontend-core';
+import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   CheckboxBlock,
   DatePickerInputSimple,
   Input,
   Label,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useMdUp, useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
-import { Controller, FormProvider, useFieldArray, useForm } from "react-hook-form";
-import { useScriptSchedule } from "../../hooks/use-script-schedule";
-import { useCreateScriptSchedule, useUpdateScriptSchedule } from "../../hooks/use-script-schedule-mutations";
-import { useScripts } from "../../hooks/use-scripts";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMdUp, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { useScriptSchedule } from '../../hooks/use-script-schedule';
+import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../../hooks/use-script-schedule-mutations';
+import { useScripts } from '../../hooks/use-scripts';
 import {
   buildCreatePayload,
   type CreateScheduleFormData,
@@ -33,10 +33,10 @@ import {
   type Platform,
   REPEAT_PERIOD_OPTIONS,
   scheduleDetailToFormData,
-} from "../../types/script-schedule.types";
-import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from "../../utils/script-utils";
-import { ScheduleActionFormCard } from "./schedule-action-form-card";
-import { ScheduleCreateSkeleton } from "./schedule-create-skeleton";
+} from '../../types/script-schedule.types';
+import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '../../utils/script-utils';
+import { ScheduleActionFormCard } from './schedule-action-form-card';
+import { ScheduleCreateSkeleton } from './schedule-create-skeleton';
 
 interface ScheduleCreateViewProps {
   scheduleId?: string;
@@ -47,7 +47,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const { toast } = useToast();
   const isMdUp = useMdUp();
   const isEditMode = Boolean(scheduleId);
-  const { schedule, isLoading: isLoadingSchedule } = useScriptSchedule(scheduleId ?? "");
+  const { schedule, isLoading: isLoadingSchedule } = useScriptSchedule(scheduleId ?? '');
   const { scripts, error: scriptsError } = useScripts();
   const createMutation = useCreateScriptSchedule();
   const updateMutation = useUpdateScriptSchedule();
@@ -55,19 +55,19 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const methods = useForm<CreateScheduleFormData>({
     resolver: zodResolver(createScheduleFormSchema),
     defaultValues: {
-      name: "",
-      note: "",
+      name: '',
+      note: '',
       scheduledDate: undefined,
       repeatEnabled: false,
       repeatInterval: 1,
-      repeatPeriod: "day",
+      repeatPeriod: 'day',
       weekdays: 0,
-      supportedPlatforms: ["windows", "linux", "darwin"],
+      supportedPlatforms: ['windows', 'linux', 'darwin'],
       enabled: true,
       actions: [
         {
           script: 0,
-          name: "",
+          name: '',
           timeout: 90,
           script_args: [],
           env_vars: [],
@@ -85,7 +85,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "actions",
+    name: 'actions',
   });
 
   useEffect(() => {
@@ -95,25 +95,25 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
     }
   }, [isEditMode, schedule, methods]);
 
-  const repeatEnabled = watch("repeatEnabled");
-  const supportedPlatforms = watch("supportedPlatforms");
+  const repeatEnabled = watch('repeatEnabled');
+  const supportedPlatforms = watch('supportedPlatforms');
 
   const handleBack = useCallback(() => {
-    isEditMode ? router.push(`/scripts/schedules/${scheduleId}`) : router.push("/scripts/?tab=schedules");
+    isEditMode ? router.push(`/scripts/schedules/${scheduleId}`) : router.push('/scripts/?tab=schedules');
   }, [router, isEditMode, scheduleId]);
 
   const togglePlatform = useCallback(
     (platform: Platform) => {
-      const current = methods.getValues("supportedPlatforms");
+      const current = methods.getValues('supportedPlatforms');
       if (current.includes(platform)) {
         if (current.length > 1) {
           methods.setValue(
-            "supportedPlatforms",
+            'supportedPlatforms',
             current.filter(p => p !== platform),
           );
         }
       } else {
-        methods.setValue("supportedPlatforms", [...current, platform]);
+        methods.setValue('supportedPlatforms', [...current, platform]);
       }
     },
     [methods],
@@ -122,7 +122,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const addAction = useCallback(() => {
     append({
       script: 0,
-      name: "",
+      name: '',
       timeout: 90,
       script_args: [],
       env_vars: [],
@@ -139,9 +139,9 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             const hasMatch = script.supported_platforms.some(p => data.supportedPlatforms.includes(p));
             if (!hasMatch) {
               toast({
-                title: "Platform conflict",
+                title: 'Platform conflict',
                 description: `Script "${script.name}" does not support any of the selected platforms.`,
-                variant: "destructive",
+                variant: 'destructive',
               });
               return;
             }
@@ -152,25 +152,25 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         if (isEditMode && scheduleId) {
           await updateMutation.mutateAsync({ id: scheduleId, payload });
           toast({
-            title: "Schedule updated",
+            title: 'Schedule updated',
             description: `Schedule "${data.name}" updated successfully.`,
-            variant: "success",
+            variant: 'success',
           });
         } else {
           const result = await createMutation.mutateAsync(payload);
           toast({
-            title: "Schedule created",
+            title: 'Schedule created',
             description: `Schedule "${data.name}" created successfully.`,
-            variant: "success",
+            variant: 'success',
           });
           router.push(`/scripts/schedules/${result.id}`);
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? "update" : "create"} schedule`;
+        const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`;
         toast({
-          title: `${isEditMode ? "Update" : "Creation"} failed`,
+          title: `${isEditMode ? 'Update' : 'Creation'} failed`,
           description: msg,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -180,11 +180,11 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const onFormError = useCallback(
     (errors: any) => {
       const firstError = Object.values(errors)[0] as any;
-      const message = firstError?.message || firstError?.root?.message || "Please fix validation errors";
+      const message = firstError?.message || firstError?.root?.message || 'Please fix validation errors';
       toast({
-        title: "Validation error",
+        title: 'Validation error',
         description: message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     },
     [toast],
@@ -193,15 +193,15 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const actions = useMemo(
     () => [
       {
-        label: "Cancel",
+        label: 'Cancel',
         onClick: handleBack,
-        variant: "outline" as const,
+        variant: 'outline' as const,
         showOnlyMobile: true,
       },
       {
-        label: isEditMode ? "Update Schedule" : "Save Schedule",
+        label: isEditMode ? 'Update Schedule' : 'Save Schedule',
         onClick: handleSubmit(onSubmit, onFormError),
-        variant: "primary" as const,
+        variant: 'primary' as const,
         loading: isSubmitting || createMutation.isPending || updateMutation.isPending,
       },
     ],
@@ -228,9 +228,9 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   return (
     <FormProvider {...methods}>
       <DetailPageContainer
-        title={isEditMode ? "Edit Script Schedule" : "New Script Schedule"}
+        title={isEditMode ? 'Edit Script Schedule' : 'New Script Schedule'}
         backButton={{
-          label: isEditMode ? "Back to Schedule" : "Back to Script Schedules",
+          label: isEditMode ? 'Back to Schedule' : 'Back to Script Schedules',
           onClick: handleBack,
         }}
         actions={actions}
@@ -352,7 +352,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                     icon={<p.icon className="w-5 h-5" />}
                     selected={!isDisabled && supportedPlatforms.includes(p.id)}
                     disabled={isDisabled}
-                    tag={isDisabled ? (isMdUp ? "Coming Soon" : "Soon") : undefined}
+                    tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
                     onClick={isDisabled ? undefined : () => togglePlatform(p.id)}
                   />
                 );

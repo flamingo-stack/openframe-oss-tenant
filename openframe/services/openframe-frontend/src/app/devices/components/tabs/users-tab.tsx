@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   InfoCard,
@@ -6,10 +6,10 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@flamingo-stack/openframe-frontend-core";
-import { Info as InfoIcon } from "lucide-react";
-import React from "react";
-import { Device } from "../../types/device.types";
+} from '@flamingo-stack/openframe-frontend-core';
+import { Info as InfoIcon } from 'lucide-react';
+import React from 'react';
+import { Device } from '../../types/device.types';
 
 interface UsersTabProps {
   device: Device | null;
@@ -26,7 +26,7 @@ export function UsersTab({ device }: UsersTabProps) {
 
   const users = device.users || [];
   const loggedInUser = users.find(u => u.isLoggedIn) || users[0];
-  const loggedUsername = loggedInUser?.username || device.logged_in_username || device.logged_username || "Unknown";
+  const loggedUsername = loggedInUser?.username || device.logged_in_username || device.logged_username || 'Unknown';
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -39,7 +39,7 @@ export function UsersTab({ device }: UsersTabProps) {
           <InfoCard
             data={{
               title: loggedUsername,
-              subtitle: "Active Session",
+              subtitle: 'Active Session',
               icon: (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -56,15 +56,15 @@ export function UsersTab({ device }: UsersTabProps) {
               items: (() => {
                 const items = [];
                 if (loggedInUser?.uid !== undefined) {
-                  items.push({ label: "UID", value: loggedInUser.uid.toString() });
+                  items.push({ label: 'UID', value: loggedInUser.uid.toString() });
                 }
                 if (loggedInUser?.groupname) {
-                  items.push({ label: "Group", value: loggedInUser.groupname });
+                  items.push({ label: 'Group', value: loggedInUser.groupname });
                 }
                 if (loggedInUser?.shell) {
-                  items.push({ label: "Shell", value: loggedInUser.shell });
+                  items.push({ label: 'Shell', value: loggedInUser.shell });
                 }
-                return items.length > 0 ? items : [{ label: "Status", value: "Logged In" }];
+                return items.length > 0 ? items : [{ label: 'Status', value: 'Logged In' }];
               })(),
             }}
           />
@@ -81,19 +81,19 @@ export function UsersTab({ device }: UsersTabProps) {
                 const items = [];
 
                 if (user.uid !== undefined) {
-                  items.push({ label: "UID", value: user.uid.toString() });
+                  items.push({ label: 'UID', value: user.uid.toString() });
                 }
 
                 if (user.groupname) {
-                  items.push({ label: "Group", value: user.groupname });
+                  items.push({ label: 'Group', value: user.groupname });
                 }
 
                 if (user.shell) {
-                  items.push({ label: "Shell", value: user.shell });
+                  items.push({ label: 'Shell', value: user.shell });
                 }
 
                 if (user.type) {
-                  items.push({ label: "Type", value: user.type });
+                  items.push({ label: 'Type', value: user.type });
                 }
 
                 return (
@@ -102,10 +102,10 @@ export function UsersTab({ device }: UsersTabProps) {
                     data={{
                       title: user.username,
                       subtitle: user.isLoggedIn
-                        ? "● Active"
-                        : user.type === "person"
-                          ? "User Account"
-                          : user.type || "System User",
+                        ? '● Active'
+                        : user.type === 'person'
+                          ? 'User Account'
+                          : user.type || 'System User',
                       icon: (
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -119,7 +119,7 @@ export function UsersTab({ device }: UsersTabProps) {
                           </TooltipContent>
                         </Tooltip>
                       ),
-                      items: items.length > 0 ? items : [{ label: "Username", value: user.username }],
+                      items: items.length > 0 ? items : [{ label: 'Username', value: user.username }],
                     }}
                   />
                 );

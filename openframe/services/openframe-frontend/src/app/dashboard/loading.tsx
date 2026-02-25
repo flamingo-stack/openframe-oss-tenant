@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { isSaasTenantMode } from "@/lib/app-mode";
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { isSaasTenantMode } from '@/lib/app-mode';
 
 /**
  * Dashboard loading skeleton that matches the actual dashboard layout EXACTLY:
@@ -50,9 +50,9 @@ function OnboardingStepCardSkeleton() {
       </div>
       {/* Right - buttons */}
       <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end shrink-0">
-        <Skeleton className="h-14 w-full sm:w-[100px] rounded-[6px]" />{" "}
+        <Skeleton className="h-14 w-full sm:w-[100px] rounded-[6px]" />{' '}
         {/* Skip button - h-12 matches Button default */}
-        <Skeleton className="h-14 w-full sm:w-[160px] rounded-[6px]" />{" "}
+        <Skeleton className="h-14 w-full sm:w-[160px] rounded-[6px]" />{' '}
         {/* Action button - h-12 matches Button default */}
       </div>
     </div>
@@ -69,7 +69,7 @@ function OnboardingSkeleton() {
       {/* Header - title + button */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 md:gap-0">
         <Skeleton className="h-8 w-36" /> {/* "Get Started" title - 24px/32px line height */}
-        <Skeleton className="h-12 w-full md:w-[180px] rounded-[6px]" />{" "}
+        <Skeleton className="h-12 w-full md:w-[180px] rounded-[6px]" />{' '}
         {/* "Skip Onboarding" button - w-full md:w-auto matches actual Button */}
       </div>
       {/* Step cards - 5 VERTICAL cards (NOT horizontal!) */}

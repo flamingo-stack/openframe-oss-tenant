@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 /**
  * Scripts Store
@@ -42,7 +42,7 @@ export interface ScriptsState {
 
 const initialState = {
   scripts: [],
-  search: "",
+  search: '',
   isLoading: true,
   error: null,
 };
@@ -85,7 +85,7 @@ export const useScriptsStore = create<ScriptsState>()(
       reset: () => set(() => initialState),
     })),
     {
-      name: "scripts-store",
+      name: 'scripts-store',
     },
   ),
 );

@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AuthProvidersList } from "@flamingo-stack/openframe-frontend-core/components/features";
+import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -14,53 +14,53 @@ import {
   CardHeader,
   Input,
   Label,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useInviteProviders } from "@/app/auth/hooks/use-invite-providers";
-import { authApiClient } from "@/lib/auth-api-client";
-import { AuthLayout } from "../layouts";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useInviteProviders } from '@/app/auth/hooks/use-invite-providers';
+import { authApiClient } from '@/lib/auth-api-client';
+import { AuthLayout } from '../layouts';
 
 export default function InvitePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
 
-  const invitationId = searchParams.get("id");
+  const invitationId = searchParams.get('id');
   const {
     providers: ssoProviders,
     loading: loadingProviders,
     error: providersError,
   } = useInviteProviders(invitationId);
 
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTenantSwitch, setShowTenantSwitch] = useState(false);
-  const [, setSignupMethod] = useState<"form" | "sso">("form");
+  const [, setSignupMethod] = useState<'form' | 'sso'>('form');
   const [invitationNotFound, setInvitationNotFound] = useState(false);
 
   useEffect(() => {
     if (!invitationId) {
       toast({
-        title: "Invalid Invitation",
-        description: "No invitation ID provided. Please use the link from your invitation email.",
-        variant: "destructive",
+        title: 'Invalid Invitation',
+        description: 'No invitation ID provided. Please use the link from your invitation email.',
+        variant: 'destructive',
       });
-      router.push("/auth");
+      router.push('/auth');
     } else if (
       providersError &&
-      (providersError.includes("Invitation not found") || providersError.includes("Invitation already used or revoked"))
+      (providersError.includes('Invitation not found') || providersError.includes('Invitation already used or revoked'))
     ) {
       setInvitationNotFound(true);
       toast({
-        title: "Invitation Not Found",
+        title: 'Invitation Not Found',
         description:
-          "This invitation link is invalid or has expired. Please contact your administrator for a new invitation.",
-        variant: "destructive",
+          'This invitation link is invalid or has expired. Please contact your administrator for a new invitation.',
+        variant: 'destructive',
       });
     }
   }, [invitationId, providersError, router, toast]);
@@ -68,18 +68,18 @@ export default function InvitePage() {
   const handleSubmit = async (switchTenant = false) => {
     if (!firstName.trim() || !lastName.trim() || !password || password !== confirmPassword) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all fields and ensure passwords match.",
-        variant: "destructive",
+        title: 'Validation Error',
+        description: 'Please fill in all fields and ensure passwords match.',
+        variant: 'destructive',
       });
       return;
     }
 
     if (password.length < 8) {
       toast({
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
+        title: 'Password Too Short',
+        description: 'Password must be at least 8 characters long.',
+        variant: 'destructive',
       });
       return;
     }
@@ -98,30 +98,30 @@ export default function InvitePage() {
       if (!response.ok) {
         const error = response.data as any;
 
-        if (error?.code === "USER_IS_ACTIVE_IN_ANOTHER_TENANT") {
+        if (error?.code === 'USER_IS_ACTIVE_IN_ANOTHER_TENANT') {
           setShowTenantSwitch(true);
           setIsLoading(false);
           return;
         }
 
-        throw new Error(error?.message || response.error || "Failed to accept invitation");
+        throw new Error(error?.message || response.error || 'Failed to accept invitation');
       }
 
       toast({
-        title: "Invitation Accepted!",
-        description: "Your account has been created successfully. Redirecting to login...",
-        variant: "success",
+        title: 'Invitation Accepted!',
+        description: 'Your account has been created successfully. Redirecting to login...',
+        variant: 'success',
       });
 
       setTimeout(() => {
-        router.push("/auth");
+        router.push('/auth');
       }, 2000);
     } catch (error) {
-      console.error("Invitation acceptance error:", error);
+      console.error('Invitation acceptance error:', error);
       toast({
-        title: "Acceptance Failed",
-        description: error instanceof Error ? error.message : "Failed to accept invitation. Please try again.",
-        variant: "destructive",
+        title: 'Acceptance Failed',
+        description: error instanceof Error ? error.message : 'Failed to accept invitation. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -134,13 +134,13 @@ export default function InvitePage() {
   };
 
   const handleSsoSignup = async (provider: string) => {
-    setSignupMethod("sso");
+    setSignupMethod('sso');
 
     if (!invitationId) {
       toast({
-        title: "Invalid Invitation",
-        description: "No invitation ID provided.",
-        variant: "destructive",
+        title: 'Invalid Invitation',
+        description: 'No invitation ID provided.',
+        variant: 'destructive',
       });
       return;
     }
@@ -150,16 +150,16 @@ export default function InvitePage() {
     try {
       await authApiClient.acceptInvitationSso({
         invitationId,
-        provider: provider as "google" | "microsoft",
+        provider: provider as 'google' | 'microsoft',
         switchTenant: true,
-        redirectTo: "/auth/login",
+        redirectTo: '/auth/login',
       });
     } catch (error) {
-      console.error("SSO signup error:", error);
+      console.error('SSO signup error:', error);
       toast({
-        title: "SSO Signup Failed",
-        description: "Unable to initiate SSO signup. Please try again.",
-        variant: "destructive",
+        title: 'SSO Signup Failed',
+        description: 'Unable to initiate SSO signup. Please try again.',
+        variant: 'destructive',
       });
       setIsLoading(false);
     }
@@ -250,7 +250,7 @@ export default function InvitePage() {
               <div className="flex gap-6 items-center">
                 <div className="flex-1"></div>
                 <div className="flex-1">
-                  <Button onClick={() => router.push("/auth")} variant="primary" className="!w-full sm:!w-full">
+                  <Button onClick={() => router.push('/auth')} variant="primary" className="!w-full sm:!w-full">
                     Back to Login
                   </Button>
                 </div>
@@ -296,7 +296,7 @@ export default function InvitePage() {
                 </div>
               )}
               {/* Personal Details */}
-              <div className="flex flex-col md:flex-row gap-6" onClick={() => setSignupMethod("form")}>
+              <div className="flex flex-col md:flex-row gap-6" onClick={() => setSignupMethod('form')}>
                 <div className="flex-1 flex flex-col gap-1">
                   <Label>First Name</Label>
                   <Input
@@ -354,7 +354,7 @@ export default function InvitePage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center pt-4">
                 <Button
-                  onClick={() => router.push("/auth")}
+                  onClick={() => router.push('/auth')}
                   disabled={isLoading}
                   variant="outline"
                   className="w-full sm:flex-1"

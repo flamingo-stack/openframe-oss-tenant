@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { TabContent } from "@flamingo-stack/openframe-frontend-core";
-import React from "react";
-import { getTabComponent } from "./device-tabs";
+import { TabContent } from '@flamingo-stack/openframe-frontend-core';
+import React from 'react';
+import { getTabComponent } from './device-tabs';
 
 interface DeviceTabContentProps {
   activeTab: string;

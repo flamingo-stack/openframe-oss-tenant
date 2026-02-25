@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -8,23 +8,23 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "@flamingo-stack/openframe-frontend-core";
-import { SelectButton } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { SearchIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { Autocomplete, Input, Label, ListLoader } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useDebounce, useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { DEVICE_STATUS } from "../../../devices/constants/device-statuses";
-import { GET_DEVICES_QUERY } from "../../../devices/queries/devices-queries";
-import type { Device, DevicesGraphQlNode, GraphQlResponse } from "../../../devices/types/device.types";
-import { getTacticalAgentId } from "../../../devices/utils/device-action-utils";
-import { getDeviceOperatingSystem } from "../../../devices/utils/device-status";
-import { createDeviceListItem } from "../../../devices/utils/device-transform";
-import { useOrganizationsMin } from "../../../organizations/hooks/use-organizations-min";
-import { getDevicePrimaryId } from "../../utils/device-helpers";
-import { mapPlatformsToOsTypes } from "../../utils/script-utils";
+} from '@flamingo-stack/openframe-frontend-core';
+import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Autocomplete, Input, Label, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
+import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
+import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
+import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
+import { getDeviceOperatingSystem } from '../../../devices/utils/device-status';
+import { createDeviceListItem } from '../../../devices/utils/device-transform';
+import { useOrganizationsMin } from '../../../organizations/hooks/use-organizations-min';
+import { getDevicePrimaryId } from '../../utils/device-helpers';
+import { mapPlatformsToOsTypes } from '../../utils/script-utils';
 
 export interface SelectedTestDevice {
   agentToolId: string;
@@ -41,7 +41,7 @@ interface TestScriptModalProps {
 export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPlatforms }: TestScriptModalProps) {
   const { toast } = useToast();
 
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [isLoadingDevices, setIsLoadingDevices] = useState(false);
@@ -56,7 +56,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
 
   useEffect(() => {
     if (isOpen) {
-      fetchOrgs("");
+      fetchOrgs('');
     }
   }, [isOpen, fetchOrgs]);
 
@@ -82,11 +82,11 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
   // Client-side filtered devices (by search term + selected orgs)
   const filteredDevices = useMemo(() => {
     let filtered = allDevices;
-    const term = (debouncedSearch || "").toLowerCase();
+    const term = (debouncedSearch || '').toLowerCase();
     if (term) {
       filtered = filtered.filter(d => {
-        const name = (d.displayName || d.hostname || "").toLowerCase();
-        const os = (d.osType || "").toLowerCase();
+        const name = (d.displayName || d.hostname || '').toLowerCase();
+        const os = (d.osType || '').toLowerCase();
         return name.includes(term) || os.includes(term);
       });
     }
@@ -119,13 +119,13 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
           };
         }>
       >(
-        "/api/graphql",
+        '/api/graphql',
         {
           query: GET_DEVICES_QUERY,
           variables: {
             filter,
             pagination: { limit: 100, cursor: null },
-            search: "",
+            search: '',
           },
         },
         { signal: controller.signal },
@@ -134,12 +134,12 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
       if (controller.signal.aborted) return;
 
       if (!response.ok) {
-        throw new Error(response.error || "Failed to fetch devices");
+        throw new Error(response.error || 'Failed to fetch devices');
       }
 
       const graphqlResponse = response.data;
       if (!graphqlResponse?.data) {
-        throw new Error("No data received from server");
+        throw new Error('No data received from server');
       }
       if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
         throw new Error(graphqlResponse.errors[0].message);
@@ -149,9 +149,9 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
       const items = nodes.map(createDeviceListItem);
       setAllDevices(items);
     } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      const msg = err instanceof Error ? err.message : "Failed to load devices";
-      toast({ title: "Error", description: msg, variant: "destructive" });
+      if (err instanceof DOMException && err.name === 'AbortError') return;
+      const msg = err instanceof Error ? err.message : 'Failed to load devices';
+      toast({ title: 'Error', description: msg, variant: 'destructive' });
     } finally {
       if (!controller.signal.aborted) {
         setIsLoadingDevices(false);
@@ -195,9 +195,9 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
 
     if (!agentToolId) {
       toast({
-        title: "No Tactical Agent",
-        description: "This device has no Tactical RMM agent connected.",
-        variant: "destructive",
+        title: 'No Tactical Agent',
+        description: 'This device has no Tactical RMM agent connected.',
+        variant: 'destructive',
       });
       return;
     }
@@ -275,7 +275,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
                   <SelectButton
                     key={id}
                     title={device.displayName || device.hostname}
-                    icon={getDeviceTypeIcon(deviceType, { className: "w-5 h-5" })}
+                    icon={getDeviceTypeIcon(deviceType, { className: 'w-5 h-5' })}
                     description={getDeviceOperatingSystem(device.osType)}
                     selected={isSelected}
                     onClick={() => handleSelectDevice(device)}

@@ -1,8 +1,8 @@
-import { create } from "zustand";
-import { apiClient } from "@/lib/api-client";
-import { MESSAGE_TYPE, OWNER_TYPE } from "../constants";
-import { GET_DIALOG_MESSAGES_QUERY, GET_DIALOG_QUERY } from "../queries/dialogs-queries";
-import { Dialog, Message, MessageConnection } from "../types/dialog.types";
+import { create } from 'zustand';
+import { apiClient } from '@/lib/api-client';
+import { MESSAGE_TYPE, OWNER_TYPE } from '../constants';
+import { GET_DIALOG_MESSAGES_QUERY, GET_DIALOG_QUERY } from '../queries/dialogs-queries';
+import { Dialog, Message, MessageConnection } from '../types/dialog.types';
 
 interface DialogResponse {
   dialog: Dialog;
@@ -90,7 +90,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
 
     try {
-      const response = await apiClient.post<GraphQlResponse<DialogResponse>>("/chat/graphql", {
+      const response = await apiClient.post<GraphQlResponse<DialogResponse>>('/chat/graphql', {
         query: GET_DIALOG_QUERY,
         variables: { id: dialogId },
       });
@@ -105,12 +105,12 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         currentDialog: dialog,
         isLoadingDialog: s.currentDialogId !== dialogId ? s.isLoadingDialog : false,
         loadingDialogId: s.currentDialogId !== dialogId ? s.loadingDialogId : null,
-        dialogError: dialog ? null : "Dialog not found",
+        dialogError: dialog ? null : 'Dialog not found',
       }));
 
       return dialog;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch dialog";
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dialog';
       set({
         dialogError: errorMessage,
         isLoadingDialog: false,
@@ -138,7 +138,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
 
     try {
       if (pollNew) {
-        const response = await apiClient.post<GraphQlResponse<MessagesResponse>>("/chat/graphql", {
+        const response = await apiClient.post<GraphQlResponse<MessagesResponse>>('/chat/graphql', {
           query: GET_DIALOG_MESSAGES_QUERY,
           variables: {
             dialogId,
@@ -154,15 +154,15 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         const connection = graphqlResponse?.data?.messages;
         const newMessages = (connection?.edges || []).map(edge => edge.node);
 
         set(s => {
-          const clientMessages = newMessages.filter(m => m.chatType === "CLIENT_CHAT");
-          const adminMessages = newMessages.filter(m => m.chatType === "ADMIN_AI_CHAT");
+          const clientMessages = newMessages.filter(m => m.chatType === 'CLIENT_CHAT');
+          const adminMessages = newMessages.filter(m => m.chatType === 'ADMIN_AI_CHAT');
 
           // For client messages
           const existingClientIds = new Set(s.currentMessages.map(m => m.id));
@@ -203,7 +203,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       let newestCursor: string | null = state.newestMessageCursor;
 
       while (hasNextPage) {
-        const response = await apiClient.post<GraphQlResponse<MessagesResponse>>("/chat/graphql", {
+        const response = await apiClient.post<GraphQlResponse<MessagesResponse>>('/chat/graphql', {
           query: GET_DIALOG_MESSAGES_QUERY,
           variables: {
             dialogId,
@@ -219,14 +219,14 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         const connection = graphqlResponse?.data?.messages;
         const batchMessages = (connection?.edges || []).map(edge => edge.node);
 
-        const batchClientMessages = batchMessages.filter(m => m.chatType === "CLIENT_CHAT");
-        const batchAdminMessages = batchMessages.filter(m => m.chatType === "ADMIN_AI_CHAT");
+        const batchClientMessages = batchMessages.filter(m => m.chatType === 'CLIENT_CHAT');
+        const batchAdminMessages = batchMessages.filter(m => m.chatType === 'ADMIN_AI_CHAT');
 
         allClientMessages = [...allClientMessages, ...batchClientMessages];
         allAdminMessages = [...allAdminMessages, ...batchAdminMessages];
@@ -269,7 +269,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         };
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to fetch messages";
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch messages';
       set({
         messagesError: errorMessage,
         isLoadingMessages: false,
@@ -342,7 +342,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
             ...lastMessage,
             messageData: {
               ...lastMessage.messageData,
-              text: (lastMessageData.text || "") + (messageData.text || ""),
+              text: (lastMessageData.text || '') + (messageData.text || ''),
             },
           };
           return updatedMessages;

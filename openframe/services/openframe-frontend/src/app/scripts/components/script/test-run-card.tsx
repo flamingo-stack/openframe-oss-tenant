@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Button } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { Monitor, Square } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Monitor, Square } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 export interface TestRunData {
   id: string;
@@ -10,7 +10,7 @@ export interface TestRunData {
   agentToolId: string;
   startedAt: string;
   startTime: number;
-  status: "running" | "completed" | "error" | "aborted";
+  status: 'running' | 'completed' | 'error' | 'aborted';
   output: string[];
   elapsedSeconds: number;
 }
@@ -21,34 +21,34 @@ interface TestRunCardProps {
 }
 
 function formatDuration(totalSeconds: number): string {
-  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, "0");
-  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
-  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
   return `${hours}:${minutes}:${seconds}`;
 }
 
-function getStatusLabel(status: TestRunData["status"]): string {
+function getStatusLabel(status: TestRunData['status']): string {
   switch (status) {
-    case "running":
-      return "In Progress";
-    case "completed":
-      return "Completed";
-    case "aborted":
-      return "Aborted";
-    case "error":
-      return "Failed";
+    case 'running':
+      return 'In Progress';
+    case 'completed':
+      return 'Completed';
+    case 'aborted':
+      return 'Aborted';
+    case 'error':
+      return 'Failed';
   }
 }
 
-function getStatusColor(status: TestRunData["status"]): string {
+function getStatusColor(status: TestRunData['status']): string {
   switch (status) {
-    case "running":
-      return "text-ods-accent";
-    case "completed":
-      return "text-[#5ea62e]";
-    case "aborted":
-    case "error":
-      return "text-error";
+    case 'running':
+      return 'text-ods-accent';
+    case 'completed':
+      return 'text-[#5ea62e]';
+    case 'aborted':
+    case 'error':
+      return 'text-error';
   }
 }
 
@@ -106,7 +106,7 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
           </div>
 
-          {run.status === "running" && (
+          {run.status === 'running' && (
             <Button
               variant="outline"
               onClick={() => onStop(run.id)}
@@ -138,7 +138,7 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
           </div>
 
-          {run.status === "running" && (
+          {run.status === 'running' && (
             <div className="flex">
               <Button variant="outline" onClick={() => onStop(run.id)} leftIcon={<Square className="h-6 w-6" />}>
                 Stop Script
@@ -152,18 +152,18 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
       <div ref={logRef} className="h-[400px] overflow-y-auto p-4 border-b border-ods-border items-end">
         <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888] whitespace-pre-wrap">
           {run.output.map((line, i) => {
-            const isError = line.toLowerCase().startsWith("error");
+            const isError = line.toLowerCase().startsWith('error');
             const isSuccess =
-              line.toLowerCase().includes("success") ||
-              line.toLowerCase().includes("passed") ||
-              line.toLowerCase().includes("completed");
+              line.toLowerCase().includes('success') ||
+              line.toLowerCase().includes('passed') ||
+              line.toLowerCase().includes('completed');
             return (
-              <div key={i} className={isError ? "text-error" : isSuccess ? "text-[#5ea62e]" : ""}>
+              <div key={i} className={isError ? 'text-error' : isSuccess ? 'text-[#5ea62e]' : ''}>
                 {line}
               </div>
             );
           })}
-          {run.status === "running" && <div className="text-ods-accent animate-pulse">Waiting for response...</div>}
+          {run.status === 'running' && <div className="text-ods-accent animate-pulse">Waiting for response...</div>}
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
-export type DialogStatus = "ACTIVE" | "ACTION_REQUIRED" | "ON_HOLD" | "RESOLVED" | "ARCHIVED";
+export type DialogStatus = 'ACTIVE' | 'ACTION_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
-export type DialogOwnerEnum = "CLIENT";
+export type DialogOwnerEnum = 'CLIENT';
 
 export interface DialogOwner {
   type: DialogOwnerEnum;
@@ -56,16 +56,16 @@ export interface DialogConnection {
 }
 
 // Message types
-export type MessageOwnerType = "CLIENT" | "ASSISTANT" | "ADMIN";
+export type MessageOwnerType = 'CLIENT' | 'ASSISTANT' | 'ADMIN';
 export type ChatType = string;
 export type DialogMode = string;
 export type MessageDataType =
-  | "TEXT"
-  | "ERROR"
-  | "EXECUTING_TOOL"
-  | "EXECUTED_TOOL"
-  | "APPROVAL_REQUEST"
-  | "APPROVAL_RESULT";
+  | 'TEXT'
+  | 'ERROR'
+  | 'EXECUTING_TOOL'
+  | 'EXECUTED_TOOL'
+  | 'APPROVAL_REQUEST'
+  | 'APPROVAL_RESULT';
 
 export interface MessageOwner {
   type: MessageOwnerType;
@@ -100,7 +100,7 @@ export interface ErrorData extends MessageData {
 }
 
 export interface ExecutingToolData extends MessageData {
-  type: "EXECUTING_TOOL";
+  type: 'EXECUTING_TOOL';
   integratedToolType: string;
   toolFunction: string;
   parameters?: Record<string, any>;
@@ -109,7 +109,7 @@ export interface ExecutingToolData extends MessageData {
 }
 
 export interface ExecutedToolData extends MessageData {
-  type: "EXECUTED_TOOL";
+  type: 'EXECUTED_TOOL';
   integratedToolType: string;
   toolFunction: string;
   result?: string;
@@ -119,7 +119,7 @@ export interface ExecutedToolData extends MessageData {
 }
 
 export interface ApprovalRequestData extends MessageData {
-  type: "APPROVAL_REQUEST";
+  type: 'APPROVAL_REQUEST';
   approvalRequestId: string;
   approvalType: string;
   command: string;
@@ -127,7 +127,7 @@ export interface ApprovalRequestData extends MessageData {
 }
 
 export interface ApprovalResultData extends MessageData {
-  type: "APPROVAL_RESULT";
+  type: 'APPROVAL_RESULT';
   approvalRequestId: string;
   approved: boolean;
   approvalType: string;

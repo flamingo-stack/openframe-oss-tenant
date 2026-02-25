@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-import { Suspense } from "react";
-import { AppLayout } from "../components/app-layout";
-import { DevicesView } from "./components/devices-view";
+import { Suspense } from 'react';
+import { AppLayout } from '../components/app-layout';
+import { DevicesView } from './components/devices-view';
 
 export default function Devices() {
   return (

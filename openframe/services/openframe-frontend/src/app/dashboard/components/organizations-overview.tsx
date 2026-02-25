@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { DashboardInfoCard, OrganizationCard, Skeleton } from "@flamingo-stack/openframe-frontend-core";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { getFullImageUrl } from "@/lib/image-url";
-import { useOrganizationsOverview } from "../hooks/use-organizations-overview";
+import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useOrganizationsOverview } from '../hooks/use-organizations-overview';
 
 const OrganizationsSkeleton = function OrganizationsSkeleton() {
   return (

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { Button, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useState } from "react";
-import { isSaasSharedMode } from "@/lib/app-mode";
-import { authApiClient, SAAS_DOMAIN_SUFFIX } from "@/lib/auth-api-client";
-import { ForgotPasswordModal } from "./forgot-password-modal";
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useState } from 'react';
+import { isSaasSharedMode } from '@/lib/app-mode';
+import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
+import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface AuthChoiceSectionProps {
   onCreateOrganization: (orgName: string, domain: string, accessCode: string, email: string) => void;
@@ -20,11 +20,11 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const { toast } = useToast();
   const isSaasShared = isSaasSharedMode();
 
-  const [orgName, setOrgName] = useState("");
-  const [domain, setDomain] = useState(isSaasShared ? "" : "localhost");
-  const [orgEmail, setOrgEmail] = useState("");
-  const [signInEmail, setSignInEmail] = useState("");
-  const [accessCode, setAccessCode] = useState("");
+  const [orgName, setOrgName] = useState('');
+  const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost');
+  const [orgEmail, setOrgEmail] = useState('');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [accessCode, setAccessCode] = useState('');
   const [accessCodeError, setAccessCodeError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
@@ -44,7 +44,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
     if (isSaasShared) {
       if (!accessCode.trim()) {
-        setAccessCodeError("Access code is required");
+        setAccessCodeError('Access code is required');
         return;
       }
       setAccessCodeError(null);
@@ -54,39 +54,39 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         const validateResponse = await authApiClient.validateAccessCode(orgEmail.trim(), accessCode.trim());
 
         if (!validateResponse.ok || !validateResponse.data) {
-          const error = validateResponse?.data?.code || "Failed to validate access code";
+          const error = validateResponse?.data?.code || 'Failed to validate access code';
 
-          if (error.includes("ACCESS_CODE_ALREADY_USED")) {
-            setAccessCodeError("This access code has already been used");
+          if (error.includes('ACCESS_CODE_ALREADY_USED')) {
+            setAccessCodeError('This access code has already been used');
             toast({
-              title: "Access Code Already Used",
-              description: "This access code has already been used.",
-              variant: "destructive",
+              title: 'Access Code Already Used',
+              description: 'This access code has already been used.',
+              variant: 'destructive',
             });
-          } else if (["ACCESS_CODE_VALIDATION_FAILED", "INVALID_ACCESS_CODE"].includes(error)) {
-            setAccessCodeError("Invalid access code");
+          } else if (['ACCESS_CODE_VALIDATION_FAILED', 'INVALID_ACCESS_CODE'].includes(error)) {
+            setAccessCodeError('Invalid access code');
             toast({
-              title: "Invalid Access Code",
-              description: "The access code is not valid.",
-              variant: "destructive",
+              title: 'Invalid Access Code',
+              description: 'The access code is not valid.',
+              variant: 'destructive',
             });
           } else {
-            setAccessCodeError("Access code validation failed");
+            setAccessCodeError('Access code validation failed');
             toast({
-              title: "Validation Failed",
+              title: 'Validation Failed',
               description: error,
-              variant: "destructive",
+              variant: 'destructive',
             });
           }
           return;
         }
       } catch (error) {
-        console.error("Access code validation error:", error);
-        setAccessCodeError("Failed to validate access code");
+        console.error('Access code validation error:', error);
+        setAccessCodeError('Failed to validate access code');
         toast({
-          title: "Validation Error",
-          description: "Unable to validate access code.",
-          variant: "destructive",
+          title: 'Validation Error',
+          description: 'Unable to validate access code.',
+          variant: 'destructive',
         });
         return;
       } finally {
@@ -107,34 +107,34 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
           if (available) {
             const fullDomain = `${subdomain}.${SAAS_DOMAIN_SUFFIX}`;
-            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : "", orgEmail.trim());
+            onCreateOrganization(orgName.trim(), fullDomain, isSaasShared ? accessCode.trim() : '', orgEmail.trim());
           } else {
             toast({
-              title: "Domain Not Available",
+              title: 'Domain Not Available',
               description: `The subdomain '${subdomain}' is already taken. Please try another one.`,
-              variant: "destructive",
+              variant: 'destructive',
             });
 
             if (suggestedUrl && suggestedUrl.length > 0) {
-              const suggestions = suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, ""));
+              const suggestions = suggestedUrl.map(url => url.replace(`.${SAAS_DOMAIN_SUFFIX}`, ''));
               setSuggestedDomains(suggestions);
             }
           }
         } else {
-          throw new Error(response.error || "Failed to check domain availability");
+          throw new Error(response.error || 'Failed to check domain availability');
         }
       } catch (error) {
-        console.error("Domain check error:", error);
+        console.error('Domain check error:', error);
         toast({
-          title: "Error",
-          description: "Failed to check domain availability. Please try again.",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to check domain availability. Please try again.',
+          variant: 'destructive',
         });
       } finally {
         setIsCheckingDomain(false);
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain || "localhost", "", orgEmail.trim());
+      onCreateOrganization(orgName.trim(), domain || 'localhost', '', orgEmail.trim());
     }
   };
 
@@ -176,7 +176,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 onKeyDown={e => {
-                  if (e.key === "Enter" && !isLoading && isOrgEmailValid && isOrgNameValid) {
+                  if (e.key === 'Enter' && !isLoading && isOrgEmailValid && isOrgNameValid) {
                     handleCreateOrganization();
                   }
                 }}
@@ -194,7 +194,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={isLoading}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 onKeyDown={e => {
-                  if (e.key === "Enter" && !isLoading && isOrgNameValid) {
+                  if (e.key === 'Enter' && !isLoading && isOrgNameValid) {
                     handleCreateOrganization();
                   }
                 }}
@@ -210,18 +210,18 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
 
           {/* Domain Field - Full Width */}
           <div className="flex flex-col gap-1">
-            <Label>{isSaasShared ? "Domain" : "Domain"}</Label>
+            <Label>{isSaasShared ? 'Domain' : 'Domain'}</Label>
             <div className="flex flex-col gap-2">
               {isSaasShared ? (
                 <Input
                   value={domain}
                   onKeyDown={e => {
-                    if (e.key === "Enter" && !isLoading) {
+                    if (e.key === 'Enter' && !isLoading) {
                       handleCreateOrganization();
                     }
                   }}
                   onChange={e => {
-                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                    const value = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
                     setDomain(value);
                     setSuggestedDomains([]);
                   }}
@@ -238,7 +238,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 <Input
                   value={domain}
                   onKeyDown={e => {
-                    if (e.key === "Enter" && !isLoading) {
+                    if (e.key === 'Enter' && !isLoading) {
                       handleCreateOrganization();
                     }
                   }}
@@ -286,13 +286,13 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                   if (accessCodeError) setAccessCodeError(null);
                 }}
                 onKeyDown={e => {
-                  if (e.key === "Enter" && !isLoading) {
+                  if (e.key === 'Enter' && !isLoading) {
                     handleCreateOrganization();
                   }
                 }}
                 placeholder="Enter Code Here"
                 disabled={isLoading}
-                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? "border-error" : ""}`}
+                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
               />
               {accessCodeError && <p className="text-xs text-error mt-1">{accessCodeError}</p>}
             </div>
@@ -316,7 +316,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 variant="primary"
                 className="!w-full sm:!w-full"
               >
-                {isValidatingAccessCode ? "Validating..." : isCheckingDomain ? "Checking..." : "Continue"}
+                {isValidatingAccessCode ? 'Validating...' : isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
             </div>
           </div>
@@ -344,7 +344,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               value={signInEmail}
               onChange={e => setSignInEmail(e.target.value)}
               onKeyDown={e => {
-                if (e.key === "Enter" && !isLoading && isSignInEmailValid) {
+                if (e.key === 'Enter' && !isLoading && isSignInEmailValid) {
                   handleSignIn();
                 }
               }}

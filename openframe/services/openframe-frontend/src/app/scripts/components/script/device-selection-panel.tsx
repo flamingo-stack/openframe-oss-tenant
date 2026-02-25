@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { type DeviceType, getDeviceTypeIcon, LoadError, useSmUp } from "@flamingo-stack/openframe-frontend-core";
-import { SelectButton } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { SearchIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { Autocomplete, Button, Input, ListLoader } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import type { Device } from "../../../devices/types/device.types";
-import { getDeviceOperatingSystem } from "../../../devices/utils/device-status";
-import { getDevicePrimaryId } from "../../utils/device-helpers";
+import { type DeviceType, getDeviceTypeIcon, LoadError, useSmUp } from '@flamingo-stack/openframe-frontend-core';
+import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Autocomplete, Button, Input, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type { Device } from '../../../devices/types/device.types';
+import { getDeviceOperatingSystem } from '../../../devices/utils/device-status';
+import { getDevicePrimaryId } from '../../utils/device-helpers';
 
 interface OrganizationOption {
   label: string;
@@ -99,7 +99,7 @@ export function DeviceSelectionPanel({
             className="text-ods-accent hover:text-ods-accent-hover"
             noPadding
           >
-            {isSmUp ? "Select All Displayed Devices" : "Select All"}
+            {isSmUp ? 'Select All Displayed Devices' : 'Select All'}
           </Button>
         </div>
       </div>
@@ -119,15 +119,15 @@ export function DeviceSelectionPanel({
             {devices.map(device => {
               const id = getDevicePrimaryId(device);
               const deviceType = device.type?.toLowerCase() as DeviceType;
-              const isSelected = selectedIds.has(id || "");
+              const isSelected = selectedIds.has(id || '');
               return (
                 <SelectButton
                   key={id}
                   title={device.displayName || device.hostname}
-                  icon={getDeviceTypeIcon(deviceType, { className: "w-5 h-5" })}
+                  icon={getDeviceTypeIcon(deviceType, { className: 'w-5 h-5' })}
                   description={getDeviceOperatingSystem(device.osType)}
                   selected={isSelected}
-                  onClick={() => onToggleSelect(id || "")}
+                  onClick={() => onToggleSelect(id || '')}
                 />
               );
             })}

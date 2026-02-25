@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { ApprovalLevel, PermissionCategory } from "@flamingo-stack/openframe-frontend-core";
+import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core';
 import {
   Alert,
   AlertDescription,
@@ -17,35 +17,35 @@ import {
   SelectValue,
   Skeleton,
   SlidersIcon,
-} from "@flamingo-stack/openframe-frontend-core";
-import { PolicyConfigurationPanel } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { AiRobotIcon, ClaudeIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { AlertCircle, Edit2, Save, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { useAiConfiguration } from "../../hooks/use-ai-configuration";
-import { useAiPolicies } from "../../hooks/use-ai-policies";
-import { CUSTOM_CREATION_TEMPLATE_ID, type PolicyRule, type PolicyTemplateDetail } from "../../types/ai-policies";
-import type { CustomPolicyState, EditSnapshot } from "../../types/ai-settings";
-import { buildPolicyGroups, clonePolicyGroups, mapToObject } from "../../utils/ai-settings.utils";
+} from '@flamingo-stack/openframe-frontend-core';
+import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { AiRobotIcon, ClaudeIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { AlertCircle, Edit2, Save, X } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { useAiConfiguration } from '../../hooks/use-ai-configuration';
+import { useAiPolicies } from '../../hooks/use-ai-policies';
+import { CUSTOM_CREATION_TEMPLATE_ID, type PolicyRule, type PolicyTemplateDetail } from '../../types/ai-policies';
+import type { CustomPolicyState, EditSnapshot } from '../../types/ai-settings';
+import { buildPolicyGroups, clonePolicyGroups, mapToObject } from '../../utils/ai-settings.utils';
 
-const CUSTOM_TEMPLATE_TYPE = "CUSTOM" as const;
+const CUSTOM_TEMPLATE_TYPE = 'CUSTOM' as const;
 
 const PROVIDER_CONFIG = {
   ANTHROPIC: {
-    apiKey: "anthropic",
-    label: "Anthropic",
+    apiKey: 'anthropic',
+    label: 'Anthropic',
     icon: ClaudeIcon,
   },
   OPENAI: {
-    apiKey: "openai",
-    label: "OpenAI",
+    apiKey: 'openai',
+    label: 'OpenAI',
     icon: OpenAiIcon,
   },
   GOOGLE_GEMINI: {
-    apiKey: "google-gemini",
-    label: "Google",
+    apiKey: 'google-gemini',
+    label: 'Google',
     icon: GoogleGeminiIcon,
   },
 } as const;
@@ -53,10 +53,10 @@ const PROVIDER_CONFIG = {
 type ProviderKey = keyof typeof PROVIDER_CONFIG;
 
 const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
-  anthropic: "ANTHROPIC",
-  openai: "OPENAI",
-  "google-gemini": "GOOGLE_GEMINI",
-  google: "GOOGLE_GEMINI",
+  anthropic: 'ANTHROPIC',
+  openai: 'OPENAI',
+  'google-gemini': 'GOOGLE_GEMINI',
+  google: 'GOOGLE_GEMINI',
 };
 
 export function AiSettingsTab() {
@@ -94,8 +94,8 @@ export function AiSettingsTab() {
   const canEditPolicyRules =
     isEditMode && (selectedTemplateId === CUSTOM_CREATION_TEMPLATE_ID || isSelectedCustomTemplate);
 
-  const [selectedProvider, setSelectedProvider] = useState<string>("");
-  const [selectedModel, setSelectedModel] = useState<string>("");
+  const [selectedProvider, setSelectedProvider] = useState<string>('');
+  const [selectedModel, setSelectedModel] = useState<string>('');
 
   const [policyGroups, setPolicyGroups] = useState<Map<string, PermissionCategory[]>>(new Map());
 
@@ -210,7 +210,7 @@ export function AiSettingsTab() {
         templateIdForUpdate = customPolicy.baseTemplateId;
       } else if (isEditingCustomTemplate) {
         const nonCustomTemplate = templateOptions.find(t => t.type !== CUSTOM_TEMPLATE_TYPE);
-        templateIdForUpdate = nonCustomTemplate?.id || "DEFAULT";
+        templateIdForUpdate = nonCustomTemplate?.id || 'DEFAULT';
       }
 
       if (templateIdForUpdate) {
@@ -315,7 +315,7 @@ export function AiSettingsTab() {
 
   const handleProviderChange = useCallback((provider: string) => {
     setSelectedProvider(provider);
-    setSelectedModel("");
+    setSelectedModel('');
   }, []);
 
   const setupCustomPolicy = useCallback(
@@ -348,7 +348,7 @@ export function AiSettingsTab() {
         const res = await apiClient.get<PolicyTemplateDetail>(
           `/chat/api/v1/policies/${encodeURIComponent(templateId)}`,
         );
-        if (!res.ok) throw new Error(res.error || "Failed to fetch base template");
+        if (!res.ok) throw new Error(res.error || 'Failed to fetch base template');
 
         const baseTemplate = res.data;
         if (baseTemplate) {
@@ -363,9 +363,9 @@ export function AiSettingsTab() {
         }
       } catch (error) {
         toast({
-          title: "Failed to Load Base Template",
-          description: error instanceof Error ? error.message : "Unable to load template for custom policy",
-          variant: "destructive",
+          title: 'Failed to Load Base Template',
+          description: error instanceof Error ? error.message : 'Unable to load template for custom policy',
+          variant: 'destructive',
           duration: 5000,
         });
       } finally {
@@ -524,7 +524,7 @@ export function AiSettingsTab() {
               }
               className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent/90"
             >
-              {isSaving || isPolicyActivating || isSubmitting ? "Saving..." : "Save Settings"}
+              {isSaving || isPolicyActivating || isSubmitting ? 'Saving...' : 'Save Settings'}
             </Button>
             <Button
               variant="outline"
@@ -672,7 +672,7 @@ export function AiSettingsTab() {
                         {(() => {
                           const currentTemplateId = selectedTemplateId || activeTemplateId;
                           const currentTemplate = templateOptions.find(t => t.id === currentTemplateId);
-                          return currentTemplate?.label || "None";
+                          return currentTemplate?.label || 'None';
                         })()}
                       </span>
                     </div>
@@ -711,7 +711,7 @@ export function AiSettingsTab() {
                     value={
                       customPolicy.enabled && !hasCustomTemplate
                         ? CUSTOM_CREATION_TEMPLATE_ID
-                        : selectedTemplateId || ""
+                        : selectedTemplateId || ''
                     }
                     onValueChange={v => {
                       if (v === CUSTOM_CREATION_TEMPLATE_ID) {
@@ -755,15 +755,15 @@ export function AiSettingsTab() {
                                       const baseTemplate = templateOptions.find(
                                         t => t.id === customPolicy.baseTemplateId,
                                       );
-                                      return baseTemplate ? ` (based on ${baseTemplate.label})` : "";
+                                      return baseTemplate ? ` (based on ${baseTemplate.label})` : '';
                                     }
                                     if (selectedTemplate?.sourceTemplate) {
                                       const sourceTemplate = templateOptions.find(
                                         t => t.id === selectedTemplate.sourceTemplate,
                                       );
-                                      return sourceTemplate ? ` (based on ${sourceTemplate.label})` : "";
+                                      return sourceTemplate ? ` (based on ${sourceTemplate.label})` : '';
                                     }
-                                    return "";
+                                    return '';
                                   })()}
                               </Label>
                               {opt.description && (
@@ -805,7 +805,7 @@ export function AiSettingsTab() {
                               htmlFor="policy-template-custom-creation"
                               className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
                             >
-                              Custom Policy{" "}
+                              Custom Policy{' '}
                               {customPolicy.baseTemplateId &&
                                 `(based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`}
                             </Label>

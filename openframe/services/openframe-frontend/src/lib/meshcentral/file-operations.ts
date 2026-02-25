@@ -2,7 +2,7 @@
  * MeshCentral File Operations
  */
 
-import type { FileOperationRequest } from "./file-manager-types";
+import type { FileOperationRequest } from './file-manager-types';
 
 export class FileOperations {
   private requestIdCounter = 0;
@@ -11,38 +11,38 @@ export class FileOperations {
     return `req-${Date.now()}-${++this.requestIdCounter}`;
   }
 
-  private detectSeparator(path: string): "\\" | "/" {
-    if (path.includes("\\") && !path.includes("/")) return "\\";
-    if (path.includes("/")) return "/";
-    if (/^[A-Za-z]:/.test(path)) return "\\";
-    return "/";
+  private detectSeparator(path: string): '\\' | '/' {
+    if (path.includes('\\') && !path.includes('/')) return '\\';
+    if (path.includes('/')) return '/';
+    if (/^[A-Za-z]:/.test(path)) return '\\';
+    return '/';
   }
 
   joinPath(base: string, segment: string): string {
-    const sanitizedSegment = segment.replace(/^[\\/]+/, "");
+    const sanitizedSegment = segment.replace(/^[\\/]+/, '');
 
-    if (!base || base === "") {
+    if (!base || base === '') {
       if (/^[A-Za-z]:/.test(sanitizedSegment)) {
-        return sanitizedSegment.endsWith("\\") ? sanitizedSegment : sanitizedSegment + "\\";
+        return sanitizedSegment.endsWith('\\') ? sanitizedSegment : sanitizedSegment + '\\';
       }
       return sanitizedSegment;
     }
 
-    if (base === "/") {
-      return "/" + sanitizedSegment;
+    if (base === '/') {
+      return '/' + sanitizedSegment;
     }
-    if (base === "\\") {
+    if (base === '\\') {
       return `\\${sanitizedSegment}`;
     }
 
     const separator = this.detectSeparator(base);
-    const needsSep = base.endsWith(separator) ? "" : separator;
+    const needsSep = base.endsWith(separator) ? '' : separator;
     return `${base}${needsSep}${sanitizedSegment}`;
   }
 
   createListDirectoryRequest(path: string): FileOperationRequest {
     return {
-      action: "ls",
+      action: 'ls',
       reqid: this.generateRequestId(),
       path: path,
     };
@@ -51,7 +51,7 @@ export class FileOperations {
   createMakeDirRequest(path: string, folderName: string): FileOperationRequest {
     const fullPath = this.joinPath(path, folderName);
     return {
-      action: "mkdir",
+      action: 'mkdir',
       reqid: this.generateRequestId(),
       path: fullPath,
     };
@@ -59,7 +59,7 @@ export class FileOperations {
 
   createRenameRequest(path: string, oldName: string, newName: string): FileOperationRequest {
     return {
-      action: "rename",
+      action: 'rename',
       reqid: this.generateRequestId(),
       path: path,
       oldname: oldName,
@@ -69,7 +69,7 @@ export class FileOperations {
 
   createDeleteRequest(path: string, items: string[], recursive = false): FileOperationRequest {
     return {
-      action: "rm",
+      action: 'rm',
       reqid: this.generateRequestId(),
       path: path,
       delfiles: items,
@@ -79,7 +79,7 @@ export class FileOperations {
 
   createCopyRequest(sourcePath: string, destinationPath: string, fileNames: string[]): FileOperationRequest {
     return {
-      action: "copy",
+      action: 'copy',
       reqid: this.generateRequestId(),
       scpath: sourcePath,
       dspath: destinationPath,
@@ -89,7 +89,7 @@ export class FileOperations {
 
   createMoveRequest(sourcePath: string, destinationPath: string, fileNames: string[]): FileOperationRequest {
     return {
-      action: "move",
+      action: 'move',
       reqid: this.generateRequestId(),
       scpath: sourcePath,
       dspath: destinationPath,
@@ -99,7 +99,7 @@ export class FileOperations {
 
   createZipRequest(path: string, files: string[], zipName: string): FileOperationRequest {
     return {
-      action: "zip",
+      action: 'zip',
       reqid: this.generateRequestId(),
       path: path,
       files: files,
@@ -109,7 +109,7 @@ export class FileOperations {
 
   createUnzipRequest(path: string, zipFile: string): FileOperationRequest {
     return {
-      action: "unzip",
+      action: 'unzip',
       reqid: this.generateRequestId(),
       path: path,
       file: zipFile,
@@ -117,9 +117,9 @@ export class FileOperations {
   }
 
   createSearchRequest(path: string, filter: string): FileOperationRequest {
-    const wildcardFilter = filter ? `*${filter}*` : "*";
+    const wildcardFilter = filter ? `*${filter}*` : '*';
     return {
-      action: "findfile",
+      action: 'findfile',
       reqid: this.generateRequestId(),
       path: path,
       filter: wildcardFilter,
@@ -128,7 +128,7 @@ export class FileOperations {
 
   createCancelSearchRequest(reqid: string): FileOperationRequest {
     return {
-      action: "cancelfindfile",
+      action: 'cancelfindfile',
       reqid: this.generateRequestId(),
       cancelreqid: reqid,
     };
@@ -136,7 +136,7 @@ export class FileOperations {
 
   createGetFileRequest(path: string, fileName: string): FileOperationRequest {
     return {
-      action: "get",
+      action: 'get',
       reqid: this.generateRequestId(),
       path: path,
       file: fileName,
@@ -146,7 +146,7 @@ export class FileOperations {
   createSetFileRequest(path: string, fileName: string, content: string): FileOperationRequest {
     const base64Content = btoa(content);
     return {
-      action: "set",
+      action: 'set',
       reqid: this.generateRequestId(),
       path: path,
       file: fileName,
@@ -157,56 +157,56 @@ export class FileOperations {
   parsePath(path: string): string[] {
     if (!path) return [];
     const separator = this.detectSeparator(path);
-    if (separator === "\\") {
+    if (separator === '\\') {
       return path
-        .replace(/^\\+/, "")
-        .split("\\")
+        .replace(/^\\+/, '')
+        .split('\\')
         .filter(segment => segment.length > 0);
     }
-    return path.split("/").filter(segment => segment.length > 0);
+    return path.split('/').filter(segment => segment.length > 0);
   }
 
   buildPath(segments: string[]): string {
-    if (segments.length === 0) return "/";
-    return "/" + segments.join("/");
+    if (segments.length === 0) return '/';
+    return '/' + segments.join('/');
   }
 
   getParentPath(path: string): string {
-    if (!path || path === "/" || path === "\\") return path || "/";
+    if (!path || path === '/' || path === '\\') return path || '/';
     const separator = this.detectSeparator(path);
 
-    if (separator === "\\") {
-      const trimmed = path.replace(/\\+$/, "");
+    if (separator === '\\') {
+      const trimmed = path.replace(/\\+$/, '');
       if (/^[A-Za-z]:$/.test(trimmed)) {
-        return "\\";
+        return '\\';
       }
-      const parts = trimmed.split("\\").filter(part => part.length > 0);
-      if (parts.length === 0) return "\\";
+      const parts = trimmed.split('\\').filter(part => part.length > 0);
+      if (parts.length === 0) return '\\';
       parts.pop();
-      if (parts.length === 0) return "\\";
+      if (parts.length === 0) return '\\';
       const first = parts[0];
       if (/^[A-Za-z]:$/.test(first)) {
-        const remaining = parts.slice(1).join("\\");
+        const remaining = parts.slice(1).join('\\');
         return remaining ? `${first}\\${remaining}` : `${first}\\`;
       }
-      return `\\${parts.join("\\")}`;
+      return `\\${parts.join('\\')}`;
     }
 
-    const trimmed = path.replace(/\/+$/, "");
-    if (trimmed === "") return "/";
-    const segments = trimmed.split("/").filter(Boolean);
+    const trimmed = path.replace(/\/+$/, '');
+    if (trimmed === '') return '/';
+    const segments = trimmed.split('/').filter(Boolean);
     segments.pop();
-    return segments.length === 0 ? "/" : `/${segments.join("/")}`;
+    return segments.length === 0 ? '/' : `/${segments.join('/')}`;
   }
 
   sanitizeName(name: string): string {
-    return name.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "");
+    return name.replace(/[<>:"\/\\|?*\x00-\x1F]/g, '');
   }
 
   validatePath(path: string): boolean {
-    const segments = path.split("/");
+    const segments = path.split('/');
     for (const segment of segments) {
-      if (segment === ".." || segment === ".") {
+      if (segment === '..' || segment === '.') {
         return false;
       }
     }

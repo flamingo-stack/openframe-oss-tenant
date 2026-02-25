@@ -1,26 +1,26 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
 
 type ReleaseVersionResponse = {
   releaseVersion?: string;
 };
 
 export const releaseVersionQueryKeys = {
-  all: ["releaseVersion"] as const,
-  detail: () => [...releaseVersionQueryKeys.all, "detail"] as const,
+  all: ['releaseVersion'] as const,
+  detail: () => [...releaseVersionQueryKeys.all, 'detail'] as const,
 };
 
 async function fetchReleaseVersion(): Promise<string> {
-  const response = await apiClient.get<ReleaseVersionResponse>("/api/release-version");
+  const response = await apiClient.get<ReleaseVersionResponse>('/api/release-version');
 
   if (!response.ok) {
     throw new Error(response.error || `Request failed with status ${response.status}`);
   }
 
-  return response.data?.releaseVersion?.trim() || "latest";
+  return response.data?.releaseVersion?.trim() || 'latest';
 }
 
 interface UseReleaseVersionOptions {
@@ -46,14 +46,14 @@ export function useReleaseVersion(options: UseReleaseVersionOptions = {}) {
 
   if (query.error && enabled) {
     toast({
-      title: "Failed to load release version",
+      title: 'Failed to load release version',
       description: query.error.message,
-      variant: "destructive",
+      variant: 'destructive',
     });
   }
 
   return {
-    releaseVersion: query.data ?? "latest",
+    releaseVersion: query.data ?? 'latest',
     isLoading: query.isLoading,
     error: query.error?.message ?? null,
     refetch: query.refetch,

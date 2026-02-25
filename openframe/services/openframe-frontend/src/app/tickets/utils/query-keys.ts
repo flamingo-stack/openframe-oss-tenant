@@ -11,10 +11,10 @@ export interface DialogsQueryParams {
 
 export const dialogsQueryKeys = {
   // Base key for all dialogs queries
-  all: ["dialogs"] as const,
+  all: ['dialogs'] as const,
 
   // All list queries (paginated results)
-  lists: () => [...dialogsQueryKeys.all, "list"] as const,
+  lists: () => [...dialogsQueryKeys.all, 'list'] as const,
 
   // Specific list query with parameters
   list: (params: DialogsQueryParams) =>
@@ -22,9 +22,9 @@ export const dialogsQueryKeys = {
       ...dialogsQueryKeys.lists(),
       {
         archived: params.archived,
-        search: params.search || "",
+        search: params.search || '',
         statusFilters: params.statusFilters || [],
-        cursor: params.cursor || "",
+        cursor: params.cursor || '',
       },
     ] as const,
 } as const;

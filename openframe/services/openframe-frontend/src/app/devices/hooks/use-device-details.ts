@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { tacticalApiClient } from "@/lib/tactical-api-client";
-import { GET_DEVICE_QUERY } from "../queries/devices-queries";
-import { Battery, Device, DeviceGraphQlNode, GraphQlResponse, MdmInfo, Software, User } from "../types/device.types";
-import { FleetHost } from "../types/fleet.types";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { GET_DEVICE_QUERY } from '../queries/devices-queries';
+import { Battery, Device, DeviceGraphQlNode, GraphQlResponse, MdmInfo, Software, User } from '../types/device.types';
+import { FleetHost } from '../types/fleet.types';
 
 /**
  * Create Device object directly from API responses
@@ -47,7 +47,7 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
       type: fu.type,
       groupname: fu.groupname,
       shell: fu.shell,
-      isLoggedIn: fu.type === "person",
+      isLoggedIn: fu.type === 'person',
     })) || [];
 
   // Transform Fleet MDM to unified MDMInfo type
@@ -66,22 +66,22 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
   // Helper to check if IP is private
   const isPrivateIp = (ip: string): boolean => {
     if (!ip) return false;
-    if (ip.startsWith("10.")) return true;
-    if (ip.startsWith("172.")) {
-      const second = parseInt(ip.split(".")[1]);
+    if (ip.startsWith('10.')) return true;
+    if (ip.startsWith('172.')) {
+      const second = parseInt(ip.split('.')[1]);
       if (second >= 16 && second <= 31) return true;
     }
-    if (ip.startsWith("192.168.")) return true;
-    if (ip.startsWith("127.")) return true;
-    if (ip.startsWith("169.254.")) return true;
-    if (ip.startsWith("fe80:")) return true;
-    if (ip.startsWith("fc00:") || ip.startsWith("fd00:")) return true;
-    if (ip === "::1") return true;
+    if (ip.startsWith('192.168.')) return true;
+    if (ip.startsWith('127.')) return true;
+    if (ip.startsWith('169.254.')) return true;
+    if (ip.startsWith('fe80:')) return true;
+    if (ip.startsWith('fc00:') || ip.startsWith('fd00:')) return true;
+    if (ip === '::1') return true;
     return false;
   };
 
   // Determine actual public IP (filter private IPs)
-  let actualPublicIp = "";
+  let actualPublicIp = '';
   if (fleetData?.public_ip && !isPrivateIp(fleetData.public_ip)) {
     actualPublicIp = fleetData.public_ip;
   } else if (tacticalData?.public_ip && !isPrivateIp(tacticalData.public_ip)) {
@@ -121,7 +121,7 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
   }
   if (tacticalData?.local_ips) {
     tacticalData.local_ips
-      .split(",")
+      .split(',')
       .map((ip: string) => ip.trim())
       .filter(Boolean)
       .forEach((ip: string) => {
@@ -164,12 +164,12 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
     hardware_model: fleetData?.hardware_model,
     hardware_version: fleetData?.hardware_version,
     serial_number: fleetData?.hardware_serial || node.serialNumber || tacticalData?.serial_number,
-    manufacturer: fleetData?.hardware_vendor || node.manufacturer || tacticalData?.make_model?.split("\n")[0],
+    manufacturer: fleetData?.hardware_vendor || node.manufacturer || tacticalData?.make_model?.split('\n')[0],
     model: fleetData?.hardware_model || node.model || tacticalData?.make_model?.trim(),
     make_model:
       fleetData?.hardware_model ||
       tacticalData?.make_model ||
-      [node.manufacturer, node.model].filter(Boolean).join(" "),
+      [node.manufacturer, node.model].filter(Boolean).join(' '),
 
     // Storage
     gigs_disk_space_available: fleetData?.gigs_disk_space_available,
@@ -188,7 +188,7 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
     macAddress: fleetData?.primary_mac || node.macAddress,
 
     // System Status
-    status: node.status || fleetData?.status || tacticalData?.status || "UNKNOWN",
+    status: node.status || fleetData?.status || tacticalData?.status || 'UNKNOWN',
     uptime: fleetData?.uptime,
     last_seen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,
     lastSeen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,
@@ -265,9 +265,9 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
 
     // Legacy tactical fields for compatibility
     cpu_model: fleetData?.cpu_brand ? [fleetData.cpu_brand] : tacticalData?.cpu_model || [],
-    site_name: tacticalData?.site_name || "",
-    client_name: node.organization?.name || tacticalData?.client_name || "",
-    monitoring_type: node.type || tacticalData?.monitoring_type || "",
+    site_name: tacticalData?.site_name || '',
+    client_name: node.organization?.name || tacticalData?.client_name || '',
+    monitoring_type: node.type || tacticalData?.monitoring_type || '',
     needs_reboot: tacticalData?.needs_reboot || false,
     pending_actions_count: tacticalData?.pending_actions_count || 0,
     overdue_text_alert: tacticalData?.overdue_text_alert || false,
@@ -284,7 +284,7 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
     maintenance_mode: tacticalData?.maintenance_mode || false,
     italic: tacticalData?.italic || false,
     block_policy_inheritance: tacticalData?.block_policy_inheritance || false,
-    goarch: tacticalData?.goarch || "",
+    goarch: tacticalData?.goarch || '',
     has_patches_pending: tacticalData?.has_patches_pending || false,
     custom_fields: tacticalData?.custom_fields || [],
   };
@@ -301,7 +301,7 @@ export function useDeviceDetails() {
   const fetchDeviceById = useCallback(
     async (machineId: string, silent = false) => {
       if (!machineId) {
-        setError("machineId is required");
+        setError('machineId is required');
         return;
       }
 
@@ -313,7 +313,7 @@ export function useDeviceDetails() {
 
       try {
         // 1) Fetch primary device from GraphQL
-        const response = await apiClient.post<GraphQlResponse<{ device: DeviceGraphQlNode }>>("/api/graphql", {
+        const response = await apiClient.post<GraphQlResponse<{ device: DeviceGraphQlNode }>>('/api/graphql', {
           query: GET_DEVICE_QUERY,
           variables: { machineId },
         });
@@ -325,17 +325,17 @@ export function useDeviceDetails() {
         const graphqlResponse = response.data;
         if (!graphqlResponse?.data?.device) {
           setDeviceDetails(null);
-          setError("Device not found");
+          setError('Device not found');
           return;
         }
         if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         const node = graphqlResponse.data.device;
 
         // 2) Use toolConnections to fetch Tactical details if present
-        const tactical = node.toolConnections?.find(tc => tc.toolType === "TACTICAL_RMM");
+        const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
         let tacticalData: any | null = null;
         if (tactical?.agentToolId) {
           const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
@@ -345,7 +345,7 @@ export function useDeviceDetails() {
         }
 
         // 2.5) Fetch Fleet MDM details if present
-        const fleet = node.toolConnections?.find(tc => tc.toolType === "FLEET_MDM");
+        const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM');
         let fleetData: any | null = null;
         if (fleet?.agentToolId) {
           // Validate that agentToolId is a valid numeric string before calling Fleet API
@@ -366,15 +366,15 @@ export function useDeviceDetails() {
         setDeviceDetails(merged);
         setLastUpdated(Date.now());
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch device details";
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
         setError(errorMessage);
 
         // Only show toast for initial (non-silent) fetches
         if (!silent) {
           toast({
-            title: "Failed to Load Device Details",
+            title: 'Failed to Load Device Details',
             description: errorMessage,
-            variant: "destructive",
+            variant: 'destructive',
           });
         }
       } finally {
@@ -397,8 +397,8 @@ export function useDeviceDetails() {
     if (!deviceDetails?.machineId) return;
 
     // Extract agent IDs from toolConnections
-    const tacticalAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === "TACTICAL_RMM")?.agentToolId;
-    const meshcentralAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === "MESHCENTRAL")?.agentToolId;
+    const tacticalAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId;
+    const meshcentralAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;
 
     // Adaptive interval based on agent connection status
     // Fast polling (5s) when agents are missing, slow polling (10s) when all connected

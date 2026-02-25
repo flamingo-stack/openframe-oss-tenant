@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   DetailPageContainer,
@@ -6,31 +6,31 @@ import {
   NotFoundError,
   ScriptArguments,
   ScriptInfoSection,
-} from "@flamingo-stack/openframe-frontend-core";
-import { Input, Label, ListLoader } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import { tacticalApiClient } from "@/lib/tactical-api-client";
-import { getTacticalAgentId } from "../../../devices/utils/device-action-utils";
-import { useDeviceFilter } from "../../hooks/use-device-filter";
-import { useDeviceSelection } from "../../hooks/use-device-selection";
-import { useRunScriptData } from "../../hooks/use-run-script-data";
-import { scriptArgumentSchema } from "../../types/edit-script.types";
-import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from "../../utils/device-helpers";
-import { parseKeyValues, serializeKeyValues } from "../../utils/script-key-values";
-import { DeviceSelectionPanel } from "./device-selection-panel";
-import { ExecutionStartedModal } from "./execution-started-modal";
+} from '@flamingo-stack/openframe-frontend-core';
+import { Input, Label, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
+import { useDeviceFilter } from '../../hooks/use-device-filter';
+import { useDeviceSelection } from '../../hooks/use-device-selection';
+import { useRunScriptData } from '../../hooks/use-run-script-data';
+import { scriptArgumentSchema } from '../../types/edit-script.types';
+import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../../utils/device-helpers';
+import { parseKeyValues, serializeKeyValues } from '../../utils/script-key-values';
+import { DeviceSelectionPanel } from './device-selection-panel';
+import { ExecutionStartedModal } from './execution-started-modal';
 
 interface RunScriptViewProps {
   scriptId: string;
 }
 
 const runFormSchema = z.object({
-  timeout: z.number().min(1, "Timeout must be at least 1 second").max(86400, "Timeout cannot exceed 24 hours"),
+  timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
   scriptArgs: z.array(scriptArgumentSchema),
   envVars: z.array(scriptArgumentSchema),
 });
@@ -85,9 +85,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     async (data: RunFormData) => {
       if (selectedCount === 0) {
         toast({
-          title: "No devices selected",
-          description: "Please select at least one device.",
-          variant: "destructive",
+          title: 'No devices selected',
+          description: 'Please select at least one device.',
+          variant: 'destructive',
         });
         return;
       }
@@ -98,9 +98,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
         if (selectedAgentIds.length === 0) {
           toast({
-            title: "No compatible agents",
-            description: "Selected devices have no Tactical agent IDs.",
-            variant: "destructive",
+            title: 'No compatible agents',
+            description: 'Selected devices have no Tactical agent IDs.',
+            variant: 'destructive',
           });
           return;
         }
@@ -109,17 +109,17 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         const shell = resolveShellForExecution(osType, scriptDetails?.shell);
 
         const payload = {
-          mode: "script",
-          target: "agents",
-          monType: "all",
+          mode: 'script',
+          target: 'agents',
+          monType: 'all',
           osType,
-          cmd: "",
+          cmd: '',
           shell,
           custom_shell: null,
           custom_field: null,
           collector_all_output: false,
           save_to_agent_note: false,
-          patchMode: "scan",
+          patchMode: 'scan',
           offlineAgents: false,
           client: null,
           site: null,
@@ -138,8 +138,8 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
         setShowExecutionModal(true);
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Failed to submit script";
-        toast({ title: "Submission failed", description: msg, variant: "destructive" });
+        const msg = e instanceof Error ? e.message : 'Failed to submit script';
+        toast({ title: 'Submission failed', description: msg, variant: 'destructive' });
       }
     },
     [selectedCount, filteredDevices, selectedIds, scriptDetails, toast],
@@ -158,7 +158,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     (formErrors: Record<string, { message?: string }>) => {
       const firstError = Object.values(formErrors)[0];
       if (firstError?.message) {
-        toast({ title: "Validation error", description: firstError.message, variant: "destructive" });
+        toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
       }
     },
     [toast],
@@ -167,9 +167,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   const actions = useMemo(
     () => [
       {
-        label: "Run Script",
+        label: 'Run Script',
         onClick: handleSubmit(onSubmit, onFormError),
-        variant: "primary" as const,
+        variant: 'primary' as const,
         disabled: selectedCount === 0,
         loading: isSubmitting,
       },
@@ -192,7 +192,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   return (
     <DetailPageContainer
       title="Run Script"
-      backButton={{ label: "Back to Script Details", onClick: handleBack }}
+      backButton={{ label: 'Back to Script Details', onClick: handleBack }}
       actions={actions}
     >
       <div className="flex-1 overflow-auto">
@@ -274,7 +274,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
       <ExecutionStartedModal
         isOpen={showExecutionModal}
         onClose={handleCloseExecutionModal}
-        scriptName={scriptDetails.name || "Script"}
+        scriptName={scriptDetails.name || 'Script'}
         onViewLogs={handleViewLogs}
       />
     </DetailPageContainer>

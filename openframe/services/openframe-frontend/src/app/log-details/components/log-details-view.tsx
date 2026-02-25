@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { ToolBadge } from "@flamingo-stack/openframe-frontend-core/components";
-import { CopyIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
-import { Button, DetailLoader, DetailPageContainer, Tag } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { normalizeToolTypeWithFallback } from "@flamingo-stack/openframe-frontend-core/utils";
-import { ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { DeviceInfoSection } from "../../components/shared";
-import { useLogDetails } from "../hooks/use-log-details";
-import { DetailsSection } from "./details-section";
-import { FullInformationSection } from "./full-information-section";
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Button, DetailLoader, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
+import { ChevronLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { DeviceInfoSection } from '../../components/shared';
+import { useLogDetails } from '../hooks/use-log-details';
+import { DetailsSection } from './details-section';
+import { FullInformationSection } from './full-information-section';
 
 interface LogDetailsViewProps {
   logId: string;
@@ -20,19 +20,19 @@ interface LogDetailsViewProps {
   timestamp: string;
 }
 
-const getSeverityVariant = (severity: string): "success" | "warning" | "error" | "grey" | "critical" => {
+const getSeverityVariant = (severity: string): 'success' | 'warning' | 'error' | 'grey' | 'critical' => {
   switch (severity?.toUpperCase()) {
-    case "ERROR":
-      return "error";
-    case "WARNING":
-      return "warning";
-    case "INFO":
-      return "grey";
-    case "CRITICAL":
-      return "critical";
-    case "DEBUG":
+    case 'ERROR':
+      return 'error';
+    case 'WARNING':
+      return 'warning';
+    case 'INFO':
+      return 'grey';
+    case 'CRITICAL':
+      return 'critical';
+    case 'DEBUG':
     default:
-      return "grey";
+      return 'grey';
   }
 };
 
@@ -44,20 +44,20 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     if (logId && ingestDay && toolType && eventType && timestamp) {
       fetchLogDetailsById(logId, ingestDay, toolType, eventType, timestamp);
     } else {
-      router.replace("/logs-page");
+      router.replace('/logs-page');
     }
   }, [logId, ingestDay, toolType, eventType, timestamp, fetchLogDetailsById, router]);
 
   const handleBackToLogs = () => {
-    router.push("/logs-page");
+    router.push('/logs-page');
   };
 
   const handleCopyLogDetails = () => {
     if (logDetails) {
       // Copy log details to clipboard
-      const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || "No message available"}\nDetails: ${logDetails.details || "No details available"}`;
+      const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || 'No message available'}\nDetails: ${logDetails.details || 'No details available'}`;
       navigator.clipboard.writeText(details);
-      console.log("Log details copied to clipboard");
+      console.log('Log details copied to clipboard');
     }
   };
 
@@ -137,7 +137,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           <div className="flex flex-col gap-4 items-start p-4 sm:p-6">
             <div className="flex flex-col gap-2 w-full">
               <div className="font-['DM_Sans'] font-medium text-[16px] sm:text-[18px] leading-[22px] sm:leading-[24px] text-ods-text-primary break-words">
-                {logDetails.message || "No message available"}
+                {logDetails.message || 'No message available'}
               </div>
               <div className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
                 <ToolBadge toolType={normalizeToolTypeWithFallback(logDetails.toolType)} />

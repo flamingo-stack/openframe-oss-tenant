@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -8,9 +8,9 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "@flamingo-stack/openframe-frontend-core";
-import { useCallback, useEffect, useState } from "react";
-import type { User } from "../../auth/stores";
+} from '@flamingo-stack/openframe-frontend-core';
+import { useCallback, useEffect, useState } from 'react';
+import type { User } from '../../auth/stores';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -21,14 +21,14 @@ interface EditProfileModalProps {
 }
 
 export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: EditProfileModalProps) {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
 
   // Sync form state when modal opens
   useEffect(() => {
     if (isOpen && user) {
-      setFirstName(user.firstName || "");
-      setLastName(user.lastName || "");
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
     }
   }, [isOpen, user]);
 
@@ -45,7 +45,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
   }, [onClose]);
 
   // Get primary role for display
-  const primaryRole = user?.roles?.[0] || "User";
+  const primaryRole = user?.roles?.[0] || 'User';
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
@@ -87,7 +87,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-1">
             <Label className="text-ods-text-primary text-lg font-medium">Email</Label>
-            <Input id="edit-email" value={user?.email || ""} disabled={true} placeholder="Email" />
+            <Input id="edit-email" value={user?.email || ''} disabled={true} placeholder="Email" />
           </div>
           <div className="space-y-1">
             <Label className="text-ods-text-primary text-lg font-medium">Role</Label>
@@ -112,7 +112,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
           disabled={isSaving}
           className="flex-1 h-12 bg-ods-accent text-ods-card font-bold text-lg hover:bg-ods-accent/90"
         >
-          {isSaving ? "Saving..." : "Update Profile"}
+          {isSaving ? 'Saving...' : 'Update Profile'}
         </Button>
       </ModalFooter>
     </Modal>

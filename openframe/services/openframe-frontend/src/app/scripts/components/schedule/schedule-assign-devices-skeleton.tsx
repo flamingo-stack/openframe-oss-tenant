@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * ScheduleInfoBarFromData skeleton — Name/Note top row + Date/Time/Repeat/Platform bottom row

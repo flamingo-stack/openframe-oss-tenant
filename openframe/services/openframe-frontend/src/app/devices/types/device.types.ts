@@ -10,7 +10,7 @@ export interface Software {
   id: number;
   name: string;
   version: string;
-  source: "apps" | "chrome_extensions" | "vscode_extensions" | "homebrew_packages" | "python_packages";
+  source: 'apps' | 'chrome_extensions' | 'vscode_extensions' | 'homebrew_packages' | 'python_packages';
   vendor?: string;
   bundle_identifier?: string;
   vulnerabilities: Vulnerability[];
@@ -76,7 +76,7 @@ export interface DeviceTag {
 /**
  * Tool Type enum
  */
-export type ToolType = "MESHCENTRAL" | "TACTICAL_RMM" | "FLEET_MDM";
+export type ToolType = 'MESHCENTRAL' | 'TACTICAL_RMM' | 'FLEET_MDM';
 
 /**
  * Tool Connection type

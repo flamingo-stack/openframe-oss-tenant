@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Button } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { runtimeEnv } from "../../lib/runtime-config";
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { runtimeEnv } from '../../lib/runtime-config';
 
 interface UnauthorizedOverlayProps {
   onRetry?: () => void;

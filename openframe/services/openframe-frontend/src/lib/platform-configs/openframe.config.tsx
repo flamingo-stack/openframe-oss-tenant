@@ -3,37 +3,37 @@ import {
   IconsXIcon,
   OpenFrameLogo,
   UserIcon,
-} from "@flamingo-stack/openframe-frontend-core/components/icons";
-import { Button } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import React from "react";
-import { AppConfig } from "../app-config";
-import { getBaseUrl } from "../utils";
+} from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React from 'react';
+import { AppConfig } from '../app-config';
+import { getBaseUrl } from '../utils';
 
 export const openframeConfig: AppConfig = {
-  name: "OpenFrame",
-  legalName: "Flamingo AI, Inc.",
+  name: 'OpenFrame',
+  legalName: 'Flamingo AI, Inc.',
   description:
-    "Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.",
+    'Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.',
   get url() {
     return getBaseUrl();
   },
   get logo() {
     return `${getBaseUrl()}/assets/openframe/apple-touch-icon.png`;
   },
-  slogan: "Open Source Application Framework",
-  platform: "openframe",
+  slogan: 'Open Source Application Framework',
+  platform: 'openframe',
   brandColors: {
-    primary: "#5efaf0", // Cyan - for metadata only (actual UI uses ODS CSS)
-    accent: "#FFFFFF", // White - for metadata only (actual UI uses ODS CSS)
-    background: "#0A0A0A", // Dark - for metadata only (actual UI uses ODS CSS)
-    text: "#FFFFFF", // White - for metadata only (actual UI uses ODS CSS)
+    primary: '#5efaf0', // Cyan - for metadata only (actual UI uses ODS CSS)
+    accent: '#FFFFFF', // White - for metadata only (actual UI uses ODS CSS)
+    background: '#0A0A0A', // Dark - for metadata only (actual UI uses ODS CSS)
+    text: '#FFFFFF', // White - for metadata only (actual UI uses ODS CSS)
   },
   seo: {
-    title: "OpenFrame - Open Source Framework",
-    titleTemplate: "%s | OpenFrame",
+    title: 'OpenFrame - Open Source Framework',
+    titleTemplate: '%s | OpenFrame',
     description:
-      "Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.",
-    keywords: ["open source", "framework", "IT operations", "automation", "security", "MSP tools"],
+      'Distributed platform creating a unified layer for data, APIs, automation, and AI. Simplifies IT and security operations.',
+    keywords: ['open source', 'framework', 'IT operations', 'automation', 'security', 'MSP tools'],
     get ogImage() {
       return `${getBaseUrl()}/assets/openframe/og-image.png`;
     },
@@ -46,13 +46,13 @@ export const openframeConfig: AppConfig = {
     showFooter: true,
     showAnnouncement: false,
     showSidebar: false,
-    headerType: "platform",
+    headerType: 'platform',
   },
   navigation: {
     logo: {
-      href: "/",
-      text: "OpenFrame",
-      icon: "openframe",
+      href: '/',
+      text: 'OpenFrame',
+      icon: 'openframe',
       getElement: () => (
         <span className="flex items-center gap-3">
           <OpenFrameLogo className="h-8 w-8" />
@@ -63,14 +63,14 @@ export const openframeConfig: AppConfig = {
     showPlatformNav: true,
     showAdminNav: false,
     showAdminMenuInHeader: false,
-    allowedRoutes: ["/docs", "/examples", "/api", "/profile", "/contact"],
-    restrictedRoutes: ["/admin", "/vendors", "/margin-increase"],
+    allowedRoutes: ['/docs', '/examples', '/api', '/profile', '/contact'],
+    restrictedRoutes: ['/admin', '/vendors', '/margin-increase'],
   },
   ui: {
     showUserMenu: true,
     showMobileNav: true,
     showSearchBar: true,
-    headerStyle: "default",
+    headerStyle: 'default',
     headerAutoHide: true,
     getHeaderActions: ({ user, router, pathname, onSignUp }) => {
       const left: React.ReactElement[] = [];
@@ -83,7 +83,7 @@ export const openframeConfig: AppConfig = {
             key="profile-button"
             variant="ghost"
             size="sm"
-            onClick={() => router.push("/profile")}
+            onClick={() => router.push('/profile')}
             leftIcon={<UserIcon className="w-5 h-5" />}
           >
             Profile
@@ -103,7 +103,7 @@ export const openframeConfig: AppConfig = {
           key="get-started-button"
           variant="outline"
           size="sm"
-          onClick={() => window.open("https://github.com/openframe-dev", "_blank")}
+          onClick={() => window.open('https://github.com/openframe-dev', '_blank')}
         >
           Get Started
         </Button>,
@@ -128,27 +128,27 @@ export const openframeConfig: AppConfig = {
     },
     sections: [
       {
-        title: "RESOURCES",
+        title: 'RESOURCES',
         links: [
-          { href: "/docs", label: "Documentation" },
-          { href: "/examples", label: "Examples" },
+          { href: '/docs', label: 'Documentation' },
+          { href: '/examples', label: 'Examples' },
         ],
       },
       {
-        title: "COMPANY",
+        title: 'COMPANY',
         links: [
-          { href: "/about", label: "About" },
-          { href: "/contact", label: "Contact" },
+          { href: '/about', label: 'About' },
+          { href: '/contact', label: 'Contact' },
         ],
       },
     ],
   },
   contact: {
-    email: "hello@openframe.dev",
-    supportUrl: "/support",
+    email: 'hello@openframe.dev',
+    supportUrl: '/support',
   },
   social: {
-    github: "https://github.com/openframe-dev",
-    twitter: "https://twitter.com/openframe_dev",
+    github: 'https://github.com/openframe-dev',
+    twitter: 'https://twitter.com/openframe_dev',
   },
 };

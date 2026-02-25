@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
-import { isRouteAllowedInCurrentMode } from "../lib/app-mode";
+import { usePathname } from 'next/navigation';
+import { isRouteAllowedInCurrentMode } from '../lib/app-mode';
 
 interface RouteGuardProps {
   children: React.ReactNode;

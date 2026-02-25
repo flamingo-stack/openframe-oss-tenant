@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { SoftwareSource, TableColumn } from "@flamingo-stack/openframe-frontend-core";
-import { SoftwareInfo, SoftwareSourceBadge, Table, Tag } from "@flamingo-stack/openframe-frontend-core";
-import React, { useCallback, useMemo } from "react";
-import type { Device, Software } from "../../types/device.types";
+import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
+import { SoftwareInfo, SoftwareSourceBadge, Table, Tag } from '@flamingo-stack/openframe-frontend-core';
+import React, { useCallback, useMemo } from 'react';
+import type { Device, Software } from '../../types/device.types';
 
 interface SoftwareTabProps {
   device: Device | null;
@@ -14,7 +14,7 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
 
   // Format date for display - matches device-info-section.tsx format
   const formatDate = useCallback((dateString?: string): string => {
-    if (!dateString) return "Never";
+    if (!dateString) return 'Never';
     const date = new Date(dateString);
     return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
   }, []);
@@ -23,23 +23,23 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
   const columns: TableColumn<Software>[] = useMemo(
     () => [
       {
-        key: "name",
-        label: "SOFTWARE",
-        width: "w-[40%]",
+        key: 'name',
+        label: 'SOFTWARE',
+        width: 'w-[40%]',
         sortable: true,
         renderCell: (item: Software) => <SoftwareInfo name={item.name} vendor={item.vendor} version={item.version} />,
       },
       {
-        key: "source",
-        label: "SOURCE",
-        width: "w-[20%]",
+        key: 'source',
+        label: 'SOURCE',
+        width: 'w-[20%]',
         sortable: true,
         renderCell: (item: Software) => <SoftwareSourceBadge source={item.source as SoftwareSource} />,
       },
       {
-        key: "vulnerabilities",
-        label: "SECURITY",
-        width: "w-[15%]",
+        key: 'vulnerabilities',
+        label: 'SECURITY',
+        width: 'w-[15%]',
         sortable: true,
         sortValue: (item: Software) => item.vulnerabilities.length,
         renderCell: (item: Software) => {
@@ -47,13 +47,13 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
           if (vulnCount === 0) {
             return <Tag label="NO ISSUES" variant="success" className="px-2 py-1 text-[12px] leading-[16px]" />;
           }
-          return <Tag label={`${vulnCount} ${vulnCount === 1 ? "ISSUE" : "ISSUES"}`} variant="error" />;
+          return <Tag label={`${vulnCount} ${vulnCount === 1 ? 'ISSUE' : 'ISSUES'}`} variant="error" />;
         },
       },
       {
-        key: "last_opened_at",
-        label: "LAST OPENED",
-        width: "w-[25%]",
+        key: 'last_opened_at',
+        label: 'LAST OPENED',
+        width: 'w-[25%]',
         sortable: true,
         renderCell: (item: Software) => (
           <div className="font-['DM_Sans'] font-medium text-ods-text-primary">{formatDate(item.last_opened_at)}</div>

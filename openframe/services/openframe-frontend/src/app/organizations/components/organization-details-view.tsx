@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -7,16 +7,16 @@ import {
   InfoCard,
   LoadError,
   NotFoundError,
-} from "@flamingo-stack/openframe-frontend-core";
-import { OrganizationIcon } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { PencilIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
-import React, { useEffect } from "react";
-import { featureFlags } from "@/lib/feature-flags";
-import { getFullImageUrl } from "@/lib/image-url";
-import { useDeleteOrganization } from "../hooks/use-delete-organization";
-import { useOrganizationDetails } from "../hooks/use-organization-details";
+} from '@flamingo-stack/openframe-frontend-core';
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { PencilIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useDeleteOrganization } from '../hooks/use-delete-organization';
+import { useOrganizationDetails } from '../hooks/use-organization-details';
 
 interface OrganizationDetailsViewProps {
   id: string;
@@ -34,7 +34,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     }
   }, [id, fetchOrganizationById]);
 
-  const handleBack = () => router.push("/organizations");
+  const handleBack = () => router.push('/organizations');
   const handleEdit = () => router.push(`/organizations/edit/${id}`);
   const handleDelete = async () => {
     if (!organization) return;
@@ -43,11 +43,11 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     }
     try {
       await deleteOrganization(organization.id);
-      toast({ title: "Organization deleted", description: `${organization.name} was deleted` });
-      router.push("/organizations");
+      toast({ title: 'Organization deleted', description: `${organization.name} was deleted` });
+      router.push('/organizations');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to delete organization";
-      toast({ title: "Delete failed", description: msg, variant: "destructive" });
+      const msg = e instanceof Error ? e.message : 'Failed to delete organization';
+      toast({ title: 'Delete failed', description: msg, variant: 'destructive' });
     }
   };
 
@@ -86,8 +86,8 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
   return (
     <DetailPageContainer
-      title={organization?.name || "Organization"}
-      backButton={{ label: "Back to Organizations", onClick: handleBack }}
+      title={organization?.name || 'Organization'}
+      backButton={{ label: 'Back to Organizations', onClick: handleBack }}
       headerActions={headerActions}
       padding="none"
       className="pt-6"
@@ -99,26 +99,26 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
             {featureFlags.organizationImages.displayEnabled() && (
               <OrganizationIcon
                 imageUrl={getFullImageUrl(organization?.imageUrl)}
-                organizationName={organization?.name || "Organization"}
+                organizationName={organization?.name || 'Organization'}
                 size="lg"
               />
             )}
             <div>
-              <div className="text-ods-text-primary text-[18px]">{organization?.industry || "-"}</div>
+              <div className="text-ods-text-primary text-[18px]">{organization?.industry || '-'}</div>
               <div className="text-ods-text-secondary text-sm">Category</div>
             </div>
           </div>
           <div>
-            <div className="text-ods-text-primary text-[18px]">{organization?.website || "-"}</div>
+            <div className="text-ods-text-primary text-[18px]">{organization?.website || '-'}</div>
             <div className="text-ods-text-secondary text-sm">Website</div>
           </div>
           <div>
-            <div className="text-ods-text-primary text-[18px]">{organization?.employees ?? "-"}</div>
+            <div className="text-ods-text-primary text-[18px]">{organization?.employees ?? '-'}</div>
             <div className="text-ods-text-secondary text-sm">Employees</div>
           </div>
           <div>
             <div className="text-ods-text-primary text-[18px]">
-              {organization ? new Date(organization.updatedAt).toLocaleString() : "-"}
+              {organization ? new Date(organization.updatedAt).toLocaleString() : '-'}
             </div>
             <div className="text-ods-text-secondary text-sm">Updated</div>
           </div>
@@ -126,11 +126,11 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
         <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <div className="text-ods-text-primary text-[18px]">{organization?.physicalAddress || "-"}</div>
+            <div className="text-ods-text-primary text-[18px]">{organization?.physicalAddress || '-'}</div>
             <div className="text-ods-text-secondary text-sm mb-2">Physical Address</div>
           </div>
           <div>
-            <div className="text-ods-text-primary text-[18px]">{organization?.mailingAddress || "-"}</div>
+            <div className="text-ods-text-primary text-[18px]">{organization?.mailingAddress || '-'}</div>
             <div className="text-ods-text-secondary text-sm mb-2">Mailing Address</div>
           </div>
         </div>
@@ -145,10 +145,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           <InfoCard
             data={{
               items: [
-                { label: "Name", value: organization.primary.name || "-" },
-                { label: "Position", value: organization.primary.title || "-" },
-                { label: "Email", value: organization.primary.email || "-" },
-                { label: "Phone", value: organization.primary.phone || "-" },
+                { label: 'Name', value: organization.primary.name || '-' },
+                { label: 'Position', value: organization.primary.title || '-' },
+                { label: 'Email', value: organization.primary.email || '-' },
+                { label: 'Phone', value: organization.primary.phone || '-' },
               ],
             }}
           />
@@ -161,10 +161,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           <InfoCard
             data={{
               items: [
-                { label: "Name", value: organization.billing.name || "-" },
-                { label: "Position", value: organization.billing.title || "-" },
-                { label: "Email", value: organization.billing.email || "-" },
-                { label: "Phone", value: organization.billing.phone || "-" },
+                { label: 'Name', value: organization.billing.name || '-' },
+                { label: 'Position', value: organization.billing.title || '-' },
+                { label: 'Email', value: organization.billing.email || '-' },
+                { label: 'Phone', value: organization.billing.phone || '-' },
               ],
             }}
           />
@@ -177,10 +177,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           <InfoCard
             data={{
               items: [
-                { label: "Name", value: organization.technical.name || "-" },
-                { label: "Position", value: organization.technical.title || "-" },
-                { label: "Email", value: organization.technical.email || "-" },
-                { label: "Phone", value: organization.technical.phone || "-" },
+                { label: 'Name', value: organization.technical.name || '-' },
+                { label: 'Position', value: organization.technical.title || '-' },
+                { label: 'Email', value: organization.technical.email || '-' },
+                { label: 'Phone', value: organization.technical.phone || '-' },
               ],
             }}
           />
@@ -196,15 +196,15 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           data={{
             items: [
               {
-                label: "Monthly Recurring Revenue",
-                value: organization.mrrUsd != null ? `$${organization.mrrUsd.toLocaleString()}` : "-",
+                label: 'Monthly Recurring Revenue',
+                value: organization.mrrUsd != null ? `$${organization.mrrUsd.toLocaleString()}` : '-',
               },
               {
-                label: "Contract",
+                label: 'Contract',
                 value:
                   organization.contractStart && organization.contractEnd
                     ? `${new Date(organization.contractStart).toLocaleDateString()} - ${new Date(organization.contractEnd).toLocaleDateString()}`
-                    : "-",
+                    : '-',
               },
             ],
           }}

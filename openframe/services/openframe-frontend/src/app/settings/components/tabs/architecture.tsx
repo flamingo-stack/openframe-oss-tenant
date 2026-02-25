@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { ServiceCard, Skeleton } from "@flamingo-stack/openframe-frontend-core";
-import { SearchIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { Input } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import React, { useEffect, useMemo, useState } from "react";
-import { useIntegratedTools } from "../../hooks/use-integrated-tools";
+import { ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useIntegratedTools } from '../../hooks/use-integrated-tools';
 
 export function ArchitectureTab() {
   const { tools, isLoading, fetchIntegratedTools } = useIntegratedTools();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchIntegratedTools({ enabled: true, category: null }).catch(() => {});
@@ -18,11 +18,11 @@ export function ArchitectureTab() {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return tools;
     return tools.filter(t => {
-      const name = t.name?.toLowerCase() || "";
-      const description = t.description?.toLowerCase() || "";
-      const category = (t.category as unknown as string)?.toLowerCase?.() || "";
-      const layer = (t.layer as unknown as string)?.toLowerCase?.() || "";
-      const urls = (t.toolUrls || []).map(u => (u?.url || "").toLowerCase());
+      const name = t.name?.toLowerCase() || '';
+      const description = t.description?.toLowerCase() || '';
+      const category = (t.category as unknown as string)?.toLowerCase?.() || '';
+      const layer = (t.layer as unknown as string)?.toLowerCase?.() || '';
+      const urls = (t.toolUrls || []).map(u => (u?.url || '').toLowerCase());
       return (
         name.includes(term) ||
         description.includes(term) ||
@@ -35,7 +35,7 @@ export function ArchitectureTab() {
 
   // Group by layer (after filtering)
   const grouped = filteredTools.reduce<Record<string, typeof tools>>((acc, t) => {
-    const layer = (t.layer as unknown as string) || "Other";
+    const layer = (t.layer as unknown as string) || 'Other';
     if (!acc[layer]) acc[layer] = [];
     acc[layer].push(t);
     return acc;
@@ -81,7 +81,7 @@ export function ArchitectureTab() {
               const urls = tool.toolUrls || [];
               urls.forEach(u => {
                 if (!u?.url) return;
-                const formattedType = (u.type || "Link").replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+                const formattedType = (u.type || 'Link').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
                 // Concatenate port to URL if port exists
                 const fullUrl = u.port ? `${u.url}:${u.port}` : u.url;
@@ -90,21 +90,21 @@ export function ArchitectureTab() {
 
                 // Display port as a separate row if it exists
                 if (u.port) {
-                  rows.push({ label: "Port", value: String(u.port), actions: { copy: true } });
+                  rows.push({ label: 'Port', value: String(u.port), actions: { copy: true } });
                 }
               });
               if (tool.credentials?.username)
-                rows.push({ label: "User", value: tool.credentials.username, actions: { copy: true } });
+                rows.push({ label: 'User', value: tool.credentials.username, actions: { copy: true } });
               if (tool.credentials?.password)
                 rows.push({
-                  label: "Pass",
+                  label: 'Pass',
                   value: tool.credentials.password,
                   isSecret: true,
                   actions: { reveal: true, copy: true },
                 });
               if (tool.credentials?.apiKey?.key)
                 rows.push({
-                  label: tool.credentials.apiKey.keyName || "API Key",
+                  label: tool.credentials.apiKey.keyName || 'API Key',
                   value: tool.credentials.apiKey.key,
                   isSecret: true,
                   actions: { reveal: true, copy: true },
@@ -114,7 +114,7 @@ export function ArchitectureTab() {
                 <ServiceCard
                   key={tool.id}
                   title={tool.name}
-                  subtitle={tool.description || ""}
+                  subtitle={tool.description || ''}
                   tag={tool.category ? { label: tool.category } : undefined}
                   rows={rows}
                 />

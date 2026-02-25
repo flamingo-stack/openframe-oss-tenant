@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   InfoCard,
@@ -6,9 +6,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@flamingo-stack/openframe-frontend-core";
-import { Info as InfoIcon } from "lucide-react";
-import React from "react";
+} from '@flamingo-stack/openframe-frontend-core';
+import { Info as InfoIcon } from 'lucide-react';
+import React from 'react';
 
 interface NetworkTabProps {
   device: any;
@@ -22,7 +22,7 @@ export function NetworkTab({ device }: NetworkTabProps) {
   const ipv6Addresses: string[] = [];
 
   allIps.forEach((ip: string) => {
-    if (ip.includes(":")) {
+    if (ip.includes(':')) {
       ipv6Addresses.push(ip);
     } else {
       ipv4Addresses.push(ip);
@@ -77,7 +77,7 @@ export function NetworkTab({ device }: NetworkTabProps) {
       <div className="space-y-4 mt-6">
         <InfoCard
           data={{
-            title: "Public IP",
+            title: 'Public IP',
             icon: (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -91,7 +91,7 @@ export function NetworkTab({ device }: NetworkTabProps) {
                 </TooltipContent>
               </Tooltip>
             ),
-            items: [{ label: "IP Address", value: device?.public_ip || "Unknown", copyable: true }],
+            items: [{ label: 'IP Address', value: device?.public_ip || 'Unknown', copyable: true }],
           }}
         />
 
@@ -99,7 +99,7 @@ export function NetworkTab({ device }: NetworkTabProps) {
           {ipv4Addresses.length > 0 && (
             <InfoCard
               data={{
-                title: "Local IPv4 Addresses",
+                title: 'Local IPv4 Addresses',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -120,7 +120,7 @@ export function NetworkTab({ device }: NetworkTabProps) {
           {ipv6Addresses.length > 0 && (
             <InfoCard
               data={{
-                title: "Local IPv6 Addresses",
+                title: 'Local IPv6 Addresses',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>

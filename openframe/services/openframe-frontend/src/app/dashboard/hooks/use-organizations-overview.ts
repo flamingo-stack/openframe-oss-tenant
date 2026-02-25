@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { DEVICE_STATUS } from "../../devices/constants/device-statuses";
-import { GET_DEVICE_FILTERS_QUERY } from "../../devices/queries/devices-queries";
-import type { GraphQlResponse } from "../../devices/types/device.types";
-import { dashboardQueryKeys } from "../utils/query-keys";
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
+import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries';
+import type { GraphQlResponse } from '../../devices/types/device.types';
+import { dashboardQueryKeys } from '../utils/query-keys';
 
 type OrganizationNode = {
   id: string;
@@ -38,7 +38,7 @@ export interface OrganizationOverviewRow {
   inactivePct: number;
 }
 
-const _ACTIVE_STATUSES = ["ONLINE"] as const;
+const _ACTIVE_STATUSES = ['ONLINE'] as const;
 
 async function fetchOrganizationsOverview(limit: number): Promise<{
   rows: OrganizationOverviewRow[];
@@ -68,18 +68,18 @@ async function fetchOrganizationsOverview(limit: number): Promise<{
   `;
 
   try {
-    const orgsResponse = await apiClient.post<GraphQlResponse<OrganizationsResponse>>("/api/graphql", {
+    const orgsResponse = await apiClient.post<GraphQlResponse<OrganizationsResponse>>('/api/graphql', {
       query: GET_ORGANIZATIONS_QUERY,
     });
 
     if (!orgsResponse.ok) {
-      console.warn("Organizations overview API failed:", orgsResponse.error || orgsResponse.status);
+      console.warn('Organizations overview API failed:', orgsResponse.error || orgsResponse.status);
       return { rows: [], totalOrganizations: 0 };
     }
 
     const orgsData = orgsResponse.data?.data?.organizations;
     if (!orgsData) {
-      console.warn("Invalid organizations overview response structure");
+      console.warn('Invalid organizations overview response structure');
       return { rows: [], totalOrganizations: 0 };
     }
 
@@ -92,7 +92,7 @@ async function fetchOrganizationsOverview(limit: number): Promise<{
           GraphQlResponse<{
             deviceFilters: { filteredCount: number; statuses?: Array<{ value: string; count: number }> };
           }>
-        >("/api/graphql", {
+        >('/api/graphql', {
           query: GET_DEVICE_FILTERS_QUERY,
           variables: {
             filter: {
@@ -119,7 +119,7 @@ async function fetchOrganizationsOverview(limit: number): Promise<{
           id: org.id,
           organizationId: org.organizationId,
           name: org.name,
-          websiteUrl: org.websiteUrl || "",
+          websiteUrl: org.websiteUrl || '',
           imageUrl: org.image?.imageUrl || null,
           total: totalDevices,
           active,
@@ -140,7 +140,7 @@ async function fetchOrganizationsOverview(limit: number): Promise<{
 
     return { rows, totalOrganizations };
   } catch (error) {
-    console.warn("Organizations overview fetch failed:", error);
+    console.warn('Organizations overview fetch failed:', error);
     return { rows: [], totalOrganizations: 0 };
   }
 }

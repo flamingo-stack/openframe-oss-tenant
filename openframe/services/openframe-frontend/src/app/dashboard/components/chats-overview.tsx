@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { DashboardInfoCard, Skeleton } from "@flamingo-stack/openframe-frontend-core";
-import { useChatsOverview } from "../hooks/use-dashboard-stats";
+import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useChatsOverview } from '../hooks/use-dashboard-stats';
 
 export function ChatsOverviewSection() {
   const chats = useChatsOverview();

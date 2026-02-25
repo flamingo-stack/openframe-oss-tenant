@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { type DeploymentInfo, type DeploymentType, detectDeployment } from "@/lib/deployment-detector";
+import { useEffect, useState } from 'react';
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { type DeploymentInfo, type DeploymentType, detectDeployment } from '@/lib/deployment-detector';
 
 /**
  * Deployment Store
@@ -31,13 +31,13 @@ const useDeploymentStore = create<DeploymentState>()(
         // Only initialize once
         const currentState = useDeploymentStore.getState();
         if (currentState.isInitialized) {
-          console.log("🌐 [Deployment] Already initialized, skipping detection");
+          console.log('🌐 [Deployment] Already initialized, skipping detection');
           return;
         }
 
         // Detect deployment
         const deploymentInfo = detectDeployment();
-        console.log("🌐 [Deployment] Detected:", deploymentInfo);
+        console.log('🌐 [Deployment] Detected:', deploymentInfo);
 
         set({
           deployment: deploymentInfo,
@@ -46,7 +46,7 @@ const useDeploymentStore = create<DeploymentState>()(
       },
 
       reset: () => {
-        console.log("🌐 [Deployment] Resetting deployment detection");
+        console.log('🌐 [Deployment] Resetting deployment detection');
         set({
           deployment: null,
           isInitialized: false,
@@ -54,7 +54,7 @@ const useDeploymentStore = create<DeploymentState>()(
       },
     }),
     {
-      name: "deployment-store", // Redux DevTools name
+      name: 'deployment-store', // Redux DevTools name
     },
   ),
 );
@@ -70,7 +70,7 @@ export function useDeployment() {
   useEffect(() => {
     // Initialize deployment detection if not already done
     if (!isInitialized) {
-      console.log("🌐 [useDeployment] Initializing deployment detection...");
+      console.log('🌐 [useDeployment] Initializing deployment detection...');
 
       // Small delay to ensure we're in browser environment
       const timer = setTimeout(() => {
@@ -88,8 +88,8 @@ export function useDeployment() {
   const isCloud = deployment?.isCloud ?? false;
   const isSelfHosted = deployment?.isSelfHosted ?? false;
   const isDevelopment = deployment?.isDevelopment ?? false;
-  const deploymentType = deployment?.type ?? "development";
-  const hostname = deployment?.hostname ?? "localhost";
+  const deploymentType = deployment?.type ?? 'development';
+  const hostname = deployment?.hostname ?? 'localhost';
 
   return {
     // Full deployment info
@@ -147,7 +147,7 @@ export function isDevelopmentDeployment(): boolean {
  * Static helper to get deployment type
  */
 export function getDeploymentType(): DeploymentType {
-  return useDeploymentStore.getState().deployment?.type ?? "development";
+  return useDeploymentStore.getState().deployment?.type ?? 'development';
 }
 
 // Export types

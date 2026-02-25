@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import React from "react";
-import type { LogEntry } from "../../logs-page/stores/logs-store";
+import React from 'react';
+import type { LogEntry } from '../../logs-page/stores/logs-store';
 
 interface DetailsSectionProps {
   logDetails: LogEntry;

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import nextDynamic from "next/dynamic";
-import AuthLoading from "./loading";
+import nextDynamic from 'next/dynamic';
+import AuthLoading from './loading';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-const AuthPage = nextDynamic(() => import("@/app/auth/pages/auth-page"), {
+const AuthPage = nextDynamic(() => import('@/app/auth/pages/auth-page'), {
   ssr: false,
   loading: () => <AuthLoading />,
 });

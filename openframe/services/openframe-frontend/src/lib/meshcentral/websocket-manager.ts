@@ -1,6 +1,6 @@
-import { apiClient } from "../api-client";
+import { apiClient } from '../api-client';
 
-export type WebSocketState = "disconnected" | "connecting" | "connected" | "reconnecting" | "failed";
+export type WebSocketState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
 
 export interface WebSocketManagerOptions {
   url: string | (() => string);
@@ -20,7 +20,7 @@ export interface WebSocketManagerOptions {
 
 export class WebSocketManager {
   private socket: WebSocket | null = null;
-  private state: WebSocketState = "disconnected";
+  private state: WebSocketState = 'disconnected';
   private reconnectAttempt = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private messageQueue: Array<string | ArrayBuffer | Blob> = [];
@@ -28,7 +28,7 @@ export class WebSocketManager {
   private lastConnectTime = 0;
   private lastRefreshAttempt = 0;
   private browserListenersAttached = false;
-  private options: Required<Omit<WebSocketManagerOptions, "protocols">> & Pick<WebSocketManagerOptions, "protocols">;
+  private options: Required<Omit<WebSocketManagerOptions, 'protocols'>> & Pick<WebSocketManagerOptions, 'protocols'>;
 
   constructor(options: WebSocketManagerOptions) {
     this.options = {
@@ -51,7 +51,7 @@ export class WebSocketManager {
         return !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code);
       },
       refreshTokenBeforeReconnect: true,
-      binaryType: "arraybuffer",
+      binaryType: 'arraybuffer',
       enableMessageQueue: true,
       ...options,
     };
@@ -84,7 +84,7 @@ export class WebSocketManager {
       }
 
       this.lastRefreshAttempt = Date.now();
-      const response = await apiClient.get("/api/me");
+      const response = await apiClient.get('/api/me');
 
       if (response.ok) {
         return true;
@@ -97,7 +97,7 @@ export class WebSocketManager {
   }
 
   private getUrl(): string {
-    const url = typeof this.options.url === "function" ? this.options.url() : this.options.url;
+    const url = typeof this.options.url === 'function' ? this.options.url() : this.options.url;
     return url;
   }
 
@@ -112,7 +112,7 @@ export class WebSocketManager {
 
     this.cleanup();
     this.attachBrowserListeners();
-    this.setState("connecting");
+    this.setState('connecting');
 
     try {
       const url = this.getUrl();
@@ -121,7 +121,7 @@ export class WebSocketManager {
       this.socket.binaryType = this.options.binaryType;
       this.setupEventHandlers();
     } catch (_error) {
-      this.setState("failed");
+      this.setState('failed');
       this.scheduleReconnect(false);
     }
   }
@@ -130,7 +130,7 @@ export class WebSocketManager {
     if (!this.socket) return;
 
     this.socket.onopen = event => {
-      this.setState("connected");
+      this.setState('connected');
       this.reconnectAttempt = 0;
       this.lastConnectTime = Date.now();
 
@@ -153,7 +153,7 @@ export class WebSocketManager {
     };
 
     this.socket.onclose = event => {
-      this.setState("disconnected");
+      this.setState('disconnected');
 
       this.options.onClose(event);
 
@@ -162,12 +162,12 @@ export class WebSocketManager {
         const isAuthFailure =
           event.code === 1008 ||
           event.code === 1006 ||
-          event.reason?.toLowerCase().includes("auth") ||
-          event.reason?.toLowerCase().includes("unauthorized");
+          event.reason?.toLowerCase().includes('auth') ||
+          event.reason?.toLowerCase().includes('unauthorized');
 
         this.scheduleReconnect(isAuthFailure);
       } else if (!this.isDisposed) {
-        this.setState("failed");
+        this.setState('failed');
       }
     };
   }
@@ -176,7 +176,7 @@ export class WebSocketManager {
     if (this.isDisposed || this.reconnectTimer) return;
 
     if (this.reconnectAttempt >= this.options.maxReconnectAttempts) {
-      this.setState("failed");
+      this.setState('failed');
       return;
     }
 
@@ -185,7 +185,7 @@ export class WebSocketManager {
     const jitter = baseDelay * 0.25 * (Math.random() * 2 - 1); // +-25% jitter
     const delay = Math.max(500, Math.round(baseDelay + jitter));
 
-    this.setState("reconnecting");
+    this.setState('reconnecting');
 
     this.reconnectTimer = setTimeout(async () => {
       this.reconnectTimer = null;
@@ -196,13 +196,13 @@ export class WebSocketManager {
 
       // If we somehow reconnected already, abort this scheduled attempt
       if (this.socket?.readyState === WebSocket.OPEN) {
-        this.setState("connected");
+        this.setState('connected');
         return;
       }
 
       const tokenRefreshed = await this.refreshTokenIfNeeded(forceRefresh);
       if (!tokenRefreshed && this.options.refreshTokenBeforeReconnect) {
-        this.setState("failed");
+        this.setState('failed');
         return;
       }
 
@@ -226,7 +226,7 @@ export class WebSocketManager {
         this.messageQueue.push(data);
       }
 
-      if (this.state === "disconnected" || this.state === "failed") {
+      if (this.state === 'disconnected' || this.state === 'failed') {
         if (this.reconnectTimer || this.socket?.readyState === WebSocket.CONNECTING) {
           return false;
         }
@@ -264,17 +264,17 @@ export class WebSocketManager {
   disconnect() {
     this.isDisposed = true;
     this.cleanup();
-    this.setState("disconnected");
+    this.setState('disconnected');
   }
 
   private handleVisibilityChange = () => {
-    if (typeof document === "undefined") return;
+    if (typeof document === 'undefined') return;
     if (document.hidden) {
       // Tab hidden: pause reconnection attempts but keep live connections
       return;
     }
     // Tab visible again — if we're in a bad state, reconnect immediately
-    if (!this.isDisposed && (this.state === "failed" || this.state === "disconnected")) {
+    if (!this.isDisposed && (this.state === 'failed' || this.state === 'disconnected')) {
       this.reconnectAttempt = 0;
       this.connect();
     }
@@ -283,7 +283,7 @@ export class WebSocketManager {
   private handleOnline = () => {
     if (
       !this.isDisposed &&
-      (this.state === "disconnected" || this.state === "failed" || this.state === "reconnecting")
+      (this.state === 'disconnected' || this.state === 'failed' || this.state === 'reconnecting')
     ) {
       this.reconnectAttempt = 0;
       this.connect();
@@ -298,19 +298,19 @@ export class WebSocketManager {
   };
 
   private attachBrowserListeners() {
-    if (this.browserListenersAttached || typeof window === "undefined") return;
+    if (this.browserListenersAttached || typeof window === 'undefined') return;
     this.browserListenersAttached = true;
-    document.addEventListener("visibilitychange", this.handleVisibilityChange);
-    window.addEventListener("online", this.handleOnline);
-    window.addEventListener("offline", this.handleOffline);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    window.addEventListener('online', this.handleOnline);
+    window.addEventListener('offline', this.handleOffline);
   }
 
   private detachBrowserListeners() {
-    if (!this.browserListenersAttached || typeof window === "undefined") return;
+    if (!this.browserListenersAttached || typeof window === 'undefined') return;
     this.browserListenersAttached = false;
-    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-    window.removeEventListener("online", this.handleOnline);
-    window.removeEventListener("offline", this.handleOffline);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    window.removeEventListener('online', this.handleOnline);
+    window.removeEventListener('offline', this.handleOffline);
   }
 
   private cleanup() {
@@ -327,9 +327,9 @@ export class WebSocketManager {
 
       if (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING) {
         try {
-          this.socket.close(1000, "Normal closure");
+          this.socket.close(1000, 'Normal closure');
         } catch (error) {
-          console.error("Error closing socket:", error);
+          console.error('Error closing socket:', error);
         }
       }
 

@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { PoliciesIcon, QueriesIcon, type TabItem } from "@flamingo-stack/openframe-frontend-core";
-import { Policies } from "./policies";
-import { Queries } from "./queries";
+import { PoliciesIcon, QueriesIcon, type TabItem } from '@flamingo-stack/openframe-frontend-core';
+import { Policies } from './policies';
+import { Queries } from './queries';
 
 export const MONITORING_TABS: TabItem[] = [
   {
-    id: "policies",
-    label: "Policies",
+    id: 'policies',
+    label: 'Policies',
     icon: PoliciesIcon,
     component: Policies,
   },
@@ -18,8 +18,8 @@ export const MONITORING_TABS: TabItem[] = [
   //   component: Checks
   // },
   {
-    id: "queries",
-    label: "Queries",
+    id: 'queries',
+    label: 'Queries',
     icon: QueriesIcon,
     component: Queries,
   },

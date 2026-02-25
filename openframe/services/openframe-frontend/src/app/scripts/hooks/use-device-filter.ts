@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
-import type { Device } from "../../devices/types/device.types";
-import { useOrganizationsMin } from "../../organizations/hooks/use-organizations-min";
+import { useEffect, useMemo, useState } from 'react';
+import type { Device } from '../../devices/types/device.types';
+import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min';
 
 interface UseDeviceFilterOptions {
   devices: Device[];
@@ -9,14 +9,14 @@ interface UseDeviceFilterOptions {
 }
 
 export function useDeviceFilter({ devices, enabled = true }: UseDeviceFilterOptions) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
 
   const { items: allOrganizations, fetch: fetchOrgs } = useOrganizationsMin();
 
   useEffect(() => {
     if (enabled) {
-      fetchOrgs("");
+      fetchOrgs('');
     }
   }, [fetchOrgs, enabled]);
 
@@ -32,8 +32,8 @@ export function useDeviceFilter({ devices, enabled = true }: UseDeviceFilterOpti
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(d => {
-        const name = (d.displayName || d.hostname || "").toLowerCase();
-        const os = (d.osType || d.operating_system || "").toLowerCase();
+        const name = (d.displayName || d.hostname || '').toLowerCase();
+        const os = (d.osType || d.operating_system || '').toLowerCase();
         return name.includes(term) || os.includes(term);
       });
     }

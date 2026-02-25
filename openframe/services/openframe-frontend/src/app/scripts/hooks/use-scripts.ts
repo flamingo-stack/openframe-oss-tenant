@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { tacticalApiClient } from "../../../lib/tactical-api-client";
-import { ScriptEntry } from "../stores/scripts-store";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { tacticalApiClient } from '../../../lib/tactical-api-client';
+import { ScriptEntry } from '../stores/scripts-store';
 
 // ============ Query Keys ============
 
 export const scriptsQueryKeys = {
-  all: ["scripts"] as const,
+  all: ['scripts'] as const,
 };
 
 // ============ API Functions ============

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { GET_LOG_DETAILS_QUERY, GET_LOG_FILTERS_QUERY, GET_LOGS_QUERY } from "../queries/logs-queries";
-import { LogEdge, LogEntry, LogFilters, PageInfo, useLogsStore } from "../stores/logs-store";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { GET_LOG_DETAILS_QUERY, GET_LOG_FILTERS_QUERY, GET_LOGS_QUERY } from '../queries/logs-queries';
+import { LogEdge, LogEntry, LogFilters, PageInfo, useLogsStore } from '../stores/logs-store';
 
 interface LogsResponse {
   logs: {
@@ -70,12 +70,12 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
       return {
         ...logEntry,
         device: {
-          id: logEntry.deviceId || "",
-          machineId: logEntry.deviceId || "",
-          hostname: logEntry.hostname || logEntry.deviceId || "",
-          displayName: logEntry.hostname || "",
+          id: logEntry.deviceId || '',
+          machineId: logEntry.deviceId || '',
+          hostname: logEntry.hostname || logEntry.deviceId || '',
+          displayName: logEntry.hostname || '',
           organizationId: logEntry.organizationId,
-          organization: logEntry.organizationName || logEntry.organizationId || "",
+          organization: logEntry.organizationName || logEntry.organizationId || '',
         },
       };
     }
@@ -93,12 +93,12 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
           cursor: cursor || null,
         };
 
-        const response = await apiClient.post<GraphQlResponse<LogsResponse>>("/api/graphql", {
+        const response = await apiClient.post<GraphQlResponse<LogsResponse>>('/api/graphql', {
           query: GET_LOGS_QUERY,
           variables: {
             filter: filters,
             pagination,
-            search: searchTerm || "",
+            search: searchTerm || '',
           },
         });
 
@@ -109,11 +109,11 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         if (!graphqlResponse?.data) {
-          throw new Error("No data received from server");
+          throw new Error('No data received from server');
         }
 
         const logsData = graphqlResponse.data;
@@ -129,15 +129,15 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         const uniqueIds = new Set(ids);
         if (ids.length !== uniqueIds.size) {
           const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
-          console.error("⚠️ DUPLICATE LOG KEYS DETECTED from backend:", duplicates);
-          console.error("Full edge count:", transformedEdges.length, "Unique IDs:", uniqueIds.size);
+          console.error('⚠️ DUPLICATE LOG KEYS DETECTED from backend:', duplicates);
+          console.error('Full edge count:', transformedEdges.length, 'Unique IDs:', uniqueIds.size);
         }
 
         if (append) {
-          console.log("[useLogs] Appending", transformedEdges.length, "logs");
+          console.log('[useLogs] Appending', transformedEdges.length, 'logs');
           appendEdges(transformedEdges);
         } else {
-          console.log("[useLogs] Replacing with", transformedEdges.length, "logs");
+          console.log('[useLogs] Replacing with', transformedEdges.length, 'logs');
           setEdges(transformedEdges);
         }
 
@@ -145,14 +145,14 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
 
         return logsData;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch logs";
-        console.error("Failed to fetch logs:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch logs';
+        console.error('Failed to fetch logs:', error);
         setError(errorMessage);
 
         toast({
-          title: "Error fetching logs",
+          title: 'Error fetching logs',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
 
         throw error;
@@ -178,7 +178,7 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
   const fetchLogDetails = useCallback(
     async (logEntry: LogEntry) => {
       try {
-        const response = await apiClient.post<GraphQlResponse<LogDetailsResponse>>("/api/graphql", {
+        const response = await apiClient.post<GraphQlResponse<LogDetailsResponse>>('/api/graphql', {
           query: GET_LOG_DETAILS_QUERY,
           variables: {
             logId: logEntry.toolEventId,
@@ -196,11 +196,11 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         if (!graphqlResponse?.data) {
-          throw new Error("No data received from server");
+          throw new Error('No data received from server');
         }
 
         // Transform log details to include device structure
@@ -208,13 +208,13 @@ export function useLogs(activeFilters: LogFilterInput = {}) {
 
         return logDetails;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch log details";
-        console.error("Failed to fetch log details:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch log details';
+        console.error('Failed to fetch log details:', error);
 
         toast({
-          title: "Error fetching log details",
+          title: 'Error fetching log details',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
 
         throw error;
@@ -283,7 +283,7 @@ export function useLogFilters() {
       setError(null);
 
       try {
-        const response = await apiClient.post<GraphQlResponse<{ logFilters: LogFilters }>>("/api/graphql", {
+        const response = await apiClient.post<GraphQlResponse<{ logFilters: LogFilters }>>('/api/graphql', {
           query: GET_LOG_FILTERS_QUERY,
           variables: {
             filter: filter || {},
@@ -297,24 +297,24 @@ export function useLogFilters() {
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         if (!graphqlResponse?.data) {
-          throw new Error("No data received from server");
+          throw new Error('No data received from server');
         }
 
         setLogFilters(graphqlResponse.data.logFilters);
         return graphqlResponse.data.logFilters;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch log filters";
-        console.error("Failed to fetch log filters:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch log filters';
+        console.error('Failed to fetch log filters:', error);
         setError(errorMessage);
 
         toast({
-          title: "Error fetching log filters",
+          title: 'Error fetching log filters',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
 
         throw error;

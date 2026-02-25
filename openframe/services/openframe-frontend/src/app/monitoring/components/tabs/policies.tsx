@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DeviceCardCompact,
   ListPageLayout,
@@ -9,19 +9,19 @@ import {
   Table,
   type TableColumn,
   Tag,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useApiParams, useDebounce, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { usePolicies } from "../../hooks/use-policies";
-import type { Policy } from "../../types/policies.types";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useRouter } from 'next/navigation';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { usePolicies } from '../../hooks/use-policies';
+import type { Policy } from '../../types/policies.types';
 
 const PAGE_SIZE = 10;
 
 function parsePlatforms(platform: string | undefined): string[] {
   if (!platform) return [];
   return platform
-    .split(",")
+    .split(',')
     .map(p => p.trim())
     .filter(Boolean);
 }
@@ -31,10 +31,10 @@ function PolicyStatusCell({ policy }: { policy: Policy }) {
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <Tag label={isFailing ? "Failing" : "Compliant"} variant={isFailing ? "error" : "success"} />
+      <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
       {isFailing && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {policy.failing_host_count} {policy.failing_host_count === 1 ? "device" : "devices"}
+          {policy.failing_host_count} {policy.failing_host_count === 1 ? 'device' : 'devices'}
         </span>
       )}
     </div>
@@ -45,8 +45,8 @@ export function Policies() {
   const router = useRouter();
 
   const { params, setParam, setParams } = useApiParams({
-    search: { type: "string", default: "" },
-    page: { type: "number", default: 1 },
+    search: { type: 'string', default: '' },
+    page: { type: 'number', default: 1 },
   });
 
   const [searchInput, setSearchInput] = useState(params.search);
@@ -63,7 +63,7 @@ export function Policies() {
   const { policies, isLoading, error } = usePolicies();
 
   const filteredPolicies = useMemo(() => {
-    if (!params.search || params.search.trim() === "") return policies;
+    if (!params.search || params.search.trim() === '') return policies;
 
     const searchLower = params.search.toLowerCase().trim();
     return policies.filter(
@@ -82,26 +82,26 @@ export function Policies() {
   const columns: TableColumn<Policy>[] = useMemo(
     () => [
       {
-        key: "name",
-        label: "Name",
+        key: 'name',
+        label: 'Name',
         renderCell: policy => <DeviceCardCompact deviceName={policy.name} organization={policy.description} />,
       },
       {
-        key: "severity",
-        label: "Severity",
-        width: "w-[100px]",
-        hideAt: "md",
+        key: 'severity',
+        label: 'Severity',
+        width: 'w-[100px]',
+        hideAt: 'md',
         renderCell: policy => (
           <span className="font-medium leading-[20px] text-ods-text-primary">
-            {policy.critical ? "Critical " : "Low"}
+            {policy.critical ? 'Critical ' : 'Low'}
           </span>
         ),
       },
       {
-        key: "platform",
-        label: "Platform",
-        width: "w-[140px]",
-        hideAt: "lg",
+        key: 'platform',
+        label: 'Platform',
+        width: 'w-[140px]',
+        hideAt: 'lg',
         renderCell: policy => {
           const platforms = parsePlatforms(policy.platform);
           return platforms.length > 0 ? (
@@ -112,10 +112,10 @@ export function Policies() {
         },
       },
       {
-        key: "status",
-        label: "Status",
-        width: "w-[120px]",
-        hideAt: "sm",
+        key: 'status',
+        label: 'Status',
+        width: 'w-[120px]',
+        hideAt: 'sm',
         renderCell: policy => <PolicyStatusCell policy={policy} />,
       },
     ],
@@ -125,7 +125,7 @@ export function Policies() {
   const rowActions = useCallback(
     (policy: Policy) => [
       {
-        label: "Policy Details",
+        label: 'Policy Details',
         onClick: () => router.push(`/monitoring/policy/${policy.id}`),
       },
     ],
@@ -144,19 +144,19 @@ export function Policies() {
   );
 
   const handleAddPolicy = useCallback(() => {
-    router.push("/monitoring/policy/edit/new");
+    router.push('/monitoring/policy/edit/new');
   }, [router]);
 
   const cursorPagination = useTablePagination(
     totalPages > 1
       ? {
-          type: "client",
+          type: 'client',
           currentPage: params.page,
           totalPages,
           itemCount: paginatedPolicies.length,
-          itemName: "policies",
-          onNext: () => setParam("page", Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam("page", Math.max(params.page - 1, 1)),
+          itemName: 'policies',
+          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
+          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
           showInfo: true,
         }
       : null,
@@ -165,7 +165,7 @@ export function Policies() {
   const actions = useMemo(
     () => [
       {
-        label: "Add Policy",
+        label: 'Add Policy',
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddPolicy,
       },
@@ -194,7 +194,7 @@ export function Policies() {
         emptyMessage={
           params.search
             ? `No policies found matching "${params.search}". Try adjusting your search.`
-            : "No policies found."
+            : 'No policies found.'
         }
         showFilters={false}
         rowClassName="mb-1"

@@ -1,8 +1,8 @@
 type ControlAuthCookies = { authCookie: string; relayCookie?: string };
 
-import { runtimeEnv } from "../runtime-config";
-import { buildWsUrl, MESH_PASS, MESH_USER } from "./meshcentral-config";
-import { WebSocketManager } from "./websocket-manager";
+import { runtimeEnv } from '../runtime-config';
+import { buildWsUrl, MESH_PASS, MESH_USER } from './meshcentral-config';
+import { WebSocketManager } from './websocket-manager';
 
 export class MeshControlClient {
   private wsManager: WebSocketManager | null = null;
@@ -22,15 +22,15 @@ export class MeshControlClient {
 
     // Add credentials for authentication
     if (credentials?.user || MESH_USER) {
-      qs.append("user", credentials?.user || MESH_USER);
+      qs.append('user', credentials?.user || MESH_USER);
     }
     if (credentials?.pass || MESH_PASS) {
-      qs.append("pass", credentials?.pass || MESH_PASS);
+      qs.append('pass', credentials?.pass || MESH_PASS);
     }
 
     // Add auth cookie if provided
     if (authCookie) {
-      qs.append("auth", authCookie);
+      qs.append('auth', authCookie);
     }
 
     const buildUrl = () => {
@@ -38,8 +38,8 @@ export class MeshControlClient {
 
       try {
         const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-        if (isDevTicketEnabled && typeof window !== "undefined") {
-          const token = localStorage.getItem("of_access_token");
+        if (isDevTicketEnabled && typeof window !== 'undefined') {
+          const token = localStorage.getItem('of_access_token');
           if (token) url += `&authorization=${encodeURIComponent(token)}`;
         }
       } catch {}
@@ -49,29 +49,29 @@ export class MeshControlClient {
 
     this.wsManager = new WebSocketManager({
       url: buildUrl, // Use function to get fresh token on reconnect
-      binaryType: "arraybuffer",
+      binaryType: 'arraybuffer',
       enableMessageQueue: true,
       refreshTokenBeforeReconnect: false, // Disable for MeshCentral
 
       onStateChange: state => {
-        if (state === "connected") {
+        if (state === 'connected') {
           this.isOpen = true;
           if (!this.cookies) {
             this.requestAuthCookies();
           }
-        } else if (state === "disconnected" || state === "failed") {
+        } else if (state === 'disconnected' || state === 'failed') {
           this.isOpen = false;
-          this.clearPendingRequests("WebSocket disconnected");
+          this.clearPendingRequests('WebSocket disconnected');
         }
       },
       onMessage: e => {
         this.handleMessage(e);
       },
       onError: error => {
-        console.error("[MeshControl] WebSocket error:", error);
+        console.error('[MeshControl] WebSocket error:', error);
       },
       onClose: event => {
-        console.log("[MeshControl] WebSocket closed:", {
+        console.log('[MeshControl] WebSocket closed:', {
           code: event.code,
           reason: event.reason,
           wasClean: event.wasClean,
@@ -89,13 +89,13 @@ export class MeshControlClient {
     try {
       const msg = JSON.parse(e.data as string);
 
-      if (msg && msg.action === "authcookie" && msg.cookie) {
+      if (msg && msg.action === 'authcookie' && msg.cookie) {
         this.cookies = { authCookie: msg.cookie as string, relayCookie: msg.rcookie };
 
         try {
           this.wsManager?.send(
             JSON.stringify({
-              action: "urlargs",
+              action: 'urlargs',
               args: { auth: this.cookies.authCookie },
             }),
           );
@@ -105,29 +105,29 @@ export class MeshControlClient {
           this.resendActiveTunnels();
         } catch {}
 
-        const request = this.pendingRequests.get("authcookie");
+        const request = this.pendingRequests.get('authcookie');
         if (request) {
           clearTimeout(request.timeout);
-          this.pendingRequests.delete("authcookie");
+          this.pendingRequests.delete('authcookie');
           request.resolve(this.cookies);
         }
       }
 
-      if (msg && msg.action === "poweraction" && msg.responseid) {
+      if (msg && msg.action === 'poweraction' && msg.responseid) {
         const request = this.pendingRequests.get(msg.responseid);
         if (request) {
           clearTimeout(request.timeout);
           this.pendingRequests.delete(msg.responseid);
 
-          if (msg.result === "ok") {
+          if (msg.result === 'ok') {
             request.resolve();
           } else {
-            request.reject(new Error(msg.result || "Power action failed"));
+            request.reject(new Error(msg.result || 'Power action failed'));
           }
         }
       }
     } catch (error) {
-      console.error("Error handling message:", error);
+      console.error('Error handling message:', error);
     }
   }
 
@@ -141,9 +141,9 @@ export class MeshControlClient {
 
   private async requestAuthCookies() {
     try {
-      this.wsManager?.send(JSON.stringify({ action: "authcookie" }));
+      this.wsManager?.send(JSON.stringify({ action: 'authcookie' }));
     } catch (error) {
-      console.error("Error requesting auth cookies:", error);
+      console.error('Error requesting auth cookies:', error);
     }
   }
 
@@ -156,11 +156,11 @@ export class MeshControlClient {
 
     return new Promise<ControlAuthCookies>((resolve, reject) => {
       const timeout = setTimeout(() => {
-        this.pendingRequests.delete("authcookie");
-        reject(new Error("Timed out waiting for authcookie"));
+        this.pendingRequests.delete('authcookie');
+        reject(new Error('Timed out waiting for authcookie'));
       }, timeoutMs);
 
-      this.pendingRequests.set("authcookie", { resolve, reject, timeout });
+      this.pendingRequests.set('authcookie', { resolve, reject, timeout });
       this.requestAuthCookies();
     });
   }
@@ -173,8 +173,8 @@ export class MeshControlClient {
         const checkConnection = () => {
           if (this.isOpen) {
             resolve();
-          } else if (this.wsManager?.getState() === "failed") {
-            reject(new Error("Failed to establish control connection"));
+          } else if (this.wsManager?.getState() === 'failed') {
+            reject(new Error('Failed to establish control connection'));
           } else {
             setTimeout(checkConnection, 100);
           }
@@ -191,15 +191,15 @@ export class MeshControlClient {
       return;
     }
 
-    const msg: Record<string, any> = { action: "msg", type: "tunnel", nodeid: nodeId, value: relayPathValue };
-    if (typeof usage === "number") {
+    const msg: Record<string, any> = { action: 'msg', type: 'tunnel', nodeid: nodeId, value: relayPathValue };
+    if (typeof usage === 'number') {
       msg.usage = usage;
     }
 
     try {
       this.wsManager.send(JSON.stringify(msg));
     } catch (error) {
-      console.error("[MeshControl] Error sending tunnel message:", error);
+      console.error('[MeshControl] Error sending tunnel message:', error);
     }
   }
 
@@ -208,22 +208,22 @@ export class MeshControlClient {
     relayId: string,
     protocol: number,
     relayCookie?: string,
-    domainPrefix = "",
+    domainPrefix = '',
     usage?: number,
   ): void {
     this.upsertActiveTunnel(nodeId, relayId, protocol, domainPrefix, usage);
 
-    const prefix = domainPrefix ? `${domainPrefix.replace(/^\/*|\/*$/g, "")}/` : "";
+    const prefix = domainPrefix ? `${domainPrefix.replace(/^\/*|\/*$/g, '')}/` : '';
     const effectiveRelayCookie = this.cookies?.relayCookie ?? relayCookie;
-    const value = `*/${prefix}meshrelay.ashx?p=${protocol}&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${effectiveRelayCookie ? `&rauth=${encodeURIComponent(effectiveRelayCookie)}` : ""}`;
+    const value = `*/${prefix}meshrelay.ashx?p=${protocol}&nodeid=${encodeURIComponent(nodeId)}&id=${encodeURIComponent(relayId)}${effectiveRelayCookie ? `&rauth=${encodeURIComponent(effectiveRelayCookie)}` : ''}`;
     this.sendTunnelMsg(nodeId, value, usage);
   }
 
-  sendDesktopTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ""): void {
+  sendDesktopTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ''): void {
     this.sendRelayTunnel(nodeId, relayId, 2, relayCookie, domainPrefix);
   }
 
-  sendFileTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ""): void {
+  sendFileTunnel(nodeId: string, relayId: string, relayCookie?: string, domainPrefix = ''): void {
     this.sendRelayTunnel(nodeId, relayId, 5, relayCookie, domainPrefix, 5);
   }
 
@@ -243,10 +243,10 @@ export class MeshControlClient {
     }
   }
 
-  async powerAction(nodeId: string, action: "wake" | "sleep" | "reset" | "poweroff", timeoutMs = 8000): Promise<void> {
+  async powerAction(nodeId: string, action: 'wake' | 'sleep' | 'reset' | 'poweroff', timeoutMs = 8000): Promise<void> {
     await this.openSession();
 
-    if (!this.wsManager?.isConnected()) throw new Error("Control socket not open");
+    if (!this.wsManager?.isConnected()) throw new Error('Control socket not open');
 
     const actionTypes: Record<typeof action, number> = {
       wake: 302,
@@ -255,18 +255,18 @@ export class MeshControlClient {
       poweroff: 2,
     };
     const actiontype = actionTypes[action];
-    const nodePath = nodeId.startsWith("node//") ? nodeId : `node//${nodeId}`;
+    const nodePath = nodeId.startsWith('node//') ? nodeId : `node//${nodeId}`;
     const responseid = `power_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
     return new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingRequests.delete(responseid);
-        reject(new Error("Timed out waiting for poweraction response"));
+        reject(new Error('Timed out waiting for poweraction response'));
       }, timeoutMs);
 
       this.pendingRequests.set(responseid, { resolve, reject, timeout });
 
-      const payload = { action: "poweraction", nodeids: [nodePath], actiontype, responseid };
+      const payload = { action: 'poweraction', nodeids: [nodePath], actiontype, responseid };
       try {
         this.wsManager?.send(JSON.stringify(payload));
       } catch (error) {
@@ -278,7 +278,7 @@ export class MeshControlClient {
   }
 
   close(): void {
-    this.clearPendingRequests("Client closing");
+    this.clearPendingRequests('Client closing');
     this.wsManager?.disconnect();
     this.wsManager = null;
     this.isOpen = false;

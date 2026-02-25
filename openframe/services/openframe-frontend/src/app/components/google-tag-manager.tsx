@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import Script from "next/script";
-import { useEffect } from "react";
-import { runtimeEnv } from "@/lib/runtime-config";
+import Script from 'next/script';
+import { useEffect } from 'react';
+import { runtimeEnv } from '@/lib/runtime-config';
 
 interface GoogleTagManagerProps {
   containerId?: string;
@@ -40,7 +40,7 @@ export function GoogleTagManager({ containerId }: GoogleTagManagerProps) {
           src={`https://www.googletagmanager.com/ns.html?id=${id}`}
           height="0"
           width="0"
-          style={{ display: "none", visibility: "hidden" }}
+          style={{ display: 'none', visibility: 'hidden' }}
         />
       </noscript>
     </>

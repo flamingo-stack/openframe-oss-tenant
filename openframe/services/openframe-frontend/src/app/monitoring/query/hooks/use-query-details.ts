@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { queriesQueryKeys } from "../../hooks/use-queries";
-import type { Query } from "../../types/queries.types";
+import { useQuery } from '@tanstack/react-query';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { queriesQueryKeys } from '../../hooks/use-queries';
+import type { Query } from '../../types/queries.types';
 
 async function fetchQuery(id: number): Promise<Query> {
   const res = await fleetApiClient.getQuery(id);

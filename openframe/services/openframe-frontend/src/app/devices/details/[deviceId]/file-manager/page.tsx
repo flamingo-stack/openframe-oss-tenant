@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { Button, DetailPageContainer } from "@flamingo-stack/openframe-frontend-core";
-import { FileManagerSkeleton } from "@flamingo-stack/openframe-frontend-core/components/ui/file-manager";
-import { useRouter } from "next/navigation";
-import { use, useEffect } from "react";
-import { AppLayout } from "@/app/components/app-layout";
-import { FileManagerContainer } from "@/app/devices/details/[deviceId]/file-manager/components/file-manager-container";
-import { useDeviceDetails } from "@/app/devices/hooks/use-device-details";
-import { getMeshCentralAgentId } from "@/app/devices/utils/device-action-utils";
+import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
+import { useRouter } from 'next/navigation';
+import { use, useEffect } from 'react';
+import { AppLayout } from '@/app/components/app-layout';
+import { FileManagerContainer } from '@/app/devices/details/[deviceId]/file-manager/components/file-manager-container';
+import { useDeviceDetails } from '@/app/devices/hooks/use-device-details';
+import { getMeshCentralAgentId } from '@/app/devices/utils/device-action-utils';
 
 interface FileManagerPageProps {
   params: Promise<{
@@ -41,7 +41,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
           title="File Manager"
           className="h-full"
           contentClassName="flex flex-col min-h-0 overflow-hidden"
-          backButton={{ label: "Back to Device", onClick: () => router.push(`/devices/details/${deviceId}`) }}
+          backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
           padding="none"
         >
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -62,7 +62,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
           title="File Manager"
           className="h-full"
           contentClassName="flex flex-col min-h-0 overflow-hidden"
-          backButton={{ label: "Back to Device", onClick: () => router.push(`/devices/details/${deviceId}`) }}
+          backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
           padding="none"
         >
           <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -100,7 +100,7 @@ function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
         className="h-full"
         contentClassName="flex flex-col min-h-0 overflow-hidden"
         backButton={{
-          label: "Back to Device",
+          label: 'Back to Device',
           onClick: onBack,
         }}
         padding="none"

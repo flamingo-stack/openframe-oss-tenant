@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "@/lib/api-client";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 export function useRegistrationSecret() {
   const { toast } = useToast();
-  const [initialKey, setInitialKey] = useState<string>("");
+  const [initialKey, setInitialKey] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,22 +14,22 @@ export function useRegistrationSecret() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get("/api/agent/registration-secret/active");
+      const response = await apiClient.get('/api/agent/registration-secret/active');
       if (!response.ok) {
         throw new Error(response.error || `Request failed with status ${response.status}`);
       }
       const { key } = response.data;
       if (!key) {
-        throw new Error("Active registration secret not found in response");
+        throw new Error('Active registration secret not found in response');
       }
       setInitialKey(key);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to fetch registration secret";
+      const message = err instanceof Error ? err.message : 'Failed to fetch registration secret';
       setError(message);
       toast({
-        title: "Failed to load registration secret",
+        title: 'Failed to load registration secret',
         description: message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);

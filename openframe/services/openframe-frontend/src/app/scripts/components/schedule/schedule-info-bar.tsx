@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { OSTypeBadgeGroup } from "@flamingo-stack/openframe-frontend-core/components";
-import type { ScriptScheduleDetail } from "../../types/script-schedule.types";
-import { formatScheduleDate, getRepeatLabel } from "../../types/script-schedule.types";
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
+import type { ScriptScheduleDetail } from '../../types/script-schedule.types';
+import { formatScheduleDate, getRepeatLabel } from '../../types/script-schedule.types';
 
 interface ScheduleInfoBarProps {
   schedule: ScriptScheduleDetail;
@@ -52,7 +52,7 @@ export function ScheduleInfoBarFromData({ name, note, date, time, repeat, platfo
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Schedule Name</span>
         </div>
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{note || "—"}</span>
+          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{note || '—'}</span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Note</span>
         </div>
       </div>

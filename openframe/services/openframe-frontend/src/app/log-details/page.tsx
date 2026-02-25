@@ -1,10 +1,10 @@
-import { AppLayout } from "../components/app-layout";
-import { LogDetailsView } from "./components/log-details-view";
+import { AppLayout } from '../components/app-layout';
+import { LogDetailsView } from './components/log-details-view';
 
 // Force dynamic rendering due to useSearchParams in AppLayout
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
-import { redirect } from "next/navigation";
+import { redirect } from 'next/navigation';
 
 interface LogDetailsPageProps {
   searchParams: Promise<{
@@ -21,7 +21,7 @@ export default async function LogDetailsPage({ searchParams }: LogDetailsPagePro
   const { id, ingestDay, toolType, eventType, timestamp } = params;
 
   if (!id || !ingestDay || !toolType || !eventType || !timestamp) {
-    redirect("/logs-page");
+    redirect('/logs-page');
   }
 
   return (

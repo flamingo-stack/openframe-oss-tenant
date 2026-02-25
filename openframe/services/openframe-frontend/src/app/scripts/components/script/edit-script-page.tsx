@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { Button, FormPageContainer, Label } from "@flamingo-stack/openframe-frontend-core";
-import { Card } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { ArrowLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
-import { useEditScriptForm } from "../../hooks/use-edit-script-form";
-import { useScriptDetails } from "../../hooks/use-script-details";
-import { useTestRuns } from "../../hooks/use-test-runs";
-import { EditScriptSkeleton } from "./edit-script-skeleton";
-import { ScriptFormFields } from "./script-form-fields";
-import { TestRunCard } from "./test-run-card";
-import { type SelectedTestDevice, TestScriptModal } from "./test-script-modal";
+import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-frontend-core';
+import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
+import { useEditScriptForm } from '../../hooks/use-edit-script-form';
+import { useScriptDetails } from '../../hooks/use-script-details';
+import { useTestRuns } from '../../hooks/use-test-runs';
+import { EditScriptSkeleton } from './edit-script-skeleton';
+import { ScriptFormFields } from './script-form-fields';
+import { TestRunCard } from './test-run-card';
+import { type SelectedTestDevice, TestScriptModal } from './test-script-modal';
 
 interface EditScriptPageProps {
   scriptId: string | null;
@@ -23,22 +23,22 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const backButton = useMemo(
     () =>
       isEditMode
-        ? { label: "Back to Script Details", onClick: () => router.push(`/scripts/details/${scriptId}`) }
-        : { label: "Back to Scripts", onClick: () => router.push("/scripts") },
+        ? { label: 'Back to Script Details', onClick: () => router.push(`/scripts/details/${scriptId}`) }
+        : { label: 'Back to Scripts', onClick: () => router.push('/scripts') },
     [isEditMode, scriptId, router],
   );
 
-  const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || "");
+  const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || '');
   const { form, isSubmitting, handleSave } = useEditScriptForm({ scriptId, scriptDetails, isEditMode });
   const { testRuns, handleRunTest, handleStopRun } = useTestRuns(form.getValues);
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
-  const watchedName = form.watch("name");
-  const watchedSupportedPlatforms = form.watch("supported_platforms");
+  const watchedName = form.watch('name');
+  const watchedSupportedPlatforms = form.watch('supported_platforms');
 
   const handleBack = useCallback(() => {
-    router.push("/scripts");
+    router.push('/scripts');
   }, [router]);
 
   const handleDeviceSelected = useCallback(
@@ -51,14 +51,14 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const actions = useMemo(
     () => [
       {
-        label: "Test Script",
+        label: 'Test Script',
         onClick: () => setIsTestModalOpen(true),
-        variant: "outline" as const,
+        variant: 'outline' as const,
       },
       {
-        label: "Save Script",
+        label: 'Save Script',
         onClick: handleSave,
-        variant: "primary" as const,
+        variant: 'primary' as const,
         disabled: isSubmitting || !watchedName.trim(),
         loading: isSubmitting,
       },
@@ -89,7 +89,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
   return (
     <FormPageContainer
-      title={isEditMode && scriptDetails ? "Edit Script" : "New Script"}
+      title={isEditMode && scriptDetails ? 'Edit Script' : 'New Script'}
       backButton={backButton}
       actions={actions}
       padding="none"

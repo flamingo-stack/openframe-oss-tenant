@@ -1,31 +1,31 @@
-"use client";
+'use client';
 
-import { LoadError, Tag } from "@flamingo-stack/openframe-frontend-core";
-import { Button, Table, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useCallback, useMemo, useState } from "react";
-import { LogDrawer } from "../../../components/shared";
-import { useScriptScheduleHistory } from "../../hooks/use-script-schedule";
-import type { ScriptScheduleDetail, ScriptScheduleHistoryEntry } from "../../types/script-schedule.types";
+import { LoadError, Tag } from '@flamingo-stack/openframe-frontend-core';
+import { Button, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useCallback, useMemo, useState } from 'react';
+import { LogDrawer } from '../../../components/shared';
+import { useScriptScheduleHistory } from '../../hooks/use-script-schedule';
+import type { ScriptScheduleDetail, ScriptScheduleHistoryEntry } from '../../types/script-schedule.types';
 
 interface ScheduleHistoryTabProps {
   schedule: ScriptScheduleDetail;
   scheduleId: string;
 }
 
-function getStatusVariant(status: string): "success" | "error" | "warning" | "grey" {
+function getStatusVariant(status: string): 'success' | 'error' | 'warning' | 'grey' {
   switch (status) {
-    case "passing":
-      return "success";
-    case "failing":
-      return "error";
+    case 'passing':
+      return 'success';
+    case 'failing':
+      return 'error';
     default:
-      return "grey";
+      return 'grey';
   }
 }
 
 function getStatusLabel(entry: ScriptScheduleHistoryEntry): string {
-  if (entry.retcode === 0) return "OK";
-  if (entry.status === "failing") return "FAILING";
+  if (entry.retcode === 0) return 'OK';
+  if (entry.status === 'failing') return 'FAILING';
   return entry.status.toUpperCase();
 }
 
@@ -59,7 +59,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
     setSelectedEntry(null);
   }, []);
 
-  const drawerTitle = selectedEntry ? `LOG-${String(selectedEntry.id).padStart(3, "0")}` : "";
+  const drawerTitle = selectedEntry ? `LOG-${String(selectedEntry.id).padStart(3, '0')}` : '';
 
   const drawerStatusTag = selectedEntry
     ? {
@@ -69,27 +69,27 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
     : undefined;
 
   const drawerTimestamp = selectedEntry?.last_run
-    ? new Date(selectedEntry.last_run).toLocaleString("en-US", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "UTC",
+    ? new Date(selectedEntry.last_run).toLocaleString('en-US', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
       })
-    : "—";
+    : '—';
 
   const drawerInfoFields = selectedEntry
     ? [
-        { label: "Status", value: getStatusLabel(selectedEntry) },
-        { label: "Return Code", value: String(selectedEntry.retcode) },
-        { label: "Device", value: selectedEntry.agent_hostname },
-        { label: "Platform", value: selectedEntry.agent_platform },
-        { label: "Exec. Time", value: `${selectedEntry.execution_time}s` },
-        { label: "Agent ID", value: selectedEntry.agent_id },
+        { label: 'Status', value: getStatusLabel(selectedEntry) },
+        { label: 'Return Code', value: String(selectedEntry.retcode) },
+        { label: 'Device', value: selectedEntry.agent_hostname },
+        { label: 'Platform', value: selectedEntry.agent_platform },
+        { label: 'Exec. Time', value: `${selectedEntry.execution_time}s` },
+        { label: 'Agent ID', value: selectedEntry.agent_id },
         {
-          label: "Sync Status",
-          value: selectedEntry.sync_status.replace("_", " "),
+          label: 'Sync Status',
+          value: selectedEntry.sync_status.replace('_', ' '),
         },
       ]
     : [];
@@ -97,43 +97,43 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
   const columns: TableColumn<ScriptScheduleHistoryEntry>[] = useMemo(
     () => [
       {
-        key: "log_id",
-        label: "LOG ID",
-        width: "w-[160px]",
+        key: 'log_id',
+        label: 'LOG ID',
+        width: 'w-[160px]',
         renderCell: entry => (
           <div className="flex flex-col">
             <span className="font-['Azeret_Mono'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
-              LOG-{String(entry.id).padStart(3, "0")}
+              LOG-{String(entry.id).padStart(3, '0')}
             </span>
             <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">
               {entry.last_run
-                ? new Date(entry.last_run).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "2-digit",
-                    day: "2-digit",
-                    timeZone: "UTC",
+                ? new Date(entry.last_run).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    timeZone: 'UTC',
                   }) +
-                  "," +
-                  new Date(entry.last_run).toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: "UTC",
+                  ',' +
+                  new Date(entry.last_run).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    timeZone: 'UTC',
                   })
-                : "—"}
+                : '—'}
             </span>
           </div>
         ),
       },
       {
-        key: "status",
-        label: "STATUS",
-        width: "w-[120px]",
+        key: 'status',
+        label: 'STATUS',
+        width: 'w-[120px]',
         renderCell: entry => <Tag label={getStatusLabel(entry)} variant={getStatusVariant(entry.status)} />,
       },
       {
-        key: "device",
-        label: "DEVICE",
-        hideAt: "sm" as const,
+        key: 'device',
+        label: 'DEVICE',
+        hideAt: 'sm' as const,
         renderCell: entry => (
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
@@ -145,13 +145,13 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         ),
       },
       {
-        key: "details",
-        label: "LOG DETAILS",
-        hideAt: "md" as const,
+        key: 'details',
+        label: 'LOG DETAILS',
+        hideAt: 'md' as const,
         renderCell: entry => (
           <div className="flex flex-col min-w-0">
             <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {entry.stdout || entry.stderr || "No output"}
+              {entry.stdout || entry.stderr || 'No output'}
             </span>
             <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
               {entry.stderr ? `stderr: ${entry.stderr}` : `Execution time: ${entry.execution_time}s`}

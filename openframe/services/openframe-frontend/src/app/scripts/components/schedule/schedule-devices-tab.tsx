@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { LoadError, OSTypeBadge } from "@flamingo-stack/openframe-frontend-core";
-import { Table, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useMemo } from "react";
-import { useScriptScheduleAgents } from "../../hooks/use-script-schedule";
-import type { ScriptScheduleAgent, ScriptScheduleDetail } from "../../types/script-schedule.types";
+import { LoadError, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core';
+import { Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMemo } from 'react';
+import { useScriptScheduleAgents } from '../../hooks/use-script-schedule';
+import type { ScriptScheduleAgent, ScriptScheduleDetail } from '../../types/script-schedule.types';
 
 interface ScheduleDevicesTabProps {
   schedule: ScriptScheduleDetail;
@@ -17,8 +17,8 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
   const columns: TableColumn<ScriptScheduleAgent>[] = useMemo(
     () => [
       {
-        key: "device",
-        label: "DEVICE",
+        key: 'device',
+        label: 'DEVICE',
         renderCell: agent => (
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
@@ -28,9 +28,9 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
         ),
       },
       {
-        key: "details",
-        label: "DETAILS",
-        hideAt: "md" as const,
+        key: 'details',
+        label: 'DETAILS',
+        hideAt: 'md' as const,
         renderCell: agent => <OSTypeBadge osType={agent.plat} />,
       },
     ],

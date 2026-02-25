@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AlertDialog,
@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 interface EmailVerificationModalProps {
   open: boolean;
@@ -50,7 +50,7 @@ export function EmailVerificationModal({
             disabled={isSending}
             className="flex-1 bg-ods-accent text-ods-bg font-['DM_Sans'] font-bold text-[18px] leading-[24px] tracking-[-0.36px] px-4 py-3 rounded-[6px] hover:bg-ods-accent/90"
           >
-            {isSending ? "Sending..." : "Resend Verification"}
+            {isSending ? 'Sending...' : 'Resend Verification'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

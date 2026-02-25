@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { AppLayout as CoreAppLayout } from "@flamingo-stack/openframe-frontend-core/components/navigation";
-import { CompactPageLoader } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import type { NavigationSidebarConfig } from "@flamingo-stack/openframe-frontend-core/types/navigation";
-import { usePathname, useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { runtimeEnv } from "@/lib/runtime-config";
-import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from "../../lib/app-mode";
-import { getNavigationItems } from "../../lib/navigation-config";
-import { useAuth } from "../auth/hooks/use-auth";
-import { useAuthStore } from "../auth/stores/auth-store";
-import { AppShellSkeleton } from "./app-shell-skeleton";
-import { UnauthorizedOverlay } from "./unauthorized-overlay";
+import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
+import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { runtimeEnv } from '@/lib/runtime-config';
+import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
+import { getNavigationItems } from '../../lib/navigation-config';
+import { useAuth } from '../auth/hooks/use-auth';
+import { useAuthStore } from '../auth/stores/auth-store';
+import { AppShellSkeleton } from './app-shell-skeleton';
+import { UnauthorizedOverlay } from './unauthorized-overlay';
 
 function ContentLoading() {
   return <CompactPageLoader />;
@@ -42,12 +42,12 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     () => ({
       items: navigationItems,
       onNavigate: handleNavigate,
-      className: "h-screen",
+      className: 'h-screen',
     }),
     [navigationItems, handleNavigate],
   );
 
-  const displayName = `${user?.firstName || ""} ${user?.lastName || ""}`.trim();
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
 
   return (
     <CoreAppLayout
@@ -68,7 +68,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         showUser: true,
         userName: displayName,
         userEmail: user?.email,
-        onProfile: () => router.push("/settings/?tab=profile"),
+        onProfile: () => router.push('/settings/?tab=profile'),
         onLogout: handleLogout,
       }}
     >
@@ -110,15 +110,15 @@ function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode
     });
 
     return () => {
-      if (typeof unsubscribe === "function") {
+      if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
     };
   }, []);
 
   useEffect(() => {
-    if (isHydrated && isOssTenantMode() && !isAuthenticated && !pathname?.startsWith("/auth")) {
-      router.push("/auth");
+    if (isHydrated && isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
+      router.push('/auth');
     }
   }, [isHydrated, isAuthenticated, pathname, router]);
 
@@ -139,10 +139,10 @@ function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode
         if (!cancelled && res.ok && (res as any).data?.authenticated) {
           const userData = (res as any).data.user;
           const token = runtimeEnv.enableDevTicketObserver()
-            ? typeof window !== "undefined"
-              ? localStorage.getItem("of_access_token") || "cookie-auth"
-              : "cookie-auth"
-            : "cookie-auth";
+            ? typeof window !== 'undefined'
+              ? localStorage.getItem('of_access_token') || 'cookie-auth'
+              : 'cookie-auth'
+            : 'cookie-auth';
 
           handleAuthSuccessRef.current(token, userData);
         }

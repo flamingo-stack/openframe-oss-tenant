@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { QueryResultRow } from "@flamingo-stack/openframe-frontend-core";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import type { WebSocketState } from "@/lib/meshcentral/websocket-manager";
-import { WebSocketManager } from "@/lib/meshcentral/websocket-manager";
+import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import type { WebSocketState } from '@/lib/meshcentral/websocket-manager';
+import { WebSocketManager } from '@/lib/meshcentral/websocket-manager';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -24,7 +24,7 @@ export interface CampaignTotals {
 }
 
 interface CampaignMessage {
-  type: "totals" | "result" | "status" | "error";
+  type: 'totals' | 'result' | 'status' | 'error';
   data: any;
 }
 
@@ -40,7 +40,7 @@ export interface UseLiveCampaignReturn {
   hostsResponded: number;
   hostsFailed: number;
   connectionState: WebSocketState;
-  campaignStatus: "" | "pending" | "finished";
+  campaignStatus: '' | 'pending' | 'finished';
 }
 
 const CAMPAIGN_LIMIT = 250_000;
@@ -48,8 +48,8 @@ const CAMPAIGN_LIMIT = 250_000;
 // ── SockJS helpers ─────────────────────────────────────────────────
 
 function buildSockJsUrl(fleetBaseUrl: string): string {
-  const wsBase = fleetBaseUrl.replace(/^http/, "ws");
-  const serverId = String(Math.floor(Math.random() * 999)).padStart(3, "0");
+  const wsBase = fleetBaseUrl.replace(/^http/, 'ws');
+  const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
   const sessionId = Math.random().toString(36).substring(2, 10);
   return `${wsBase}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
 }
@@ -59,7 +59,7 @@ function encodeSockJsMessage(msg: object): string {
 }
 
 function parseSockJsFrame(raw: string): {
-  type: "open" | "data" | "heartbeat" | "close";
+  type: 'open' | 'data' | 'heartbeat' | 'close';
   messages?: CampaignMessage[];
   closeInfo?: [number, string];
 } | null {
@@ -67,28 +67,28 @@ function parseSockJsFrame(raw: string): {
 
   const firstChar = raw[0];
 
-  if (firstChar === "o") {
-    return { type: "open" };
+  if (firstChar === 'o') {
+    return { type: 'open' };
   }
 
-  if (firstChar === "h") {
-    return { type: "heartbeat" };
+  if (firstChar === 'h') {
+    return { type: 'heartbeat' };
   }
 
-  if (firstChar === "a") {
+  if (firstChar === 'a') {
     try {
       const strings = JSON.parse(raw.slice(1)) as string[];
       const messages = strings.map(s => JSON.parse(s) as CampaignMessage);
-      return { type: "data", messages };
+      return { type: 'data', messages };
     } catch {
       return null;
     }
   }
 
-  if (firstChar === "c") {
+  if (firstChar === 'c') {
     try {
       const info = JSON.parse(raw.slice(1)) as [number, string];
-      return { type: "close", closeInfo: info };
+      return { type: 'close', closeInfo: info };
     } catch {
       return null;
     }
@@ -106,11 +106,11 @@ async function getAllHostsLabelId(): Promise<number> {
 
   const res = await fleetApiClient.getLabels();
   if (!res.ok || !res.data?.labels) {
-    throw new Error("Failed to fetch Fleet labels");
+    throw new Error('Failed to fetch Fleet labels');
   }
 
   const allHostsLabel = res.data.labels.find(
-    l => l.label_membership_type === "dynamic" && l.name.toLowerCase().includes("all"),
+    l => l.label_membership_type === 'dynamic' && l.name.toLowerCase().includes('all'),
   );
 
   if (!allHostsLabel) {
@@ -134,8 +134,8 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const [totals, setTotals] = useState<CampaignTotals | null>(null);
   const [hostsResponded, setHostsResponded] = useState(0);
   const [hostsFailed, setHostsFailed] = useState(0);
-  const [connectionState, setConnectionState] = useState<WebSocketState>("disconnected");
-  const [campaignStatus, setCampaignStatus] = useState<"" | "pending" | "finished">("");
+  const [connectionState, setConnectionState] = useState<WebSocketState>('disconnected');
+  const [campaignStatus, setCampaignStatus] = useState<'' | 'pending' | 'finished'>('');
 
   const wsRef = useRef<WebSocketManager | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -171,8 +171,8 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
     cleanup();
     if (isMountedRef.current) {
       setIsRunning(false);
-      setCampaignStatus("finished");
-      setConnectionState("disconnected");
+      setCampaignStatus('finished');
+      setConnectionState('disconnected');
     }
   }, [cleanup]);
 
@@ -181,7 +181,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       if (!isMountedRef.current) return;
 
       switch (msg.type) {
-        case "totals": {
+        case 'totals': {
           setTotals({
             count: msg.data.count,
             online: msg.data.online,
@@ -191,14 +191,14 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
           break;
         }
 
-        case "result": {
+        case 'result': {
           // Check campaign limit
           const count = responseCountRef.current;
           if (count.results + count.errors >= CAMPAIGN_LIMIT) {
             toast({
-              title: "Campaign limit reached",
+              title: 'Campaign limit reached',
               description: `Stopped after ${CAMPAIGN_LIMIT.toLocaleString()} results`,
-              variant: "destructive",
+              variant: 'destructive',
             });
             stopCampaign();
             return;
@@ -208,16 +208,16 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
           if (hasError) {
             const err: CampaignError = {
               host_id: msg.data.host?.id,
-              host_display_name: msg.data.host?.display_name || "Unknown",
-              osquery_version: msg.data.host?.osquery_version || "",
-              error: msg.data.error || "Error details require osquery 4.4.0+",
+              host_display_name: msg.data.host?.display_name || 'Unknown',
+              osquery_version: msg.data.host?.osquery_version || '',
+              error: msg.data.error || 'Error details require osquery 4.4.0+',
             };
             setErrors(prev => [...prev, err]);
             setHostsFailed(prev => prev + 1);
             count.errors++;
           } else {
             const rows: QueryResultRow[] = (msg.data.rows || []).map((row: Record<string, unknown>) => ({
-              host_display_name: msg.data.host?.display_name || "Unknown",
+              host_display_name: msg.data.host?.display_name || 'Unknown',
               ...row,
             }));
             setResults(prev => [...prev, ...rows]);
@@ -227,20 +227,20 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
           break;
         }
 
-        case "status": {
+        case 'status': {
           setCampaignStatus(msg.data.status);
-          if (msg.data.status === "finished") {
+          if (msg.data.status === 'finished') {
             stopCampaign();
           }
           break;
         }
 
-        case "error": {
-          const errorStr = typeof msg.data === "string" ? msg.data : "Unknown campaign error";
+        case 'error': {
+          const errorStr = typeof msg.data === 'string' ? msg.data : 'Unknown campaign error';
           toast({
-            title: "Campaign Error",
+            title: 'Campaign Error',
             description: errorStr,
-            variant: "destructive",
+            variant: 'destructive',
           });
           break;
         }
@@ -252,7 +252,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const startCampaign = useCallback(
     async (sql: string) => {
       if (!sql.trim()) {
-        toast({ title: "Query is required", description: "Enter a query before testing", variant: "destructive" });
+        toast({ title: 'Query is required', description: 'Enter a query before testing', variant: 'destructive' });
         return;
       }
 
@@ -263,8 +263,8 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       setTotals(null);
       setHostsResponded(0);
       setHostsFailed(0);
-      setCampaignStatus("");
-      setConnectionState("disconnected");
+      setCampaignStatus('');
+      setConnectionState('disconnected');
 
       try {
         // 1. Get "All Hosts" label
@@ -278,7 +278,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         });
 
         if (!res.ok || !res.data?.campaign) {
-          throw new Error(res.error || "Failed to create live campaign");
+          throw new Error(res.error || 'Failed to create live campaign');
         }
 
         const campaignId = res.data.campaign.id;
@@ -300,7 +300,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         // 4. Open WebSocket with SockJS framing
         const fleetBaseUrl = fleetApiClient.getBaseUrl();
         const wsUrl = buildSockJsUrl(fleetBaseUrl);
-        const token = localStorage.getItem("of_access_token") || "";
+        const token = localStorage.getItem('of_access_token') || '';
 
         const ws = new WebSocketManager({
           url: wsUrl,
@@ -311,7 +311,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
             if (isMountedRef.current) setConnectionState(state);
           },
           onMessage: event => {
-            const raw = typeof event.data === "string" ? event.data : "";
+            const raw = typeof event.data === 'string' ? event.data : '';
 
             // Deduplication
             if (raw === previousDataRef.current) return;
@@ -321,21 +321,21 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
             if (!frame) return;
 
             switch (frame.type) {
-              case "open": {
+              case 'open': {
                 // SockJS connection established — send auth + subscribe
-                ws.send(encodeSockJsMessage({ type: "auth", data: { token } }));
-                ws.send(encodeSockJsMessage({ type: "select_campaign", data: { campaign_id: campaignId } }));
+                ws.send(encodeSockJsMessage({ type: 'auth', data: { token } }));
+                ws.send(encodeSockJsMessage({ type: 'select_campaign', data: { campaign_id: campaignId } }));
                 break;
               }
-              case "data": {
+              case 'data': {
                 frame.messages?.forEach(msg => handleCampaignMessage(msg));
                 break;
               }
-              case "heartbeat": {
+              case 'heartbeat': {
                 // Ignore
                 break;
               }
-              case "close": {
+              case 'close': {
                 ws.disconnect();
                 break;
               }
@@ -344,16 +344,16 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
           onError: () => {
             if (isMountedRef.current) {
               toast({
-                title: "WebSocket Error",
-                description: "Connection error during live campaign",
-                variant: "destructive",
+                title: 'WebSocket Error',
+                description: 'Connection error during live campaign',
+                variant: 'destructive',
               });
             }
           },
           onClose: () => {
             // Connection closed — if campaign wasn't finished, mark as stopped
             if (isMountedRef.current && campaignIdRef.current === campaignId) {
-              setConnectionState("disconnected");
+              setConnectionState('disconnected');
             }
           },
         });
@@ -364,9 +364,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         cleanup();
         if (isMountedRef.current) {
           setIsRunning(false);
-          setCampaignStatus("finished");
-          const message = error instanceof Error ? error.message : "Failed to start campaign";
-          toast({ title: "Test Failed", description: message, variant: "destructive" });
+          setCampaignStatus('finished');
+          const message = error instanceof Error ? error.message : 'Failed to start campaign';
+          toast({ title: 'Test Failed', description: message, variant: 'destructive' });
         }
       }
     },

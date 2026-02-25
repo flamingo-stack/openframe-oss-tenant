@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Label,
@@ -8,16 +8,16 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@flamingo-stack/openframe-frontend-core";
-import { SelectButton } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { CheckboxBlock, Input, Textarea } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useMdUp } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { SHELL_TYPES } from "@flamingo-stack/openframe-frontend-core/types";
-import { Controller, type UseFormReturn } from "react-hook-form";
+} from '@flamingo-stack/openframe-frontend-core';
+import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { CheckboxBlock, Input, Textarea } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMdUp } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types';
+import { Controller, type UseFormReturn } from 'react-hook-form';
 
-import { CATEGORIES, type EditScriptFormData } from "../../types/edit-script.types";
-import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from "../../utils/script-utils";
-import { ScriptEditor } from "./script-editor";
+import { CATEGORIES, type EditScriptFormData } from '../../types/edit-script.types';
+import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '../../utils/script-utils';
+import { ScriptEditor } from './script-editor';
 
 interface ScriptFormFieldsProps {
   form: UseFormReturn<EditScriptFormData>;
@@ -25,7 +25,7 @@ interface ScriptFormFieldsProps {
 
 export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
   const { control, watch, setValue, getValues } = form;
-  const watchedSupportedPlatforms = watch("supported_platforms");
+  const watchedSupportedPlatforms = watch('supported_platforms');
   const isMdUp = useMdUp();
 
   return (
@@ -43,14 +43,14 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
                 icon={<p.icon className="w-5 h-5" />}
                 selected={!isDisabled && watchedSupportedPlatforms.includes(p.id)}
                 disabled={isDisabled}
-                tag={isDisabled ? (isMdUp ? "Coming Soon" : "Soon") : undefined}
+                tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
                 onClick={
                   isDisabled
                     ? undefined
                     : () => {
-                        const current = getValues("supported_platforms");
+                        const current = getValues('supported_platforms');
                         const has = current.includes(p.id);
-                        setValue("supported_platforms", has ? current.filter(id => id !== p.id) : [...current, p.id], {
+                        setValue('supported_platforms', has ? current.filter(id => id !== p.id) : [...current, p.id], {
                           shouldValidate: true,
                         });
                       }
@@ -205,7 +205,7 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
         render={({ field }) => (
           <div>
             <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Syntax</Label>
-            <ScriptEditor value={field.value} onChange={field.onChange} shell={getValues("shell")} height="600px" />
+            <ScriptEditor value={field.value} onChange={field.onChange} shell={getValues('shell')} height="600px" />
           </div>
         )}
       />

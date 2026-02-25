@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { type HistoricalMessage, processHistoricalMessagesWithErrors } from "@flamingo-stack/openframe-frontend-core";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import type { ApprovalStatus } from "../../tickets/constants";
-import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from "../../tickets/constants";
-import { GET_DIALOG_MESSAGES_QUERY, GET_MINGO_DIALOG_QUERY } from "../queries/dialogs-queries";
-import { useApproveRequestMutation, useRejectRequestMutation } from "../services/mingo-api-service";
-import { useMingoMessagesStore } from "../stores/mingo-messages-store";
-import type { DialogResponse, MessagePage, MessagesResponse } from "../types";
+import { type HistoricalMessage, processHistoricalMessagesWithErrors } from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import type { ApprovalStatus } from '../../tickets/constants';
+import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../../tickets/constants';
+import { GET_DIALOG_MESSAGES_QUERY, GET_MINGO_DIALOG_QUERY } from '../queries/dialogs-queries';
+import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
+import { useMingoMessagesStore } from '../stores/mingo-messages-store';
+import type { DialogResponse, MessagePage, MessagesResponse } from '../types';
 
 export function useMingoDialogSelection() {
   const { toast } = useToast();
@@ -43,9 +43,9 @@ export function useMingoDialogSelection() {
         updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED);
       } catch (error) {
         toast({
-          title: "Approval Failed",
-          description: error instanceof Error ? error.message : "Unable to approve request",
-          variant: "destructive",
+          title: 'Approval Failed',
+          description: error instanceof Error ? error.message : 'Unable to approve request',
+          variant: 'destructive',
           duration: 5000,
         });
       }
@@ -66,9 +66,9 @@ export function useMingoDialogSelection() {
         updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED);
       } catch (error) {
         toast({
-          title: "Rejection Failed",
-          description: error instanceof Error ? error.message : "Unable to reject request",
-          variant: "destructive",
+          title: 'Rejection Failed',
+          description: error instanceof Error ? error.message : 'Unable to reject request',
+          variant: 'destructive',
           duration: 5000,
         });
       }
@@ -82,17 +82,17 @@ export function useMingoDialogSelection() {
   handleRejectRef.current = handleReject;
 
   const dialogQuery = useQuery({
-    queryKey: ["mingo-dialog", activeDialogId],
+    queryKey: ['mingo-dialog', activeDialogId],
     queryFn: async () => {
       if (!activeDialogId) return null;
 
-      const response = await apiClient.post<DialogResponse>("/chat/graphql", {
+      const response = await apiClient.post<DialogResponse>('/chat/graphql', {
         query: GET_MINGO_DIALOG_QUERY,
         variables: { id: activeDialogId },
       });
 
       if (!response.ok || !response.data?.data?.dialog) {
-        throw new Error(response.error || "Failed to fetch dialog");
+        throw new Error(response.error || 'Failed to fetch dialog');
       }
 
       return response.data.data.dialog;
@@ -102,11 +102,11 @@ export function useMingoDialogSelection() {
   });
 
   const messagesQuery = useInfiniteQuery({
-    queryKey: ["mingo-dialog-messages", activeDialogId],
+    queryKey: ['mingo-dialog-messages', activeDialogId],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
       if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
 
-      const response = await apiClient.post<MessagesResponse>("/chat/graphql", {
+      const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
         query: GET_DIALOG_MESSAGES_QUERY,
         variables: {
           dialogId: activeDialogId,
@@ -116,7 +116,7 @@ export function useMingoDialogSelection() {
       });
 
       if (!response.ok || !response.data?.data?.messages) {
-        throw new Error(response.error || "Failed to fetch messages");
+        throw new Error(response.error || 'Failed to fetch messages');
       }
 
       const { edges, pageInfo } = response.data.data.messages;

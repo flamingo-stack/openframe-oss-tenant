@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AlertDialog,
@@ -10,10 +10,10 @@ import {
   Button,
   Input,
   Label,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useState } from "react";
-import { authApiClient } from "@/lib/auth-api-client";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useState } from 'react';
+import { authApiClient } from '@/lib/auth-api-client';
 
 interface ForgotPasswordModalProps {
   open: boolean;
@@ -21,7 +21,7 @@ interface ForgotPasswordModalProps {
   defaultEmail?: string;
 }
 
-export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = "" }: ForgotPasswordModalProps) {
+export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: ForgotPasswordModalProps) {
   const { toast } = useToast();
   const [email, setEmail] = useState(defaultEmail);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,9 +29,9 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = "" }: F
   const handleSubmit = async () => {
     if (!email.trim()) {
       toast({
-        title: "Email Required",
-        description: "Please enter your email address.",
-        variant: "destructive",
+        title: 'Email Required',
+        description: 'Please enter your email address.',
+        variant: 'destructive',
       });
       return;
     }
@@ -42,22 +42,22 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = "" }: F
 
       if (response.ok) {
         toast({
-          title: "Reset Link Sent",
+          title: 'Reset Link Sent',
           description: `A password reset link has been sent to ${email.trim()}. Please check your inbox.`,
-          variant: "success",
+          variant: 'success',
           duration: 5000,
         });
         onOpenChange(false);
-        setEmail("");
+        setEmail('');
       } else {
-        throw new Error(response.error || "Failed to send reset link");
+        throw new Error(response.error || 'Failed to send reset link');
       }
     } catch (error) {
-      console.error("Password reset error:", error);
+      console.error('Password reset error:', error);
       toast({
-        title: "Reset Failed",
-        description: error instanceof Error ? error.message : "Unable to send password reset link. Please try again.",
-        variant: "destructive",
+        title: 'Reset Failed',
+        description: error instanceof Error ? error.message : 'Unable to send password reset link. Please try again.',
+        variant: 'destructive',
       });
     } finally {
       setIsSubmitting(false);
@@ -98,7 +98,7 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = "" }: F
             disabled={isSubmitting}
             className="mt-2 bg-ods-card border-ods-border text-ods-text-primary font-body text-[16px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
             onKeyDown={e => {
-              if (e.key === "Enter" && !isSubmitting) {
+              if (e.key === 'Enter' && !isSubmitting) {
                 handleSubmit();
               }
             }}

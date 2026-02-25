@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { OrganizationIcon } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { PlusCircleIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { ListPageLayout, Table, type TableColumn } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import {
   useApiParams,
   useCursorPaginationState,
   useTablePagination,
-} from "@flamingo-stack/openframe-frontend-core/hooks";
-import { formatRelativeTime } from "@flamingo-stack/openframe-frontend-core/utils";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef } from "react";
-import { featureFlags } from "@/lib/feature-flags";
-import { getFullImageUrl } from "@/lib/image-url";
-import { useOrganizations } from "../hooks/use-organizations";
+} from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useOrganizations } from '../hooks/use-organizations';
 
 interface UiOrganizationEntry {
   id: string;
@@ -52,8 +52,8 @@ export function OrganizationsTable() {
 
   // Extra URL params for filters (not search/cursor which are handled by pagination hook)
   const { params: filterParams, setParams: setFilterParams } = useApiParams({
-    tier: { type: "array", default: [] },
-    industry: { type: "array", default: [] },
+    tier: { type: 'array', default: [] },
+    industry: { type: 'array', default: [] },
   });
 
   const prevFiltersKeyRef = useRef<string | null>(null);
@@ -103,10 +103,10 @@ export function OrganizationsTable() {
   } = useCursorPaginationState({
     onInitialLoad: (search, cursor) => {
       if (cursor) {
-        fetchOrganizations(search || "", cursor, backendFilters);
+        fetchOrganizations(search || '', cursor, backendFilters);
         setHasLoadedBeyondFirst(true);
       } else {
-        fetchOrganizations(search || "", null, backendFilters);
+        fetchOrganizations(search || '', null, backendFilters);
       }
       markInitialLoadDone();
     },
@@ -149,15 +149,15 @@ export function OrganizationsTable() {
   const columns: TableColumn<UiOrganizationEntry>[] = useMemo(
     () => [
       {
-        key: "name",
-        label: "Name",
-        width: "w-2/5",
+        key: 'name',
+        label: 'Name',
+        width: 'w-2/5',
         renderCell: org => <OrganizationNameCell org={org} />,
       },
       {
-        key: "tier",
-        label: "Tier",
-        width: "w-1/6",
+        key: 'tier',
+        label: 'Tier',
+        width: 'w-1/6',
         renderCell: org => (
           <div className="flex flex-col justify-center shrink-0">
             <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
@@ -170,9 +170,9 @@ export function OrganizationsTable() {
         ),
       },
       {
-        key: "mrrDisplay",
-        label: "MRR",
-        width: "w-1/6",
+        key: 'mrrDisplay',
+        label: 'MRR',
+        width: 'w-1/6',
         renderCell: org => (
           <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
             {org.mrrDisplay}
@@ -180,12 +180,12 @@ export function OrganizationsTable() {
         ),
       },
       {
-        key: "lastActivityDisplay",
-        label: "Last Activity",
-        width: "w-[200px]",
-        hideAt: "md",
+        key: 'lastActivityDisplay',
+        label: 'Last Activity',
+        width: 'w-[200px]',
+        hideAt: 'md',
         renderCell: org => {
-          const [first, second] = org.lastActivityDisplay.split("\n");
+          const [first, second] = org.lastActivityDisplay.split('\n');
           return (
             <div className="flex flex-col justify-center shrink-0">
               <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
@@ -223,7 +223,7 @@ export function OrganizationsTable() {
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
       // Reset cursor and update filter params
-      setPaginationParams({ cursor: "" });
+      setPaginationParams({ cursor: '' });
       setFilterParams({
         tier: columnFilters.tier || [],
         industry: columnFilters.industry || [],
@@ -246,13 +246,13 @@ export function OrganizationsTable() {
   const cursorPagination = useTablePagination(
     pageInfo
       ? {
-          type: "server",
+          type: 'server',
           hasNextPage: pageInfo.hasNextPage,
           hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
           startCursor: pageInfo.startCursor ?? undefined,
           endCursor: pageInfo.endCursor ?? undefined,
           itemCount: organizations.length,
-          itemName: "organizations",
+          itemName: 'organizations',
           onNext,
           onReset,
           showInfo: true,
@@ -261,7 +261,7 @@ export function OrganizationsTable() {
   );
 
   const handleAddOrganization = useCallback(() => {
-    router.push("/organizations/edit/new");
+    router.push('/organizations/edit/new');
   }, [router]);
 
   // Convert URL params to table filters format
@@ -276,7 +276,7 @@ export function OrganizationsTable() {
   const actions = useMemo(
     () => [
       {
-        label: "Add Organization",
+        label: 'Add Organization',
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddOrganization,
       },

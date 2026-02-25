@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { EditProfileIcon, GoogleLogo, MicrosoftIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
-import { SearchIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import { EditProfileIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Card,
   CheckboxWithDescription,
@@ -13,14 +13,14 @@ import {
   Table,
   type TableColumn,
   Tag,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { featureFlags } from "@/lib/feature-flags";
-import { type AvailableProvider, type ProviderConfig, useSsoConfig } from "../../hooks/use-sso-config";
-import { type TenantDomainInfo, useTenantDomain } from "../../hooks/use-tenant-domain";
-import { getProviderIcon } from "../../utils/get-provider-icon";
-import { SsoConfigModal } from "../edit-sso-config-modal";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
+import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
+import { getProviderIcon } from '../../utils/get-provider-icon';
+import { SsoConfigModal } from '../edit-sso-config-modal';
 
 // Feature flag: enabled by default, can disable with env var
 const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
@@ -29,7 +29,7 @@ type UiProviderRow = {
   id: string;
   provider: string;
   displayName: string;
-  status: { label: string; variant: "success" | "grey" };
+  status: { label: string; variant: 'success' | 'grey' };
   hasConfig: boolean;
   allowedDomains: string[];
   autoProvisionUsers: boolean;
@@ -37,7 +37,7 @@ type UiProviderRow = {
 };
 
 export function SsoConfigurationTab() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [providers, setProviders] = useState<UiProviderRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +80,8 @@ export function SsoConfigurationTab() {
           provider: p.provider,
           displayName: p.displayName,
           status: {
-            label: isEnabled ? "ACTIVE" : "INACTIVE",
-            variant: isEnabled ? "success" : "grey",
+            label: isEnabled ? 'ACTIVE' : 'INACTIVE',
+            variant: isEnabled ? 'success' : 'grey',
           },
           hasConfig: Boolean(cfg?.clientId || cfg?.clientSecret),
           allowedDomains: cfg?.allowedDomains || [],
@@ -92,7 +92,7 @@ export function SsoConfigurationTab() {
 
       setProviders(rows);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load SSO providers");
+      setError(err instanceof Error ? err.message : 'Failed to load SSO providers');
     } finally {
       setIsLoading(false);
     }
@@ -105,7 +105,7 @@ export function SsoConfigurationTab() {
       const domainInfo = await fetchTenantDomain();
       setTenantDomain(domainInfo);
     } catch (err) {
-      console.error("Failed to load tenant domain:", err);
+      console.error('Failed to load tenant domain:', err);
       // Don't set error state - shared SSO section will just not show
       setTenantDomain(null);
     } finally {
@@ -124,9 +124,9 @@ export function SsoConfigurationTab() {
 
         if (result.error) {
           toast({
-            title: "Auto Provision Failed",
+            title: 'Auto Provision Failed',
             description: result.error.message,
-            variant: "destructive",
+            variant: 'destructive',
             duration: 5000,
           });
           return;
@@ -136,18 +136,18 @@ export function SsoConfigurationTab() {
         setTenantDomain(prev => (prev ? { ...prev, autoAllow: enabled } : null));
 
         toast({
-          title: enabled ? "Auto Provision Enabled" : "Auto Provision Disabled",
+          title: enabled ? 'Auto Provision Enabled' : 'Auto Provision Disabled',
           description: enabled
             ? `Users from ${tenantDomain.domain} can now sign in via shared Google and Microsoft SSO.`
-            : "Auto provision for shared SSO providers has been disabled.",
-          variant: "success",
+            : 'Auto provision for shared SSO providers has been disabled.',
+          variant: 'success',
           duration: 4000,
         });
       } catch (err) {
         toast({
-          title: "Update Failed",
-          description: err instanceof Error ? err.message : "Failed to update auto provision setting",
-          variant: "destructive",
+          title: 'Update Failed',
+          description: err instanceof Error ? err.message : 'Failed to update auto provision setting',
+          variant: 'destructive',
           duration: 5000,
         });
       } finally {
@@ -165,9 +165,9 @@ export function SsoConfigurationTab() {
   const columns: TableColumn<UiProviderRow>[] = useMemo(() => {
     const baseColumns: TableColumn<UiProviderRow>[] = [
       {
-        key: "provider",
-        label: "OAUTH PROVIDER",
-        width: "flex-[2] min-w-0",
+        key: 'provider',
+        label: 'OAUTH PROVIDER',
+        width: 'flex-[2] min-w-0',
         renderCell: row => (
           <div className="flex items-center gap-3">
             {getProviderIcon(row.provider)}
@@ -183,9 +183,9 @@ export function SsoConfigurationTab() {
         ),
       },
       {
-        key: "status",
-        label: "STATUS",
-        width: "flex-1 min-w-0",
+        key: 'status',
+        label: 'STATUS',
+        width: 'flex-1 min-w-0',
         renderCell: row => (
           <div className="w-fit">
             <Tag label={row.status.label} variant={row.status.variant} />
@@ -197,24 +197,24 @@ export function SsoConfigurationTab() {
     // Only add allowed domains column if feature is enabled
     if (isDomainAllowlistEnabled) {
       baseColumns.push({
-        key: "allowedDomains",
-        label: "ALLOWED DOMAINS",
-        width: "flex-[1.5] min-w-0",
+        key: 'allowedDomains',
+        label: 'ALLOWED DOMAINS',
+        width: 'flex-[1.5] min-w-0',
         renderCell: row => (
           <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
-            {row.allowedDomains.length > 0 ? row.allowedDomains.join(", ") : "None"}
+            {row.allowedDomains.length > 0 ? row.allowedDomains.join(', ') : 'None'}
           </span>
         ),
       });
     }
 
     baseColumns.push({
-      key: "hasConfig",
-      label: "CONFIGURATION",
-      width: "flex-1 min-w-0",
+      key: 'hasConfig',
+      label: 'CONFIGURATION',
+      width: 'flex-1 min-w-0',
       renderCell: row => (
         <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary">
-          {row.hasConfig ? "Configured" : "Not configured"}
+          {row.hasConfig ? 'Configured' : 'Not configured'}
         </span>
       ),
     });
@@ -231,14 +231,14 @@ export function SsoConfigurationTab() {
   const rowActions: RowAction<UiProviderRow>[] = useMemo(
     () => [
       {
-        label: "Edit",
+        label: 'Edit',
         icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
         onClick: row => {
           setModalState({
             open: true,
             providerKey: row.provider,
             displayName: row.displayName,
-            isEnabled: row.status.label === "ACTIVE",
+            isEnabled: row.status.label === 'ACTIVE',
             clientId: row.original?.config?.clientId,
             clientSecret: row.original?.config?.clientSecret,
             msTenantId: row.original?.config?.msTenantId,
@@ -246,7 +246,7 @@ export function SsoConfigurationTab() {
             allowedDomains: row.allowedDomains,
           });
         },
-        variant: "outline",
+        variant: 'outline',
       },
     ],
     [],
@@ -312,7 +312,7 @@ export function SsoConfigurationTab() {
                 description={
                   tenantDomain.generic
                     ? `Generic domains like ${tenantDomain.domain} cannot be used for auto-provisioning.`
-                    : "Automatically create user accounts when signing in via shared Google or Microsoft SSO."
+                    : 'Automatically create user accounts when signing in via shared Google or Microsoft SSO.'
                 }
                 className="w-full md:w-[400px] md:shrink-0"
               />
@@ -334,8 +334,8 @@ export function SsoConfigurationTab() {
       <SsoConfigModal
         isOpen={Boolean(modalState?.open)}
         onClose={() => setModalState(null)}
-        providerKey={modalState?.providerKey || ""}
-        providerDisplayName={modalState?.displayName || ""}
+        providerKey={modalState?.providerKey || ''}
+        providerDisplayName={modalState?.displayName || ''}
         isEnabled={modalState?.isEnabled}
         initialClientId={modalState?.clientId}
         initialClientSecret={modalState?.clientSecret}

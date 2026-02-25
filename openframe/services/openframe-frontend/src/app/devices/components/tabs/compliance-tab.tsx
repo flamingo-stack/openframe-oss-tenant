@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   InfoCard,
@@ -6,9 +6,9 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@flamingo-stack/openframe-frontend-core";
-import { Info as InfoIcon } from "lucide-react";
-import React from "react";
+} from '@flamingo-stack/openframe-frontend-core';
+import { Info as InfoIcon } from 'lucide-react';
+import React from 'react';
 
 interface ComplianceTabProps {
   device: any;
@@ -31,9 +31,9 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
 
   // Format schedule days
   const formatScheduleDays = (days: number[]) => {
-    if (!days || days.length === 0) return "Not set";
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    return days.map(d => dayNames[d]).join(", ");
+    if (!days || days.length === 0) return 'Not set';
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return days.map(d => dayNames[d]).join(', ');
   };
 
   return (
@@ -48,7 +48,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: "Patch Status",
+                title: 'Patch Status',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -64,18 +64,18 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                 ),
                 items: [
                   {
-                    label: "Last Installed",
+                    label: 'Last Installed',
                     value: device.patches_last_installed
                       ? new Date(device.patches_last_installed).toLocaleDateString()
-                      : "Never",
+                      : 'Never',
                   },
                   {
-                    label: "Pending Patches",
-                    value: device.has_patches_pending ? "Yes" : "No",
+                    label: 'Pending Patches',
+                    value: device.has_patches_pending ? 'Yes' : 'No',
                   },
                   {
-                    label: "Status",
-                    value: device.has_patches_pending ? "Pending" : "Up to Date",
+                    label: 'Status',
+                    value: device.has_patches_pending ? 'Pending' : 'Up to Date',
                   },
                 ],
               }}
@@ -93,7 +93,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <InfoCard
                 data={{
-                  title: "Update Severity Policies",
+                  title: 'Update Severity Policies',
                   icon: (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -108,18 +108,18 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                     </Tooltip>
                   ),
                   items: [
-                    { label: "Critical", value: winupdatepolicy.critical || "inherit" },
-                    { label: "Important", value: winupdatepolicy.important || "inherit" },
-                    { label: "Moderate", value: winupdatepolicy.moderate || "inherit" },
-                    { label: "Low", value: winupdatepolicy.low || "inherit" },
-                    { label: "Other", value: winupdatepolicy.other || "inherit" },
+                    { label: 'Critical', value: winupdatepolicy.critical || 'inherit' },
+                    { label: 'Important', value: winupdatepolicy.important || 'inherit' },
+                    { label: 'Moderate', value: winupdatepolicy.moderate || 'inherit' },
+                    { label: 'Low', value: winupdatepolicy.low || 'inherit' },
+                    { label: 'Other', value: winupdatepolicy.other || 'inherit' },
                   ],
                 }}
               />
 
               <InfoCard
                 data={{
-                  title: "Update Schedule",
+                  title: 'Update Schedule',
                   icon: (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -135,25 +135,25 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                   ),
                   items: [
                     {
-                      label: "Schedule Days",
+                      label: 'Schedule Days',
                       value: formatScheduleDays(winupdatepolicy.run_time_days),
                     },
                     {
-                      label: "Run Time",
+                      label: 'Run Time',
                       value:
-                        winupdatepolicy.run_time_hour !== undefined ? `${winupdatepolicy.run_time_hour}:00` : "Not set",
+                        winupdatepolicy.run_time_hour !== undefined ? `${winupdatepolicy.run_time_hour}:00` : 'Not set',
                     },
                     {
-                      label: "Frequency",
-                      value: winupdatepolicy.run_time_frequency || "inherit",
+                      label: 'Frequency',
+                      value: winupdatepolicy.run_time_frequency || 'inherit',
                     },
                     {
-                      label: "Reboot After Install",
-                      value: winupdatepolicy.reboot_after_install || "inherit",
+                      label: 'Reboot After Install',
+                      value: winupdatepolicy.reboot_after_install || 'inherit',
                     },
                     {
-                      label: "Email on Failure",
-                      value: winupdatepolicy.email_if_fail ? "Yes" : "No",
+                      label: 'Email on Failure',
+                      value: winupdatepolicy.email_if_fail ? 'Yes' : 'No',
                     },
                   ],
                 }}
@@ -171,7 +171,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: "Applied Policies",
+                title: 'Applied Policies',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -186,17 +186,17 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                   </Tooltip>
                 ),
                 items: [
-                  { label: "Agent Policy", value: appliedPolicies.agent_policy || "None" },
-                  { label: "Site Policy", value: appliedPolicies.site_policy || "None" },
-                  { label: "Client Policy", value: appliedPolicies.client_policy || "None" },
-                  { label: "Default Policy", value: appliedPolicies.default_policy || "None" },
+                  { label: 'Agent Policy', value: appliedPolicies.agent_policy || 'None' },
+                  { label: 'Site Policy', value: appliedPolicies.site_policy || 'None' },
+                  { label: 'Client Policy', value: appliedPolicies.client_policy || 'None' },
+                  { label: 'Default Policy', value: appliedPolicies.default_policy || 'None' },
                 ],
               }}
             />
 
             <InfoCard
               data={{
-                title: "Policy Configuration",
+                title: 'Policy Configuration',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -212,8 +212,8 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                 ),
                 items: [
                   {
-                    label: "Policy Inheritance",
-                    value: device.block_policy_inheritance ? "Blocked" : "Enabled",
+                    label: 'Policy Inheritance',
+                    value: device.block_policy_inheritance ? 'Blocked' : 'Enabled',
                   },
                 ],
               }}
@@ -230,8 +230,8 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <InfoCard
               data={{
-                title: "Total Checks",
-                subtitle: checks.total?.toString() || "0",
+                title: 'Total Checks',
+                subtitle: checks.total?.toString() || '0',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -246,10 +246,10 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                   </Tooltip>
                 ),
                 items: [
-                  { label: "Passing", value: checks.passing?.toString() || "0" },
-                  { label: "Failing", value: checks.failing?.toString() || "0" },
-                  { label: "Warnings", value: checks.warning?.toString() || "0" },
-                  { label: "Info", value: checks.info?.toString() || "0" },
+                  { label: 'Passing', value: checks.passing?.toString() || '0' },
+                  { label: 'Failing', value: checks.failing?.toString() || '0' },
+                  { label: 'Warnings', value: checks.warning?.toString() || '0' },
+                  { label: 'Info', value: checks.info?.toString() || '0' },
                 ],
               }}
             />
@@ -266,7 +266,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <InfoCard
                 data={{
-                  title: "Fleet Policy Status",
+                  title: 'Fleet Policy Status',
                   icon: (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -282,12 +282,12 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                   ),
                   items: [
                     {
-                      label: "Failing Policies",
-                      value: issues.failing_policies_count?.toString() || "0",
+                      label: 'Failing Policies',
+                      value: issues.failing_policies_count?.toString() || '0',
                     },
                     {
-                      label: "Total Issues",
-                      value: issues.total_issues_count?.toString() || "0",
+                      label: 'Total Issues',
+                      value: issues.total_issues_count?.toString() || '0',
                     },
                   ],
                 }}

@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { tacticalApiClient } from "@/lib/tactical-api-client";
+import { useQuery } from '@tanstack/react-query';
+import { tacticalApiClient } from '@/lib/tactical-api-client';
 import type {
   ScriptScheduleAgent,
   ScriptScheduleDetail,
   ScriptScheduleHistoryResponse,
   ScriptScheduleListItem,
-} from "../types/script-schedule.types";
+} from '../types/script-schedule.types';
 
 // ============ Query Keys ============
 
 export const scriptScheduleQueryKeys = {
-  all: ["script-schedules"] as const,
-  list: () => [...scriptScheduleQueryKeys.all, "list"] as const,
-  detail: (id: string) => [...scriptScheduleQueryKeys.all, "detail", id] as const,
-  agents: (id: string) => [...scriptScheduleQueryKeys.all, "agents", id] as const,
+  all: ['script-schedules'] as const,
+  list: () => [...scriptScheduleQueryKeys.all, 'list'] as const,
+  detail: (id: string) => [...scriptScheduleQueryKeys.all, 'detail', id] as const,
+  agents: (id: string) => [...scriptScheduleQueryKeys.all, 'agents', id] as const,
   history: (id: string, limit: number, offset: number) =>
-    [...scriptScheduleQueryKeys.all, "history", id, limit, offset] as const,
+    [...scriptScheduleQueryKeys.all, 'history', id, limit, offset] as const,
 };
 
 // ============ API Functions ============

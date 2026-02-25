@@ -8,17 +8,17 @@ import {
   PowerShellIcon,
   RemoteControlIcon,
   ShellIcon,
-} from "@flamingo-stack/openframe-frontend-core/components/icons";
-import { Folder } from "lucide-react";
-import React from "react";
-import type { Device } from "../types/device.types";
-import { type DeviceActionAvailability, getDeviceActionAvailability } from "./device-action-utils";
+} from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Folder } from 'lucide-react';
+import React from 'react';
+import type { Device } from '../types/device.types';
+import { type DeviceActionAvailability, getDeviceActionAvailability } from './device-action-utils';
 
 /**
  * Shell submenu item configuration
  */
 export interface ShellSubmenuItem {
-  id: "cmd" | "powershell" | "bash";
+  id: 'cmd' | 'powershell' | 'bash';
   label: string;
   icon: React.ReactNode;
 }
@@ -34,7 +34,7 @@ export interface DeviceActionButtonConfig {
   href: string;
   showExternalLinkOnHover: boolean;
   // For Windows Remote Shell - has submenu
-  type: "button" | "submenu";
+  type: 'button' | 'submenu';
   submenu?: ShellSubmenuItem[];
 }
 
@@ -54,13 +54,13 @@ export interface DeviceActionButtons {
 export function getWindowsShellSubmenu(): ShellSubmenuItem[] {
   return [
     {
-      id: "cmd",
-      label: "CMD",
+      id: 'cmd',
+      label: 'CMD',
       icon: <CmdIcon className="w-6 h-6" />,
     },
     {
-      id: "powershell",
-      label: "PowerShell",
+      id: 'powershell',
+      label: 'PowerShell',
       icon: <PowerShellIcon className="w-6 h-6" />,
     },
   ];
@@ -69,7 +69,7 @@ export function getWindowsShellSubmenu(): ShellSubmenuItem[] {
 /**
  * Get shell submenu href for a given shell type
  */
-export function getShellHref(deviceId: string, shellType: "cmd" | "powershell" | "bash"): string {
+export function getShellHref(deviceId: string, shellType: 'cmd' | 'powershell' | 'bash'): string {
   return `/devices/details/${deviceId}/remote-shell?shellType=${shellType}`;
 }
 
@@ -82,44 +82,44 @@ export function getDeviceActionButtons(device: Device, deviceId: string, isWindo
 
   return {
     remoteControl: {
-      id: "remote-control",
-      label: "Remote Control",
+      id: 'remote-control',
+      label: 'Remote Control',
       icon: <RemoteControlIcon className="w-6 h-6" />,
       disabled: !availability.remoteControlEnabled,
       href: `/devices/details/${deviceId}/remote-desktop`,
       showExternalLinkOnHover: true,
-      type: "button",
+      type: 'button',
     },
 
     remoteShell: isWindows
       ? {
-          id: "remote-shell",
-          label: "Remote Shell",
+          id: 'remote-shell',
+          label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           disabled: !availability.remoteShellEnabled,
           href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
           showExternalLinkOnHover: true,
-          type: "submenu",
+          type: 'submenu',
           submenu: getWindowsShellSubmenu(),
         }
       : {
-          id: "remote-shell",
-          label: "Remote Shell",
+          id: 'remote-shell',
+          label: 'Remote Shell',
           icon: <ShellIcon className="w-6 h-6" />,
           disabled: !availability.remoteShellEnabled,
           href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
           showExternalLinkOnHover: true,
-          type: "button",
+          type: 'button',
         },
 
     manageFiles: {
-      id: "manage-files",
-      label: "Manage Files",
+      id: 'manage-files',
+      label: 'Manage Files',
       icon: <Folder className="w-6 h-6" />,
       disabled: !availability.manageFilesEnabled,
       href: `/devices/details/${deviceId}/file-manager`,
       showExternalLinkOnHover: true,
-      type: "button",
+      type: 'button',
     },
 
     availability,
@@ -135,15 +135,15 @@ export function toActionsMenuItem(
   deviceId: string,
   handlers?: {
     onClick?: () => void;
-    onShellSelect?: (type: "cmd" | "powershell" | "bash") => void;
+    onShellSelect?: (type: 'cmd' | 'powershell' | 'bash') => void;
   },
 ) {
-  if (config.type === "submenu" && config.submenu) {
+  if (config.type === 'submenu' && config.submenu) {
     return {
       id: config.id,
       label: config.label,
       icon: config.icon,
-      type: "submenu" as const,
+      type: 'submenu' as const,
       disabled: config.disabled,
       submenu: config.submenu.map(item => ({
         id: item.id,

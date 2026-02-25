@@ -1,21 +1,21 @@
-import { type DeviceType, getDeviceTypeIcon } from "@flamingo-stack/openframe-frontend-core";
-import { OrganizationIcon, OSTypeBadge } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { type TableColumn, Tag } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import type React from "react";
-import { featureFlags } from "@/lib/feature-flags";
-import { deduplicateFilterOptions } from "@/lib/filter-utils";
-import { getFullImageUrl } from "@/lib/image-url";
-import { DEFAULT_VISIBLE_STATUSES } from "../constants/device-statuses";
-import type { Device } from "../types/device.types";
-import { getDeviceStatusConfig } from "../utils/device-status";
-import { DeviceActionsDropdown } from "./device-actions-dropdown";
+import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
+import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type React from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { deduplicateFilterOptions } from '@/lib/filter-utils';
+import { getFullImageUrl } from '@/lib/image-url';
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
+import type { Device } from '../types/device.types';
+import { getDeviceStatusConfig } from '../utils/device-status';
+import { DeviceActionsDropdown } from './device-actions-dropdown';
 
 // Returns render function for custom actions area (three dots menu only)
 export function getDeviceTableRowActions(onRefresh?: () => void): (device: Device) => React.ReactNode {
   const DeviceRowActions = (device: Device) => (
     <DeviceActionsDropdown device={device} context="table" onActionComplete={onRefresh} />
   );
-  DeviceRowActions.displayName = "DeviceRowActions";
+  DeviceRowActions.displayName = 'DeviceRowActions';
   return DeviceRowActions;
 }
 
@@ -25,11 +25,11 @@ function OrganizationCell({ device }: { device: Device }) {
   return (
     <div className="flex items-center gap-3">
       {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || "Organization"} size="sm" />
+        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Organization'} size="sm" />
       )}
       <div className="flex flex-col justify-center flex-1 min-w-0">
         <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
-          {device.organization || ""}
+          {device.organization || ''}
         </span>
       </div>
     </div>
@@ -39,15 +39,15 @@ function OrganizationCell({ device }: { device: Device }) {
 export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
   return [
     {
-      key: "device",
-      label: "DEVICE",
-      width: "flex-1 md:w-1/3",
+      key: 'device',
+      label: 'DEVICE',
+      width: 'flex-1 md:w-1/3',
       renderCell: device => (
         <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
           <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
             {device.type &&
               getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
-                className: "w-5 h-5 text-ods-text-secondary",
+                className: 'w-5 h-5 text-ods-text-secondary',
               })}
           </div>
           <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
@@ -59,9 +59,9 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       ),
     },
     {
-      key: "status",
-      label: "STATUS",
-      width: "w-[100px] md:w-1/6",
+      key: 'status',
+      label: 'STATUS',
+      width: 'w-[100px] md:w-1/6',
       filterable: true,
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || [];
@@ -70,7 +70,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
           (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value),
         );
         // ARCHIVED shown separately below a divider, DELETED is completely hidden
-        const archivedStatus = statuses.find((s: any) => s.value === "ARCHIVED");
+        const archivedStatus = statuses.find((s: any) => s.value === 'ARCHIVED');
 
         const options: any[] = normalStatuses.map((status: any) => ({
           id: status.value,
@@ -81,10 +81,10 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
         // Add separator and archived if exists in data
         if (archivedStatus) {
           options.push({
-            id: "separator-archived",
-            label: "",
-            value: "",
-            type: "separator",
+            id: 'separator-archived',
+            label: '',
+            value: '',
+            type: 'separator',
           });
           options.push({
             id: archivedStatus.value,
@@ -104,19 +104,19 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
             </div>
             <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">
               {device.last_seen
-                ? `${new Date(device.last_seen).toLocaleDateString()} ${new Date(device.last_seen).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-                : "Never"}
+                ? `${new Date(device.last_seen).toLocaleDateString()} ${new Date(device.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                : 'Never'}
             </span>
           </div>
         );
       },
     },
     {
-      key: "os",
-      label: "OS",
-      width: "w-[120px] md:w-1/6",
+      key: 'os',
+      label: 'OS',
+      width: 'w-[120px] md:w-1/6',
       filterable: true,
-      hideAt: "sm",
+      hideAt: 'sm',
       filterOptions:
         deviceFilters?.osTypes?.map((os: any) => ({
           id: os.value,
@@ -130,10 +130,10 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       ),
     },
     {
-      key: "organization",
-      label: "ORGANIZATION",
-      width: "w-1/6",
-      hideAt: "lg",
+      key: 'organization',
+      label: 'ORGANIZATION',
+      width: 'w-1/6',
+      hideAt: 'lg',
       filterable: true,
       filterOptions: deduplicateFilterOptions(
         deviceFilters?.organizationIds?.map((org: any) => ({

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { handleApiError } from "@/lib/handle-api-error";
-import type { Query } from "../types/queries.types";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { handleApiError } from '@/lib/handle-api-error';
+import type { Query } from '../types/queries.types';
 
 // ============ Types ============
 
@@ -35,9 +35,9 @@ interface UpdateQueryData {
 // ============ Query Keys ============
 
 export const queriesQueryKeys = {
-  all: ["queries"] as const,
-  list: (params?: ListQueriesParams) => [...queriesQueryKeys.all, "list", params] as const,
-  detail: (id: number) => [...queriesQueryKeys.all, "detail", id] as const,
+  all: ['queries'] as const,
+  list: (params?: ListQueriesParams) => [...queriesQueryKeys.all, 'list', params] as const,
+  detail: (id: number) => [...queriesQueryKeys.all, 'detail', id] as const,
 };
 
 // ============ API Functions ============
@@ -97,14 +97,14 @@ export function useQueries(params?: ListQueriesParams) {
     createQueryMutation.mutate(data, {
       onSuccess: query => {
         toast({
-          title: "Query Created",
+          title: 'Query Created',
           description: `Query "${data.name}" created successfully`,
-          variant: "success",
+          variant: 'success',
         });
         options?.onSuccess?.(query);
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to create query");
+        handleApiError(error, toast, 'Failed to create query');
         options?.onError?.(error as Error);
       },
     });
@@ -131,14 +131,14 @@ export function useQueries(params?: ListQueriesParams) {
       {
         onSuccess: query => {
           toast({
-            title: "Query Updated",
-            description: "Query updated successfully",
-            variant: "success",
+            title: 'Query Updated',
+            description: 'Query updated successfully',
+            variant: 'success',
           });
           options?.onSuccess?.(query);
         },
         onError: error => {
-          handleApiError(error, toast, "Failed to update query");
+          handleApiError(error, toast, 'Failed to update query');
           options?.onError?.(error as Error);
         },
       },

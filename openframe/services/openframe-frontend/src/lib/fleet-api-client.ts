@@ -3,11 +3,11 @@
  * Extends the base API client with Fleet-specific functionality
  */
 
-import { FleetHost, FleetHostResponse } from "../app/devices/types/fleet.types";
-import { Policy } from "../app/monitoring/types/policies.types";
-import { Query, QueryReportParams, QueryReportResponse } from "../app/monitoring/types/queries.types";
-import { type ApiRequestOptions, type ApiResponse, apiClient } from "./api-client";
-import { runtimeEnv } from "./runtime-config";
+import { FleetHost, FleetHostResponse } from '../app/devices/types/fleet.types';
+import { Policy } from '../app/monitoring/types/policies.types';
+import { Query, QueryReportParams, QueryReportResponse } from '../app/monitoring/types/queries.types';
+import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
+import { runtimeEnv } from './runtime-config';
 
 export interface FleetLabel {
   id: number;
@@ -34,16 +34,16 @@ class FleetApiClient {
 
   constructor() {
     // Build base from tenant host when provided; otherwise relative via apiClient
-    const tenantHost = runtimeEnv.tenantHostUrl() || "";
+    const tenantHost = runtimeEnv.tenantHostUrl() || '';
     this.baseUrl = `${tenantHost}/tools/fleetmdm-server`;
   }
 
   private buildFleetUrl(path: string): string {
-    if (path.startsWith("http://") || path.startsWith("https://")) {
+    if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
 
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
     return `${this.baseUrl}${cleanPath}`;
   }
 
@@ -54,13 +54,13 @@ class FleetApiClient {
   }
 
   async get<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: "GET" });
+    return this.request<T>(path, { ...options, method: 'GET' });
   }
 
   async post<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "POST",
+      method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -68,7 +68,7 @@ class FleetApiClient {
   async put<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "PUT",
+      method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -76,24 +76,24 @@ class FleetApiClient {
   async patch<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "PATCH",
+      method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
   async delete<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: "DELETE" });
+    return this.request<T>(path, { ...options, method: 'DELETE' });
   }
 
   // Fleet specific methods - Policies
 
   async getPolicies(params?: { team_id?: number; query?: string }): Promise<ApiResponse<{ policies: Policy[] }>> {
     const queryParams = new URLSearchParams();
-    if (params?.team_id) queryParams.append("team_id", params.team_id.toString());
-    if (params?.query) queryParams.append("query", params.query);
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params?.query) queryParams.append('query', params.query);
 
     const queryString = queryParams.toString();
-    const path = queryString ? `/api/latest/fleet/policies?${queryString}` : "/api/latest/fleet/policies";
+    const path = queryString ? `/api/latest/fleet/policies?${queryString}` : '/api/latest/fleet/policies';
 
     return this.get(path);
   }
@@ -112,7 +112,7 @@ class FleetApiClient {
     critical?: boolean;
     calendar_events_enabled?: boolean;
   }): Promise<ApiResponse<{ policy: Policy }>> {
-    return this.post("/api/latest/fleet/policies", policyData);
+    return this.post('/api/latest/fleet/policies', policyData);
   }
 
   async updatePolicy(
@@ -145,20 +145,20 @@ class FleetApiClient {
     team_id?: number;
     query?: string;
     order_key?: string;
-    order_direction?: "asc" | "desc";
+    order_direction?: 'asc' | 'desc';
     per_page?: number;
     page?: number;
   }): Promise<ApiResponse<{ queries: Query[] }>> {
     const queryParams = new URLSearchParams();
-    if (params?.team_id) queryParams.append("team_id", params.team_id.toString());
-    if (params?.query) queryParams.append("query", params.query);
-    if (params?.order_key) queryParams.append("order_key", params.order_key);
-    if (params?.order_direction) queryParams.append("order_direction", params.order_direction);
-    if (params?.per_page) queryParams.append("per_page", params.per_page.toString());
-    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params?.query) queryParams.append('query', params.query);
+    if (params?.order_key) queryParams.append('order_key', params.order_key);
+    if (params?.order_direction) queryParams.append('order_direction', params.order_direction);
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
 
     const queryString = queryParams.toString();
-    const path = queryString ? `/api/latest/fleet/queries?${queryString}` : "/api/latest/fleet/queries";
+    const path = queryString ? `/api/latest/fleet/queries?${queryString}` : '/api/latest/fleet/queries';
 
     return this.get(path);
   }
@@ -180,7 +180,7 @@ class FleetApiClient {
     logging?: string;
     discard_data?: boolean;
   }): Promise<ApiResponse<Query>> {
-    return this.post("/api/latest/fleet/queries", queryData);
+    return this.post('/api/latest/fleet/queries', queryData);
   }
 
   async updateQuery(
@@ -228,13 +228,13 @@ class FleetApiClient {
   }): Promise<
     ApiResponse<{ campaign: { id: number; query_id: number; created_at: string; updated_at: string; user_id: number } }>
   > {
-    return this.post("/api/latest/fleet/queries/run", params);
+    return this.post('/api/latest/fleet/queries/run', params);
   }
 
   async getQueryReport(queryId: number, params?: QueryReportParams): Promise<ApiResponse<QueryReportResponse>> {
     const queryParams = new URLSearchParams();
-    if (params?.order_key) queryParams.append("order_key", params.order_key);
-    if (params?.order_direction) queryParams.append("order_direction", params.order_direction);
+    if (params?.order_key) queryParams.append('order_key', params.order_key);
+    if (params?.order_direction) queryParams.append('order_direction', params.order_direction);
     const queryString = queryParams.toString();
     const path = queryString
       ? `/api/latest/fleet/queries/${queryId}/report?${queryString}`
@@ -249,25 +249,25 @@ class FleetApiClient {
     query?: string;
     status?: string;
     order_key?: string;
-    order_direction?: "asc" | "desc";
+    order_direction?: 'asc' | 'desc';
     per_page?: number;
     page?: number;
     disable_failing_policies?: boolean;
   }): Promise<ApiResponse<{ hosts: Host[] }>> {
     const queryParams = new URLSearchParams();
-    if (params?.team_id) queryParams.append("team_id", params.team_id.toString());
-    if (params?.query) queryParams.append("query", params.query);
-    if (params?.status) queryParams.append("status", params.status);
-    if (params?.order_key) queryParams.append("order_key", params.order_key);
-    if (params?.order_direction) queryParams.append("order_direction", params.order_direction);
-    if (params?.per_page) queryParams.append("per_page", params.per_page.toString());
-    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params?.query) queryParams.append('query', params.query);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.order_key) queryParams.append('order_key', params.order_key);
+    if (params?.order_direction) queryParams.append('order_direction', params.order_direction);
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.disable_failing_policies !== undefined) {
-      queryParams.append("disable_failing_policies", params.disable_failing_policies.toString());
+      queryParams.append('disable_failing_policies', params.disable_failing_policies.toString());
     }
 
     const queryString = queryParams.toString();
-    const path = queryString ? `/api/latest/fleet/hosts?${queryString}` : "/api/latest/fleet/hosts";
+    const path = queryString ? `/api/latest/fleet/hosts?${queryString}` : '/api/latest/fleet/hosts';
 
     return this.get(path);
   }
@@ -287,7 +287,7 @@ class FleetApiClient {
   // Fleet specific methods - Teams
 
   async getTeams(): Promise<ApiResponse<any[]>> {
-    return this.get("/api/latest/fleet/teams");
+    return this.get('/api/latest/fleet/teams');
   }
 
   async getTeam(teamId: number): Promise<ApiResponse<any>> {
@@ -297,7 +297,7 @@ class FleetApiClient {
   // Fleet specific methods - Labels
 
   async getLabels(): Promise<ApiResponse<{ labels: FleetLabel[] }>> {
-    return this.get("/api/latest/fleet/labels");
+    return this.get('/api/latest/fleet/labels');
   }
 
   async getLabel(labelId: number): Promise<ApiResponse<{ label: FleetLabel }>> {
@@ -305,7 +305,7 @@ class FleetApiClient {
   }
 
   async createLabel(data: { name: string; description: string }): Promise<ApiResponse<{ label: FleetLabel }>> {
-    return this.post("/api/latest/fleet/labels", data);
+    return this.post('/api/latest/fleet/labels', data);
   }
 
   async deleteLabel(id: number): Promise<ApiResponse<void>> {
@@ -315,7 +315,7 @@ class FleetApiClient {
   // Fleet specific methods - Packs
 
   async getPacks(): Promise<ApiResponse<any[]>> {
-    return this.get("/api/latest/fleet/packs");
+    return this.get('/api/latest/fleet/packs');
   }
 
   async getPack(packId: number): Promise<ApiResponse<any>> {

@@ -1,10 +1,10 @@
-import { useCallback, useState } from "react";
-import { runtimeEnv } from "./runtime-config";
+import { useCallback, useState } from 'react';
+import { runtimeEnv } from './runtime-config';
 
 /**
  * Upload a file with authentication (cookies + optional auth headers)
  */
-export async function uploadWithAuth(endpoint: string, file: File, fieldName: string = "file"): Promise<string> {
+export async function uploadWithAuth(endpoint: string, file: File, fieldName: string = 'file'): Promise<string> {
   const formData = new FormData();
   formData.append(fieldName, file);
 
@@ -12,7 +12,7 @@ export async function uploadWithAuth(endpoint: string, file: File, fieldName: st
 
   if (runtimeEnv.enableDevTicketObserver()) {
     try {
-      const accessToken = localStorage.getItem("of_access_token");
+      const accessToken = localStorage.getItem('of_access_token');
       if (accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -21,21 +21,21 @@ export async function uploadWithAuth(endpoint: string, file: File, fieldName: st
     }
   }
 
-  const url = endpoint.startsWith("http")
+  const url = endpoint.startsWith('http')
     ? endpoint
-    : endpoint.startsWith("/api")
+    : endpoint.startsWith('/api')
       ? `${runtimeEnv.tenantHostUrl()}${endpoint}`
       : `${runtimeEnv.tenantHostUrl()}/api${endpoint}`;
 
   const response = await fetch(url, {
-    method: "POST",
+    method: 'POST',
     body: formData,
-    credentials: "include",
+    credentials: 'include',
     headers,
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
+    const errorText = await response.text().catch(() => '');
     throw new Error(`Upload failed (${response.status}): ${errorText || response.statusText}`);
   }
 
@@ -50,7 +50,7 @@ export async function uploadWithAuth(endpoint: string, file: File, fieldName: st
     (data.image && data.image.imageUrl);
 
   if (!uploadedUrl) {
-    throw new Error("No URL returned in upload response");
+    throw new Error('No URL returned in upload response');
   }
 
   return uploadedUrl;
@@ -61,12 +61,12 @@ export async function uploadWithAuth(endpoint: string, file: File, fieldName: st
  */
 export async function deleteWithAuth(endpoint: string): Promise<void> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   };
 
   if (runtimeEnv.enableDevTicketObserver()) {
     try {
-      const accessToken = localStorage.getItem("of_access_token");
+      const accessToken = localStorage.getItem('of_access_token');
       if (accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -75,20 +75,20 @@ export async function deleteWithAuth(endpoint: string): Promise<void> {
     }
   }
 
-  const url = endpoint.startsWith("http")
+  const url = endpoint.startsWith('http')
     ? endpoint
-    : endpoint.startsWith("/api")
+    : endpoint.startsWith('/api')
       ? `${runtimeEnv.tenantHostUrl()}${endpoint}`
       : `${runtimeEnv.tenantHostUrl()}/api${endpoint}`;
 
   const response = await fetch(url, {
-    method: "DELETE",
-    credentials: "include",
+    method: 'DELETE',
+    credentials: 'include',
     headers,
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
+    const errorText = await response.text().catch(() => '');
     throw new Error(`Delete failed (${response.status}): ${errorText || response.statusText}`);
   }
 }
@@ -109,7 +109,7 @@ export function useAuthenticatedUpload() {
       const url = await uploadWithAuth(endpoint, file, fieldName);
       return url;
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : 'Upload failed';
       setError(message);
       return null;
     } finally {

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   CHAT_TYPE,
@@ -8,9 +8,9 @@ import {
   type NatsMessageType,
   type UseChunkCatchupReturn,
   useChunkCatchup as useChunkCatchupCore,
-} from "@flamingo-stack/openframe-frontend-core";
-import { useCallback, useMemo } from "react";
-import { apiClient } from "@/lib/api-client";
+} from '@flamingo-stack/openframe-frontend-core';
+import { useCallback, useMemo } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn };
 

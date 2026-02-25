@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { AuthLoginSection } from "@/app/auth/components/login-section";
-import { useAuth } from "@/app/auth/hooks/use-auth";
-import { AuthLayout } from "@/app/auth/layouts";
-import { useAuthStore } from "@/app/auth/stores/auth-store";
-import { isAuthOnlyMode } from "@/lib/app-mode";
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { AuthLoginSection } from '@/app/auth/components/login-section';
+import { useAuth } from '@/app/auth/hooks/use-auth';
+import { AuthLayout } from '@/app/auth/layouts';
+import { useAuthStore } from '@/app/auth/stores/auth-store';
+import { isAuthOnlyMode } from '@/lib/app-mode';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && !isAuthOnlyMode()) {
-      router.push("/dashboard");
+      router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
@@ -35,7 +35,7 @@ export default function LoginPage() {
     if (email && !discoveryAttempted && !isLoading) {
       discoverTenants(email);
     } else if (!email && !isLoading) {
-      router.push("/auth");
+      router.push('/auth');
     }
   }, [email, discoveryAttempted, isLoading, isInitialized, discoverTenants, router]);
 
@@ -44,7 +44,7 @@ export default function LoginPage() {
   };
 
   const handleBack = () => {
-    router.push("/auth/");
+    router.push('/auth/');
   };
 
   return (

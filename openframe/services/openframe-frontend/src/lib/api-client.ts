@@ -4,10 +4,10 @@
  */
 
 // Constants for localStorage keys (matching use-token-storage.ts)
-const ACCESS_TOKEN_KEY = "of_access_token";
-const REFRESH_TOKEN_KEY = "of_refresh_token";
+const ACCESS_TOKEN_KEY = 'of_access_token';
+const REFRESH_TOKEN_KEY = 'of_refresh_token';
 
-interface ApiRequestOptions extends Omit<RequestInit, "headers"> {
+interface ApiRequestOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>;
   skipAuth?: boolean;
 }
@@ -19,9 +19,9 @@ interface ApiResponse<T = any> {
   ok: boolean;
 }
 
-import { authApiClient } from "./auth-api-client";
-import { forceLogout } from "./force-logout";
-import { runtimeEnv } from "./runtime-config";
+import { authApiClient } from './auth-api-client';
+import { forceLogout } from './force-logout';
+import { runtimeEnv } from './runtime-config';
 
 class ApiClient {
   private isDevTicketEnabled: boolean;
@@ -47,7 +47,7 @@ class ApiClient {
           headers.Authorization = `Bearer ${accessToken}`;
         }
       } catch (error) {
-        console.error("[API Client] Failed to get access token:", error);
+        console.error('[API Client] Failed to get access token:', error);
       }
     }
 
@@ -59,11 +59,11 @@ class ApiClient {
    */
   private buildUrl(path: string): string {
     // Absolute URLs pass through
-    if (path.startsWith("http://") || path.startsWith("https://")) return path;
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
 
     const tenantHost = runtimeEnv.tenantHostUrl();
 
-    const cleanPath = path.startsWith("/") ? path : `/${path}`;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
     if (tenantHost) return `${tenantHost}${cleanPath}`;
 
     // Default: use relative path (no host)
@@ -85,14 +85,14 @@ class ApiClient {
     this.refreshPromise = (async () => {
       try {
         // Get tenant ID from auth store with robust fallbacks
-        const { useAuthStore } = await import("../app/auth/stores/auth-store");
+        const { useAuthStore } = await import('../app/auth/stores/auth-store');
         const authState = useAuthStore.getState();
         const storeTenantId = authState.tenantId;
         const userTenantId = (authState.user as any)?.organizationId || (authState.user as any)?.tenantId;
         const tenantId = storeTenantId || userTenantId;
 
         if (!tenantId) {
-          console.warn("[API Client] No tenant ID found for refresh; attempting refresh without tenantId");
+          console.warn('[API Client] No tenant ID found for refresh; attempting refresh without tenantId');
         }
 
         const responseRaw = await authApiClient.refresh(tenantId);
@@ -152,7 +152,7 @@ class ApiClient {
    */
   private async forceLogout(): Promise<void> {
     await forceLogout({
-      reason: "API Client - Authentication failure",
+      reason: 'API Client - Authentication failure',
     });
   }
 
@@ -168,8 +168,8 @@ class ApiClient {
 
     // Build headers
     const requestHeaders: Record<string, string> = {
-      Accept: "application/json",
-      "Content-Type": "application/json",
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
       ...headers, // Custom headers from caller
     };
 
@@ -185,20 +185,20 @@ class ApiClient {
       const response = await fetch(url, {
         ...fetchOptions,
         headers: requestHeaders,
-        credentials: "include", // Always include cookies for cookie-based auth
+        credentials: 'include', // Always include cookies for cookie-based auth
       });
 
       // Handle 401 Unauthorized - attempt token refresh ONLY ONCE
       if (response.status === 401 && !skipAuth && !isRetry) {
         // Check if on auth page - skip refresh/logout to prevent loops
-        const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-        const isAuthPage = currentPath.startsWith("/auth");
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+        const isAuthPage = currentPath.startsWith('/auth');
 
         if (isAuthPage) {
           // Just return the 401 without forcing logout
           return {
             data: undefined,
-            error: "Unauthorized",
+            error: 'Unauthorized',
             status: 401,
             ok: false,
           };
@@ -229,7 +229,7 @@ class ApiClient {
           await this.forceLogout();
 
           return {
-            error: "Authentication failed - please login again",
+            error: 'Authentication failed - please login again',
             status: 401,
             ok: false,
           };
@@ -238,13 +238,13 @@ class ApiClient {
 
       // Parse response
       let data: T | undefined;
-      const contentType = response.headers.get("content-type");
+      const contentType = response.headers.get('content-type');
 
-      if (contentType?.includes("application/json")) {
+      if (contentType?.includes('application/json')) {
         try {
           data = await response.json();
         } catch (error) {
-          console.error("[API Client] Failed to parse JSON response:", error);
+          console.error('[API Client] Failed to parse JSON response:', error);
         }
       }
 
@@ -263,9 +263,9 @@ class ApiClient {
       };
     } catch (error) {
       // Aborted requests should never trigger auth refresh or logout
-      if (error instanceof DOMException && error.name === "AbortError") {
+      if (error instanceof DOMException && error.name === 'AbortError') {
         return {
-          error: "Request aborted",
+          error: 'Request aborted',
           status: 0,
           ok: false,
         };
@@ -275,8 +275,8 @@ class ApiClient {
       // This can happen in localhost deployments where fetch fails completely on 401
       if (!skipAuth && !isRetry) {
         // Check if on auth page - skip refresh/logout to prevent loops
-        const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
-        const isAuthPage = currentPath.startsWith("/auth");
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+        const isAuthPage = currentPath.startsWith('/auth');
 
         if (!isAuthPage) {
           if (this.isRefreshing) {
@@ -304,7 +304,7 @@ class ApiClient {
             await this.forceLogout();
 
             return {
-              error: "Authentication failed - please login again",
+              error: 'Authentication failed - please login again',
               status: 401,
               ok: false,
             };
@@ -313,7 +313,7 @@ class ApiClient {
       }
 
       return {
-        error: error instanceof Error ? error.message : "Network error",
+        error: error instanceof Error ? error.message : 'Network error',
         status: 0,
         ok: false,
       };
@@ -324,13 +324,13 @@ class ApiClient {
    * Convenience methods for common HTTP methods
    */
   async get<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: "GET" });
+    return this.request<T>(path, { ...options, method: 'GET' });
   }
 
   async post<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "POST",
+      method: 'POST',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -338,7 +338,7 @@ class ApiClient {
   async put<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "PUT",
+      method: 'PUT',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
@@ -346,13 +346,13 @@ class ApiClient {
   async patch<T = any>(path: string, body?: any, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
     return this.request<T>(path, {
       ...options,
-      method: "PATCH",
+      method: 'PATCH',
       body: body ? JSON.stringify(body) : undefined,
     });
   }
 
   async delete<T = any>(path: string, options?: ApiRequestOptions): Promise<ApiResponse<T>> {
-    return this.request<T>(path, { ...options, method: "DELETE" });
+    return this.request<T>(path, { ...options, method: 'DELETE' });
   }
 
   /**
@@ -363,7 +363,7 @@ class ApiClient {
   }
 
   me<T = any>() {
-    return this.request<T>("/api/me");
+    return this.request<T>('/api/me');
   }
 }
 

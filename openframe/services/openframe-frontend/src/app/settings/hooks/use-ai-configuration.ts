@@ -1,10 +1,10 @@
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useState } from "react";
-import { apiClient } from "@/lib/api-client";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 interface AiConfiguration {
   id: string;
-  provider: "OPENAI" | "ANTHROPIC" | "GOOGLE_GEMINI";
+  provider: 'OPENAI' | 'ANTHROPIC' | 'GOOGLE_GEMINI';
   modelName: string;
   isActive: boolean;
   hasApiKey: boolean;
@@ -15,14 +15,14 @@ interface AiConfiguration {
 interface ModelInfo {
   modelName: string;
   displayName: string;
-  provider: "OPENAI" | "ANTHROPIC" | "GOOGLE_GEMINI";
+  provider: 'OPENAI' | 'ANTHROPIC' | 'GOOGLE_GEMINI';
   contextWindow: number;
 }
 
 interface SupportedModels {
   anthropic?: ModelInfo[];
   openai?: ModelInfo[];
-  "google-gemini"?: ModelInfo[];
+  'google-gemini'?: ModelInfo[];
 }
 
 interface UpdateAiConfigurationParams {
@@ -40,10 +40,10 @@ export function useAiConfiguration() {
 
   const fetchConfiguration = useCallback(async () => {
     try {
-      const response = await apiClient.get<AiConfiguration>("/chat/api/v1/ai-configuration");
+      const response = await apiClient.get<AiConfiguration>('/chat/api/v1/ai-configuration');
 
       if (!response.ok) {
-        throw new Error(response.error || "Failed to fetch AI configuration");
+        throw new Error(response.error || 'Failed to fetch AI configuration');
       }
 
       if (response.data) {
@@ -52,9 +52,9 @@ export function useAiConfiguration() {
       }
     } catch (error) {
       toast({
-        title: "Failed to Load Configuration",
-        description: error instanceof Error ? error.message : "Unable to load AI settings",
-        variant: "destructive",
+        title: 'Failed to Load Configuration',
+        description: error instanceof Error ? error.message : 'Unable to load AI settings',
+        variant: 'destructive',
         duration: 5000,
       });
       throw error;
@@ -65,10 +65,10 @@ export function useAiConfiguration() {
 
   const fetchSupportedModels = useCallback(async () => {
     try {
-      const response = await apiClient.get<SupportedModels>("/chat/api/v1/ai-configuration/supported-models");
+      const response = await apiClient.get<SupportedModels>('/chat/api/v1/ai-configuration/supported-models');
 
       if (!response.ok) {
-        throw new Error(response.error || "Failed to fetch supported models");
+        throw new Error(response.error || 'Failed to fetch supported models');
       }
 
       if (response.data) {
@@ -77,9 +77,9 @@ export function useAiConfiguration() {
       }
     } catch (error) {
       toast({
-        title: "Failed to Load Models",
-        description: "Unable to fetch supported AI models",
-        variant: "destructive",
+        title: 'Failed to Load Models',
+        description: 'Unable to fetch supported AI models',
+        variant: 'destructive',
         duration: 5000,
       });
       throw error;
@@ -100,16 +100,16 @@ export function useAiConfiguration() {
           body.apiKey = params.apiKey;
         }
 
-        const response = await apiClient.post<AiConfiguration>("/chat/api/v1/ai-configuration", body);
+        const response = await apiClient.post<AiConfiguration>('/chat/api/v1/ai-configuration', body);
 
         if (!response.ok) {
-          throw new Error(response.error || "Failed to save AI configuration");
+          throw new Error(response.error || 'Failed to save AI configuration');
         }
 
         toast({
-          title: "Settings Saved",
-          description: "AI configuration updated successfully",
-          variant: "success",
+          title: 'Settings Saved',
+          description: 'AI configuration updated successfully',
+          variant: 'success',
           duration: 4000,
         });
 
@@ -117,9 +117,9 @@ export function useAiConfiguration() {
         return updatedConfig;
       } catch (error) {
         toast({
-          title: "Save Failed",
-          description: error instanceof Error ? error.message : "Unable to save AI settings",
-          variant: "destructive",
+          title: 'Save Failed',
+          description: error instanceof Error ? error.message : 'Unable to save AI settings',
+          variant: 'destructive',
           duration: 5000,
         });
         throw error;

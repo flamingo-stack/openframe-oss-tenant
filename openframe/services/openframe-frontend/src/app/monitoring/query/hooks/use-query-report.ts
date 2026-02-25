@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import type { QueryResultRow } from "@flamingo-stack/openframe-frontend-core";
-import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { queriesQueryKeys } from "../../hooks/use-queries";
-import type { QueryReportResponse } from "../../types/queries.types";
+import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { queriesQueryKeys } from '../../hooks/use-queries';
+import type { QueryReportResponse } from '../../types/queries.types';
 
 async function fetchQueryReport(queryId: number): Promise<QueryReportResponse> {
   const res = await fleetApiClient.getQueryReport(queryId);
@@ -15,7 +15,7 @@ async function fetchQueryReport(queryId: number): Promise<QueryReportResponse> {
   return res.data;
 }
 
-function flattenResults(results: QueryReportResponse["results"]): QueryResultRow[] {
+function flattenResults(results: QueryReportResponse['results']): QueryResultRow[] {
   return results.map(result => ({
     host_name: result.host_name,
     last_fetched: result.last_fetched,
@@ -25,7 +25,7 @@ function flattenResults(results: QueryReportResponse["results"]): QueryResultRow
 
 export function useQueryReport(queryId: number | null) {
   const query = useQuery({
-    queryKey: [...queriesQueryKeys.detail(queryId!), "report"],
+    queryKey: [...queriesQueryKeys.detail(queryId!), 'report'],
     queryFn: () => fetchQueryReport(queryId!),
     enabled: queryId !== null,
   });

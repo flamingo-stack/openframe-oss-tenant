@@ -108,7 +108,7 @@
       "semicolons": "always",
       "arrowParentheses": "asNeeded",
       "bracketSameLine": false,
-      "quoteStyle": "double",
+      "quoteStyle": "single",
       "attributePosition": "auto",
       "bracketSpacing": true
     }

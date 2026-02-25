@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../../../lib/api-client";
-import { handleApiError } from "../../../lib/handle-api-error";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
+import { handleApiError } from '../../../lib/handle-api-error';
 
 // ============ Types ============
 
 export enum InvitationStatus {
-  Pending = "PENDING",
-  Expired = "EXPIRED",
+  Pending = 'PENDING',
+  Expired = 'EXPIRED',
 }
 
 export type InvitationRecord = {
@@ -34,8 +34,8 @@ export type PagedInvitationsResponse = {
 // ============ Query Keys ============
 
 export const invitationsQueryKeys = {
-  all: ["invitations"] as const,
-  list: (page: number, size: number) => [...invitationsQueryKeys.all, "list", { page, size }] as const,
+  all: ['invitations'] as const,
+  list: (page: number, size: number) => [...invitationsQueryKeys.all, 'list', { page, size }] as const,
 };
 
 // ============ API Functions ============
@@ -67,12 +67,12 @@ async function inviteUsersApi(emails: string[]): Promise<void> {
   if (trimmed.length === 0) return;
 
   const results = await Promise.all(
-    trimmed.map(async email => ({ email, res: await apiClient.post("api/invitations", { email }) })),
+    trimmed.map(async email => ({ email, res: await apiClient.post('api/invitations', { email }) })),
   );
 
   const errors = results.filter(r => !r.res.ok).map(r => r.email);
   if (errors.length) {
-    throw new Error(`Failed to invite: ${errors.join(", ")}`);
+    throw new Error(`Failed to invite: ${errors.join(', ')}`);
   }
 }
 
@@ -108,7 +108,7 @@ export function useInvitations(page: number = 0, size: number = 20) {
         options?.onSuccess?.();
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to revoke invitation");
+        handleApiError(error, toast, 'Failed to revoke invitation');
         options?.onError?.(error as Error);
       },
     });
@@ -127,7 +127,7 @@ export function useInvitations(page: number = 0, size: number = 20) {
         options?.onSuccess?.();
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to resend invitation");
+        handleApiError(error, toast, 'Failed to resend invitation');
         options?.onError?.(error as Error);
       },
     });

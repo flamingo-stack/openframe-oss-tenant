@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { AuthProvidersList } from "@flamingo-stack/openframe-frontend-core/components/features";
-import { Button, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { ArrowLeft, Building, Cloud, Lock, Mail, User } from "lucide-react";
-import { useState } from "react";
-import { useDeployment } from "@/app/hooks/use-deployment";
+import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ArrowLeft, Building, Cloud, Lock, Mail, User } from 'lucide-react';
+import { useState } from 'react';
+import { useDeployment } from '@/app/hooks/use-deployment';
 
 interface TenantInfo {
   tenantName: string;
@@ -32,29 +32,29 @@ interface AuthLoginSectionProps {
  * Modern login section with SSO providers and email/password option
  */
 export function AuthLoginSection({ availableProviders, onSso, onBack, isLoading }: AuthLoginSectionProps) {
-  const [loginMethod, setLoginMethod] = useState<"sso" | "email">("sso");
+  const [loginMethod, setLoginMethod] = useState<'sso' | 'email'>('sso');
 
   // Separate OpenFrame SSO from standard providers
-  const hasOpenFrameSso = availableProviders.includes("openframe-sso");
-  const standardProviders = availableProviders.filter(provider => provider !== "openframe-sso");
+  const hasOpenFrameSso = availableProviders.includes('openframe-sso');
+  const standardProviders = availableProviders.filter(provider => provider !== 'openframe-sso');
 
   const enabledProviders: SsoProvider[] = standardProviders.map(provider => ({
     provider: provider,
     enabled: true,
     displayName:
-      provider === "google"
-        ? "Google"
-        : provider === "microsoft"
-          ? "Microsoft"
-          : provider === "slack"
-            ? "Slack"
-            : provider === "github"
-              ? "GitHub"
+      provider === 'google'
+        ? 'Google'
+        : provider === 'microsoft'
+          ? 'Microsoft'
+          : provider === 'slack'
+            ? 'Slack'
+            : provider === 'github'
+              ? 'GitHub'
               : provider.charAt(0).toUpperCase() + provider.slice(1),
   }));
 
   const handleSsoClick = async (provider: string) => {
-    setLoginMethod("sso");
+    setLoginMethod('sso');
     await onSso(provider);
   };
 
@@ -80,9 +80,9 @@ export function AuthLoginSection({ availableProviders, onSso, onBack, isLoading 
                 {hasOpenFrameSso && (
                   <>
                     <Button
-                      onClick={() => handleSsoClick("openframe-sso")}
+                      onClick={() => handleSsoClick('openframe-sso')}
                       disabled={isLoading}
-                      loading={isLoading && loginMethod === "sso"}
+                      loading={isLoading && loginMethod === 'sso'}
                       variant="primary"
                       className="sm:!w-full"
                     >
@@ -116,7 +116,7 @@ export function AuthLoginSection({ availableProviders, onSso, onBack, isLoading 
                         enabled: p.enabled,
                       }))}
                       onProviderClick={provider => handleSsoClick(provider)}
-                      loading={isLoading && loginMethod === "sso"}
+                      loading={isLoading && loginMethod === 'sso'}
                       orientation="vertical"
                       showDivider={false}
                     />

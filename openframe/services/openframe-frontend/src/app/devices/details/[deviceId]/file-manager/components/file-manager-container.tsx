@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { Button, DetailPageContainer, Progress } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import type { FileAction, FileItem } from "@flamingo-stack/openframe-frontend-core/components/ui/file-manager";
-import { FileManager, FileManagerSkeleton } from "@flamingo-stack/openframe-frontend-core/components/ui/file-manager";
-import { useRouter } from "next/navigation";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useMeshFileManager } from "../../../../hooks/use-mesh-file-manager";
-import { DeleteConfirmationModal } from "./delete-confirmation-modal";
-import { NewFolderModal } from "./new-folder-modal";
-import { RenameItemModal } from "./rename-item-modal";
+import { Button, DetailPageContainer, Progress } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type { FileAction, FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
+import { FileManager, FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
+import { useRouter } from 'next/navigation';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useMeshFileManager } from '../../../../hooks/use-mesh-file-manager';
+import { DeleteConfirmationModal } from './delete-confirmation-modal';
+import { NewFolderModal } from './new-folder-modal';
+import { RenameItemModal } from './rename-item-modal';
 
 interface FileManagerContainerProps {
   deviceId: string;
@@ -20,7 +20,7 @@ interface FileManagerContainerProps {
 export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }: FileManagerContainerProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
   const {
     files,
@@ -57,18 +57,18 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
   });
 
   const [isNewFolderModalOpen, setIsNewFolderModalOpen] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
+  const [newFolderName, setNewFolderName] = useState('');
   const [isNewFolderSubmitting, setIsNewFolderSubmitting] = useState(false);
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [renameContext, setRenameContext] = useState<{ oldName: string } | null>(null);
-  const [renameValue, setRenameValue] = useState("");
+  const [renameValue, setRenameValue] = useState('');
   const [isRenameSubmitting, setIsRenameSubmitting] = useState(false);
 
   const [deleteContext, setDeleteContext] = useState<{ fileIds: string[] } | null>(null);
 
   const showFileManagerSkeleton =
-    connectionState === "disconnected" || (connectionState === "connecting" && files.length === 0);
+    connectionState === 'disconnected' || (connectionState === 'connecting' && files.length === 0);
   const handleBackToDevice = useCallback(() => {
     router.push(`/devices/details/${deviceId}`);
   }, [router, deviceId]);
@@ -76,7 +76,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
   const handleNavigate = useCallback(
     (path: string) => {
       navigateToPath(path);
-      setSearchQuery("");
+      setSearchQuery('');
     },
     [navigateToPath],
   );
@@ -84,7 +84,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
   const handleBreadcrumbClick = useCallback(
     (path: string) => {
       navigateToPath(path);
-      setSearchQuery("");
+      setSearchQuery('');
     },
     [navigateToPath],
   );
@@ -120,9 +120,9 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
 
   const handleFolderOpen = useCallback(
     (file: FileItem) => {
-      if (file.type === "folder") {
+      if (file.type === 'folder') {
         navigateInto(file.name);
-        setSearchQuery("");
+        setSearchQuery('');
       }
     },
     [navigateInto],
@@ -133,10 +133,10 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
       if (file.path) {
         const pathParts = file.path.split(/[/\\]/);
         pathParts.pop();
-        const directoryPath = pathParts.join(file.path.includes("\\") ? "\\" : "/");
+        const directoryPath = pathParts.join(file.path.includes('\\') ? '\\' : '/');
 
-        navigateToPath(directoryPath || "/");
-        setSearchQuery("");
+        navigateToPath(directoryPath || '/');
+        setSearchQuery('');
       }
     },
     [navigateToPath],
@@ -144,23 +144,23 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
 
   const handleFileAction = useCallback(
     async (action: FileAction, fileId?: string) => {
-      if (action === "upload") {
+      if (action === 'upload') {
         fileInputRef.current?.click();
-      } else if (action === "download" && fileId) {
-        const fileName = fileId.split("/").pop() || fileId;
+      } else if (action === 'download' && fileId) {
+        const fileName = fileId.split('/').pop() || fileId;
         downloadFile(fileName);
-      } else if (action === "rename" && fileId) {
-        const fileName = fileId.split("/").pop() || "";
+      } else if (action === 'rename' && fileId) {
+        const fileName = fileId.split('/').pop() || '';
         setRenameContext({ oldName: fileName });
         setRenameValue(fileName);
         setIsRenameModalOpen(true);
-      } else if (action === "delete") {
+      } else if (action === 'delete') {
         const targetFiles = fileId ? [fileId] : selectedFiles;
         if (targetFiles.length > 0) {
           setDeleteContext({ fileIds: targetFiles });
         }
-      } else if (action === "new-folder") {
-        setNewFolderName("");
+      } else if (action === 'new-folder') {
+        setNewFolderName('');
         setIsNewFolderModalOpen(true);
       } else {
         await handleAction(action, fileId);
@@ -175,7 +175,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
       if (file) {
         await uploadFile(file);
         if (fileInputRef.current) {
-          fileInputRef.current.value = "";
+          fileInputRef.current.value = '';
         }
       }
     },
@@ -188,27 +188,27 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
         return;
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.key === "c" && selectedFiles.length > 0) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'c' && selectedFiles.length > 0) {
         event.preventDefault();
         copyToClipboard();
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.key === "x" && selectedFiles.length > 0) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'x' && selectedFiles.length > 0) {
         event.preventDefault();
         cutFiles();
       }
 
-      if ((event.ctrlKey || event.metaKey) && event.key === "v" && clipboard) {
+      if ((event.ctrlKey || event.metaKey) && event.key === 'v' && clipboard) {
         event.preventDefault();
         pasteFiles();
       }
 
-      if (event.key === "Delete" && selectedFiles.length > 0) {
+      if (event.key === 'Delete' && selectedFiles.length > 0) {
         event.preventDefault();
-        handleFileAction("delete");
+        handleFileAction('delete');
       }
 
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         if (selectedFiles.length > 0) {
           selectAll(false);
         } else if (clipboard) {
@@ -217,21 +217,21 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedFiles, clipboard, copyToClipboard, cutFiles, pasteFiles, clearClipboard, handleFileAction, selectAll]);
 
   const closeNewFolderModal = useCallback(() => {
     if (isNewFolderSubmitting) return;
     setIsNewFolderModalOpen(false);
-    setNewFolderName("");
+    setNewFolderName('');
   }, [isNewFolderSubmitting]);
 
   const closeRenameModal = useCallback(() => {
     if (isRenameSubmitting) return;
     setIsRenameModalOpen(false);
     setRenameContext(null);
-    setRenameValue("");
+    setRenameValue('');
   }, [isRenameSubmitting]);
 
   const handleCreateFolder = useCallback(async () => {
@@ -275,12 +275,12 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
 
   return (
     <DetailPageContainer
-      title={"File Manager"}
+      title={'File Manager'}
       subtitle={hostname || `Device ${deviceId}`}
       className="h-full"
       contentClassName="flex flex-col min-h-0 overflow-hidden"
       backButton={{
-        label: "Back to Device",
+        label: 'Back to Device',
         onClick: handleBackToDevice,
       }}
       padding="none"
@@ -297,18 +297,18 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
             searchQuery={searchQuery}
             loading={
               loading ||
-              connectionState === "connecting" ||
-              connectionState === "connected_to_server" ||
+              connectionState === 'connecting' ||
+              connectionState === 'connected_to_server' ||
               (isSearching && files.length === 0) ||
               (searchQuery && files.length === 0 && isSearchActive()) ||
-              (connectionState === "connected_end_to_end" && currentPath === "" && files.length === 0 && !searchQuery)
+              (connectionState === 'connected_end_to_end' && currentPath === '' && files.length === 0 && !searchQuery)
             }
             isSearching={isSearching}
             showCheckboxes={true}
             showSearch={true}
             showActions={true}
             canPaste={clipboard !== null}
-            disableSearch={currentPath === "/" || currentPath === ""}
+            disableSearch={currentPath === '/' || currentPath === ''}
             resultsCount={files.length}
             onNavigate={handleNavigate}
             onBreadcrumbClick={handleBreadcrumbClick}
@@ -369,7 +369,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
         <div className="fixed bottom-4 right-4 bg-ods-card border border-ods-border rounded-lg p-3 shadow-lg">
           <div className="flex items-center gap-2">
             <div className="text-sm text-ods-text-primary">
-              {clipboard.fileIds.length} item(s) {clipboard.operation === "copy" ? "copied" : "cut"}
+              {clipboard.fileIds.length} item(s) {clipboard.operation === 'copy' ? 'copied' : 'cut'}
             </div>
             <Button
               variant="ghost"

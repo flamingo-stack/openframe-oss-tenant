@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import type { InvitationRecord, InvitationStatus } from "./use-invitations";
-import { invitationsQueryKeys, useInvitations } from "./use-invitations";
-import type { UserRecord, UserStatus } from "./use-users";
-import { usersQueryKeys, useUsers } from "./use-users";
+import type { InvitationRecord, InvitationStatus } from './use-invitations';
+import { invitationsQueryKeys, useInvitations } from './use-invitations';
+import type { UserRecord, UserStatus } from './use-users';
+import { usersQueryKeys, useUsers } from './use-users';
 
 // ============ Types ============
 
 export enum RecordType {
-  User = "user",
-  Invitation = "invitation",
+  User = 'user',
+  Invitation = 'invitation',
 }
 
 export type UnifiedUserStatus = UserStatus | InvitationStatus;

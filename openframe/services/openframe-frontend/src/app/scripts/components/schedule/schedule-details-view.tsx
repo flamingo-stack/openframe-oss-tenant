@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   DetailPageContainer,
@@ -8,21 +8,21 @@ import {
   TabContent,
   type TabItem,
   TabNavigation,
-} from "@flamingo-stack/openframe-frontend-core";
+} from '@flamingo-stack/openframe-frontend-core';
 import {
   BracketCurlyIcon,
   ClockHistoryIcon,
   MonitorIcon,
   PenEditIcon,
-} from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { useScriptSchedule } from "../../hooks/use-script-schedule";
-import { ScheduleDetailSkeleton } from "./schedule-details-skeleton";
-import { ScheduleDevicesTab } from "./schedule-devices-tab";
-import { ScheduleHistoryTab } from "./schedule-history-tab";
-import { ScheduleInfoBar } from "./schedule-info-bar";
-import { ScheduleScriptsTab } from "./schedule-scripts-tab";
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { useScriptSchedule } from '../../hooks/use-script-schedule';
+import { ScheduleDetailSkeleton } from './schedule-details-skeleton';
+import { ScheduleDevicesTab } from './schedule-devices-tab';
+import { ScheduleHistoryTab } from './schedule-history-tab';
+import { ScheduleInfoBar } from './schedule-info-bar';
+import { ScheduleScriptsTab } from './schedule-scripts-tab';
 
 interface ScheduleDetailViewProps {
   scheduleId: string;
@@ -30,20 +30,20 @@ interface ScheduleDetailViewProps {
 
 const SCHEDULE_TABS: TabItem[] = [
   {
-    id: "schedule-scripts",
-    label: "Scheduled Scripts",
+    id: 'schedule-scripts',
+    label: 'Scheduled Scripts',
     icon: BracketCurlyIcon,
     component: ScheduleScriptsTab,
   },
   {
-    id: "schedule-devices",
-    label: "Assigned Devices",
+    id: 'schedule-devices',
+    label: 'Assigned Devices',
     icon: MonitorIcon,
     component: ScheduleDevicesTab,
   },
   {
-    id: "schedule-history",
-    label: "Execution History",
+    id: 'schedule-history',
+    label: 'Execution History',
     icon: ClockHistoryIcon,
     component: ScheduleHistoryTab,
   },
@@ -54,7 +54,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   const { schedule, isLoading, error } = useScriptSchedule(scheduleId);
 
   const handleBack = useCallback(() => {
-    router.push("/scripts/?tab=schedules");
+    router.push('/scripts/?tab=schedules');
   }, [router]);
 
   const handleEditDevices = useCallback(() => {
@@ -68,12 +68,12 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   const actions = useMemo(
     () => [
       {
-        label: "Edit Devices",
+        label: 'Edit Devices',
         onClick: handleEditDevices,
         icon: <PenEditIcon size={20} />,
       },
       {
-        label: "Edit Schedule",
+        label: 'Edit Schedule',
         onClick: handleEditSchedule,
         icon: <PenEditIcon size={20} />,
       },
@@ -96,7 +96,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   return (
     <DetailPageContainer
       title={schedule.name}
-      backButton={{ label: "Back to Script Schedules", onClick: handleBack }}
+      backButton={{ label: 'Back to Script Schedules', onClick: handleBack }}
       actions={actions}
       actionsVariant="icon-buttons"
       padding="none"

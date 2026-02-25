@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -7,7 +7,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 interface ExecutionStartedModalProps {
   isOpen: boolean;

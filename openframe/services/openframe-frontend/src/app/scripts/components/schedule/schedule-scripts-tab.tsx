@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { InfoCard } from "@flamingo-stack/openframe-frontend-core";
-import { Chevron01DownIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { Button } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import type { ScriptScheduleAction, ScriptScheduleDetail } from "../../types/script-schedule.types";
+import { InfoCard } from '@flamingo-stack/openframe-frontend-core';
+import { Chevron01DownIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import type { ScriptScheduleAction, ScriptScheduleDetail } from '../../types/script-schedule.types';
 
 interface ScheduleScriptsTabProps {
   schedule: ScriptScheduleDetail;
@@ -42,8 +42,8 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
     action.script_args.length > 0
       ? {
           items: action.script_args.map(arg => {
-            const [key, ...rest] = arg.includes("=") ? arg.split("=") : [arg];
-            return { label: key, value: rest.join("=") || "flag" };
+            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
+            return { label: key, value: rest.join('=') || 'flag' };
           }),
         }
       : null;
@@ -52,8 +52,8 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
     action.env_vars.length > 0
       ? {
           items: action.env_vars.map(env => {
-            const [key, ...rest] = env.includes("=") ? env.split("=") : [env];
-            return { label: key, value: rest.join("=") || "" };
+            const [key, ...rest] = env.includes('=') ? env.split('=') : [env];
+            return { label: key, value: rest.join('=') || '' };
           }),
         }
       : null;
@@ -84,7 +84,7 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
           size="icon"
           onClick={toggleExpand}
           centerIcon={
-            <span className={`inline-flex transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}>
+            <span className={`inline-flex transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
               <Chevron01DownIcon size={24} />
             </span>
           }
@@ -94,7 +94,7 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
       {/* Expandable Content — animated with grid rows */}
       <div
         className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-        style={{ gridTemplateRows: isExpanded ? "1fr" : "0fr" }}
+        style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden min-h-0">
           <div className="flex flex-col border-t border-ods-border">
@@ -103,14 +103,14 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
               <div className="flex flex-col md:flex-row items-start w-full">
                 <div className="flex-1 w-full p-4">
                   {argsData ? (
-                    <InfoCard data={{ title: "Script Arguments", ...argsData }} />
+                    <InfoCard data={{ title: 'Script Arguments', ...argsData }} />
                   ) : (
                     <div className="text-ods-text-secondary text-[14px]">No script arguments</div>
                   )}
                 </div>
                 <div className="flex-1 w-full p-4">
                   {envData ? (
-                    <InfoCard data={{ title: "Environment Vars", ...envData }} />
+                    <InfoCard data={{ title: 'Environment Vars', ...envData }} />
                   ) : (
                     <div className="text-ods-text-secondary text-[14px]">No environment variables</div>
                   )}

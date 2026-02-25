@@ -1,5 +1,5 @@
-import { GoogleLogo, MicrosoftIcon, SlackIcon } from "@flamingo-stack/openframe-frontend-core/components/icons";
-import React from "react";
+import { GoogleLogo, MicrosoftIcon, SlackIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import React from 'react';
 
 /**
  * Get the appropriate icon component for an SSO provider
@@ -9,16 +9,16 @@ import React from "react";
  */
 export function getProviderIcon(
   providerKey: string,
-  className: string = "h-6 w-6 shrink-0",
+  className: string = 'h-6 w-6 shrink-0',
 ): React.ReactElement | null {
   const provider = providerKey.toLowerCase();
 
   switch (provider) {
-    case "microsoft":
+    case 'microsoft':
       return <MicrosoftIcon className={className} />;
-    case "google":
+    case 'google':
       return <GoogleLogo className={className} />;
-    case "slack":
+    case 'slack':
       return <SlackIcon className={className} />;
     default:
       return null;

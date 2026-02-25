@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { BoxArchiveIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { ListPageLayout, Table } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useCursorPaginationState, useTablePagination } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo } from "react";
-import { useOrganizationLookup } from "../../../organizations/hooks/use-organization-lookup";
-import { useArchiveResolvedMutation } from "../../hooks/use-archive-resolved-mutation";
-import { useDialogsQuery } from "../../hooks/use-dialogs-query";
-import { ClientDialogOwner, Dialog } from "../../types/dialog.types";
-import { getDialogTableColumns } from "../dialog-table-columns";
+import { BoxArchiveIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup';
+import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation';
+import { useDialogsQuery } from '../../hooks/use-dialogs-query';
+import { ClientDialogOwner, Dialog } from '../../types/dialog.types';
+import { getDialogTableColumns } from '../dialog-table-columns';
 
 interface ChatsTableProps {
   isArchived: boolean;
@@ -49,7 +49,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     // Extract unique organization IDs from loaded dialogs
     const organizationIds = dialogs
       .map((dialog: Dialog) => {
-        const isClientOwner = "machine" in (dialog.owner || {});
+        const isClientOwner = 'machine' in (dialog.owner || {});
         if (isClientOwner) {
           const clientOwner = dialog.owner as ClientDialogOwner;
           return clientOwner.machine?.organizationId;
@@ -96,7 +96,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   );
 
   const hasResolvedDialogs = useMemo(() => {
-    return !isArchived && dialogs.some((d: Dialog) => d.status === "RESOLVED");
+    return !isArchived && dialogs.some((d: Dialog) => d.status === 'RESOLVED');
   }, [dialogs, isArchived]);
 
   const onNext = useCallback(() => {
@@ -112,13 +112,13 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   const cursorPagination = useTablePagination(
     pageInfo
       ? {
-          type: "server",
+          type: 'server',
           hasNextPage: hasNextPage,
           hasLoadedBeyondFirst: hasLoadedBeyondFirst,
           startCursor: startCursor,
           endCursor: endCursor,
           itemCount: dialogs.length,
-          itemName: "chats",
+          itemName: 'chats',
           onNext: onNext,
           onReset: onReset,
           showInfo: true,
@@ -126,15 +126,15 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       : null,
   );
 
-  const title = isArchived ? "Archived Chats" : "Current Chats";
+  const title = isArchived ? 'Archived Chats' : 'Current Chats';
   const emptyMessage = isArchived
-    ? "No archived chats found. Try adjusting your search or filters."
-    : "No current chats found. Try adjusting your search or filters.";
+    ? 'No archived chats found. Try adjusting your search or filters.'
+    : 'No current chats found. Try adjusting your search or filters.';
 
   const actions = useMemo(
     () => [
       {
-        label: "Archive Resolved",
+        label: 'Archive Resolved',
         icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleArchiveResolved,
         disabled: archiveResolvedMutation.isPending || isLoading,
@@ -186,10 +186,10 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
 }
 
 // Wrapper components for tab navigation
-export function CurrentChats(props: Omit<ChatsTableProps, "isArchived">) {
+export function CurrentChats(props: Omit<ChatsTableProps, 'isArchived'>) {
   return <ChatsTable isArchived={false} {...props} />;
 }
 
-export function ArchivedChats(props: Omit<ChatsTableProps, "isArchived">) {
+export function ArchivedChats(props: Omit<ChatsTableProps, 'isArchived'>) {
   return <ChatsTable isArchived={true} {...props} />;
 }

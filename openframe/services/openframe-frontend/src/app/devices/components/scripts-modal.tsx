@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -8,19 +8,19 @@ import {
   ModalHeader,
   ModalTitle,
   OS_TYPES,
-} from "@flamingo-stack/openframe-frontend-core";
-import { ListLoader, PageError } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { Check, Search } from "lucide-react";
-import React, { useState } from "react";
-import { tacticalApiClient } from "../../../lib/tactical-api-client";
-import { useScripts } from "../../scripts/hooks/use-scripts";
-import { ScriptEntry } from "../../scripts/stores/scripts-store";
-import { Device } from "../types/device.types";
+} from '@flamingo-stack/openframe-frontend-core';
+import { ListLoader, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { Check, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { tacticalApiClient } from '../../../lib/tactical-api-client';
+import { useScripts } from '../../scripts/hooks/use-scripts';
+import { ScriptEntry } from '../../scripts/stores/scripts-store';
+import { Device } from '../types/device.types';
 
 const _scrollbarStyles = {
-  scrollbarWidth: "thin" as const,
-  scrollbarColor: "var(--color-text-secondary) var(--color-border-default)",
+  scrollbarWidth: 'thin' as const,
+  scrollbarColor: 'var(--color-text-secondary) var(--color-border-default)',
 };
 
 interface ScriptsModalProps {
@@ -71,10 +71,10 @@ const filterScriptsByPlatform = (scripts: ScriptEntry[], devicePlatform: string)
 
 interface CheckboxProps {
   active?: boolean;
-  state?: "default" | "hover" | "action";
+  state?: 'default' | 'hover' | 'action';
 }
 
-function CustomCheckbox({ active = true, state = "default" }: CheckboxProps) {
+function CustomCheckbox({ active = true, state = 'default' }: CheckboxProps) {
   if (!active) {
     return (
       <div className="relative w-6 h-6">
@@ -95,7 +95,7 @@ function CustomCheckbox({ active = true, state = "default" }: CheckboxProps) {
 }
 
 export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, onDeviceLogs }: ScriptsModalProps) {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedScripts, setSelectedScripts] = useState<string[]>([]);
   const [_isExecuting, setIsExecuting] = useState(false);
@@ -104,7 +104,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   const { scripts, isLoading, error } = useScripts();
   const { toast } = useToast();
 
-  const platformCompatibleScripts = device ? filterScriptsByPlatform(scripts, device.plat || "") : scripts;
+  const platformCompatibleScripts = device ? filterScriptsByPlatform(scripts, device.plat || '') : scripts;
 
   const categories = getCategoriesFromScripts(platformCompatibleScripts);
 
@@ -135,9 +135,9 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   const handleRunScripts = async () => {
     if (selectedScripts.length === 0) {
       toast({
-        title: "No scripts selected",
-        description: "Please select at least one script to run.",
-        variant: "destructive",
+        title: 'No scripts selected',
+        description: 'Please select at least one script to run.',
+        variant: 'destructive',
       });
       return;
     }
@@ -148,9 +148,9 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
       const executionPromises = selectedScripts.map(async scriptId => {
         try {
           const response = await tacticalApiClient.runScript(deviceId, {
-            output: "forget",
+            output: 'forget',
             emails: [],
-            emailMode: "default",
+            emailMode: 'default',
             custom_field: null,
             save_all_output: false,
             script: parseInt(scriptId),
@@ -179,21 +179,21 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
 
         if (failures === 0) {
           toast({
-            title: "Scripts submitted successfully",
-            description: `${successes} script${successes > 1 ? "s" : ""} submitted for execution. Check device logs for results.`,
-            variant: "default",
+            title: 'Scripts submitted successfully',
+            description: `${successes} script${successes > 1 ? 's' : ''} submitted for execution. Check device logs for results.`,
+            variant: 'default',
           });
         } else if (successes > 0) {
           toast({
-            title: "Partial submission success",
-            description: `${successes} script${successes > 1 ? "s" : ""} submitted successfully, ${failures} failed to submit.`,
-            variant: "destructive",
+            title: 'Partial submission success',
+            description: `${successes} script${successes > 1 ? 's' : ''} submitted successfully, ${failures} failed to submit.`,
+            variant: 'destructive',
           });
         } else {
           toast({
-            title: "Script submission failed",
-            description: `Failed to submit ${failures} script${failures > 1 ? "s" : ""}.`,
-            variant: "destructive",
+            title: 'Script submission failed',
+            description: `Failed to submit ${failures} script${failures > 1 ? 's' : ''}.`,
+            variant: 'destructive',
           });
         }
       });
@@ -212,13 +212,13 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
         setIsRedirecting(false);
       }, 3000);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit scripts";
-      console.error("Script submission error:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit scripts';
+      console.error('Script submission error:', error);
 
       toast({
-        title: "Script submission failed",
+        title: 'Script submission failed',
         description: errorMessage,
-        variant: "destructive",
+        variant: 'destructive',
       });
 
       // Reset states on error
@@ -239,9 +239,9 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[800px] flex flex-col">
       <ModalHeader>
-        <ModalTitle>{isRedirecting ? "Scripts Running" : "Select Script"}</ModalTitle>
+        <ModalTitle>{isRedirecting ? 'Scripts Running' : 'Select Script'}</ModalTitle>
         <p className="text-ods-text-secondary text-sm mt-1">
-          {isRedirecting ? "Redirecting to device logs..." : "Choose scripts to execute on this device"}
+          {isRedirecting ? 'Redirecting to device logs...' : 'Choose scripts to execute on this device'}
         </p>
       </ModalHeader>
 
@@ -340,8 +340,8 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                             key={script.id}
                             onClick={() => handleScriptToggle(script.id)}
                             className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-ods-border ${
-                              isSelected ? "bg-accent-active" : "bg-ods-bg"
-                            } ${index === filteredScripts.length - 1 ? "border-b-0" : ""}`}
+                              isSelected ? 'bg-accent-active' : 'bg-ods-bg'
+                            } ${index === filteredScripts.length - 1 ? 'border-b-0' : ''}`}
                           >
                             <div className="flex flex-col flex-1">
                               <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
@@ -349,7 +349,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                               </div>
                               <div
                                 className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
-                                  isSelected ? "text-ods-accent" : "text-ods-text-secondary"
+                                  isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
                                 }`}
                               >
                                 {script.description}
@@ -375,7 +375,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
           Cancel
         </Button>
         <Button onClick={handleRunScripts} disabled={selectedScripts.length === 0 || isRedirecting}>
-          {isRedirecting ? "Redirecting..." : `Run Script${selectedScripts.length !== 1 ? "s" : ""}`}
+          {isRedirecting ? 'Redirecting...' : `Run Script${selectedScripts.length !== 1 ? 's' : ''}`}
         </Button>
       </ModalFooter>
     </Modal>

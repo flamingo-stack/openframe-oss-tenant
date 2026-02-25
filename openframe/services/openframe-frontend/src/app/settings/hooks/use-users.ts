@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../../../lib/api-client";
-import { handleApiError } from "../../../lib/handle-api-error";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
+import { handleApiError } from '../../../lib/handle-api-error';
 
 // ============ Types ============
 
 export enum UserStatus {
-  Active = "ACTIVE",
-  Deleted = "DELETED",
+  Active = 'ACTIVE',
+  Deleted = 'DELETED',
 }
 
 export type UserRecord = {
@@ -36,8 +36,8 @@ export type PagedUsersResponse = {
 // ============ Query Keys ============
 
 export const usersQueryKeys = {
-  all: ["users"] as const,
-  list: (page: number, size: number) => [...usersQueryKeys.all, "list", { page, size }] as const,
+  all: ['users'] as const,
+  list: (page: number, size: number) => [...usersQueryKeys.all, 'list', { page, size }] as const,
 };
 
 // ============ API Functions ============
@@ -85,7 +85,7 @@ export function useUsers(page: number = 0, size: number = 20) {
         options?.onSuccess?.();
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to delete user");
+        handleApiError(error, toast, 'Failed to delete user');
         options?.onError?.(error as Error);
       },
     });

@@ -1,22 +1,22 @@
-import type { FileAction, FileItem } from "@flamingo-stack/openframe-frontend-core/components/ui/file-manager";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MeshCentralFileManager } from "@/lib/meshcentral/file-manager";
-import type { FileConnectionState, FileEntry, FileTransferProgress } from "@/lib/meshcentral/file-manager-types";
-import { MeshControlClient } from "@/lib/meshcentral/meshcentral-control";
-import { convertFileEntriesToItems, sanitizePath } from "../utils/file-manager-utils";
+import type { FileAction, FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { MeshCentralFileManager } from '@/lib/meshcentral/file-manager';
+import type { FileConnectionState, FileEntry, FileTransferProgress } from '@/lib/meshcentral/file-manager-types';
+import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
+import { convertFileEntriesToItems, sanitizePath } from '../utils/file-manager-utils';
 
 // Global map to track active file manager instances by device ID (React Strict Mode protection)
 const activeFileManagers = new Map<string, boolean>();
 
 // Extract directory path from file IDs
 function getDirectoryFromFileIds(fileIds: string[]): string {
-  if (fileIds.length === 0) return "/";
+  if (fileIds.length === 0) return '/';
 
   const firstFilePath = fileIds[0];
-  const pathParts = firstFilePath.split("/");
+  const pathParts = firstFilePath.split('/');
   pathParts.pop();
-  return pathParts.length > 0 ? pathParts.join("/") : "/";
+  return pathParts.length > 0 ? pathParts.join('/') : '/';
 }
 
 interface UseMeshFileManagerOptions {
@@ -67,7 +67,7 @@ interface UseMeshFileManagerReturn {
 interface ClipboardItem {
   fileIds: string[];
   sourcePath: string;
-  operation: "copy" | "cut";
+  operation: 'copy' | 'cut';
 }
 
 export function useMeshFileManager({
@@ -77,9 +77,9 @@ export function useMeshFileManager({
 }: UseMeshFileManagerOptions): UseMeshFileManagerReturn {
   const { toast } = useToast();
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [currentPath, setCurrentPath] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-  const [connectionState, setConnectionState] = useState<FileConnectionState>("disconnected");
+  const [connectionState, setConnectionState] = useState<FileConnectionState>('disconnected');
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<FileTransferProgress | null>(null);
   const [downloadProgress, setDownloadProgress] = useState<FileTransferProgress | null>(null);
@@ -113,7 +113,7 @@ export function useMeshFileManager({
       const token = { cancelled: false };
       initTokenRef.current = token;
 
-      const deviceKey = `${meshcentralAgentId}-${isRemote ? "remote" : "server"}`;
+      const deviceKey = `${meshcentralAgentId}-${isRemote ? 'remote' : 'server'}`;
 
       if (fileManagerRef.current || activeFileManagers.get(deviceKey)) {
         return;
@@ -128,7 +128,7 @@ export function useMeshFileManager({
 
       try {
         setLoading(true);
-        setConnectionState("connecting");
+        setConnectionState('connecting');
 
         const controlClient = new MeshControlClient();
         controlClientRef.current = controlClient;
@@ -149,18 +149,18 @@ export function useMeshFileManager({
             if (mounted) {
               setConnectionState(state);
 
-              if (state === "connected_end_to_end") {
+              if (state === 'connected_end_to_end') {
                 toastRef.current?.({
-                  title: "Connected",
-                  description: "File manager connected successfully",
-                  variant: "success",
+                  title: 'Connected',
+                  description: 'File manager connected successfully',
+                  variant: 'success',
                   duration: 2000,
                 });
-              } else if (state === "failed") {
+              } else if (state === 'failed') {
                 toastRef.current?.({
-                  title: "Connection Failed",
-                  description: "Failed to establish connection to file system",
-                  variant: "destructive",
+                  title: 'Connection Failed',
+                  description: 'Failed to establish connection to file system',
+                  variant: 'destructive',
                   duration: 5000,
                 });
               }
@@ -201,7 +201,7 @@ export function useMeshFileManager({
           },
           onTransferProgress: (progress: FileTransferProgress) => {
             if (mounted) {
-              if (progress.type === "upload") {
+              if (progress.type === 'upload') {
                 setUploadProgress(progress);
                 if (progress.progress === 100) {
                   setTimeout(() => setUploadProgress(null), 2000);
@@ -218,11 +218,11 @@ export function useMeshFileManager({
             if (mounted) {
               setDownloadProgress(null);
               toastRef.current?.({
-                title: "Download Cancelled by Server",
+                title: 'Download Cancelled by Server',
                 description: reason
                   ? `${fileName} download was cancelled: ${reason}`
                   : `${fileName} download was cancelled by the server`,
-                variant: "destructive",
+                variant: 'destructive',
                 duration: 5000,
               });
             }
@@ -230,9 +230,9 @@ export function useMeshFileManager({
           onError: (error: Error) => {
             if (mounted) {
               toastRef.current?.({
-                title: "File Manager Error",
+                title: 'File Manager Error',
                 description: error.message,
-                variant: "destructive",
+                variant: 'destructive',
                 duration: 5000,
               });
               onErrorRef.current?.(error);
@@ -264,9 +264,9 @@ export function useMeshFileManager({
       } catch (error) {
         const err = error as Error;
         toastRef.current?.({
-          title: "Connection Failed",
-          description: err.message || "Failed to connect to file manager",
-          variant: "destructive",
+          title: 'Connection Failed',
+          description: err.message || 'Failed to connect to file manager',
+          variant: 'destructive',
           duration: 5000,
         });
         onErrorRef.current?.(err);
@@ -277,7 +277,7 @@ export function useMeshFileManager({
         if (initTokenRef.current === token) {
           initTokenRef.current = null;
         }
-        const deviceKey = `${meshcentralAgentId}-${isRemote ? "remote" : "server"}`;
+        const deviceKey = `${meshcentralAgentId}-${isRemote ? 'remote' : 'server'}`;
         if (!initSucceeded) {
           activeFileManagers.delete(deviceKey);
         }
@@ -292,7 +292,7 @@ export function useMeshFileManager({
       if (initTokenRef.current) {
         initTokenRef.current.cancelled = true;
       }
-      const deviceKey = `${meshcentralAgentId}-${isRemote ? "remote" : "server"}`;
+      const deviceKey = `${meshcentralAgentId}-${isRemote ? 'remote' : 'server'}`;
 
       mounted = false;
       _isInitializing = false;
@@ -334,9 +334,9 @@ export function useMeshFileManager({
         setSelectedFiles([]);
       } catch (error) {
         toast({
-          title: "Navigation Failed",
+          title: 'Navigation Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } finally {
         setLoading(false);
@@ -355,9 +355,9 @@ export function useMeshFileManager({
       setSelectedFiles([]);
     } catch (error) {
       toast({
-        title: "Navigation Failed",
+        title: 'Navigation Failed',
         description: (error as Error).message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -375,9 +375,9 @@ export function useMeshFileManager({
         setSelectedFiles([]);
       } catch (error) {
         toast({
-          title: "Navigation Failed",
+          title: 'Navigation Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } finally {
         setLoading(false);
@@ -395,9 +395,9 @@ export function useMeshFileManager({
         await fileManager.createFolder(name);
       } catch (error) {
         toast({
-          title: "Create Folder Failed",
+          title: 'Create Folder Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } finally {
         refreshCurrentDirectory();
@@ -412,13 +412,13 @@ export function useMeshFileManager({
       if (!fileManager || !fileManager.isConnected()) return;
 
       try {
-        const names = fileIds.map(id => id.split("/").pop() || "");
+        const names = fileIds.map(id => id.split('/').pop() || '');
         await fileManager.deleteItems(names, true);
       } catch (error) {
         toast({
-          title: "Delete Failed",
+          title: 'Delete Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
         return;
       }
@@ -438,9 +438,9 @@ export function useMeshFileManager({
         await fileManager.rename(oldName, newName);
       } catch (error) {
         toast({
-          title: "Rename Failed",
+          title: 'Rename Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       } finally {
         refreshCurrentDirectory();
@@ -458,9 +458,9 @@ export function useMeshFileManager({
         await fileManager.uploadFile(file);
       } catch (error) {
         toast({
-          title: "Upload Failed",
+          title: 'Upload Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -476,9 +476,9 @@ export function useMeshFileManager({
         fileManager.downloadFile(fileName);
       } catch (error) {
         toast({
-          title: "Download Failed",
+          title: 'Download Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
       }
     },
@@ -491,13 +491,13 @@ export function useMeshFileManager({
       if (!fileManager || !fileManager.isConnected()) return;
 
       try {
-        const names = fileIds.map(id => id.split("/").pop() || "");
+        const names = fileIds.map(id => id.split('/').pop() || '');
         await fileManager.copyFiles(names, destinationPath);
       } catch (error) {
         toast({
-          title: "Copy Failed",
+          title: 'Copy Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
         return;
       }
@@ -513,13 +513,13 @@ export function useMeshFileManager({
       if (!fileManager || !fileManager.isConnected()) return;
 
       try {
-        const names = fileIds.map(id => id.split("/").pop() || "");
+        const names = fileIds.map(id => id.split('/').pop() || '');
         await fileManager.moveFiles(names, destinationPath);
       } catch (error) {
         toast({
-          title: "Move Failed",
+          title: 'Move Failed',
           description: (error as Error).message,
-          variant: "destructive",
+          variant: 'destructive',
         });
         return;
       }
@@ -539,11 +539,11 @@ export function useMeshFileManager({
         await fileManager.searchFiles(query);
       } catch (error) {
         const errorMessage = (error as Error).message;
-        if (!errorMessage.includes("Cancelled for new search")) {
+        if (!errorMessage.includes('Cancelled for new search')) {
           toast({
-            title: "Search Failed",
+            title: 'Search Failed',
             description: errorMessage,
-            variant: "destructive",
+            variant: 'destructive',
           });
           setIsSearching(false);
         }
@@ -591,9 +591,9 @@ export function useMeshFileManager({
       const targetFiles = fileIds || selectedFiles;
       if (targetFiles.length === 0) {
         toast({
-          title: "No Files Selected",
-          description: "Please select files to copy",
-          variant: "default",
+          title: 'No Files Selected',
+          description: 'Please select files to copy',
+          variant: 'default',
         });
         return;
       }
@@ -603,7 +603,7 @@ export function useMeshFileManager({
       setClipboard({
         fileIds: targetFiles,
         sourcePath,
-        operation: "copy",
+        operation: 'copy',
       });
     },
     [selectedFiles, toast],
@@ -614,9 +614,9 @@ export function useMeshFileManager({
       const targetFiles = fileIds || selectedFiles;
       if (targetFiles.length === 0) {
         toast({
-          title: "No Files Selected",
-          description: "Please select files to cut",
-          variant: "default",
+          title: 'No Files Selected',
+          description: 'Please select files to cut',
+          variant: 'default',
         });
         return;
       }
@@ -626,7 +626,7 @@ export function useMeshFileManager({
       setClipboard({
         fileIds: targetFiles,
         sourcePath,
-        operation: "cut",
+        operation: 'cut',
       });
     },
     [selectedFiles, toast],
@@ -635,9 +635,9 @@ export function useMeshFileManager({
   const pasteFiles = useCallback(async () => {
     if (!clipboard) {
       toast({
-        title: "Clipboard Empty",
-        description: "No files in clipboard to paste",
-        variant: "default",
+        title: 'Clipboard Empty',
+        description: 'No files in clipboard to paste',
+        variant: 'default',
       });
       return;
     }
@@ -645,26 +645,26 @@ export function useMeshFileManager({
     const fileManager = fileManagerRef.current;
     if (!fileManager || !fileManager.isConnected()) {
       toast({
-        title: "Not Connected",
-        description: "File manager not connected",
-        variant: "destructive",
+        title: 'Not Connected',
+        description: 'File manager not connected',
+        variant: 'destructive',
       });
       return;
     }
 
     if (clipboard.sourcePath === currentPath) {
       toast({
-        title: "Same Location",
-        description: "Cannot paste to the same location",
-        variant: "default",
+        title: 'Same Location',
+        description: 'Cannot paste to the same location',
+        variant: 'default',
       });
       return;
     }
 
-    const fileNames = clipboard.fileIds.map(id => id.split("/").pop() || "");
+    const fileNames = clipboard.fileIds.map(id => id.split('/').pop() || '');
 
     try {
-      if (clipboard.operation === "copy") {
+      if (clipboard.operation === 'copy') {
         await fileManager.copyFromSource(clipboard.sourcePath, fileNames);
       } else {
         await fileManager.moveFromSource(clipboard.sourcePath, fileNames);
@@ -672,11 +672,11 @@ export function useMeshFileManager({
         setSelectedFiles([]);
       }
     } catch (error) {
-      const operation = clipboard.operation === "copy" ? "Copy" : "Move";
+      const operation = clipboard.operation === 'copy' ? 'Copy' : 'Move';
       toast({
         title: `${operation} Failed`,
         description: (error as Error).message,
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -687,9 +687,9 @@ export function useMeshFileManager({
   const clearClipboard = useCallback(() => {
     setClipboard(null);
     toast({
-      title: "Clipboard Cleared",
-      description: "Clipboard has been cleared",
-      variant: "default",
+      title: 'Clipboard Cleared',
+      description: 'Clipboard has been cleared',
+      variant: 'default',
       duration: 2000,
     });
   }, [toast]);
@@ -705,9 +705,9 @@ export function useMeshFileManager({
         downloader.cancelDownload(activeDownloadId);
         setDownloadProgress(null);
         toast({
-          title: "Download Cancelled",
-          description: "File download has been cancelled",
-          variant: "default",
+          title: 'Download Cancelled',
+          description: 'File download has been cancelled',
+          variant: 'default',
         });
       }
     }
@@ -724,9 +724,9 @@ export function useMeshFileManager({
         uploader.cancelUpload(activeUploadId);
         setUploadProgress(null);
         toast({
-          title: "Upload Cancelled",
-          description: "File upload has been cancelled",
-          variant: "default",
+          title: 'Upload Cancelled',
+          description: 'File upload has been cancelled',
+          variant: 'default',
         });
       }
     }
@@ -737,49 +737,49 @@ export function useMeshFileManager({
       const targetFiles = fileId ? [fileId] : selectedFiles;
 
       switch (action) {
-        case "download":
+        case 'download':
           if (targetFiles.length === 1) {
-            const fileName = targetFiles[0].split("/").pop() || "";
+            const fileName = targetFiles[0].split('/').pop() || '';
             downloadFile(fileName);
           }
           break;
 
-        case "delete":
+        case 'delete':
           if (targetFiles.length > 0) {
             await deleteItems(targetFiles);
           }
           break;
 
-        case "new-folder":
-          const folderName = prompt("Enter folder name:");
+        case 'new-folder':
+          const folderName = prompt('Enter folder name:');
           if (folderName) {
             await createFolder(folderName);
           }
           break;
 
-        case "rename":
+        case 'rename':
           if (targetFiles.length === 1) {
-            const oldName = targetFiles[0].split("/").pop() || "";
-            const newName = prompt("Enter new name:", oldName);
+            const oldName = targetFiles[0].split('/').pop() || '';
+            const newName = prompt('Enter new name:', oldName);
             if (newName && newName !== oldName) {
               await renameItem(oldName, newName);
             }
           }
           break;
 
-        case "upload":
+        case 'upload':
           // This will be handled by the container component with file input
           break;
 
-        case "copy":
+        case 'copy':
           copyToClipboard(targetFiles);
           break;
 
-        case "cut":
+        case 'cut':
           cutFiles(targetFiles);
           break;
 
-        case "paste":
+        case 'paste':
           await pasteFiles();
           break;
 

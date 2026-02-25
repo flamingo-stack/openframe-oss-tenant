@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   DetailPageContainer,
@@ -7,15 +7,15 @@ import {
   getOSPlatformId,
   LoadError,
   NotFoundError,
-} from "@flamingo-stack/openframe-frontend-core";
-import { OSTypeBadge } from "@flamingo-stack/openframe-frontend-core/components/features";
+} from '@flamingo-stack/openframe-frontend-core';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   CheckCircleIcon,
   MonitorIcon,
   PlusCircleIcon,
   SearchIcon,
   TrashIcon,
-} from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   getTabComponent,
@@ -25,22 +25,22 @@ import {
   Table,
   type TableColumn,
   TabNavigation,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { formatRelativeTime } from "@flamingo-stack/openframe-frontend-core/utils";
-import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { DEVICE_STATUS } from "../../../devices/constants/device-statuses";
-import { GET_DEVICES_QUERY } from "../../../devices/queries/devices-queries";
-import type { Device, DevicesGraphQlNode, GraphQlResponse } from "../../../devices/types/device.types";
-import { createDeviceListItem } from "../../../devices/utils/device-transform";
-import { useScriptSchedule, useScriptScheduleAgents } from "../../hooks/use-script-schedule";
-import { useReplaceScheduleAgents } from "../../hooks/use-script-schedule-mutations";
-import { formatScheduleDate, getRepeatLabel } from "../../types/script-schedule.types";
-import { ScheduleAssignDevicesSkeleton } from "./schedule-assign-devices-skeleton";
-import { ScheduleInfoBarFromData } from "./schedule-info-bar";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
+import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
+import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
+import { createDeviceListItem } from '../../../devices/utils/device-transform';
+import { useScriptSchedule, useScriptScheduleAgents } from '../../hooks/use-script-schedule';
+import { useReplaceScheduleAgents } from '../../hooks/use-script-schedule-mutations';
+import { formatScheduleDate, getRepeatLabel } from '../../types/script-schedule.types';
+import { ScheduleAssignDevicesSkeleton } from './schedule-assign-devices-skeleton';
+import { ScheduleInfoBarFromData } from './schedule-info-bar';
 
 interface ScheduleAssignDevicesViewProps {
   scheduleId: string;
@@ -51,7 +51,7 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
     // ...(osTypes.length > 0 && { osTypes }),
     // TODO: remove after macos/linux support
-    osTypes: ["WINDOWS"],
+    osTypes: ['WINDOWS'],
   };
 
   const response = await apiClient.post<
@@ -62,22 +62,22 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
         filteredCount: number;
       };
     }>
-  >("/api/graphql", {
+  >('/api/graphql', {
     query: GET_DEVICES_QUERY,
     variables: {
       filter,
       pagination: { limit: 100, cursor: null },
-      search: "",
+      search: '',
     },
   });
 
   if (!response.ok) {
-    throw new Error(response.error || "Failed to fetch devices");
+    throw new Error(response.error || 'Failed to fetch devices');
   }
 
   const graphqlResponse = response.data;
   if (!graphqlResponse?.data) {
-    throw new Error("No data received from server");
+    throw new Error('No data received from server');
   }
 
   const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
@@ -91,7 +91,7 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
   });
 }
 
-type SubTab = "available" | "selected";
+type SubTab = 'available' | 'selected';
 
 interface DeviceTabContentProps {
   mode: SubTab;
@@ -117,7 +117,7 @@ function DeviceTabContent({
   return (
     <>
       <div className="flex justify-end -mb-2">
-        {mode === "available" ? (
+        {mode === 'available' ? (
           <Button
             variant="link"
             onClick={onAddAll}
@@ -141,7 +141,7 @@ function DeviceTabContent({
         rowKey="tacticalAgentId"
         loading={loading}
         skeletonRows={8}
-        emptyMessage={mode === "selected" ? "No devices selected" : "No devices found"}
+        emptyMessage={mode === 'selected' ? 'No devices selected' : 'No devices found'}
         showFilters={false}
         renderRowActions={renderRowActions}
       />
@@ -157,8 +157,8 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const replaceAgentsMutation = useReplaceScheduleAgents();
 
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>("available");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState<SubTab>('available');
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize selected agents from current assignment
@@ -174,7 +174,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const supportedPlatforms = schedule?.task_supported_platforms ?? [];
 
   const devicesQuery = useQuery({
-    queryKey: ["schedule-assign-devices", scheduleId, supportedPlatforms],
+    queryKey: ['schedule-assign-devices', scheduleId, supportedPlatforms],
     queryFn: () => fetchDevicesByPlatforms(supportedPlatforms),
     enabled: Boolean(scheduleId) && Boolean(schedule),
   });
@@ -190,15 +190,15 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       const lowerSearch = searchTerm.toLowerCase();
       devices = devices.filter(
         d =>
-          (d.displayName || d.hostname || "").toLowerCase().includes(lowerSearch) ||
-          (d.osType || d.operating_system || "").toLowerCase().includes(lowerSearch),
+          (d.displayName || d.hostname || '').toLowerCase().includes(lowerSearch) ||
+          (d.osType || d.operating_system || '').toLowerCase().includes(lowerSearch),
       );
     }
     return devices;
   }, [allDevices, searchTerm]);
 
   const displayDevices = useMemo(() => {
-    if (activeSubTab === "selected") {
+    if (activeSubTab === 'selected') {
       return filteredDevices.filter(d => selectedAgentIds.has(d.tacticalAgentId!));
     }
     return filteredDevices;
@@ -232,29 +232,29 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         agents: Array.from(selectedAgentIds),
       });
       toast({
-        title: "Devices saved",
+        title: 'Devices saved',
         description: `${selectedAgentIds.size} device(s) assigned to schedule.`,
-        variant: "success",
+        variant: 'success',
       });
       router.push(`/scripts/schedules/${scheduleId}?tab=schedule-devices`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to save devices";
-      toast({ title: "Save failed", description: msg, variant: "destructive" });
+      const msg = e instanceof Error ? e.message : 'Failed to save devices';
+      toast({ title: 'Save failed', description: msg, variant: 'destructive' });
     }
   }, [replaceAgentsMutation, scheduleId, selectedAgentIds, toast, router]);
 
   const actions = useMemo(
     () => [
       {
-        label: "Cancel",
+        label: 'Cancel',
         onClick: handleBack,
-        variant: "outline" as const,
+        variant: 'outline' as const,
         showOnlyMobile: true,
       },
       {
-        label: "Save Devices",
+        label: 'Save Devices',
         onClick: handleSave,
-        variant: "primary" as const,
+        variant: 'primary' as const,
         loading: replaceAgentsMutation.isPending,
       },
     ],
@@ -264,8 +264,8 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const columns: TableColumn<Device>[] = useMemo(
     () => [
       {
-        key: "device",
-        label: "DEVICE",
+        key: 'device',
+        label: 'DEVICE',
         renderCell: device => {
           const lastSeen = device.last_seen || device.lastSeen;
           return (
@@ -273,7 +273,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
                 {device.type &&
                   getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
-                    className: "w-5 h-5 text-ods-text-secondary",
+                    className: 'w-5 h-5 text-ods-text-secondary',
                   })}
               </div>
               <div className="flex flex-col truncate">
@@ -281,7 +281,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
                   {device.displayName || device.hostname}
                 </span>
                 <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-                  Last Online: {lastSeen ? formatRelativeTime(lastSeen) : "unknown"}
+                  Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
               </div>
             </div>
@@ -289,9 +289,9 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         },
       },
       {
-        key: "details",
-        label: "DETAILS",
-        width: "w-[100px] md:flex-1",
+        key: 'details',
+        label: 'DETAILS',
+        width: 'w-[100px] md:flex-1',
         renderCell: device => {
           return <OSTypeBadge osType={device.osType} />;
         },
@@ -309,7 +309,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       const agentId = device.tacticalAgentId!;
       const isSelected = selectedAgentIds.has(agentId);
 
-      if (activeSubTab === "selected") {
+      if (activeSubTab === 'selected') {
         return (
           <Button
             variant="device-action"
@@ -329,8 +329,8 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
           className={
             isSelected
-              ? "text-[var(--open-colors-yellow,#ffc008)] border-[var(--open-colors-yellow,#ffc008)] bg-[#7F6004] hover:bg-[#7F6004]"
-              : "text-ods-text-secondary hover:text-ods-text-primary"
+              ? 'text-[var(--open-colors-yellow,#ffc008)] border-[var(--open-colors-yellow,#ffc008)] bg-[#7F6004] hover:bg-[#7F6004]'
+              : 'text-ods-text-secondary hover:text-ods-text-primary'
           }
         />
       );
@@ -341,13 +341,13 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const assignTabs: TabItem[] = useMemo(
     () => [
       {
-        id: "available",
-        label: "Available Devices",
+        id: 'available',
+        label: 'Available Devices',
         icon: MonitorIcon,
         component: DeviceTabContent,
       },
       {
-        id: "selected",
+        id: 'selected',
         label: `Selected Devices (${selectedAgentIds.size})`,
         icon: CheckCircleIcon,
         component: DeviceTabContent,
@@ -376,7 +376,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   return (
     <DetailPageContainer
       title="Schedule Devices"
-      backButton={{ label: "Back to Schedule", onClick: handleBack }}
+      backButton={{ label: 'Back to Schedule', onClick: handleBack }}
       actions={actions}
     >
       <div className="flex flex-col gap-6 overflow-auto">
@@ -425,7 +425,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           tabs={assignTabs}
           activeTab={activeSubTab}
           onTabChange={tabId => {
-            setSearchTerm("");
+            setSearchTerm('');
             setActiveSubTab(tabId as SubTab);
           }}
         />

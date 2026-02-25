@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * Supported Platform section skeleton

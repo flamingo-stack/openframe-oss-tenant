@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Button,
@@ -7,8 +7,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import React, { useEffect } from "react";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React, { useEffect } from 'react';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -25,23 +25,23 @@ export function DeleteConfirmationModal({
   onConfirm,
   onClose,
 }: DeleteConfirmationModalProps) {
-  const title = itemCount === 1 ? "Delete Item" : "Delete Items";
+  const title = itemCount === 1 ? 'Delete Item' : 'Delete Items';
   const description =
     itemCount === 1
-      ? "Are you sure you want to delete this item? This action cannot be undone."
+      ? 'Are you sure you want to delete this item? This action cannot be undone.'
       : `Are you sure you want to delete ${itemCount} items? This action cannot be undone.`;
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !submitting) {
+      if (event.key === 'Enter' && !submitting) {
         event.preventDefault();
         onConfirm();
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, submitting, onConfirm]);
 
   return (

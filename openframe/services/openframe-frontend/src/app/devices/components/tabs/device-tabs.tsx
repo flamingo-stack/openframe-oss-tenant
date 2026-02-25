@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AuditIcon,
@@ -10,70 +10,70 @@ import {
   TerminalBrowserIcon,
   UsersIcon,
   WebDesignIcon,
-} from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import type { TabItem } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { AgentsTab } from "./agents-tab";
-import { ComplianceTab } from "./compliance-tab";
-import { HardwareTab } from "./hardware-tab";
-import { LogsTab } from "./logs-tab";
-import { NetworkTab } from "./network-tab";
-import { SecurityTab } from "./security-tab";
-import { SoftwareTab } from "./software-tab";
-import { UsersTab } from "./users-tab";
-import { VulnerabilitiesTab } from "./vulnerabilities-tab";
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type { TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { AgentsTab } from './agents-tab';
+import { ComplianceTab } from './compliance-tab';
+import { HardwareTab } from './hardware-tab';
+import { LogsTab } from './logs-tab';
+import { NetworkTab } from './network-tab';
+import { SecurityTab } from './security-tab';
+import { SoftwareTab } from './software-tab';
+import { UsersTab } from './users-tab';
+import { VulnerabilitiesTab } from './vulnerabilities-tab';
 
 export const DEVICE_TABS: TabItem[] = [
   {
-    id: "hardware",
-    label: "Hardware",
+    id: 'hardware',
+    label: 'Hardware',
     icon: HardDrivesIcon,
     component: HardwareTab,
   },
   {
-    id: "network",
-    label: "Network",
+    id: 'network',
+    label: 'Network',
     icon: Hierarchy02Icon,
     component: NetworkTab,
   },
   {
-    id: "security",
-    label: "Security",
+    id: 'security',
+    label: 'Security',
     icon: ShieldIcon,
     component: SecurityTab,
   },
   {
-    id: "compliance",
-    label: "Compliance",
+    id: 'compliance',
+    label: 'Compliance',
     icon: AuditIcon,
     component: ComplianceTab,
   },
   {
-    id: "agents",
-    label: "Agents",
+    id: 'agents',
+    label: 'Agents',
     icon: TerminalBrowserIcon,
     component: AgentsTab,
   },
   {
-    id: "users",
-    label: "Users",
+    id: 'users',
+    label: 'Users',
     icon: UsersIcon,
     component: UsersTab,
   },
   {
-    id: "software",
-    label: "Software",
+    id: 'software',
+    label: 'Software',
     icon: WebDesignIcon,
     component: SoftwareTab,
   },
   {
-    id: "vulnerabilities",
-    label: "Vulnerabilities",
+    id: 'vulnerabilities',
+    label: 'Vulnerabilities',
     icon: BracketSquareCheckIcon,
     component: VulnerabilitiesTab,
   },
   {
-    id: "logs",
-    label: "Logs",
+    id: 'logs',
+    label: 'Logs',
     icon: ClipboardListIcon,
     component: LogsTab,
   },

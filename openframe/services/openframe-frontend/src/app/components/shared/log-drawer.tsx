@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   CardLoader,
@@ -10,12 +10,12 @@ import {
   DrawerHeader,
   DrawerTitle,
   Tag,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
-import type React from "react";
-import { useEffect } from "react";
-import { DeviceDetailsButton } from "../../devices/components/device-details-button";
-import { useDeviceDetails } from "../../devices/hooks/use-device-details";
-import { getDeviceOperatingSystem, getDeviceStatusConfig } from "../../devices/utils/device-status";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type React from 'react';
+import { useEffect } from 'react';
+import { DeviceDetailsButton } from '../../devices/components/device-details-button';
+import { useDeviceDetails } from '../../devices/hooks/use-device-details';
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status';
 
 export interface LogDrawerInfoField {
   label: string;
@@ -29,7 +29,7 @@ interface LogDrawerProps {
   description?: string;
   statusTag?: {
     label: string;
-    variant?: "success" | "warning" | "error" | "grey" | "critical";
+    variant?: 'success' | 'warning' | 'error' | 'grey' | 'critical';
   };
   timestamp?: string;
   infoFields?: LogDrawerInfoField[];
@@ -58,7 +58,7 @@ function DrawerDeviceCard({ deviceId }: { deviceId: string }) {
       device={{
         id: deviceDetails.id,
         machineId: deviceDetails.machineId,
-        name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || "",
+        name: deviceDetails.displayName || deviceDetails.hostname || deviceDetails.description || '',
         organization: deviceDetails.organization || deviceDetails.machineId,
         lastSeen: deviceDetails.lastSeen,
         operatingSystem: getDeviceOperatingSystem(deviceDetails.osType),
@@ -94,7 +94,7 @@ export function LogDrawer({
   infoFields,
   deviceId,
 }: LogDrawerProps) {
-  const hasDevice = !!deviceId && deviceId !== "null" && deviceId !== "";
+  const hasDevice = !!deviceId && deviceId !== 'null' && deviceId !== '';
 
   return (
     <Drawer
@@ -129,9 +129,9 @@ export function LogDrawer({
             {infoFields && infoFields.length > 0 && (
               <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3">
                 {infoFields.map(field => (
-                  <div key={typeof field.label === "string" ? field.label : ""} className="flex flex-col gap-0.5">
+                  <div key={typeof field.label === 'string' ? field.label : ''} className="flex flex-col gap-0.5">
                     <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                      {field.value || "—"}
+                      {field.value || '—'}
                     </span>
                     <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                       {field.label}

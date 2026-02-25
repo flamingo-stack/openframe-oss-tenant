@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 /**
  * Organizations Store
@@ -15,13 +15,13 @@ export interface OrganizationEntry {
     name: string;
     email: string;
   };
-  tier: "Basic" | "Premium" | "Enterprise";
+  tier: 'Basic' | 'Premium' | 'Enterprise';
   industry:
-    | "Technology"
-    | "Professional Services"
-    | "Healthcare"
-    | "Financial Services"
-    | "Retail & Hospitality"
+    | 'Technology'
+    | 'Professional Services'
+    | 'Healthcare'
+    | 'Financial Services'
+    | 'Retail & Hospitality'
     | string;
   mrrUsd: number;
   contractDue: string;
@@ -47,7 +47,7 @@ export interface OrganizationsState {
 
 const initialState = {
   organizations: [],
-  search: "",
+  search: '',
   isLoading: true,
   error: null,
 };
@@ -90,7 +90,7 @@ export const useOrganizationsStore = create<OrganizationsState>()(
       reset: () => set(() => initialState),
     })),
     {
-      name: "organizations-store",
+      name: 'organizations-store',
     },
   ),
 );

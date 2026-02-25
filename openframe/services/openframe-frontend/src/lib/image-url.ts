@@ -1,4 +1,4 @@
-import { runtimeEnv } from "./runtime-config";
+import { runtimeEnv } from './runtime-config';
 
 /**
  * Build full image URL with API base URL prefix
@@ -11,19 +11,19 @@ export function getFullImageUrl(imageUrl: string | null | undefined): string | u
   }
 
   // Already a full URL
-  if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
     return imageUrl;
   }
 
   const tenantHost = runtimeEnv.tenantHostUrl();
 
   // Already has /api/ prefix
-  if (imageUrl.startsWith("/api/")) {
+  if (imageUrl.startsWith('/api/')) {
     return `${tenantHost}${imageUrl}`;
   }
 
   // Has leading slash but no /api/
-  if (imageUrl.startsWith("/")) {
+  if (imageUrl.startsWith('/')) {
     return `${tenantHost}/api${imageUrl}`;
   }
 

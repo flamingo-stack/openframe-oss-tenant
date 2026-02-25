@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AuthBenefitsSection } from "../components/benefits-section";
+import { AuthBenefitsSection } from '../components/benefits-section';
 
 interface AuthLayoutProps {
   children: React.ReactNode;

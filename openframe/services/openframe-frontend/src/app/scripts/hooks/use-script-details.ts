@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { tacticalApiClient } from "../../../lib/tactical-api-client";
+import { useQuery } from '@tanstack/react-query';
+import { tacticalApiClient } from '../../../lib/tactical-api-client';
 
 export interface ScriptDetails {
   id: number;
@@ -23,7 +23,7 @@ export interface ScriptDetails {
 // ============ Query Keys ============
 
 export const scriptDetailsQueryKeys = {
-  all: ["script-details"] as const,
+  all: ['script-details'] as const,
   detail: (scriptId: string) => [...scriptDetailsQueryKeys.all, scriptId] as const,
 };
 
@@ -33,7 +33,7 @@ async function fetchScriptDetails(scriptId: string): Promise<ScriptDetails> {
   const response = await tacticalApiClient.getScript(scriptId);
 
   if (!response.ok || !response.data) {
-    throw new Error(response.error || "Failed to fetch script details");
+    throw new Error(response.error || 'Failed to fetch script details');
   }
 
   return response.data;

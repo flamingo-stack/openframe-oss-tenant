@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useState } from "react";
-import { apiClient } from "../../../lib/api-client";
-import { GET_LOG_DETAILS_QUERY } from "../../logs-page/queries/logs-queries";
-import type { LogEntry } from "../../logs-page/stores/logs-store";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useState } from 'react';
+import { apiClient } from '../../../lib/api-client';
+import { GET_LOG_DETAILS_QUERY } from '../../logs-page/queries/logs-queries';
+import type { LogEntry } from '../../logs-page/stores/logs-store';
 
 interface LogDetailsResponse {
   logDetails: LogEntry;
@@ -30,7 +30,7 @@ export function useLogDetails() {
       setError(null);
 
       try {
-        const response = await apiClient.post<GraphQlResponse<LogDetailsResponse>>("/api/graphql", {
+        const response = await apiClient.post<GraphQlResponse<LogDetailsResponse>>('/api/graphql', {
           query: GET_LOG_DETAILS_QUERY,
           variables: {
             logId: logId,
@@ -48,24 +48,24 @@ export function useLogDetails() {
         const graphqlResponse = response.data;
 
         if (graphqlResponse?.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
         }
 
         if (!graphqlResponse?.data) {
-          throw new Error("No data received from server");
+          throw new Error('No data received from server');
         }
 
         setLogDetails(graphqlResponse.data.logDetails);
         return graphqlResponse.data.logDetails;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Failed to fetch log details";
-        console.error("Failed to fetch log details:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch log details';
+        console.error('Failed to fetch log details:', error);
         setError(errorMessage);
 
         toast({
-          title: "Error fetching log details",
+          title: 'Error fetching log details',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
         });
 
         throw error;

@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { CardLoader, DeviceCard } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useEffect } from "react";
-import { DeviceDetailsButton } from "../../devices/components/device-details-button";
-import { useDeviceDetails } from "../../devices/hooks/use-device-details";
-import type { Device } from "../../devices/types/device.types";
-import { getDeviceOperatingSystem, getDeviceStatusConfig } from "../../devices/utils/device-status";
+import { CardLoader, DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useEffect } from 'react';
+import { DeviceDetailsButton } from '../../devices/components/device-details-button';
+import { useDeviceDetails } from '../../devices/hooks/use-device-details';
+import type { Device } from '../../devices/types/device.types';
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status';
 
 interface DeviceInfoSectionProps {
   deviceId?: string;
@@ -54,10 +54,10 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
       {device && (
         <DeviceCard
           device={{
-            id: device.id || deviceId || "",
-            machineId: device.machineId || deviceId || "",
-            name: device.displayName || device.hostname || device.description || device.machineId || deviceId || "",
-            organization: device.organization || device.machineId || deviceId || "",
+            id: device.id || deviceId || '',
+            machineId: device.machineId || deviceId || '',
+            name: device.displayName || device.hostname || device.description || device.machineId || deviceId || '',
+            organization: device.organization || device.machineId || deviceId || '',
             lastSeen: device.lastSeen || device.last_seen,
             operatingSystem: getDeviceOperatingSystem(device.osType),
           }}
@@ -77,8 +77,8 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
               visible: true,
               component: (
                 <DeviceDetailsButton
-                  deviceId={device.id || deviceId || ""}
-                  machineId={device.machineId || deviceId || ""}
+                  deviceId={device.id || deviceId || ''}
+                  machineId={device.machineId || deviceId || ''}
                   className="shrink-0"
                 />
               ),

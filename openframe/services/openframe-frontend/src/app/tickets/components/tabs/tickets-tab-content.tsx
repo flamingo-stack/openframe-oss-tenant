@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { getTabComponent } from "@flamingo-stack/openframe-frontend-core";
-import { TICKETS_TABS } from "./tickets-tabs";
+import { getTabComponent } from '@flamingo-stack/openframe-frontend-core';
+import { TICKETS_TABS } from './tickets-tabs';
 
 interface TicketsTabContentProps {
   activeTab: string;

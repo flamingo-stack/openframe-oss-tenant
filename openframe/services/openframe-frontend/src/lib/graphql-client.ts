@@ -5,12 +5,12 @@
  * Must be called after authentication is complete.
  */
 
-import { introspector } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { runtimeEnv } from "./runtime-config";
+import { introspector } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { runtimeEnv } from './runtime-config';
 
 // GraphQL endpoint configuration
 export const GRAPHQL_ENDPOINT =
-  typeof window !== "undefined" ? `${window.location.origin}/api/graphql` : "/api/graphql";
+  typeof window !== 'undefined' ? `${window.location.origin}/api/graphql` : '/api/graphql';
 
 /**
  * Initialize GraphQL introspection
@@ -33,32 +33,32 @@ export async function initializeGraphQlIntrospection(force = false): Promise<voi
   try {
     // Skip if already loaded (unless forced)
     if (!force && introspector.isLoaded()) {
-      console.log("[GraphQL] Schema already loaded from cache");
+      console.log('[GraphQL] Schema already loaded from cache');
       return;
     }
 
-    console.log("[GraphQL] Initializing schema introspection...");
+    console.log('[GraphQL] Initializing schema introspection...');
 
     // Get auth headers (for DevTicket mode)
     const headers: Record<string, string> = {};
 
     if (runtimeEnv.enableDevTicketObserver()) {
       try {
-        const accessToken = localStorage.getItem("of_access_token");
+        const accessToken = localStorage.getItem('of_access_token');
         if (accessToken) {
           headers.Authorization = `Bearer ${accessToken}`;
         }
       } catch (error) {
-        console.warn("[GraphQL] Failed to get access token:", error);
+        console.warn('[GraphQL] Failed to get access token:', error);
       }
     }
 
     // Fetch schema via introspection
     await introspector.fetchSchema(GRAPHQL_ENDPOINT, headers, force);
 
-    console.log("[GraphQL] Schema introspection complete");
+    console.log('[GraphQL] Schema introspection complete');
   } catch (error) {
-    console.error("[GraphQL] Introspection failed:", error);
+    console.error('[GraphQL] Introspection failed:', error);
     // Don't throw - URL state hooks can still work without introspection
     // (nested types just won't be automatically flattened)
   }
@@ -71,7 +71,7 @@ export async function initializeGraphQlIntrospection(force = false): Promise<voi
  */
 export function clearGraphQlCache(): void {
   introspector.clearCache();
-  console.log("[GraphQL] Schema cache cleared");
+  console.log('[GraphQL] Schema cache cleared');
 }
 
 /**

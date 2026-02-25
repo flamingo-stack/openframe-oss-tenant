@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { DetailPageContainer } from "@flamingo-stack/openframe-frontend-core";
-import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * ScheduleInfoBar skeleton — 4 cols: Date, Time, Repeat, Platform

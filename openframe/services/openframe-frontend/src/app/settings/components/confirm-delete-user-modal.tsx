@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   AlertDialog,
@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 interface ConfirmDeleteUserModalProps {
   open: boolean;

@@ -2,7 +2,7 @@
  * MeshCentral File Uploader
  */
 
-import type { FileTransferProgress, UploadRequest } from "./file-manager-types";
+import type { FileTransferProgress, UploadRequest } from './file-manager-types';
 
 export interface UploadTask {
   id: string;
@@ -13,7 +13,7 @@ export interface UploadTask {
   totalBytes: number;
   nextOffset: number;
   pendingBytes: number;
-  status: "pending" | "hashing" | "uploading" | "completed" | "failed" | "cancelled";
+  status: 'pending' | 'hashing' | 'uploading' | 'completed' | 'failed' | 'cancelled';
   hash?: string;
   error?: Error;
   append?: boolean;
@@ -52,16 +52,16 @@ export class FileUploader {
       progress: Math.round((task.bytesUploaded / task.totalBytes) * 100),
       bytesTransferred: task.bytesUploaded,
       totalBytes: task.totalBytes,
-      type: "upload",
+      type: 'upload',
     };
     this.onProgress?.(progress);
   }
 
   async calculateFileHash(file: File): Promise<string> {
     const buffer = await file.arrayBuffer();
-    const hashBuffer = await crypto.subtle.digest("SHA-384", buffer);
+    const hashBuffer = await crypto.subtle.digest('SHA-384', buffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
   async uploadFile(file: File, remotePath: string, checkHash = true): Promise<string> {
@@ -76,18 +76,18 @@ export class FileUploader {
       totalBytes: file.size,
       nextOffset: 0,
       pendingBytes: 0,
-      status: "pending",
+      status: 'pending',
     };
 
     this.uploads.set(uploadId, task);
 
     try {
       if (checkHash && file.size <= 100 * 1024 * 1024) {
-        task.status = "hashing";
+        task.status = 'hashing';
         task.hash = await this.calculateFileHash(file);
 
         const hashRequest: UploadRequest = {
-          action: "uploadhash",
+          action: 'uploadhash',
           reqid: uploadId,
           path: remotePath,
           name: file.name,
@@ -103,8 +103,8 @@ export class FileUploader {
         this.beginUpload(uploadId);
       }
     } catch (error) {
-      task.status = "failed";
-      task.error = error instanceof Error ? error : new Error("Upload failed");
+      task.status = 'failed';
+      task.error = error instanceof Error ? error : new Error('Upload failed');
       throw task.error;
     }
 
@@ -115,13 +115,13 @@ export class FileUploader {
     const task = this.uploads.get(uploadId);
     if (!task) return;
 
-    task.status = "uploading";
+    task.status = 'uploading';
     task.append = append;
     task.nextOffset = resumeOffset;
     task.bytesUploaded = resumeOffset;
 
     const request: UploadRequest = {
-      action: "upload",
+      action: 'upload',
       reqid: uploadId,
       path: task.remotePath,
       name: task.fileName,
@@ -136,7 +136,7 @@ export class FileUploader {
     const task = this.uploads.get(uploadId);
     if (!task) return;
 
-    task.status = "uploading";
+    task.status = 'uploading';
     task.nextOffset = offset;
     task.bytesUploaded = offset;
     this.sendNextChunk(uploadId);
@@ -144,9 +144,9 @@ export class FileUploader {
 
   handleUploadAck(uploadId: string, confirmedOffset?: number): void {
     const task = this.uploads.get(uploadId);
-    if (!task || task.status !== "uploading") return;
+    if (!task || task.status !== 'uploading') return;
 
-    if (typeof confirmedOffset === "number") {
+    if (typeof confirmedOffset === 'number') {
       task.bytesUploaded = confirmedOffset;
     } else if (task.pendingBytes > 0) {
       task.bytesUploaded += task.pendingBytes;
@@ -168,7 +168,7 @@ export class FileUploader {
 
     if (exists) {
       task.bytesUploaded = task.totalBytes;
-      task.status = "completed";
+      task.status = 'completed';
       this.reportProgress(task);
     } else {
       this.beginUpload(uploadId, !!resumeOffset, resumeOffset || 0);
@@ -179,7 +179,7 @@ export class FileUploader {
     const task = this.uploads.get(uploadId);
     if (!task) return;
 
-    task.status = "completed";
+    task.status = 'completed';
     this.reportProgress(task);
   }
 
@@ -187,13 +187,13 @@ export class FileUploader {
     const task = this.uploads.get(uploadId);
     if (!task) return;
 
-    task.status = "failed";
+    task.status = 'failed';
     task.error = new Error(error);
   }
 
   hasActiveUpload(): boolean {
     for (const task of this.uploads.values()) {
-      if (task.status === "uploading" || task.status === "hashing") {
+      if (task.status === 'uploading' || task.status === 'hashing') {
         return true;
       }
     }
@@ -202,7 +202,7 @@ export class FileUploader {
 
   getActiveUploadId(): string | null {
     for (const [id, task] of this.uploads.entries()) {
-      if (task.status === "uploading" || task.status === "hashing") {
+      if (task.status === 'uploading' || task.status === 'hashing') {
         return id;
       }
     }
@@ -213,13 +213,13 @@ export class FileUploader {
     const task = this.uploads.get(uploadId);
     if (!task) return;
 
-    task.status = "cancelled";
+    task.status = 'cancelled';
     this.uploads.delete(uploadId);
   }
 
   private async sendNextChunk(uploadId: string): Promise<void> {
     const task = this.uploads.get(uploadId);
-    if (!task || task.status !== "uploading") return;
+    if (!task || task.status !== 'uploading') return;
     if (task.nextOffset >= task.totalBytes) {
       this.finishUpload(uploadId);
       return;
@@ -256,10 +256,10 @@ export class FileUploader {
 
   private finishUpload(uploadId: string): void {
     const task = this.uploads.get(uploadId);
-    if (!task || task.status !== "uploading") return;
+    if (!task || task.status !== 'uploading') return;
 
     if (this.sendMessage) {
-      this.sendMessage(JSON.stringify({ action: "uploaddone", reqid: uploadId }));
+      this.sendMessage(JSON.stringify({ action: 'uploaddone', reqid: uploadId }));
     }
   }
 
@@ -273,7 +273,7 @@ export class FileUploader {
 
   clearCompleted(): void {
     for (const [id, task] of this.uploads) {
-      if (task.status === "completed" || task.status === "cancelled") {
+      if (task.status === 'completed' || task.status === 'cancelled') {
         this.uploads.delete(id);
       }
     }

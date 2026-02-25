@@ -2,9 +2,9 @@
  * MeshCentral File Manager
  */
 
-import { FileBinaryProtocol } from "./file-binary-protocol";
-import { type DownloadTask, FileDownloader } from "./file-downloader";
-import { type FileError, FileErrorHandler } from "./file-error-handler";
+import { FileBinaryProtocol } from './file-binary-protocol';
+import { type DownloadTask, FileDownloader } from './file-downloader';
+import { type FileError, FileErrorHandler } from './file-error-handler';
 import type {
   DirectoryListing,
   FileConnectionState,
@@ -12,11 +12,11 @@ import type {
   FileManagerOptions,
   FileOperationResponse,
   FileTransferProgress,
-} from "./file-manager-types";
-import { FileOperations } from "./file-operations";
-import { FileUploader, type UploadTask } from "./file-uploader";
-import type { MeshControlClient } from "./meshcentral-control";
-import { MeshTunnel, type TunnelState } from "./meshcentral-tunnel";
+} from './file-manager-types';
+import { FileOperations } from './file-operations';
+import { FileUploader, type UploadTask } from './file-uploader';
+import type { MeshControlClient } from './meshcentral-control';
+import { MeshTunnel, type TunnelState } from './meshcentral-tunnel';
 
 export class MeshCentralFileManager {
   private tunnel: MeshTunnel | null = null;
@@ -28,8 +28,8 @@ export class MeshCentralFileManager {
   private optionsSent = false;
   private initialDirectoryRequested = false;
 
-  private state: FileConnectionState = "disconnected";
-  private currentPath = "";
+  private state: FileConnectionState = 'disconnected';
+  private currentPath = '';
   private currentFiles: FileEntry[] = [];
   private pendingRequests = new Map<string, { resolve: Function; reject: Function; timeout: any }>();
   private loadingPath: string | null = null;
@@ -87,13 +87,13 @@ export class MeshCentralFileManager {
       return;
     }
 
-    throw new Error("Server file access not implemented. Please use remote file access.");
+    throw new Error('Server file access not implemented. Please use remote file access.');
   }
 
   private async ensureRemoteSession(): Promise<void> {
     if (!this.isRemote) return;
     if (!this.controlClient) {
-      throw new Error("MeshControlClient is required for remote file access");
+      throw new Error('MeshControlClient is required for remote file access');
     }
     await this.controlClient.openSession();
     const cookies = await this.controlClient.getAuthCookies();
@@ -102,41 +102,41 @@ export class MeshCentralFileManager {
   }
 
   private normalizeRequestedPath(path: string): string {
-    if (!path || path === "/") return "";
+    if (!path || path === '/') return '';
 
     const unixLikeMatch = path.match(/^\/([A-Za-z]:)(\/.*)?$/);
     if (unixLikeMatch) {
       const drive = unixLikeMatch[1];
-      const remainder = unixLikeMatch[2] || "";
-      return drive + "\\" + remainder.replace(/\//g, "\\").replace(/^\\/, "");
+      const remainder = unixLikeMatch[2] || '';
+      return drive + '\\' + remainder.replace(/\//g, '\\').replace(/^\\/, '');
     }
 
     if (path.match(/^\/[A-Za-z]:$/)) {
-      return path.substring(1) + "\\";
+      return path.substring(1) + '\\';
     }
 
     const mixedMatch = path.match(/^([A-Za-z]:)(\/.*)?$/);
     if (mixedMatch) {
       const drive = mixedMatch[1];
-      const remainder = mixedMatch[2] || "";
-      return drive + "\\" + remainder.replace(/\//g, "\\").replace(/^\\/, "");
+      const remainder = mixedMatch[2] || '';
+      return drive + '\\' + remainder.replace(/\//g, '\\').replace(/^\\/, '');
     }
 
     if (path.match(/^[A-Za-z]:\\/)) {
-      return path.replace(/\//g, "\\");
+      return path.replace(/\//g, '\\');
     }
 
     if (path.match(/^[A-Za-z]:$/)) {
-      return path + "\\";
+      return path + '\\';
     }
 
     return path;
   }
 
   private async startRemoteTunnel(): Promise<void> {
-    if (!this.nodeId) throw new Error("Node ID is required for remote file access");
-    if (!this.authCookie) throw new Error("Missing MeshCentral auth cookie");
-    if (!this.controlClient) throw new Error("MeshControlClient unavailable");
+    if (!this.nodeId) throw new Error('Node ID is required for remote file access');
+    if (!this.authCookie) throw new Error('Missing MeshCentral auth cookie');
+    if (!this.controlClient) throw new Error('MeshControlClient unavailable');
 
     this.initialDirectoryRequested = false;
     this.optionsSent = false;
@@ -149,7 +149,7 @@ export class MeshCentralFileManager {
     try {
       await this.controlClient.openSession();
     } catch (error) {
-      console.error("[FileManager] Failed to open control session:", error);
+      console.error('[FileManager] Failed to open control session:', error);
       throw error;
     }
 
@@ -158,7 +158,7 @@ export class MeshCentralFileManager {
       nodeId: this.nodeId,
       protocol: 5,
       onData: data => {
-        if (typeof data === "string") {
+        if (typeof data === 'string') {
           this.handleJsonMessage(data);
         } else {
           this.handleBinaryMessage(data);
@@ -168,7 +168,7 @@ export class MeshCentralFileManager {
         this.handleBinaryMessage(bytes);
       },
       onCtrlMessage: msg => this.handleCtrlChannelMessage(msg),
-      onConsoleMessage: msg => console.log("[FileManager][Console]", msg),
+      onConsoleMessage: msg => console.log('[FileManager][Console]', msg),
       onRequestPairing: async relayId => {
         try {
           if (!this.controlClient?.isConnected()) {
@@ -178,7 +178,7 @@ export class MeshCentralFileManager {
             this.controlClient.sendFileTunnel(this.nodeId, relayId);
           }
         } catch (error) {
-          console.error("[FileManager] Error pairing file tunnel:", error);
+          console.error('[FileManager] Error pairing file tunnel:', error);
         }
       },
       onStateChange: state => this.handleTunnelStateChange(state),
@@ -193,23 +193,23 @@ export class MeshCentralFileManager {
         this.optionsSent = false;
         this.initialDirectoryRequested = false;
         this.loadingPath = null;
-        this.setState("disconnected");
+        this.setState('disconnected');
         break;
       case 1:
-        this.setState("connecting");
+        this.setState('connecting');
         break;
       case 2:
         this.optionsSent = false;
-        this.setState("connected_to_server");
+        this.setState('connected_to_server');
         this.sendRelayOptions();
         break;
       case 3: {
-        const wasConnected = this.state === "connected_end_to_end";
-        this.setState("connected_end_to_end");
+        const wasConnected = this.state === 'connected_end_to_end';
+        this.setState('connected_end_to_end');
         if (!wasConnected && !this.initialDirectoryRequested) {
           this.initialDirectoryRequested = true;
-          this.loadDirectory(this.currentPath || "").catch(error => {
-            console.error("[FileManager] Initial load failed:", error);
+          this.loadDirectory(this.currentPath || '').catch(error => {
+            console.error('[FileManager] Initial load failed:', error);
           });
         }
         break;
@@ -240,52 +240,52 @@ export class MeshCentralFileManager {
       }
 
       switch (message.action) {
-        case "ls":
+        case 'ls':
           this.handleDirectoryListing(message as DirectoryListing);
           break;
 
-        case "findfile":
+        case 'findfile':
           this.handleFindFileMessage(message);
           break;
 
-        case "download":
+        case 'download':
           this.handleDownloadMessage(message);
           break;
 
-        case "uploadstart":
+        case 'uploadstart':
           this.uploader.handleUploadStart(message.reqid, message.nextofs || message.position || 0);
           break;
 
-        case "uploadack":
+        case 'uploadack':
           this.uploader.handleUploadAck(message.reqid, message.nextofs || message.position);
           break;
 
-        case "uploadhash":
+        case 'uploadhash':
           this.uploader.handleHashResponse(message.reqid, !!message.exists, message.nextofs || message.offset);
           break;
 
-        case "uploaddone":
+        case 'uploaddone':
           this.uploader.handleUploadDone(message.reqid);
-          this.loadDirectory(this.currentPath || "");
+          this.loadDirectory(this.currentPath || '');
           break;
 
-        case "uploaderror":
-          this.uploader.handleUploadError(message.reqid, message.error || "Upload failed");
+        case 'uploaderror':
+          this.uploader.handleUploadError(message.reqid, message.error || 'Upload failed');
           break;
 
-        case "dialogmessage":
+        case 'dialogmessage':
           this.handleDialogMessage(message);
           break;
 
-        case "error":
+        case 'error':
           this.handleErrorMessage(message);
           break;
 
-        case "connected":
-        case "state":
+        case 'connected':
+        case 'state':
           if (message.state === 3 || message.connected === true) {
-            this.setState("connected_end_to_end");
-            this.loadDirectory(this.currentPath || "");
+            this.setState('connected_end_to_end');
+            this.loadDirectory(this.currentPath || '');
           }
           break;
 
@@ -293,14 +293,14 @@ export class MeshCentralFileManager {
           this.handleOperationResponse(message);
       }
     } catch (_error) {
-      if (data.length > 0 && (data.charCodeAt(0) > 127 || data.includes("\x00"))) {
+      if (data.length > 0 && (data.charCodeAt(0) > 127 || data.includes('\x00'))) {
         const encoder = new TextEncoder();
         const bytes = encoder.encode(data);
         this.handleBinaryMessage(bytes);
         return;
       }
 
-      if (data.startsWith("{") && !data.endsWith("}")) {
+      if (data.startsWith('{') && !data.endsWith('}')) {
         return;
       }
     }
@@ -310,14 +310,14 @@ export class MeshCentralFileManager {
     const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
 
     try {
-      const textDecoder = new TextDecoder("utf-8");
+      const textDecoder = new TextDecoder('utf-8');
       const text = textDecoder.decode(bytes.slice(0, 100));
 
-      if (text.startsWith("{") || text.startsWith("[")) {
+      if (text.startsWith('{') || text.startsWith('[')) {
         const fullText = textDecoder.decode(bytes);
         try {
           const json = JSON.parse(fullText);
-          if (json.dir !== undefined || json.action === "ls") {
+          if (json.dir !== undefined || json.action === 'ls') {
             if (json.dir !== undefined) {
               this.handleDirectoryListing(json as DirectoryListing);
             }
@@ -407,7 +407,7 @@ export class MeshCentralFileManager {
 
   private handleDialogMessage(message: any): void {
     if (message?.msg) {
-      console.log("[FileManager] Dialog message:", message.msg);
+      console.log('[FileManager] Dialog message:', message.msg);
     }
   }
 
@@ -441,12 +441,12 @@ export class MeshCentralFileManager {
   }
 
   private handleOperationResponse(message: FileOperationResponse): void {
-    const request = this.pendingRequests.get(message.reqid || "");
+    const request = this.pendingRequests.get(message.reqid || '');
     if (request) {
       clearTimeout(request.timeout);
-      this.pendingRequests.delete(message.reqid || "");
+      this.pendingRequests.delete(message.reqid || '');
 
-      if (message.result === "ok" || message.action) {
+      if (message.result === 'ok' || message.action) {
         request.resolve(message);
       } else if (message.error) {
         request.reject(new Error(message.error));
@@ -467,7 +467,7 @@ export class MeshCentralFileManager {
       if (request) {
         clearTimeout(request.timeout);
         this.pendingRequests.delete(message.reqid);
-        request.reject(new Error(error?.message || "Operation failed"));
+        request.reject(new Error(error?.message || 'Operation failed'));
       }
     }
   }
@@ -479,7 +479,7 @@ export class MeshCentralFileManager {
       if (timeoutMs > 0) {
         timeout = setTimeout(() => {
           this.pendingRequests.delete(request.reqid);
-          reject(new Error("Operation timed out"));
+          reject(new Error('Operation timed out'));
         }, timeoutMs);
       }
 
@@ -489,7 +489,7 @@ export class MeshCentralFileManager {
       if (!sent) {
         if (timeout) clearTimeout(timeout);
         this.pendingRequests.delete(request.reqid);
-        reject(new Error("Failed to send request"));
+        reject(new Error('Failed to send request'));
       }
     });
   }
@@ -497,7 +497,7 @@ export class MeshCentralFileManager {
   async loadDirectory(path: string): Promise<FileEntry[]> {
     const normalizedPath = this.normalizeRequestedPath(path);
     if (!this.fileOps.validatePath(normalizedPath)) {
-      throw new Error("Invalid path");
+      throw new Error('Invalid path');
     }
 
     if (this.loadingPath === normalizedPath) {
@@ -517,7 +517,7 @@ export class MeshCentralFileManager {
 
   async createFolder(folderName: string): Promise<void> {
     const sanitized = this.fileOps.sanitizeName(folderName);
-    if (!sanitized) throw new Error("Invalid folder name");
+    if (!sanitized) throw new Error('Invalid folder name');
 
     const request = this.fileOps.createMakeDirRequest(this.currentPath, sanitized);
 
@@ -527,7 +527,7 @@ export class MeshCentralFileManager {
 
   async rename(oldName: string, newName: string): Promise<void> {
     const sanitized = this.fileOps.sanitizeName(newName);
-    if (!sanitized) throw new Error("Invalid name");
+    if (!sanitized) throw new Error('Invalid name');
 
     const request = this.fileOps.createRenameRequest(this.currentPath, oldName, sanitized);
 
@@ -544,7 +544,7 @@ export class MeshCentralFileManager {
 
   async copyFiles(items: string[], destinationPath: string): Promise<void> {
     if (!this.fileOps.validatePath(destinationPath)) {
-      throw new Error("Invalid destination path");
+      throw new Error('Invalid destination path');
     }
 
     const request = this.fileOps.createCopyRequest(this.currentPath, destinationPath, items);
@@ -555,7 +555,7 @@ export class MeshCentralFileManager {
 
   async copyFromSource(sourcePath: string, items: string[]): Promise<void> {
     if (!this.fileOps.validatePath(sourcePath)) {
-      throw new Error("Invalid source path");
+      throw new Error('Invalid source path');
     }
 
     const request = this.fileOps.createCopyRequest(sourcePath, this.currentPath, items);
@@ -566,7 +566,7 @@ export class MeshCentralFileManager {
 
   async moveFromSource(sourcePath: string, items: string[]): Promise<void> {
     if (!this.fileOps.validatePath(sourcePath)) {
-      throw new Error("Invalid source path");
+      throw new Error('Invalid source path');
     }
 
     const request = this.fileOps.createMoveRequest(sourcePath, this.currentPath, items);
@@ -577,7 +577,7 @@ export class MeshCentralFileManager {
 
   async moveFiles(items: string[], destinationPath: string): Promise<void> {
     if (!this.fileOps.validatePath(destinationPath)) {
-      throw new Error("Invalid destination path");
+      throw new Error('Invalid destination path');
     }
 
     const request = this.fileOps.createMoveRequest(this.currentPath, destinationPath, items);
@@ -591,7 +591,7 @@ export class MeshCentralFileManager {
   }
 
   downloadFile(fileName: string): string {
-    const basePath = this.currentPath || "";
+    const basePath = this.currentPath || '';
     const filePath = this.fileOps.joinPath(basePath, fileName);
     const entry = this.currentFiles.find(file => file.n === fileName);
     return this.downloader.downloadFile(filePath, fileName, entry?.s);
@@ -600,7 +600,7 @@ export class MeshCentralFileManager {
   async getFileContent(fileName: string): Promise<string> {
     const request = this.fileOps.createGetFileRequest(this.currentPath, fileName);
     const response = await this.sendOperation<any>(request);
-    return response.data ? atob(response.data) : "";
+    return response.data ? atob(response.data) : '';
   }
 
   async setFileContent(fileName: string, content: string): Promise<void> {
@@ -615,7 +615,7 @@ export class MeshCentralFileManager {
 
       if (this.pendingDebouncedSearchReject) {
         try {
-          this.pendingDebouncedSearchReject(new Error("Cancelled for new search"));
+          this.pendingDebouncedSearchReject(new Error('Cancelled for new search'));
         } catch {
           /* noop */
         }
@@ -661,7 +661,7 @@ export class MeshCentralFileManager {
             if (pendingRequest) {
               clearTimeout(pendingRequest.timeout);
               this.pendingRequests.delete(cancelRequestId);
-              pendingRequest.reject(new Error("Cancelled for new search"));
+              pendingRequest.reject(new Error('Cancelled for new search'));
             }
 
             this.pendingSearchRequestId = null;
@@ -698,7 +698,7 @@ export class MeshCentralFileManager {
 
     if (this.pendingDebouncedSearchReject) {
       try {
-        this.pendingDebouncedSearchReject(new Error("Cancelled for new search"));
+        this.pendingDebouncedSearchReject(new Error('Cancelled for new search'));
       } catch {
         /* noop */
       }
@@ -716,7 +716,7 @@ export class MeshCentralFileManager {
       if (pendingRequest) {
         clearTimeout(pendingRequest.timeout);
         this.pendingRequests.delete(cancelRequestId);
-        pendingRequest.reject(new Error("Cancelled for new search"));
+        pendingRequest.reject(new Error('Cancelled for new search'));
       }
 
       this.pendingSearchRequestId = null;
@@ -730,18 +730,18 @@ export class MeshCentralFileManager {
   }
 
   async navigateUp(): Promise<FileEntry[]> {
-    const parentPath = this.fileOps.getParentPath(this.currentPath || "/");
+    const parentPath = this.fileOps.getParentPath(this.currentPath || '/');
     return await this.loadDirectory(parentPath);
   }
 
   async navigateInto(directoryName: string): Promise<FileEntry[]> {
-    const basePath = this.currentPath || "";
+    const basePath = this.currentPath || '';
     const newPath = this.fileOps.joinPath(basePath, directoryName);
     return await this.loadDirectory(newPath);
   }
 
   getCurrentPath(): string {
-    return this.currentPath || "/";
+    return this.currentPath || '/';
   }
 
   getCurrentFiles(): FileEntry[] {
@@ -769,7 +769,7 @@ export class MeshCentralFileManager {
   }
 
   isConnected(): boolean {
-    return this.state === "connected_end_to_end";
+    return this.state === 'connected_end_to_end';
   }
 
   isSearchActive(): boolean {
@@ -786,7 +786,7 @@ export class MeshCentralFileManager {
       if (request.timeout) {
         clearTimeout(request.timeout);
       }
-      request.reject(new Error("Disconnected"));
+      request.reject(new Error('Disconnected'));
     }
     this.pendingRequests.clear();
 
@@ -799,14 +799,14 @@ export class MeshCentralFileManager {
       try {
         this.tunnel.stop();
       } catch (error) {
-        console.error("Error stopping file tunnel:", error);
+        console.error('Error stopping file tunnel:', error);
       }
       this.tunnel = null;
     }
 
-    this.setState("disconnected");
+    this.setState('disconnected');
     this.currentFiles = [];
-    this.currentPath = "";
+    this.currentPath = '';
     this.optionsSent = false;
     this.initialDirectoryRequested = false;
 
@@ -830,20 +830,20 @@ export class MeshCentralFileManager {
     try {
       this.tunnel.sendCtrl(payload);
     } catch (error) {
-      console.error("Error sending relay control message via tunnel:", error);
+      console.error('Error sending relay control message via tunnel:', error);
     }
   }
 
   private handleCtrlChannelMessage(message: any): void {
     switch (message.type) {
-      case "ping":
-        this.sendRelayControlMessage({ type: "pong" });
+      case 'ping':
+        this.sendRelayControlMessage({ type: 'pong' });
         break;
-      case "close":
-        console.log("[FileManager] Relay sent close notice:", message.reason);
+      case 'close':
+        console.log('[FileManager] Relay sent close notice:', message.reason);
         break;
-      case "console":
-        console.log("[FileManager] Relay console message:", message.msg);
+      case 'console':
+        console.log('[FileManager] Relay console message:', message.msg);
         break;
       default:
         break;
@@ -855,8 +855,8 @@ export class MeshCentralFileManager {
     if (this.optionsSent && !force) return;
     this.optionsSent = true;
     this.sendRelayControlMessage({
-      type: "options",
-      consent: typeof this.options.consent === "number" ? this.options.consent : 0,
+      type: 'options',
+      consent: typeof this.options.consent === 'number' ? this.options.consent : 0,
     });
   }
 
@@ -865,7 +865,7 @@ export class MeshCentralFileManager {
       const data = JSON.stringify(payload);
       return this.sendData(data);
     } catch (error) {
-      console.error("Failed to serialize payload:", error);
+      console.error('Failed to serialize payload:', error);
       return false;
     }
   }
@@ -873,7 +873,7 @@ export class MeshCentralFileManager {
   private async sendOperationWithoutResponse(request: any): Promise<void> {
     const sent = this.sendJsonMessage(request);
     if (!sent) {
-      throw new Error("Failed to send request");
+      throw new Error('Failed to send request');
     }
   }
 
@@ -888,7 +888,7 @@ export class MeshCentralFileManager {
     }
 
     try {
-      if (typeof data === "string") {
+      if (typeof data === 'string') {
         this.tunnel.sendText(data);
       } else {
         const buffer = data instanceof Uint8Array ? data : new Uint8Array(data);
@@ -901,9 +901,9 @@ export class MeshCentralFileManager {
   }
 }
 
-export { FileBinaryProtocol } from "./file-binary-protocol";
-export { type DownloadTask, FileDownloader } from "./file-downloader";
-export { type FileError, FileErrorHandler, type FileErrorType } from "./file-error-handler";
-export * from "./file-manager-types";
-export { FileOperations } from "./file-operations";
-export { FileUploader, type UploadTask } from "./file-uploader";
+export { FileBinaryProtocol } from './file-binary-protocol';
+export { type DownloadTask, FileDownloader } from './file-downloader';
+export { type FileError, FileErrorHandler, type FileErrorType } from './file-error-handler';
+export * from './file-manager-types';
+export { FileOperations } from './file-operations';
+export { FileUploader, type UploadTask } from './file-uploader';

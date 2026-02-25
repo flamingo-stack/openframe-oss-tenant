@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   InfoCard,
@@ -6,23 +6,23 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@flamingo-stack/openframe-frontend-core";
-import { ToolBadge } from "@flamingo-stack/openframe-frontend-core/components";
-import { normalizeToolTypeWithFallback } from "@flamingo-stack/openframe-frontend-core/utils";
-import { Info as InfoIcon } from "lucide-react";
-import type { Device, InstalledAgent, ToolConnection } from "../../types/device.types";
+} from '@flamingo-stack/openframe-frontend-core';
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
+import { Info as InfoIcon } from 'lucide-react';
+import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
 
 interface AgentsTabProps {
   device: Device;
 }
 
 const agentTypeToToolType: Record<string, string> = {
-  "fleetmdm-agent": "FLEET_MDM",
-  "tacticalrmm-agent": "TACTICAL_RMM",
-  "meshcentral-agent": "MESHCENTRAL",
-  "openframe-chat": "OPENFRAME_CHAT",
-  "openframe-client": "OPENFRAME_CLIENT",
-  osqueryd: "OSQUERY",
+  'fleetmdm-agent': 'FLEET_MDM',
+  'tacticalrmm-agent': 'TACTICAL_RMM',
+  'meshcentral-agent': 'MESHCENTRAL',
+  'openframe-chat': 'OPENFRAME_CHAT',
+  'openframe-client': 'OPENFRAME_CLIENT',
+  osqueryd: 'OSQUERY',
 };
 
 export function AgentsTab({ device }: AgentsTabProps) {
@@ -41,7 +41,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
     return {
       agentType: agent.agentType,
       version: agent.version,
-      toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, "_"),
+      toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_'),
       agentToolId: connection?.agentToolId,
       hasConnection: !!connection,
     };
@@ -54,7 +54,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
     if (!hasInstalledAgent) {
       combinedAgents.push({
-        agentType: tc.toolType.toLowerCase().replace(/_/g, "-"),
+        agentType: tc.toolType.toLowerCase().replace(/_/g, '-'),
         version: undefined,
         toolType: tc.toolType,
         agentToolId: tc.agentToolId,
@@ -81,11 +81,11 @@ export function AgentsTab({ device }: AgentsTabProps) {
             const items = [];
 
             if (agent.agentToolId) {
-              items.push({ label: "ID", value: agent.agentToolId, copyable: true });
+              items.push({ label: 'ID', value: agent.agentToolId, copyable: true });
             }
 
             if (agent.version) {
-              items.push({ label: "Version", value: agent.version });
+              items.push({ label: 'Version', value: agent.version });
             }
 
             return (
@@ -120,7 +120,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
           <div className="h-full">
             <InfoCard
               data={{
-                title: "Agents",
+                title: 'Agents',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -134,7 +134,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
                     </TooltipContent>
                   </Tooltip>
                 ),
-                items: [{ label: "Status", value: "No agents found" }],
+                items: [{ label: 'Status', value: 'No agents found' }],
               }}
               className="h-full"
             />

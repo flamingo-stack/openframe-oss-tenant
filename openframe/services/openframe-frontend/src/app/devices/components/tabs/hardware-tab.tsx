@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   InfoCard,
@@ -6,10 +6,10 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@flamingo-stack/openframe-frontend-core";
-import { Info as InfoIcon } from "lucide-react";
-import React from "react";
-import { Device } from "../../types/device.types";
+} from '@flamingo-stack/openframe-frontend-core';
+import { Info as InfoIcon } from 'lucide-react';
+import React from 'react';
+import { Device } from '../../types/device.types';
 
 interface HardwareTabProps {
   device: Device | null;
@@ -37,16 +37,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
       // Only add cores if we have the data
       if (physicalCores && logicalCores) {
         items.push({
-          label: "Physical Cores",
+          label: 'Physical Cores',
           value: `${physicalCores}`,
         });
         items.push({
-          label: "Logical Cores",
+          label: 'Logical Cores',
           value: `${logicalCores}`,
         });
       } else if (physicalCores) {
         items.push({
-          label: "Cores",
+          label: 'Cores',
           value: `${physicalCores}`,
         });
       }
@@ -54,7 +54,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
       // Add CPU type info if available
       if (device?.cpu_type) {
         items.push({
-          label: "Type",
+          label: 'Type',
           value: device.cpu_type,
         });
       }
@@ -81,7 +81,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
     // Filter out invalid disks
     const validDisks = disks.filter(
-      disk => disk.total !== "0 B" && disk.device !== "map auto_home" && disk.percent > 0,
+      disk => disk.total !== '0 B' && disk.device !== 'map auto_home' && disk.percent > 0,
     );
 
     const extractPhysicalDisk = (device: string) => {
@@ -98,7 +98,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
       }
 
       // Fallback: create key from device string
-      return `disk_${device.replace(/[^a-zA-Z0-9]/g, "_")}`;
+      return `disk_${device.replace(/[^a-zA-Z0-9]/g, '_')}`;
     };
 
     const groupedByPhysicalDisk = validDisks.reduce(
@@ -117,25 +117,25 @@ export function HardwareTab({ device }: HardwareTabProps) {
       (acc, diskStr) => {
         const str = diskStr.trim();
 
-        let diskKey = "";
-        let size = "";
-        let diskType = "HDD";
-        let diskName = "";
+        let diskKey = '';
+        let size = '';
+        let diskType = 'HDD';
+        let diskName = '';
 
         const macDiskMatch = str.match(/disk(\d+)\s+([\d.]+\s*[KMGT]B)/i);
         if (macDiskMatch) {
           diskKey = `disk${macDiskMatch[1]}`;
           size = macDiskMatch[2];
 
-          if (str.includes("SSD") || str.includes("NVMe")) {
-            diskType = "SSD";
-            diskName = "SSD";
-          } else if (str.includes("Virtual")) {
-            diskType = "Virtual";
-            diskName = "Virtual Disk";
+          if (str.includes('SSD') || str.includes('NVMe')) {
+            diskType = 'SSD';
+            diskName = 'SSD';
+          } else if (str.includes('Virtual')) {
+            diskType = 'Virtual';
+            diskName = 'Virtual Disk';
           } else {
-            diskType = "HDD";
-            diskName = "HDD";
+            diskType = 'HDD';
+            diskName = 'HDD';
           }
         } else {
           const sizeMatch = str.match(/([\d.]+\s*[KMGT]B)/i);
@@ -147,25 +147,25 @@ export function HardwareTab({ device }: HardwareTabProps) {
           if (driveLetterMatch) {
             diskKey = `drive_${driveLetterMatch[1]}`;
           } else {
-            diskKey = `disk_${str.slice(0, 20).replace(/[^a-zA-Z0-9]/g, "_")}`;
+            diskKey = `disk_${str.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}`;
           }
 
-          if (str.includes("Virtual")) {
-            diskType = "Virtual";
-            diskName = "Virtual Disk";
-          } else if (str.includes("SSD") || str.includes("NVMe")) {
-            diskType = "SSD";
-            diskName = "SSD";
-          } else if (str.includes("HDD")) {
-            diskType = "HDD";
-            diskName = "HDD";
+          if (str.includes('Virtual')) {
+            diskType = 'Virtual';
+            diskName = 'Virtual Disk';
+          } else if (str.includes('SSD') || str.includes('NVMe')) {
+            diskType = 'SSD';
+            diskName = 'SSD';
+          } else if (str.includes('HDD')) {
+            diskType = 'HDD';
+            diskName = 'HDD';
           } else {
-            if (str.includes("Samsung") || str.includes("Kingston") || str.includes("Crucial")) {
-              diskType = "SSD";
-              diskName = "SSD";
+            if (str.includes('Samsung') || str.includes('Kingston') || str.includes('Crucial')) {
+              diskType = 'SSD';
+              diskName = 'SSD';
             } else {
-              diskType = "HDD";
-              diskName = "HDD";
+              diskType = 'HDD';
+              diskName = 'HDD';
             }
           }
         }
@@ -199,8 +199,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
         if (partitions && partitions.length > 0) {
           // Has partition data - use the largest partition
           const mainPartition = partitions.reduce((largest, current) => {
-            const currentSize = parseFloat(current.total.replace(/[^\d.]/g, ""));
-            const largestSize = parseFloat(largest.total.replace(/[^\d.]/g, ""));
+            const currentSize = parseFloat(current.total.replace(/[^\d.]/g, ''));
+            const largestSize = parseFloat(largest.total.replace(/[^\d.]/g, ''));
             return currentSize > largestSize ? current : largest;
           });
 
@@ -210,7 +210,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
             used: mainPartition.used,
             free: mainPartition.free,
             percentage: mainPartition.percent,
-            type: diskInfo?.type || (diskKey.includes("Virtual") ? "Virtual" : "Unknown"),
+            type: diskInfo?.type || (diskKey.includes('Virtual') ? 'Virtual' : 'Unknown'),
             count: partitions.length,
           };
         } else if (diskInfo) {
@@ -218,8 +218,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
           return {
             name: diskInfo.name,
             size: diskInfo.size,
-            used: "N/A",
-            free: "N/A",
+            used: 'N/A',
+            free: 'N/A',
             percentage: 0,
             type: diskInfo.type,
             count: 0,
@@ -228,16 +228,16 @@ export function HardwareTab({ device }: HardwareTabProps) {
           // Partition without matching physical disk info (fallback)
           return {
             name: diskKey,
-            size: "Unknown",
-            used: "N/A",
-            free: "N/A",
+            size: 'Unknown',
+            used: 'N/A',
+            free: 'N/A',
             percentage: 0,
-            type: "Unknown",
+            type: 'Unknown',
             count: 0,
           };
         }
       })
-      .filter(disk => disk.name && disk.size !== "Unknown"); // Filter out invalid entries
+      .filter(disk => disk.name && disk.size !== 'Unknown'); // Filter out invalid entries
 
     return allDisks.sort((a, b) => {
       // Parse size strings to numeric values for comparison
@@ -249,8 +249,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
         const unit = match[2].toUpperCase();
 
         // Convert everything to GB for comparison
-        if (unit === "TB") return value * 1024;
-        if (unit === "MB") return value / 1024;
+        if (unit === 'TB') return value * 1024;
+        if (unit === 'MB') return value / 1024;
         return value; // GB
       };
 
@@ -288,7 +288,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
                   subtitle:
                     disk.count === 0
                       ? `${disk.type} Drive (No partition data)`
-                      : `${disk.type} Drive (${disk.count} partition${disk.count > 1 ? "s" : ""})`,
+                      : `${disk.type} Drive (${disk.count} partition${disk.count > 1 ? 's' : ''})`,
                   icon: (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -304,19 +304,19 @@ export function HardwareTab({ device }: HardwareTabProps) {
                   ),
                   items: [
                     {
-                      label: "Current Usage",
+                      label: 'Current Usage',
                       value: `${disk.percentage}%`,
                     },
                     {
-                      label: "Used Space",
+                      label: 'Used Space',
                       value: disk.used,
                     },
                     {
-                      label: "Free Space",
+                      label: 'Free Space',
                       value: disk.free,
                     },
                     {
-                      label: "Total Capacity",
+                      label: 'Total Capacity',
                       value: disk.size,
                     },
                   ],
@@ -338,8 +338,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
               data={{
-                title: "System Memory",
-                subtitle: "RAM",
+                title: 'System Memory',
+                subtitle: 'RAM',
                 icon: (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -355,8 +355,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
                 ),
                 items: [
                   {
-                    label: "Total Memory",
-                    value: device.totalRam || "Unknown",
+                    label: 'Total Memory',
+                    value: device.totalRam || 'Unknown',
                   },
                 ],
               }}
@@ -376,7 +376,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
                 key={index}
                 data={{
                   title: cpu.model,
-                  subtitle: cpu.items.length > 0 ? undefined : "No detailed information available",
+                  subtitle: cpu.items.length > 0 ? undefined : 'No detailed information available',
                   icon: (
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -395,8 +395,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
                       ? cpu.items
                       : [
                           {
-                            label: "Status",
-                            value: "Basic info only",
+                            label: 'Status',
+                            value: 'Basic info only',
                           },
                         ],
                 }}
@@ -414,7 +414,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {batteries.map((battery, index) => {
-                const healthStatus = battery.health || "Unknown";
+                const healthStatus = battery.health || 'Unknown';
                 const cycleCount = battery.cycle_count || 0;
 
                 // Parse health percentage - Fleet returns it as a string like "Normal (99%)"
@@ -425,11 +425,11 @@ export function HardwareTab({ device }: HardwareTabProps) {
                 } else {
                   // Fallback to text-based parsing
                   const healthLower = healthStatus.toLowerCase();
-                  if (healthLower.includes("normal") || healthLower.includes("good")) {
+                  if (healthLower.includes('normal') || healthLower.includes('good')) {
                     healthPercentage = 100;
-                  } else if (healthLower.includes("fair")) {
+                  } else if (healthLower.includes('fair')) {
                     healthPercentage = 60;
-                  } else if (healthLower.includes("poor")) {
+                  } else if (healthLower.includes('poor')) {
                     healthPercentage = 30;
                   }
                 }
@@ -455,11 +455,11 @@ export function HardwareTab({ device }: HardwareTabProps) {
                       ),
                       items: [
                         {
-                          label: "Cycle Count",
+                          label: 'Cycle Count',
                           value: cycleCount.toString(),
                         },
                         {
-                          label: "Health",
+                          label: 'Health',
                           value: `${healthPercentage}%`,
                         },
                       ],

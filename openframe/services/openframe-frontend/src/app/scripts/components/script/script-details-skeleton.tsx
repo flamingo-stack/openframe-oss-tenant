@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { DetailPageContainer } from "@flamingo-stack/openframe-frontend-core";
-import { Skeleton } from "@flamingo-stack/openframe-frontend-core/components/ui";
+import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * Info field skeleton — value on top, label below
  */
-function InfoFieldSkeleton({ valueWidth = "w-32" }: { valueWidth?: string }) {
+function InfoFieldSkeleton({ valueWidth = 'w-32' }: { valueWidth?: string }) {
   return (
     <div>
       <Skeleton className={`h-5 ${valueWidth} mb-1`} />

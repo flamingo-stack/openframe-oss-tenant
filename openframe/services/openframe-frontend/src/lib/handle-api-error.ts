@@ -6,11 +6,11 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  if (typeof error === "string") {
+  if (typeof error === 'string') {
     return error;
   }
 
-  return "An unexpected error occurred";
+  return 'An unexpected error occurred';
 }
 
 /**
@@ -19,14 +19,14 @@ export function getErrorMessage(error: unknown): string {
  */
 export function handleApiError(
   error: unknown,
-  toast: (options: { title: string; description: string; variant: "destructive" }) => void,
-  defaultMessage: string = "Operation failed",
+  toast: (options: { title: string; description: string; variant: 'destructive' }) => void,
+  defaultMessage: string = 'Operation failed',
 ): void {
   const message = getErrorMessage(error);
 
   toast({
     title: defaultMessage,
     description: message,
-    variant: "destructive",
+    variant: 'destructive',
   });
 }

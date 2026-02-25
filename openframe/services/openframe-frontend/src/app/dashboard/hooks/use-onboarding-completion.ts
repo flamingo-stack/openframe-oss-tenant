@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useOrganizations } from "../../organizations/hooks/use-organizations";
-import { useSsoConfig } from "../../settings/hooks/use-sso-config";
-import { useUsers } from "../../settings/hooks/use-users";
-import { useDevicesOverview } from "./use-dashboard-stats";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useOrganizations } from '../../organizations/hooks/use-organizations';
+import { useSsoConfig } from '../../settings/hooks/use-sso-config';
+import { useUsers } from '../../settings/hooks/use-users';
+import { useDevicesOverview } from './use-dashboard-stats';
 
 /**
  * Hook to check onboarding step completion using existing data hooks
@@ -51,9 +51,9 @@ export function useOnboardingCompletion() {
       // Count only providers that are enabled
       const activeCount = configs.filter(cfg => cfg?.enabled === true).length;
       setSsoProvidersCount(activeCount);
-      console.log("✓ SSO providers loaded:", providers.length, "active:", activeCount);
+      console.log('✓ SSO providers loaded:', providers.length, 'active:', activeCount);
     } catch (err) {
-      console.error("SSO providers fetch failed:", err);
+      console.error('SSO providers fetch failed:', err);
       if (isMountedRef.current) {
         setSsoProvidersCount(0);
       }
@@ -70,9 +70,9 @@ export function useOnboardingCompletion() {
     orgsFetchedRef.current = true;
 
     try {
-      await fetchOrganizations("", null, {});
+      await fetchOrganizations('', null, {});
     } catch (err) {
-      console.error("Organizations fetch failed:", err);
+      console.error('Organizations fetch failed:', err);
     }
   }, [fetchOrganizations]);
 
@@ -100,10 +100,10 @@ export function useOnboardingCompletion() {
   // Memoize completion status to prevent unnecessary re-renders and recalculations
   const completionStatus = useMemo(
     () => ({
-      "sso-configuration": ssoProvidersCount > 0,
-      "organizations-setup": organizations.length > 1,
-      "device-management": deviceCount > 0,
-      "company-and-team": totalElements > 1,
+      'sso-configuration': ssoProvidersCount > 0,
+      'organizations-setup': organizations.length > 1,
+      'device-management': deviceCount > 0,
+      'company-and-team': totalElements > 1,
     }),
     [ssoProvidersCount, organizations.length, deviceCount, totalElements],
   );
@@ -111,15 +111,15 @@ export function useOnboardingCompletion() {
   // Log completion status only when loading completes
   useEffect(() => {
     if (!isLoading) {
-      console.log("📊 Onboarding completion status:", completionStatus);
+      console.log('📊 Onboarding completion status:', completionStatus);
       console.log(
-        "📊 Raw values - orgs:",
+        '📊 Raw values - orgs:',
         organizations.length,
-        "users:",
+        'users:',
         totalElements,
-        "devices:",
+        'devices:',
         deviceCount,
-        "sso:",
+        'sso:',
         ssoProvidersCount,
       );
     }

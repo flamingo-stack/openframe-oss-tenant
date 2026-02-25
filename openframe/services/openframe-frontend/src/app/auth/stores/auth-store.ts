@@ -1,6 +1,6 @@
-import { create } from "zustand";
-import { devtools, persist } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
+import { create } from 'zustand';
+import { devtools, persist } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
 
 /**
  * Authentication Store
@@ -64,14 +64,14 @@ const initialState = {
 // Helper to fetch full user profile
 async function fetchUserProfile(userId: string): Promise<User | null> {
   try {
-    const { apiClient } = await import("../../../lib/api-client");
+    const { apiClient } = await import('../../../lib/api-client');
     const res = await apiClient.get<User>(`api/users/${encodeURIComponent(userId)}`);
     if (res.ok && res.data) {
       return res.data;
     }
     return null;
   } catch (error) {
-    console.error("[AuthStore] Failed to fetch user profile:", error);
+    console.error('[AuthStore] Failed to fetch user profile:', error);
     return null;
   }
 }
@@ -153,7 +153,7 @@ export const useAuthStore = create<AuthState>()(
 
             return fullProfile;
           } catch (error) {
-            console.error("[AuthStore] Failed to fetch user profile:", error);
+            console.error('[AuthStore] Failed to fetch user profile:', error);
             set(state => {
               state.isLoadingProfile = false;
             });
@@ -162,7 +162,7 @@ export const useAuthStore = create<AuthState>()(
         },
       })),
       {
-        name: "auth-storage", // Storage key
+        name: 'auth-storage', // Storage key
         partialize: state => ({
           // Only persist these fields
           user: state.user,
@@ -171,7 +171,7 @@ export const useAuthStore = create<AuthState>()(
       },
     ),
     {
-      name: "auth-store", // Redux DevTools name
+      name: 'auth-store', // Redux DevTools name
     },
   ),
 );

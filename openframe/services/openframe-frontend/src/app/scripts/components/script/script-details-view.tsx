@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
 import {
   DetailPageContainer,
   LoadError,
   NotFoundError,
   ScriptInfoSection,
-} from "@flamingo-stack/openframe-frontend-core";
-import { PenEditIcon, PlayIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { useScriptDetails } from "../../hooks/use-script-details";
-import { ScriptArgumentsCard } from "./script-arguments-card";
-import { ScriptDetailsSkeleton } from "./script-details-skeleton";
-import { ScriptEditor } from "./script-editor";
+} from '@flamingo-stack/openframe-frontend-core';
+import { PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { useScriptDetails } from '../../hooks/use-script-details';
+import { ScriptArgumentsCard } from './script-arguments-card';
+import { ScriptDetailsSkeleton } from './script-details-skeleton';
+import { ScriptEditor } from './script-editor';
 
 interface ScriptDetailsViewProps {
   scriptId: string;
@@ -23,7 +23,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
 
   const handleBack = useCallback(() => {
-    router.push("/scripts");
+    router.push('/scripts');
   }, [router]);
 
   const handleEditScript = useCallback(() => {
@@ -39,16 +39,16 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const actions = useMemo(
     () => [
       {
-        label: "Edit Script",
+        label: 'Edit Script',
         icon: <PenEditIcon size={20} />,
         onClick: handleEditScript,
-        variant: "outline" as const,
+        variant: 'outline' as const,
       },
       {
-        label: "Run Script",
+        label: 'Run Script',
         icon: <PlayIcon size={20} />,
         onClick: handleRunScript,
-        variant: "primary" as const,
+        variant: 'primary' as const,
       },
     ],
     [handleRunScript, handleEditScript],
@@ -70,7 +70,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     <DetailPageContainer
       title={scriptDetails.name}
       backButton={{
-        label: "Back to Scripts",
+        label: 'Back to Scripts',
         onClick: handleBack,
       }}
       actions={actions}
@@ -79,7 +79,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
       <div className="flex flex-col overflow-auto gap-6">
         <ScriptInfoSection
           headline={scriptDetails.description}
-          subheadline={"Description"}
+          subheadline={'Description'}
           shellType={scriptDetails.shell}
           supportedPlatforms={scriptDetails.supported_platforms}
           category={scriptDetails.category}

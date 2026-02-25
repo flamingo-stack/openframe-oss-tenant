@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { Dialog } from "../types/dialog.types";
-import { dialogsQueryKeys, invalidateAllDialogs } from "../utils/query-keys";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { Dialog } from '../types/dialog.types';
+import { dialogsQueryKeys, invalidateAllDialogs } from '../utils/query-keys';
 
 export function useArchiveResolvedMutation() {
   const { toast } = useToast();
@@ -12,26 +12,26 @@ export function useArchiveResolvedMutation() {
 
   return useMutation({
     mutationFn: async (dialogs: Dialog[]): Promise<{ successCount: number; failCount: number }> => {
-      const resolvedDialogs = dialogs.filter(d => d.status === "RESOLVED");
+      const resolvedDialogs = dialogs.filter(d => d.status === 'RESOLVED');
 
       if (resolvedDialogs.length === 0) {
-        throw new Error("No resolved dialogs to archive");
+        throw new Error('No resolved dialogs to archive');
       }
 
       const archivePromises = resolvedDialogs.map(dialog =>
-        apiClient.patch(`/chat/api/v1/dialogs/${dialog.id}/status`, { status: "ARCHIVED" }),
+        apiClient.patch(`/chat/api/v1/dialogs/${dialog.id}/status`, { status: 'ARCHIVED' }),
       );
 
       const results = await Promise.allSettled(archivePromises);
 
-      const successCount = results.filter(r => r.status === "fulfilled" && r.value.ok).length;
+      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.ok).length;
       const failCount = results.length - successCount;
 
       return { successCount, failCount };
     },
 
     onMutate: async (dialogs: Dialog[]) => {
-      const resolvedDialogIds = dialogs.filter(d => d.status === "RESOLVED").map(d => d.id);
+      const resolvedDialogIds = dialogs.filter(d => d.status === 'RESOLVED').map(d => d.id);
 
       if (resolvedDialogIds.length === 0) return;
 
@@ -58,21 +58,21 @@ export function useArchiveResolvedMutation() {
         });
       }
 
-      const errorMessage = error instanceof Error ? error.message : "Failed to archive resolved dialogs";
-      console.error("Failed to archive resolved dialogs:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to archive resolved dialogs';
+      console.error('Failed to archive resolved dialogs:', error);
 
-      if (errorMessage === "No resolved dialogs to archive") {
+      if (errorMessage === 'No resolved dialogs to archive') {
         toast({
-          title: "No Resolved Dialogs",
-          description: "There are no resolved dialogs to archive",
-          variant: "info",
+          title: 'No Resolved Dialogs',
+          description: 'There are no resolved dialogs to archive',
+          variant: 'info',
           duration: 3000,
         });
       } else {
         toast({
-          title: "Error",
+          title: 'Error',
           description: errorMessage,
-          variant: "destructive",
+          variant: 'destructive',
           duration: 5000,
         });
       }
@@ -81,18 +81,18 @@ export function useArchiveResolvedMutation() {
     onSuccess: ({ successCount, failCount }) => {
       if (successCount > 0) {
         toast({
-          title: "Success",
-          description: `${successCount} dialog${successCount > 1 ? "s" : ""} archived successfully${failCount > 0 ? ` (${failCount} failed)` : ""}`,
-          variant: "success",
+          title: 'Success',
+          description: `${successCount} dialog${successCount > 1 ? 's' : ''} archived successfully${failCount > 0 ? ` (${failCount} failed)` : ''}`,
+          variant: 'success',
           duration: 4000,
         });
       }
 
       if (failCount > 0 && successCount === 0) {
         toast({
-          title: "Error",
-          description: `Failed to archive ${failCount} dialog${failCount > 1 ? "s" : ""}`,
-          variant: "destructive",
+          title: 'Error',
+          description: `Failed to archive ${failCount} dialog${failCount > 1 ? 's' : ''}`,
+          variant: 'destructive',
           duration: 5000,
         });
       }

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { handleApiError } from "@/lib/handle-api-error";
-import type { Policy } from "../types/policies.types";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { handleApiError } from '@/lib/handle-api-error';
+import type { Policy } from '../types/policies.types';
 
 // ============ Types ============
 
@@ -32,9 +32,9 @@ interface UpdatePolicyData {
 // ============ Query Keys ============
 
 export const policiesQueryKeys = {
-  all: ["policies"] as const,
-  list: (params?: ListPoliciesParams) => [...policiesQueryKeys.all, "list", params] as const,
-  detail: (id: number) => [...policiesQueryKeys.all, "detail", id] as const,
+  all: ['policies'] as const,
+  list: (params?: ListPoliciesParams) => [...policiesQueryKeys.all, 'list', params] as const,
+  detail: (id: number) => [...policiesQueryKeys.all, 'detail', id] as const,
 };
 
 // ============ API Functions ============
@@ -108,14 +108,14 @@ export function usePolicies(params?: ListPoliciesParams) {
     createPolicyMutation.mutate(data, {
       onSuccess: policy => {
         toast({
-          title: "Policy Created",
+          title: 'Policy Created',
           description: `Policy "${data.name}" created successfully`,
-          variant: "success",
+          variant: 'success',
         });
         options?.onSuccess?.(policy);
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to create policy");
+        handleApiError(error, toast, 'Failed to create policy');
         options?.onError?.(error as Error);
       },
     });
@@ -142,14 +142,14 @@ export function usePolicies(params?: ListPoliciesParams) {
       {
         onSuccess: policy => {
           toast({
-            title: "Policy Updated",
-            description: "Policy updated successfully",
-            variant: "success",
+            title: 'Policy Updated',
+            description: 'Policy updated successfully',
+            variant: 'success',
           });
           options?.onSuccess?.(policy);
         },
         onError: error => {
-          handleApiError(error, toast, "Failed to update policy");
+          handleApiError(error, toast, 'Failed to update policy');
           options?.onError?.(error as Error);
         },
       },
@@ -174,14 +174,14 @@ export function usePolicies(params?: ListPoliciesParams) {
     deletePolicyMutation.mutate(id, {
       onSuccess: () => {
         toast({
-          title: "Policy Deleted",
-          description: "Policy deleted successfully",
-          variant: "success",
+          title: 'Policy Deleted',
+          description: 'Policy deleted successfully',
+          variant: 'success',
         });
         options?.onSuccess?.();
       },
       onError: error => {
-        handleApiError(error, toast, "Failed to delete policy");
+        handleApiError(error, toast, 'Failed to delete policy');
         options?.onError?.(error as Error);
       },
     });

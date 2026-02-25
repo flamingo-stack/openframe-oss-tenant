@@ -39,5 +39,5 @@ export interface QueryReportResponse {
 
 export interface QueryReportParams {
   order_key?: string;
-  order_direction?: "asc" | "desc";
+  order_direction?: 'asc' | 'desc';
 }

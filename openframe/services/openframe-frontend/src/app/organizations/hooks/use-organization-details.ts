@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useToast } from "@flamingo-stack/openframe-frontend-core/hooks";
-import { useCallback, useState } from "react";
-import { apiClient } from "@/lib/api-client";
-import { GET_ORGANIZATION_BY_ID_QUERY } from "../queries/organizations-queries";
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
+import { GET_ORGANIZATION_BY_ID_QUERY } from '../queries/organizations-queries';
 
 export interface OrganizationDetails {
   id: string;
@@ -27,9 +27,9 @@ export interface OrganizationDetails {
 }
 
 function formatAddress(addr?: any): string {
-  if (!addr) return "";
+  if (!addr) return '';
   const parts = [addr.street1, addr.street2, addr.city, addr.state, addr.postalCode, addr.country];
-  return parts.filter(Boolean).join(", ");
+  return parts.filter(Boolean).join(', ');
 }
 
 export function useOrganizationDetails() {
@@ -43,7 +43,7 @@ export function useOrganizationDetails() {
       setLoading(true);
       setError(null);
       try {
-        const response = await apiClient.post<any>("/api/graphql", {
+        const response = await apiClient.post<any>('/api/graphql', {
           query: GET_ORGANIZATION_BY_ID_QUERY,
           variables: { id },
         });
@@ -66,32 +66,32 @@ export function useOrganizationDetails() {
         const mapped: OrganizationDetails = {
           id: org.id,
           organizationId: org.organizationId,
-          name: org.name || "-",
-          industry: org.category || "-",
-          website: org.websiteUrl || "-",
-          employees: typeof org.numberOfEmployees === "number" ? org.numberOfEmployees : null,
+          name: org.name || '-',
+          industry: org.category || '-',
+          website: org.websiteUrl || '-',
+          employees: typeof org.numberOfEmployees === 'number' ? org.numberOfEmployees : null,
           updatedAt: org.updatedAt || org.createdAt || new Date().toISOString(),
           physicalAddress: formatAddress(org.contactInformation?.physicalAddress),
           mailingAddress: formatAddress(org.contactInformation?.mailingAddress),
           primary: {
-            name: primary.contactName || "",
-            title: primary.title || "",
-            email: primary.email || "",
-            phone: primary.phone || "",
+            name: primary.contactName || '',
+            title: primary.title || '',
+            email: primary.email || '',
+            phone: primary.phone || '',
           },
           billing: {
-            name: billing.contactName || "",
-            title: billing.title || "",
-            email: billing.email || "",
-            phone: billing.phone || "",
+            name: billing.contactName || '',
+            title: billing.title || '',
+            email: billing.email || '',
+            phone: billing.phone || '',
           },
           technical: {
-            name: technical.contactName || "",
-            title: technical.title || "",
-            email: technical.email || "",
-            phone: technical.phone || "",
+            name: technical.contactName || '',
+            title: technical.title || '',
+            email: technical.email || '',
+            phone: technical.phone || '',
           },
-          mrrUsd: typeof org.monthlyRevenue === "number" ? org.monthlyRevenue : null,
+          mrrUsd: typeof org.monthlyRevenue === 'number' ? org.monthlyRevenue : null,
           contractStart: org.contractStartDate || null,
           contractEnd: org.contractEndDate || null,
           notes: org.notes ? [org.notes] : [],
@@ -102,9 +102,9 @@ export function useOrganizationDetails() {
         setOrganization(mapped);
         return mapped;
       } catch (e) {
-        const message = e instanceof Error ? e.message : "Failed to load organization";
+        const message = e instanceof Error ? e.message : 'Failed to load organization';
         setError(message);
-        toast({ title: "Error", description: message, variant: "destructive" });
+        toast({ title: 'Error', description: message, variant: 'destructive' });
         throw e;
       } finally {
         setLoading(false);

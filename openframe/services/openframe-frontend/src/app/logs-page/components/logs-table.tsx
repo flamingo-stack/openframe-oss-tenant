@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Input, ToolBadge } from "@flamingo-stack/openframe-frontend-core";
-import { Refresh02HrIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
+import { Input, ToolBadge } from '@flamingo-stack/openframe-frontend-core';
+import { Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   DeviceCardCompact,
@@ -11,17 +11,17 @@ import {
   TableDescriptionCell,
   TableTimestampCell,
   Tag,
-} from "@flamingo-stack/openframe-frontend-core/components/ui";
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import {
   useApiParams,
   useCursorPaginationState,
   useTablePagination,
-} from "@flamingo-stack/openframe-frontend-core/hooks";
-import { normalizeToolTypeWithFallback, toToolLabel } from "@flamingo-stack/openframe-frontend-core/utils";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { transformOrganizationFilters } from "@/lib/filter-utils";
-import { LogDrawer } from "../../components/shared";
-import { useLogFilters, useLogs } from "../hooks/use-logs";
+} from '@flamingo-stack/openframe-frontend-core/hooks';
+import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { transformOrganizationFilters } from '@/lib/filter-utils';
+import { LogDrawer } from '../../components/shared';
+import { useLogFilters, useLogs } from '../hooks/use-logs';
 
 interface UiLogEntry {
   id: string;
@@ -29,7 +29,7 @@ interface UiLogEntry {
   timestamp: string;
   status: {
     label: string;
-    variant?: "success" | "warning" | "error" | "grey" | "critical";
+    variant?: 'success' | 'warning' | 'error' | 'grey' | 'critical';
   };
   source: {
     name: string;
@@ -63,9 +63,9 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 ) {
   // Extra URL params for filters (not search/cursor which are handled by pagination hook)
   const { params: filterParams, setParams: setFilterParams } = useApiParams({
-    severities: { type: "array", default: [] },
-    toolTypes: { type: "array", default: [] },
-    organizationIds: { type: "array", default: [] },
+    severities: { type: 'array', default: [] },
+    toolTypes: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] },
   });
 
   const [selectedLog, setSelectedLog] = useState<UiLogEntry | null>(null);
@@ -120,10 +120,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   } = useCursorPaginationState({
     onInitialLoad: (search, cursor) => {
       if (cursor) {
-        fetchLogs(search || "", backendFilters, cursor, false);
+        fetchLogs(search || '', backendFilters, cursor, false);
         setHasLoadedBeyondFirst(true);
       } else {
-        searchLogs(search || "");
+        searchLogs(search || '');
       }
       fetchLogFilters();
     },
@@ -140,15 +140,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         status: {
           label: log.severity,
           variant:
-            log.severity === "ERROR"
-              ? ("error" as const)
-              : log.severity === "WARNING"
-                ? ("warning" as const)
-                : log.severity === "INFO"
-                  ? ("grey" as const)
-                  : log.severity === "CRITICAL"
-                    ? ("critical" as const)
-                    : ("success" as const),
+            log.severity === 'ERROR'
+              ? ('error' as const)
+              : log.severity === 'WARNING'
+                ? ('warning' as const)
+                : log.severity === 'INFO'
+                  ? ('grey' as const)
+                  : log.severity === 'CRITICAL'
+                    ? ('critical' as const)
+                    : ('success' as const),
         },
         source: {
           name: toToolLabel(log.toolType),
@@ -156,12 +156,12 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         },
         device: {
           // Use device.hostname if available, fallback to deviceId
-          name: log.device?.hostname || log.hostname || log.deviceId || "-",
+          name: log.device?.hostname || log.hostname || log.deviceId || '-',
           // Use device.organization (string) if available, fallback to organizationName or userId
-          organization: log.device?.organization || log.organizationName || log.userId || "-",
+          organization: log.device?.organization || log.organizationName || log.userId || '-',
         },
         description: {
-          title: log.summary || "No summary available",
+          title: log.summary || 'No summary available',
           details: log.details,
         },
         originalLogEntry: log,
@@ -172,15 +172,15 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const columns: TableColumn<UiLogEntry>[] = useMemo(() => {
     const allColumns: TableColumn<UiLogEntry>[] = [
       {
-        key: "logId",
-        label: "Log ID",
-        width: "w-[200px]",
+        key: 'logId',
+        label: 'Log ID',
+        width: 'w-[200px]',
         renderCell: log => <TableTimestampCell timestamp={log.timestamp} id={log.logId} formatTimestamp={false} />,
       },
       {
-        key: "status",
-        label: "Status",
-        width: "w-[120px]",
+        key: 'status',
+        label: 'Status',
+        width: 'w-[120px]',
         filterable: true,
         filterOptions:
           logFilters?.severities?.map((severity: string) => ({
@@ -195,10 +195,10 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         ),
       },
       {
-        key: "tool",
-        label: "Tool",
-        width: "w-[150px]",
-        hideAt: "sm",
+        key: 'tool',
+        label: 'Tool',
+        width: 'w-[150px]',
+        hideAt: 'sm',
         filterable: true,
         filterOptions:
           logFilters?.toolTypes?.map((toolType: string) => ({
@@ -209,31 +209,31 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         renderCell: log => <ToolBadge toolType={normalizeToolTypeWithFallback(log.source.toolType)} />,
       },
       {
-        key: "source",
-        label: "SOURCE",
-        width: "w-[120px]",
-        hideAt: "md",
+        key: 'source',
+        label: 'SOURCE',
+        width: 'w-[120px]',
+        hideAt: 'md',
         filterable: true,
         filterOptions: transformOrganizationFilters(logFilters?.organizations),
         renderCell: log => (
           <DeviceCardCompact
-            deviceName={log.device.name === "null" ? "System" : log.device.name}
+            deviceName={log.device.name === 'null' ? 'System' : log.device.name}
             organization={log.device.organization}
           />
         ),
       },
       {
-        key: "description",
-        label: "Log Details",
-        width: "flex-1",
-        hideAt: "xl",
+        key: 'description',
+        label: 'Log Details',
+        width: 'flex-1',
+        hideAt: 'xl',
         renderCell: log => <TableDescriptionCell text={log.description.title} />,
       },
     ];
 
     // Filter out device column when embedded (showing device-specific logs)
     if (embedded) {
-      return allColumns.filter(col => col.key !== "source");
+      return allColumns.filter(col => col.key !== 'source');
     }
 
     return allColumns;
@@ -243,7 +243,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const getLogDetailsUrl = useCallback((log: UiLogEntry): string => {
     const original = log.originalLogEntry || log;
     const id = log.id || log.logId;
-    return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || "")}`;
+    return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`;
   }, []);
 
   // Render row actions with external link button
@@ -307,7 +307,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
       // Reset cursor and update filter params
-      setPaginationParams({ cursor: "" });
+      setPaginationParams({ cursor: '' });
       setFilterParams({
         severities: columnFilters.status || [],
         toolTypes: columnFilters.tool || [],
@@ -331,13 +331,13 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const cursorPagination = useTablePagination(
     pageInfo
       ? {
-          type: "server",
+          type: 'server',
           hasNextPage,
           hasLoadedBeyondFirst,
           startCursor: pageInfo.startCursor,
           endCursor: pageInfo.endCursor,
           itemCount: logs.length,
-          itemName: "logs",
+          itemName: 'logs',
           onNext,
           onReset,
           showInfo: true,
@@ -358,7 +358,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   const actions = useMemo(
     () => [
       {
-        label: "Refresh",
+        label: 'Refresh',
         icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleRefresh,
       },
@@ -384,8 +384,8 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         skeletonRows={10}
         emptyMessage={
           deviceId
-            ? "No logs found for this device. Try adjusting your search or filters."
-            : "No logs found. Try adjusting your search or filters."
+            ? 'No logs found for this device. Try adjusting your search or filters.'
+            : 'No logs found. Try adjusting your search or filters.'
         }
         onRowClick={handleRowClick}
         renderRowActions={!embedded ? renderRowActions : undefined}
@@ -400,20 +400,20 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       <LogDrawer
         isOpen={Boolean(selectedLog)}
         onClose={handleCloseModal}
-        title={selectedLog?.description.title || ""}
-        description={selectedLog?.description.details || "Log Description"}
+        title={selectedLog?.description.title || ''}
+        description={selectedLog?.description.details || 'Log Description'}
         statusTag={selectedLog?.status}
         timestamp={selectedLog?.timestamp}
         deviceId={selectedLog?.originalLogEntry?.deviceId}
         infoFields={
           selectedLog
             ? [
-                { label: "Log ID", value: selectedLog.logId },
+                { label: 'Log ID', value: selectedLog.logId },
                 {
-                  label: "Source",
+                  label: 'Source',
                   value: <ToolBadge toolType={normalizeToolTypeWithFallback(selectedLog.source.toolType)} />,
                 },
-                { label: "Device", value: selectedLog.device.name },
+                { label: 'Device', value: selectedLog.device.name },
               ]
             : []
         }

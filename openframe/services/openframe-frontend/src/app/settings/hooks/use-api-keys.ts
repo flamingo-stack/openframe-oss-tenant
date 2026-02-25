@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useState } from "react";
-import { apiClient } from "../../../lib/api-client";
+import { useCallback, useState } from 'react';
+import { apiClient } from '../../../lib/api-client';
 
 export type ApiKeyRecord = {
   id: string;
@@ -26,14 +26,14 @@ export function useApiKeys() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await apiClient.get<ApiKeyRecord[]>("api/api-keys");
+      const res = await apiClient.get<ApiKeyRecord[]>('api/api-keys');
       if (!res.ok || !Array.isArray(res.data)) {
         throw new Error(res.error || `Failed to load API keys (${res.status})`);
       }
       setItems(res.data);
       return res.data;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to load API keys";
+      const msg = e instanceof Error ? e.message : 'Failed to load API keys';
       setError(msg);
       throw e;
     } finally {
@@ -47,7 +47,7 @@ export function useApiKeys() {
       description: data.description || undefined,
       expiresAt: data.expiresAt ?? null,
     };
-    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>("api/api-keys", payload);
+    const res = await apiClient.post<{ apiKey: ApiKeyRecord; fullKey: string }>('api/api-keys', payload);
     if (!res.ok || !res.data) {
       throw new Error(res.error || `Failed to create API key (${res.status})`);
     }
@@ -83,7 +83,7 @@ export function useApiKeys() {
   const setApiKeyEnabled = useCallback(async (id: string, enabled: boolean) => {
     const res = await apiClient.put<ApiKeyRecord>(`api/api-keys/${encodeURIComponent(id)}`, { enabled });
     if (!res.ok || !res.data) {
-      throw new Error(res.error || `Failed to ${enabled ? "enable" : "disable"} API key (${res.status})`);
+      throw new Error(res.error || `Failed to ${enabled ? 'enable' : 'disable'} API key (${res.status})`);
     }
     return res.data;
   }, []);

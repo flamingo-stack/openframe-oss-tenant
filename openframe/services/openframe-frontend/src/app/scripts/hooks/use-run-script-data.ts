@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api-client";
-import { DEVICE_STATUS } from "../../devices/constants/device-statuses";
-import { GET_DEVICES_QUERY } from "../../devices/queries/devices-queries";
-import { Device, DevicesGraphQlNode, GraphQlResponse } from "../../devices/types/device.types";
-import { createDeviceListItem } from "../../devices/utils/device-transform";
-import { mapPlatformsToOsTypes } from "../utils/script-utils";
-import { useScriptDetails } from "./use-script-details";
+import { useQuery } from '@tanstack/react-query';
+import { apiClient } from '@/lib/api-client';
+import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
+import { GET_DEVICES_QUERY } from '../../devices/queries/devices-queries';
+import { Device, DevicesGraphQlNode, GraphQlResponse } from '../../devices/types/device.types';
+import { createDeviceListItem } from '../../devices/utils/device-transform';
+import { mapPlatformsToOsTypes } from '../utils/script-utils';
+import { useScriptDetails } from './use-script-details';
 
 // ============ Query Keys ============
 
 export const runScriptDataQueryKeys = {
-  devices: (scriptId: string) => ["run-script-devices", scriptId] as const,
+  devices: (scriptId: string) => ['run-script-devices', scriptId] as const,
 };
 
 // ============ API Functions ============
@@ -33,12 +33,12 @@ async function fetchDevicesForScript(supportedPlatforms: string[]): Promise<Devi
         filteredCount: number;
       };
     }>
-  >("/api/graphql", {
+  >('/api/graphql', {
     query: GET_DEVICES_QUERY,
     variables: {
       filter,
       pagination: { limit: 100, cursor: null },
-      search: "",
+      search: '',
     },
   });
 
@@ -49,10 +49,10 @@ async function fetchDevicesForScript(supportedPlatforms: string[]): Promise<Devi
   const graphqlResponse = response.data;
 
   if (!graphqlResponse?.data) {
-    throw new Error("No data received from server");
+    throw new Error('No data received from server');
   }
   if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-    throw new Error(graphqlResponse.errors[0].message || "GraphQL error occurred");
+    throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
   }
 
   const nodes = graphqlResponse.data.devices.edges.map(e => e.node);

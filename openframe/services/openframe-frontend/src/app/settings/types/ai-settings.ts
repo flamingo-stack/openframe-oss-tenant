@@ -1,5 +1,5 @@
-import type { ApprovalLevel, PermissionCategory } from "@flamingo-stack/openframe-frontend-core";
-import type { PolicyTemplateDetail } from "./ai-policies";
+import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core';
+import type { PolicyTemplateDetail } from './ai-policies';
 
 export type CustomPolicyState = {
   enabled: boolean;

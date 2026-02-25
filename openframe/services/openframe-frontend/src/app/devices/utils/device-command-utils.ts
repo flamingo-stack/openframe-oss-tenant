@@ -3,11 +3,11 @@
  * Unified logic for building device installation and uninstallation commands
  */
 
-import type { OSPlatformId } from "@flamingo-stack/openframe-frontend-core/utils";
+import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 
-const RELEASES_BASE_URL = "https://github.com/flamingo-stack/openframe-oss-tenant/releases";
-const MACOS_BINARY_NAME = "openframe-client_macos.tar.gz";
-const WINDOWS_BINARY_NAME = "openframe-client_windows.zip";
+const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases';
+const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz';
+const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip';
 
 /**
  * Build the binary download URL for a given version and asset
@@ -49,9 +49,9 @@ export function buildInstallCommand(options: InstallCommandOptions): string {
   const { platform, serverUrl, initialKey, orgId, releaseVersion, additionalArgs = [] } = options;
 
   const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgId}`;
-  const extras = additionalArgs.length ? " " + additionalArgs.join(" ") : "";
+  const extras = additionalArgs.length ? ' ' + additionalArgs.join(' ') : '';
 
-  if (platform === "windows") {
+  if (platform === 'windows') {
     const windowsBinaryUrl = getWindowsBinaryUrl(releaseVersion);
     const argString = `${baseArgs}${extras}`;
     return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`;
@@ -73,7 +73,7 @@ export interface UninstallCommandOptions {
 export function buildUninstallCommand(options: UninstallCommandOptions): string {
   const { platform, releaseVersion } = options;
 
-  if (platform === "windows") {
+  if (platform === 'windows') {
     const windowsBinaryUrl = getWindowsBinaryUrl(releaseVersion);
     return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList 'uninstall' -Verb RunAs -Wait`;
   }
@@ -87,27 +87,27 @@ export function buildUninstallCommand(options: UninstallCommandOptions): string 
  * Normalize OS type from various device fields to OSPlatformId
  */
 export function normalizeDevicePlatform(platform?: string, osType?: string, operatingSystem?: string): OSPlatformId {
-  const osValue = (platform || osType || operatingSystem || "").toLowerCase();
+  const osValue = (platform || osType || operatingSystem || '').toLowerCase();
 
-  if (osValue.includes("windows") || osValue === "win" || osValue === "win32" || osValue === "win64") {
-    return "windows";
+  if (osValue.includes('windows') || osValue === 'win' || osValue === 'win32' || osValue === 'win64') {
+    return 'windows';
   }
 
-  if (osValue.includes("darwin") || osValue.includes("mac") || osValue.includes("osx")) {
-    return "darwin";
+  if (osValue.includes('darwin') || osValue.includes('mac') || osValue.includes('osx')) {
+    return 'darwin';
   }
 
   if (
-    osValue.includes("linux") ||
-    osValue.includes("ubuntu") ||
-    osValue.includes("debian") ||
-    osValue.includes("centos") ||
-    osValue.includes("redhat") ||
-    osValue.includes("fedora")
+    osValue.includes('linux') ||
+    osValue.includes('ubuntu') ||
+    osValue.includes('debian') ||
+    osValue.includes('centos') ||
+    osValue.includes('redhat') ||
+    osValue.includes('fedora')
   ) {
-    return "linux";
+    return 'linux';
   }
 
   // Default to darwin if unknown
-  return "darwin";
+  return 'darwin';
 }

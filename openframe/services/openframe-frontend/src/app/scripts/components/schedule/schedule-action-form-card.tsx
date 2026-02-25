@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { OS_PLATFORMS, ScriptArguments } from "@flamingo-stack/openframe-frontend-core";
-import { TrashIcon } from "@flamingo-stack/openframe-frontend-core/components/icons-v2";
-import { Autocomplete, Button, Input, Label } from "@flamingo-stack/openframe-frontend-core/components/ui";
-import { useMemo } from "react";
-import { Controller, useFormContext } from "react-hook-form";
-import type { ScriptEntry } from "../../stores/scripts-store";
-import type { CreateScheduleFormData } from "../../types/script-schedule.types";
+import { OS_PLATFORMS, ScriptArguments } from '@flamingo-stack/openframe-frontend-core';
+import { TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Autocomplete, Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMemo } from 'react';
+import { Controller, useFormContext } from 'react-hook-form';
+import type { ScriptEntry } from '../../stores/scripts-store';
+import type { CreateScheduleFormData } from '../../types/script-schedule.types';
 
 interface ScheduleActionFormCardProps {
   index: number;

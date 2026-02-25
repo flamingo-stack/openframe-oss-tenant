@@ -1,7 +1,7 @@
-import { create } from "zustand";
-import { devtools } from "zustand/middleware";
-import { immer } from "zustand/middleware/immer";
-import type { Device } from "../../devices/types/device.types";
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
+import type { Device } from '../../devices/types/device.types';
 
 /**
  * Logs Store
@@ -13,7 +13,7 @@ export interface LogEntry {
   eventType: string;
   ingestDay: string;
   toolType: string;
-  severity: "DEBUG" | "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+  severity: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
   userId?: string;
   deviceId?: string;
   summary: string;
@@ -75,7 +75,7 @@ export interface LogsState {
 const initialState = {
   logs: [],
   edges: [],
-  search: "",
+  search: '',
   pageInfo: null,
   pageSize: 10,
   isLoading: true,
@@ -154,7 +154,7 @@ export const useLogsStore = create<LogsState>()(
 
       reset: () => set(() => initialState),
     })),
-    { name: "logs-store" },
+    { name: 'logs-store' },
   ),
 );
 

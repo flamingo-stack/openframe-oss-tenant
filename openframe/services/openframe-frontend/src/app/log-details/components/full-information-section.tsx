@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { InfoRow } from "@flamingo-stack/openframe-frontend-core";
-import { ToolBadge } from "@flamingo-stack/openframe-frontend-core/components";
-import { normalizeToolTypeWithFallback } from "@flamingo-stack/openframe-frontend-core/utils";
+import { InfoRow } from '@flamingo-stack/openframe-frontend-core';
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 
 interface LogEntry {
   toolEventId: string;

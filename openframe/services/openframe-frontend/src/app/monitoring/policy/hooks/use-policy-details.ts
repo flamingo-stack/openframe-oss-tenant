@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useQuery } from "@tanstack/react-query";
-import { fleetApiClient } from "@/lib/fleet-api-client";
-import { policiesQueryKeys } from "../../hooks/use-policies";
-import type { Policy } from "../../types/policies.types";
+import { useQuery } from '@tanstack/react-query';
+import { fleetApiClient } from '@/lib/fleet-api-client';
+import { policiesQueryKeys } from '../../hooks/use-policies';
+import type { Policy } from '../../types/policies.types';
 
 async function fetchPolicy(id: number): Promise<Policy> {
   const res = await fleetApiClient.getPolicy(id);
