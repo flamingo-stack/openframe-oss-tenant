@@ -2,7 +2,7 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use tracing::{info, warn, error};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
-use crate::models::Installation;
+use crate::models::{Installation, DownloadConfiguration};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
@@ -10,7 +10,7 @@ use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
-use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater};
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater, create_migrator, needs_migration};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -142,6 +142,15 @@ impl ToolAgentUpdateService {
             command_params_resolver: self.command_params_resolver.clone(),
         };
 
+        // Check if migration is needed (installation type change)
+        let target_type = download_config.installation_type;
+        if needs_migration(&installed_tool.installation, target_type) {
+            info!(tool_id = %tool_agent_id, "Migration required: {:?} -> {:?}",
+                  installed_tool.installation, target_type);
+            return self.do_migration(new_version, download_config, installed_tool, deps).await;
+        }
+
+        // Same-type update
         let updater = create_updater(&installed_tool.installation, deps);
 
         info!(tool_id = %tool_agent_id, "Phase 1: Preparing update");
@@ -167,6 +176,53 @@ impl ToolAgentUpdateService {
                     error!(tool_id = %tool_agent_id, error = %rollback_err, "Rollback also failed");
                 }
                 return Err(e).with_context(|| format!("Update failed for: {}", tool_agent_id));
+            }
+        }
+
+        self.publish_installed_agent_message(tool_agent_id, new_version).await;
+
+        Ok(())
+    }
+
+    async fn do_migration(
+        &self,
+        new_version: &str,
+        download_config: &DownloadConfiguration,
+        installed_tool: &mut crate::models::installed_tool::InstalledTool,
+        deps: ToolUpdaterDeps,
+    ) -> Result<()> {
+        let tool_agent_id = &installed_tool.tool_agent_id;
+        let target_type = download_config.installation_type;
+
+        let migrator = create_migrator(&installed_tool.installation, target_type, deps)?
+            .ok_or_else(|| anyhow::anyhow!("Migration not needed but do_migration was called"))?;
+
+        info!(tool_id = %tool_agent_id, "Migration Phase 1: Preparing");
+        let ctx = migrator.prepare(installed_tool).await
+            .with_context(|| format!("Failed to prepare migration for: {}", tool_agent_id))?;
+
+        info!(tool_id = %tool_agent_id, "Migration Phase 2: Migrating");
+        match migrator.migrate(installed_tool, download_config, &ctx).await {
+            Ok(new_installation) => {
+                // Update both version AND installation type
+                installed_tool.version = new_version.to_string();
+                installed_tool.installation = new_installation.clone();
+                self.installed_tools_service.save(installed_tool.clone()).await
+                    .with_context(|| format!("Failed to save migrated tool: {}", tool_agent_id))?;
+
+                info!(tool_id = %tool_agent_id, "Migration Phase 3: Finalizing");
+                migrator.finalize(installed_tool, &new_installation, &ctx).await
+                    .with_context(|| format!("Failed to finalize migration for: {}", tool_agent_id))?;
+
+                info!(tool_id = %tool_agent_id, version = %new_version,
+                      "Migration completed successfully: {:?}", new_installation);
+            }
+            Err(e) => {
+                error!(tool_id = %tool_agent_id, error = %e, "Migration failed, attempting rollback");
+                if let Err(rollback_err) = migrator.rollback(installed_tool, &ctx).await {
+                    error!(tool_id = %tool_agent_id, error = %rollback_err, "Rollback also failed");
+                }
+                return Err(e).with_context(|| format!("Migration failed for: {}", tool_agent_id));
             }
         }
 

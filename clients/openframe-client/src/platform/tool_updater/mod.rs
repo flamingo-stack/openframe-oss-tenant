@@ -2,11 +2,13 @@ mod standard;
 #[cfg(target_os = "macos")]
 mod gui_app;
 mod service;
+mod migration;
 
 pub use standard::StandardToolUpdater;
 #[cfg(target_os = "macos")]
 pub use gui_app::GuiAppToolUpdater;
 pub use service::ServiceToolUpdater;
+pub use migration::{ToolMigrator, MigrationContext, create_migrator, needs_migration};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
