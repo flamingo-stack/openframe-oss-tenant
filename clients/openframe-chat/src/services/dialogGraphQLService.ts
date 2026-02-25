@@ -1,49 +1,49 @@
-import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request'
-import { tokenService } from './tokenService'
-import type { 
-  MessageOwner,
+import type {
   MessageData as CoreMessageData,
-  HistoricalMessage
-} from '@flamingo-stack/openframe-frontend-core'
+  HistoricalMessage,
+  MessageOwner,
+} from '@flamingo-stack/openframe-frontend-core';
+import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
+import { tokenService } from './tokenService';
 
 export interface ResumableDialog {
-  id: string
-  title: string
-  status: string
-  createdAt: string
-  statusUpdatedAt: string | null
-  resolvedAt: string | null
-  aiResolutionSuggestedAt: string | null
+  id: string;
+  title: string;
+  status: string;
+  createdAt: string;
+  statusUpdatedAt: string | null;
+  resolvedAt: string | null;
+  aiResolutionSuggestedAt: string | null;
   rating: {
-    id: string
-    dialogId: string
-    createdAt: string
-  } | null
+    id: string;
+    dialogId: string;
+    createdAt: string;
+  } | null;
 }
 
-export type DialogOwner = MessageOwner
+export type DialogOwner = MessageOwner;
 
-export type MessageData = CoreMessageData
+export type MessageData = CoreMessageData;
 
 export interface Message extends HistoricalMessage {
-  dialogMode: string
+  dialogMode: string;
 }
 
 export interface MessageEdge {
-  cursor: string
-  node: Message
+  cursor: string;
+  node: Message;
 }
 
 export interface PageInfo {
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-  startCursor: string | null
-  endCursor: string | null
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
 }
 
 export interface MessagesConnection {
-  edges: MessageEdge[]
-  pageInfo: PageInfo
+  edges: MessageEdge[];
+  pageInfo: PageInfo;
 }
 
 const GET_RESUMABLE_DIALOG_QUERY = gql`
@@ -63,7 +63,7 @@ const GET_RESUMABLE_DIALOG_QUERY = gql`
       }
     }
   }
-`
+`;
 
 const GET_DIALOG_MESSAGES_QUERY = gql`
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int) {
@@ -138,114 +138,111 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
       }
     }
   }
-`
+`;
 
-export class DialogGraphQLService {
-  private graphQLClient: GraphQLClient | null = null
-  private currentEndpoint: string | null = null
+export class DialogGraphQlService {
+  private graphQlClient: GraphQLClient | null = null;
+  private currentEndpoint: string | null = null;
 
   private async initializeClient(): Promise<GraphQLClient> {
-    if (this.graphQLClient && this.currentEndpoint) {
-      const token = tokenService.getCurrentToken()
+    if (this.graphQlClient && this.currentEndpoint) {
+      const token = tokenService.getCurrentToken();
       if (token) {
-        this.graphQLClient.setHeaders({
+        this.graphQlClient.setHeaders({
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        })
+          Authorization: `Bearer ${token}`,
+        });
       }
-      return this.graphQLClient
+      return this.graphQlClient;
     }
 
-    const baseUrl = tokenService.getCurrentApiBaseUrl()
-    const token = tokenService.getCurrentToken()
-    
+    const baseUrl = tokenService.getCurrentApiBaseUrl();
+    const token = tokenService.getCurrentToken();
+
     if (!baseUrl || !token) {
-      throw new Error('API base URL or token not available')
+      throw new Error('API base URL or token not available');
     }
 
-    const endpoint = `${baseUrl}/chat/graphql`
-    
-    this.graphQLClient = new GraphQLClient(endpoint, {
+    const endpoint = `${baseUrl}/chat/graphql`;
+
+    this.graphQlClient = new GraphQLClient(endpoint, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       fetch: fetch,
-    })
-    
-    this.currentEndpoint = endpoint
-    return this.graphQLClient
+    });
+
+    this.currentEndpoint = endpoint;
+    return this.graphQlClient;
   }
 
-  private async request<T>(
-    document: RequestDocument,
-    variables?: Variables
-  ): Promise<T> {
-    const client = await this.initializeClient()
-    return client.request<T>(document, variables)
+  private async request<T>(document: RequestDocument, variables?: Variables): Promise<T> {
+    const client = await this.initializeClient();
+    return client.request<T>(document, variables);
   }
 
   async getResumableDialog(): Promise<ResumableDialog | null> {
     try {
-      await tokenService.ensureTokenReady()
-      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(
-        GET_RESUMABLE_DIALOG_QUERY
-      )
-      return data.resumableDialog
+      await tokenService.ensureTokenReady();
+      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(GET_RESUMABLE_DIALOG_QUERY);
+      return data.resumableDialog;
     } catch (error) {
-      console.error('Failed to fetch resumable dialog:', error)
-      return null
+      console.error('Failed to fetch resumable dialog:', error);
+      return null;
     }
   }
 
   async getDialogMessages(
     dialogId: string,
     cursor?: string | null,
-    limit: number = 100
+    limit: number = 100,
   ): Promise<MessagesConnection | null> {
     try {
-      await tokenService.ensureTokenReady()
-      
-      const allEdges: MessageEdge[] = []
-      let currentCursor = cursor
-      let hasNextPage = true
-      let pageInfo: PageInfo | null = null
-      
+      await tokenService.ensureTokenReady();
+
+      const allEdges: MessageEdge[] = [];
+      let currentCursor = cursor;
+      let hasNextPage = true;
+      let pageInfo: PageInfo | null = null;
+
       while (hasNextPage) {
-        const data = await this.request<{ messages: MessagesConnection }>(
-          GET_DIALOG_MESSAGES_QUERY,
-          { dialogId, chatType: 'CLIENT_CHAT', cursor: currentCursor, limit }
-        )
-        
+        const data = await this.request<{ messages: MessagesConnection }>(GET_DIALOG_MESSAGES_QUERY, {
+          dialogId,
+          chatType: 'CLIENT_CHAT',
+          cursor: currentCursor,
+          limit,
+        });
+
         if (!data.messages) {
-          break
+          break;
         }
-        
-        allEdges.push(...data.messages.edges)
-        pageInfo = data.messages.pageInfo
-        hasNextPage = data.messages.pageInfo.hasNextPage
-        currentCursor = data.messages.pageInfo.endCursor
+
+        allEdges.push(...data.messages.edges);
+        pageInfo = data.messages.pageInfo;
+        hasNextPage = data.messages.pageInfo.hasNextPage;
+        currentCursor = data.messages.pageInfo.endCursor;
       }
-      
+
       return {
         edges: allEdges,
         pageInfo: pageInfo || {
           hasNextPage: false,
           hasPreviousPage: false,
           startCursor: null,
-          endCursor: null
-        }
-      }
+          endCursor: null,
+        },
+      };
     } catch (error) {
-      console.error('Failed to fetch dialog messages:', error)
-      return null
+      console.error('Failed to fetch dialog messages:', error);
+      return null;
     }
   }
 
   dispose(): void {
-    this.graphQLClient = null
-    this.currentEndpoint = null
+    this.graphQlClient = null;
+    this.currentEndpoint = null;
   }
 }
 
-export const dialogGraphQLService = new DialogGraphQLService()
+export const dialogGraphQlService = new DialogGraphQlService();
