@@ -1,3 +1,6 @@
+global:
+  image:
+    tag: latest
 
 registerJob:
   enabled: true

@@ -1,7 +1,12 @@
+global:
+  image:
+    tag: latest
+
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
 
 image:
