@@ -13,7 +13,8 @@
     "lint:biome:fix": "biome check --fix .",
     "format": "biome format .",
     "format:fix": "biome format --fix .",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky"
   },
   "dependencies": {
     "@flamingo-stack/openframe-frontend-core": "0.0.46",
@@ -46,6 +47,7 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^9.27.0",
     "eslint-config-next": "16.0.7",
+    "husky": "^9.1.7",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3"
