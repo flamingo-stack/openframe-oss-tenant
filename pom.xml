@@ -315,6 +315,21 @@
                 <artifactId>openframe-test-service-core</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-cassandra</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-pinot</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-nats</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
