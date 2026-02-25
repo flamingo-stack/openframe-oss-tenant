@@ -98,6 +98,26 @@ class TokenService {
   }
 
   /**
+   * Refresh token from Rust, bypassing cache.
+   * Used before NATS reconnection to ensure a valid token.
+   */
+  async refreshToken(): Promise<string | null> {
+    try {
+      console.log('[TOKEN SERVICE] Refreshing token from Rust...');
+      const token = await invoke<string | null>('get_token');
+      if (token) {
+        console.log('[TOKEN SERVICE] Token refreshed:', this.maskToken(token));
+        this.setToken(token);
+        return token;
+      }
+      return this.currentToken;
+    } catch (error) {
+      console.error('[TOKEN SERVICE] Failed to refresh token:', error);
+      return this.currentToken;
+    }
+  }
+
+  /**
    * Get the current token
    */
   getCurrentToken(): string | null {

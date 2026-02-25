@@ -218,7 +218,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     [processRealtimeChunk],
   );
 
-  const { catchUpChunks, resetChunkTracking, startInitialBuffering } = useChunkCatchup({
+  const { catchUpChunks, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
     dialogId: natsDialogId,
     onChunkReceived: handleRealtimeEvent,
   });
@@ -271,15 +271,30 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     [],
   );
 
-  const { isSubscribed } = useNatsDialogSubscription({
+  const handleBeforeReconnect = useCallback(async () => {
+    console.log('[CHAT] NATS disconnected, refreshing token before reconnect...');
+    await tokenService.refreshToken();
+  }, []);
+
+  const { isSubscribed, reconnectionCount } = useNatsDialogSubscription({
     enabled: useNats && !!natsDialogId,
     dialogId: natsDialogId,
     topics,
     onEvent: handleRealtimeEvent,
     onSubscribed: handleNatsSubscribed,
+    onBeforeReconnect: handleBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
   });
+
+  useEffect(() => {
+    if (reconnectionCount > 0 && natsDialogId) {
+      console.log(`[CHAT] NATS reconnected (count: ${reconnectionCount}), catching up missed messages...`);
+      resetAndCatchUp().catch((error: unknown) => {
+        console.error('[CHAT] Failed to catch up after reconnection:', error);
+      });
+    }
+  }, [reconnectionCount, natsDialogId, resetAndCatchUp]);
 
   const waitForNatsSubscription = useCallback(
     async (expectedDialogId: string): Promise<void> => {

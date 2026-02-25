@@ -1,5 +1,5 @@
 import { buildNatsWsUrl, useNatsDialogSubscription } from '@flamingo-stack/openframe-frontend-core';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { tokenService } from '../services/tokenService';
 
@@ -113,6 +113,11 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     [],
   );
 
+  const handleBeforeReconnect = useCallback(async () => {
+    console.log('[CONNECTION STATUS] NATS disconnected, refreshing token before reconnect...');
+    await tokenService.refreshToken();
+  }, []);
+
   const { isConnected } = useNatsDialogSubscription({
     enabled: !!apiBaseUrl && !!token,
     dialogId: null, // No dialog subscription, just connection monitoring
@@ -123,6 +128,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     onDisconnect: () => {
       setStatus('disconnected');
     },
+    onBeforeReconnect: handleBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
   });
