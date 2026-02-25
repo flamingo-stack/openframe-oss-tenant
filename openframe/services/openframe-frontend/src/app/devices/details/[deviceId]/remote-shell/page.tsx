@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, use, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { TerminalSquare, ChevronLeft } from 'lucide-react'
-import { Button } from '@flamingo-stack/openframe-frontend-core'
+import { TerminalSquare } from 'lucide-react'
+import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { AppLayout } from '@app/components/app-layout'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
@@ -272,20 +272,15 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
 
   return (
     <AppLayout>
-      <div className="h-full flex flex-col overflow-hidden">
-        {/* Back Button */}
-        <div className="bg-ods-system-greys-background py-2 flex-shrink-0">
-          <Button
-            onClick={handleBack}
-            variant="ghost"
-            leftIcon={<ChevronLeft className="w-6 h-6 mr-2" />}
-            className="text-ods-text-secondary hover:text-ods-text-primary p-0"
-          >
-            Back to Device
-          </Button>
-        </div>
-
-        {/* Header Bar */}
+      <DetailPageContainer
+        title='Remote Shell'
+        className='h-full'
+        contentClassName='flex flex-col'
+        backButton={{
+          label: 'Back to Device',
+          onClick: handleBack
+        }}
+      >
         <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
           {/* Device info */}
           <div className="flex items-center gap-4">
@@ -324,7 +319,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
             <div ref={containerRef} className="w-full h-full p-2" />
           </div>
         </div>
-      </div>
+      </DetailPageContainer>
     </AppLayout>
   )
 }

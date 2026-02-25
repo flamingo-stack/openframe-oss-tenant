@@ -68,7 +68,7 @@ export function useScriptSchedules() {
 
   return {
     schedules: query.data ?? [],
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
   }
@@ -83,7 +83,7 @@ export function useScriptSchedule(id: string) {
 
   return {
     schedule: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
   }
@@ -98,7 +98,7 @@ export function useScriptScheduleAgents(id: string) {
 
   return {
     agents: query.data ?? [],
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
   }
@@ -117,7 +117,7 @@ export function useScriptScheduleHistory(
   return {
     history: query.data?.results ?? [],
     total: query.data?.total ?? 0,
-    isLoading: query.isLoading,
+    isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
   }

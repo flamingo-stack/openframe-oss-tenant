@@ -1,5 +1,0 @@
-flowchart TD
-    Request["Incoming Request"] --> Resolver["JwtIssuerAuthenticationManagerResolver"]
-    Resolver --> Cache["Caffeine Jwt Provider Cache"]
-    Cache --> Provider["JwtAuthenticationProvider"]
-    Provider --> Decoder["JwtDecoder.fromIssuerLocation"]

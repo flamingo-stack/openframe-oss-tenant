@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, use, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Monitor, MoreHorizontal, Settings, ChevronLeft, Loader2 } from 'lucide-react'
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
+import { Monitor, MoreHorizontal, Settings, Loader2 } from 'lucide-react'
+import { Button, DetailPageContainer, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, ActionsMenu, ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { AppLayout } from '@app/components/app-layout'
 import { MeshControlClient } from '@lib/meshcentral/meshcentral-control'
@@ -117,7 +117,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
     const desktop = new MeshDesktop()
     desktopRef.current = desktop
-    
+
     desktop.onFirstFrame?.(() => setFirstFrameReceived(true))
 
     // Set up display list change callback
@@ -469,20 +469,14 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   return (
     <AppLayout>
-      <div className="h-full flex flex-col overflow-hidden">
-        {/* Back Button */}
-        <div className="bg-ods-system-greys-background py-2 flex-shrink-0">
-          <Button
-            onClick={handleBack}
-            variant="ghost"
-            leftIcon={<ChevronLeft className="w-6 h-6 mr-2" />}
-            className="text-ods-text-secondary hover:text-ods-text-primary p-0"
-          >
-            Back to Device
-          </Button>
-        </div>
-
-        {/* Header Bar */}
+      <DetailPageContainer
+        className='h-full'
+        contentClassName='flex flex-col'
+        backButton={{
+          label: 'Back to Device',
+          onClick: handleBack
+        }}
+      >
         <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
           {/* Device info */}
           <div className="flex items-center gap-4">
@@ -599,18 +593,18 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Settings Modal */}
-      <RemoteSettingsModal
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        currentSettings={remoteSettings}
-        desktopRef={desktopRef}
-        tunnelRef={tunnelRef}
-        connectionState={state}
-        onSettingsChange={setRemoteSettings}
-      />
+        {/* Settings Modal */}
+        <RemoteSettingsModal
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          currentSettings={remoteSettings}
+          desktopRef={desktopRef}
+          tunnelRef={tunnelRef}
+          connectionState={state}
+          onSettingsChange={setRemoteSettings}
+        />
+      </DetailPageContainer>
     </AppLayout>
   )
 }

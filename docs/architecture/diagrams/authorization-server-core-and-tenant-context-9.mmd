@@ -1,0 +1,8 @@
+flowchart TD
+    Start2["Incoming Request /{tenant}/oauth2/authorize"] --> TenantFilter2["TenantContextFilter"]
+    TenantFilter2 --> AuthChain["Security Filter Chain"]
+    AuthChain --> UserLookup["UserDetailsService"]
+    UserLookup --> TokenIssue["JWT Issuance"]
+    TokenIssue --> CustomClaims["Add tenant_id + roles"]
+    CustomClaims --> Sign["Sign with Tenant RSA Key"]
+    Sign --> Response["Return Token"]

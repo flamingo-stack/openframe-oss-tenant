@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant Client
+    participant AuthServer as "Authorization Server"
+    participant KeyService as "TenantKeyService"
+    participant AuthService as "MongoAuthorizationService"
+    participant MongoDB
+
+    Client->>AuthServer: Authorization Request with PKCE
+    AuthServer->>AuthService: Save Authorization Code
+    AuthService->>MongoDB: Persist MongoOAuth2Authorization
+
+    Client->>AuthServer: Token Request with Code
+    AuthServer->>AuthService: Load Authorization by Code
+    AuthService->>MongoDB: Fetch Entity
+    AuthService->>AuthServer: Rehydrated Authorization
+
+    AuthServer->>KeyService: Get Signing Key
+    KeyService->>MongoDB: Load or Create TenantKey
+    AuthServer->>Client: Signed JWT Access Token

@@ -1,0 +1,7 @@
+flowchart LR
+    Client["Client / Frontend"] -->|"HTTPS"| Gateway["Gateway Rest Controllers"]
+    Gateway -->|"Delegates"| IntegrationService["Integration Service"]
+    Gateway -->|"Delegates"| RestProxyService["Rest Proxy Service"]
+    IntegrationService -->|"Calls"| ExternalTool["External Tool API"]
+    RestProxyService -->|"Proxies"| ExternalTool
+    Gateway -->|"Secured by"| SecurityLayer["Gateway Security Config"]

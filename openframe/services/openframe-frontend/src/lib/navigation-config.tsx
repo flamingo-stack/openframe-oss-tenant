@@ -6,10 +6,12 @@ import {
   IdCardIcon,
   MonitorIcon,
   Settings02Icon,
-  TagIcon
+  TagIcon,
+  RadarIcon
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation'
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode'
+import { featureFlags } from './feature-flags'
 
 export const getNavigationItems = (
   pathname: string
@@ -47,13 +49,13 @@ export const getNavigationItems = (
       path: '/scripts',
       isActive: pathname === '/scripts/'
     },
-    // {
-    //   id: 'policies-and-queries',
-    //   label: 'Policies & Queries',
-    //   icon: <PoliciesIcon className="w-5 h-5" />,
-    //   path: '/policies-and-queries',
-    //   isActive: pathname === '/policies-and-queries/'
-    // },
+    ...(featureFlags.monitoring.enabled() ? [{
+      id: 'monitoring',
+      label: 'Monitoring',
+      icon: <RadarIcon size={24} />,
+      path: '/monitoring',
+      isActive: pathname === '/monitoring/'
+    }] : []),
     {
       id: 'logs',
       label: 'Logs',

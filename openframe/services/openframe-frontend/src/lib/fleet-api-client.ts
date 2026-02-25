@@ -5,33 +5,16 @@
 
 import { apiClient, type ApiResponse, type ApiRequestOptions } from './api-client'
 import { runtimeEnv } from './runtime-config'
-import { Policy } from '../app/policies-and-queries/types/policies.types'
+import { Policy } from '../app/monitoring/types/policies.types'
+import { Query, QueryReportResponse, QueryReportParams } from '../app/monitoring/types/queries.types'
 import { FleetHost, FleetHostResponse } from '../app/devices/types/fleet.types'
 
-interface Query {
+export interface FleetLabel {
   id: number
   name: string
-  query: string
   description: string
-  author_id: number
-  author_name: string
-  author_email: string
-  saved: boolean
-  observer_can_run: boolean
-  team_id?: number | null
-  team_id_char?: string | null
-  pack_id?: number | null
-  interval: number
-  platform?: string
-  min_osquery_version?: string
-  automations_enabled: boolean
-  logging?: string
-  discard_data?: boolean
-  created_at: string
-  updated_at: string
-  software?: string
-  last_executed?: string
-  output_size?: string
+  label_type: string
+  label_membership_type: string
 }
 
 interface Host {
@@ -121,7 +104,7 @@ class FleetApiClient {
     return this.get(path)
   }
 
-  async getPolicy(policyId: number): Promise<ApiResponse<Policy>> {
+  async getPolicy(policyId: number): Promise<ApiResponse<{ policy: Policy }>> {
     return this.get(`/api/latest/fleet/policies/${policyId}`)
   }
 
@@ -134,7 +117,7 @@ class FleetApiClient {
     platform?: string
     critical?: boolean
     calendar_events_enabled?: boolean
-  }): Promise<ApiResponse<Policy>> {
+  }): Promise<ApiResponse<{ policy: Policy }>> {
     return this.post('/api/latest/fleet/policies', policyData)
   }
 
@@ -147,7 +130,7 @@ class FleetApiClient {
     platform?: string
     critical?: boolean
     calendar_events_enabled?: boolean
-  }>): Promise<ApiResponse<Policy>> {
+  }>): Promise<ApiResponse<{ policy: Policy }>> {
     return this.patch(`/api/latest/fleet/policies/${policyId}`, policyData)
   }
 
@@ -233,11 +216,28 @@ class FleetApiClient {
 
   async runLiveQuery(params: {
     query: string
-    host_ids?: number[]
-    label_ids?: number[]
-    team_ids?: number[]
-  }): Promise<ApiResponse<any>> {
+    query_id?: number | null
+    selected: {
+      hosts: number[]
+      labels: number[]
+      teams: number[]
+    }
+  }): Promise<ApiResponse<{ campaign: { id: number; query_id: number; created_at: string; updated_at: string; user_id: number } }>> {
     return this.post('/api/latest/fleet/queries/run', params)
+  }
+
+  async getQueryReport(
+    queryId: number,
+    params?: QueryReportParams
+  ): Promise<ApiResponse<QueryReportResponse>> {
+    const queryParams = new URLSearchParams()
+    if (params?.order_key) queryParams.append('order_key', params.order_key)
+    if (params?.order_direction) queryParams.append('order_direction', params.order_direction)
+    const queryString = queryParams.toString()
+    const path = queryString
+      ? `/api/latest/fleet/queries/${queryId}/report?${queryString}`
+      : `/api/latest/fleet/queries/${queryId}/report`
+    return this.get(path)
   }
 
   // Fleet specific methods - Hosts
@@ -294,12 +294,20 @@ class FleetApiClient {
 
   // Fleet specific methods - Labels
 
-  async getLabels(): Promise<ApiResponse<any[]>> {
+  async getLabels(): Promise<ApiResponse<{ labels: FleetLabel[] }>> {
     return this.get('/api/latest/fleet/labels')
   }
 
-  async getLabel(labelId: number): Promise<ApiResponse<any>> {
+  async getLabel(labelId: number): Promise<ApiResponse<{ label: FleetLabel }>> {
     return this.get(`/api/latest/fleet/labels/${labelId}`)
+  }
+
+  async createLabel(data: { name: string; description: string }): Promise<ApiResponse<{ label: FleetLabel }>> {
+    return this.post('/api/latest/fleet/labels', data)
+  }
+
+  async deleteLabel(id: number): Promise<ApiResponse<void>> {
+    return this.delete(`/api/latest/fleet/labels/id/${id}`)
   }
 
   // Fleet specific methods - Packs
@@ -320,4 +328,4 @@ class FleetApiClient {
 const fleetApiClient = new FleetApiClient()
 
 export { fleetApiClient, FleetApiClient }
-export type { ApiResponse, ApiRequestOptions, Policy, Query, Host }
+export type { ApiResponse, ApiRequestOptions, Policy, Query, QueryReportResponse, QueryReportParams, Host }

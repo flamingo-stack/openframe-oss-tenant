@@ -1,0 +1,5 @@
+flowchart TD
+    Request["POST /oauth/token"] --> Controller["AgentAuthController"]
+    Controller --> Service["AgentAuthService"]
+    Service --> Response["AgentTokenResponse"]
+    Response --> Client["Agent"]

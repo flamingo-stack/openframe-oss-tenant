@@ -1,9 +1,0 @@
-flowchart TD
-    Req["External API Request"] --> CheckKey["Check X API Key Header"]
-    CheckKey -->|"Missing"| Unauthorized["Return 401"]
-    CheckKey -->|"Present"| Validate["Validate API Key"]
-    Validate -->|"Invalid"| Unauthorized
-    Validate -->|"Valid"| RateLimit["Check Rate Limit"]
-    RateLimit -->|"Exceeded"| TooMany["Return 429"]
-    RateLimit -->|"Allowed"| Enrich["Add User Context Headers"]
-    Enrich --> Forward["Forward to External API Service"]

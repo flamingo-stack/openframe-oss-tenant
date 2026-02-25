@@ -1,0 +1,6 @@
+flowchart TD
+    Props["OssTenantKafkaProperties"] --> ConsumerFactory
+    ConsumerFactory --> ListenerFactory
+    ListenerFactory --> AckMode["AckMode (default RECORD)"]
+    ListenerFactory --> Concurrency["Concurrency"]
+    ListenerFactory --> PollTimeout["Poll Timeout"]

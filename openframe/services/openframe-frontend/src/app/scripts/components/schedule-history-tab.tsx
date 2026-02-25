@@ -100,7 +100,6 @@ function ScheduleHistoryDrawer({ isOpen, onClose, entry }: ScheduleHistoryDrawer
                   <InfoField label="Status" value={getStatusLabel(entry)} />
                   <InfoField label="Return Code" value={String(entry.retcode)} />
                   <InfoField label="Device" value={entry.agent_hostname} />
-                  <InfoField label="Organization" value={entry.organization} />
                   <InfoField label="Platform" value={entry.agent_platform} />
                   <InfoField label="Execution Time" value={`${entry.execution_time}s`} />
                   <InfoField label="Agent ID" value={entry.agent_id} />
@@ -121,10 +120,10 @@ function ScheduleHistoryDrawer({ isOpen, onClose, entry }: ScheduleHistoryDrawer
               {/* stderr */}
               {entry.stderr && (
                 <div className="flex flex-col gap-2">
-                  <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-attention-red-error">
+                  <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[var(--ods-attention-red-error)]">
                     stderr
                   </span>
-                  <pre className="font-['Azeret_Mono'] text-[12px] leading-[16px] text-ods-text-secondary p-4 bg-ods-bg rounded border border-ods-attention-red-error/30 whitespace-pre-wrap break-words">
+                  <pre className="font-['Azeret_Mono'] text-[12px] leading-[16px] text-ods-text-secondary p-4 bg-ods-bg rounded border border-[var(--ods-attention-red-error)] whitespace-pre-wrap break-words">
                     {entry.stderr}
                   </pre>
                 </div>
@@ -218,9 +217,6 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
             <div className="flex flex-col">
               <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
                 {entry.agent_hostname}
-              </span>
-              <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">
-                {entry.organization}
               </span>
             </div>
           </div>

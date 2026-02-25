@@ -1,0 +1,5 @@
+flowchart TD
+    ApiLayer["API Service / Authorization Server"] --> DomainServices["Domain Services"]
+    DomainServices --> Repositories["Data Mongo Repositories"]
+    Repositories --> MongoTemplate["MongoTemplate / Spring Data"]
+    MongoTemplate --> MongoDB[("MongoDB")]

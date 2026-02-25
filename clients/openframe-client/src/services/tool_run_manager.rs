@@ -509,8 +509,17 @@ impl ToolRunManager {
                     
                     match tool.session_type {
                         SessionType::User => {
+                            // openframe-chat: launch in background mode when started by daemon
+                            let launch_args = if tool.tool_agent_id == "openframe-chat" {
+                                let mut args = processed_args.clone();
+                                args.push("--background".to_string());
+                                args
+                            } else {
+                                processed_args.clone()
+                            };
+
                             info!("Launching {} in USER session (GUI application)", tool.tool_agent_id);
-                            match launch_process_in_user_session(&command_path, &processed_args) {
+                            match launch_process_in_user_session(&command_path, &launch_args) {
                                 Ok((pid, process_handle)) => {
                                     info!("{} launched successfully in USER session with PID: {}", tool.tool_agent_id, pid);
                                     
@@ -596,7 +605,12 @@ impl ToolRunManager {
                                     if let Err(e) = crate::platform::preferences_writer::write(bundle_id, prefs) {
                                         error!(tool_id = %tool.tool_agent_id, "Failed to write preferences: {:#}", e);
                                     }
-                                    vec![]
+
+                                    if tool.tool_agent_id == "openframe-chat" {
+                                        vec!["--background".to_string()]
+                                    } else {
+                                        vec![]
+                                    }
                                 }
                                 None => processed_args.clone(),
                             };

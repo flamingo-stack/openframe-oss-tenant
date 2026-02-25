@@ -13,6 +13,7 @@ const SHELL_TO_LANGUAGE: Record<string, string> = {
   nushell: 'shell',
   deno: 'typescript',
   shell: 'shell',
+  sql: 'sql',
 }
 
 function defineOdsTheme(monaco: Monaco) {
@@ -124,11 +125,7 @@ export function ScriptEditor({
         beforeMount={handleBeforeMount}
         onMount={handleMount}
         onChange={handleChange}
-        loading={
-          <div className="flex items-center justify-center h-full bg-ods-bg text-ods-text-secondary">
-            Loading editor...
-          </div>
-        }
+        loading={<div></div>}
         options={{
           readOnly,
           fontSize: 14,

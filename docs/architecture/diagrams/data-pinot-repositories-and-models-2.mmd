@@ -1,0 +1,6 @@
+flowchart TD
+    Input["Filter Input Lists"] --> BuildWhere["Build WHERE Clause"]
+    BuildWhere --> ComposeQuery["Compose SELECT / GROUP BY"]
+    ComposeQuery --> Execute["pinotConnection.execute()"]
+    Execute --> MapResults["Map ResultSet to Map<String,Integer>"]
+    MapResults --> Return["Return Filter Options"]

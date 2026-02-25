@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Frontend or External Client"] --> Gateway["Gateway Service"]
+    Gateway --> ApiCore["Api Service Core Config And Security"]
+    ApiCore --> RestControllers["API REST Controllers"]
+    ApiCore --> GraphQL["GraphQL Fetchers"]
+    RestControllers --> DomainServices["Domain Services"]
+    GraphQL --> DomainServices
+    DomainServices --> DataLayer["Mongo and Data Repositories"]

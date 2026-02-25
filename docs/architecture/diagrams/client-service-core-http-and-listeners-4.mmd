@@ -1,0 +1,6 @@
+flowchart TD
+    Agent["Device Agent"] -->|"Register Request"| Controller["AgentController"]
+    Controller --> Service["AgentRegistrationService"]
+    Service --> Processor["AgentRegistrationProcessor"]
+    Service --> Response["AgentRegistrationResponse"]
+    Response --> Agent

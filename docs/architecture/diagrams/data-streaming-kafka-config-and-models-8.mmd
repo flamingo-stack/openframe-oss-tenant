@@ -1,0 +1,5 @@
+flowchart LR
+    Mongo["MongoDB"] -->|"CDC"| Debezium
+    Debezium --> Kafka[("Kafka Cluster")]
+    Kafka --> StreamService["Stream Service"]
+    StreamService --> Pinot["Pinot Analytics"]

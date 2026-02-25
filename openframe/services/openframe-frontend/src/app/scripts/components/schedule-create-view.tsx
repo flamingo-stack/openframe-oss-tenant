@@ -27,7 +27,7 @@ import {
   type CreateScheduleFormData,
   type Platform,
 } from '../types/script-schedule.types'
-import { DISABLED_PLATFORMS, getAvailableOsPlatforms } from '../utils/script-utils'
+import { DISABLED_PLATFORMS, AVAILABLE_PLATFORMS } from '../utils/script-utils'
 import { ScheduleActionFormCard } from './schedule-action-form-card'
 import { ScheduleCreateLoader } from './schedule-create-loader'
 
@@ -149,7 +149,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
           })
-          router.push(`/scripts/schedules/${scheduleId}`)
         } else {
           const result = await createMutation.mutateAsync(payload)
           toast({
@@ -325,7 +324,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
               Supported Platform
             </Label>
             <div className="flex gap-3 max-w-[920px]">
-              {getAvailableOsPlatforms().map((p) => {
+              {AVAILABLE_PLATFORMS.map((p) => {
                 const isDisabled = DISABLED_PLATFORMS.includes(p.id)
                 return (
                   <SelectButton

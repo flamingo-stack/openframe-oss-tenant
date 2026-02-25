@@ -1,0 +1,5 @@
+flowchart TD
+    Verifier["Code Verifier"] -->|"SHA256"| Hash["Hash"]
+    Hash -->|"Base64Url"| Challenge["Code Challenge"]
+    Challenge -->|"Sent to Auth Server"| AuthServer["Authorization Server"]
+    Verifier -->|"Sent during token exchange"| AuthServer

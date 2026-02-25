@@ -1,0 +1,24 @@
+flowchart TD
+    ConfigServer["Config Server Application"]
+    Gateway["Gateway Application"]
+    Api["API Application"]
+    ExternalApi["External API Application"]
+    Authz["Authorization Server Application"]
+    Stream["Stream Application"]
+    Client["Client Application"]
+    Management["Management Application"]
+
+    Gateway --> Api
+    Gateway --> ExternalApi
+    Gateway --> Authz
+
+    Api --> Stream
+    Client --> Api
+    Stream --> Api
+    Management --> Api
+
+    ConfigServer --> Gateway
+    ConfigServer --> Api
+    ConfigServer --> Authz
+    ConfigServer --> Stream
+    ConfigServer --> Client

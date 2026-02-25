@@ -1,6 +1,0 @@
-flowchart TD
-    Tenant["Tenant"] --> Key["Per-Tenant RSA Key"]
-    Key --> Token["Signed JWT"]
-    Token --> Gateway
-    Gateway --> API
-    API --> Data

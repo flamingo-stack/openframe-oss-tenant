@@ -1,0 +1,7 @@
+flowchart TD
+    AppStart["App Startup"] --> ProviderInit["DebugModeProvider Mounted"]
+    ProviderInit --> InvokeCmd["invoke get_debug_mode"]
+    InvokeCmd -->|"Success"| SetTrue["Set debugMode"]
+    InvokeCmd -->|"Error"| SetFalse["Set debugMode false"]
+    SetTrue --> UIReady["UI Renders with Debug State"]
+    SetFalse --> UIReady

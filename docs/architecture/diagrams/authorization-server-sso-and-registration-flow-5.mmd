@@ -1,0 +1,5 @@
+flowchart LR
+    Gateway["Gateway Service"] --> AuthServer["Authorization Server"]
+    AuthServer --> Mongo[("MongoDB")]
+    AuthServer --> ApiService["API Service"]
+    Frontend["Frontend Tenant App"] --> Gateway

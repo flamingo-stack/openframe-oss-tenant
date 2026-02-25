@@ -1,0 +1,5 @@
+flowchart TD
+    Execute["Execute Pinot Query"] --> Success{"Success?"}
+    Success -->|Yes| Return["Return Results"]
+    Success -->|No| LogErr["Log Error"]
+    LogErr --> Throw["Throw PinotQueryException"]

@@ -1,13 +1,15 @@
-sequenceDiagram
-    participant Client
-    participant Gateway
-    participant Auth
-    participant API
+flowchart TD
+    UI["Frontend & Chat Clients"] --> Edge["Gateway Layer"]
+    Edge --> Security["Authorization Server & Shared JWT"]
+    Edge --> ApiLayer["API & External API Services"]
 
-    Client->>Gateway: Request (JWT or API Key)
-    Gateway->>Auth: Validate or resolve issuer
-    Auth->>Gateway: Signed JWT
-    Gateway->>API: Forward with Authorization header
-    API->>API: Decode JWT (resource server)
-    API->>Gateway: Response
-    Gateway->>Client: Final Response
+    ApiLayer --> Domain["Domain Services"]
+    Domain --> Data["Mongo / Cassandra / Pinot"]
+
+    Stream["Stream Service"] --> Kafka["Kafka"]
+    Kafka --> Stream
+    Stream --> Pinot
+    Stream --> Cassandra
+
+    Client["Client Service"] --> NATS["NATS / JetStream"]
+    Client --> Domain

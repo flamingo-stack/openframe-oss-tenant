@@ -1,0 +1,5 @@
+flowchart LR
+    Request["Incoming HTTP Request"] --> TenantFilter["Tenant Context Filter"]
+    TenantFilter --> SecurityChain["Spring Security Filter Chain"]
+    SecurityChain --> Controller["Authorization Controller"]
+    Controller --> Service["Domain Services"]

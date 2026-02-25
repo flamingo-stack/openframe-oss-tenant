@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Client Applications"] --> Rest["REST Controllers"]
+    Client --> GraphQL["GraphQL Data Fetchers"]
+
+    Rest --> Dto["Api Lib Dto And Mapping"]
+    GraphQL --> Dto
+
+    Dto --> Services["Domain Services"]
+    Services --> Repos["Mongo Repositories"]
+    Repos --> Docs["Mongo Documents"]

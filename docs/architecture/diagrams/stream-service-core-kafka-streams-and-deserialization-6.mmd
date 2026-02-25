@@ -1,0 +1,6 @@
+flowchart TD
+    Deserializer --> MessageTypeEnum["MessageType Enum"]
+    MessageTypeEnum --> Router["Stream Router"]
+    Router --> Enrichment["Enrichment Service"]
+    Router --> Persistence["Persistence Layer"]
+    Router --> ExternalPublish["External Publishing"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Login["Login / OAuth Endpoints"] --> Token["Token Issuance"]
+    Token --> Mongo["OAuth Persistence"]
+    Token --> Jwt["JWT Signing"]

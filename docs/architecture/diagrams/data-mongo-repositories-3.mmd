@@ -1,0 +1,4 @@
+flowchart TD
+    ReactiveUserRepo["ReactiveUserRepository"] --> MongoReactive["ReactiveMongoRepository"]
+    ReactiveUserRepo --> BaseUserRepo["BaseUserRepository"]
+    MongoReactive --> MongoDB[("MongoDB")]

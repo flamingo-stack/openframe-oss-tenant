@@ -1,0 +1,6 @@
+flowchart TD
+    User["Authenticated User"] --> Controller["ApiKeyController"]
+    Controller --> Service["ApiKeyService"]
+    Service --> Repo["API Key Repository"]
+
+    Controller -->|"principal.getId()"| Scope["User-Scoped Access"]

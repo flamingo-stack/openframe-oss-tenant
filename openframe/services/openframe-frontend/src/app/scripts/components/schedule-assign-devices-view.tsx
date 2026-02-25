@@ -4,18 +4,16 @@ import {
   DetailPageContainer,
   DeviceType,
   getDeviceTypeIcon,
+  getOSPlatformId,
   LoadError,
   NotFoundError,
-  StatusTag,
 } from '@flamingo-stack/openframe-frontend-core'
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils'
-import { OSTypeBadge, OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features'
 import { CheckCircleIcon, MonitorIcon, PlusCircleIcon, SearchIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
 import { Button, getTabComponent, Input, Table, TabContent, TabNavigation, type TableColumn, type TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui'
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
 import { apiClient } from '@lib/api-client'
-import { featureFlags } from '@lib/feature-flags'
-import { getFullImageUrl } from '@lib/image-url'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo, useState } from 'react'
@@ -23,7 +21,6 @@ import { DEVICE_STATUS } from '../../devices/constants/device-statuses'
 import { GET_DEVICES_QUERY } from '../../devices/queries/devices-queries'
 import type { Device, DevicesGraphQLNode, GraphQLResponse } from '../../devices/types/device.types'
 import { createDeviceListItem } from '../../devices/utils/device-transform'
-import { getDeviceStatusConfig } from '../../devices/utils/device-status'
 import { useScriptSchedule, useScriptScheduleAgents } from '../hooks/use-script-schedule'
 import { useReplaceScheduleAgents } from '../hooks/use-script-schedule-mutations'
 import { formatScheduleDate, getRepeatLabel } from '../types/script-schedule.types'
@@ -34,9 +31,12 @@ interface ScheduleAssignDevicesViewProps {
   scheduleId: string
 }
 
-async function fetchAllDevices(): Promise<Device[]> {
+async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
   const filter = {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
+    // ...(osTypes.length > 0 && { osTypes }),
+    // TODO: remove after macos/linux support
+    osTypes: ['WINDOWS']
   }
 
   const response = await apiClient.post<
@@ -66,7 +66,14 @@ async function fetchAllDevices(): Promise<Device[]> {
   }
 
   const nodes = graphqlResponse.data.devices.edges.map((e) => e.node)
-  return nodes.map(createDeviceListItem)
+  const devices = nodes.map(createDeviceListItem)
+
+  if (platforms.length === 0) return devices
+
+  return devices.filter((d) => {
+    const platformId = getOSPlatformId(d.osType)
+    return platformId ? platforms.includes(platformId) : false
+  })
 }
 
 type SubTab = 'available' | 'selected'
@@ -132,10 +139,12 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true)
   }
 
+  const supportedPlatforms = schedule?.task_supported_platforms ?? []
+
   const devicesQuery = useQuery({
-    queryKey: ['schedule-assign-devices', scheduleId],
-    queryFn: fetchAllDevices,
-    enabled: Boolean(scheduleId),
+    queryKey: ['schedule-assign-devices', scheduleId, supportedPlatforms],
+    queryFn: () => fetchDevicesByPlatforms(supportedPlatforms),
+    enabled: Boolean(scheduleId) && Boolean(schedule),
   })
 
   // Only include devices that have a Tactical RMM agent_id
@@ -195,7 +204,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         description: `${selectedAgentIds.size} device(s) assigned to schedule.`,
         variant: 'success',
       })
-      // router.push(`/scripts/schedules/${scheduleId}?tab=devices`)
+      router.push(`/scripts/schedules/${scheduleId}?tab=schedule-devices`)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save devices'
       toast({ title: 'Save failed', description: msg, variant: 'destructive' })
@@ -232,36 +241,12 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
                 {device.type && getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, { className: 'w-5 h-5 text-ods-text-secondary' })}
               </div>
-              <div className="flex flex-col">
-                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
+              <div className="flex flex-col truncate">
+                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
                   {device.displayName || device.hostname}
                 </span>
-                <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">
+                <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
-                </span>
-              </div>
-            </div>
-          )
-        },
-      },
-      {
-        key: 'organization',
-        label: 'ORGANIZATION',
-        hideAt: 'sm' as const,
-        renderCell: (device) => {
-          const fullImageUrl = getFullImageUrl(device.organizationImageUrl)
-          return (
-            <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon
-                  imageUrl={fullImageUrl}
-                  organizationName={device.organization || 'Organization'}
-                  size="sm"
-                />
-              )}
-              <div className="flex flex-col min-w-0">
-                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                  {device.organization || '—'}
                 </span>
               </div>
             </div>
@@ -271,20 +256,11 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       {
         key: 'details',
         label: 'DETAILS',
-        hideAt: 'md' as const,
+        width: 'w-[100px] md:flex-1',
         renderCell: (device) => {
           return (
             <OSTypeBadge osType={device.osType} />
           )
-        },
-      },
-      {
-        key: 'status',
-        label: 'STATUS',
-        width: 'w-[100px]',
-        renderCell: (device) => {
-          const statusConfig = getDeviceStatusConfig(device.status)
-          return <StatusTag label={statusConfig.label} variant={statusConfig.variant} className="px-2 py-1 text-[12px]" />
         },
       },
     ],
@@ -410,16 +386,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full"
-              endAdornment={
-                searchTerm ? (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="text-ods-text-secondary hover:text-ods-text-primary"
-                  >
-                    &times;
-                  </button>
-                ) : undefined
-              }
             />
           </div>
         </div>

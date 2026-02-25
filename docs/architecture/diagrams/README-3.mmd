@@ -1,9 +1,12 @@
-flowchart LR
-    Tools["Integrated Tools"] --> Kafka["Kafka Topics"]
+sequenceDiagram
+    participant Browser
+    participant Gateway
+    participant AuthServer
+    participant ApiService
 
-    Kafka --> Stream["Stream Service Core"]
-    Stream --> Enrichment["Event & Activity Enrichment"]
-    Enrichment --> Unified["Unified Events Topic"]
-
-    Unified --> API["API Service"]
-    Unified --> ExternalAPI["External API"]
+    Browser->>AuthServer: OAuth Login (tenant-scoped)
+    AuthServer-->>Browser: JWT (tenant_id claim)
+    Browser->>Gateway: API Request with JWT
+    Gateway->>Gateway: Validate issuer + signature
+    Gateway->>ApiService: Forward with identity context
+    ApiService->>ApiService: Enforce tenant isolation

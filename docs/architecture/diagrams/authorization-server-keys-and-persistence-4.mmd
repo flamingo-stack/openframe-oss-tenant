@@ -1,0 +1,6 @@
+flowchart TD
+    SpringAuth["Spring Authorization Server"] --> Service["MongoAuthorizationService"]
+    Service --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> Entity["MongoOAuth2Authorization"]
+    Entity --> Repo["MongoOAuth2AuthorizationRepository"]
+    Repo --> MongoDB[("MongoDB")]
