@@ -20,7 +20,7 @@ spec:
 
       containers:
         - name: openframe-frontend
-          image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.image.tag .Values.global.image.tag }}"
           ports:
             - containerPort: 3000
               name: http

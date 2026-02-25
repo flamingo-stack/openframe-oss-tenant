@@ -1,3 +1,7 @@
+global:
+  image:
+    tag: latest
+
 deployment:
   oss:
     ingress:
@@ -19,10 +23,12 @@ registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
- 
+
 image:
-  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-frontend
+  registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+  repository: openframe-frontend
   tag: latest
 
 resources:

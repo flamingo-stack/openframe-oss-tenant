@@ -16,7 +16,7 @@ spec:
 
       containers:
       - name: register
-        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         env:
         - name: MONGODB_HOST
           valueFrom:
@@ -44,7 +44,7 @@ spec:
           - |
             echo "Registering MeshCentral MongoDB..."
             echo "Waiting for OpenFrame Management API to become reachable..."
-            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do
               echo "Still waiting..."
               sleep 10
             done
