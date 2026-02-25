@@ -14,7 +14,7 @@
     "format": "biome format .",
     "format:fix": "biome format --fix .",
     "type-check": "tsc --noEmit",
-    "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky"
+    "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky || true"
   },
   "dependencies": {
     "@flamingo-stack/openframe-frontend-core": "0.0.46",
