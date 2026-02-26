@@ -1,256 +1,296 @@
 # First Steps with OpenFrame
 
-Congratulations on successfully setting up OpenFrame! This guide will walk you through your first hour with the platform, helping you understand its key features and capabilities.
+Welcome to OpenFrame! After completing the quick start setup, this guide will walk you through the essential first steps to get productive with the platform.
 
-## Initial Access
+[![OpenFrame v0.5.2: Autonomous AI Agent Architecture for MSPs](https://img.youtube.com/vi/PexpoNdZtUk/maxresdefault.jpg)](https://www.youtube.com/watch?v=PexpoNdZtUk)
 
-### Accessing the Dashboard
+## Your First 5 Actions
 
-1. **Open your browser** and navigate to: http://localhost:8080
-2. **Login** using the default credentials (if authentication is enabled)
-3. **Explore the main dashboard** - your central hub for all operations
+Here are the first 5 things you should do after getting OpenFrame running:
 
-### Key Interface Elements
+### 1. Complete Your Tenant Setup
 
-- **Navigation Bar**: Quick access to major sections
-- **Dashboard Widgets**: Real-time metrics and status indicators  
-- **Service Status Panel**: Monitor all integrated services
-- **Quick Actions**: Common tasks and shortcuts
+Navigate to **Settings** → **Company and Users**:
 
-## Understanding the Architecture
-
-### Core Components Overview
-
-OpenFrame consists of several interconnected services:
-
-1. **Gateway Service** (Port 8080) - Your main entry point
-2. **API Service** - GraphQL and REST endpoints
-3. **Client Service** - Agent management
-4. **Management Service** - Administrative functions
-5. **Stream Service** - Real-time data processing
-6. **Config Service** (Port 8888) - Configuration management
-7. **UI Service** - Vue.js frontend application
-
-### Data Flow
-```
-User Request → Gateway → Service → Database → Response
+```text
+✅ Set up your company profile
+✅ Configure your primary contact information
+✅ Upload your company logo
+✅ Set your timezone and locale preferences
 ```
 
-## Exploring Key Features
+**Why this matters**: Proper tenant configuration ensures all features work correctly and data is properly attributed.
 
-### 1. Service Management
+### 2. Create Your First Organization
 
-**View Service Status**:
-- Navigate to the Services section
-- Check health status of all components
-- Review performance metrics
+Organizations represent your clients in OpenFrame. Create a test organization:
 
-**Service Controls**:
-- Start/stop individual services
-- View service logs
-- Monitor resource usage
+1. Go to **Organizations** → **New Organization**
+2. Fill in the basic details:
+   - **Name**: "Demo Client MSP"
+   - **Contact Email**: "admin@democlient.com"
+   - **Phone**: Your test number
+   - **Address**: Your test address
 
-### 2. API Exploration
+3. Save the organization
 
-**GraphQL Playground**:
-1. Visit: http://localhost:8080/graphql
-2. Explore available queries and mutations
-3. Try sample queries:
+**Expected result**: You should see the organization listed in your dashboard with a status of "Active".
 
-```graphql
-query {
-  systemInfo {
-    version
-    status
-    services {
-      name
-      status
-      port
-    }
-  }
-}
-```
+### 3. Register Your First Device
 
-**REST Endpoints**:
-- Authentication: `/oauth/token`
-- Health checks: `/actuator/health`
-- Service discovery: `/api/services`
+Test the device registration process:
 
-### 3. Integrated Tools
+1. Navigate to **Devices** → **New Device**
+2. Copy the registration command provided
+3. Run it on a test machine (or virtual machine):
 
-OpenFrame includes several integrated tools:
-
-**Currently Available**:
-- **MeshCentral** - Remote management platform
-- **Tactical RMM** - IT management suite  
-- **Fleet MDM** - Mobile device management
-- **Authentik** - Identity provider
-
-**Accessing Tools**:
-1. From the main dashboard, click on "Integrated Tools"
-2. Select the tool you want to use
-3. Tools open in embedded views or new tabs
-
-### 4. Agent Management
-
-**Understanding Agents**:
-- Cross-platform Rust agents for system monitoring
-- Automatic registration and management
-- Real-time metrics collection
-
-**Agent Operations**:
-1. View registered agents in the Client section
-2. Monitor agent health and connectivity
-3. Deploy configuration updates
-4. Review collected metrics
-
-## Common First Tasks
-
-### 1. Configure Your Environment
-
-**Update Configuration**:
-1. Access the Config Service at http://localhost:8888
-2. Review default settings
-3. Customize for your environment
-
-**Environment Variables**:
 ```bash
-# Key environment variables to consider
-SPRING_PROFILES_ACTIVE=dev
-SERVER_PORT=8080
-DATABASE_URL=mongodb://localhost:27017/openframe
+# Example registration command (yours will be different)
+curl -sSL https://install.openframe.dev/register | bash -s -- \
+  --tenant-id=your-tenant-id \
+  --registration-secret=your-secret
 ```
 
-### 2. Set Up Monitoring
+4. Wait 1-2 minutes and refresh the Devices page
 
-**Dashboard Setup**:
-1. Navigate to Monitoring section
-2. Configure alert thresholds
-3. Set up notification channels
+**Expected result**: Your test device appears in the devices list with connection status and basic hardware information.
 
-**Grafana Access** (if enabled):
-- URL: http://localhost:3000
-- Default credentials: admin/admin
-- Pre-configured OpenFrame dashboards
+### 4. Meet Mingo, Your AI Assistant
 
-### 3. Test API Integration
+Explore the AI capabilities that make OpenFrame powerful:
 
-**Using curl**:
+1. Navigate to **Mingo** in the sidebar
+2. Start with these example conversations:
+
+```text
+"Help me understand my current infrastructure setup"
+
+"What devices need attention?"
+
+"Create a maintenance checklist for this month"
+
+"Explain what services are currently running"
+```
+
+**Expected result**: Mingo provides intelligent responses based on your platform data and suggests actionable next steps.
+
+### 5. Generate Your First API Key
+
+Set up programmatic access for integrations:
+
+1. Go to **Settings** → **API Keys**
+2. Click **Create New API Key**
+3. Fill in the details:
+   - **Name**: "Development Testing"
+   - **Description**: "For learning and testing API endpoints"
+   - **Permissions**: Start with "Read Only"
+
+4. Copy and save the API key securely
+
+**Expected result**: You receive a secure API key that you can use to access OpenFrame's external APIs programmatically.
+
+## Essential Platform Features to Explore
+
+### Device Management
+
+**Navigate to**: Devices
+
+**Key capabilities**:
+- **Real-time status monitoring** - See device health, connectivity, and performance
+- **Remote access** - Built-in remote desktop and file management
+- **Agent management** - Install, update, and configure device agents
+- **Compliance tracking** - Monitor security compliance and policies
+
+**Try this**: Click on your registered device to explore the detailed device view with tabs for hardware, software, security, and logs.
+
+### Organization Management
+
+**Navigate to**: Organizations
+
+**Key capabilities**:
+- **Client hierarchy** - Organize customers and their devices
+- **Contact management** - Store and manage client contacts
+- **Service tracking** - Monitor service levels and agreements
+- **Billing integration** - Track resources and usage per organization
+
+**Try this**: Edit your demo organization to add additional contact information and explore the organization detail view.
+
+### AI-Powered Insights
+
+**Navigate to**: Mingo
+
+**Key capabilities**:
+- **Intelligent triage** - AI automatically prioritizes alerts and incidents
+- **Automated responses** - Mingo can take action on routine issues
+- **Knowledge synthesis** - Ask questions and get answers from your infrastructure data
+- **Workflow automation** - Create custom AI-powered workflows
+
+**Try this**: Ask Mingo "What would you recommend as my next steps for securing my infrastructure?" and follow the guidance provided.
+
+### Analytics and Monitoring
+
+**Navigate to**: Dashboard
+
+**Key capabilities**:
+- **Real-time metrics** - System health, performance, and usage statistics
+- **Custom dashboards** - Create views tailored to your needs
+- **Alert management** - Configure and respond to system alerts
+- **Trend analysis** - Historical data and predictive insights
+
+**Try this**: Explore the dashboard widgets and customize the view to show the metrics most relevant to your MSP operations.
+
+### External API Integration
+
+**Use your API key from step 5**:
+
 ```bash
-# Get system status
-curl -X GET http://localhost:8080/api/system/status
+# Test API connectivity
+curl -H "X-API-Key: your-api-key" \
+  http://localhost:8083/api/v1/organizations
 
-# Test authentication
-curl -X POST http://localhost:8080/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=your_client_id&client_secret=your_secret"
+# Get device information
+curl -H "X-API-Key: your-api-key" \
+  http://localhost:8083/api/v1/devices
+
+# Retrieve recent events
+curl -H "X-API-Key: your-api-key" \
+  http://localhost:8083/api/v1/events?limit=10
 ```
 
-**Using GraphQL**:
+**Try this**: Use the API to retrieve data and experiment with building custom integrations or reports.
+
+## Common Initial Configuration Tasks
+
+### Configure SSO (Optional)
+
+If your organization uses Google Workspace or Azure AD:
+
+1. Go to **Settings** → **SSO Configuration**
+2. Choose your provider (Google or Microsoft)
+3. Follow the setup wizard to configure OAuth2 integration
+4. Test the SSO flow with a test user
+
+### Set Up User Roles
+
+Invite team members and configure access:
+
+1. Go to **Settings** → **Company and Users**
+2. Click **Add Users** 
+3. Send invitations with appropriate roles:
+   - **Admin**: Full platform access
+   - **Technician**: Device and incident management
+   - **Viewer**: Read-only access for reporting
+
+### Configure AI Policies
+
+Customize how Mingo interacts with your systems:
+
+1. Go to **Settings** → **AI Settings**
+2. Review and configure AI policies:
+   - **Auto-approval thresholds** for routine tasks
+   - **Escalation rules** for critical incidents
+   - **Integration permissions** for external tools
+
+### Test Integrations
+
+If you have existing MSP tools, explore integration options:
+
+1. Check the integrations available in **Settings** → **Architecture**
+2. Configure connections to existing RMM/PSA tools
+3. Test data synchronization and event forwarding
+
+## Expected Learning Outcomes
+
+After completing these first steps, you should understand:
+
+### Platform Navigation
+- ✅ How to navigate between core modules
+- ✅ Where to find configuration settings  
+- ✅ How to access help and documentation
+
+### Core Workflows
+- ✅ Device registration and management process
+- ✅ Organization and client management
+- ✅ AI assistant interaction patterns
+- ✅ API access and authentication
+
+### System Architecture
+- ✅ Multi-tenant isolation model
+- ✅ Role-based access control
+- ✅ Event-driven data processing
+- ✅ Microservice communication patterns
+
+### Automation Capabilities
+- ✅ AI-powered incident triage
+- ✅ Automated response workflows
+- ✅ Intelligent alert filtering
+- ✅ Custom integration possibilities
+
+## Performance and Scaling Tips
+
+As you start using OpenFrame more heavily:
+
+### Monitor Resource Usage
 ```bash
-# Test GraphQL endpoint
-curl -X POST http://localhost:8080/graphql \
-  -H "Content-Type: application/json" \
-  -d '{"query": "{ systemInfo { version status } }"}'
+# Check service resource consumption
+docker stats
+
+# Monitor database performance
+docker compose exec mongodb mongostat
+
+# View service logs
+docker compose logs -f openframe-api
 ```
 
-## Development Workflow
+### Optimize for Your Workload
+- **Device-heavy**: Increase Client Service memory allocation
+- **Analytics-heavy**: Optimize Pinot segment configuration
+- **High-event volume**: Scale Stream Service horizontally
 
-### 1. Making Your First Change
+### Backup Strategy
+- **MongoDB**: Regular database backups for transactional data
+- **Configuration**: Export tenant settings and configurations
+- **API Keys**: Secure storage of authentication credentials
 
-**Frontend Changes**:
-1. Navigate to `openframe/services/openframe-frontend`
-2. Run `npm run dev` for development mode
-3. Make changes and see live updates
+## Common Questions and Next Steps
 
-**Backend Changes**:
-1. Open your preferred Java IDE
-2. Import the Maven project
-3. Make changes and use Spring Boot DevTools for hot reload
+### "How do I connect my existing RMM tool?"
 
-### 2. Testing Changes
+OpenFrame supports integration with major RMM platforms. Check the external integrations documentation or ask Mingo: "How can I connect TacticalRMM to OpenFrame?"
 
-**Run Tests**:
-```bash
-# Backend tests
-mvn test
+### "Can I customize the AI behavior?"
 
-# Frontend tests  
-cd openframe/services/openframe-frontend
-npm run test
+Yes! AI policies and automation rules are fully configurable. Explore the AI Settings section to customize Mingo's behavior for your specific workflows.
 
-# Rust agent tests
-cd client
-cargo test
-```
+### "What's the recommended way to scale this for production?"
 
-## Next Steps
+For production deployments, consider the Kubernetes deployment guides and horizontal scaling patterns documented in the architecture section.
 
-### Immediate Actions (Next 30 minutes)
-1. **Explore the API documentation**: [API Overview](../api/overview.md)
-2. **Review architecture details**: [Architecture Overview](../development/architecture/overview.md)
-3. **Set up your development environment**: [Development Setup](../development/setup/environment.md)
+### "How do I get help when I'm stuck?"
 
-### Short-term Goals (Next few hours)
-1. **Deploy additional integrated tools**
-2. **Configure monitoring and alerting**
-3. **Set up your first custom integration**
-4. **Explore the client agent capabilities**
+1. **Ask Mingo** - The AI assistant has knowledge of platform capabilities
+2. **Check documentation** - Explore the architecture guides for detailed information
+3. **Community support** - Join the [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for community help
 
-### Learning Resources
-- **[Development Guide](../development/README.md)** - Comprehensive development documentation
-- **[API Reference](../api/README.md)** - Complete API documentation
-- **[Deployment Guide](../deployment/README.md)** - Production deployment information
-- **[Operations Manual](../operations/README.md)** - Operational procedures
+## Where to Go From Here
 
-## Getting Help
+Now that you've completed the essential first steps:
 
-### Documentation
-- **Search this documentation** using your browser's search function
-- **Check the troubleshooting guides** for common issues
-- **Review the FAQ** for frequently asked questions
+### For MSP Operations Teams
+- Explore advanced device management and monitoring features
+- Set up automated incident response workflows
+- Configure client-facing dashboards and reports
 
-### Community
-- **GitHub Issues**: Report bugs and request features
-- **Discussion Forums**: Ask questions and share knowledge
-- **Community Chat**: Real-time help and discussion
+### For Developers and Integrators  
+- Dive into the API documentation and SDK examples
+- Explore the microservice architecture for custom extensions
+- Learn about the event streaming patterns for real-time integrations
 
-### Troubleshooting
+### For System Administrators
+- Review security configurations and access controls
+- Plan production deployment and scaling strategies
+- Set up monitoring, backup, and disaster recovery procedures
 
-**Common First-Time Issues**:
-1. **Port conflicts**: Ensure required ports are available
-2. **Permission issues**: Check file and directory permissions
-3. **Service startup failures**: Review logs for specific error messages
-4. **Authentication problems**: Verify credentials and token configuration
+---
 
-**Getting Logs**:
-```bash
-# Service logs
-docker-compose logs -f [service-name]
-
-# Application logs
-tail -f logs/openframe.log
-
-# System logs
-journalctl -f -u openframe
-```
-
-**Quick Health Check**:
-```bash
-# Check all services
-curl http://localhost:8080/actuator/health
-
-# Check specific service
-curl http://localhost:8080/api/services/health
-```
-
-## Congratulations!
-
-You've completed your first steps with OpenFrame. You should now have:
-- ✅ A running OpenFrame installation
-- ✅ Understanding of core components
-- ✅ Experience with the main interface
-- ✅ Knowledge of key features and capabilities
-- ✅ Direction for next steps
-
-Ready to dive deeper? Continue with the [Development Guide](../development/README.md) or explore specific areas that interest you most.
+*🚀 You're now ready to harness the full power of OpenFrame! Continue exploring the platform features and building your AI-powered MSP operations.*

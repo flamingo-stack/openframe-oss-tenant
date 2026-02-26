@@ -1,58 +1,67 @@
-'use client'
+'use client';
 
-import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useState } from 'react'
-import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { isSaasSharedMode } from '@lib/app-mode'
-import { useRegistrationProviders } from '@app/auth/hooks/use-registration-providers'
+import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useState } from 'react';
+import { useRegistrationProviders } from '@/app/auth/hooks/use-registration-providers';
+import { isSaasSharedMode } from '@/lib/app-mode';
 
 interface RegisterRequest {
-  tenantName: string
-  tenantDomain: string
-  firstName: string
-  lastName: string
-  email: string
-  password: string
-  accessCode: string
+  tenantName: string;
+  tenantDomain: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  accessCode: string;
 }
 
 interface AuthSignupSectionProps {
-  orgName: string
-  domain: string
-  accessCode: string
-  email?: string
-  onSubmit: (data: RegisterRequest) => void
-  onSSO?: (provider: string) => void
-  onBack: () => void
-  isLoading: boolean
+  orgName: string;
+  domain: string;
+  accessCode: string;
+  email?: string;
+  onSubmit: (data: RegisterRequest) => void;
+  onSso?: (provider: string) => void;
+  onBack: () => void;
+  isLoading: boolean;
 }
 
 /**
  * Signup section for completing user registration
  */
-export function AuthSignupSection({ orgName, domain, accessCode, email: prefillEmail, onSubmit, onSSO, onBack, isLoading }: AuthSignupSectionProps) {
-  const isSaasShared = isSaasSharedMode()
-  const { providers: ssoProviders, loading: loadingProviders } = useRegistrationProviders()
+export function AuthSignupSection({
+  orgName,
+  domain,
+  accessCode,
+  email: prefillEmail,
+  onSubmit,
+  onSso,
+  onBack,
+  isLoading,
+}: AuthSignupSectionProps) {
+  const isSaasShared = isSaasSharedMode();
+  const { providers: ssoProviders, loading: loadingProviders } = useRegistrationProviders();
 
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState(prefillEmail || '')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [, setSignupMethod] = useState<'form' | 'sso'>('form')
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState(prefillEmail || '');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [, setSignupMethod] = useState<'form' | 'sso'>('form');
 
-  const displayDomain = isSaasShared ? domain : domain
+  const displayDomain = isSaasShared ? domain : domain;
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  const isEmailValid = emailRegex.test(email.trim())
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isEmailValid = emailRegex.test(email.trim());
 
-  const getTitle = () => 'Create Organization'
-  const getSubtitle = () => 'Start your journey with OpenFrame'
-  const getButtonText = () => isSaasShared ? 'Start Free Trial' : 'Create Organization'
+  const getTitle = () => 'Create Organization';
+  const getSubtitle = () => 'Start your journey with OpenFrame';
+  const getButtonText = () => (isSaasShared ? 'Start Free Trial' : 'Create Organization');
 
   const handleSubmit = () => {
     if (!firstName.trim() || !lastName.trim() || !isEmailValid || !password || password !== confirmPassword) {
-      return
+      return;
     }
 
     const data: RegisterRequest = {
@@ -62,49 +71,46 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
       lastName: lastName.trim(),
       email: email.trim(),
       password,
-      accessCode: accessCode
-    }
+      accessCode: accessCode,
+    };
 
-    onSubmit(data)
-  }
+    onSubmit(data);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !isLoading && isFormValid) {
-      handleSubmit()
+      handleSubmit();
     }
-  }
+  };
 
-  const handleSSOClick = async (provider: string) => {
-    setSignupMethod('sso')
-    if (onSSO) {
-      onSSO(provider)
+  const handleSsoClick = async (provider: string) => {
+    setSignupMethod('sso');
+    if (onSso) {
+      onSso(provider);
     }
-  }
+  };
 
-  const isFormValid = firstName.trim() && lastName.trim() && isEmailValid &&
-    password && confirmPassword && password === confirmPassword
+  const isFormValid =
+    firstName.trim() && lastName.trim() && isEmailValid && password && confirmPassword && password === confirmPassword;
 
   return (
     <div className="w-full">
       <div className="w-full space-y-6 lg:space-y-10">
-
         {/* Complete Your Registration Section */}
         <div className="bg-ods-card border border-ods-border rounded-sm p-10">
           <div className="mb-6">
             <h1 className="font-heading text-[32px] font-semibold text-ods-text-primary leading-10 tracking-[-0.64px] mb-2">
               {getTitle()}
             </h1>
-            <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">
-              {getSubtitle()}
-            </p>
+            <p className="font-body text-[18px] font-medium text-ods-text-secondary leading-6">{getSubtitle()}</p>
           </div>
 
           {/* SSO Options for SaaS Shared Mode */}
-          {ssoProviders.length > 0 && onSSO && (
+          {ssoProviders.length > 0 && onSso && (
             <div className="mb-6">
               <AuthProvidersList
                 enabledProviders={ssoProviders}
-                onProviderClick={handleSSOClick}
+                onProviderClick={handleSsoClick}
                 dividerText="Sign up with"
                 loading={isLoading || loadingProviders}
               />
@@ -119,9 +125,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
             </div>
           )}
 
-          <div className="space-y-6"
-            onClick={() => setSignupMethod('form')}>
-
+          <div className="space-y-6" onClick={() => setSignupMethod('form')}>
             {/* Organization details (disabled) */}
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex-1 flex flex-col gap-1">
@@ -150,7 +154,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
                 <Label>First Name</Label>
                 <Input
                   value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  onChange={e => setFirstName(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Your First Name"
                   disabled={isLoading}
@@ -161,7 +165,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
                 <Label>Last Name</Label>
                 <Input
                   value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
+                  onChange={e => setLastName(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Your Last Name"
                   disabled={isLoading}
@@ -175,15 +179,13 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="username@mail.com"
                 disabled={isLoading || !!prefillEmail}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
-              {email.trim() && !isEmailValid && (
-                <p className="text-xs text-error mt-1">Enter a valid email address</p>
-              )}
+              {email.trim() && !isEmailValid && <p className="text-xs text-error mt-1">Enter a valid email address</p>}
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">
@@ -192,9 +194,9 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
                 <Input
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={"Choose a Strong Password"}
+                  placeholder={'Choose a Strong Password'}
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
@@ -207,7 +209,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
                 <Input
                   type="password"
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={e => setConfirmPassword(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Confirm your Password"
                   disabled={isLoading}
@@ -220,12 +222,7 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center">
-              <Button
-                onClick={onBack}
-                disabled={isLoading}
-                variant="outline"
-                className="w-full sm:flex-1"
-              >
+              <Button onClick={onBack} disabled={isLoading} variant="outline" className="w-full sm:flex-1">
                 Back
               </Button>
               <Button
@@ -242,5 +239,5 @@ export function AuthSignupSection({ orgName, domain, accessCode, email: prefillE
         </div>
       </div>
     </div>
-  )
+  );
 }

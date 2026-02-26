@@ -1,0 +1,13 @@
+flowchart LR
+    UI["Chat UI Components"] --> DebugContext["Debug Mode Context"]
+    UI --> DialogService["Dialog GraphQL Service"]
+    UI --> ModelsService["Supported Models Service"]
+
+    DialogService --> TokenService["Token Service"]
+    ModelsService --> TokenService
+
+    TokenService --> Tauri["Tauri Runtime"]
+    TokenService --> Backend["OpenFrame Backend APIs"]
+
+    DialogService --> GraphQL["/chat/graphql"]
+    ModelsService --> RestEndpoint["/chat/api/v1/ai-configuration/supported-models"]

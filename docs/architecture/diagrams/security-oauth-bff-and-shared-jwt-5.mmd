@@ -1,0 +1,6 @@
+flowchart TD
+    Browser["Browser"] -->|"POST /oauth/refresh"| BFF["OAuth BFF Controller"]
+    BFF -->|"Lookup tenant"| Service["OAuthBffService"]
+    Service -->|"Call Authorization Server"| AuthServer
+    AuthServer -->|"New tokens"| BFF
+    BFF -->|"Update Cookies"| Browser

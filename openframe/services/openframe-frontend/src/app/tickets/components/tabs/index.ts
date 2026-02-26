@@ -1,2 +1,2 @@
-export { TICKETS_TABS, getTicketsTab, getTabComponent, TicketsTabNavigation } from './tickets-tabs'
-export { TicketsTabContent } from './tickets-tab-content'
+export { TicketsTabContent } from './tickets-tab-content';
+export { getTabComponent, getTicketsTab, TICKETS_TABS, TicketsTabNavigation } from './tickets-tabs';

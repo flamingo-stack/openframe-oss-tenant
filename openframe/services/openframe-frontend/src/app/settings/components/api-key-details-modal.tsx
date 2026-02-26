@@ -1,30 +1,37 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { Button, StatusTag, Modal, ModalHeader, ModalTitle, ModalFooter, Label, Input } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import type { ApiKeyRecord } from '../hooks/use-api-keys'
+import {
+  Button,
+  Input,
+  Label,
+  Modal,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+  Tag,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React from 'react';
+import type { ApiKeyRecord } from '../hooks/use-api-keys';
 
 interface ApiKeyDetailsModalProps {
-  isOpen: boolean
-  onClose: () => void
-  apiKey: ApiKeyRecord | null
+  isOpen: boolean;
+  onClose: () => void;
+  apiKey: ApiKeyRecord | null;
 }
 
 export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsModalProps) {
-  if (!apiKey) return null
+  if (!apiKey) return null;
 
-  const createdDate = new Date(apiKey.createdAt)
-  const expiresDate = apiKey.expiresAt ? new Date(apiKey.expiresAt) : null
-  const lastUsed = apiKey.lastUsed ? new Date(apiKey.lastUsed) : null
-  const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : '—')
+  const createdDate = new Date(apiKey.createdAt);
+  const expiresDate = apiKey.expiresAt ? new Date(apiKey.expiresAt) : null;
+  const lastUsed = apiKey.lastUsed ? new Date(apiKey.lastUsed) : null;
+  const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : '—');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader>
         <ModalTitle>API Key Details</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
-          View API key information and usage statistics
-        </p>
+        <p className="text-ods-text-secondary text-sm mt-1">View API key information and usage statistics</p>
       </ModalHeader>
 
       <div className="px-6 py-4 space-y-4">
@@ -34,7 +41,7 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
             <div className="text-lg font-semibold text-ods-text-primary">{apiKey.name}</div>
             <div className="text-sm text-ods-text-secondary mt-1">{apiKey.description || '—'}</div>
           </div>
-          <StatusTag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'info'} />
+          <Tag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'grey'} />
         </div>
 
         {/* Two Column Layout */}
@@ -77,12 +84,8 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
       </div>
 
       <ModalFooter>
-        <Button onClick={onClose}>
-          Close
-        </Button>
+        <Button onClick={onClose}>Close</Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }
-
-

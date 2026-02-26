@@ -1,0 +1,9 @@
+flowchart TD
+    Login["User Login"] --> CookieOrToken["Cookie or Dev Token"]
+    CookieOrToken --> ApiRequest["API Request"]
+    ApiRequest --> Unauthorized{"401?"}
+    Unauthorized -->|No| Success["Continue"]
+    Unauthorized -->|Yes| Refresh["/oauth/refresh"]
+    Refresh --> Valid{"Valid?"}
+    Valid -->|Yes| Retry["Retry Request"]
+    Valid -->|No| ForceLogout["Force Logout"]

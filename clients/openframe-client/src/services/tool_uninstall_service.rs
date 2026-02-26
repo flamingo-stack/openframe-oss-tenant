@@ -1,12 +1,17 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, debug};
 use tokio::process::Command;
+use tokio::fs;
+use std::path::PathBuf;
+use crate::models::download_configuration::InstallationType;
 use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
+#[allow(unused_imports)]
+use crate::models::InstalledTool;
 
 #[derive(Clone)]
 pub struct ToolUninstallService {
@@ -70,7 +75,7 @@ impl ToolUninstallService {
 
         // Stop the tool process before uninstalling - fail if we can't stop it
         info!("Stopping tool process before uninstallation: {}", tool_agent_id);
-        self.tool_kill_service.stop_tool(tool_agent_id).await
+        self.stop_tool_process(tool).await
             .with_context(|| format!("Failed to stop tool process for: {}", tool_agent_id))?;
 
         // TODO: make this stop from fleet orbit side or using asset path
@@ -85,17 +90,14 @@ impl ToolUninstallService {
         }
 
         // Check if uninstallation command is provided
-        if tool.uninstallation_command_args.is_none() {
-            info!("No uninstallation command provided for tool: {}, skipping", tool_agent_id);
-            return Ok(());
-        }
-
-        let uninstall_args = tool.uninstallation_command_args.as_ref().unwrap();
-        
-        if uninstall_args.is_empty() {
-            info!("Empty uninstallation command for tool: {}, skipping", tool_agent_id);
-            return Ok(());
-        }
+        let uninstall_args = match &tool.uninstallation_command_args {
+            Some(args) if !args.is_empty() => args,
+            _ => {
+                info!("No uninstallation command provided for tool: {}", tool_agent_id);
+                self.cleanup_gui_app_bundle(tool).await;
+                return Ok(());
+            }
+        };
 
         // Process command parameters (replace placeholders)
         let processed_args = self.command_params_resolver
@@ -143,10 +145,54 @@ impl ToolUninstallService {
         let stdout = String::from_utf8_lossy(&output.stdout);
         info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
 
-        // Note: Tool-specific directory cleanup is handled automatically when the main
-        // OpenFrame application is uninstalled, as it's within the app support directory
+        // Cleanup GUI app bundle if applicable
+        self.cleanup_gui_app_bundle(tool).await;
 
         Ok(())
+    }
+
+    async fn stop_tool_process(&self, tool: &InstalledTool) -> Result<()> {
+        self.tool_kill_service.stop_installed_tool(tool).await
+    }
+
+    async fn cleanup_gui_app_bundle(&self, tool: &crate::models::InstalledTool) {
+        if tool.installation_type != InstallationType::GuiApp {
+            return;
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            let Some(exec_path) = &tool.executable_path else { return };
+            self.remove_macos_app_bundle(exec_path).await;
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            let _ = tool;
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn remove_macos_app_bundle(&self, executable_path: &str) {
+        let path = PathBuf::from(executable_path);
+        let Some(app_bundle) = path.ancestors()
+            .find(|p| p.extension().map_or(false, |ext| ext == "app"))
+        else {
+            warn!("Could not find .app bundle in path: {}", executable_path);
+            return;
+        };
+
+        if !app_bundle.exists() {
+            info!("App bundle already removed: {}", app_bundle.display());
+            return;
+        }
+
+        info!("Removing .app bundle: {}", app_bundle.display());
+        if let Err(e) = fs::remove_dir_all(app_bundle).await {
+            warn!("Failed to remove .app bundle {}: {:#}", app_bundle.display(), e);
+        } else {
+            info!("Successfully removed .app bundle: {}", app_bundle.display());
+        }
     }
 }
 

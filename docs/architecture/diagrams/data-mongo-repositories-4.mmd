@@ -1,0 +1,5 @@
+flowchart TD
+    Filter["EventQueryFilter"] --> BuildQuery["buildEventQuery()"]
+    BuildQuery --> ApplyCursor["apply ObjectId cursor"]
+    ApplyCursor --> Sort["apply validated sorting"]
+    Sort --> MongoTemplateFind["mongoTemplate.find(Event)"]

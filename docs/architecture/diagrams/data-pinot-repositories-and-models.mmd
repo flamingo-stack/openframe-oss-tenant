@@ -1,0 +1,7 @@
+flowchart LR
+    Kafka["Kafka Topics"] --> Stream["Stream Service"]
+    Stream --> Pinot["Apache Pinot"]
+    Pinot --> DeviceRepo["PinotClientDeviceRepository"]
+    Pinot --> LogRepo["PinotClientLogRepository"]
+    DeviceRepo --> ApiLayer["API / GraphQL Layer"]
+    LogRepo --> ApiLayer

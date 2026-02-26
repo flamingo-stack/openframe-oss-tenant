@@ -1,0 +1,15 @@
+flowchart LR
+    UI["Frontend UI"] --> ApiClient["ApiClient"]
+    UI --> AuthApiClient["AuthApiClient"]
+    UI --> FleetClient["FleetApiClient"]
+    UI --> TacticalClient["TacticalApiClient"]
+    UI --> MingoService["MingoApiService"]
+
+    ApiClient --> ApiBackend["API Service"]
+    AuthApiClient --> AuthServer["Authorization Server"]
+    FleetClient --> FleetTool["Fleet MDM Tool"]
+    TacticalClient --> TacticalTool["Tactical RMM Tool"]
+    MingoService --> ChatBackend["Chat and AI Services"]
+
+    MingoService --> MingoStore["MingoMessagesStore"]
+    UI --> DialogDetailsStore["DialogDetailsStore"]

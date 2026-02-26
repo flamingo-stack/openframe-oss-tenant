@@ -1,0 +1,11 @@
+flowchart LR
+    App["Application Service"] -->|"produce()"| Template["KafkaTemplate"]
+    Template --> ProducerFactory["ProducerFactory"]
+    ProducerFactory --> Broker[("Kafka Cluster")]
+
+    Broker --> ConsumerFactory["ConsumerFactory"]
+    ConsumerFactory --> ListenerFactory["KafkaListenerContainerFactory"]
+    ListenerFactory --> Listener["@KafkaListener"]
+
+    TopicProps["KafkaTopicProperties"] --> Admin["KafkaAdmin"]
+    Admin --> Broker

@@ -1,3 +1,3 @@
 export const features = {
-  nats: true
-}
+  nats: true,
+};

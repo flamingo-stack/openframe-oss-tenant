@@ -1,35 +1,34 @@
-'use client'
+'use client';
 
-import { InfoRow } from '@flamingo-stack/openframe-frontend-core'
-import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components'
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
+import { InfoRow } from '@flamingo-stack/openframe-frontend-core';
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 
 interface LogEntry {
-  toolEventId: string
-  eventType: string
-  ingestDay: string
-  toolType: string
-  severity: string
-  userId?: string
-  deviceId?: string
-  message?: string
-  timestamp: string
-  details?: string
-  __typename?: string
+  toolEventId: string;
+  eventType: string;
+  ingestDay: string;
+  toolType: string;
+  severity: string;
+  userId?: string;
+  deviceId?: string;
+  message?: string;
+  timestamp: string;
+  details?: string;
 }
 
 interface FullInformationSectionProps {
-  logDetails?: LogEntry | null
+  logDetails?: LogEntry | null;
 }
 
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
   const formatTimestamp = (timestamp: string) => {
     try {
-      return new Date(timestamp).toISOString()
+      return new Date(timestamp).toISOString();
     } catch {
-      return timestamp
+      return timestamp;
     }
-  }
+  };
 
   if (!logDetails) {
     return (
@@ -38,12 +37,10 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
           Full Information
         </div>
         <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-center justify-center p-8 w-full">
-          <div className="text-ods-text-secondary text-center">
-            No log details available
-          </div>
+          <div className="text-ods-text-secondary text-center">No log details available</div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -95,5 +92,5 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
         </div>
       </div>
     </div>
-  )
+  );
 }

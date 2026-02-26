@@ -1,28 +1,30 @@
-'use client'
+'use client';
 
-import React from 'react'
-import type { LogEntry } from '../../logs-page/stores/logs-store'
+import React from 'react';
+import type { LogEntry } from '../../logs-page/stores/logs-store';
 
 interface DetailsSectionProps {
-  logDetails: LogEntry
+  logDetails: LogEntry;
 }
 
 export function DetailsSection({ logDetails }: DetailsSectionProps) {
   // Parse details JSON if available, otherwise show structured log data
-  let detailsData
+  let detailsData;
   try {
-    detailsData = logDetails.details ? JSON.parse(logDetails.details) : {
-      toolEventId: logDetails.toolEventId,
-      eventType: logDetails.eventType,
-      toolType: logDetails.toolType,
-      severity: logDetails.severity,
-      userId: logDetails.userId,
-      deviceId: logDetails.deviceId,
-      timestamp: logDetails.timestamp,
-      ingestDay: logDetails.ingestDay,
-      message: logDetails.message
-    }
-  } catch (error) {
+    detailsData = logDetails.details
+      ? JSON.parse(logDetails.details)
+      : {
+          toolEventId: logDetails.toolEventId,
+          eventType: logDetails.eventType,
+          toolType: logDetails.toolType,
+          severity: logDetails.severity,
+          userId: logDetails.userId,
+          deviceId: logDetails.deviceId,
+          timestamp: logDetails.timestamp,
+          ingestDay: logDetails.ingestDay,
+          message: logDetails.message,
+        };
+  } catch (_error) {
     // If details is not valid JSON, create a structured object
     detailsData = {
       toolEventId: logDetails.toolEventId,
@@ -34,11 +36,11 @@ export function DetailsSection({ logDetails }: DetailsSectionProps) {
       timestamp: logDetails.timestamp,
       ingestDay: logDetails.ingestDay,
       message: logDetails.message,
-      rawDetails: logDetails.details
-    }
+      rawDetails: logDetails.details,
+    };
   }
 
-  const formattedJson = JSON.stringify(detailsData, null, 2)
+  const formattedJson = JSON.stringify(detailsData, null, 2);
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -58,5 +60,5 @@ export function DetailsSection({ logDetails }: DetailsSectionProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

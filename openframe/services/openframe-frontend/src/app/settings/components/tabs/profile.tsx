@@ -1,72 +1,72 @@
-'use client'
+'use client';
 
-import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core'
-import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { authApiClient } from '@lib/auth-api-client'
-import { AlertCircle, Pencil } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import { apiClient } from '../../../../lib/api-client'
-import { handleApiError } from '../../../../lib/handle-api-error'
-import { useAuthStore } from '../../../auth/stores'
-import { EditProfileModal } from '../edit-profile-modal'
-import { EmailVerificationModal } from '../email-verification-modal'
+import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { AlertCircle, Pencil } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { authApiClient } from '@/lib/auth-api-client';
+import { apiClient } from '../../../../lib/api-client';
+import { handleApiError } from '../../../../lib/handle-api-error';
+import { useAuthStore } from '../../../auth/stores';
+import { EditProfileModal } from '../edit-profile-modal';
+import { EmailVerificationModal } from '../email-verification-modal';
 
 export function ProfileTab() {
-  const { toast } = useToast()
-  const user = useAuthStore((state) => state.user)
-  const isLoadingProfile = useAuthStore((state) => state.isLoadingProfile)
-  const updateUser = useAuthStore((state) => state.updateUser)
-  const fetchFullProfile = useAuthStore((state) => state.fetchFullProfile)
+  const { toast } = useToast();
+  const user = useAuthStore(state => state.user);
+  const isLoadingProfile = useAuthStore(state => state.isLoadingProfile);
+  const updateUser = useAuthStore(state => state.updateUser);
+  const fetchFullProfile = useAuthStore(state => state.fetchFullProfile);
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [isSendingVerification, setIsSendingVerification] = useState(false)
-  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false)
-  
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+
   const updateProfile = useCallback(
     async (data: { firstName: string; lastName: string }) => {
-      if (!user?.id) return
+      if (!user?.id) return;
 
-      setIsUpdating(true)
+      setIsUpdating(true);
       try {
-        const res = await apiClient.put(`api/users/${encodeURIComponent(user.id)}`, data)
+        const res = await apiClient.put(`api/users/${encodeURIComponent(user.id)}`, data);
         if (!res.ok) {
-          throw new Error(res.error || 'Failed to update profile')
+          throw new Error(res.error || 'Failed to update profile');
         }
 
-        const updatedData = res.data
+        const updatedData = res.data;
 
         // Update auth store with new data
         updateUser({
           firstName: updatedData.firstName,
           lastName: updatedData.lastName,
-        })
+        });
 
         toast({
           title: 'Profile Updated',
           description: 'Your profile has been updated successfully.',
           variant: 'success',
           duration: 3000,
-        })
+        });
 
-        setIsEditModalOpen(false)
+        setIsEditModalOpen(false);
       } catch (error) {
-        handleApiError(error, toast, 'Failed to update profile')
+        handleApiError(error, toast, 'Failed to update profile');
       } finally {
-        setIsUpdating(false)
+        setIsUpdating(false);
       }
     },
-    [user?.id, updateUser, toast]
-  )
+    [user?.id, updateUser, toast],
+  );
 
   const handleResendVerification = async () => {
-    setIsSendingVerification(true)
+    setIsSendingVerification(true);
     try {
-      const response = await authApiClient.resendVerificationEmail(user?.email || '')
+      const response = await authApiClient.resendVerificationEmail(user?.email || '');
 
       if (!response.ok) {
-        throw new Error(response.error || 'Failed to send verification email')
+        throw new Error(response.error || 'Failed to send verification email');
       }
 
       toast({
@@ -74,36 +74,34 @@ export function ProfileTab() {
         description: 'Please check your inbox and follow the link to verify your email.',
         variant: 'success',
         duration: 5000,
-      })
+      });
     } catch (error) {
-      handleApiError(error, toast, 'Failed to send verification email')
+      handleApiError(error, toast, 'Failed to send verification email');
     } finally {
-      setIsSendingVerification(false)
+      setIsSendingVerification(false);
     }
-  }
+  };
 
   // Get initials for avatar placeholder
   const getInitials = () => {
-    const first = user?.firstName?.charAt(0) || ''
-    const last = user?.lastName?.charAt(0) || ''
-    return (first + last).toUpperCase() || 'UN'
-  }
+    const first = user?.firstName?.charAt(0) || '';
+    const last = user?.lastName?.charAt(0) || '';
+    return (first + last).toUpperCase() || 'UN';
+  };
 
   useEffect(() => {
-    fetchFullProfile()
-  }, [])
+    fetchFullProfile();
+  }, [fetchFullProfile]);
 
   // Get display name
-  const displayName = user
-    ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
-    : '—'
+  const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : '—';
 
   if (isLoadingProfile && !user) {
     return (
       <div className="pt-6">
         <Skeleton className="h-20 w-full rounded-md" />
       </div>
-    )
+    );
   }
 
   if (!user) {
@@ -111,7 +109,7 @@ export function ProfileTab() {
       <div className="pt-6">
         <PageError message="No user data available" />
       </div>
-    )
+    );
   }
 
   return (
@@ -128,9 +126,7 @@ export function ProfileTab() {
             />
           ) : (
             <div className="w-12 h-12 rounded-full bg-ods-bg border border-ods-border flex items-center justify-center">
-              <span className="text-sm font-medium text-ods-text-secondary">
-                {getInitials()}
-              </span>
+              <span className="text-sm font-medium text-ods-text-secondary">{getInitials()}</span>
             </div>
           )}
         </div>
@@ -138,11 +134,9 @@ export function ProfileTab() {
         {/* Name and Email */}
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium text-ods-text-primary truncate">
-              {displayName}
-            </span>
+            <span className="text-lg font-medium text-ods-text-primary truncate">{displayName}</span>
             {/* Role badges */}
-            {user.roles?.map((role) => (
+            {user.roles?.map(role => (
               <span
                 key={role}
                 className="shrink-0 inline-flex items-center px-2 py-1 rounded-md text-xs font-mono font-medium uppercase bg-ods-card border border-ods-border text-ods-text-primary"
@@ -182,11 +176,7 @@ export function ProfileTab() {
           >
             <span className="font-bold">User Logs</span>
           </Button> */}
-          <Button
-            variant="outline"
-            onClick={() => setIsEditModalOpen(true)}
-            leftIcon={<Pencil className="w-5 h-5" />}
-          >
+          <Button variant="outline" onClick={() => setIsEditModalOpen(true)} leftIcon={<Pencil className="w-5 h-5" />}>
             <span className="font-bold">Edit Profile</span>
           </Button>
         </div>
@@ -210,5 +200,5 @@ export function ProfileTab() {
         isSending={isSendingVerification}
       />
     </div>
-  )
+  );
 }

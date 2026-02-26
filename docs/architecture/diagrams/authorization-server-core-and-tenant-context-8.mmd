@@ -1,0 +1,10 @@
+flowchart TD
+    Request2["HTTP Request"] --> ParsePath["Parse URI Path"]
+    ParsePath --> CheckPrefix["Tenant Prefix Present?"]
+    CheckPrefix -->|Yes| SetContext["Set TenantContext + Session"]
+    CheckPrefix -->|No| CheckQuery["Check tenant Query Param"]
+    CheckQuery -->|Found| SetContext
+    CheckQuery -->|Not Found| CheckSession["Check Session Attribute"]
+    CheckSession -->|Found| SetContext
+    SetContext --> Continue["Continue Filter Chain"]
+    Continue --> Clear["Clear ThreadLocal in finally"]

@@ -1,0 +1,4 @@
+flowchart LR
+    BaseUserRepo["BaseUserRepository<T,B,ID>"] --> ReactiveUserRepo["ReactiveUserRepository"]
+    BaseApiKeyRepo["BaseApiKeyRepository<T,B,L,ID>"] --> ApiKeyImpl["Concrete Mongo Repository"]
+    BaseTenantRepo["BaseTenantRepository<T,B,ID>"] --> TenantImpl["Concrete Mongo Repository"]

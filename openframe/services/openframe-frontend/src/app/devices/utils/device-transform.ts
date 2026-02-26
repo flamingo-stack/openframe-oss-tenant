@@ -1,11 +1,11 @@
-import { Device, DevicesGraphQLNode } from '../types/device.types'
+import { Device, DevicesGraphQlNode } from '../types/device.types';
 
 /**
  * Create Device list item directly from GraphQL node
  * For list view - lightweight, no external API calls
  */
-export function createDeviceListItem(node: DevicesGraphQLNode): Device {
-  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')
+export function createDeviceListItem(node: DevicesGraphQlNode): Device {
+  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
 
   return {
     // Core Identifiers
@@ -104,6 +104,6 @@ export function createDeviceListItem(node: DevicesGraphQLNode): Device {
     tacticalAgentId: tactical?.agentToolId,
 
     // Graphics
-    graphics: undefined
-  }
+    graphics: undefined,
+  };
 }

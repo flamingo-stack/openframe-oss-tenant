@@ -1,0 +1,4 @@
+flowchart TD
+    HealthCheck["Health Endpoint Invoked"] --> Query["Execute SELECT release_version FROM system.local"]
+    Query --> Success["Health UP"]
+    Query -->|"Exception"| Failure["Health DOWN"]

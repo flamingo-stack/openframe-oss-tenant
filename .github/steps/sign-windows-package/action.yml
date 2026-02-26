@@ -19,25 +19,31 @@ inputs:
   certificate_profile_name:
     description: 'Certificate profile name'
     required: true
-  binary_path:
-    description: 'Path to the Windows binary to sign'
+  name:
+    description: 'Client name (e.g. "openframe-client"). Used for binary path resolution.'
+    required: true
+  target_path:
+    description: 'Cargo target directory (e.g. ./clients/openframe-client/target)'
+    required: true
+  target:
+    description: 'Rust build target (e.g. x86_64-pc-windows-msvc)'
     required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Setup and export all needed vars
+    - name: Setup and verify binary path
       shell: pwsh
       run: |
-        $BinaryPath = "${{ github.workspace }}/${{ inputs.binary_path }}"
+        $ArtifactPath = "${{ github.workspace }}/${{ inputs.target_path }}/${{ inputs.target }}/release/${{ inputs.name }}.exe"
 
-        if (-not (Test-Path $BinaryPath)) {
-          Write-Error "Binary not found at: $BinaryPath"
+        if (-not (Test-Path $ArtifactPath)) {
+          Write-Error "Binary not found at: $ArtifactPath"
           exit 1
         }
 
-        Write-Host "Binary to sign: $BinaryPath"
-        echo "BINARY_PATH=$BinaryPath" >> $env:GITHUB_ENV
+        Write-Host "Binary to sign: $ArtifactPath"
+        echo "ARTIFACT_PATH=$ArtifactPath" >> $env:GITHUB_ENV
 
     - name: Sign Windows Executable
       uses: azure/trusted-signing-action@v0.5.0
@@ -48,7 +54,7 @@ runs:
         endpoint: ${{ inputs.signing_endpoint }}
         trusted-signing-account-name: ${{ inputs.code_signing_account_name }}
         certificate-profile-name: ${{ inputs.certificate_profile_name }}
-        files: ${{ github.workspace }}/${{ inputs.binary_path }}
+        files: ${{ env.ARTIFACT_PATH }}
         file-digest: SHA256
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
@@ -56,10 +62,8 @@ runs:
     - name: Verify Signature
       shell: pwsh
       run: |
-        $BinaryPath = "${{ github.workspace }}/${{ inputs.binary_path }}"
-
-        Write-Host "Verifying signature for: $BinaryPath"
-        $sig = Get-AuthenticodeSignature -FilePath $BinaryPath
+        Write-Host "Verifying signature for: $env:ARTIFACT_PATH"
+        $sig = Get-AuthenticodeSignature -FilePath $env:ARTIFACT_PATH
 
         Write-Host "  Status: $($sig.Status)"
         Write-Host "  Status Message: $($sig.StatusMessage)"
@@ -76,7 +80,7 @@ runs:
         }
 
         if ($sig.Status -ne "Valid") {
-          Write-Error "Signature verification failed for $BinaryPath"
+          Write-Error "Signature verification failed for $env:ARTIFACT_PATH"
           Write-Error "Status: $($sig.Status)"
           Write-Error "Message: $($sig.StatusMessage)"
           exit 1

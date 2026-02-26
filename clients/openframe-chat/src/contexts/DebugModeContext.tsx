@@ -1,42 +1,38 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from '@tauri-apps/api/core';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 interface DebugModeContextType {
-  debugMode: boolean
-  setDebugMode: (enabled: boolean) => void
+  debugMode: boolean;
+  setDebugMode: (enabled: boolean) => void;
 }
 
-const DebugModeContext = createContext<DebugModeContextType | undefined>(undefined)
+const DebugModeContext = createContext<DebugModeContextType | undefined>(undefined);
 
 export function DebugModeProvider({ children }: { children: ReactNode }) {
-  const [debugMode, setDebugMode] = useState(false)
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     const fetchDebugMode = async () => {
       try {
-        const enabled = await invoke<boolean>('get_debug_mode')
-        setDebugMode(enabled)
-        console.log('[DebugModeContext] Debug mode initialized:', enabled)
+        const enabled = await invoke<boolean>('get_debug_mode');
+        setDebugMode(enabled);
+        console.log('[DebugModeContext] Debug mode initialized:', enabled);
       } catch (error) {
-        console.error('[DebugModeContext] Failed to fetch debug mode:', error)
-        setDebugMode(false)
+        console.error('[DebugModeContext] Failed to fetch debug mode:', error);
+        setDebugMode(false);
       }
-    }
+    };
 
-    fetchDebugMode()
-  }, [])
+    fetchDebugMode();
+  }, []);
 
-  return (
-    <DebugModeContext.Provider value={{ debugMode, setDebugMode }}>
-      {children}
-    </DebugModeContext.Provider>
-  )
+  return <DebugModeContext.Provider value={{ debugMode, setDebugMode }}>{children}</DebugModeContext.Provider>;
 }
 
 export function useDebugMode() {
-  const context = useContext(DebugModeContext)
+  const context = useContext(DebugModeContext);
   if (context === undefined) {
-    throw new Error('useDebugMode must be used within a DebugModeProvider')
+    throw new Error('useDebugMode must be used within a DebugModeProvider');
   }
-  return context
+  return context;
 }

@@ -1,0 +1,6 @@
+flowchart TD
+    AppStart["ApplicationReadyEvent"] --> Subscribe["Subscribe to NATS"]
+    Subscribe --> Process["Process Messages"]
+    Process --> Ack["Ack on Success"]
+    Process --> Retry["Redeliver on Failure"]
+    Shutdown["@PreDestroy"] --> Drain["Drain Dispatcher"]

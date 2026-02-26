@@ -1,0 +1,14 @@
+flowchart TD
+    ApiAppConfig["ApiApplicationConfig"] --> PasswordEncoder["BCrypt PasswordEncoder"]
+
+    AuthConfig["AuthenticationConfig"] --> ArgResolver["AuthPrincipalArgumentResolver"]
+
+    DataInit["DataInitializer"] --> OAuthRepo["OAuthClientRepository"]
+
+    DateScalar["DateScalarConfig"] --> GraphQLRuntime["GraphQL Runtime"]
+    InstantScalar["InstantScalarConfig"] --> GraphQLRuntime
+
+    RestTemplateCfg["RestTemplateConfig"] --> RestTemplateBean["RestTemplate"]
+
+    SecConfig["SecurityConfig"] --> JwtCache["Caffeine JwtAuthenticationProvider Cache"]
+    SecConfig --> FilterChain["SecurityFilterChain"]

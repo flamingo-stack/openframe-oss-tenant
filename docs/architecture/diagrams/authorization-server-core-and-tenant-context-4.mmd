@@ -1,0 +1,5 @@
+flowchart TD
+    Principal["Authenticated Principal"] --> ResolveTenant["Get Tenant ID"]
+    ResolveTenant --> LoadUser["UserService.findActiveByEmailAndTenant()"]
+    LoadUser --> AddClaims["Add tenant_id, userId, roles"]
+    AddClaims --> IssueToken["Signed JWT"]

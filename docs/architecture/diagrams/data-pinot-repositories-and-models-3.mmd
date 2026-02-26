@@ -1,0 +1,7 @@
+flowchart TD
+    Client["API / GraphQL"] --> Repo["PinotClientLogRepository"]
+    Repo --> Builder["PinotQueryBuilder"]
+    Builder --> PinotExec["Pinot Broker"]
+    PinotExec --> ResultSet["ResultSet"]
+    ResultSet --> Mapper["Row Mapper Functions"]
+    Mapper --> Projection["LogProjection / OrganizationOption"]

@@ -1,30 +1,27 @@
 /**
  * Central export for all Zustand stores
- * 
+ *
  * Usage:
  * import { useAuthStore, useDevicesStore, useSSOStore } from '@/stores'
  */
 
-export { useAuthStore } from '../app/auth/stores/auth-store'
-export type { AuthState } from '../app/auth/stores/auth-store'
-
-export { useDevicesStore } from './devices-store'
-export type { DevicesState, Device, DeviceFilter } from './devices-store'
-
+export type { AuthState } from '../app/auth/stores/auth-store';
 // Export selectors for performance optimization
 export {
-  selectUser,
+  selectError as selectAuthError,
   selectIsAuthenticated,
   selectIsLoading as selectAuthLoading,
-  selectError as selectAuthError,
-} from '../app/auth/stores/auth-store'
-
+  selectUser,
+  useAuthStore,
+} from '../app/auth/stores/auth-store';
+export type { Device, DeviceFilter, DevicesState } from './devices-store';
 export {
-  selectDevices,
-  selectSelectedDevice,
-  selectFilter,
-  selectIsLoading as selectDevicesLoading,
-  selectError as selectDevicesError,
-  selectFilteredDevices,
   selectDeviceStats,
-} from './devices-store'
+  selectDevices,
+  selectError as selectDevicesError,
+  selectFilter,
+  selectFilteredDevices,
+  selectIsLoading as selectDevicesLoading,
+  selectSelectedDevice,
+  useDevicesStore,
+} from './devices-store';

@@ -1,0 +1,7 @@
+flowchart TD
+    App["Service Application"] --> DataConfig["Data Platform Config And Health"]
+    DataConfig --> Cassandra["Cassandra Cluster"]
+    DataConfig --> Pinot["Apache Pinot"]
+    DataConfig --> Actuator["Spring Boot Actuator"]
+
+    Actuator --> Health["Cassandra Health Indicator"]

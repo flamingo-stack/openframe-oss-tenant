@@ -1,85 +1,92 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { Input, Label, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components'
-import { useAuthenticatedImage } from '@lib/use-authenticated-image'
-import { uploadWithAuth, deleteWithAuth } from '@lib/upload-with-auth'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { runtimeEnv } from '@lib/runtime-config'
-import { featureFlags } from '@lib/feature-flags'
+import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components';
+import {
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import React from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
+import { runtimeEnv } from '@/lib/runtime-config';
+import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
 
 export type GeneralInfoState = {
-  name: string
-  category: string
-  employees: string
-  serviceTier: 'Basic' | 'Premium' | 'Enterprise'
-  sla: 'Low' | 'Medium' | 'High' | 'Critical'
-  mrr: string
-  website: string
-  contractStart: string
-  contractEnd: string
-  notes: string
-  logoUrl?: string
-  imageUrl?: string
-  imageVersion?: number
-}
+  name: string;
+  category: string;
+  employees: string;
+  serviceTier: 'Basic' | 'Premium' | 'Enterprise';
+  sla: 'Low' | 'Medium' | 'High' | 'Critical';
+  mrr: string;
+  website: string;
+  contractStart: string;
+  contractEnd: string;
+  notes: string;
+  logoUrl?: string;
+  imageUrl?: string;
+  imageVersion?: number;
+};
 
 interface GeneralInformationTabProps {
-  value: GeneralInfoState
-  onChange: (next: GeneralInfoState) => void
-  organizationId?: string
+  value: GeneralInfoState;
+  onChange: (next: GeneralInfoState) => void;
+  organizationId?: string;
 }
 
 export function GeneralInformationTab({ value, onChange, organizationId }: GeneralInformationTabProps) {
-  const set = (partial: Partial<GeneralInfoState>) => onChange({ ...value, ...partial })
-  const { toast } = useToast()
-  const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant'
-  const { imageUrl: fetchedImageUrl } = useAuthenticatedImage(value.imageUrl, value.imageVersion)
-  const displayImageUrl = fetchedImageUrl || value.logoUrl
+  const set = (partial: Partial<GeneralInfoState>) => onChange({ ...value, ...partial });
+  const { toast } = useToast();
+  const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
+  const displayImageUrl = getFullImageUrl(value.imageUrl);
 
   const handleAuthenticatedUpload = async (file: File): Promise<string> => {
     try {
-      const uploadedUrl = await uploadWithAuth(`/api/organizations/${organizationId}/image`, file)
-      toast({ 
-        title: 'Upload successful', 
+      const uploadedUrl = await uploadWithAuth(`/api/organizations/${organizationId}/image`, file);
+      toast({
+        title: 'Upload successful',
         description: 'Organization image has been updated',
-        variant: 'success'
-      })
-      return uploadedUrl
+        variant: 'success',
+      });
+      return uploadedUrl;
     } catch (error) {
-      throw error
+      throw error;
     }
-  }
+  };
 
   const handleAuthenticatedDelete = async (): Promise<void> => {
-    if (!organizationId) return
+    if (!organizationId) return;
 
     try {
-      await deleteWithAuth(`/api/organizations/${organizationId}/image`)
+      await deleteWithAuth(`/api/organizations/${organizationId}/image`);
 
-      set({ 
+      set({
         imageUrl: undefined,
         logoUrl: undefined,
-        imageVersion: Date.now()
-      })
+        imageVersion: Date.now(),
+      });
 
-      toast({ 
-        title: 'Delete successful', 
+      toast({
+        title: 'Delete successful',
         description: 'Organization image has been deleted',
-        variant: 'success'
-      })
+        variant: 'success',
+      });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete image'
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete image';
       toast({
         title: 'Delete failed',
         description: errorMessage,
-        variant: 'destructive'
-      })
-      throw error
+        variant: 'destructive',
+      });
+      throw error;
     }
-  }
-
+  };
 
   return (
     <div className="pt-6 flex flex-col gap-6">
@@ -93,7 +100,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                 id="org-name"
                 placeholder="Company Name"
                 value={value.name}
-                onChange={(e) => set({ name: e.target.value })}
+                onChange={e => set({ name: e.target.value })}
                 className="bg-ods-card border border-ods-border"
               />
             </div>
@@ -105,7 +112,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                 id="org-category"
                 placeholder="Category"
                 value={value.category}
-                onChange={(e) => set({ category: e.target.value })}
+                onChange={e => set({ category: e.target.value })}
                 className="bg-ods-card border border-ods-border"
               />
             </div>
@@ -118,7 +125,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                 type="number"
                 placeholder="0"
                 value={value.employees}
-                onChange={(e) => set({ employees: e.target.value })}
+                onChange={e => set({ employees: e.target.value })}
                 className="bg-ods-card border border-ods-border"
               />
             </div>
@@ -126,7 +133,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
             {/* Service Tier */}
             <div className="flex flex-col gap-2">
               <Label>Service Tier</Label>
-              <Select value={value.serviceTier} onValueChange={(v) => set({ serviceTier: v as any })}>
+              <Select value={value.serviceTier} onValueChange={v => set({ serviceTier: v as any })}>
                 <SelectTrigger className="bg-ods-card border border-ods-border">
                   <SelectValue placeholder="Select Tier" />
                 </SelectTrigger>
@@ -141,7 +148,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
             {/* SLA Thresholds */}
             <div className="flex flex-col gap-2">
               <Label>SLA Thresholds</Label>
-              <Select value={value.sla} onValueChange={(v) => set({ sla: v as any })}>
+              <Select value={value.sla} onValueChange={v => set({ sla: v as any })}>
                 <SelectTrigger className="bg-ods-card border border-ods-border">
                   <SelectValue placeholder="Select SLA" />
                 </SelectTrigger>
@@ -161,7 +168,7 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                 id="org-website"
                 placeholder="https://www.website.com"
                 value={value.website}
-                onChange={(e) => set({ website: e.target.value })}
+                onChange={e => set({ website: e.target.value })}
                 className="bg-ods-card border border-ods-border"
               />
             </div>
@@ -177,18 +184,18 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                 {organizationId ? (
                   <HeroImageUploader
                     imageUrl={displayImageUrl}
-                    onChange={(url) => {
+                    onChange={url => {
                       if (url && url.startsWith('/images/')) {
-                        set({ 
-                          imageUrl: url, 
+                        set({
+                          imageUrl: url,
                           logoUrl: undefined,
-                          imageVersion: Date.now()
+                          imageVersion: Date.now(),
                         });
                       } else {
-                        set({ 
-                          logoUrl: url, 
+                        set({
+                          logoUrl: url,
                           imageUrl: undefined,
-                          imageVersion: Date.now()
+                          imageVersion: Date.now(),
                         });
                       }
                     }}
@@ -204,10 +211,10 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
                   // New organization - defer upload until after creation
                   <HeroImageUploader
                     imageUrl={displayImageUrl}
-                    onChange={(url) => set({ logoUrl: url })}
+                    onChange={url => set({ logoUrl: url })}
                     uploadEndpoint="/api/organizations/placeholder/image" // Won't be used with deferUpload
                     onDelete={async () => {
-                      set({ logoUrl: undefined, imageVersion: Date.now() })
+                      set({ logoUrl: undefined, imageVersion: Date.now() });
                     }}
                     height={185}
                     objectFit="contain"
@@ -230,31 +237,35 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
             type="number"
             placeholder="0"
             value={value.mrr}
-            onChange={(e) => set({ mrr: e.target.value })}
+            onChange={e => set({ mrr: e.target.value })}
             className="bg-ods-card border border-ods-border"
           />
         </div>
 
         {/* Contract Start */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="org-contract-start" className="whitespace-nowrap">Contract Start Date</Label>
+          <Label htmlFor="org-contract-start" className="whitespace-nowrap">
+            Contract Start Date
+          </Label>
           <Input
             id="org-contract-start"
             type="date"
             value={value.contractStart}
-            onChange={(e) => set({ contractStart: e.target.value })}
+            onChange={e => set({ contractStart: e.target.value })}
             className="bg-ods-card border border-ods-border"
           />
         </div>
 
         {/* Contract End */}
         <div className="flex flex-col gap-2">
-          <Label htmlFor="org-contract-end" className="whitespace-nowrap">Contract End Date</Label>
+          <Label htmlFor="org-contract-end" className="whitespace-nowrap">
+            Contract End Date
+          </Label>
           <Input
             id="org-contract-end"
             type="date"
             value={value.contractEnd}
-            onChange={(e) => set({ contractEnd: e.target.value })}
+            onChange={e => set({ contractEnd: e.target.value })}
             className="bg-ods-card border border-ods-border"
           />
         </div>
@@ -268,10 +279,10 @@ export function GeneralInformationTab({ value, onChange, organizationId }: Gener
           rows={6}
           placeholder="Your notes here..."
           value={value.notes}
-          onChange={(e) => set({ notes: e.target.value })}
+          onChange={e => set({ notes: e.target.value })}
           className="bg-ods-card border border-ods-border"
         />
       </div>
     </div>
-  )
+  );
 }

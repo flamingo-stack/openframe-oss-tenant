@@ -1,0 +1,5 @@
+flowchart TD
+    InputIds["List<String> orgIds"] --> FilterNulls["Remove null + dedupe"]
+    FilterNulls --> RepoCall["OrganizationRepository.findByOrganizationIdIn"]
+    RepoCall --> MapBuild["Build Map<organizationId, Organization>"]
+    MapBuild --> OrderedResult["Return in original order"]

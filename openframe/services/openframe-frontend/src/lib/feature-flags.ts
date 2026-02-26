@@ -1,4 +1,4 @@
-import { runtimeEnv } from './runtime-config'
+import { runtimeEnv } from './runtime-config';
 
 /**
  * Feature flags management
@@ -11,32 +11,28 @@ export const featureFlags = {
    */
   organizationImages: {
     enabled(): boolean {
-      return runtimeEnv.featureOrganizationImages()
+      return runtimeEnv.featureOrganizationImages();
     },
     uploadEnabled(): boolean {
-      return this.enabled()
+      return this.enabled();
     },
     displayEnabled(): boolean {
-      return this.enabled()
-    }
+      return this.enabled();
+    },
   },
   ssoAutoAllow: {
     enabled(): boolean {
-      return runtimeEnv.featureSSOAllowDomain()
-    }
+      return runtimeEnv.featureSsoAllowDomain();
+    },
   },
-  /**
-   * Script Schedule Feature
-   * Controls the availability of script scheduling functionality
-   */
-  scriptSchedule: {
+  monitoring: {
     enabled(): boolean {
-      return runtimeEnv.featureScriptSchedule()
-    }
-  }
-} as const
+      return runtimeEnv.featureMonitoring();
+    },
+  },
+} as const;
 
 /**
  * Feature flag keys
  */
-export type FeatureFlagKey = keyof typeof featureFlags
+export type FeatureFlagKey = keyof typeof featureFlags;

@@ -46,6 +46,9 @@ fleet:
     base-url: http://fleetmdm-server.integrated-tools.svc.cluster.local:8070
 
 openframe:
+  machine-id:
+    cache:
+      enabled: true
   oss-tenant:
     kafka:
       topics:

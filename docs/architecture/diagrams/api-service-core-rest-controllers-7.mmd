@@ -1,0 +1,4 @@
+flowchart TD
+    Admin["Admin Request"] --> Controller["SSOConfigController"]
+    Controller --> Service["SSOConfigService"]
+    Service --> Store["Tenant SSO Configuration"]

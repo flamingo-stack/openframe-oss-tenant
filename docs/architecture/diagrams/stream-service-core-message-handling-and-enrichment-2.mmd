@@ -1,0 +1,7 @@
+sequenceDiagram
+    participant Kafka
+    participant Listener as JsonKafkaListener
+    participant Processor as GenericJsonMessageProcessor
+
+    Kafka->>Listener: CommonDebeziumMessage + MessageType
+    Listener->>Processor: process(message, messageType)

@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
-import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
  * Auth loading skeleton that matches the actual auth page EXACTLY:
@@ -17,7 +17,6 @@ export default function AuthLoading() {
     >
       {/* Left Side - Auth Content (50% width) - matches AuthLayout exactly */}
       <div className="w-full lg:w-1/2 h-full min-h-screen flex flex-col justify-center gap-10 p-6 lg:p-20">
-
         {/* Create Organization Card - matches AuthChoiceSection first card */}
         <div className="bg-ods-card border border-ods-border rounded-sm p-10 relative">
           <div className="flex flex-col gap-6">
@@ -91,11 +90,8 @@ export default function AuthLoading() {
             {/* Benefits container - matches bg-ods-bg border border-ods-border rounded-md */}
             <div className="bg-ods-bg border border-ods-border rounded-md w-full">
               {/* 3 BenefitCards with border-b between first two - auth-figma variant uses p-6, gap-4, text-[18px] leading-6 */}
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className={`p-6 ${i < 2 ? 'border-b border-ods-border' : ''}`}
-                >
+              {[0, 1, 2].map(i => (
+                <div key={i} className={`p-6 ${i < 2 ? 'border-b border-ods-border' : ''}`}>
                   <div className="flex gap-4 items-start">
                     <Skeleton className="h-6 w-6 flex-shrink-0 rounded" /> {/* Icon - w-6 h-6 */}
                     <div className="flex-1 space-y-2">
@@ -111,5 +107,5 @@ export default function AuthLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

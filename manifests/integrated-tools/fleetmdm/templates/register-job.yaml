@@ -47,7 +47,7 @@ spec:
 
             echo "Registering FleetMDM Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."
-            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do
+            until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do
               echo "Still waiting..."
               sleep 10
             done

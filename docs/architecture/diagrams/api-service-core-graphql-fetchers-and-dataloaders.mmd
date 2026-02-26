@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Frontend / GraphQL Client"] -->|"GraphQL Query"| DGS["Netflix DGS Engine"]
+    DGS --> Fetchers["GraphQL DataFetchers"]
+    Fetchers --> Services["Domain Services"]
+    Services --> Repositories["Mongo / Pinot Repositories"]
+    
+    Fetchers --> DataLoaders["DGS DataLoaders"]
+    DataLoaders --> Services

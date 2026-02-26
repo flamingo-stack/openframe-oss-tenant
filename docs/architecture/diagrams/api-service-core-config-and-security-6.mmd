@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant ApiService as "API Service"
+
+    Client->>Gateway: HTTP Request with JWT
+    Gateway->>Gateway: Validate JWT
+    Gateway->>ApiService: Forward Request with Authorization Header
+    ApiService->>ApiService: Resolve Issuer
+    ApiService->>ApiService: Authenticate via JwtAuthenticationProvider
+    ApiService->>ApiService: Populate SecurityContext

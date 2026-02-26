@@ -38,13 +38,8 @@ WORKDIR /app
 
 COPY --from=builder /build/openframe/services/openframe-api/target/*.jar app.jar
 
-RUN apk add --no-cache postfix libstdc++ iputils bind-tools netcat-openbsd curl
-
-EXPOSE 8090
-
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8090/management/v1/health || exit 1
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+RUN apk add --no-cache postfix libstdc++ iputils bind-tools netcat-openbsd curl && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
 
 ENTRYPOINT ["/bin/sh", "-c", "postfix start && export CONTAINER_IP=$(hostname -i) && exec java -jar /app/app.jar"]

@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useDeployment } from '@app/hooks/use-deployment'
+import { useEffect } from 'react';
+import { useDeployment } from '@/app/hooks/use-deployment';
 
 /**
  * Deployment Initializer Component
@@ -9,8 +9,8 @@ import { useDeployment } from '@app/hooks/use-deployment'
  * Should be placed at the root level of the application
  */
 export function DeploymentInitializer() {
-  const { isInitialized, deployment } = useDeployment()
-  
+  const { isInitialized, deployment } = useDeployment();
+
   useEffect(() => {
     if (isInitialized && deployment) {
       // Log deployment info once initialized
@@ -19,17 +19,17 @@ export function DeploymentInitializer() {
         hostname: deployment.hostname,
         isCloud: deployment.isCloud,
         isSelfHosted: deployment.isSelfHosted,
-        isDevelopment: deployment.isDevelopment
-      })
-      
+        isDevelopment: deployment.isDevelopment,
+      });
+
       // Add deployment type to document for debugging/styling
       if (typeof document !== 'undefined') {
-        document.documentElement.setAttribute('data-deployment', deployment.type)
-        document.documentElement.setAttribute('data-hostname', deployment.hostname)
+        document.documentElement.setAttribute('data-deployment', deployment.type);
+        document.documentElement.setAttribute('data-hostname', deployment.hostname);
       }
     }
-  }, [isInitialized, deployment])
-  
+  }, [isInitialized, deployment]);
+
   // This component doesn't render anything
-  return null
+  return null;
 }

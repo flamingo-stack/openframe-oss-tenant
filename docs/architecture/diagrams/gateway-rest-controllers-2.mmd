@@ -1,0 +1,7 @@
+flowchart TD
+    Request["HTTP Request"] --> Controller["IntegrationController"]
+    Controller -->|"Call"| Service["IntegrationService.testIntegrationConnection"]
+    Service -->|"Mono<String>"| Controller
+    Controller -->|"map(ResponseEntity.ok)"| Success["200 OK"]
+    Service -->|"Error"| ErrorPath["onErrorResume"]
+    ErrorPath --> BadRequest["400 Bad Request"]

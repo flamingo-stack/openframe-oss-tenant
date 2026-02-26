@@ -1,0 +1,9 @@
+flowchart LR
+    MachineList["List<Machine>"] --> TagsField["tags() field resolver"]
+    MachineList --> OrgField["organization() field resolver"]
+    
+    TagsField --> TagLoader["TagDataLoader"]
+    OrgField --> OrgLoader["OrganizationDataLoader"]
+    
+    TagLoader --> TagService["TagService"]
+    OrgLoader --> OrgRepo["OrganizationRepository"]

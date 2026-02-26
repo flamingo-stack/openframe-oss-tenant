@@ -1,0 +1,4 @@
+flowchart LR
+    DebeziumMessage --> TransformKafka["Transform to IntegratedToolEvent"]
+    TransformKafka --> BuildKey["Build Broker Key"]
+    BuildKey --> Publish["OssTenantRetryingKafkaProducer.publish()"]

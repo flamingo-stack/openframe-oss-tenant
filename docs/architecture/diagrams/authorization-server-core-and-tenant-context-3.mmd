@@ -1,0 +1,4 @@
+flowchart LR
+    Request["JWKS Request"] --> TenantContextNode["Resolve Tenant ID"]
+    TenantContextNode --> KeyService["TenantKeyService.getOrCreateActiveKey()"]
+    KeyService --> JwkSet["Return RSAKey in JWKSet"]

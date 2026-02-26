@@ -1,0 +1,6 @@
+flowchart TD
+    Config["JwtConfig"] -->|"loadPublicKey()"| Decoder["JwtDecoder"]
+    Config -->|"loadPublicKey()"| Encoder
+    Config -->|"loadPrivateKey()"| Encoder["JwtEncoder"]
+    Encoder -->|"JWKSet"| Nimbus["NimbusJwtEncoder"]
+    Decoder -->|"Public Key"| NimbusDecoder["NimbusJwtDecoder"]

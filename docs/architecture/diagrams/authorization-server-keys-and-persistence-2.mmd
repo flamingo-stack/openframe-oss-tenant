@@ -1,0 +1,9 @@
+flowchart TD
+    Request["Request for Signing Key"] --> Check["Find Active Key"]
+    Check -->|"Found"| Load["Load Public + Decrypt Private"]
+    Check -->|"Not Found"| Generate["Generate RSA 2048 Key Pair"]
+    Generate --> Encrypt["Encrypt Private Key"]
+    Encrypt --> Store["Store TenantKey Document"]
+    Store --> Load
+    Load --> Build["Build RSAKey with kid"]
+    Build --> Return["Return RSAKey"]

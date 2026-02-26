@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { useCallback, useMemo } from 'react'
-import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
-import { getFullImageUrl } from '@lib/image-url'
-import { useRouter } from 'next/navigation'
-import { useOrganizationsOverview } from '../hooks/use-organizations-overview'
+import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useRouter } from 'next/navigation';
+import { useCallback, useMemo } from 'react';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useOrganizationsOverview } from '../hooks/use-organizations-overview';
 
 const OrganizationsSkeleton = function OrganizationsSkeleton() {
   return (
     <div className="flex flex-col gap-3">
-      {[1, 2, 3].map((i) => (
+      {[1, 2, 3].map(i => (
         <div key={i} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
           {/* Organization card skeleton */}
           <div className="bg-ods-card border border-ods-border rounded-[6px] p-4">
@@ -21,14 +21,14 @@ const OrganizationsSkeleton = function OrganizationsSkeleton() {
               <Skeleton className="h-4 w-20" />
             </div>
           </div>
-          
+
           {/* Active devices card skeleton */}
           <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 space-y-2">
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-8 w-16" />
             <Skeleton className="h-2 w-full" />
           </div>
-          
+
           {/* Inactive devices card skeleton */}
           <div className="bg-ods-card border border-ods-border rounded-[6px] p-4 space-y-2">
             <Skeleton className="h-4 w-28" />
@@ -38,37 +38,37 @@ const OrganizationsSkeleton = function OrganizationsSkeleton() {
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 /**
  * Organizations Overview Section
  */
 export function OrganizationsOverviewSection() {
-  const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10)
-  const router = useRouter()
+  const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10);
+  const router = useRouter();
 
-  const handleOrgClick = useCallback((organizationId: string) => {
-    router.push(`/devices?organizationIds=${organizationId}`)
-  }, [router])
+  const handleOrgClick = useCallback(
+    (organizationId: string) => {
+      router.push(`/devices?organizationIds=${organizationId}`);
+    },
+    [router],
+  );
 
   const organizationRows = useMemo(() => {
     if (loading && rows.length === 0) {
-      return <OrganizationsSkeleton />
+      return <OrganizationsSkeleton />;
     }
 
     if (error) {
-      return <div className="text-ods-error font-['DM_Sans'] text-[14px]">{error}</div>
+      return <div className="text-ods-error font-['DM_Sans'] text-[14px]">{error}</div>;
     }
 
-    return rows.map((org) => {
-      const fullImageUrl = getFullImageUrl(org.imageUrl)
+    return rows.map(org => {
+      const fullImageUrl = getFullImageUrl(org.imageUrl);
 
       return (
-        <div
-          key={org.id}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch"
-        >
+        <div key={org.id} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
           {/* Organization column */}
           <OrganizationCard
             organization={org}
@@ -83,9 +83,11 @@ export function OrganizationsOverviewSection() {
             value={org.active}
             percentage={org.activePct}
             showProgress
-            href={org.active > 0
-              ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
-              : `/devices?organizationIds=${org.organizationId}`}
+            href={
+              org.active > 0
+                ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
+                : `/devices?organizationIds=${org.organizationId}`
+            }
           />
 
           {/* Inactive devices */}
@@ -94,14 +96,16 @@ export function OrganizationsOverviewSection() {
             value={org.inactive}
             percentage={org.inactivePct}
             showProgress
-            href={org.inactive > 0
-              ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`
-              : `/devices?organizationIds=${org.organizationId}`}
+            href={
+              org.inactive > 0
+                ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`
+                : `/devices?organizationIds=${org.organizationId}`
+            }
           />
         </div>
-      )
-    })
-  }, [rows, loading, error, handleOrgClick])
+      );
+    });
+  }, [rows, loading, error, handleOrgClick]);
 
   return (
     <div className="space-y-4">
@@ -116,11 +120,9 @@ export function OrganizationsOverviewSection() {
         </p>
       )}
 
-      <div className="flex flex-col gap-3">
-        {organizationRows}
-      </div>
+      <div className="flex flex-col gap-3">{organizationRows}</div>
     </div>
-  )
+  );
 }
 
-export default OrganizationsOverviewSection
+export default OrganizationsOverviewSection;
