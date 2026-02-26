@@ -200,7 +200,7 @@ jobs:
       - name: Run Tests
         id: tests
         env:
-          API_BASE_URL: http://localhost:8100
+          API_BASE_URL: https://localhost
         run: |
           java -jar openframe/services/openframe-test/target/openframe-test-1.0.0-SNAPSHOT-jar-with-dependencies.jar
         continue-on-error: true
