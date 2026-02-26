@@ -1,7 +1,8 @@
 'use client';
 
 import { ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { SearchBar } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useIntegratedTools } from '../../hooks/use-integrated-tools';
 
@@ -45,7 +46,13 @@ export function ArchitectureTab() {
   return (
     <div className="pt-6 space-y-6">
       <div>
-        <SearchBar placeholder="Search for Tools..." onSubmit={setSearchTerm} value={searchTerm} className="w-full" />
+        <Input
+          startAdornment={<SearchIcon />}
+          placeholder="Search for Tools..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="w-full"
+        />
       </div>
       {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

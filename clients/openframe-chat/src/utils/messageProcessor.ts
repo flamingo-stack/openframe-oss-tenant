@@ -1,19 +1,19 @@
 import {
   CHAT_TYPE,
-  processHistoricalMessagesWithErrors,
   type HistoricalMessage,
-  type Message
-} from '@flamingo-stack/openframe-frontend-core'
-import type { Message as GraphQLMessage } from '../services/dialogGraphQLService'
-import faeAvatar from '../assets/fae-avatar.png'
+  type Message,
+  processHistoricalMessagesWithErrors,
+} from '@flamingo-stack/openframe-frontend-core';
+import faeAvatar from '../assets/fae-avatar.png';
+import type { Message as GraphQlMessage } from '../services/dialogGraphQLService';
 
 /**
  * Process historical messages from GraphQL into chat display format
  */
 export function processHistoricalMessages(
-  messages: GraphQLMessage[],
+  messages: GraphQlMessage[],
   onApprove?: (requestId?: string) => Promise<void>,
-  onReject?: (requestId?: string) => Promise<void>
+  onReject?: (requestId?: string) => Promise<void>,
 ): Message[] {
   const historicalMessages: HistoricalMessage[] = messages.map(msg => ({
     id: msg.id,
@@ -22,7 +22,7 @@ export function processHistoricalMessages(
     createdAt: msg.createdAt,
     owner: msg.owner,
     messageData: msg.messageData,
-  }))
+  }));
 
   const processed = processHistoricalMessagesWithErrors(historicalMessages, {
     assistantName: 'Fae',
@@ -31,7 +31,7 @@ export function processHistoricalMessages(
     chatTypeFilter: CHAT_TYPE.CLIENT,
     onApprove,
     onReject,
-  })
+  });
 
   return processed.messages.map(msg => ({
     id: msg.id,
@@ -40,5 +40,5 @@ export function processHistoricalMessages(
     content: msg.content,
     timestamp: msg.timestamp,
     avatar: msg.role === 'assistant' || msg.role === 'error' ? faeAvatar : undefined,
-  })) as Message[]
+  })) as Message[];
 }

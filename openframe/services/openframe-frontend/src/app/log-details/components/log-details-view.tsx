@@ -2,12 +2,7 @@
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
 import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import {
-  Button,
-  DetailLoader,
-  DetailPageContainer,
-  StatusTag,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, DetailLoader, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -25,19 +20,19 @@ interface LogDetailsViewProps {
   timestamp: string;
 }
 
-const getSeverityVariant = (severity: string): 'success' | 'warning' | 'error' | 'info' | 'critical' => {
+const getSeverityVariant = (severity: string): 'success' | 'warning' | 'error' | 'grey' | 'critical' => {
   switch (severity?.toUpperCase()) {
     case 'ERROR':
       return 'error';
     case 'WARNING':
       return 'warning';
     case 'INFO':
-      return 'info';
+      return 'grey';
     case 'CRITICAL':
       return 'critical';
     case 'DEBUG':
     default:
-      return 'info';
+      return 'grey';
   }
 };
 
@@ -131,7 +126,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
-          <StatusTag label={logDetails.severity} variant={getSeverityVariant(logDetails.severity)} />
+          <Tag label={logDetails.severity} variant={getSeverityVariant(logDetails.severity)} />
           <span className="font-['DM_Sans'] font-medium text-[16px] sm:text-[18px] leading-[22px] sm:leading-[24px] text-ods-text-primary">
             {new Date(logDetails.timestamp).toLocaleString()}
           </span>

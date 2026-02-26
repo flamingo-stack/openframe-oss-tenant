@@ -1,9 +1,9 @@
 'use client';
 
 import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
-import { SoftwareInfo, SoftwareSourceBadge, StatusTag, Table } from '@flamingo-stack/openframe-frontend-core';
+import { SoftwareInfo, SoftwareSourceBadge, Table, Tag } from '@flamingo-stack/openframe-frontend-core';
 import React, { useCallback, useMemo } from 'react';
-import { Device, Software } from '../../types/device.types';
+import type { Device, Software } from '../../types/device.types';
 
 interface SoftwareTabProps {
   device: Device | null;
@@ -45,15 +45,9 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
         renderCell: (item: Software) => {
           const vulnCount = item.vulnerabilities.length;
           if (vulnCount === 0) {
-            return <StatusTag label="NO ISSUES" variant="success" className="px-2 py-1 text-[12px] leading-[16px]" />;
+            return <Tag label="NO ISSUES" variant="success" className="px-2 py-1 text-[12px] leading-[16px]" />;
           }
-          return (
-            <StatusTag
-              label={`${vulnCount} ${vulnCount === 1 ? 'ISSUE' : 'ISSUES'}`}
-              variant="error"
-              className="px-2 py-1 text-[12px] leading-[16px]"
-            />
-          );
+          return <Tag label={`${vulnCount} ${vulnCount === 1 ? 'ISSUE' : 'ISSUES'}`} variant="error" />;
         },
       },
       {

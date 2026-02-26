@@ -3,7 +3,8 @@
 import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
 import { Input, Label, Textarea } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React, { useEffect, useMemo, useState } from 'react';
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface CreateApiKeyModalProps {
   isOpen: boolean;
@@ -16,7 +17,12 @@ interface CreateApiKeyModalProps {
   }) => Promise<{ apiKey: any; fullKey: string }>;
   // Edit mode
   mode?: 'create' | 'edit';
-  initial?: { id: string; name: string; description?: string | null; expiresAt?: string | null };
+  initial?: {
+    id: string;
+    name: string;
+    description?: string | null;
+    expiresAt?: string | null;
+  };
   onUpdated?: (updated: { id: string }) => Promise<void> | void;
   update?: (id: string, data: { name: string; description?: string; expiresAt?: string | null }) => Promise<any>;
 }
@@ -63,13 +69,24 @@ export function CreateApiKeyModal({
       };
       if (mode === 'edit' && initial && update) {
         const updated = await update(initial.id, payload);
-        toast({ title: 'API Key updated', description: updated.name, variant: 'success' });
+        toast({
+          title: 'API Key updated',
+          description: updated.name,
+          variant: 'success',
+        });
         await onUpdated?.({ id: updated.id });
         onClose();
       } else if (create && onCreated) {
         const result = await create(payload);
-        toast({ title: 'API Key created', description: result.apiKey.name, variant: 'success' });
-        await onCreated({ apiKeyId: result.apiKey.id, fullKey: result.fullKey });
+        toast({
+          title: 'API Key created',
+          description: result.apiKey.name,
+          variant: 'success',
+        });
+        await onCreated({
+          apiKeyId: result.apiKey.id,
+          fullKey: result.fullKey,
+        });
         onClose();
       }
     } catch (e) {

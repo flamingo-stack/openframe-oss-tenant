@@ -14,7 +14,9 @@
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
-  "json": { "formatter": { "enabled": true, "indentWidth": 2, "indentStyle": "space" } },
+  "json": {
+    "formatter": { "enabled": true, "indentWidth": 2, "indentStyle": "space" }
+  },
   "formatter": {
     "enabled": true,
     "formatWithErrors": false,
@@ -30,7 +32,10 @@
     "enabled": true,
     "rules": {
       "recommended": false,
-      "complexity": { "noUselessConstructor": "error", "useLiteralKeys": "error" },
+      "complexity": {
+        "noUselessConstructor": "error",
+        "useLiteralKeys": "error"
+      },
       "correctness": {
         "noUnusedVariables": "error",
         "noUndeclaredDependencies": "error",
@@ -47,13 +52,28 @@
           "options": {
             "strictCase": true,
             "conventions": [
-              { "selector": { "kind": "variable" }, "formats": ["camelCase", "CONSTANT_CASE", "PascalCase"] },
-              { "selector": { "kind": "function" }, "formats": ["camelCase", "PascalCase"] },
+              {
+                "selector": { "kind": "variable" },
+                "formats": ["camelCase", "CONSTANT_CASE", "PascalCase"]
+              },
+              {
+                "selector": { "kind": "function" },
+                "formats": ["camelCase", "PascalCase"]
+              },
               { "selector": { "kind": "class" }, "formats": ["PascalCase"] },
-              { "selector": { "kind": "interface" }, "formats": ["PascalCase"] },
-              { "selector": { "kind": "typeAlias" }, "formats": ["PascalCase"] },
+              {
+                "selector": { "kind": "interface" },
+                "formats": ["PascalCase"]
+              },
+              {
+                "selector": { "kind": "typeAlias" },
+                "formats": ["PascalCase"]
+              },
               { "selector": { "kind": "enum" }, "formats": ["PascalCase"] },
-              { "selector": { "kind": "enumMember" }, "formats": ["PascalCase"] },
+              {
+                "selector": { "kind": "enumMember" },
+                "formats": ["PascalCase"]
+              },
               {
                 "selector": { "kind": "objectLiteralMember" },
                 "formats": ["camelCase", "PascalCase", "snake_case", "CONSTANT_CASE"]
@@ -62,13 +82,22 @@
                 "selector": { "kind": "typeMember" },
                 "formats": ["camelCase", "PascalCase", "snake_case", "CONSTANT_CASE"]
               },
-              { "selector": { "kind": "importAlias" }, "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"] },
-              { "selector": { "kind": "exportAlias" }, "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"] }
+              {
+                "selector": { "kind": "importAlias" },
+                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": { "kind": "exportAlias" },
+                "formats": ["camelCase", "PascalCase", "CONSTANT_CASE"]
+              }
             ]
           }
         }
       },
-      "suspicious": { "noDuplicateClassMembers": "error", "noRedeclare": "error" }
+      "suspicious": {
+        "noDuplicateClassMembers": "error",
+        "noRedeclare": "error"
+      }
     }
   },
   "javascript": {
@@ -87,7 +116,9 @@
   "overrides": [
     {
       "includes": ["**/*.test.ts", "**/*.test.tsx"],
-      "linter": { "rules": { "correctness": { "noUndeclaredDependencies": "off" } } }
+      "linter": {
+        "rules": { "correctness": { "noUndeclaredDependencies": "off" } }
+      }
     }
   ]
 }

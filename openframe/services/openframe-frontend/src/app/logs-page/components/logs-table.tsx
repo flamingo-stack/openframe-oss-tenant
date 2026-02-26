@@ -6,11 +6,11 @@ import {
   Button,
   DeviceCardCompact,
   ListPageLayout,
-  StatusTag,
   Table,
   type TableColumn,
   TableDescriptionCell,
   TableTimestampCell,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import {
   useApiParams,
@@ -20,8 +20,8 @@ import {
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
+import { LogDrawer } from '../../components/shared';
 import { useLogFilters, useLogs } from '../hooks/use-logs';
-import { LogInfoModal } from './log-info-modal';
 
 interface UiLogEntry {
   id: string;
@@ -29,7 +29,7 @@ interface UiLogEntry {
   timestamp: string;
   status: {
     label: string;
-    variant?: 'success' | 'warning' | 'error' | 'info' | 'critical';
+    variant?: 'success' | 'warning' | 'error' | 'grey' | 'critical';
   };
   source: {
     name: string;
@@ -101,7 +101,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     error,
     searchLogs,
     refreshLogs,
-    fetchLogDetails,
     fetchNextPage,
     fetchFirstPage,
     hasNextPage,
@@ -146,7 +145,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
               : log.severity === 'WARNING'
                 ? ('warning' as const)
                 : log.severity === 'INFO'
-                  ? ('info' as const)
+                  ? ('grey' as const)
                   : log.severity === 'CRITICAL'
                     ? ('critical' as const)
                     : ('success' as const),
@@ -191,7 +190,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
           })) || [],
         renderCell: log => (
           <div className="shrink-0">
-            <StatusTag label={log.status.label} variant={log.status.variant} />
+            <Tag label={log.status.label} variant={log.status.variant} />
           </div>
         ),
       },
@@ -397,12 +396,27 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         cursorPagination={!embedded ? cursorPagination : undefined}
       />
 
-      {/* Log Info Modal - Side Menu */}
-      <LogInfoModal
-        isOpen={!!selectedLog}
+      {/* Log Drawer - Side Panel */}
+      <LogDrawer
+        isOpen={Boolean(selectedLog)}
         onClose={handleCloseModal}
-        log={selectedLog}
-        fetchLogDetails={fetchLogDetails}
+        title={selectedLog?.description.title || ''}
+        description={selectedLog?.description.details || 'Log Description'}
+        statusTag={selectedLog?.status}
+        timestamp={selectedLog?.timestamp}
+        deviceId={selectedLog?.originalLogEntry?.deviceId}
+        infoFields={
+          selectedLog
+            ? [
+                { label: 'Log ID', value: selectedLog.logId },
+                {
+                  label: 'Source',
+                  value: <ToolBadge toolType={normalizeToolTypeWithFallback(selectedLog.source.toolType)} />,
+                },
+                { label: 'Device', value: selectedLog.device.name },
+              ]
+            : []
+        }
       />
     </>
   );

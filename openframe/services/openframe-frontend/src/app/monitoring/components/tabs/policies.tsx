@@ -6,9 +6,9 @@ import {
   DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
-  StatusTag,
   Table,
   type TableColumn,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
@@ -31,7 +31,7 @@ function PolicyStatusCell({ policy }: { policy: Policy }) {
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <StatusTag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
+      <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
       {isFailing && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
           {policy.failing_host_count} {policy.failing_host_count === 1 ? 'device' : 'devices'}

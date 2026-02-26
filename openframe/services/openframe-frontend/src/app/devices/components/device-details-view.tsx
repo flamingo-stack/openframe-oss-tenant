@@ -3,7 +3,6 @@
 import {
   ActionsMenu,
   Button,
-  CardLoader,
   DetailPageContainer,
   DropdownMenu,
   DropdownMenuContent,
@@ -12,9 +11,9 @@ import {
   LoadError,
   NotFoundError,
   normalizeOSType,
-  StatusTag,
   TabContent,
   TabNavigation,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
   CmdIcon,
@@ -25,11 +24,12 @@ import {
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { ChevronDown, Folder } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceActionsDropdown } from './device-actions-dropdown';
+import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
@@ -106,7 +106,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   };
 
   if (isLoading) {
-    return <CardLoader items={4} />;
+    return <DeviceDetailsSkeleton />;
   }
 
   if (error) {
@@ -226,7 +226,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           {normalizedDevice?.status &&
             (() => {
               const statusConfig = getDeviceStatusConfig(normalizedDevice.status);
-              return <StatusTag label={statusConfig.label} variant={statusConfig.variant} />;
+              return <Tag label={statusConfig.label} variant={statusConfig.variant} />;
             })()}
           {lastUpdated && (
             <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>

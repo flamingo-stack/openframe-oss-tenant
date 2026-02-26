@@ -1,3 +1,7 @@
+global:
+  image:
+    tag: latest
+
 environment: dev
 
 deployment:
@@ -19,16 +23,33 @@ deployment:
       autoSync: true
 
 
-global:  # not working yet
-  image:
-    tag: latest
-
 apps:
   namespace-platform:
     enabled: true
     project: default
     namespace: platform
-    syncWave: "0"
+    syncWave: "-1"
+  namespace-datasources:
+    enabled: true
+    project: default
+    namespace: datasources
+    syncWave: "-1"
+  namespace-microservices:
+    enabled: true
+    project: default
+    namespace: microservices
+    syncWave: "-1"
+  namespace-client-tools:
+    enabled: true
+    project: default
+    namespace: client-tools
+    syncWave: "-1"
+  namespace-integrated-tools:
+    enabled: true
+    project: default
+    namespace: integrated-tools
+    syncWave: "-1"
+
   ngrok-operator:
     enabled: true
     project: platform
@@ -65,11 +86,6 @@ apps:
       ServerSideApply: true
       RespectIgnoreDifferences: true
 
-  namespace-datasources:
-    enabled: true
-    project: default
-    namespace: datasources
-    syncWave: "1"
   mongodb:
     enabled: true
     project: datasources
@@ -110,17 +126,12 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-
-  namespace-microservices:
-    enabled: true
-    project: default
-    namespace: microservices
-    syncWave: "2"
+# ---
   openframe-config:
     enabled: true
     project: microservices
     namespace: microservices
-    syncWave: "2"
+    syncWave: "1"
     values:
       config:
         branch: main
@@ -128,7 +139,8 @@ apps:
     enabled: true
     project: microservices
     namespace: microservices
-    syncWave: "2"
+    syncWave: "1"
+
   openframe-external-api: 
     enabled: true
     project: microservices
@@ -164,12 +176,7 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-
-  namespace-client-tools:
-    enabled: true
-    project: default
-    namespace: client-tools
-    syncWave: "2"
+# ---
   mongo-express:
     enabled: true
     project: client-tools
@@ -187,58 +194,54 @@ apps:
     syncWave: "2"
     syncOptions:
       RespectIgnoreDifferences: true
-
-  namespace-integrated-tools:
-    enabled: true
-    project: default
-    namespace: integrated-tools
-    syncWave: "3"
+# ---
   # postgres-authentik:
   #   enabled: true
   #   project: integrated-tools
   #   namespace: integrated-tools
-  #   syncWave: "3"
+  #   syncWave: "2"
   # redis-authentik:
   #   enabled: true
   #   project: integrated-tools
   #   namespace: integrated-tools
-  #   syncWave: "3"
+  #   syncWave: "2"
+  mysql-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "2"
+  redis-fleetmdm:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "2"
+  mongodb-meshcentral:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "2"
+  redis-tactical:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "2"
+  postgres-tactical:
+    enabled: true
+    project: integrated-tools
+    namespace: integrated-tools
+    syncWave: "2"
+
   # authentik:
   #   enabled: true
   #   project: integrated-tools
   #   namespace: integrated-tools
   #   syncWave: "3"
-  mysql-fleetmdm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  redis-fleetmdm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
   fleetmdm: 
     enabled: true
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "3"
   meshcentral: 
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  mongodb-meshcentral:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  redis-tactical:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  postgres-tactical:
     enabled: true
     project: integrated-tools
     namespace: integrated-tools

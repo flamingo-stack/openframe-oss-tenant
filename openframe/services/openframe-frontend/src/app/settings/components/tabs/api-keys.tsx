@@ -5,11 +5,11 @@ import {
   Button,
   ListPageContainer,
   MoreActionsMenu,
-  StatusTag,
   Table,
   type TableColumn,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
 import { CreateApiKeyModal } from '../../components/create-api-key-modal';
@@ -53,7 +53,7 @@ export function ApiKeysTab() {
       width: 'w-40',
       renderCell: row => (
         <div className="w-40 shrink-0">
-          <StatusTag label={row.enabled ? 'ACTIVE' : 'INACTIVE'} variant={row.enabled ? 'success' : 'info'} />
+          <Tag label={row.enabled ? 'ACTIVE' : 'INACTIVE'} variant={row.enabled ? 'success' : 'grey'} />
         </div>
       ),
     },

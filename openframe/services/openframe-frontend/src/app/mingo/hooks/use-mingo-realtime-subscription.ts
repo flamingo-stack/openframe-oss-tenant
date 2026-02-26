@@ -11,6 +11,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
@@ -35,6 +36,9 @@ interface UseMingoRealtimeSubscription {
   getSubscriptionState: (dialogId: string) => DialogSubscriptionState;
   subscribedDialogs: Set<string>;
   connectionState: 'connected' | 'disconnected' | 'connecting';
+  token: string | null;
+  isDevTicketEnabled: boolean;
+  onConnectionChange: (dialogId: string, connected: boolean) => void;
 }
 
 function getApiBaseUrl(): string | null {
@@ -65,13 +69,13 @@ export function useMingoRealtimeSubscription(
 
   const [subscribedDialogs, setSubscribedDialogs] = useState<Set<string>>(new Set());
   const [dialogStates, setDialogStates] = useState<Map<string, DialogSubscriptionState>>(new Map());
-  const [connectionState, _setConnectionState] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
+  const [connectionState, setConnectionState] = useState<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
   const onChunkReceivedRef = useRef(onChunkReceived);
   const catchupRefs = useRef<Map<string, any>>(new Map());
 
   const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-  const [_token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
+  const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
   const { resetUnread } = useMingoMessagesStore();
 
@@ -91,15 +95,17 @@ export function useMingoRealtimeSubscription(
     return () => window.removeEventListener('storage', handler);
   }, [isDevTicketEnabled]);
 
-  // NATS client configuration
-  const _clientConfig = useMemo(
-    () => ({
-      name: 'openframe-frontend-mingo',
-      user: 'machine',
-      pass: '',
-    }),
-    [],
-  );
+  const onConnectionChange = useCallback((dialogId: string, connected: boolean) => {
+    setConnectionState(connected ? 'connected' : 'disconnected');
+    setDialogStates(prev => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(dialogId);
+      if (existing) {
+        newMap.set(dialogId, { ...existing, isConnected: connected });
+      }
+      return newMap;
+    });
+  }, []);
 
   const getSubscriptionState = useCallback(
     (dialogId: string): DialogSubscriptionState => {
@@ -164,6 +170,9 @@ export function useMingoRealtimeSubscription(
     getSubscriptionState,
     subscribedDialogs,
     connectionState,
+    token,
+    isDevTicketEnabled,
+    onConnectionChange,
   };
 }
 
@@ -354,13 +363,22 @@ interface DialogSubscriptionProps {
   onApprove?: (requestId?: string) => void;
   onReject?: (requestId?: string) => void;
   approvalStatuses?: Record<string, any>;
+  token: string | null;
+  isDevTicketEnabled: boolean;
+  onConnectionChange?: (dialogId: string, connected: boolean) => void;
 }
 
-export function DialogSubscription({ dialogId, onApprove, onReject, approvalStatuses }: DialogSubscriptionProps) {
+export function DialogSubscription({
+  dialogId,
+  onApprove,
+  onReject,
+  approvalStatuses,
+  token,
+  isDevTicketEnabled,
+  onConnectionChange,
+}: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
-  const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-  const [token] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
   const { processChunk: processorProcessChunk } = useDialogChunkProcessor(dialogId, {
     onApprove,
@@ -378,6 +396,7 @@ export function DialogSubscription({ dialogId, onApprove, onReject, approvalStat
     resetChunkTracking,
     startInitialBuffering,
     processChunk: coreProcessChunk,
+    resetAndCatchUp,
   } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: useCallback((chunk: ChunkData, _messageType: NatsMessageType) => {
@@ -430,17 +449,40 @@ export function DialogSubscription({ dialogId, onApprove, onReject, approvalStat
     }
   }, [hasCaughtUp, catchUpChunks]);
 
-  useNatsDialogSubscription({
+  const handleConnect = useCallback(() => {
+    onConnectionChange?.(dialogId, true);
+  }, [dialogId, onConnectionChange]);
+
+  const handleDisconnect = useCallback(() => {
+    onConnectionChange?.(dialogId, false);
+  }, [dialogId, onConnectionChange]);
+
+  const handleBeforeReconnect = useCallback(async () => {
+    try {
+      await apiClient.get('/api/user/me');
+    } catch {
+      // If refresh fails, apiClient will force-logout
+    }
+  }, []);
+
+  const { reconnectionCount } = useNatsDialogSubscription({
     enabled: true,
     dialogId,
     topics: MINGO_TOPICS,
     onEvent: handleNatsEvent,
-    onConnect: () => {},
-    onDisconnect: () => {},
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    onBeforeReconnect: handleBeforeReconnect,
     onSubscribed: handleSubscribed,
     getNatsWsUrl,
     clientConfig,
   });
+
+  useEffect(() => {
+    if (reconnectionCount > 0 && dialogId) {
+      resetAndCatchUp();
+    }
+  }, [reconnectionCount, dialogId, resetAndCatchUp]);
 
   return null;
 }

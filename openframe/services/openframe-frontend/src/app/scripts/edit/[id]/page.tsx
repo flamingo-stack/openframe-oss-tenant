@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { AppLayout } from '../../../components/app-layout';
-import { EditScriptPage } from '../../components/edit-script-page';
+import { EditScriptPage } from '../../components/script/edit-script-page';
 
 export default function EditScriptPageWrapper() {
   const params = useParams<{ id?: string }>();

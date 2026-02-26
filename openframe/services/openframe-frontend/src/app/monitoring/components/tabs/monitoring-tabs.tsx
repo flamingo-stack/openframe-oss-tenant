@@ -1,8 +1,6 @@
 'use client';
 
-import { PoliciesIcon, QueriesIcon, TabItem } from '@flamingo-stack/openframe-frontend-core';
-import { PulseIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Checks } from './checks';
+import { PoliciesIcon, QueriesIcon, type TabItem } from '@flamingo-stack/openframe-frontend-core';
 import { Policies } from './policies';
 import { Queries } from './queries';
 

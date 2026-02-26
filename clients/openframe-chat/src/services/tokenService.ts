@@ -1,5 +1,5 @@
-import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 interface TokenUpdatePayload {
   token: string;
@@ -14,10 +14,9 @@ class TokenService {
   constructor() {
     this.initTokenListener();
     this.initApiUrl();
-    
+
     this.initFromEnv();
   }
-
 
   private normalizeApiUrl(serverUrl: string): string {
     const trimmed = serverUrl.trim();
@@ -38,7 +37,7 @@ class TokenService {
 
   private setToken(token: string) {
     this.currentToken = token;
-    this.listeners.forEach((listener) => {
+    this.listeners.forEach(listener => {
       try {
         listener(token);
       } catch (error) {
@@ -49,7 +48,7 @@ class TokenService {
 
   private setApiBaseUrl(apiUrl: string) {
     this.currentApiBaseUrl = apiUrl;
-    this.apiUrlListeners.forEach((listener) => {
+    this.apiUrlListeners.forEach(listener => {
       try {
         listener(apiUrl);
       } catch (error) {
@@ -63,19 +62,19 @@ class TokenService {
    */
   private async initTokenListener() {
     try {
-      await listen<TokenUpdatePayload>('token-update', (event) => {
+      await listen<TokenUpdatePayload>('token-update', event => {
         const { token } = event.payload;
         console.log('[TOKEN SERVICE] Token received from Rust event:', this.maskToken(token));
-        
+
         this.setToken(token);
       });
-      
+
       console.log('[TOKEN SERVICE] Token listener initialized');
     } catch (error) {
       console.error('[TOKEN SERVICE] Failed to initialize token listener:', error);
     }
   }
-  
+
   /**
    * Request token from Rust using Tauri command
    */
@@ -85,7 +84,7 @@ class TokenService {
     try {
       console.log('[TOKEN SERVICE] Requesting token from Rust...');
       const token = await invoke<string | null>('get_token');
-      
+
       if (token) {
         console.log('[TOKEN SERVICE] Token received from Rust command:', this.maskToken(token));
         this.setToken(token);
@@ -93,7 +92,27 @@ class TokenService {
       } else {
         return this.currentToken;
       }
+    } catch (_error) {
+      return this.currentToken;
+    }
+  }
+
+  /**
+   * Refresh token from Rust, bypassing cache.
+   * Used before NATS reconnection to ensure a valid token.
+   */
+  async refreshToken(): Promise<string | null> {
+    try {
+      console.log('[TOKEN SERVICE] Refreshing token from Rust...');
+      const token = await invoke<string | null>('get_token');
+      if (token) {
+        console.log('[TOKEN SERVICE] Token refreshed:', this.maskToken(token));
+        this.setToken(token);
+        return token;
+      }
+      return this.currentToken;
     } catch (error) {
+      console.error('[TOKEN SERVICE] Failed to refresh token:', error);
       return this.currentToken;
     }
   }
@@ -112,7 +131,7 @@ class TokenService {
    */
   onTokenUpdate(callback: (token: string) => void): () => void {
     this.listeners.add(callback);
-    
+
     // If we already have a token, call the callback immediately
     if (this.currentToken) {
       try {
@@ -121,7 +140,7 @@ class TokenService {
         console.error('[TOKEN SERVICE] Error in immediate callback:', error);
       }
     }
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback);
@@ -134,7 +153,7 @@ class TokenService {
   async initApiUrl() {
     try {
       const serverUrl = await invoke<string>('get_server_url');
-      
+
       if (serverUrl) {
         const apiUrl = this.normalizeApiUrl(serverUrl);
         this.setApiBaseUrl(apiUrl);
@@ -158,7 +177,7 @@ class TokenService {
    */
   onApiUrlUpdate(callback: (apiUrl: string) => void): () => void {
     this.apiUrlListeners.add(callback);
-    
+
     if (this.currentApiBaseUrl) {
       try {
         callback(this.currentApiBaseUrl);
@@ -166,7 +185,7 @@ class TokenService {
         console.error('[TOKEN SERVICE] Error in immediate API URL callback:', error);
       }
     }
-    
+
     return () => {
       this.apiUrlListeners.delete(callback);
     };
@@ -179,30 +198,30 @@ class TokenService {
     if (token.length <= 8) {
       return '****';
     }
-    
+
     const first = token.substring(0, 4);
     const last = token.substring(token.length - 4);
     return `${first}...${last}`;
   }
 
   async ensureTokenReady(): Promise<void> {
-    let token = this.getCurrentToken()
-    
+    let token = this.getCurrentToken();
+
     if (!token) {
-      token = await this.requestToken()
-      
+      token = await this.requestToken();
+
       if (!token) {
-        throw new Error('Authentication token not available.')
+        throw new Error('Authentication token not available.');
       }
     }
-    
-    let apiUrl = this.getCurrentApiBaseUrl()
+
+    let apiUrl = this.getCurrentApiBaseUrl();
     if (!apiUrl) {
-      await this.initApiUrl()
-      apiUrl = this.getCurrentApiBaseUrl()
-      
+      await this.initApiUrl();
+      apiUrl = this.getCurrentApiBaseUrl();
+
       if (!apiUrl) {
-        throw new Error('API server URL not configured.')
+        throw new Error('API server URL not configured.');
       }
     }
   }
@@ -210,4 +229,3 @@ class TokenService {
 
 // Export singleton instance
 export const tokenService = new TokenService();
-

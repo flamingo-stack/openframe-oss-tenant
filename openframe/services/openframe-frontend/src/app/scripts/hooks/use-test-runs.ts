@@ -2,8 +2,8 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 
-import type { TestRunData } from '../components/test-run-card';
-import type { SelectedTestDevice } from '../components/test-script-modal';
+import type { TestRunData } from '../components/script/test-run-card';
+import type { SelectedTestDevice } from '../components/script/test-script-modal';
 import type { EditScriptFormData } from '../types/edit-script.types';
 
 let runIdCounter = 0;
@@ -16,8 +16,12 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
 
   useEffect(() => {
     return () => {
-      abortControllersRef.current.forEach(c => c.abort());
-      timersRef.current.forEach(t => clearInterval(t));
+      abortControllersRef.current.forEach(c => {
+        c.abort();
+      });
+      timersRef.current.forEach(t => {
+        clearInterval(t);
+      });
       abortControllersRef.current.clear();
       timersRef.current.clear();
     };
@@ -52,7 +56,13 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
       stopRunTimer(runId);
       setTestRuns(prev =>
         prev.map(r =>
-          r.id === runId ? { ...r, status: 'aborted', output: [...r.output, 'Script execution aborted by user.'] } : r,
+          r.id === runId
+            ? {
+                ...r,
+                status: 'aborted',
+                output: [...r.output, 'Script execution aborted by user.'],
+              }
+            : r,
         ),
       );
     },
@@ -137,7 +147,14 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
 
         setTestRuns(prev =>
           prev.map(r =>
-            r.id === runId ? { ...r, elapsedSeconds: elapsed, status: 'completed', output: outputLines } : r,
+            r.id === runId
+              ? {
+                  ...r,
+                  elapsedSeconds: elapsed,
+                  status: 'completed',
+                  output: outputLines,
+                }
+              : r,
           ),
         );
 
@@ -157,12 +174,21 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
         setTestRuns(prev =>
           prev.map(r =>
             r.id === runId
-              ? { ...r, elapsedSeconds: elapsed, status: 'error', output: [...r.output, `Error: ${errorMsg}`] }
+              ? {
+                  ...r,
+                  elapsedSeconds: elapsed,
+                  status: 'error',
+                  output: [...r.output, `Error: ${errorMsg}`],
+                }
               : r,
           ),
         );
 
-        toast({ title: 'Test Failed', description: `${device.deviceName}: ${errorMsg}`, variant: 'destructive' });
+        toast({
+          title: 'Test Failed',
+          description: `${device.deviceName}: ${errorMsg}`,
+          variant: 'destructive',
+        });
       }
     },
     [getFormValues, toast, startRunTimer, stopRunTimer],

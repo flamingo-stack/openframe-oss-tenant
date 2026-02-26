@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
-const appType = process.env.NEXT_PUBLIC_APP_TYPE || 'flamingo'
+const appType = process.env.NEXT_PUBLIC_APP_TYPE || 'flamingo';
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -23,4 +23,4 @@ export default defineConfig({
   },
   clearScreen: false,
   envPrefix: ['VITE_', 'TAURI_', 'NEXT_PUBLIC_'],
-})
+});

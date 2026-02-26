@@ -5,7 +5,7 @@
 
 import { getOSPlatformId, normalizeOSType, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core';
 
-export type DeviceStatusVariant = 'success' | 'error' | 'warning' | 'info' | 'critical';
+export type DeviceStatusVariant = 'success' | 'error' | 'warning' | 'grey' | 'critical';
 export type DeviceCardStatus = 'active' | 'inactive' | 'offline' | 'warning' | 'error';
 
 export interface DeviceStatusConfig {
@@ -49,7 +49,7 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
     case 'INACTIVE':
       return {
         label: 'INACTIVE',
-        variant: 'info',
+        variant: 'grey',
         cardStatus: 'inactive',
       };
     case 'MAINTENANCE':
@@ -61,7 +61,7 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
     case 'ARCHIVED':
       return {
         label: 'ARCHIVED',
-        variant: 'info',
+        variant: 'grey',
         cardStatus: 'inactive',
       };
     case 'DELETED':
@@ -73,7 +73,7 @@ export function getDeviceStatusConfig(status: string): DeviceStatusConfig {
     default:
       return {
         label: status.toUpperCase(),
-        variant: 'info',
+        variant: 'grey',
         cardStatus: 'inactive',
       };
   }

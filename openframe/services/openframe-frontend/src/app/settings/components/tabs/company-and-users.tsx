@@ -5,9 +5,9 @@ import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/componen
 import {
   ListPageContainer,
   MoreActionsMenu,
-  StatusTag,
   Table,
   type TableColumn,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useState } from 'react';
 import { useAuthStore } from '../../../auth/stores/auth-store';
@@ -34,11 +34,10 @@ const statusToLabel = {
 
 const statusToVariant = {
   [UserStatus.Active]: 'success',
-  [UserStatus.Deleted]: 'info',
+  [UserStatus.Deleted]: 'grey',
   [InvitationStatus.Pending]: 'warning',
   [InvitationStatus.Expired]: 'error',
-  // TODO: import status type from flamingo-stack-frontend-core
-} as const satisfies Record<UnifiedUserStatus, 'success' | 'info' | 'warning' | 'error'>;
+} as const satisfies Record<UnifiedUserStatus, 'success' | 'grey' | 'warning' | 'error'>;
 
 export function CompanyAndUsersTab() {
   const {
@@ -100,7 +99,7 @@ export function CompanyAndUsersTab() {
 
         return (
           <div className="">
-            <StatusTag label={label} variant={variant} />
+            <Tag label={label} variant={variant} />
           </div>
         );
       },
@@ -216,8 +215,15 @@ export function CompanyAndUsersTab() {
                 <MoreActionsMenu
                   className="px-4"
                   items={[
-                    { label: 'Resend', onClick: () => handleResendRequest(row) },
-                    { label: 'Remove', onClick: () => handleRemoveRequest(row), danger: true },
+                    {
+                      label: 'Resend',
+                      onClick: () => handleResendRequest(row),
+                    },
+                    {
+                      label: 'Remove',
+                      onClick: () => handleRemoveRequest(row),
+                      danger: true,
+                    },
                   ]}
                 />
               );
@@ -226,7 +232,13 @@ export function CompanyAndUsersTab() {
             return (
               <MoreActionsMenu
                 className="px-4"
-                items={[{ label: 'Revoke', onClick: () => handleRevokeRequest(row), danger: true }]}
+                items={[
+                  {
+                    label: 'Revoke',
+                    onClick: () => handleRevokeRequest(row),
+                    danger: true,
+                  },
+                ]}
               />
             );
           }
@@ -240,7 +252,12 @@ export function CompanyAndUsersTab() {
             <MoreActionsMenu
               className="px-4"
               items={[
-                { label: 'Delete', onClick: () => handleDeleteRequest(row), danger: true, disabled: disableDelete },
+                {
+                  label: 'Delete',
+                  onClick: () => handleDeleteRequest(row),
+                  danger: true,
+                  disabled: disableDelete,
+                },
               ]}
             />
           );

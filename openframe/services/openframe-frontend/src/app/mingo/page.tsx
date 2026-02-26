@@ -52,7 +52,8 @@ export default function Mingo() {
     assistantType,
   } = useMingoChat(activeDialogId);
 
-  const { subscribeToDialog, subscribedDialogs } = useMingoRealtimeSubscription(activeDialogId);
+  const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
+    useMingoRealtimeSubscription(activeDialogId);
 
   const draftWelcomeMessages = useMemo(
     () => [
@@ -225,6 +226,9 @@ export default function Mingo() {
             onApprove={handleApprove}
             onReject={handleReject}
             approvalStatuses={approvalStatuses}
+            token={token}
+            isDevTicketEnabled={isDevTicketEnabled}
+            onConnectionChange={onConnectionChange}
           />
         ))}
 

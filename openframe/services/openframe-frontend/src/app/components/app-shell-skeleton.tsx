@@ -63,7 +63,8 @@ function OnboardingSkeleton() {
       </div>
       {/* Step cards - 5 vertical cards */}
       <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
+        {Array(5).map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: This is a static array of 5 items for skeleton onboarding steps, so using index as key is acceptable here.
           <OnboardingStepCardSkeleton key={i} />
         ))}
       </div>
@@ -169,7 +170,7 @@ function OrganizationsSkeleton() {
  */
 export function AppShellSkeleton() {
   return (
-    <div className="flex h-screen bg-ods-bg" role="status" aria-label="Loading application">
+    <output className="flex h-screen bg-ods-bg" aria-label="Loading application">
       {/* NavigationSidebar skeleton - EXACT w-56 = 224px */}
       <aside className="hidden md:flex w-56 h-screen bg-ods-card border-r border-ods-border flex-col">
         {/* Logo area - h-14 matches header */}
@@ -181,7 +182,8 @@ export function AppShellSkeleton() {
         </div>
         {/* Navigation items */}
         <div className="flex-1 p-4 space-y-1">
-          {[...Array(6)].map((_, i) => (
+          {Array(6).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: This is a static array of 6 items for skeleton nav links, so using index as key is acceptable here.
             <div key={i} className="flex items-center gap-3 p-3 rounded-md">
               <Skeleton className="h-5 w-5 rounded" />
               <Skeleton className="h-4 w-24" />
@@ -230,6 +232,6 @@ export function AppShellSkeleton() {
           </div>
         </main>
       </div>
-    </div>
+    </output>
   );
 }

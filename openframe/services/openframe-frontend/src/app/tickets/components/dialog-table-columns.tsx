@@ -1,10 +1,10 @@
 import {
   DeviceCardCompact,
-  StatusTag,
   type TableColumn,
   TableTimestampCell,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { ClientDialogOwner, Dialog } from '../types/dialog.types';
+import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
 interface DialogTableColumnsOptions {
   organizationLookup?: Record<string, string>;
@@ -51,7 +51,11 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
       filterOptions: !isArchived
         ? [
             { id: 'ACTIVE', value: 'ACTIVE', label: 'Active' },
-            { id: 'ACTION_REQUIRED', value: 'ACTION_REQUIRED', label: 'Action Required' },
+            {
+              id: 'ACTION_REQUIRED',
+              value: 'ACTION_REQUIRED',
+              label: 'Action Required',
+            },
             { id: 'ON_HOLD', value: 'ON_HOLD', label: 'On Hold' },
             { id: 'RESOLVED', value: 'RESOLVED', label: 'Resolved' },
           ]
@@ -68,23 +72,23 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
             case 'RESOLVED':
               return 'success' as const;
             case 'ARCHIVED':
-              return 'info' as const;
+              return 'outline' as const;
             default:
-              return 'info' as const;
+              return 'outline' as const;
           }
         };
 
         if (dialog.status === 'RESOLVED') {
           return (
             <div className="shrink-0">
-              <StatusTag label="RESOLVED" />
+              <Tag label="RESOLVED" />
             </div>
           );
         }
 
         return (
           <div className="shrink-0">
-            <StatusTag label={dialog.status.replace('_', ' ')} variant={getStatusVariant(dialog.status)} />
+            <Tag label={dialog.status.replace('_', ' ')} variant={getStatusVariant(dialog.status)} />
           </div>
         );
       },

@@ -90,7 +90,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     onError: (error, isAdmin) => {},
   });
 
-  const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering } = useChunkCatchup({
+  const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
     dialogId,
     onChunkReceived: processRealtimeChunk,
   });
@@ -150,12 +150,27 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialogId, catchUpChunks]);
 
-  useNatsDialogSubscription({
+  const handleBeforeReconnect = useCallback(async () => {
+    try {
+      await apiClient.get('/api/user/me');
+    } catch {
+      // If refresh fails, apiClient will force-logout
+    }
+  }, []);
+
+  const { reconnectionCount } = useNatsDialogSubscription({
     enabled: !!dialogId,
     dialogId,
     onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
+    onBeforeReconnect: handleBeforeReconnect,
   });
+
+  useEffect(() => {
+    if (reconnectionCount > 0 && dialogId) {
+      resetAndCatchUp();
+    }
+  }, [reconnectionCount, dialogId, resetAndCatchUp]);
 
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;
@@ -358,7 +373,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
-      className="h-full pt-6 gap-2"
+      className="h-full gap-2"
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
@@ -411,6 +426,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 messages={chatData.messages}
                 autoScroll={true}
                 showAvatars={false}
+                isLoading={messagesLoading}
                 isTyping={isClientChatTyping}
                 pendingApprovals={chatData.pendingApprovals}
                 assistantType={chatData.assistantType}
@@ -462,6 +478,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   messages={adminChatData.messages}
                   autoScroll={true}
                   showAvatars={false}
+                  isLoading={messagesLoading}
                   isTyping={isAdminChatTyping}
                   pendingApprovals={adminChatData.pendingApprovals}
                   assistantType={adminChatData.assistantType}

@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
 import { usePolicies } from '../../hooks/use-policies';

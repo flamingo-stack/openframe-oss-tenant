@@ -1,7 +1,7 @@
 'use client';
 
-import { CardLoader, DeviceCard, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+import { CardLoader, DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useEffect } from 'react';
 import { DeviceDetailsButton } from '../../devices/components/device-details-button';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
 import type { Device } from '../../devices/types/device.types';
@@ -61,12 +61,13 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
             lastSeen: device.lastSeen || device.last_seen,
             operatingSystem: getDeviceOperatingSystem(device.osType),
           }}
-          statusBadgeComponent={
-            device.status &&
-            (() => {
-              const statusConfig = getDeviceStatusConfig(device.status);
-              return <StatusTag label={statusConfig.label} variant={statusConfig.variant} />;
-            })()
+          statusTag={
+            device.status
+              ? {
+                  label: getDeviceStatusConfig(device.status).label,
+                  variant: getDeviceStatusConfig(device.status).variant,
+                }
+              : undefined
           }
           actions={{
             moreButton: {

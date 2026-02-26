@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { AppLayout } from '../../../../components/app-layout';
-import { ScheduleCreateView } from '../../../components/schedule-create-view';
+import { ScheduleCreateView } from '../../../components/schedule/schedule-create-view';
 
 export const dynamic = 'force-dynamic';
 

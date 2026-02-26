@@ -1,8 +1,7 @@
 import { ContentLoadingContainer, DeviceCardSkeletonGrid } from '@flamingo-stack/openframe-frontend-core/components';
-import { DeviceCard, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import React from 'react';
-import { type Device } from '../types/device.types';
+import type { Device } from '../types/device.types';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device-status';
 
 interface DevicesGridProps {
@@ -80,8 +79,13 @@ export function DevicesGrid({ devices, isLoading, filters }: DevicesGridProps) {
                     lastSeen: device.lastSeen,
                     operatingSystem: getDeviceOperatingSystem(device.osType),
                   }}
-                  statusBadgeComponent={
-                    device.status && <StatusTag label={statusConfig.label} variant={statusConfig.variant} />
+                  statusTag={
+                    device.status
+                      ? {
+                          label: statusConfig.label,
+                          variant: statusConfig.variant,
+                        }
+                      : undefined
                   }
                   onDeviceClick={() => handleDeviceClick(device)}
                   actions={{

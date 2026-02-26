@@ -1,12 +1,12 @@
-import { DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
+import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { StatusTag, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React from 'react';
+import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type React from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { getFullImageUrl } from '@/lib/image-url';
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
-import { type Device } from '../types/device.types';
+import type { Device } from '../types/device.types';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceActionsDropdown } from './device-actions-dropdown';
 
@@ -100,7 +100,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
         return (
           <div className="flex flex-col items-start gap-1 shrink-0">
             <div className="inline-flex">
-              <StatusTag label={statusConfig.label} variant={statusConfig.variant} />
+              <Tag label={statusConfig.label} variant={statusConfig.variant} />
             </div>
             <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">
               {device.last_seen

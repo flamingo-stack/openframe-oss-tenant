@@ -1,16 +1,9 @@
 'use client';
 
 import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
-import {
-  Badge,
-  CveLink,
-  SoftwareInfo,
-  SoftwareSourceBadge,
-  StatusTag,
-  Table,
-} from '@flamingo-stack/openframe-frontend-core';
+import { Badge, CveLink, SoftwareInfo, SoftwareSourceBadge, Table, Tag } from '@flamingo-stack/openframe-frontend-core';
 import React, { useCallback, useMemo } from 'react';
-import { Device, Software, Vulnerability } from '../../types/device.types';
+import type { Device, Software, Vulnerability } from '../../types/device.types';
 
 interface VulnerabilitiesTabProps {
   device: Device | null;
@@ -112,9 +105,9 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
             critical: 'critical' as const,
             high: 'error' as const,
             medium: 'warning' as const,
-            low: 'info' as const,
+            low: 'grey' as const,
           };
-          return <StatusTag label={severity.toUpperCase()} variant={variantMap[severity]} />;
+          return <Tag label={severity.toUpperCase()} variant={variantMap[severity]} />;
         },
       },
       {

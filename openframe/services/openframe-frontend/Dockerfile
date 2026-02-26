@@ -59,7 +59,5 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
-EXPOSE 3000
-
 # Default command uses package.json start script (next start -p 3000)
 CMD ["npm", "start"]

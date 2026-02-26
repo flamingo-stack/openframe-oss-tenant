@@ -1,17 +1,17 @@
 'use client';
 
 import {
-  AlertTriangleIcon,
-  BotIcon,
-  CpuIcon,
-  FileCheckIcon,
-  FileTextIcon,
-  NetworkIcon,
-  PackageIcon,
+  AuditIcon,
+  BracketSquareCheckIcon,
+  ClipboardListIcon,
+  HardDrivesIcon,
+  Hierarchy02Icon,
   ShieldIcon,
-  TabItem,
+  TerminalBrowserIcon,
   UsersIcon,
-} from '@flamingo-stack/openframe-frontend-core';
+  WebDesignIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type { TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { AgentsTab } from './agents-tab';
 import { ComplianceTab } from './compliance-tab';
 import { HardwareTab } from './hardware-tab';
@@ -26,13 +26,13 @@ export const DEVICE_TABS: TabItem[] = [
   {
     id: 'hardware',
     label: 'Hardware',
-    icon: CpuIcon,
+    icon: HardDrivesIcon,
     component: HardwareTab,
   },
   {
     id: 'network',
     label: 'Network',
-    icon: NetworkIcon,
+    icon: Hierarchy02Icon,
     component: NetworkTab,
   },
   {
@@ -44,13 +44,13 @@ export const DEVICE_TABS: TabItem[] = [
   {
     id: 'compliance',
     label: 'Compliance',
-    icon: FileCheckIcon,
+    icon: AuditIcon,
     component: ComplianceTab,
   },
   {
     id: 'agents',
     label: 'Agents',
-    icon: BotIcon,
+    icon: TerminalBrowserIcon,
     component: AgentsTab,
   },
   {
@@ -62,19 +62,19 @@ export const DEVICE_TABS: TabItem[] = [
   {
     id: 'software',
     label: 'Software',
-    icon: PackageIcon,
+    icon: WebDesignIcon,
     component: SoftwareTab,
   },
   {
     id: 'vulnerabilities',
     label: 'Vulnerabilities',
-    icon: AlertTriangleIcon,
+    icon: BracketSquareCheckIcon,
     component: VulnerabilitiesTab,
   },
   {
     id: 'logs',
     label: 'Logs',
-    icon: FileTextIcon,
+    icon: ClipboardListIcon,
     component: LogsTab,
   },
 ];

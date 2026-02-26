@@ -11,7 +11,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Edit2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { useQueryDetails } from '../hooks/use-query-details';
 import { useQueryReport } from '../hooks/use-query-report';
 

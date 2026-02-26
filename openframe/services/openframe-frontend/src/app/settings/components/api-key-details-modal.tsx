@@ -8,7 +8,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
-  StatusTag,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React from 'react';
 import type { ApiKeyRecord } from '../hooks/use-api-keys';
@@ -41,7 +41,7 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
             <div className="text-lg font-semibold text-ods-text-primary">{apiKey.name}</div>
             <div className="text-sm text-ods-text-secondary mt-1">{apiKey.description || '—'}</div>
           </div>
-          <StatusTag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'info'} />
+          <Tag label={apiKey.enabled ? 'ACTIVE' : 'INACTIVE'} variant={apiKey.enabled ? 'success' : 'grey'} />
         </div>
 
         {/* Two Column Layout */}

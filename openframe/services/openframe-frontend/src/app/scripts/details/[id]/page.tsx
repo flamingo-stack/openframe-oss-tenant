@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { AppLayout } from '../../../components/app-layout';
-import { ScriptDetailsView } from '../../components/script-details-view';
+import { ScriptDetailsView } from '../../components/script/script-details-view';
 
 export default function ScriptDetailsPage() {
   const params = useParams<{ id?: string }>();

@@ -1,17 +1,18 @@
 'use client';
 
 import { EditProfileIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Card,
   CheckboxWithDescription,
+  Input,
   ListPageContainer,
   PageError,
   type RowAction,
-  SearchBar,
   Skeleton,
-  StatusTag,
   Table,
   type TableColumn,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -28,7 +29,7 @@ type UiProviderRow = {
   id: string;
   provider: string;
   displayName: string;
-  status: { label: string; variant: 'success' | 'info' };
+  status: { label: string; variant: 'success' | 'grey' };
   hasConfig: boolean;
   allowedDomains: string[];
   autoProvisionUsers: boolean;
@@ -80,7 +81,7 @@ export function SsoConfigurationTab() {
           displayName: p.displayName,
           status: {
             label: isEnabled ? 'ACTIVE' : 'INACTIVE',
-            variant: isEnabled ? 'success' : 'info',
+            variant: isEnabled ? 'success' : 'grey',
           },
           hasConfig: Boolean(cfg?.clientId || cfg?.clientSecret),
           allowedDomains: cfg?.allowedDomains || [],
@@ -187,7 +188,7 @@ export function SsoConfigurationTab() {
         width: 'flex-1 min-w-0',
         renderCell: row => (
           <div className="w-fit">
-            <StatusTag label={row.status.label} variant={row.status.variant} />
+            <Tag label={row.status.label} variant={row.status.variant} />
           </div>
         ),
       },
@@ -257,7 +258,13 @@ export function SsoConfigurationTab() {
 
   return (
     <ListPageContainer title="SSO Configurations" background="default" padding="none" className="pt-6">
-      <SearchBar placeholder="Search SSO providers" onSubmit={setSearchTerm} value={searchTerm} className="w-full" />
+      <Input
+        startAdornment={<SearchIcon />}
+        placeholder="Search SSO providers"
+        value={searchTerm}
+        onChange={e => setSearchTerm(e.target.value)}
+        className="w-full"
+      />
 
       {/* Shared SSO Provider Section */}
       {isDomainLoading ? (

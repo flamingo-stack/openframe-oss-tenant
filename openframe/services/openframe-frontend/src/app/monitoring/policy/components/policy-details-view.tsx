@@ -10,7 +10,7 @@ import {
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { Edit2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { ScriptEditor } from '../../../scripts/components/script-editor';
+import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { usePolicyDetails } from '../hooks/use-policy-details';
 
 interface PolicyDetailsViewProps {
