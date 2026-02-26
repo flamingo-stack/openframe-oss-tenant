@@ -1,0 +1,8 @@
+flowchart TD
+    A["HTTP GET /api/v1/devices"] --> B["DeviceController"]
+    B --> C["Build FilterCriteria"]
+    C --> D["DeviceService.queryDevices()"]
+    D --> E["Domain Query"]
+    E --> F["DeviceMapper"]
+    F --> G["DevicesResponse"]
+    G --> H["HTTP 200 JSON Response"]

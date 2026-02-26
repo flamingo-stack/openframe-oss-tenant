@@ -1,47 +1,45 @@
-'use client'
+'use client';
 
-import React, { useEffect, useState } from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { Alert, AlertDescription } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
+import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Alert, AlertDescription } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import React, { useEffect, useState } from 'react';
 
 interface ApiKeyCreatedModalProps {
-  isOpen: boolean
-  fullKey: string | null
-  onClose: () => void
+  isOpen: boolean;
+  fullKey: string | null;
+  onClose: () => void;
 }
 
 export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedModalProps) {
-  const { toast } = useToast()
-  const [localKey, setLocalKey] = useState('')
+  const { toast } = useToast();
+  const [localKey, setLocalKey] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
-      setLocalKey('')
+      setLocalKey('');
     } else if (fullKey) {
-      setLocalKey(fullKey)
+      setLocalKey(fullKey);
     }
-  }, [isOpen, fullKey])
+  }, [isOpen, fullKey]);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(localKey)
-      toast({ title: 'Copied', description: 'API key copied to clipboard', variant: 'success' })
+      await navigator.clipboard.writeText(localKey);
+      toast({ title: 'Copied', description: 'API key copied to clipboard', variant: 'success' });
     } catch {
-      toast({ title: 'Copy failed', description: 'Unable to copy API key', variant: 'destructive' })
+      toast({ title: 'Copy failed', description: 'Unable to copy API key', variant: 'destructive' });
     }
-  }
+  };
 
-  if (!localKey) return null
+  if (!localKey) return null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader>
         <ModalTitle>API Key Created</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
-          Save your API key securely
-        </p>
+        <p className="text-ods-text-secondary text-sm mt-1">Save your API key securely</p>
       </ModalHeader>
 
       <div className="px-6 py-4 space-y-4">
@@ -66,12 +64,8 @@ export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedMo
         <Button variant="outline" onClick={handleCopy}>
           Copy API Key
         </Button>
-        <Button onClick={onClose}>
-          Continue
-        </Button>
+        <Button onClick={onClose}>Continue</Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }
-
-

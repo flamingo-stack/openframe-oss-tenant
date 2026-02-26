@@ -1,146 +1,152 @@
-import { useState, useEffect, useMemo } from 'react'
-import { tokenService } from '../services/tokenService'
-import { supportedModelsService } from '../services/supportedModelsService'
-import { useNatsDialogSubscription, buildNatsWsUrl } from '@flamingo-stack/openframe-frontend-core'
+import { buildNatsWsUrl, useNatsDialogSubscription } from '@flamingo-stack/openframe-frontend-core';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { supportedModelsService } from '../services/supportedModelsService';
+import { tokenService } from '../services/tokenService';
 
-export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting'
+export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
 
-export interface AIConfiguration {
-  id: string
-  provider: string
-  modelName: string
-  isActive: boolean
-  hasApiKey: boolean
-  createdAt: string
-  updatedAt: string
+export interface AiConfiguration {
+  id: string;
+  provider: string;
+  modelName: string;
+  isActive: boolean;
+  hasApiKey: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface UseConnectionStatusReturn {
-  status: ConnectionStatus
-  serverUrl: string | null
-  aiConfiguration: AIConfiguration | null
-  isFullyLoaded: boolean
+  status: ConnectionStatus;
+  serverUrl: string | null;
+  aiConfiguration: AiConfiguration | null;
+  isFullyLoaded: boolean;
 }
 
 export function useConnectionStatus(): UseConnectionStatusReturn {
-  const [status, setStatus] = useState<ConnectionStatus>('connecting')
-  const [serverUrl, setServerUrl] = useState<string | null>(null)
-  const [aiConfiguration, setAiConfiguration] = useState<AIConfiguration | null>(null)
-  const [isFullyLoaded, setIsFullyLoaded] = useState(false)
-  
-  const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl())
-  const [token, setToken] = useState(tokenService.getCurrentToken())
-  
+  const [status, setStatus] = useState<ConnectionStatus>('connecting');
+  const [serverUrl, setServerUrl] = useState<string | null>(null);
+  const [aiConfiguration, setAiConfiguration] = useState<AiConfiguration | null>(null);
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false);
+
+  const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
+  const [token, setToken] = useState(tokenService.getCurrentToken());
+
   useEffect(() => {
     const initializeCredentials = async () => {
       try {
         if (!apiBaseUrl) {
-          await tokenService.initApiUrl()
-          setApiBaseUrl(tokenService.getCurrentApiBaseUrl())
+          await tokenService.initApiUrl();
+          setApiBaseUrl(tokenService.getCurrentApiBaseUrl());
         }
-        
+
         if (!token) {
-          await tokenService.requestToken()
-          setToken(tokenService.getCurrentToken())
+          await tokenService.requestToken();
+          setToken(tokenService.getCurrentToken());
         }
       } catch (error) {
-        console.error('Failed to initialize credentials:', error)
+        console.error('Failed to initialize credentials:', error);
       }
-    }
-    
-    initializeCredentials()
-  }, [apiBaseUrl, token])
-  
+    };
+
+    initializeCredentials();
+  }, [apiBaseUrl, token]);
+
   useEffect(() => {
-    const unsubscribeToken = tokenService.onTokenUpdate(setToken)
-    const unsubscribeApiUrl = tokenService.onApiUrlUpdate(setApiBaseUrl)
-    
+    const unsubscribeToken = tokenService.onTokenUpdate(setToken);
+    const unsubscribeApiUrl = tokenService.onApiUrlUpdate(setApiBaseUrl);
+
     return () => {
-      unsubscribeToken()
-      unsubscribeApiUrl()
-    }
-  }, [])
-  
+      unsubscribeToken();
+      unsubscribeApiUrl();
+    };
+  }, []);
+
   useEffect(() => {
     if (apiBaseUrl) {
-      setServerUrl(apiBaseUrl.replace(/^https?:\/\//, ''))
+      setServerUrl(apiBaseUrl.replace(/^https?:\/\//, ''));
     }
-  }, [apiBaseUrl])
+  }, [apiBaseUrl]);
 
   useEffect(() => {
     const loadAiConfiguration = async () => {
       try {
-        const currentApiBaseUrl = tokenService.getCurrentApiBaseUrl()
-        const currentToken = tokenService.getCurrentToken()
-        
-        if (!currentApiBaseUrl || !currentToken) {
-          return
+        if (!apiBaseUrl || !token) {
+          return;
         }
-        
-        const response = await fetch(`${currentApiBaseUrl}/chat/api/v1/ai-configuration`, {
+
+        const response = await fetch(`${apiBaseUrl}/chat/api/v1/ai-configuration`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${currentToken}`
+            Authorization: `Bearer ${token}`,
           },
-          signal: AbortSignal.timeout(5000)
-        })
-        
+          signal: AbortSignal.timeout(5000),
+        });
+
         if (response && response.ok) {
-          const config = await response.json()
-          setAiConfiguration(config)
-          
-          await supportedModelsService.loadSupportedModels()
-          setIsFullyLoaded(true)
+          const config = await response.json();
+          setAiConfiguration(config);
+
+          await supportedModelsService.loadSupportedModels();
+          setIsFullyLoaded(true);
         }
       } catch (error) {
-        console.error('Failed to load AI configuration:', error)
+        console.error('Failed to load AI configuration:', error);
       }
-    }
-    
-    loadAiConfiguration()
-  }, [apiBaseUrl, token])
+    };
+
+    loadAiConfiguration();
+  }, [apiBaseUrl, token]);
 
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
-      if (!apiBaseUrl || !token) return ''
-      return buildNatsWsUrl(apiBaseUrl, { token, includeAuthParam: true })
-    }
-  }, [apiBaseUrl, token])
+      if (!apiBaseUrl || !token) return '';
+      return buildNatsWsUrl(apiBaseUrl, { token, includeAuthParam: true });
+    };
+  }, [apiBaseUrl, token]);
 
-  const clientConfig = useMemo(() => ({
-    name: 'openframe-chat-status',
-    user: 'machine',
-    pass: ''
-  }), [])
+  const clientConfig = useMemo(
+    () => ({
+      name: 'openframe-chat-status',
+      user: 'machine',
+      pass: '',
+    }),
+    [],
+  );
+
+  const handleBeforeReconnect = useCallback(async () => {
+    console.log('[CONNECTION STATUS] NATS disconnected, refreshing token before reconnect...');
+    await tokenService.refreshToken();
+  }, []);
 
   const { isConnected } = useNatsDialogSubscription({
     enabled: !!apiBaseUrl && !!token,
     dialogId: null, // No dialog subscription, just connection monitoring
     topics: [],
     onConnect: () => {
-      setStatus('connected')
+      setStatus('connected');
     },
     onDisconnect: () => {
-      setStatus('disconnected')
+      setStatus('disconnected');
     },
+    onBeforeReconnect: handleBeforeReconnect,
     getNatsWsUrl,
-    clientConfig
-  })
+    clientConfig,
+  });
 
   useEffect(() => {
     if (!apiBaseUrl || !token) {
-      setStatus('connecting')
-      return
+      setStatus('connecting');
+      return;
     }
-    
+
     if (isConnected) {
-      setStatus('connected')
+      setStatus('connected');
     } else {
-      setStatus('disconnected')
+      setStatus('disconnected');
     }
-  }, [isConnected, apiBaseUrl, token])
-  
-  const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null
-  
-  return { status, serverUrl: displayUrl, aiConfiguration, isFullyLoaded }
+  }, [isConnected, apiBaseUrl, token]);
+
+  const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null;
+
+  return { status, serverUrl: displayUrl, aiConfiguration, isFullyLoaded };
 }

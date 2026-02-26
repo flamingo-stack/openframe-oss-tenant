@@ -1,0 +1,6 @@
+flowchart TD
+    OidcUser["OIDC User"] --> ResolveTenant2["Resolve Tenant ID"]
+    ResolveTenant2 --> GetSsoConfig["SSOConfigService.getSSOConfig()"]
+    GetSsoConfig -->|Auto Provision Enabled| DomainCheck["Allowed Domain?"]
+    DomainCheck -->|Yes| CreateUser["UserService.registerOrReactivateFromSso()"]
+    CreateUser --> PostProcess["RegistrationProcessor.postProcessAutoProvision()"]

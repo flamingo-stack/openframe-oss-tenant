@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Browser
+    participant TenantController as "Tenant Registration Controller"
+    participant SsoRegService as "SSO Tenant Registration Service"
+    participant OAuth2 as "Spring Security OAuth2"
+
+    Browser->>TenantController: GET /oauth/register/sso
+    TenantController->>SsoRegService: startRegistration(request)
+    SsoRegService-->>TenantController: SsoAuthorizeData
+    TenantController->>Browser: Set-Cookie sso_reg
+    TenantController->>Browser: 303 See Other redirect
+    Browser->>OAuth2: Authorization request

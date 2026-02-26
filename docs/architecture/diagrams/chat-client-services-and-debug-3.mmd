@@ -1,0 +1,10 @@
+flowchart TD
+    Start["Client Start"] --> InitListeners["Init Token + API URL"]
+    InitListeners --> EnvCheck["Check Env Variables"]
+    InitListeners --> TauriListen["Listen token-update Event"]
+
+    UIRequest["Service Needs Token"] --> Ensure["ensureTokenReady()"]
+    Ensure --> HasToken{{"Token Exists?"}}
+    HasToken -->|"No"| InvokeGet["invoke get_token"]
+    HasToken -->|"Yes"| Continue
+    InvokeGet --> Continue["Token Ready"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["loadSupportedModels()"] --> Loaded{{"Already Loaded?"}}
+    Loaded -->|"Yes"| Return
+    Loaded -->|"No"| Fetch["Fetch From API"]
+    Fetch --> Parse["Normalize + Store in Map"]
+    Parse --> MarkLoaded["isLoaded = true"]

@@ -1,0 +1,4 @@
+flowchart TD
+    Kafka["Kafka Topics"] --> Listener["Kafka Listeners"]
+    Listener --> Enrichment["Enrichment Services"]
+    Enrichment --> Producer["Kafka Producer"]

@@ -1,0 +1,7 @@
+flowchart TD
+    OrgFilter["OrganizationQueryFilter"] --> CriteriaList["Collect Criteria List"]
+    CriteriaList --> AndOperator["andOperator(...) "]
+    Search["Search String"] --> OrSearch["name or organizationId or category"]
+    AndOperator --> Query
+    OrSearch --> Query
+    Query --> MongoFind["mongoTemplate.find(Organization)"]

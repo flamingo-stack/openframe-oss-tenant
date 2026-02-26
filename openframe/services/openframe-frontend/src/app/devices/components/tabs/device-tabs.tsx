@@ -1,96 +1,87 @@
-'use client'
+'use client';
 
-import { TabItem } from '@flamingo-stack/openframe-frontend-core'
 import {
-  CpuIcon,
-  NetworkIcon,
+  AuditIcon,
+  BracketSquareCheckIcon,
+  ClipboardListIcon,
+  HardDrivesIcon,
+  Hierarchy02Icon,
   ShieldIcon,
-  FileCheckIcon,
-  BotIcon,
+  TerminalBrowserIcon,
   UsersIcon,
-  PackageIcon,
-  AlertTriangleIcon,
-  FileTextIcon
-} from '@flamingo-stack/openframe-frontend-core'
-import { HardwareTab } from './hardware-tab'
-import { NetworkTab } from './network-tab'
-import { SecurityTab } from './security-tab'
-import { ComplianceTab } from './compliance-tab'
-import { AgentsTab } from './agents-tab'
-import { UsersTab } from './users-tab'
-import { SoftwareTab } from './software-tab'
-import { VulnerabilitiesTab } from './vulnerabilities-tab'
-import { LogsTab } from './logs-tab'
+  WebDesignIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type { TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { AgentsTab } from './agents-tab';
+import { ComplianceTab } from './compliance-tab';
+import { HardwareTab } from './hardware-tab';
+import { LogsTab } from './logs-tab';
+import { NetworkTab } from './network-tab';
+import { SecurityTab } from './security-tab';
+import { SoftwareTab } from './software-tab';
+import { UsersTab } from './users-tab';
+import { VulnerabilitiesTab } from './vulnerabilities-tab';
 
 export const DEVICE_TABS: TabItem[] = [
   {
     id: 'hardware',
     label: 'Hardware',
-    icon: CpuIcon,
-    component: HardwareTab
+    icon: HardDrivesIcon,
+    component: HardwareTab,
   },
   {
     id: 'network',
     label: 'Network',
-    icon: NetworkIcon,
-    component: NetworkTab
+    icon: Hierarchy02Icon,
+    component: NetworkTab,
   },
   {
     id: 'security',
     label: 'Security',
     icon: ShieldIcon,
-    hasAlert: false,
-    alertType: 'error',
-    component: SecurityTab
+    component: SecurityTab,
   },
   {
     id: 'compliance',
     label: 'Compliance',
-    icon: FileCheckIcon,
-    component: ComplianceTab
+    icon: AuditIcon,
+    component: ComplianceTab,
   },
   {
     id: 'agents',
     label: 'Agents',
-    icon: BotIcon,
-    hasAlert: false,
-    alertType: 'warning',
-    component: AgentsTab
+    icon: TerminalBrowserIcon,
+    component: AgentsTab,
   },
   {
     id: 'users',
     label: 'Users',
     icon: UsersIcon,
-    component: UsersTab
+    component: UsersTab,
   },
   {
     id: 'software',
     label: 'Software',
-    icon: PackageIcon,
-    hasAlert: false,
-    alertType: 'warning',
-    component: SoftwareTab
+    icon: WebDesignIcon,
+    component: SoftwareTab,
   },
   {
     id: 'vulnerabilities',
     label: 'Vulnerabilities',
-    icon: AlertTriangleIcon,
-    hasAlert: false,
-    alertType: 'error',
-    component: VulnerabilitiesTab
+    icon: BracketSquareCheckIcon,
+    component: VulnerabilitiesTab,
   },
   {
     id: 'logs',
     label: 'Logs',
-    icon: FileTextIcon,
-    component: LogsTab
-  }
-]
+    icon: ClipboardListIcon,
+    component: LogsTab,
+  },
+];
 
-export const getDeviceTab = (tabId: string): TabItem | undefined =>
-  DEVICE_TABS.find(tab => tab.id === tabId)
+export const getDeviceTab = (tabId: string): TabItem | undefined => DEVICE_TABS.find(tab => tab.id === tabId);
 
 export const getTabComponent = (tabId: string): React.ComponentType<{ device: any }> | null => {
-  const tab = getDeviceTab(tabId)
-  return tab?.component || null
-}
+  const tab = getDeviceTab(tabId);
+  return tab?.component || null;
+};

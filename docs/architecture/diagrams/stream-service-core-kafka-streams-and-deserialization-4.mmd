@@ -1,0 +1,6 @@
+flowchart TD
+    QueryEvent["Fleet Query Result"] --> HasError{{"Error Present?"}}
+    HasError -->|Yes| ErrorJson["Build Error JSON"]
+    HasError -->|No| HasData{{"Data Present?"}}
+    HasData -->|Yes| ResultJson["Build Result JSON"]
+    HasData -->|No| InfoMessage["Result Received Message"]

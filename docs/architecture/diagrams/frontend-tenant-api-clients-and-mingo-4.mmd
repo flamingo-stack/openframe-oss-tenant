@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant User
+    participant UI
+    participant ApiClient
+    participant ChatAPI
+
+    User->>UI: Send Message
+    UI->>ApiClient: POST /chat/api/v1/messages
+    ApiClient->>ChatAPI: Forward request
+    ChatAPI-->>ApiClient: Message ID
+    ApiClient-->>UI: Success response

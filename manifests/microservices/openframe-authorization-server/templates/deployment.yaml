@@ -12,24 +12,22 @@ spec:
     metadata:
       labels:
         app: openframe-authorization-server
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        prometheus.io/port: "9006"
+        prometheus.io/path: "/management/{{ .Values.global.image.tag }}/prometheus"
 
     spec:
       initContainers:
-        - name: wait-for-config-server
-          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
-          command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
-
         - name: wait-for-management-server
-          image: {{ default .Values.initContainer.image.registry .Values.global.image.registry }}/curlimages/curl:{{ .Values.initContainer.image.tag }}
-          command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/v1/health; do sleep 1; done"]
+          image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do sleep 1; done"]
           
       containers:
         - name: openframe-authorization-server
-          image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.image.tag .Values.global.image.tag }}"
           ports:
             - containerPort: 9005
               name: http
@@ -52,7 +50,7 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /management/v1/health
+              path: /management/{{ .Values.global.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -60,7 +58,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /management/v1/health
+              path: /management/{{ .Values.global.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30

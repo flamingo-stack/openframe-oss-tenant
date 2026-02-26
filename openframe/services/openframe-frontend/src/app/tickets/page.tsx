@@ -1,34 +1,34 @@
-'use client'
+'use client';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { AppLayout } from '../components/app-layout'
-import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core'
-import { TicketsView } from './components/tickets-view'
-import { isSaasTenantMode } from '@lib/app-mode'
+import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { isSaasTenantMode } from '@/lib/app-mode';
+import { AppLayout } from '../components/app-layout';
+import { TicketsView } from './components/tickets-view';
 
 export default function Tickets() {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
-      router.replace('/dashboard')
-      return
+      router.replace('/dashboard');
+      return;
     }
-  }, [router])
+  }, [router]);
 
   // Don't render anything if not in saas-tenant mode
   if (!isSaasTenantMode()) {
-    return null
+    return null;
   }
 
   return (
-    <AppLayout>
+    <AppLayout mainClassName="pt-0 sm:pt-0">
       <ContentPageContainer padding="none" showHeader={false}>
         <TicketsView />
       </ContentPageContainer>
     </AppLayout>
-  )
+  );
 }

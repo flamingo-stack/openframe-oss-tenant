@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Authenticated HTTP Request"] --> Filter["Security Filter Chain"]
+    Filter --> Principal["AuthPrincipal"]
+    Principal --> Controller["Controller Method"]
+    Controller --> Service["User / ApiKey Service"]

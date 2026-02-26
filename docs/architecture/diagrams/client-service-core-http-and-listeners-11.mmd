@@ -1,0 +1,5 @@
+flowchart TD
+    JetStream["JetStream TOOL_CONNECTIONS"] --> Listener["ToolConnectionListener"]
+    Listener --> Extractor["MachineIdExtractor"]
+    Listener --> Service["ToolConnectionService"]
+    Service --> Persist["Persist Tool Connection"]

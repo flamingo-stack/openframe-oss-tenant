@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter } from '@flamingo-stack/openframe-frontend-core'
+import { Button, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
+import React from 'react';
 
 interface DisableApiKeyModalProps {
-  isOpen: boolean
-  onClose: () => void
-  apiKeyName?: string
-  onConfirm: () => Promise<void>
+  isOpen: boolean;
+  onClose: () => void;
+  apiKeyName?: string;
+  onConfirm: () => Promise<void>;
 }
 
 export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: DisableApiKeyModalProps) {
@@ -15,14 +15,14 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader>
         <ModalTitle>Confirm Disabling</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
-          This action will deactivate the API key
-        </p>
+        <p className="text-ods-text-secondary text-sm mt-1">This action will deactivate the API key</p>
       </ModalHeader>
 
       <div className="px-6 py-4">
         <p className="text-ods-text-primary">
-          Are you sure you want to deactivate <span className="text-error font-semibold">{apiKeyName || 'this API Key'}</span>? This key will stop working until you reactivate it.
+          Are you sure you want to deactivate{' '}
+          <span className="text-error font-semibold">{apiKeyName || 'this API Key'}</span>? This key will stop working
+          until you reactivate it.
         </p>
       </div>
 
@@ -35,7 +35,5 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
         </Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }
-
-

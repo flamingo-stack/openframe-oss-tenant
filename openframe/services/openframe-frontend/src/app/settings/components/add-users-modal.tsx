@@ -1,63 +1,70 @@
-'use client'
+'use client';
 
-import React, { useEffect, useMemo, useState } from 'react'
-import { Button, Modal, ModalHeader, ModalTitle, ModalFooter, Label } from '@flamingo-stack/openframe-frontend-core'
-import { Input, Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { PlusCircleIcon, IconsXIcon } from '@flamingo-stack/openframe-frontend-core/components/icons'
+import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
+import { IconsXIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import React, { useEffect, useMemo, useState } from 'react';
 
-type InviteRow = { email: string; role: string }
+type InviteRow = { email: string; role: string };
 
 interface AddUsersModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onInvited?: () => Promise<void> | void
-  invite: (rows: InviteRow[]) => Promise<void>
+  isOpen: boolean;
+  onClose: () => void;
+  onInvited?: () => Promise<void> | void;
+  invite: (rows: InviteRow[]) => Promise<void>;
 }
 
 export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersModalProps) {
-  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Admin' }])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Admin' }]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
 
-  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, [])
-  const canSubmit = useMemo(() => rows.some(r => emailRegex.test(r.email.trim())), [rows, emailRegex])
-  const roleOptions = useMemo(() => [
-    { value: 'Admin', label: 'Admin' }
-  ], [])
+  const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
+  const canSubmit = useMemo(() => rows.some(r => emailRegex.test(r.email.trim())), [rows, emailRegex]);
+  const roleOptions = useMemo(() => [{ value: 'Admin', label: 'Admin' }], []);
 
   useEffect(() => {
     if (!isOpen) {
-      setRows([{ email: '', role: 'Admin' }])
-      setIsSubmitting(false)
+      setRows([{ email: '', role: 'Admin' }]);
+      setIsSubmitting(false);
     }
-  }, [isOpen])
+  }, [isOpen]);
 
   const setRow = (idx: number, patch: Partial<InviteRow>) => {
-    setRows(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r))
-  }
+    setRows(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
 
-  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Admin' }])
-  const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx))
+  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Admin' }]);
+  const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async () => {
-    if (!canSubmit) return
-    const payload = rows
-      .map(r => ({ email: r.email.trim(), role: r.role }))
-      .filter(r => emailRegex.test(r.email))
-    if (payload.length === 0) return
-    setIsSubmitting(true)
+    if (!canSubmit) return;
+    const payload = rows.map(r => ({ email: r.email.trim(), role: r.role })).filter(r => emailRegex.test(r.email));
+    if (payload.length === 0) return;
+    setIsSubmitting(true);
     try {
-      await invite(payload)
-      toast({ title: 'Invites sent', description: `${payload.length} user(s) invited`, variant: 'success' })
-      onClose()
-      await onInvited?.()
+      await invite(payload);
+      toast({ title: 'Invites sent', description: `${payload.length} user(s) invited`, variant: 'success' });
+      onClose();
+      await onInvited?.();
     } catch (err) {
-      toast({ title: 'Invite failed', description: err instanceof Error ? err.message : 'Failed to send invites', variant: 'destructive' })
+      toast({
+        title: 'Invite failed',
+        description: err instanceof Error ? err.message : 'Failed to send invites',
+        variant: 'destructive',
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
@@ -88,13 +95,15 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
                 invalid={row.email.length > 0 && !emailRegex.test(row.email)}
               />
               <div className="flex items-center gap-3">
-                <Select value={row.role} onValueChange={(v) => setRow(idx, { role: v })}>
+                <Select value={row.role} onValueChange={v => setRow(idx, { role: v })}>
                   <SelectTrigger className="bg-ods-card w-48">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {roleOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    {roleOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -108,11 +117,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
           ))}
         </div>
 
-        <Button
-          onClick={addRow}
-          variant="ghost"
-          leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}
-        >
+        <Button onClick={addRow} variant="ghost" leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}>
           Add More Users
         </Button>
       </div>
@@ -126,7 +131,5 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
         </Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }
-
-

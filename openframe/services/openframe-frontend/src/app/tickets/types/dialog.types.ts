@@ -1,157 +1,165 @@
-export type DialogStatus =
-  | 'ACTIVE'
-  | 'ACTION_REQUIRED'
-  | 'ON_HOLD'
-  | 'RESOLVED'
-  | 'ARCHIVED'
+export type DialogStatus = 'ACTIVE' | 'ACTION_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
-export type DialogOwnerEnum = 'CLIENT'
+export type DialogOwnerEnum = 'CLIENT';
 
 export interface DialogOwner {
-  type: DialogOwnerEnum
+  type: DialogOwnerEnum;
 }
 
 export interface Machine {
-  id: string
-  machineId: string
-  displayName?: string
-  hostname?: string
-  organizationId?: string
+  id: string;
+  machineId: string;
+  displayName?: string;
+  hostname?: string;
+  organizationId?: string;
 }
 
 export interface ClientDialogOwner extends DialogOwner {
-  machineId: string
-  machine?: Machine
+  machineId: string;
+  machine?: Machine;
 }
 
 export interface DialogRating {
-  id: string
-  dialogId: string
-  rating: number
-  createdAt: string
+  id: string;
+  dialogId: string;
+  rating: number;
+  createdAt: string;
 }
 
 export interface Dialog {
-  id: string
-  title: string
-  status: DialogStatus
-  owner: ClientDialogOwner | DialogOwner
-  createdAt: string
-  statusUpdatedAt?: string | null
-  resolvedAt?: string | null
-  aiResolutionSuggestedAt?: string | null
-  rating?: DialogRating | null
+  id: string;
+  title: string;
+  status: DialogStatus;
+  owner: ClientDialogOwner | DialogOwner;
+  createdAt: string;
+  statusUpdatedAt?: string | null;
+  resolvedAt?: string | null;
+  aiResolutionSuggestedAt?: string | null;
+  rating?: DialogRating | null;
 }
 
 export interface CursorPageInfo {
-  hasNextPage: boolean
-  hasPreviousPage: boolean
-  startCursor?: string | null
-  endCursor?: string | null
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor?: string | null;
+  endCursor?: string | null;
 }
 
 export interface DialogEdge {
-  cursor: string
-  node: Dialog
+  cursor: string;
+  node: Dialog;
 }
 
 export interface DialogConnection {
-  edges: DialogEdge[]
-  pageInfo: CursorPageInfo
+  edges: DialogEdge[];
+  pageInfo: CursorPageInfo;
 }
 
 // Message types
-export type MessageOwnerType = 'CLIENT' | 'ASSISTANT' | 'ADMIN'
-export type ChatType = string
-export type DialogMode = string
-export type MessageDataType = 'TEXT' | 'ERROR' | 'EXECUTING_TOOL' | 'EXECUTED_TOOL' | 'APPROVAL_REQUEST' | 'APPROVAL_RESULT'
+export type MessageOwnerType = 'CLIENT' | 'ASSISTANT' | 'ADMIN';
+export type ChatType = string;
+export type DialogMode = string;
+export type MessageDataType =
+  | 'TEXT'
+  | 'ERROR'
+  | 'EXECUTING_TOOL'
+  | 'EXECUTED_TOOL'
+  | 'APPROVAL_REQUEST'
+  | 'APPROVAL_RESULT';
 
 export interface MessageOwner {
-  type: MessageOwnerType
+  type: MessageOwnerType;
 }
 
 export interface ClientOwner extends MessageOwner {
-  machineId: string
+  machineId: string;
 }
 
 export interface AssistantOwner extends MessageOwner {
-  model: string
+  model: string;
 }
 
 export interface AdminOwner extends MessageOwner {
-  userId: string
+  userId: string;
   user?: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 export interface MessageData {
-  type: MessageDataType
+  type: MessageDataType;
 }
 
 export interface TextData extends MessageData {
-  text: string
+  text: string;
 }
 
 export interface ErrorData extends MessageData {
-  error: string
-  details?: string
+  error: string;
+  details?: string;
 }
 
 export interface ExecutingToolData extends MessageData {
-  type: 'EXECUTING_TOOL'
-  integratedToolType: string
-  toolFunction: string
-  parameters?: Record<string, any>
-  requiresApproval?: boolean
-  approvalStatus?: string
+  type: 'EXECUTING_TOOL';
+  integratedToolType: string;
+  toolFunction: string;
+  parameters?: Record<string, any>;
+  requiresApproval?: boolean;
+  approvalStatus?: string;
 }
 
 export interface ExecutedToolData extends MessageData {
-  type: 'EXECUTED_TOOL'
-  integratedToolType: string
-  toolFunction: string
-  result?: string
-  success?: boolean
-  requiredApproval?: boolean
-  approvalStatus?: string
+  type: 'EXECUTED_TOOL';
+  integratedToolType: string;
+  toolFunction: string;
+  result?: string;
+  success?: boolean;
+  requiredApproval?: boolean;
+  approvalStatus?: string;
 }
 
 export interface ApprovalRequestData extends MessageData {
-  type: 'APPROVAL_REQUEST'
-  approvalRequestId: string
-  approvalType: string
-  command: string
-  explanation: string
+  type: 'APPROVAL_REQUEST';
+  approvalRequestId: string;
+  approvalType: string;
+  command: string;
+  explanation: string;
 }
 
 export interface ApprovalResultData extends MessageData {
-  type: 'APPROVAL_RESULT'
-  approvalRequestId: string
-  approved: boolean
-  approvalType: string
-  command?: string
-  description?: string
-  risk?: string
-  details?: any
+  type: 'APPROVAL_RESULT';
+  approvalRequestId: string;
+  approved: boolean;
+  approvalType: string;
+  command?: string;
+  description?: string;
+  risk?: string;
+  details?: any;
 }
 
 export interface Message {
-  id: string
-  dialogId: string
-  chatType: ChatType
-  dialogMode: DialogMode
-  createdAt: string
-  owner: ClientOwner | AssistantOwner | AdminOwner | MessageOwner
-  messageData: TextData | ErrorData | ExecutingToolData | ExecutedToolData | ApprovalRequestData | ApprovalResultData | MessageData
+  id: string;
+  dialogId: string;
+  chatType: ChatType;
+  dialogMode: DialogMode;
+  createdAt: string;
+  owner: ClientOwner | AssistantOwner | AdminOwner | MessageOwner;
+  messageData:
+    | TextData
+    | ErrorData
+    | ExecutingToolData
+    | ExecutedToolData
+    | ApprovalRequestData
+    | ApprovalResultData
+    | MessageData;
 }
 
 export interface MessageEdge {
-  cursor: string
-  node: Message
+  cursor: string;
+  node: Message;
 }
 
 export interface MessageConnection {
-  edges: MessageEdge[]
-  pageInfo: CursorPageInfo
+  edges: MessageEdge[];
+  pageInfo: CursorPageInfo;
 }

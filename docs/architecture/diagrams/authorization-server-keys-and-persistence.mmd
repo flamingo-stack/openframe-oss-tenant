@@ -1,0 +1,25 @@
+flowchart TD
+    Client["OAuth2 Client"] -->|"Authorization Request"| AuthServer["Authorization Server"]
+
+    subgraph keys["Tenant Key Management"]
+        TenantKeyService["TenantKeyService"] --> KeyRepo["TenantKeyRepository"]
+        TenantKeyService --> Encryption["EncryptionService"]
+        TenantKeyService --> KeyGen["RsaAuthenticationKeyPairGenerator"]
+    end
+
+    subgraph clients["Client Persistence"]
+        ClientRepoAdapter["MongoRegisteredClientRepository"] --> ClientMongoRepo["RegisteredClientMongoRepository"]
+    end
+
+    subgraph authz["Authorization Persistence"]
+        AuthService["MongoAuthorizationService"] --> AuthRepo["MongoOAuth2AuthorizationRepository"]
+        AuthService --> AuthMapper["MongoAuthorizationMapper"]
+    end
+
+    AuthServer --> TenantKeyService
+    AuthServer --> ClientRepoAdapter
+    AuthServer --> AuthService
+
+    AuthRepo --> MongoDB[("MongoDB")]
+    ClientMongoRepo --> MongoDB
+    KeyRepo --> MongoDB

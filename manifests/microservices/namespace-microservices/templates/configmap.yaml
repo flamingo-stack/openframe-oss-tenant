@@ -5,3 +5,4 @@ metadata:
 data:
   # Spring values
   SPRING_CONFIG_URL: "http://openframe-config.microservices.svc.cluster.local:8888"
+  RELEASE_VERSION: "{{ .Values.global.image.tag }}"

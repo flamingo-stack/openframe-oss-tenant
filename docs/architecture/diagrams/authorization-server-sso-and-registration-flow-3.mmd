@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant AuthServer
+    participant IdP
+
+    User->>AuthServer: Accept invitation
+    AuthServer->>User: Set COOKIE_SSO_INVITE
+    User->>IdP: Authenticate
+    IdP->>AuthServer: OIDC callback
+    AuthServer->>AuthServer: InviteSsoHandler.handle()
+    AuthServer->>AuthServer: InvitationRegistrationService.registerByInvitation()
+    AuthServer->>User: Redirect to tenant dashboard

@@ -1,0 +1,10 @@
+flowchart TD
+    A["HTTP Request"] --> B["@RestController"]
+    B --> C["DTO Validation"]
+    C --> D["Application Service"]
+    D --> E["Domain / Repository"]
+    E --> F["Database / External System"]
+    F --> E
+    E --> D
+    D --> G["Response DTO"]
+    G --> H["HTTP Response"]

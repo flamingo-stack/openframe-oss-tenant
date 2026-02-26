@@ -1,0 +1,14 @@
+flowchart TD
+    Request["External API Request"] --> CheckHeader["X-API-Key Present?"]
+
+    CheckHeader -->|"No"| Reject401["401 UNAUTHORIZED"]
+    CheckHeader -->|"Yes"| Validate["ApiKeyValidationService"]
+
+    Validate -->|"Invalid"| Reject401
+    Validate -->|"Valid"| RateLimitCheck["RateLimitService.isAllowed"]
+
+    RateLimitCheck -->|"Denied"| Reject429["429 RATE_LIMIT_EXCEEDED"]
+    RateLimitCheck -->|"Allowed"| AddHeaders["Inject Rate Limit Headers"]
+
+    AddHeaders --> AddContext["Add X-API-Key-Id & X-User-Id"]
+    AddContext --> Forward["Forward to External API Service"]

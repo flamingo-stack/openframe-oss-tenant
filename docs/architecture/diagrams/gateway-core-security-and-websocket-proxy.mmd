@@ -1,0 +1,21 @@
+flowchart LR
+    Client["Browser / Agent / External Client"] --> Gateway["Gateway Core Security And Websocket Proxy"]
+
+    subgraph security_layer["Security & Filters"]
+        Origin["OriginSanitizerFilter"]
+        AddAuth["AddAuthorizationHeaderFilter"]
+        JwtConfig["JWT Authentication & Issuer Resolver"]
+        ApiKey["ApiKeyAuthenticationFilter"]
+    end
+
+    subgraph ws_layer["WebSocket Routing"]
+        AgentWs["ToolAgentWebSocketProxyUrlFilter"]
+        ApiWs["ToolApiWebSocketProxyUrlFilter"]
+        WsService["WebSocketServiceSecurityDecorator"]
+    end
+
+    Gateway --> security_layer
+    Gateway --> ws_layer
+
+    security_layer --> Downstream["API / Tool / Stream / External Services"]
+    ws_layer --> Tools["Integrated Tools / NATS"]

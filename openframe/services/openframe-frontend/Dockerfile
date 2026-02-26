@@ -13,7 +13,6 @@ ARG GITHUB_TOKEN
 
 # Copy dependency manifests first for best layer caching
 COPY package.json ./
-COPY .npmrc ./.npmrc
 
 # Install dependencies (no lockfile in repo) + cache npm download artifacts
 RUN --mount=type=cache,target=/root/.npm \
@@ -59,8 +58,6 @@ RUN npm install --no-audit --no-fund --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.mjs ./next.config.mjs
-
-EXPOSE 3000
 
 # Default command uses package.json start script (next start -p 3000)
 CMD ["npm", "start"]

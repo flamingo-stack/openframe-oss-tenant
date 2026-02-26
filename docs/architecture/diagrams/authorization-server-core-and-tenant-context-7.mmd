@@ -1,0 +1,4 @@
+flowchart TD
+    FindClient["findByRegistrationId()"] --> ResolveTenant3["Resolve Tenant ID"]
+    ResolveTenant3 -->|Null| Fail["Return null"]
+    ResolveTenant3 -->|Found| LoadClient["DynamicClientRegistrationService.loadClient()"]

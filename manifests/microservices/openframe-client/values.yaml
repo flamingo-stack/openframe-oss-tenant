@@ -1,16 +1,22 @@
+global:
+  image:
+    tag: latest
+
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
 
-initContainer:
-  image:
-    registry: ghcr.io/flamingo-stack/registry
-    tag: "8.9.1"
+initImage:
+  registry: ghcr.io/flamingo-stack/registry
+  repository: curlimages/curl
+  tag: "8.9.1"
 
 image:
-  repo: ghcr.io/flamingo-stack/openframe-oss-tenant/openframe-client
+  registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+  repository: openframe-client
   tag: latest
 
 resources:
@@ -24,5 +30,3 @@ resources:
 podAnnotations:
   loki.grafana.com/scrape: "true"
   prometheus.io/scrape: "true"
-  prometheus.io/port: "8102"
-  prometheus.io/path: "/management/v1/prometheus"

@@ -1,0 +1,6 @@
+flowchart TD
+    Tokens["TokenResponse"] -->|"createTicket()"| Store["InMemory Store"]
+    Client["Client"] -->|"/dev-exchange?ticket=id"| BFF
+    BFF -->|"consumeTicket()"| Store
+    Store -->|"Return Tokens"| BFF
+    BFF -->|"Add Access-Token Header"| Client

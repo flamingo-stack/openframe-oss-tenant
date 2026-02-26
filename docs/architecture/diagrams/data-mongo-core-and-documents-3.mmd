@@ -1,0 +1,5 @@
+flowchart TD
+    Events["application_events"] --> Idx1["userId ASC"]
+    Idx1 --> Idx2["timestamp DESC"]
+    Events --> Idx3["type ASC"]
+    Idx3 --> Idx4["metadata.tags ASC"]

@@ -41,16 +41,8 @@ WORKDIR /app
 # Copy the built JAR from builder stage
 COPY --from=builder /build/openframe/services/openframe-gateway/target/*.jar app.jar
 
-# Add debugging tools (added curl for healthcheck)
-RUN apk add --no-cache curl
-
-EXPOSE 8100
-
-# Healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8100/management/v1/health || exit 1
-
-# Create a non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+RUN apk add --no-cache curl && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
 
 # Switch to the new user

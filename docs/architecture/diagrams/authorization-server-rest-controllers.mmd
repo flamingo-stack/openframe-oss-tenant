@@ -1,0 +1,20 @@
+flowchart TD
+    Client["Browser or Frontend Client"] --> LoginController["Login Controller"]
+    Client --> InvitationController["Invitation Registration Controller"]
+    Client --> PasswordResetController["Password Reset Controller"]
+    Client --> SsoDiscoveryController["SSO Discovery Controller"]
+    Client --> TenantDiscoveryController["Tenant Discovery Controller"]
+    Client --> TenantRegistrationController["Tenant Registration Controller"]
+
+    InvitationController --> InvitationService["Invitation Registration Service"]
+    InvitationController --> SsoInvitationService["SSO Invitation Service"]
+
+    PasswordResetController --> PasswordResetService["Password Reset Service"]
+
+    SsoDiscoveryController --> SsoConfigService["SSO Config Service"]
+    SsoDiscoveryController --> InvitationValidator["Invitation Validator"]
+
+    TenantDiscoveryController --> TenantDiscoveryService["Tenant Discovery Service"]
+
+    TenantRegistrationController --> TenantRegistrationService["Tenant Registration Service"]
+    TenantRegistrationController --> SsoTenantRegistrationService["SSO Tenant Registration Service"]

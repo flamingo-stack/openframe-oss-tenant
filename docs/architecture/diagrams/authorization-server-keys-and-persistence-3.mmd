@@ -1,0 +1,4 @@
+flowchart LR
+    SpringAuth["Spring Authorization Server"] --> Adapter["MongoRegisteredClientRepository"]
+    Adapter --> MongoRepo["RegisteredClientMongoRepository"]
+    MongoRepo --> MongoDB[("MongoDB")]

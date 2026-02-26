@@ -17,6 +17,7 @@ data:
   TRMM_DISABLE_SERVER_SCRIPTS: "False"
   TRMM_DISABLE_SSO: "False"
   TRMM_DISABLE_2FA: "True"
+  OPENFRAME_MODE: "True"
   NODE_ENV: "development"
   WS_PROTO: "ws"
   WS_MASK_OVERRIDE: "1"

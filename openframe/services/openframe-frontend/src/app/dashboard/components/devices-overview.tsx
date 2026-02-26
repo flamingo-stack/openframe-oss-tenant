@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core'
-import { useDevicesOverview } from '../hooks/use-dashboard-stats'
+import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useDevicesOverview } from '../hooks/use-dashboard-stats';
 
 export function DevicesOverviewSection() {
-  const devices = useDevicesOverview()
+  const devices = useDevicesOverview();
 
   if (devices.isLoading) {
     return (
@@ -13,13 +13,13 @@ export function DevicesOverviewSection() {
           Devices Overview
         </h2>
         <Skeleton className="h-5 w-48" />
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -48,7 +48,7 @@ export function DevicesOverviewSection() {
         />
       </div>
     </div>
-  )
+  );
 }
 
-export default DevicesOverviewSection
+export default DevicesOverviewSection;

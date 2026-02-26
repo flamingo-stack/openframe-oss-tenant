@@ -18,6 +18,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
+
+      priorityClassName: mongodb
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

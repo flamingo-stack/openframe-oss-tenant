@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant DGS as "DGS Engine"
+    participant DeviceFetcher
+    participant DeviceService
+    participant OrgLoader as "OrganizationDataLoader"
+
+    Client->>DGS: devices query
+    DGS->>DeviceFetcher: devices()
+    DeviceFetcher->>DeviceService: queryDevices()
+    DeviceService-->>DeviceFetcher: Machines
+    DeviceFetcher-->>DGS: Connection<Machine>
+    DGS->>OrgLoader: load(orgIds batch)
+    OrgLoader-->>DGS: Organizations
+    DGS-->>Client: GraphQL response

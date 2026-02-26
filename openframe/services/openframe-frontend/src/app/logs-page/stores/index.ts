@@ -1,1 +1,1 @@
-export * from './logs-store'
+export * from './logs-store';
