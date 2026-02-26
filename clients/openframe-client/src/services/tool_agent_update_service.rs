@@ -10,7 +10,7 @@ use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
-use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater, create_migrator, needs_migration};
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater, create_migrator, needs_migration, detect_actual_installation};
 use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -145,9 +145,17 @@ impl ToolAgentUpdateService {
         // Check if migration is needed (installation type change)
         let target_type = download_config.installation_type;
         if needs_migration(&installed_tool.installation, target_type) {
-            info!(tool_id = %tool_agent_id, "Migration required: {:?} -> {:?}",
-                  installed_tool.installation, target_type);
-            return self.do_migration(new_version, download_config, installed_tool, deps).await;
+            // Check if tool is already installed as target type (metadata might be stale)
+            if let Some(actual) = detect_actual_installation(tool_agent_id, download_config, &self.directory_manager) {
+                info!(tool_id = %tool_agent_id, "Detected actual installation: {:?}", actual);
+                installed_tool.installation = actual;
+                self.installed_tools_service.save(installed_tool.clone()).await
+                    .with_context(|| format!("Failed to save installation: {}", tool_agent_id))?;
+            } else {
+                info!(tool_id = %tool_agent_id, "Migration required: {:?} -> {:?}",
+                      installed_tool.installation, target_type);
+                return self.do_migration(new_version, download_config, installed_tool, deps).await;
+            }
         }
 
         // Same-type update
