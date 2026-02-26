@@ -10,7 +10,6 @@ use futures::StreamExt;
 use tracing::{error, info, warn};
 use crate::services::AgentConfigurationService;
 use crate::models::tool_installation_message::ToolInstallationMessage;
-use crate::models::download_configuration::InstallationType;
 
 #[derive(Clone)]
 pub struct ToolInstallationMessageListener {
@@ -65,13 +64,7 @@ impl ToolInstallationMessageListener {
             let payload = String::from_utf8_lossy(&message.payload);
             info!("Received tool installation message: {:?}", payload);
 
-            let mut tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
-
-            // TEMP HARDCODE: Override installation types until backend supports per-OS config
-            if let Some(ref mut configs) = tool_installation_message.download_configurations {
-                super::apply_download_config_overrides(&tool_installation_message.tool_agent_id, configs);
-            }
-
+            let tool_installation_message: ToolInstallationMessage = serde_json::from_str(&payload)?;
             let tool_agent_id = tool_installation_message.tool_agent_id.clone();
 
             match self.tool_installation_service.install(tool_installation_message).await {

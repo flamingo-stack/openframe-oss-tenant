@@ -11,13 +11,6 @@ use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
 use crate::platform::{DirectoryManager, ToolUpdaterDeps, create_updater, create_migrator, needs_migration, detect_actual_installation};
-use std::collections::HashSet;
-use std::sync::Arc;
-use tokio::sync::RwLock;
-
-/// HARDCODE REMOVE LATER: Tracks tools that have already received an update this session.
-/// Backend is buggy and sends duplicate update messages, so we only allow one update per tool.
-type UpdatedToolsTracker = Arc<RwLock<HashSet<String>>>;
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -30,8 +23,6 @@ pub struct ToolAgentUpdateService {
     config_service: AgentConfigurationService,
     installed_agent_publisher: InstalledAgentMessagePublisher,
     command_params_resolver: ToolCommandParamsResolver,
-    /// HARDCODE REMOVE LATER: Tools that have already been updated this session
-    updated_tools: UpdatedToolsTracker,
 }
 
 impl ToolAgentUpdateService {
@@ -62,8 +53,6 @@ impl ToolAgentUpdateService {
             config_service,
             installed_agent_publisher,
             command_params_resolver,
-            // HARDCODE REMOVE LATER: Initialize empty tracker
-            updated_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
 
@@ -72,16 +61,6 @@ impl ToolAgentUpdateService {
         let new_version = &message.version;
 
         info!("Processing tool agent update for tool: {} to version: {}", tool_agent_id, new_version);
-
-        // HARDCODE REMOVE LATER: Check if this tool was already updated this session
-        // Backend sends duplicate update messages, so we only process the first one
-        {
-            let updated = self.updated_tools.read().await;
-            if updated.contains(tool_agent_id) {
-                info!("HARDCODE: Tool {} was already updated this session, skipping duplicate update", tool_agent_id);
-                return Ok(());
-            }
-        }
 
         // Check if tool is installed
         let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
@@ -92,12 +71,11 @@ impl ToolAgentUpdateService {
             }
         };
 
-        // TEMPORARILY DISABLED FOR TESTING - allows updating to same version
         // Check if version is different
-        // if installed_tool.version == *new_version {
-        //     info!("Tool {} is already at version {}, no update needed", tool_agent_id, new_version);
-        //     return Ok(());
-        // }
+        if installed_tool.version == *new_version {
+            info!("Tool {} is already at version {}, no update needed", tool_agent_id, new_version);
+            return Ok(());
+        }
 
         info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
 
@@ -106,14 +84,6 @@ impl ToolAgentUpdateService {
         let result = self.do_update(new_version, &message, &mut installed_tool).await;
 
         self.tool_run_manager.clear_updating(tool_agent_id).await;
-
-        // HARDCODE REMOVE LATER: Mark this tool as updated regardless of success/failure
-        // to prevent duplicate update attempts this session
-        {
-            let mut updated = self.updated_tools.write().await;
-            updated.insert(tool_agent_id.clone());
-            info!("HARDCODE: Marked tool {} as updated for this session", tool_agent_id);
-        }
 
         result
     }

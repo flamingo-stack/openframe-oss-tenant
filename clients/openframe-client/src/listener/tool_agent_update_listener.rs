@@ -88,14 +88,7 @@ impl ToolAgentUpdateListener {
             let message = message?;
 
             let payload = String::from_utf8_lossy(&message.payload);
-            let mut tool_agent_update_message: ToolAgentUpdateMessage = serde_json::from_str(&payload)?;
-
-            // TEMP HARDCODE: Override installation types until backend supports per-OS config
-            super::apply_download_config_overrides(
-                &tool_agent_update_message.tool_agent_id,
-                &mut tool_agent_update_message.download_configurations,
-            );
-
+            let tool_agent_update_message: ToolAgentUpdateMessage = serde_json::from_str(&payload)?;
             let tool_agent_id = tool_agent_update_message.tool_agent_id.clone();
 
             match self.tool_agent_update_service.process_update(tool_agent_update_message).await {
