@@ -197,7 +197,15 @@ jobs:
       - name: Run Tests
         id: tests
         env:
-          API_BASE_URL: http://localhost:8100
+          TEST_BASE_URL: localhost
+          TEST_USER_DOMAIN: localhost
+          MONGODB_URI: mongodb://localhost:27017/openframe
+          MONGODB_DATABASE: openframe
+          MONGODB_AUTH_DATABASE: admin
+          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
+          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+          MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
+          MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
         run: |
           java -jar openframe/services/openframe-test/target/openframe-test-1.0.0-SNAPSHOT-jar-with-dependencies.jar
         continue-on-error: true
