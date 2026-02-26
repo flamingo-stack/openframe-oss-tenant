@@ -223,7 +223,7 @@ fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Res
 }
 
 #[cfg(windows)]
-fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+pub(crate) fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = match get_active_user_session() {
             Some(id) => {

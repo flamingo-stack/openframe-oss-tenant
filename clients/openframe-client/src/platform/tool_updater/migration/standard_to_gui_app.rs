@@ -1,111 +1,24 @@
-use anyhow::{Result, bail};
+use anyhow::Result;
 use async_trait::async_trait;
-use std::sync::Arc;
+use std::path::PathBuf;
+use tokio::fs;
 use tracing::{info, warn};
 
-use super::ToolUpdaterDeps;
+use super::{ToolMigrator, MigrationContext};
 use crate::models::{InstalledTool, Installation, DownloadConfiguration, InstallationType};
+use crate::platform::tool_updater::ToolUpdaterDeps;
+use crate::platform::DirectoryManager;
 
-#[derive(Debug, Clone, Default)]
-pub struct MigrationContext {
-    pub old_cleaned: bool,
-    pub needs_start: bool,
-}
-
-#[async_trait]
-pub trait ToolMigrator: Send + Sync {
-    /// Source installation type this migrator handles
-    fn from_type(&self) -> InstallationType;
-
-    /// Target installation type this migrator produces
-    fn to_type(&self) -> InstallationType;
-
-    /// Phase 1: Stop old installation and prepare for migration
-    async fn prepare(&self, tool: &InstalledTool) -> Result<MigrationContext>;
-
-    /// Phase 2: Remove old installation and install new way
-    async fn migrate(
-        &self,
-        tool: &InstalledTool,
-        config: &DownloadConfiguration,
-        ctx: &MigrationContext,
-    ) -> Result<Installation>;
-
-    /// Phase 3: Start new installation and cleanup
-    async fn finalize(
-        &self,
-        tool: &InstalledTool,
-        new_installation: &Installation,
-        ctx: &MigrationContext,
-    ) -> Result<()>;
-
-    /// Rollback on failure (best effort)
-    async fn rollback(&self, tool: &InstalledTool, ctx: &MigrationContext) -> Result<()> {
-        warn!(
-            tool_id = %tool.tool_agent_id,
-            "Migration rollback requested but not implemented for {:?} -> {:?}",
-            self.from_type(),
-            self.to_type()
-        );
-        Ok(())
-    }
-}
-
-pub fn create_migrator(
-    from: &Installation,
-    to: InstallationType,
-    deps: ToolUpdaterDeps,
-) -> Result<Option<Arc<dyn ToolMigrator>>> {
-    let from_type = installation_to_type(from);
-
-    // No migration needed if types match
-    if from_type == to {
-        return Ok(None);
-    }
-
-    info!("Migration required: {:?} -> {:?}", from_type, to);
-
-    match (from_type, to) {
-        // Standard -> GuiApp 
-        #[cfg(target_os = "macos")]
-        (InstallationType::Standard, InstallationType::GuiApp) => {
-            Ok(Some(Arc::new(StandardToGuiAppMigrator::new(deps))))
-        }
-        _ => {
-            bail!(
-                "Unsupported migration path: {:?} -> {:?}",
-                from_type,
-                to
-            );
-        }
-    }
-}
-
-pub fn needs_migration(current: &Installation, target: InstallationType) -> bool {
-    installation_to_type(current) != target
-}
-
-fn installation_to_type(installation: &Installation) -> InstallationType {
-    match installation {
-        Installation::Standard { .. } => InstallationType::Standard,
-        Installation::GuiApp { .. } => InstallationType::GuiApp,
-        Installation::Service { .. } => InstallationType::Service,
-    }
-}
-
-#[cfg(target_os = "macos")]
-pub struct StandardToGuiAppMigrator {
+pub(super) struct StandardToGuiAppMigrator {
     deps: ToolUpdaterDeps,
 }
 
-#[cfg(target_os = "macos")]
 impl StandardToGuiAppMigrator {
     pub fn new(deps: ToolUpdaterDeps) -> Self {
         Self { deps }
     }
 }
 
-#[cfg(target_os = "macos")]
 #[async_trait]
 impl ToolMigrator for StandardToGuiAppMigrator {
     fn from_type(&self) -> InstallationType {
@@ -135,10 +48,6 @@ impl ToolMigrator for StandardToGuiAppMigrator {
         config: &DownloadConfiguration,
         _ctx: &MigrationContext,
     ) -> Result<Installation> {
-        use crate::platform::DirectoryManager;
-        use std::path::PathBuf;
-        use tokio::fs;
-
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Migrating: Standard -> GuiApp");
 
@@ -146,7 +55,7 @@ impl ToolMigrator for StandardToGuiAppMigrator {
         let old_agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
         if old_agent_path.exists() {
             info!(tool_id = %tool_agent_id, "Removing old standard binary: {}", old_agent_path.display());
-            fs::remove_file(&old_agent_path).await.ok(); // Best effort
+            fs::remove_file(&old_agent_path).await.ok();
         }
 
         // 2. Download and extract new .app bundle to /Applications
@@ -157,9 +66,9 @@ impl ToolMigrator for StandardToGuiAppMigrator {
             .download_and_extract_all(config, &applications_dir)
             .await?;
 
-        // 3. Verify installation
+        // 3. Resolve executable path from .app bundle
         let new_app_path = applications_dir.join(&config.target_file_name);
-        let executable_path = if let Some(app_bundle) = DirectoryManager::find_app_bundle_path(&new_app_path) {
+        let executable_path = if DirectoryManager::find_app_bundle_path(&new_app_path).is_some() {
             applications_dir.join(&config.target_file_name).to_string_lossy().to_string()
         } else {
             new_app_path.join("Contents/MacOS").join(tool_agent_id).to_string_lossy().to_string()
