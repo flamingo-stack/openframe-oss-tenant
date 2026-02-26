@@ -57,6 +57,8 @@ openframe:
             name: meshcentral.mongodb.events
           tactical-rmm-events:
             name: tactical-rmm.postgres.events
+          tactical-rmm-task-result-events:
+            name: tactical-rmm.postgres.task.events
           fleet-mdm-events:
             name: fleet.mysql.events
           fleet-mdm-activities:
