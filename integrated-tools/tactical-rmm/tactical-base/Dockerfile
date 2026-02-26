@@ -21,7 +21,7 @@ RUN apt-get update && \
 
 # Clone the repository and install dependencies
 RUN git clone https://github.com/flamingo-stack/tacticalrmm.git . && \
-    git checkout bc438dc87d379b1c47cc5f6b59cac4ccb15e20d4
+    git checkout 20dfd512efcf3d371b4d23b3451be83c8500f0c2
 
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir setuptools wheel daphne django_extensions django-silk && \
