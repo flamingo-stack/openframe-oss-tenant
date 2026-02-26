@@ -387,9 +387,6 @@ impl ToolInstallationService {
         Ok(Some(abs_path.to_string_lossy().to_string()))
     }
 
-    /// On Windows/Linux, GuiApp installs like Standard (download binary to tool folder).
-    /// The difference is only at launch time (user session vs service session).
-    /// Returns absolute executable path (required by Installation::GuiApp).
     #[cfg(not(target_os = "macos"))]
     async fn install_gui_app(
         &self,
@@ -403,9 +400,7 @@ impl ToolInstallationService {
             .download_and_save(config, &tool_folder_path, &default_agent_path)
             .await
             .with_context(|| format!("Failed to download GUI app: {}", tool_agent_id))?;
-
-        // GuiApp requires executable_path. For folder extraction it's already set (relative),
-        // for single binary download_and_save returns None — use the default agent path.
+        
         let abs_path = match relative_path {
             Some(rel) => tool_folder_path.join(rel),
             None => default_agent_path,

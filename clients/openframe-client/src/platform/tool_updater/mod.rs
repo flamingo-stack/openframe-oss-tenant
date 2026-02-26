@@ -15,9 +15,9 @@ use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tokio::fs;
-use tracing::{info, warn};
+use tracing::{info, warn, error};
 
-use crate::models::{InstalledTool, Installation, DownloadConfiguration};
+use crate::models::{InstalledTool, Installation, DownloadConfiguration, InstallationType};
 use crate::services::{GithubDownloadService, ToolKillService, ToolRunManager, ToolCommandParamsResolver};
 use crate::platform::{DirectoryManager, binary_writer};
 
@@ -87,6 +87,71 @@ pub fn create_updater(
         }
         Installation::Service { .. } => {
             Arc::new(ServiceToolUpdater::new(deps))
+        }
+    }
+}
+
+pub async fn run_update(
+    tool: &InstalledTool,
+    config: &DownloadConfiguration,
+    deps: ToolUpdaterDeps,
+) -> Result<()> {
+    let tool_id = &tool.tool_agent_id;
+    let updater = create_updater(&tool.installation, deps);
+
+    info!(tool_id = %tool_id, "Phase 1: Preparing update");
+    let ctx = updater.prepare(tool).await
+        .with_context(|| format!("Failed to prepare update for: {}", tool_id))?;
+
+    info!(tool_id = %tool_id, "Phase 2: Applying update");
+    match updater.apply(tool, config, &ctx).await {
+        Ok(()) => {
+            info!(tool_id = %tool_id, "Phase 3: Finalizing update");
+            updater.finalize(tool, &ctx).await
+                .with_context(|| format!("Failed to finalize update for: {}", tool_id))?;
+            Ok(())
+        }
+        Err(e) => {
+            error!(tool_id = %tool_id, error = %e, "Update failed, rolling back");
+            if let Err(rollback_err) = updater.rollback(tool, &ctx).await {
+                error!(tool_id = %tool_id, error = %rollback_err, "Rollback also failed");
+            }
+            Err(e).with_context(|| format!("Update failed for: {}", tool_id))
+        }
+    }
+}
+
+pub async fn run_migration(
+    tool: &InstalledTool,
+    config: &DownloadConfiguration,
+    target_type: InstallationType,
+    deps: ToolUpdaterDeps,
+) -> Result<Installation> {
+    let tool_id = &tool.tool_agent_id;
+
+    let migrator = create_migrator(&tool.installation, target_type, deps)?
+        .ok_or_else(|| anyhow::anyhow!("No migration needed: {:?} -> {:?}", tool.installation, target_type))?;
+
+    info!(tool_id = %tool_id, "Migration Phase 1: Preparing");
+    let ctx = migrator.prepare(tool).await
+        .with_context(|| format!("Failed to prepare migration for: {}", tool_id))?;
+
+    info!(tool_id = %tool_id, "Migration Phase 2: Migrating");
+    match migrator.migrate(tool, config, &ctx).await {
+        Ok(new_installation) => {
+            info!(tool_id = %tool_id, "Migration Phase 3: Finalizing");
+            migrator.finalize(tool, &new_installation, &ctx).await
+                .with_context(|| format!("Failed to finalize migration for: {}", tool_id))?;
+
+            info!(tool_id = %tool_id, "Migration completed: {:?}", new_installation);
+            Ok(new_installation)
+        }
+        Err(e) => {
+            error!(tool_id = %tool_id, error = %e, "Migration failed, attempting rollback");
+            if let Err(rollback_err) = migrator.rollback(tool, &ctx).await {
+                error!(tool_id = %tool_id, error = %rollback_err, "Rollback also failed");
+            }
+            Err(e).with_context(|| format!("Migration failed for: {}", tool_id))
         }
     }
 }

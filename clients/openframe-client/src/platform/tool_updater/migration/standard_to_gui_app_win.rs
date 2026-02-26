@@ -48,9 +48,6 @@ impl ToolMigrator for StandardToGuiAppMigrator {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Migrating: Standard -> GuiApp (Windows)");
 
-        // Same binary, same path — download updated version and change Installation type.
-        // On Windows the only difference between Standard and GuiApp is how
-        // ToolRunManager launches the process (CreateProcessAsUserW vs Command::new).
         let agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
         download_and_write_binary(&self.deps, config, &agent_path, tool_agent_id).await?;
 

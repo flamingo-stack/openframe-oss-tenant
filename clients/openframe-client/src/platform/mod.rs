@@ -26,7 +26,7 @@ pub use dmg_extractor::DmgExtractor;
 pub use file_lock::{format_locking_processes, get_locking_processes, is_file_in_use_error, log_file_lock_info, LockingProcess};
 pub use permissions::{Capability, PermissionError, PermissionUtils, Permissions};
 pub use installation_detector::detect_actual_installation;
-pub use tool_updater::{create_updater, ToolUpdater, ToolUpdaterDeps, UpdateContext, create_migrator, needs_migration};
+pub use tool_updater::{create_updater, ToolUpdater, ToolUpdaterDeps, UpdateContext, create_migrator, needs_migration, run_update, run_migration};
 pub use uninstall::remove_directory_with_retry;
 #[cfg(target_os = "windows")]
 pub use powershell::get_powershell_path;
