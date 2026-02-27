@@ -195,6 +195,11 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' });
   }
 
+  verifyEmail<T = any>(token: string) {
+    const path = `/sas/email/verify?token=${encodeURIComponent(token)}`;
+    return requestPublic<T>(path, { method: 'GET' });
+  }
+
   resendVerificationEmail<T = any>(email: string) {
     const path = `/sas/email/verify/resend?email=${encodeURIComponent(email)}`;
     return requestPublic<T>(path, { method: 'POST' });
