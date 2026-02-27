@@ -41,6 +41,8 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
     offset,
   });
 
+  console.log(history);
+
   const handleNextPage = useCallback(() => {
     if (offset + limit < total) {
       setOffset(prev => prev + limit);
@@ -58,8 +60,6 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
   const handleCloseDrawer = useCallback(() => {
     setSelectedEntry(null);
   }, []);
-
-  const drawerTitle = selectedEntry ? `LOG-${String(selectedEntry.id).padStart(3, '0')}` : '';
 
   const drawerStatusTag = selectedEntry
     ? {
@@ -197,11 +197,10 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
       <LogDrawer
         isOpen={Boolean(selectedEntry)}
         onClose={handleCloseDrawer}
-        title={drawerTitle}
         statusTag={drawerStatusTag}
         timestamp={drawerTimestamp}
         infoFields={drawerInfoFields}
-        description="Log Description"
+        description={selectedEntry?.stdout || selectedEntry?.stderr || 'No output'}
       />
     </div>
   );

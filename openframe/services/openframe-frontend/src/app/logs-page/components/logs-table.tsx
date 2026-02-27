@@ -400,8 +400,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       <LogDrawer
         isOpen={Boolean(selectedLog)}
         onClose={handleCloseModal}
-        title={selectedLog?.description.title || ''}
-        description={selectedLog?.description.details || 'Log Description'}
+        description={selectedLog?.description.title || ''}
         statusTag={selectedLog?.status}
         timestamp={selectedLog?.timestamp}
         deviceId={selectedLog?.originalLogEntry?.deviceId}

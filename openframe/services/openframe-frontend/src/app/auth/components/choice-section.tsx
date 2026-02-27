@@ -21,7 +21,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const isSaasShared = isSaasSharedMode();
 
   const [orgName, setOrgName] = useState('');
-  const [domain, setDomain] = useState(isSaasShared ? '' : 'localhost');
+  const [domain, setDomain] = useState('');
   const [orgEmail, setOrgEmail] = useState('');
   const [signInEmail, setSignInEmail] = useState('');
   const [accessCode, setAccessCode] = useState('');
@@ -134,7 +134,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         setIsCheckingDomain(false);
       }
     } else {
-      onCreateOrganization(orgName.trim(), domain || 'localhost', '', orgEmail.trim());
+      onCreateOrganization(orgName.trim(), domain, '', orgEmail.trim());
     }
   };
 
@@ -225,7 +225,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                     setDomain(value);
                     setSuggestedDomains([]);
                   }}
-                  placeholder="localhost"
+                  placeholder="company-name"
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                   endAdornment={
@@ -246,7 +246,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                     setDomain(e.target.value);
                     setSuggestedDomains([]);
                   }}
-                  placeholder="localhost"
+                  placeholder="company-name"
                   disabled={isLoading}
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
