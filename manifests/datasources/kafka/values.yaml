@@ -22,6 +22,9 @@ kafka:
 
   existingKraftSecret: "kafka-kraft"
 
+  # Dedicated chart parameters for single-broker dev cluster
+  offsetsTopicReplicationFactor: 1
+  transactionStateLogReplicationFactor: 1
 
   broker:
     resourcesPreset: medium

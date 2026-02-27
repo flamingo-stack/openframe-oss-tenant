@@ -44,6 +44,11 @@ cassandra:
       registry: ghcr.io/flamingo-stack/registry
       repository: bitnamilegacy/cassandra-exporter
       tag: 2.3.8-debian-12-r51
+    startupProbe:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 15
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"
