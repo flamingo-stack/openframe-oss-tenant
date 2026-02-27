@@ -4,10 +4,11 @@
  * Uses SHARED_HOST_URL when provided; otherwise uses relative URLs.
  */
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
+import { REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
 import { isSaasSharedMode } from './app-mode';
-import { clearStoredTokens, forceLogout } from './force-logout';
+import { forceLogout } from './force-logout';
 import { runtimeEnv } from './runtime-config';
+import { refreshAccessToken } from './token-refresh-manager';
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl();
@@ -47,80 +48,12 @@ function buildAuthUrl(path: string): string {
 }
 
 class AuthApiClient {
-  private isRefreshing: boolean = false;
-  private refreshPromise: Promise<boolean> | null = null;
-
-  private async refreshAccessToken(): Promise<boolean> {
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise;
-    }
-
-    this.isRefreshing = true;
-
-    this.refreshPromise = (async () => {
-      try {
-        let tenantId: string | undefined;
-        try {
-          const { useAuthStore } = await import('../app/auth/stores/auth-store');
-          const authState = useAuthStore.getState();
-          tenantId = authState.tenantId || (authState.user as any)?.organizationId || (authState.user as any)?.tenantId;
-        } catch {}
-
-        const refreshResponse = await this.refresh(tenantId || '');
-
-        if (refreshResponse.status === 401) {
-          clearStoredTokens();
-          return false;
-        }
-
-        if (refreshResponse.ok) {
-          if (runtimeEnv.enableDevTicketObserver()) {
-            let newAccessToken: string | null = null;
-            let newRefreshToken: string | null = null;
-
-            if (refreshResponse.data) {
-              newAccessToken = refreshResponse.data?.access_token || refreshResponse.data?.accessToken || null;
-              newRefreshToken = refreshResponse.data?.refresh_token || refreshResponse.data?.refreshToken || null;
-            }
-
-            if (newAccessToken) {
-              localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
-              if (newRefreshToken) {
-                localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-              }
-              return true;
-            } else {
-              return true;
-            }
-          }
-          return true;
-        } else {
-          clearStoredTokens();
-          return false;
-        }
-      } catch (_error) {
-        return false;
-      } finally {
-        this.isRefreshing = false;
-        this.refreshPromise = null;
-      }
-    })();
-
-    return this.refreshPromise;
-  }
-
-  private async forceLogout(): Promise<void> {
-    await forceLogout({
-      reason: 'Auth API Client - Token refresh failed',
-    });
-  }
-
   async handleUnauthorized<T>(
     url: string,
     headers: Record<string, string>,
     init: RequestInit,
   ): Promise<AuthApiResponse<T> | null> {
-    const refreshSuccess = await this.refreshAccessToken();
+    const refreshSuccess = await refreshAccessToken();
 
     if (refreshSuccess) {
       if (runtimeEnv.enableDevTicketObserver()) {
@@ -150,10 +83,10 @@ class AuthApiClient {
         status: retryRes.status,
         ok: retryRes.ok,
       };
-    } else {
-      await this.forceLogout();
-      return null;
     }
+
+    await forceLogout({ reason: 'Auth API Client - Token refresh failed' });
+    return null;
   }
 
   refresh<T = any>(tenantId?: string) {
@@ -209,7 +142,7 @@ class AuthApiClient {
     tenantDomain: string;
     accessCode?: string;
   }) {
-    return request<T>(`/sas/oauth/register`, {
+    return request<T>('/sas/oauth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -242,7 +175,7 @@ class AuthApiClient {
   }
 
   getRegistrationProviders<T = any>() {
-    return request<T>(`/sas/sso/providers/registration`, {
+    return request<T>('/sas/sso/providers/registration', {
       method: 'GET',
     });
   }
@@ -260,7 +193,7 @@ class AuthApiClient {
     lastName: string;
     switchTenant?: boolean;
   }) {
-    return request<T>(`/sas/invitations/accept`, {
+    return request<T>('/sas/invitations/accept', {
       method: 'POST',
       body: JSON.stringify({
         ...payload,
@@ -295,14 +228,14 @@ class AuthApiClient {
   }
 
   confirmPasswordReset<T = any>(payload: { token: string; newPassword: string }) {
-    return request<T>(`/sas/password-reset/confirm`, {
+    return request<T>('/sas/password-reset/confirm', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   }
 
   requestPasswordReset<T = any>(payload: { email: string }) {
-    return request<T>(`/sas/password-reset/request`, {
+    return request<T>('/sas/password-reset/request', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -311,7 +244,6 @@ class AuthApiClient {
   loginUrl(tenantId: string, redirectTo: string, provider?: string) {
     const providerParam = provider && provider !== 'openframe-sso' ? `&provider=${encodeURIComponent(provider)}` : '';
     const base = `/oauth/login?tenantId=${encodeURIComponent(tenantId)}${providerParam}`;
-    console.log(isSaasSharedMode());
     const path = isSaasSharedMode() ? base : `${base}&redirectTo=${redirectTo}`;
     return buildAuthUrl(path);
   }
@@ -412,14 +344,13 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
       const retryResult = await authApiClient.handleUnauthorized<T>(url, headers, init);
       if (retryResult) {
         return retryResult;
-      } else {
-        return {
-          data: undefined,
-          error: 'Authentication failed - please login again',
-          status: 401,
-          ok: false,
-        };
       }
+      return {
+        data: undefined,
+        error: 'Authentication failed - please login again',
+        status: 401,
+        ok: false,
+      };
     }
 
     let data: T | undefined;

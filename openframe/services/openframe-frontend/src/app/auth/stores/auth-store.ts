@@ -167,6 +167,7 @@ export const useAuthStore = create<AuthState>()(
           // Only persist these fields
           user: state.user,
           isAuthenticated: state.isAuthenticated,
+          tenantId: state.tenantId,
         }),
       },
     ),
