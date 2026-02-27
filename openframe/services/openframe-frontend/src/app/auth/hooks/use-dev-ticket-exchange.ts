@@ -1,87 +1,44 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
-import { apiClient } from '@/lib/api-client';
 import { authApiClient } from '@/lib/auth-api-client';
-import { useTokenStorage } from '../hooks/use-token-storage';
-import { useAuthStore } from '../stores/auth-store';
+import { authSessionQueryKey } from './use-auth-session';
+import { useTokenStorage } from './use-token-storage';
 
 /**
- * Hook for exchanging devTicket via API
- * Following MANDATORY pattern from CLAUDE.md with useToast for error handling
+ * Hook for exchanging devTicket via API.
+ * After successful exchange, triggers useAuthSession recheck
  */
 export function useDevTicketExchange() {
-  const { toast } = useToast(); // MANDATORY for API hooks
+  const { toast } = useToast();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { storeTokensFromHeaders } = useTokenStorage();
-  const { login: storeLogin, setTenantId } = useAuthStore();
 
-  // Exchange devTicket for authentication tokens
   const exchangeTicket = useCallback(
     async (ticket: string) => {
       try {
-        console.log('🎫 [DevTicket Exchange] Initiating exchange for ticket:', ticket);
         const response = await authApiClient.devExchange(ticket);
-
-        console.log('🎫 [DevTicket Exchange] API call completed, status:', response.status);
 
         if (!response.ok) {
           throw new Error(`DevTicket exchange failed with status ${response.status}`);
         }
 
-        // Process and store tokens from headers using the existing hook
         const tokens = storeTokensFromHeaders(response.headers);
 
         if (tokens.accessToken || tokens.refreshToken) {
-          console.log('🎫 [DevTicket Exchange] Tokens stored, fetching user data...');
+          // Trigger auth session recheck — useAuthSession will handle
+          // syncing user data to the store
+          await queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
 
-          const meResponse = await apiClient.me();
+          toast({
+            title: 'Welcome!',
+            description: 'Successfully signed in',
+            variant: 'success',
+          });
 
-          if (meResponse.ok && meResponse.data && meResponse.data.authenticated) {
-            const userData = meResponse.data.user;
-
-            if (userData && userData.email) {
-              // Update auth store with user data
-              const user = {
-                id: userData.id || userData.userId || '',
-                email: userData.email || '',
-                name:
-                  userData.name ||
-                  userData.displayName ||
-                  `${userData.firstName || ''} ${userData.lastName || ''}`.trim() ||
-                  userData.email ||
-                  '',
-                organizationId: userData.organizationId || userData.tenantId,
-                organizationName: userData.organizationName || userData.tenantName,
-                role: userData.role || 'user',
-              };
-
-              // Store user in auth store
-              storeLogin(user);
-
-              // Store tenant ID if available
-              const tenantId = userData.tenantId || userData.organizationId;
-              if (tenantId) {
-                setTenantId(tenantId);
-              }
-
-              toast({
-                title: 'Welcome!',
-                description: `Successfully signed in as ${user.name || user.email}`,
-                variant: 'success',
-              });
-
-              // Redirect to dashboard
-              console.log('🔄 [DevTicket Exchange] Redirecting to dashboard...');
-              router.push('/dashboard');
-            }
-          } else {
-            toast({
-              title: 'Authentication Successful',
-              description: 'Tokens have been stored securely',
-              variant: 'success',
-            });
-          }
+          router.push('/dashboard');
         }
 
         return {
@@ -91,7 +48,6 @@ export function useDevTicketExchange() {
         };
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to exchange devTicket';
-        console.error('❌ [DevTicket Exchange] Exchange failed:', error);
 
         toast({
           title: 'Exchange Failed',
@@ -106,10 +62,8 @@ export function useDevTicketExchange() {
         };
       }
     },
-    [storeTokensFromHeaders, toast, storeLogin, setTenantId, router],
+    [storeTokensFromHeaders, toast, queryClient, router],
   );
 
-  return {
-    exchangeTicket,
-  };
+  return { exchangeTicket };
 }

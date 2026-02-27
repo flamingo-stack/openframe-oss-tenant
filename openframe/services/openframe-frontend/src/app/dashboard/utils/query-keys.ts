@@ -17,6 +17,12 @@ export const dashboardQueryKeys = {
   // Organization statistics
   orgStats: (limit: number) => [...dashboardQueryKeys.all, 'org-stats', { limit }] as const,
 
+  // SSO provider count (onboarding)
+  ssoProviders: () => [...dashboardQueryKeys.all, 'sso-providers'] as const,
+
+  // User statistics (onboarding)
+  userStats: () => [...dashboardQueryKeys.all, 'user-stats'] as const,
+
   // Invalidate all dashboard queries
   invalidateAll: () => dashboardQueryKeys.all,
 } as const;
