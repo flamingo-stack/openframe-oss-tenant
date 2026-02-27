@@ -106,7 +106,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   };
 
   if (isLoading) {
-    return <DeviceDetailsSkeleton />;
+    return <DeviceDetailsSkeleton activeTab={searchParams.get('tab') || 'hardware'} />;
   }
 
   if (error) {

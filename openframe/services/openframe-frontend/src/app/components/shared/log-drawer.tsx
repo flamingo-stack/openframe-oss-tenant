@@ -25,8 +25,7 @@ export interface LogDrawerInfoField {
 interface LogDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
-  description?: string;
+  description: string;
   statusTag?: {
     label: string;
     variant?: 'success' | 'warning' | 'error' | 'grey' | 'critical';
@@ -87,7 +86,6 @@ function DrawerDeviceCard({ deviceId }: { deviceId: string }) {
 export function LogDrawer({
   isOpen,
   onClose,
-  title,
   description,
   statusTag,
   timestamp,
@@ -106,7 +104,7 @@ export function LogDrawer({
       <DrawerContent side="right" className="max-w-[400px]">
         {/* Header */}
         <DrawerHeader>
-          <DrawerTitle>{title}</DrawerTitle>
+          <DrawerTitle>Log Details</DrawerTitle>
 
           {description && <DrawerDescription>{description}</DrawerDescription>}
 

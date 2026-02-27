@@ -128,6 +128,39 @@ class AuthApiClient {
     return requestPublic<T>(path, { method: 'GET' });
   }
 
+  async verifyEmail(
+    token: string,
+  ): Promise<AuthApiResponse<{ redirectUrl?: string; code?: string; message?: string }>> {
+    const url = buildAuthUrl(`/sas/email/verify?token=${encodeURIComponent(token)}`);
+    try {
+      const res = await fetch(url, {
+        credentials: 'omit',
+        headers: { Accept: 'application/json' },
+        redirect: 'follow',
+      });
+
+      if (!res.ok) {
+        let data: { code?: string; message?: string } | undefined;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          try {
+            data = await res.json();
+          } catch {}
+        }
+        return {
+          ok: false,
+          status: res.status,
+          data,
+          error: data?.message || `Request failed with status ${res.status}`,
+        };
+      }
+
+      return { ok: true, status: res.status, data: { redirectUrl: res.url } };
+    } catch (e) {
+      return { ok: false, status: 0, error: e instanceof Error ? e.message : 'Network error' };
+    }
+  }
+
   resendVerificationEmail<T = any>(email: string) {
     const path = `/sas/email/verify/resend?email=${encodeURIComponent(email)}`;
     return requestPublic<T>(path, { method: 'POST' });
