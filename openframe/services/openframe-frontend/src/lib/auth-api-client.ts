@@ -258,6 +258,21 @@ class AuthApiClient {
       window.location.assign(logoutUrl);
     }
   }
+
+  async logoutAsync(tenantId?: string): Promise<boolean> {
+    const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
+    const logoutUrl = buildAuthUrl(`/oauth/logout${query}`);
+    try {
+      await fetch(logoutUrl, {
+        method: 'GET',
+        credentials: 'include',
+        redirect: 'manual',
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 const authApiClient = new AuthApiClient();

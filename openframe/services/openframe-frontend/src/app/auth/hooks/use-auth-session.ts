@@ -29,7 +29,6 @@ interface MeResponse {
 
 /**
  * Single source of truth for auth verification.
- * Uses React Query to deduplicate /me calls, with periodic rechecks.
  */
 export function useAuthSession() {
   const queryClient = useQueryClient();
@@ -52,8 +51,9 @@ export function useAuthSession() {
       return null;
     },
     staleTime: 4 * 60 * 1000, // 4 minutes
-    refetchInterval: runtimeEnv.authCheckIntervalMs(), // Periodic recheck (default 5 min)
-    refetchOnWindowFocus: true,
+    refetchInterval: query => {
+      return query.state.data?.authenticated ? runtimeEnv.authCheckIntervalMs() : false;
+    },
     retry: 1,
     retryDelay: 1000,
   });

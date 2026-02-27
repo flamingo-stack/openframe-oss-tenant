@@ -128,15 +128,15 @@ export const useAuthStore = create<AuthState>()(
           }),
 
         fetchFullProfile: async () => {
-          const userId = get().user?.id;
-          if (!userId) return null;
+          const { user, isLoadingProfile } = get();
+          if (!user?.id || isLoadingProfile) return null;
 
           set(state => {
             state.isLoadingProfile = true;
           });
 
           try {
-            const fullProfile = await fetchUserProfile(userId);
+            const fullProfile = await fetchUserProfile(user.id);
 
             if (fullProfile) {
               set(state => {
