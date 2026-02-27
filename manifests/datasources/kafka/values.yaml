@@ -1,7 +1,12 @@
+global:
+  image:
+    tag: latest
+
 registerJob:
   enabled: true
   image:
     registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
     tag: "8.9.1"
 
 
@@ -16,7 +21,6 @@ kafka:
     tag: 4.0.0-debian-12-r10
 
   existingKraftSecret: "kafka-kraft"
-
 
   broker:
     resourcesPreset: medium
@@ -58,7 +62,7 @@ kafka:
 
   metrics:
     jmx:
-      enabled: true
+      enabled: false
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter

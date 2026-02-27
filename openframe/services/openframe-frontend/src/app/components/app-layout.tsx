@@ -1,172 +1,111 @@
-'use client'
+'use client';
 
-import { apiClient } from '@/src/lib/api-client'
-import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation'
-import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation'
-import { runtimeEnv } from '@lib/runtime-config'
-import { usePathname, useRouter } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode'
-import { getNavigationItems } from '../../lib/navigation-config'
-import { useAuth } from '../auth/hooks/use-auth'
-import { useAuthStore } from '../auth/stores/auth-store'
-import { AppShellSkeleton } from './app-shell-skeleton'
-import { UnauthorizedOverlay } from './unauthorized-overlay'
+import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
+import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
+import { getNavigationItems } from '../../lib/navigation-config';
+import { useAuthSession } from '../auth/hooks/use-auth-session';
+import { useAuthStore } from '../auth/stores/auth-store';
+import { performLogout } from '../auth/utils/auth-actions';
+import { AppShellSkeleton } from './app-shell-skeleton';
+import { UnauthorizedOverlay } from './unauthorized-overlay';
 
 function ContentLoading() {
-  return <CompactPageLoader />
+  return <CompactPageLoader />;
 }
 
 function AppShell({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const { logout } = useAuth()
-  const user = useAuthStore(state => state.user)
+  const router = useRouter();
+  const pathname = usePathname();
+  const user = useAuthStore(state => state.user);
 
-  const handleNavigate = useCallback((path: string) => {
-    router.push(path)
-  }, [router])
+  const handleNavigate = useCallback(
+    (path: string) => {
+      router.push(path);
+    },
+    [router],
+  );
 
   const handleLogout = useCallback(() => {
-    logout()
-    router.push(getDefaultRedirectPath(false))
-  }, [logout, router])
+    performLogout();
+  }, []);
 
-  const navigationItems = useMemo(
-    () => getNavigationItems(pathname),
-    [pathname]
-  )
+  const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
     () => ({
       items: navigationItems,
       onNavigate: handleNavigate,
-      className: 'h-screen'
+      className: 'h-screen',
     }),
-    [navigationItems, handleNavigate]
-  )
+    [navigationItems, handleNavigate],
+  );
 
-  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim()
+  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
 
-  return <CoreAppLayout 
-    mainClassName={mainClassName}
-    sidebarConfig={sidebarConfig}
-    loadingFallback={<ContentLoading />}
-    mobileBurgerMenuProps={{
-      user: {
+  return (
+    <CoreAppLayout
+      mainClassName={mainClassName}
+      sidebarConfig={sidebarConfig}
+      loadingFallback={<ContentLoading />}
+      mobileBurgerMenuProps={{
+        user: {
+          userName: displayName,
+          userEmail: user?.email,
+          userAvatarUrl: user?.image?.imageUrl || null,
+          userRole: user?.role,
+        },
+        onLogout: handleLogout,
+      }}
+      headerProps={{
+        showNotifications: false,
+        showUser: true,
         userName: displayName,
         userEmail: user?.email,
-        userAvatarUrl: user?.image?.imageUrl || null,
-        userRole: user?.role,
-      },
-      onLogout: handleLogout,
-    }}
-    headerProps={{
-      showNotifications: false,
-      showUser: true,
-      userName: displayName,
-      userEmail: user?.email,
-      onProfile: () => router.push('/settings/?tab=profile'),
-      onLogout: handleLogout
-    }}>{children}</CoreAppLayout>
+        onProfile: () => router.push('/settings/?tab=profile'),
+        onLogout: handleLogout,
+      }}
+    >
+      {children}
+    </CoreAppLayout>
+  );
 }
 
 function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
-  const { isAuthenticated } = useAuthStore()
-  const { handleAuthenticationSuccess } = useAuth()
-  const handleAuthSuccessRef = useRef(handleAuthenticationSuccess)
-  useEffect(() => { handleAuthSuccessRef.current = handleAuthenticationSuccess }, [handleAuthenticationSuccess])
-  const router = useRouter()
-  const pathname = usePathname()
+  const { isReady, isAuthenticated } = useAuthSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const [isHydrated, setIsHydrated] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false)
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
-
+  // Redirect unauthenticated users to auth page in OSS mode
   useEffect(() => {
-    const checkHydration = () => {
-      const store = useAuthStore as any
-      const persistState = store.persist?.hasHydrated?.()
-      if (persistState !== undefined) {
-        setIsHydrated(persistState)
-      } else {
-        setTimeout(() => setIsHydrated(true), 100)
-      }
+    if (isReady && isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
+      router.push('/auth');
     }
-    
-    checkHydration()
+  }, [isReady, isAuthenticated, pathname, router]);
 
-    const store = useAuthStore as any
-    const unsubscribe = store.persist?.onFinishHydration?.(() => {
-      setIsHydrated(true)
-    })
-    
-    return () => {
-      if (typeof unsubscribe === 'function') {
-        unsubscribe()
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isHydrated && isOssTenantMode() && !isAuthenticated && !pathname?.startsWith('/auth')) {
-      router.push('/auth')
-    }
-  }, [isHydrated, isAuthenticated, pathname, router])
-
-  useEffect(() => {
-    if (!isSaasTenantMode()) return
-    if (isAuthenticated) return
-    if (hasCheckedAuth || isCheckingAuth) return
-
-    let cancelled = false
-    const check = async () => {
-      try {
-        setIsCheckingAuth(true)
-        const res = await apiClient.me()
-        if (!cancelled && res.ok && (res as any).data?.authenticated) {
-          const userData = (res as any).data.user
-          const token = runtimeEnv.enableDevTicketObserver()
-            ? (typeof window !== 'undefined' ? (localStorage.getItem('of_access_token') || 'cookie-auth') : 'cookie-auth')
-            : 'cookie-auth'
-
-          handleAuthSuccessRef.current(token, userData)
-        }
-      } catch (e) {
-        // noop: if /me fails, we'll fall back to showing UnauthorizedOverlay
-      } finally {
-        if (!cancelled) {
-          setIsCheckingAuth(false)
-          setHasCheckedAuth(true)
-        }
-      }
-    }
-
-    const t = setTimeout(check, 50)
-    return () => { cancelled = true; clearTimeout(t) }
-  }, [isAuthenticated])
-
-  if (isOssTenantMode() && !isHydrated) {
-    return <AppShellSkeleton />
+  // Still loading initial auth check
+  if (!isReady) {
+    return <AppShellSkeleton />;
   }
 
+  // Auth-only mode (saas-shared): render children directly
   if (isAuthOnlyMode()) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
-  if (isSaasTenantMode() && !isAuthenticated) {
-    if (!hasCheckedAuth || isCheckingAuth) {
-      return <AppShellSkeleton />
+  // Not authenticated
+  if (!isAuthenticated) {
+    if (isSaasTenantMode()) {
+      return <UnauthorizedOverlay />;
     }
-    return <UnauthorizedOverlay />
+    // OSS mode - show skeleton while redirecting to /auth
+    return <AppShellSkeleton />;
   }
 
-  if (isOssTenantMode() && isHydrated && !isAuthenticated) {
-    return <AppShellSkeleton />
-  }
-
-  return <AppShell mainClassName={mainClassName}>{children}</AppShell>
+  return <AppShell mainClassName={mainClassName}>{children}</AppShell>;
 }
 
 export function AppLayout({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
@@ -174,5 +113,5 @@ export function AppLayout({ children, mainClassName }: { children: React.ReactNo
     <Suspense fallback={<AppShellSkeleton />}>
       <AppLayoutInner mainClassName={mainClassName}>{children}</AppLayoutInner>
     </Suspense>
-  )
+  );
 }

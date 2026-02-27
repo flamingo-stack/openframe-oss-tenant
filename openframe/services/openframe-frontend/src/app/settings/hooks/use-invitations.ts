@@ -1,144 +1,144 @@
-'use client'
+'use client';
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '../../../lib/api-client'
-import { handleApiError } from '../../../lib/handle-api-error'
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '../../../lib/api-client';
+import { handleApiError } from '../../../lib/handle-api-error';
 
 // ============ Types ============
 
 export enum InvitationStatus {
-  PENDING = 'PENDING',
-  EXPIRED = 'EXPIRED',
+  Pending = 'PENDING',
+  Expired = 'EXPIRED',
 }
 
 export type InvitationRecord = {
-  id: string
-  email: string
-  roles: string[]
-  createdAt: string
-  expiresAt: string
-  status: InvitationStatus
-}
+  id: string;
+  email: string;
+  roles: string[];
+  createdAt: string;
+  expiresAt: string;
+  status: InvitationStatus;
+};
 
 export type PagedInvitationsResponse = {
-  items: InvitationRecord[]
-  page: number
-  size: number
-  totalElements: number
-  totalPages: number
-  hasNext: boolean
-  hasPrevious: boolean
-}
+  items: InvitationRecord[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+};
 
 // ============ Query Keys ============
 
 export const invitationsQueryKeys = {
   all: ['invitations'] as const,
   list: (page: number, size: number) => [...invitationsQueryKeys.all, 'list', { page, size }] as const,
-}
+};
 
 // ============ API Functions ============
 
 async function fetchInvitations(page: number, size: number): Promise<PagedInvitationsResponse> {
-  const res = await apiClient.get<PagedInvitationsResponse>(`api/invitations?page=${page}&size=${size}`)
+  const res = await apiClient.get<PagedInvitationsResponse>(`api/invitations?page=${page}&size=${size}`);
   if (!res.ok || !res.data) {
-    throw new Error(res.error || `Failed to load invitations (${res.status})`)
+    throw new Error(res.error || `Failed to load invitations (${res.status})`);
   }
-  return res.data
+  return res.data;
 }
 
 async function revokeInvitationApi(invitationId: string): Promise<void> {
-  const res = await apiClient.delete(`/api/invitations/${encodeURIComponent(invitationId)}`)
+  const res = await apiClient.delete(`/api/invitations/${encodeURIComponent(invitationId)}`);
   if (!res.ok) {
-    throw new Error(res.error || `Failed to revoke invitation (${res.status})`)
+    throw new Error(res.error || `Failed to revoke invitation (${res.status})`);
   }
 }
 
 async function resendInvitationApi(invitationId: string): Promise<void> {
-  const res = await apiClient.post(`/api/invitations/${encodeURIComponent(invitationId)}/resend`)
+  const res = await apiClient.post(`/api/invitations/${encodeURIComponent(invitationId)}/resend`);
   if (!res.ok) {
-    throw new Error(res.error || `Failed to resend invitation (${res.status})`)
+    throw new Error(res.error || `Failed to resend invitation (${res.status})`);
   }
 }
 
 async function inviteUsersApi(emails: string[]): Promise<void> {
-  const trimmed = emails.map((e) => e.trim()).filter((e) => e.length > 0)
-  if (trimmed.length === 0) return
+  const trimmed = emails.map(e => e.trim()).filter(e => e.length > 0);
+  if (trimmed.length === 0) return;
 
   const results = await Promise.all(
-    trimmed.map(async (email) => ({ email, res: await apiClient.post('api/invitations', { email }) }))
-  )
+    trimmed.map(async email => ({ email, res: await apiClient.post('api/invitations', { email }) })),
+  );
 
-  const errors = results.filter((r) => !r.res.ok).map((r) => r.email)
+  const errors = results.filter(r => !r.res.ok).map(r => r.email);
   if (errors.length) {
-    throw new Error(`Failed to invite: ${errors.join(', ')}`)
+    throw new Error(`Failed to invite: ${errors.join(', ')}`);
   }
 }
 
 // ============ Hook ============
 
 export function useInvitations(page: number = 0, size: number = 20) {
-  const queryClient = useQueryClient()
-  const { toast } = useToast()
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const invitationsQuery = useQuery({
     queryKey: invitationsQueryKeys.list(page, size),
     queryFn: () => fetchInvitations(page, size),
-  })
+  });
 
   const revokeInvitationMutation = useMutation({
     mutationFn: revokeInvitationApi,
-  })
+  });
 
   const resendInvitationMutation = useMutation({
     mutationFn: resendInvitationApi,
-  })
+  });
 
   const revokeInvitation = (
     invitationId: string,
     options?: {
-      onSuccess?: () => void
-      onError?: (error: Error) => void
-    }
+      onSuccess?: () => void;
+      onError?: (error: Error) => void;
+    },
   ) => {
     revokeInvitationMutation.mutate(invitationId, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all })
-        options?.onSuccess?.()
+        queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all });
+        options?.onSuccess?.();
       },
-      onError: (error) => {
-        handleApiError(error, toast, 'Failed to revoke invitation')
-        options?.onError?.(error as Error)
+      onError: error => {
+        handleApiError(error, toast, 'Failed to revoke invitation');
+        options?.onError?.(error as Error);
       },
-    })
-  }
+    });
+  };
 
   const resendInvitation = (
     invitationId: string,
     options?: {
-      onSuccess?: () => void
-      onError?: (error: Error) => void
-    }
+      onSuccess?: () => void;
+      onError?: (error: Error) => void;
+    },
   ) => {
     resendInvitationMutation.mutate(invitationId, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all })
-        options?.onSuccess?.()
+        queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all });
+        options?.onSuccess?.();
       },
-      onError: (error) => {
-        handleApiError(error, toast, 'Failed to resend invitation')
-        options?.onError?.(error as Error)
+      onError: error => {
+        handleApiError(error, toast, 'Failed to resend invitation');
+        options?.onError?.(error as Error);
       },
-    })
-  }
+    });
+  };
 
   const inviteUsersMutation = useMutation({
     mutationFn: inviteUsersApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: invitationsQueryKeys.all });
     },
-  })
+  });
 
   return {
     // Data
@@ -169,5 +169,5 @@ export function useInvitations(page: number = 0, size: number = 20) {
 
     // Raw query for advanced use cases
     invitationsQuery,
-  }
+  };
 }

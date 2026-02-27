@@ -1,71 +1,77 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { 
-  AlertDialog, AlertDialogContent, AlertDialogHeader, 
-  AlertDialogTitle, AlertDialogDescription, AlertDialogFooter,
-  Button, Input, Label
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { authApiClient } from '@lib/auth-api-client'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  Button,
+  Input,
+  Label,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useState } from 'react';
+import { authApiClient } from '@/lib/auth-api-client';
 
 interface ForgotPasswordModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  defaultEmail?: string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  defaultEmail?: string;
 }
 
 export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: ForgotPasswordModalProps) {
-  const { toast } = useToast()
-  const [email, setEmail] = useState(defaultEmail)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast();
+  const [email, setEmail] = useState(defaultEmail);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!email.trim()) {
       toast({
         title: 'Email Required',
         description: 'Please enter your email address.',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setIsSubmitting(true)
+    setIsSubmitting(true);
     try {
-      const response = await authApiClient.requestPasswordReset({ email: email.trim() })
-      
+      const response = await authApiClient.requestPasswordReset({ email: email.trim() });
+
       if (response.ok) {
         toast({
           title: 'Reset Link Sent',
           description: `A password reset link has been sent to ${email.trim()}. Please check your inbox.`,
           variant: 'success',
-          duration: 5000
-        })
-        onOpenChange(false)
-        setEmail('')
+          duration: 5000,
+        });
+        onOpenChange(false);
+        setEmail('');
       } else {
-        throw new Error(response.error || 'Failed to send reset link')
+        throw new Error(response.error || 'Failed to send reset link');
       }
     } catch (error) {
-      console.error('Password reset error:', error)
+      console.error('Password reset error:', error);
       toast({
         title: 'Reset Failed',
         description: error instanceof Error ? error.message : 'Unable to send password reset link. Please try again.',
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!isSubmitting) {
-      onOpenChange(newOpen)
+      onOpenChange(newOpen);
       if (!newOpen) {
-        setEmail(defaultEmail)
+        setEmail(defaultEmail);
       }
     }
-  }
+  };
 
   return (
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
@@ -78,7 +84,7 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: F
             Enter your email address and we&apos;ll send you a link to reset your password.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        
+
         <div className="mt-6">
           <Label htmlFor="reset-email" className="text-ods-text-primary">
             Email Address
@@ -87,13 +93,13 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: F
             id="reset-email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
             placeholder="username@mail.com"
             disabled={isSubmitting}
             className="mt-2 bg-ods-card border-ods-border text-ods-text-primary font-body text-[16px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
-            onKeyDown={(e) => {
+            onKeyDown={e => {
               if (e.key === 'Enter' && !isSubmitting) {
-                handleSubmit()
+                handleSubmit();
               }
             }}
           />
@@ -119,5 +125,5 @@ export function ForgotPasswordModal({ open, onOpenChange, defaultEmail = '' }: F
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

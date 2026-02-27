@@ -1,6 +1,6 @@
 /* All @import statements must come first */
-@import '@flamingo-stack/openframe-frontend-core/styles';
-@import '@xterm/xterm/css/xterm.css';
+@import "@flamingo-stack/openframe-frontend-core/styles";
+@import "@xterm/xterm/css/xterm.css";
 
 @tailwind base;
 @tailwind components;
@@ -22,12 +22,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: linear-gradient(to bottom, transparent, rgb(var(--background-end-rgb))) rgb(var(--background-start-rgb));
 }
 
 /* Hide number input arrows (spinners) across browsers */

@@ -3,9 +3,9 @@ const nextConfig = {
   // Pure frontend configuration - no server-side features
   // output: 'export',
   trailingSlash: true,
-  distDir: 'dist',   // Output directory for static export
+  distDir: 'dist', // Output directory for static export
   images: {
-    unoptimized: true  // No server-side image optimization
+    unoptimized: true, // No server-side image optimization
   },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
@@ -27,6 +27,6 @@ const nextConfig = {
   // Force client-side rendering
   basePath: '',
   assetPrefix: '',
-}
+};
 
-export default nextConfig
+export default nextConfig;

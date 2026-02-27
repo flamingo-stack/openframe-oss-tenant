@@ -39,13 +39,8 @@ WORKDIR /app
 
 COPY --from=builder /build/openframe/services/openframe-management/target/*.jar app.jar
 
-RUN apk add --no-cache libstdc++ iputils bind-tools netcat-openbsd curl
-
-EXPOSE 8095
-
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:8095/management/v1/health || exit 1
-
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+RUN apk add --no-cache libstdc++ iputils bind-tools netcat-openbsd curl && \
+    addgroup -S appgroup && adduser -S appuser -G appgroup && \
     chown -R appuser:appgroup /app
 
 USER appuser

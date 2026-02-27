@@ -1,30 +1,30 @@
-'use client'
+'use client';
 
-import React, { useEffect } from 'react'
-import { DeviceCard, CardLoader, StatusTag } from '@flamingo-stack/openframe-frontend-core/components/ui'
-import { useDeviceDetails } from '../../devices/hooks/use-device-details'
-import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status'
-import { DeviceDetailsButton } from '../../devices/components/device-details-button'
-import type { Device } from '../../devices/types/device.types'
+import { CardLoader, DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useEffect } from 'react';
+import { DeviceDetailsButton } from '../../devices/components/device-details-button';
+import { useDeviceDetails } from '../../devices/hooks/use-device-details';
+import type { Device } from '../../devices/types/device.types';
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status';
 
 interface DeviceInfoSectionProps {
-  deviceId?: string
-  userId?: string
-  device?: Partial<Device>  // Accept device data from log or dialog
+  deviceId?: string;
+  userId?: string;
+  device?: Partial<Device>; // Accept device data from log or dialog
 }
 
 export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }: DeviceInfoSectionProps) {
-  const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails()
+  const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails();
 
   useEffect(() => {
     // Only fetch if we don't already have device data and we have a deviceId
     if (deviceId && !deviceFromProps) {
-      fetchDeviceById(deviceId)
+      fetchDeviceById(deviceId);
     }
-  }, [deviceId, deviceFromProps, fetchDeviceById])
+  }, [deviceId, deviceFromProps, fetchDeviceById]);
 
   // Use device from props if available, otherwise use fetched deviceDetails
-  const device = deviceFromProps || deviceDetails
+  const device = deviceFromProps || deviceDetails;
 
   // Show loading state only if we're fetching and don't have data from props
   if (isLoading && !deviceFromProps) {
@@ -35,12 +35,12 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
         </div>
         <CardLoader items={2} containerClassName="p-0" />
       </div>
-    )
+    );
   }
 
   // If no device details available, don't show anything
   if (!device && !deviceId) {
-    return null
+    return null;
   }
 
   return (
@@ -61,20 +61,17 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
             lastSeen: device.lastSeen || device.last_seen,
             operatingSystem: getDeviceOperatingSystem(device.osType),
           }}
-          statusBadgeComponent={
-            device.status && (() => {
-              const statusConfig = getDeviceStatusConfig(device.status)
-              return (
-                <StatusTag
-                  label={statusConfig.label}
-                  variant={statusConfig.variant}
-                />
-              )
-            })()
+          statusTag={
+            device.status
+              ? {
+                  label: getDeviceStatusConfig(device.status).label,
+                  variant: getDeviceStatusConfig(device.status).variant,
+                }
+              : undefined
           }
           actions={{
             moreButton: {
-              visible: false
+              visible: false,
             },
             detailsButton: {
               visible: true,
@@ -84,11 +81,11 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
                   machineId={device.machineId || deviceId || ''}
                   className="shrink-0"
                 />
-              )
-            }
+              ),
+            },
           }}
         />
       )}
     </div>
-  )
+  );
 }

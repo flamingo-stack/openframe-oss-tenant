@@ -1,48 +1,55 @@
-'use client'
+'use client';
 
-import React, { useEffect } from 'react'
-import { Button, DetailPageContainer, CardLoader, LoadError, NotFoundError, InfoCard } from '@flamingo-stack/openframe-frontend-core'
-import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features'
-import { useRouter } from 'next/navigation'
-import { useOrganizationDetails } from '../hooks/use-organization-details'
-import { PencilIcon } from 'lucide-react'
-import { useDeleteOrganization } from '../hooks/use-delete-organization'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { featureFlags } from '@lib/feature-flags'
-import { getFullImageUrl } from '@/src/lib/image-url'
+import {
+  Button,
+  CardLoader,
+  DetailPageContainer,
+  InfoCard,
+  LoadError,
+  NotFoundError,
+} from '@flamingo-stack/openframe-frontend-core';
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { PencilIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useDeleteOrganization } from '../hooks/use-delete-organization';
+import { useOrganizationDetails } from '../hooks/use-organization-details';
 
 interface OrganizationDetailsViewProps {
-  id: string
+  id: string;
 }
 
 export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
-  const router = useRouter()
-  const { organization, isLoading, error, fetchOrganizationById } = useOrganizationDetails()
-  const { deleteOrganization } = useDeleteOrganization()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { organization, isLoading, error, fetchOrganizationById } = useOrganizationDetails();
+  const { deleteOrganization } = useDeleteOrganization();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (id) {
-      fetchOrganizationById(id)
+      fetchOrganizationById(id);
     }
-  }, [id, fetchOrganizationById])
+  }, [id, fetchOrganizationById]);
 
-  const handleBack = () => router.push('/organizations')
-  const handleEdit = () => router.push(`/organizations/edit/${id}`)
+  const handleBack = () => router.push('/organizations');
+  const handleEdit = () => router.push(`/organizations/edit/${id}`);
   const handleDelete = async () => {
-    if (!organization) return
+    if (!organization) return;
     if (organization.isDefault) {
-      return
+      return;
     }
     try {
-      await deleteOrganization(organization.id)
-      toast({ title: 'Organization deleted', description: `${organization.name} was deleted` })
-      router.push('/organizations')
+      await deleteOrganization(organization.id);
+      toast({ title: 'Organization deleted', description: `${organization.name} was deleted` });
+      router.push('/organizations');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to delete organization'
-      toast({ title: 'Delete failed', description: msg, variant: 'destructive' })
+      const msg = e instanceof Error ? e.message : 'Failed to delete organization';
+      toast({ title: 'Delete failed', description: msg, variant: 'destructive' });
     }
-  }
+  };
 
   const headerActions = (
     <div className="flex items-center gap-2">
@@ -63,18 +70,18 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         Delete
       </Button>
     </div>
-  )
+  );
 
   if (isLoading) {
-    return <CardLoader items={4} />
+    return <CardLoader items={4} />;
   }
 
   if (error) {
-    return <LoadError message={`Error loading organization: ${error}`} />
+    return <LoadError message={`Error loading organization: ${error}`} />;
   }
 
   if (!organization) {
-    return <NotFoundError message="Organization not found" />
+    return <NotFoundError message="Organization not found" />;
   }
 
   return (
@@ -82,8 +89,8 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       title={organization?.name || 'Organization'}
       backButton={{ label: 'Back to Organizations', onClick: handleBack }}
       headerActions={headerActions}
-      padding='none'
-      className='pt-6'
+      padding="none"
+      className="pt-6"
     >
       {/* Top summary row */}
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
@@ -110,7 +117,9 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
             <div className="text-ods-text-secondary text-sm">Employees</div>
           </div>
           <div>
-            <div className="text-ods-text-primary text-[18px]">{organization ? new Date(organization.updatedAt).toLocaleString() : '-'}</div>
+            <div className="text-ods-text-primary text-[18px]">
+              {organization ? new Date(organization.updatedAt).toLocaleString() : '-'}
+            </div>
             <div className="text-ods-text-secondary text-sm">Updated</div>
           </div>
         </div>
@@ -139,8 +148,8 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
                 { label: 'Name', value: organization.primary.name || '-' },
                 { label: 'Position', value: organization.primary.title || '-' },
                 { label: 'Email', value: organization.primary.email || '-' },
-                { label: 'Phone', value: organization.primary.phone || '-' }
-              ]
+                { label: 'Phone', value: organization.primary.phone || '-' },
+              ],
             }}
           />
         </div>
@@ -155,8 +164,8 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
                 { label: 'Name', value: organization.billing.name || '-' },
                 { label: 'Position', value: organization.billing.title || '-' },
                 { label: 'Email', value: organization.billing.email || '-' },
-                { label: 'Phone', value: organization.billing.phone || '-' }
-              ]
+                { label: 'Phone', value: organization.billing.phone || '-' },
+              ],
             }}
           />
         </div>
@@ -171,8 +180,8 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
                 { label: 'Name', value: organization.technical.name || '-' },
                 { label: 'Position', value: organization.technical.title || '-' },
                 { label: 'Email', value: organization.technical.email || '-' },
-                { label: 'Phone', value: organization.technical.phone || '-' }
-              ]
+                { label: 'Phone', value: organization.technical.phone || '-' },
+              ],
             }}
           />
         </div>
@@ -186,9 +195,18 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         <InfoCard
           data={{
             items: [
-              { label: 'Monthly Recurring Revenue', value: organization.mrrUsd != null ? `$${organization.mrrUsd.toLocaleString()}` : '-' },
-              { label: 'Contract', value: organization.contractStart && organization.contractEnd ? `${new Date(organization.contractStart).toLocaleDateString()} - ${new Date(organization.contractEnd).toLocaleDateString()}` : '-' },
-            ]
+              {
+                label: 'Monthly Recurring Revenue',
+                value: organization.mrrUsd != null ? `$${organization.mrrUsd.toLocaleString()}` : '-',
+              },
+              {
+                label: 'Contract',
+                value:
+                  organization.contractStart && organization.contractEnd
+                    ? `${new Date(organization.contractStart).toLocaleDateString()} - ${new Date(organization.contractEnd).toLocaleDateString()}`
+                    : '-',
+              },
+            ],
           }}
         />
       </div>
@@ -199,10 +217,15 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         </h3>
         <div className="flex flex-col gap-3">
           {(organization.notes || []).map((n, i) => (
-            <div key={i} className="text-ods-text-primary text-[18px] bg-ods-bg-hover rounded px-3 py-2 border border-ods-border">{n}</div>
+            <div
+              key={i}
+              className="text-ods-text-primary text-[18px] bg-ods-bg-hover rounded px-3 py-2 border border-ods-border"
+            >
+              {n}
+            </div>
           ))}
         </div>
       </div>
     </DetailPageContainer>
-  )
+  );
 }

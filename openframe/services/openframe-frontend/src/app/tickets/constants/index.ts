@@ -4,16 +4,16 @@ export const DIALOG_STATUS = {
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ACTIVE: 'ACTIVE',
-} as const
+} as const;
 
-export type DialogStatus = typeof DIALOG_STATUS[keyof typeof DIALOG_STATUS]
+export type DialogStatus = (typeof DIALOG_STATUS)[keyof typeof DIALOG_STATUS];
 
 export const CHAT_TYPE = {
   CLIENT: 'CLIENT_CHAT',
   ADMIN: 'ADMIN_AI_CHAT',
-} as const
+} as const;
 
-export type ChatType = typeof CHAT_TYPE[keyof typeof CHAT_TYPE]
+export type ChatType = (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE];
 
 export const MESSAGE_TYPE = {
   TEXT: 'TEXT',
@@ -25,25 +25,25 @@ export const MESSAGE_TYPE = {
   MESSAGE_START: 'MESSAGE_START',
   MESSAGE_END: 'MESSAGE_END',
   MESSAGE_REQUEST: 'MESSAGE_REQUEST',
-} as const
+} as const;
 
-export type MessageType = typeof MESSAGE_TYPE[keyof typeof MESSAGE_TYPE]
+export type MessageType = (typeof MESSAGE_TYPE)[keyof typeof MESSAGE_TYPE];
 
 export const OWNER_TYPE = {
   CLIENT: 'CLIENT',
   ADMIN: 'ADMIN',
   ASSISTANT: 'ASSISTANT',
-} as const
+} as const;
 
-export type OwnerType = typeof OWNER_TYPE[keyof typeof OWNER_TYPE]
+export type OwnerType = (typeof OWNER_TYPE)[keyof typeof OWNER_TYPE];
 
 export const APPROVAL_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
-} as const
+} as const;
 
-export type ApprovalStatus = typeof APPROVAL_STATUS[keyof typeof APPROVAL_STATUS]
+export type ApprovalStatus = (typeof APPROVAL_STATUS)[keyof typeof APPROVAL_STATUS];
 
 export const ASSISTANT_CONFIG = {
   FAE: {
@@ -54,26 +54,26 @@ export const ASSISTANT_CONFIG = {
     type: 'mingo' as const,
     name: 'Mingo',
   },
-} as const
+} as const;
 
-export type AssistantType = typeof ASSISTANT_CONFIG[keyof typeof ASSISTANT_CONFIG]['type']
+export type AssistantType = (typeof ASSISTANT_CONFIG)[keyof typeof ASSISTANT_CONFIG]['type'];
 
 export const API_ENDPOINTS = {
   APPROVAL_REQUEST: '/chat/api/v1/approval-requests',
   SEND_MESSAGE: '/chat/api/v1/messages',
   DIALOG_CHUNKS: '/chat/api/v1/dialogs',
-} as const
+} as const;
 
 export const NATS_TOPICS = {
   MESSAGE: 'message',
   ADMIN_MESSAGE: 'admin-message',
-} as const
+} as const;
 
-export type NatsMessageType = typeof NATS_TOPICS[keyof typeof NATS_TOPICS]
+export type NatsMessageType = (typeof NATS_TOPICS)[keyof typeof NATS_TOPICS];
 
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'of_access_token',
-} as const
+} as const;
 
 export const NETWORK_CONFIG = {
   SHARED_CLOSE_DELAY_MS: 3000,
@@ -83,4 +83,4 @@ export const NETWORK_CONFIG = {
   MAX_PING_OUT: 3,
   DEFAULT_MESSAGE_LIMIT: 50,
   POLL_MESSAGE_LIMIT: 10,
-} as const
+} as const;

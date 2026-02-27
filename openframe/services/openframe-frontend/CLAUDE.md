@@ -1,178 +1,284 @@
 # OpenFrame Frontend - Claude Development Guide
 
-**Next.js 15 + React 19 + TypeScript 5.8 + @flamingo/ui-kit (328+ components)**
+**Next.js 16 + React 19 + TypeScript 5.8 + @flamingo-stack/openframe-frontend-core (v0.0.46)**
 
 > Comprehensive instructions for Claude when working with the OpenFrame Frontend service.
 
 ## Core Principles
 
 **MANDATORY REQUIREMENTS:**
-1. ALL UI components MUST use @flamingo/ui-kit (328+ components available)
-2. ALL API operations MUST use `useToast` hook for feedback
-3. ALL styling MUST use ODS design tokens (no hardcoded values)
-4. Follow WCAG 2.1 AA accessibility standards
-5. Use state-driven interactions (NOT traditional forms)
-
-## Quick Navigation
-
-- [Setup & Commands](#setup--commands)
-- [Architecture & Structure](#architecture--structure)
-- [UI-Kit Integration](#ui-kit-integration)
-- [Development Patterns](#development-patterns)
-- [Testing & Deployment](#testing--deployment)
-- [Troubleshooting](#troubleshooting)
+1. ALL UI components MUST use `@flamingo-stack/openframe-frontend-core` — never create custom UI primitives
+2. ALL styling MUST use ODS design tokens (no hardcoded colors)
+3. Follow WCAG 2.1 AA accessibility standards
+4. Use `react-hook-form` + `zod` for forms; use `useToast` for all API feedback
+5. Use `@tanstack/react-query` for all server-state data fetching
 
 ## Setup & Commands
 
 ### Quick Setup
 ```bash
 npm install
-echo "NEXT_PUBLIC_API_URL=http://localhost/api" >> .env.local
-echo "NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard" >> .env.local
-echo "NEXT_PUBLIC_CLIENT_SECRET=prod_secret" >> .env.local
+cp .env.local.example .env.local   # or create manually:
+echo "NEXT_PUBLIC_TENANT_HOST_URL=http://localhost" >> .env.local
+echo "NEXT_PUBLIC_APP_MODE=oss-tenant" >> .env.local
 npm run dev
 ```
 Access: http://localhost:3000
 
-### Essential Commands
+### All Commands
 | Command | Purpose |
 |---------|----------|
-| `npm run dev` | Development server (port 3000) |
+| `npm run dev` | Dev server with webpack (port 3000) |
+| `npm run dev:turbo` | Dev server with Turbopack (port 3000) |
 | `npm run build` | Production build |
-| `npm run type-check` | TypeScript validation |
-| `npm run lint` | Code quality check |
+| `npm run build:local` | Production build with webpack |
+| `npm run start` | Start production server |
+| `npm run type-check` | TypeScript validation (`tsc --noEmit`) |
+| `npm run lint` | Next.js ESLint check |
+| `npm run lint:biome` | Biome check (linting + formatting) |
+| `npm run lint:biome:fix` | Biome auto-fix |
+| `npm run format` | Biome format check |
+| `npm run format:fix` | Biome auto-format |
+
+### Pre-commit Hooks
+Husky runs on every commit:
+```bash
+npm run lint:biome && npm run type-check
+```
+Both must pass before commits are accepted.
 
 ### Environment Variables
-```bash
-# Required
-NEXT_PUBLIC_API_URL=http://localhost/api
-NEXT_PUBLIC_CLIENT_ID=openframe_web_dashboard
-NEXT_PUBLIC_CLIENT_SECRET=prod_secret
 
-# Optional
-NEXT_PUBLIC_APP_MODE=full-app  # or auth-only
-NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true
+**Required:**
+```bash
+NEXT_PUBLIC_TENANT_HOST_URL=http://localhost   # Backend API host
+NEXT_PUBLIC_APP_MODE=oss-tenant                # App mode (see below)
+```
+
+**SaaS deployment:**
+```bash
+NEXT_PUBLIC_SHARED_HOST_URL=https://auth.openframe.ai   # Shared auth host
+NEXT_PUBLIC_GTM_CONTAINER_ID=GTM-XXXXXXX                # Google Tag Manager
+```
+
+**Feature flags:**
+```bash
+NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true   # Dev ticket auth mode
+NEXT_PUBLIC_FEATURE_ORG_IMAGES=true            # Organization images (default: true)
+NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST=true   # SSO domain allowlist (default: true)
+NEXT_PUBLIC_FEATURE_SCRIPT_SCHEDULE=false       # Script scheduling (default: false)
+NEXT_PUBLIC_FEATURE_MONITORING=false            # Monitoring pages (default: false)
 ```
 
 ## Architecture & Structure
 
 ### Technology Stack
-- **Next.js 15** - App Router, SSG/SSR
-- **React 19** - UI library with new features
-- **TypeScript 5.8** - Type safety
-- **Zustand 5.0.8** - State management
-- **Apollo Client 3.8** - GraphQL
-- **@flamingo/ui-kit** - **EXTERNAL** unified design system (328+ components)
-- **Tailwind CSS 3.4** - Styling with ODS tokens
-- **xterm.js 5.3** - Terminal interface
+| Category | Technology | Version |
+|----------|-----------|---------|
+| Framework | Next.js | 16 (^16.0.10) |
+| UI Library | React | 19 (^19.2.0) |
+| Type System | TypeScript | 5.8 (^5.8.3) |
+| Component Library | @flamingo-stack/openframe-frontend-core | 0.0.46 |
+| Data Fetching | @tanstack/react-query | 5.90 |
+| Forms | react-hook-form + @hookform/resolvers | 7.71 + 5.2 |
+| Validation | zod | 4.3 |
+| State Management | Zustand + immer | 5.0.8 + 10.1 |
+| Styling | Tailwind CSS + tailwindcss-animate | 3.4 |
+| Terminal | @xterm/xterm + @xterm/addon-fit | 6.0 + 0.11 |
+| Code Editor | @monaco-editor/react | 4.7 |
+| GraphQL | graphql + graphql-tag | 16.8 + 2.12 |
+| Date Utils | date-fns | 4.1 |
+| Icons | lucide-react | 0.454 |
+| Runtime Env | next-runtime-env | 3.2 |
+| Code Quality | Biome (primary) + ESLint (Next.js) | 2.4.4 + 9.27 |
+| Git Hooks | Husky | 9.1 |
 
-### IMPORTANT: UI-Kit is an External Library
+### Core Library is External
 
-`@flamingo/ui-kit` is **NOT part of OpenFrame** - it is a **separate, external design system library**:
+`@flamingo-stack/openframe-frontend-core` is **NOT part of OpenFrame** — it is a **separate, external library** shared across the Flamingo Stack.
 
 **Key Facts:**
-- **Repository**: Separate git repo at `/Users/michaelassraf/Documents/GitHub/ui-kit`
-- **Ownership**: Shared across Flamingo Stack (OpenFrame, Flamingo, TMCG)
-- **Connection**: Symlinked to `./ui-kit` for local development convenience only
-- **Production**: Installed as `@flamingo/ui-kit` npm package
-- **Updates**: Changes to ui-kit affect ALL Flamingo Stack projects
+- **Source repo**: `openframe-oss-lib/openframe-frontend-core/`
+- **Ownership**: Shared across Flamingo Stack projects (OpenFrame, Flamingo, TMCG)
+- **Connection**: Published via **yalc** for local development
+- **Production**: Installed as `@flamingo-stack/openframe-frontend-core` npm package
+- **Updates**: Changes affect ALL Flamingo Stack projects
 
-**Symlink Structure:**
+**yalc Workflow:**
 ```bash
-openframe-frontend/ui-kit -> ../../../../ui-kit  # Points to external repo
+# In openframe-frontend-core repo:
+yalc publish
+
+# In openframe-frontend:
+yalc add @flamingo-stack/openframe-frontend-core
+npm install
 ```
 
-**Development Workflow:**
-1. ui-kit changes are made in `/Users/michaelassraf/Documents/GitHub/ui-kit`
-2. Test changes immediately via symlink in OpenFrame
-3. Commit ui-kit changes to ui-kit repo
-4. Commit OpenFrame changes to openframe repo
-5. In production, OpenFrame uses published `@flamingo/ui-kit` npm package
+**package.json reference:**
+```json
+"@flamingo-stack/openframe-frontend-core": "0.0.46"
+```
 
 **NEVER:**
-- Treat ui-kit as part of OpenFrame codebase
+- Treat core library as part of the OpenFrame codebase
 - Make breaking changes without coordinating across projects
-- Assume ui-kit changes only affect OpenFrame
+- Import from `@flamingo/ui-kit` (old name — does not exist)
+
+### App Modes
+
+Controlled by `NEXT_PUBLIC_APP_MODE` (see `src/lib/app-mode.ts`):
+
+| Mode | Auth Pages | App Pages | Mingo | Description |
+|------|-----------|-----------|-------|-------------|
+| `oss-tenant` (default) | Yes | Yes | No | Self-hosted, full-featured |
+| `saas-tenant` | No | Yes | Yes | SaaS customer tenant |
+| `saas-shared` | Yes | No | No | SaaS shared auth service |
+
+Helper functions: `isOssTenantMode()`, `isSaasTenantMode()`, `isSaasSharedMode()`, `isAuthEnabled()`, `isAppEnabled()`
+
+### Feature Flags
+
+Defined in `src/lib/feature-flags.ts`:
+- `featureFlags.organizationImages.enabled()` — org image upload/display
+- `featureFlags.ssoAutoAllow.enabled()` — SSO domain allowlist
+- `featureFlags.monitoring.enabled()` — monitoring pages visibility
 
 ### Application Modules
-- **Authentication** - Multi-provider SSO, organization setup
-- **Dashboard** - System overview, real-time metrics
-- **Device Management** - Fleet MDM + Tactical RMM monitoring, terminal access
-- **Log Analysis** - Streaming, search, filtering, export
-- **Mingo Query Interface** - MongoDB-like query builder
+- **Authentication** (`/auth`) — Multi-provider SSO, signup, login, password reset, invite
+- **Dashboard** (`/dashboard`) — System overview, real-time metrics, onboarding
+- **Devices** (`/devices`) — Fleet MDM + Tactical RMM, detail pages, remote shell/desktop, file manager
+- **Logs** (`/logs-page`, `/log-details`) — Streaming, search, filtering, export
+- **Scripts** (`/scripts`) — Script management, editing (Monaco), execution, scheduling
+- **Organizations** (`/organizations`) — Multi-org management, detail/edit pages
+- **Monitoring** (`/monitoring`) — Queries, policies (feature-flagged)
+- **Tickets** (`/tickets`) — Ticket management, dialog view
+- **Mingo** (`/mingo`) — MongoDB-like query builder (SaaS only)
+- **Settings** (`/settings`) — Application settings
 
 ### Project Structure
 ```
 src/
-├── app/                 # Next.js App Router
-│   ├── auth/           # Authentication module
-│   ├── dashboard/      # Main dashboard
-│   ├── devices/        # Device management (Fleet MDM + Tactical RMM)
-│   │   ├── components/
-│   │   │   ├── tabs/
-│   │   │   │   ├── hardware-tab.tsx       # CPU, disk, RAM, battery
-│   │   │   │   ├── network-tab.tsx        # Unified IPs
-│   │   │   │   └── users-tab.tsx          # Unified users
-│   │   ├── types/
-│   │   │   ├── fleet.types.ts             # Fleet MDM types
-│   │   │   └── device.types.ts            # Unified device types
-│   │   ├── utils/
-│   │   │   └── normalize-device.ts        # Multi-source normalization
-│   │   └── hooks/
-│   ├── logs-page/      # Log analysis
-│   ├── mingo/          # Query interface
-│   └── components/     # Shared components
-├── stores/             # Zustand state stores
-├── lib/                # Utilities & config
-ui-kit/                 # EXTERNAL design system (symlinked)
+├── app/                    # Next.js App Router
+│   ├── auth/              # Authentication (login, signup, invite, password-reset)
+│   ├── dashboard/         # Main dashboard
+│   ├── devices/           # Device management
+│   │   ├── components/tabs/   # hardware-tab, network-tab, users-tab
+│   │   ├── types/             # fleet.types.ts, device.types.ts
+│   │   ├── utils/             # normalize-device.ts
+│   │   ├── hooks/             # useDevices, etc.
+│   │   ├── details/[deviceId]/ # Detail, remote-shell, remote-desktop, file-manager
+│   │   └── new/               # Add device
+│   ├── logs-page/         # Log analysis
+│   ├── log-details/       # Log detail view
+│   ├── scripts/           # Script management + scheduling
+│   ├── organizations/     # Organization management
+│   ├── monitoring/        # Queries + policies (feature-flagged)
+│   ├── tickets/           # Ticket system
+│   ├── mingo/             # Query interface (SaaS only)
+│   ├── settings/          # Settings
+│   ├── hooks/             # Shared hooks
+│   └── components/        # Shared components (app-layout, route-guard, etc.)
+├── components/            # Root-level shared components
+├── stores/                # Zustand stores (devices-store, auth re-exports)
+├── lib/                   # Utilities & config
+│   ├── api-client.ts          # Centralized REST API client (singleton)
+│   ├── auth-api-client.ts     # Auth-specific API client
+│   ├── fleet-api-client.ts    # Fleet MDM API client
+│   ├── tactical-api-client.ts # Tactical RMM API client
+│   ├── graphql-client.ts      # GraphQL introspection setup
+│   ├── app-mode.ts            # App mode helpers
+│   ├── runtime-config.ts      # Runtime env var access
+│   ├── feature-flags.ts       # Feature flag definitions
+│   ├── openframe-core-ui.tsx  # Client boundary re-export
+│   ├── query-client-provider.tsx # TanStack QueryClient
+│   ├── fonts.ts               # DM Sans + Azeret Mono
+│   ├── handle-api-error.ts    # Error extraction utility
+│   ├── meshcentral/           # MeshCentral remote management
+│   └── platform-configs/      # Platform-specific config
 ```
 
-## UI-Kit Integration
+## Core Library Integration
 
-### Core Import Pattern
+### Import Patterns
+
 ```typescript
-// ALWAYS import styles first
-import '@flamingo/ui-kit/styles'
+// Styles (import in root layout only)
+import '@flamingo-stack/openframe-frontend-core/styles';
 
-// Core UI components
+// UI components — direct import
 import {
   Button, Card, CardHeader, CardContent, CardFooter,
-  Input, Textarea, Label, Checkbox, Switch,
-  Badge, Alert, AlertDescription,
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-  DialogDescription, DialogFooter, DialogTrigger,
+  Input, Label, Badge, Skeleton,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
   Tabs, TabsList, TabsTrigger, TabsContent,
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  AlertDialog, AlertDialogContent, AlertDialogHeader,
-  ContentLoader, Separator, Avatar, Progress, Table
-} from '@flamingo/ui-kit/components/ui'
+  ContentPageContainer, DetailPageContainer,
+  DeviceCard, StatusTag, CardLoader, CompactPageLoader,
+  DashboardInfoCard, OrganizationCard, BenefitCard,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 // Feature components
 import {
-  AuthProvidersList, AuthTrigger, ProviderButton,
-  Terminal
-} from '@flamingo/ui-kit/components/features'
+  AuthProvidersList,
+} from '@flamingo-stack/openframe-frontend-core/components/features';
 
-// MANDATORY hooks
+// Navigation
+import { AppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
+
+// Icons
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
-  useToast,        // REQUIRED for all API operations
+  DashboardIcon, DevicesIcon, LogsIcon, ScriptsIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+
+// Hooks — CRITICAL: useToast is MANDATORY for all API operations
+import {
+  useToast,           // REQUIRED for all API feedback
+  useApiParams,       // URL state management for REST APIs
   useDebounce,
   useLocalStorage,
-  useTerminal
-} from '@flamingo/ui-kit/hooks'
+  useTablePagination,
+  introspector,       // GraphQL schema introspection
+} from '@flamingo-stack/openframe-frontend-core/hooks';
 
 // Utilities
 import {
-  cn,                      // Tailwind class merging
-  getPlatformAccentColor,  // Platform colors
-  getProxiedImageUrl      // Safe image loading
-} from '@flamingo/ui-kit/utils'
+  cn,                             // Tailwind class merging
+  getPlatformAccentColor,
+  getProxiedImageUrl,
+  normalizeToolTypeWithFallback,
+  getSlackCommunityJoinUrl,
+  DEFAULT_OS_PLATFORM,
+} from '@flamingo-stack/openframe-frontend-core/utils';
+
+// Types
+import type { NavigationSidebarItem, NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 ```
 
+### Client Boundary Pattern
+
+Server Components cannot import client-side UI barrel exports directly. Use the re-export wrapper:
+
+**File:** `src/lib/openframe-core-ui.tsx`
+```typescript
+'use client';
+export * from '@flamingo-stack/openframe-frontend-core/components/ui';
+```
+
+**Usage:**
+```typescript
+// In server-adjacent code (layout.tsx, etc.)
+import { Toaster } from '@/lib/openframe-core-ui';
+```
+
+For regular client components, import directly from the core library.
+
 ### Component Categories
-- **Core UI (50+)** - Button, Card, Input, Dialog, Tabs, etc.
-- **Feature Components** - Auth, Terminal, specialized business logic
-- **Platform-Specific** - OpenFrame system admin components
+- **Core UI** — Button, Card, Input, Dialog, Tabs, Badge, Skeleton, etc.
+- **Page Containers** — ContentPageContainer, DetailPageContainer
+- **Data Display** — DeviceCard, StatusTag, DashboardInfoCard, OrganizationCard
+- **Feature Components** — AuthProvidersList, Terminal, ToolBadge
+- **Navigation** — AppLayout, sidebar config types
 
 ## Development Patterns
 
@@ -180,577 +286,426 @@ import {
 
 **React Hooks MUST be called unconditionally:**
 ```typescript
-// ❌ BAD: Hooks called conditionally
+// BAD: Hooks called conditionally
 export function MyComponent() {
   if (someCondition) {
-    return null  // Early return BEFORE hooks
+    return null;  // Early return BEFORE hooks
   }
-
-  const data = useSomeHook()  // ❌ ERROR: Hook called after conditional
-  // ...
+  const data = useSomeHook();  // ERROR: Hook called after conditional
 }
 
-// ❌ BAD: Hooks in try-catch
+// GOOD: All hooks at the top, unconditionally
 export function MyComponent() {
-  let searchParams
-  try {
-    searchParams = useSearchParams()  // ❌ ERROR: Hook in try-catch
-  } catch {
-    return null
-  }
-  // ...
-}
-
-// ✅ GOOD: All hooks at the top, unconditionally
-export function MyComponent() {
-  // ALL hooks called first, unconditionally
-  const data = useSomeHook()
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const data = useSomeHook();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // THEN check conditions
   if (someCondition) {
-    return null  // Early return AFTER all hooks
+    return null;
   }
 
-  // Use the hook data
-  return <div>{data}</div>
-}
-
-// ✅ GOOD: Conditional logic inside useEffect
-export function MyComponent() {
-  const isEnabled = checkEnabled()
-  const data = useSomeHook()  // Always called
-
-  useEffect(() => {
-    if (!isEnabled) return  // Conditional logic INSIDE hook
-
-    // Do work when enabled
-  }, [isEnabled])
-
-  return null
+  return <div>{data}</div>;
 }
 ```
 
-**Why This Matters:**
-- React relies on hooks being called in the same order every render
-- Conditional hooks cause "Hook called conditionally" linting errors
-- Breaking this rule causes runtime bugs and unpredictable behavior
-
-**Common Fixes:**
+**Rules:**
 1. Move all hooks to the top of the component
 2. Use conditional logic INSIDE hooks (useEffect, useMemo), not around them
-3. Never wrap hooks in try-catch - handle errors inside the hook instead
+3. Never wrap hooks in try-catch — handle errors inside the hook instead
 
-### MANDATORY: API Hook Pattern with Toast
+### Data Fetching with TanStack React Query
+
+All server-state data fetching uses `@tanstack/react-query`. No Apollo Client.
+
+**Query pattern:**
 ```typescript
-import { useToast } from '@flamingo/ui-kit/hooks'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { apiClient } from '@/lib/api-client';
 
+// Define query keys
+export const devicesQueryKeys = {
+  all: ['devices'] as const,
+  detail: (id: string) => ['devices', id] as const,
+};
+
+// Query hook
 export function useDevices() {
-  const { toast } = useToast() // REQUIRED for all API hooks
+  return useQuery({
+    queryKey: devicesQueryKeys.all,
+    queryFn: async () => {
+      const response = await apiClient.get('/api/devices');
+      if (!response.ok) throw new Error(response.error || 'Failed to fetch devices');
+      return response.data;
+    },
+  });
+}
 
-  const fetchDevices = async () => {
-    try {
-      const response = await fetch('/api/devices')
-      const data = await response.json()
+// Mutation hook with toast feedback
+export function useDeleteDevice() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-      // SUCCESS feedback - REQUIRED
+  return useMutation({
+    mutationFn: async (deviceId: string) => {
+      const response = await apiClient.delete(`/api/devices/${deviceId}`);
+      if (!response.ok) throw new Error(response.error || 'Failed to delete device');
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: devicesQueryKeys.all });
+      toast({ title: 'Success', description: 'Device deleted', variant: 'success' });
+    },
+    onError: (err) => {
       toast({
-        title: "Success",
-        description: "Devices loaded successfully",
-        variant: "success",
-        duration: 3000
-      })
-
-      return data
-    } catch (error) {
-      // ERROR feedback - REQUIRED
-      toast({
-        title: "Fetch Failed",
-        description: error.message || "Unable to load devices",
-        variant: "destructive",
-        duration: 5000
-      })
-      throw error
-    }
-  }
-
-  const executeAction = async (deviceId: string, action: string) => {
-    try {
-      // Loading feedback
-      toast({
-        title: "Processing...",
-        description: `Executing ${action} on device ${deviceId}`,
-        variant: "info",
-        duration: 2000
-      })
-
-      const response = await fetch(`/api/devices/${deviceId}/actions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action })
-      })
-
-      // Success feedback
-      toast({
-        title: "Action Executed",
-        description: `${action} completed successfully`,
-        variant: "success",
-        duration: 4000
-      })
-
-      return await response.json()
-    } catch (error) {
-      toast({
-        title: "Action Failed",
-        description: error.message || `Unable to execute ${action}`,
-        variant: "destructive",
-        duration: 6000
-      })
-      throw error
-    }
-  }
-
-  return { fetchDevices, executeAction }
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to delete device',
+        variant: 'destructive',
+      });
+    },
+  });
 }
 ```
 
-### State Management with Zustand
+**QueryClient configuration** (in `src/lib/query-client-provider.tsx`):
 ```typescript
-import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
-import { immer } from 'zustand/middleware/immer'
-
-interface DevicesState {
-  devices: Device[]
-  selectedDevice: Device | null
-  loading: boolean
-  setDevices: (devices: Device[]) => void
-  selectDevice: (device: Device | null) => void
-}
-
-export const useDevicesStore = create<DevicesState>()(
-  devtools(
-    persist(
-      immer((set) => ({
-        devices: [],
-        selectedDevice: null,
-        loading: false,
-
-        setDevices: (devices) => set(state => { state.devices = devices }),
-        selectDevice: (device) => set(state => { state.selectedDevice = device })
-      })),
-      { name: 'devices-store' }
-    ),
-    { name: 'devices-store' }
-  )
-)
+new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,          // 1 minute
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 ```
 
-### State-Driven Form Pattern
-```typescript
-export function DeviceConfigPanel({ deviceId }: { deviceId: string }) {
-  const [name, setName] = useState('')
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const { toast } = useToast()
+### GraphQL Usage
 
-  const handleSave = async () => {
-    setIsUpdating(true)
-    try {
-      await updateDevice(deviceId, { name })
-      toast({
-        title: "Settings Saved",
-        description: "Device configuration updated successfully",
-        variant: "success"
-      })
-    } catch (error) {
-      toast({
-        title: "Save Failed",
-        description: error.message || "Unable to save configuration",
-        variant: "destructive"
-      })
-    } finally {
-      setIsUpdating(false)
-    }
-  }
+GraphQL queries are sent as raw POST requests through `apiClient` — there is no Apollo Client:
+```typescript
+const response = await apiClient.post('/api/graphql', {
+  query: GET_DEVICES_QUERY,
+  variables: { limit: 20, cursor: null },
+});
+```
+
+The GraphQL endpoint is determined at runtime: `${window.location.origin}/api/graphql`
+
+### API Error Handling with useToast
+
+**MANDATORY:** All API operations must provide user feedback via `useToast`:
+
+```typescript
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+
+// In mutations — use onSuccess/onError callbacks
+const mutation = useMutation({
+  mutationFn: someApiCall,
+  onSuccess: () => {
+    toast({ title: 'Success', description: 'Operation completed', variant: 'success' });
+  },
+  onError: (err) => {
+    toast({
+      title: 'Error',
+      description: err instanceof Error ? err.message : 'Operation failed',
+      variant: 'destructive',
+    });
+  },
+});
+```
+
+Use `src/lib/handle-api-error.ts` for reusable error extraction:
+```typescript
+import { handleApiError, getErrorMessage } from '@/lib/handle-api-error';
+```
+
+### Forms with react-hook-form + zod
+
+Use `react-hook-form` with `zod` schemas for all forms:
+
+```typescript
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm, Controller } from 'react-hook-form';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation } from '@tanstack/react-query';
+
+// 1. Define schema
+const formSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  timeout: z.number().min(1).max(86400),
+  platforms: z.array(z.string()).min(1, 'Select at least one platform'),
+});
+
+type FormData = z.infer<typeof formSchema>;
+
+// 2. Use in component
+export function MyForm() {
+  const { toast } = useToast();
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
+    defaultValues: { name: '', timeout: 90, platforms: ['windows'] },
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (data: FormData) => { /* API call */ },
+    onSuccess: () => toast({ title: 'Saved', description: 'Form submitted', variant: 'success' }),
+    onError: (err) => toast({ title: 'Error', description: getErrorMessage(err), variant: 'destructive' }),
+  });
+
+  const onSubmit = form.handleSubmit(
+    (data) => mutation.mutate(data),
+    (errors) => {
+      const messages = Object.values(errors).map(e => e?.message).filter(Boolean);
+      toast({ title: 'Validation Error', description: messages.join(', '), variant: 'destructive' });
+    },
+  );
 
   return (
-    <Card>
-      <CardHeader>
-        <h2>Device Configuration</h2>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor="device-name">Device Name</Label>
-          <Input
-            id="device-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter device name"
-            disabled={isUpdating}
-          />
-        </div>
-        <Button onClick={handleSave} disabled={isUpdating}>
-          {isUpdating ? 'Saving...' : 'Save Changes'}
-        </Button>
-      </CardContent>
-    </Card>
-  )
+    <form onSubmit={onSubmit}>
+      <Controller name="name" control={form.control} render={({ field }) => <Input {...field} />} />
+      <Button type="submit" disabled={mutation.isPending}>
+        {mutation.isPending ? 'Saving...' : 'Save'}
+      </Button>
+    </form>
+  );
 }
+```
+
+**Real example:** See `src/app/scripts/hooks/use-edit-script-form.ts` and `src/app/scripts/types/edit-script.types.ts`.
+
+### State Management with Zustand
+
+```typescript
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
+
+interface MyState {
+  items: Item[];
+  setItems: (items: Item[]) => void;
+}
+
+export const useMyStore = create<MyState>()(
+  devtools(
+    immer((set) => ({
+      items: [],
+      setItems: (items) => set(state => { state.items = items }),
+    })),
+    { name: 'my-store' },
+  ),
+);
+```
+
+**Existing stores:**
+- `useAuthStore` — authentication state (in `src/app/auth/stores/auth-store.ts`)
+- `useDevicesStore` — device list state (in `src/stores/devices-store.ts`)
+- Central re-exports from `src/stores/index.ts`
+
+### Code Quality with Biome
+
+**Biome 2.4.4** is the primary linter and formatter (configured in `biome.json`).
+
+**Key rules:**
+- `useConst` — always use `const` when possible
+- `noUnusedVariables` — error
+- `useHookAtTopLevel` — error (enforces React hooks rules)
+- `useExhaustiveDependencies` — warn
+- `useNamingConvention` — enforced (camelCase for variables, PascalCase for types/classes)
+- `noUndeclaredDependencies` — error (off in test files)
+
+**Formatter settings:**
+- 2-space indent, 120 char line width, single quotes, trailing commas, semicolons always
+
+**Run manually:**
+```bash
+npm run lint:biome       # Check
+npm run lint:biome:fix   # Auto-fix
+npm run format:fix       # Auto-format
 ```
 
 ## URL State Management (Runtime Schema-Driven)
 
-OpenFrame uses a **runtime schema-driven URL state management system** that automatically handles pagination, filtering, and search parameters by parsing GraphQL queries and syncing with URL parameters.
+OpenFrame uses a **runtime schema-driven URL state management system** from the core library that automatically syncs pagination, filtering, and search parameters with URL params.
 
 ### Core Features
+- **Runtime Introspection**: Fetches GraphQL schema behind auth (no build-time codegen)
+- **Auto-Flattening**: Nested input types flattened to simple URL params
+- **Bidirectional Sync**: URL params <-> GraphQL variables
+- **Zero Build Dependencies**: No GraphQL CodeGen needed
 
-- **Automatic Schema Detection**: Parses GraphQL queries at runtime to extract variable definitions
-- **Runtime Introspection**: Fetches GraphQL schema behind auth (no build-time codegen needed)
-- **Auto-Flattening**: Nested input types automatically flattened to simple URL params
-- **Bidirectional Sync**: URL ↔ GraphQL variables conversion
-- **Works Behind Auth**: Introspection happens at runtime after authentication
-- **Zero Build Dependencies**: No GraphQL CodeGen or build-time schema access required
-
-### Quick Example
+### GraphQL URL State (useQueryParams)
 
 ```typescript
-import { useQueryParams } from '@flamingo/ui-kit/hooks'
+import { useQueryParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 
-const GET_LOGS_QUERY = `
-  query GetLogs($search: String, $filter: LogFilterInput, $cursor: String, $limit: Int) {
-    logs(search: $search, filter: $filter, after: $cursor, first: $limit) {
-      edges { node { id message } }
-      pageInfo { hasNextPage endCursor }
-    }
-  }
-`
-
-export function LogsPage() {
-  // Hook automatically:
-  // 1. Parses query AST
-  // 2. Fetches GraphQL schema via introspection
-  // 3. Flattens nested types (filter.severity → severity)
-  // 4. Syncs with URL params
-  const { variables, setParam } = useQueryParams(GET_LOGS_QUERY, {
-    defaultValues: { limit: 20 }
-  })
-
-  // Fetch data using variables
-  const fetchLogs = async () => {
-    const response = await apiClient.post('/api/graphql', {
-      query: GET_LOGS_QUERY,
-      variables  // Ready to use!
-    })
-    return response.data
-  }
-
-  return (
-    <div>
-      <input onChange={(e) => setParam('search', e.target.value)} />
-      <select onChange={(e) => setParam('severity', [e.target.value])}>
-        <option>All</option>
-        <option>error</option>
-        <option>warning</option>
-      </select>
-    </div>
-  )
-}
-
-// URL: /logs?search=error&severity=critical&cursor=abc&limit=20
-// variables: { search: 'error', filter: { severity: ['critical'] }, cursor: 'abc', limit: 20 }
+const { variables, setParam } = useQueryParams(GET_LOGS_QUERY, {
+  defaultValues: { limit: 20 },
+});
+// URL: /logs?search=error&severity=critical&limit=20
+// variables: { search: 'error', filter: { severity: ['critical'] }, limit: 20 }
 ```
 
-### How It Works
+### REST API URL State (useApiParams)
 
-1. **AST Parsing** - GraphQL query string parsed to extract variable definitions
-2. **Introspection** - Schema fetched at runtime to understand input types (cached 24h)
-3. **Flattening** - Nested types like `LogFilterInput.severity` → flat URL param `?severity=`
-4. **Conversion** - URL params ↔ GraphQL variables with automatic type coercion
-
-### Initialization
-
-Introspection must be initialized after authentication:
-
+For non-GraphQL APIs, use `useApiParams` with a manual schema:
 ```typescript
-// In auth provider or app layout
-import { initializeGraphQLIntrospection } from '@/lib/graphql-client'
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+
+const { params, setParam, setParams } = useApiParams({
+  search: { type: 'string', default: '' },
+  page: { type: 'number', default: 1 },
+  status: { type: 'string', default: 'all' },
+});
+```
+
+**Used in:** LogsTable, OrganizationsTable, DevicesView, ScriptsTable, ScriptSchedulesTable, MonitoringQueries/Policies, TicketsView
+
+### Introspection Initialization
+
+Must be initialized after authentication (handled in `GraphQlIntrospectionInitializer`):
+```typescript
+import { initializeGraphQlIntrospection } from '@/lib/graphql-client';
 
 useEffect(() => {
   if (isAuthenticated) {
-    initializeGraphQLIntrospection()
+    initializeGraphQlIntrospection();
   }
-}, [isAuthenticated])
+}, [isAuthenticated]);
 ```
 
-### REST API Support
+## Root Layout & Provider Stack
 
-For non-GraphQL APIs, use `useApiParams` with manual schema:
+The root layout (`src/app/layout.tsx`) establishes the global provider hierarchy:
 
-```typescript
-import { useApiParams } from '@flamingo/ui-kit/hooks'
-
-const { params, urlSearchParams, setParam } = useApiParams({
-  search: { type: 'string', default: '' },
-  page: { type: 'number', default: 1 },
-  tags: { type: 'array', default: [] }
-})
-
-const response = await fetch(`/api/items?${urlSearchParams}`)
+```
+<html> (dark mode, font variables)
+  <head>
+    <PublicEnvScript />              <!-- next-runtime-env -->
+  </head>
+  <body>
+    <GoogleTagManager />             <!-- Analytics (if GTM ID set) -->
+    <DeploymentInitializer />        <!-- Runtime detection -->
+    <DevTicketObserver />            <!-- Dev auth (if enabled) -->
+    <GraphQlIntrospectionInitializer />  <!-- Schema cache -->
+    <QueryClientProvider>            <!-- TanStack React Query -->
+      <RouteGuard>                   <!-- App mode route filtering -->
+        <Suspense>
+          {children}                 <!-- Page content -->
+        </Suspense>
+      </RouteGuard>
+    </QueryClientProvider>
+    <Toaster />                      <!-- Toast notifications -->
+  </body>
+</html>
 ```
 
-### Benefits
+**Fonts:** DM Sans (body) + Azeret Mono (code) — loaded via `next/font/google`
 
-✅ **Shareable URLs** - Users can bookmark and share filtered views
-✅ **State Persistence** - Page reloads preserve all filters/search/pagination
-✅ **Browser Navigation** - Back/forward buttons work correctly
-✅ **Zero Config** - Standard GraphQL queries work automatically
-✅ **Type Safe** - Full TypeScript support with generics
-✅ **Minimal Bundle** - ~5KB for all hooks, uses native browser APIs
-
-### Documentation
-
-- **Complete Guide**: `ui-kit/docs/hooks/runtime-url-state.md`
-- **API Reference**: Full documentation in ui-kit docs
-- **Examples**: See LogsTable and OrganizationsTable implementations
+**Rendering:** `export const dynamic = 'force-dynamic'` on the root layout (prevents SSG issues with `useSearchParams`).
 
 ## Fleet MDM Integration
 
-OpenFrame integrates comprehensive device monitoring data from multiple sources with proper normalization and prioritization.
+OpenFrame integrates device monitoring data from multiple sources with normalization.
 
 ### Multi-Source Data Architecture
 
 **Data Sources:**
-1. **GraphQL** - Primary device registry and agent information
-2. **Fleet MDM** - Accurate hardware specs, battery health, users
-3. **Tactical RMM** - Legacy device monitoring data
+1. **GraphQL** — Primary device registry and agent information
+2. **Fleet MDM** — Accurate hardware specs, battery health, users
+3. **Tactical RMM** — Legacy device monitoring data
 
-**Normalization Strategy:**
-```typescript
-// Data prioritization in normalize-device.ts
-Core Hardware/System:  Fleet MDM → GraphQL → Tactical RMM
-Agent Version:         GraphQL → Tactical RMM → Fleet MDM
+**Normalization Strategy** (in `src/app/devices/utils/normalize-device.ts`):
+```
+Core Hardware/System:  Fleet MDM -> GraphQL -> Tactical RMM
+Agent Version:         GraphQL -> Tactical RMM -> Fleet MDM
 IP Addresses:          Unified array with Fleet first
 Users:                 Unified type (Fleet + Tactical)
 Public IP:             Filtered (excludes private IPs)
 ```
 
-### Type System
+### Key Types
 
-**Complete Fleet Types** - `src/app/devices/types/fleet.types.ts`:
+**Fleet types** — `src/app/devices/types/fleet.types.ts`:
 ```typescript
 export interface FleetHost {
-  // Hardware
-  cpu_brand: string              // "Apple M3 Max"
-  cpu_physical_cores: number     // 14
-  cpu_logical_cores: number      // 16
-  memory: number                 // bytes
-
-  // Network
-  primary_ip: string             // Local IP
-  primary_mac: string
-  public_ip: string              // May be private, filter it!
-
-  // Nested objects
-  users: FleetUser[]             // System users
-  batteries: FleetBattery[]      // macOS battery health
-  software: FleetSoftware[]      // Installed software
-  mdm: FleetMDMInfo              // MDM enrollment
-  labels: FleetLabel[]           // Fleet labels
-  issues: FleetIssues            // Security issues
-}
-
-export interface FleetBattery {
-  cycle_count: number
-  health: string  // "Normal (99%)" or "Fair" or "Poor"
+  cpu_brand: string;
+  cpu_physical_cores: number;
+  cpu_logical_cores: number;
+  memory: number;           // bytes
+  primary_ip: string;
+  public_ip: string;        // May be private — filter it!
+  users: FleetUser[];
+  batteries: FleetBattery[];
+  software: FleetSoftware[];
+  mdm: FleetMDMInfo;
 }
 ```
 
-**Unified Types** - `src/app/devices/types/device.types.ts`:
+**Unified types** — `src/app/devices/types/device.types.ts`:
 ```typescript
-// Compatible with both Fleet and Tactical
 export interface UnifiedUser {
-  username: string
-  uid?: number          // From Fleet
-  type?: string         // From Fleet: "person" | "service"
-  groupname?: string    // From Fleet
-  shell?: string        // From Fleet
-  isLoggedIn?: boolean  // Computed
-  source: 'fleet' | 'tactical' | 'unknown'  // Internal only
-}
-
-// Extended Device interface
-export interface Device {
-  // ... existing fields
-
-  // Unified fields
-  users?: UnifiedUser[]       // Merged Fleet + Tactical
-  local_ips: string[]         // Merged, Fleet first
-  public_ip: string           // Filtered actual public IP
-
-  // Complete Fleet MDM data
-  fleet?: {
-    cpu_physical_cores?: number
-    cpu_logical_cores?: number
-    batteries?: FleetBattery[]
-    users?: FleetUser[]
-    // ... all Fleet fields
-  }
+  username: string;
+  uid?: number;
+  type?: string;            // "person" | "service"
+  source: 'fleet' | 'tactical' | 'unknown';
 }
 ```
 
-### Data Normalization
+### Key Files
+- `src/app/devices/types/fleet.types.ts` — Complete Fleet MDM types
+- `src/app/devices/types/device.types.ts` — Unified device + user types
+- `src/app/devices/utils/normalize-device.ts` — Multi-source normalization
+- `src/app/devices/components/tabs/hardware-tab.tsx` — Battery, CPU, disk, RAM
+- `src/app/devices/components/tabs/network-tab.tsx` — Unified IPs
+- `src/app/devices/components/tabs/users-tab.tsx` — Unified users
+- `src/lib/fleet-api-client.ts` — Fleet API integration
+- `src/lib/tactical-api-client.ts` — Tactical RMM API integration
 
-**File:** `src/app/devices/utils/normalize-device.ts`
+## Accessibility Standards
 
-Key functions:
-- `normalizeDeviceListNode()` - List view (lighter data)
-- `normalizeDeviceDetailNode()` - Detail view (complete data)
-- `isPrivateIP()` - Filter private IPs (10.x, 192.168.x, etc.)
+### Required Practices
+1. **Semantic HTML** — Use proper HTML elements and core library components
+2. **Keyboard Navigation** — Core library provides automatic support
+3. **Screen Reader Support** — Add aria-labels and descriptions
+4. **Color/Contrast** — Use ODS design tokens only
+5. **Focus Management** — Handle focus in modals and dynamic content
 
-**Private IP Detection:**
+### ODS Design Tokens (MANDATORY)
 ```typescript
-const isPrivateIP = (ip: string): boolean => {
-  if (ip.startsWith('10.')) return true
-  if (ip.startsWith('172.')) {
-    const second = parseInt(ip.split('.')[1])
-    if (second >= 16 && second <= 31) return true
-  }
-  if (ip.startsWith('192.168.')) return true
-  if (ip.startsWith('127.')) return true        // Loopback
-  if (ip.startsWith('169.254.')) return true    // Link-local
-  if (ip.startsWith('fe80:')) return true       // IPv6 link-local
-  if (ip.startsWith('fc00:') || ip.startsWith('fd00:')) return true
-  return false
-}
+// GOOD: Using ODS tokens
+<Card className="bg-ods-card border-ods-border">
+  <div className="text-ods-text-primary">Primary text</div>
+  <div className="text-ods-text-secondary">Secondary text</div>
+</Card>
+
+// BAD: Hardcoded values
+<Card className="bg-gray-800 border-gray-700">
+  <div className="text-white">Primary text</div>
+</Card>
 ```
 
-### Hardware Tab Components
-
-**Battery Health** - macOS devices only:
-```typescript
-// hardware-tab.tsx
-const batteries = device.fleet?.batteries || []
-
-{batteries.length > 0 && (
-  <InfoCard
-    data={{
-      title: `Battery ${index + 1}`,
-      subtitle: "Normal (99%)",  // Fleet format
-      items: [
-        { label: 'Cycle Count', value: '156' },
-        { label: 'Health', value: '99%' }
-      ],
-      progress: {
-        value: 99,
-        warningThreshold: 60,
-        criticalThreshold: 80,
-        inverted: true  // High = good (green), low = bad (red)
-      }
-    }}
-  />
-)}
-```
-
-**CPU Cores** - From Fleet:
-```typescript
-const parseCpuModel = (cpuArray: string[], fleetData?: Device['fleet']) => {
-  const physicalCores = fleetData?.cpu_physical_cores  // 14
-  const logicalCores = fleetData?.cpu_logical_cores    // 16
-
-  return [{
-    model: "Apple M3 Max",  // From cpu_brand
-    items: [
-      { label: 'Physical Cores', value: '14' },
-      { label: 'Logical Cores', value: '16' }
-    ]
-  }]
-}
-```
-
-### Inverted Progress Bar
-
-**Usage:**
-```typescript
-// Disk usage: high = bad (red)
-<ProgressBar
-  progress={diskUsage}
-  inverted={false}  // Default
-/>
-
-// Battery health: high = good (green)
-<ProgressBar
-  progress={batteryHealth}
-  inverted={true}  // Inverted
-/>
-```
-
-**Color Logic** - Uses ODS tokens:
-```typescript
-// Normal mode (inverted=false): Disk usage
-progress >= 90: var(--ods-attention-red-error)     // Red
-progress >= 75: var(--color-warning)               // Yellow
-else:           var(--ods-attention-green-success) // Green
-
-// Inverted mode (inverted=true): Battery health
-progress >= 80: var(--ods-attention-green-success) // Green
-progress >= 60: var(--color-warning)               // Yellow
-else:           var(--ods-attention-red-error)     // Red
-```
-
-### ODS Color Tokens
-
-**MANDATORY:** Always use ODS tokens, never hardcoded colors:
-```typescript
-// Status colors
+**Key tokens:**
+```css
 --ods-attention-green-success: #5ea62e
 --ods-attention-red-error: #f36666
 --color-warning: #f59e0b
-
-// UI colors
---ods-system-greys-soft-grey-action: #4e4e4e
 --ods-card: #212121
 --ods-border: #3a3a3a
 --ods-text-primary: #fafafa
 --ods-text-secondary: #888888
 ```
 
-### Key Files
+**Tailwind preset:** ODS colors are provided via the core library's Tailwind preset (see `tailwind.config.ts`).
 
-- `src/app/devices/types/fleet.types.ts` - Complete Fleet MDM types (170 lines)
-- `src/app/devices/types/device.types.ts` - Unified device + user types
-- `src/app/devices/utils/normalize-device.ts` - Multi-source normalization (355 lines)
-- `src/app/devices/components/tabs/hardware-tab.tsx` - Battery, CPU, disk, RAM
-- `src/app/devices/components/tabs/network-tab.tsx` - Unified IPs
-- `src/app/devices/components/tabs/users-tab.tsx` - Unified users
-- `src/lib/fleet-api-client.ts` - Fleet API integration
-- `FLEET_MDM_INTEGRATION.md` - Complete documentation
-
-## Accessibility Standards
-
-### Required Practices
-1. **Semantic HTML** - Use proper HTML elements and UI-Kit components
-2. **Keyboard Navigation** - UI-Kit provides automatic support
-3. **Screen Reader Support** - Add aria-labels and descriptions
-4. **Color/Contrast** - Use ODS design tokens only
-5. **Focus Management** - Handle focus in modals and dynamic content
-
-### ODS Design Tokens (MANDATORY)
+### Inverted Progress Bar
 ```typescript
-// ✅ GOOD: Using ODS tokens
-<Card className="bg-ods-card border-ods-border">
-  <div className="text-ods-text-primary">Primary text</div>
-  <div className="text-ods-text-secondary">Secondary text</div>
-  <Button className="bg-ods-accent text-ods-text-on-accent">
-    Action
-  </Button>
-</Card>
+// Disk usage: high = bad (red)
+<ProgressBar progress={diskUsage} inverted={false} />
 
-// ❌ BAD: Hardcoded values
-<Card className="bg-gray-800 border-gray-700">
-  <div className="text-white">Primary text</div>
-</Card>
+// Battery health: high = good (green)
+<ProgressBar progress={batteryHealth} inverted={true} />
 ```
 
 ## Testing & Deployment
@@ -759,93 +714,101 @@ else:           var(--ods-attention-red-error)     // Red
 | Command | Purpose |
 |---------|---------|
 | `npm run type-check` | TypeScript validation |
-| `npm run lint` | Code quality check |
+| `npm run lint:biome` | Biome linting + formatting |
 | `npm run build` | Production build verification |
 
 ### Build & Deployment
 ```bash
-# Full application build
-npm run build
-
-# Auth-only build (minimal)
-npm run build:auth
-
-# Output: dist/ directory (static export)
+npm run build       # Output: dist/ directory
+npm run start       # Serve production build
 ```
 
 **Deployment Targets:**
-- Static hosting (Vercel, Netlify, AWS S3)
 - Container deployment with nginx
+- Static hosting (Vercel, Netlify, AWS S3)
 - CDN distribution
 
 ## Troubleshooting
 
 ### Common Issues
+
 **Port Conflicts:**
 ```bash
 lsof -i:3000                    # Check port usage
-lsof -ti:3000 | xargs kill -9   # Kill processes
 PORT=3001 npm run dev           # Use different port
 ```
 
-**UI-Kit Issues:**
+**Core Library Issues:**
 ```bash
-cd ui-kit && npm install       # Reinstall dependencies
-cd ui-kit && npm run type-check # Verify build
+# Re-link via yalc
+cd ~/flamingo/openframe-oss-lib/openframe-frontend-core
+yalc publish
+cd ~/flamingo/openframe-oss-tenant/openframe/services/openframe-frontend
+yalc add @flamingo-stack/openframe-frontend-core
+npm install
+```
+
+**Biome Errors:**
+```bash
+npm run lint:biome:fix    # Auto-fix most issues
+npm run format:fix        # Fix formatting
 ```
 
 **API Connection:**
-- Verify `NEXT_PUBLIC_API_URL` matches backend
+- Verify `NEXT_PUBLIC_TENANT_HOST_URL` matches backend
 - Check CORS configuration
-- Verify `CLIENT_ID` and `CLIENT_SECRET`
+- For dev ticket mode, ensure `NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true`
 
 **State Management:**
 ```javascript
 // Clear corrupted localStorage
-localStorage.removeItem('devices-store')
-localStorage.removeItem('auth-store')
+localStorage.removeItem('devices-store');
+localStorage.removeItem('auth-store');
 ```
-
-### Performance Optimization
-- Use React.memo for expensive components
-- Implement proper loading states
-- Optimize bundle size with dynamic imports
-- Use GraphQL query caching
-- Implement code splitting at route level
-
-## Development Workflow
-
-1. **Install dependencies**: `npm install`
-2. **Configure environment**: Set API URL and credentials
-3. **Start development**: `npm run dev`
-4. **Follow patterns**: Use UI-Kit components and API hooks with toast
-5. **Test thoroughly**: Type-check, lint, manual testing
-6. **Build and deploy**: Verify production build works
 
 ## Key Integration Points
 
 ### Backend Services
-- **API Gateway** - `/api` - Primary API access
-- **GraphQL** - `/api/graphql` - Real-time queries
-- **WebSocket** - `/api/ws` - Live updates
-- **Authentication** - `/api/oauth/*` - OAuth2/OpenID Connect
+- **API Gateway** — `/api` — Primary API access
+- **GraphQL** — `/api/graphql` — Data queries
+- **WebSocket** — `/api/ws` — Live updates
+- **Authentication** — `/api/oauth/*` — OAuth2/OpenID Connect
+
+### API Client Architecture
+
+The `ApiClient` singleton (`src/lib/api-client.ts`) handles:
+- Cookie-based auth (production) + header-based auth (dev ticket mode)
+- Automatic 401 detection and token refresh
+- Request queuing during refresh
+- Force logout on auth failure
+
+```typescript
+import { apiClient } from '@/lib/api-client';
+
+const response = await apiClient.get<Device[]>('/api/devices');
+if (response.ok) {
+  console.log(response.data);
+} else {
+  console.error(response.error);
+}
+```
 
 ### External Dependencies
-- **UI-Kit** - **EXTERNAL** design system (symlinked from `/Users/michaelassraf/Documents/GitHub/ui-kit`)
-  - Separate git repository
-  - Shared across Flamingo Stack projects
-  - Published as `@flamingo/ui-kit` npm package
-  - Changes affect multiple projects
-- **Terminal Libraries** - xterm.js 5.3 integration
-- **Query Libraries** - Apollo Client 3.8 + TanStack for GraphQL + REST
-- **Fleet MDM** - Device monitoring integration
-- **Tactical RMM** - Legacy device monitoring
+- **Core Library** — `@flamingo-stack/openframe-frontend-core` (via yalc)
+- **Terminal** — @xterm/xterm 6.0 integration
+- **Code Editor** — Monaco Editor for script editing
+- **Fleet MDM** — Device monitoring integration
+- **Tactical RMM** — Device monitoring integration
+- **MeshCentral** — Remote desktop/shell/file management (via `src/lib/meshcentral/`)
 
 ---
 
-**Remember:**
-1. **UI-Kit is EXTERNAL** - It's a separate repo, not part of OpenFrame
-2. **Always use UI-Kit components** - No custom UI components allowed
-3. **Follow the mandatory useToast pattern** for all API operations
-4. **Use ODS design tokens** - Never hardcode colors or styles
-5. **Normalize multi-source data** - Fleet → GraphQL → Tactical priority
+**Final Reminders:**
+1. **Core library is EXTERNAL** — separate repo, not part of OpenFrame
+2. **Always use core library components** — no custom UI primitives
+3. **Always use `useToast`** for all API operation feedback
+4. **Use ODS design tokens** — never hardcode colors or styles
+5. **Use TanStack React Query** for all data fetching — no Apollo Client
+6. **Use react-hook-form + zod** for forms
+7. **Biome is the primary linter** — must pass before commits
+8. **Normalize multi-source data** — Fleet -> GraphQL -> Tactical priority

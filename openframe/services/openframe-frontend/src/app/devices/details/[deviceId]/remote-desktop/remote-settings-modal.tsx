@@ -1,39 +1,39 @@
-'use client'
+'use client';
 
-import React, { useState, useEffect } from 'react'
 import {
+  Button,
+  Checkbox,
+  Label,
   Modal,
+  ModalFooter,
   ModalHeader,
   ModalTitle,
-  ModalFooter,
-  Button,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Checkbox,
-  Label
-} from '@flamingo-stack/openframe-frontend-core'
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { MeshDesktop } from '@lib/meshcentral/meshcentral-desktop'
-import { MeshTunnel } from '@lib/meshcentral/meshcentral-tunnel'
+} from '@flamingo-stack/openframe-frontend-core';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import React, { useEffect, useState } from 'react';
+import { MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
+import { MeshTunnel } from '@/lib/meshcentral/meshcentral-tunnel';
 import {
-  RemoteSettingsConfig,
-  QUALITY_OPTIONS,
-  SCALING_OPTIONS,
   FRAME_RATE_OPTIONS,
-  RemoteDesktopSettings
-} from '@lib/meshcentral/remote-settings'
+  QUALITY_OPTIONS,
+  RemoteDesktopSettings,
+  RemoteSettingsConfig,
+  SCALING_OPTIONS,
+} from '@/lib/meshcentral/remote-settings';
 
 interface RemoteSettingsModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  currentSettings: RemoteSettingsConfig
-  desktopRef: React.MutableRefObject<MeshDesktop | null>
-  tunnelRef: React.MutableRefObject<MeshTunnel | null>
-  connectionState: number
-  onSettingsChange?: (settings: RemoteSettingsConfig) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentSettings: RemoteSettingsConfig;
+  desktopRef: React.MutableRefObject<MeshDesktop | null>;
+  tunnelRef: React.MutableRefObject<MeshTunnel | null>;
+  connectionState: number;
+  onSettingsChange?: (settings: RemoteSettingsConfig) => void;
 }
 
 export function RemoteSettingsModal({
@@ -43,67 +43,65 @@ export function RemoteSettingsModal({
   desktopRef,
   tunnelRef,
   connectionState,
-  onSettingsChange
+  onSettingsChange,
 }: RemoteSettingsModalProps) {
-  const { toast } = useToast()
-  const [settings, setSettings] = useState<RemoteSettingsConfig>(currentSettings)
+  const { toast } = useToast();
+  const [settings, setSettings] = useState<RemoteSettingsConfig>(currentSettings);
 
   useEffect(() => {
-    setSettings(currentSettings)
-  }, [currentSettings])
+    setSettings(currentSettings);
+  }, [currentSettings]);
 
   const handleSaveSettings = () => {
     if (!tunnelRef.current || connectionState !== 3) {
       toast({
         title: 'Connection Required',
         description: 'Please wait for the remote desktop connection to establish',
-        variant: 'destructive'
-      })
-      return
+        variant: 'destructive',
+      });
+      return;
     }
 
     try {
-      const settingsManager = new RemoteDesktopSettings(settings)
-      settingsManager.setWebSocket(tunnelRef.current)
-      settingsManager.applySettings(settings)
+      const settingsManager = new RemoteDesktopSettings(settings);
+      settingsManager.setWebSocket(tunnelRef.current);
+      settingsManager.applySettings(settings);
 
       if (desktopRef.current) {
-        desktopRef.current.setSwapMouseButtons?.(settings.swapMouseButtons)
-        desktopRef.current.setUseRemoteKeyboardMap?.(settings.useRemoteKeyboardMap)
-        desktopRef.current.setInvertScrollDirection?.(settings.invertScrollDirection)
+        desktopRef.current.setSwapMouseButtons?.(settings.swapMouseButtons);
+        desktopRef.current.setUseRemoteKeyboardMap?.(settings.useRemoteKeyboardMap);
+        desktopRef.current.setInvertScrollDirection?.(settings.invertScrollDirection);
       }
 
-      onSettingsChange?.(settings)
+      onSettingsChange?.(settings);
 
       toast({
         title: 'Settings Applied',
         description: `Remote control settings updated. Est. bandwidth: ${settingsManager.estimateBandwidth()} KB/s`,
         variant: 'success',
-        duration: 3000
-      })
+        duration: 3000,
+      });
 
-      onOpenChange(false)
-    } catch (error) {
+      onOpenChange(false);
+    } catch (_error) {
       toast({
         title: 'Settings Failed',
         description: 'Unable to apply remote control settings',
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   const handleClose = () => {
-    setSettings(currentSettings)
-    onOpenChange(false)
-  }
+    setSettings(currentSettings);
+    onOpenChange(false);
+  };
 
   return (
     <Modal isOpen={open} onClose={handleClose} className="max-w-2xl">
       <ModalHeader>
         <ModalTitle>Remote Control Settings</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
-          Configure quality, scaling, and keyboard preferences
-        </p>
+        <p className="text-ods-text-secondary text-sm mt-1">Configure quality, scaling, and keyboard preferences</p>
       </ModalHeader>
 
       <div className="px-6 py-4 space-y-4">
@@ -114,7 +112,7 @@ export function RemoteSettingsModal({
             <Label htmlFor="quality">Quality</Label>
             <Select
               value={String(settings.quality)}
-              onValueChange={(value) => setSettings({ ...settings, quality: Number(value) })}
+              onValueChange={value => setSettings({ ...settings, quality: Number(value) })}
             >
               <SelectTrigger id="quality" className="bg-ods-card">
                 <SelectValue />
@@ -134,7 +132,7 @@ export function RemoteSettingsModal({
             <Label htmlFor="scaling">Scaling</Label>
             <Select
               value={String(settings.scaling)}
-              onValueChange={(value) => setSettings({ ...settings, scaling: Number(value) })}
+              onValueChange={value => setSettings({ ...settings, scaling: Number(value) })}
             >
               <SelectTrigger id="scaling" className="bg-ods-card">
                 <SelectValue>
@@ -177,9 +175,7 @@ export function RemoteSettingsModal({
           <Checkbox
             id="invert-scroll"
             checked={settings.invertScrollDirection}
-            onCheckedChange={(checked) =>
-              setSettings({ ...settings, invertScrollDirection: !!checked })
-            }
+            onCheckedChange={checked => setSettings({ ...settings, invertScrollDirection: !!checked })}
           />
           <div className="flex-1">
             <Label htmlFor="invert-scroll" className="cursor-pointer">
@@ -194,9 +190,7 @@ export function RemoteSettingsModal({
             <Checkbox
               id="swap-mouse"
               checked={settings.swapMouseButtons}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, swapMouseButtons: !!checked })
-              }
+              onCheckedChange={checked => setSettings({ ...settings, swapMouseButtons: !!checked })}
             />
             <div className="flex-1">
               <Label htmlFor="swap-mouse" className="cursor-pointer">
@@ -210,9 +204,7 @@ export function RemoteSettingsModal({
             <Checkbox
               id="keyboard-map"
               checked={settings.useRemoteKeyboardMap}
-              onCheckedChange={(checked) =>
-                setSettings({ ...settings, useRemoteKeyboardMap: !!checked })
-              }
+              onCheckedChange={checked => setSettings({ ...settings, useRemoteKeyboardMap: !!checked })}
             />
             <div className="flex-1">
               <Label htmlFor="keyboard-map" className="cursor-pointer">
@@ -228,10 +220,8 @@ export function RemoteSettingsModal({
         <Button variant="outline" onClick={handleClose}>
           Close
         </Button>
-        <Button onClick={handleSaveSettings}>
-          Save Settings
-        </Button>
+        <Button onClick={handleSaveSettings}>Save Settings</Button>
       </ModalFooter>
     </Modal>
-  )
+  );
 }

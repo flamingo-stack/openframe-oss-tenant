@@ -3,49 +3,49 @@
  * Unified configuration for device action buttons used across table dropdown and detail page
  */
 
-import React from 'react'
 import {
-  ShellIcon,
-  RemoteControlIcon,
   CmdIcon,
-  PowerShellIcon
-} from '@flamingo-stack/openframe-frontend-core/components/icons'
-import { Folder } from 'lucide-react'
-import { getDeviceActionAvailability, type DeviceActionAvailability } from './device-action-utils'
-import type { Device } from '../types/device.types'
+  PowerShellIcon,
+  RemoteControlIcon,
+  ShellIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Folder } from 'lucide-react';
+import React from 'react';
+import type { Device } from '../types/device.types';
+import { type DeviceActionAvailability, getDeviceActionAvailability } from './device-action-utils';
 
 /**
  * Shell submenu item configuration
  */
 export interface ShellSubmenuItem {
-  id: 'cmd' | 'powershell' | 'bash'
-  label: string
-  icon: React.ReactNode
+  id: 'cmd' | 'powershell' | 'bash';
+  label: string;
+  icon: React.ReactNode;
 }
 
 /**
  * Device action button configuration
  */
 export interface DeviceActionButtonConfig {
-  id: string
-  label: string
-  icon: React.ReactNode
-  disabled: boolean
-  href: string
-  showExternalLinkOnHover: boolean
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  disabled: boolean;
+  href: string;
+  showExternalLinkOnHover: boolean;
   // For Windows Remote Shell - has submenu
-  type: 'button' | 'submenu'
-  submenu?: ShellSubmenuItem[]
+  type: 'button' | 'submenu';
+  submenu?: ShellSubmenuItem[];
 }
 
 /**
  * All device action button configurations
  */
 export interface DeviceActionButtons {
-  remoteControl: DeviceActionButtonConfig
-  remoteShell: DeviceActionButtonConfig
-  manageFiles: DeviceActionButtonConfig
-  availability: DeviceActionAvailability
+  remoteControl: DeviceActionButtonConfig;
+  remoteShell: DeviceActionButtonConfig;
+  manageFiles: DeviceActionButtonConfig;
+  availability: DeviceActionAvailability;
 }
 
 /**
@@ -56,33 +56,29 @@ export function getWindowsShellSubmenu(): ShellSubmenuItem[] {
     {
       id: 'cmd',
       label: 'CMD',
-      icon: <CmdIcon className="w-6 h-6" />
+      icon: <CmdIcon className="w-6 h-6" />,
     },
     {
       id: 'powershell',
       label: 'PowerShell',
-      icon: <PowerShellIcon className="w-6 h-6" />
-    }
-  ]
+      icon: <PowerShellIcon className="w-6 h-6" />,
+    },
+  ];
 }
 
 /**
  * Get shell submenu href for a given shell type
  */
 export function getShellHref(deviceId: string, shellType: 'cmd' | 'powershell' | 'bash'): string {
-  return `/devices/details/${deviceId}/remote-shell?shellType=${shellType}`
+  return `/devices/details/${deviceId}/remote-shell?shellType=${shellType}`;
 }
 
 /**
  * Get unified device action button configurations
  * Single source of truth for all device action buttons
  */
-export function getDeviceActionButtons(
-  device: Device,
-  deviceId: string,
-  isWindows: boolean
-): DeviceActionButtons {
-  const availability = getDeviceActionAvailability(device)
+export function getDeviceActionButtons(device: Device, deviceId: string, isWindows: boolean): DeviceActionButtons {
+  const availability = getDeviceActionAvailability(device);
 
   return {
     remoteControl: {
@@ -92,7 +88,7 @@ export function getDeviceActionButtons(
       disabled: !availability.remoteControlEnabled,
       href: `/devices/details/${deviceId}/remote-desktop`,
       showExternalLinkOnHover: true,
-      type: 'button'
+      type: 'button',
     },
 
     remoteShell: isWindows
@@ -104,7 +100,7 @@ export function getDeviceActionButtons(
           href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
           showExternalLinkOnHover: true,
           type: 'submenu',
-          submenu: getWindowsShellSubmenu()
+          submenu: getWindowsShellSubmenu(),
         }
       : {
           id: 'remote-shell',
@@ -113,7 +109,7 @@ export function getDeviceActionButtons(
           disabled: !availability.remoteShellEnabled,
           href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
           showExternalLinkOnHover: true,
-          type: 'button'
+          type: 'button',
         },
 
     manageFiles: {
@@ -123,11 +119,11 @@ export function getDeviceActionButtons(
       disabled: !availability.manageFilesEnabled,
       href: `/devices/details/${deviceId}/file-manager`,
       showExternalLinkOnHover: true,
-      type: 'button'
+      type: 'button',
     },
 
-    availability
-  }
+    availability,
+  };
 }
 
 /**
@@ -138,9 +134,9 @@ export function toActionsMenuItem(
   config: DeviceActionButtonConfig,
   deviceId: string,
   handlers?: {
-    onClick?: () => void
-    onShellSelect?: (type: 'cmd' | 'powershell' | 'bash') => void
-  }
+    onClick?: () => void;
+    onShellSelect?: (type: 'cmd' | 'powershell' | 'bash') => void;
+  },
 ) {
   if (config.type === 'submenu' && config.submenu) {
     return {
@@ -155,9 +151,9 @@ export function toActionsMenuItem(
         icon: item.icon,
         href: `/devices/details/${deviceId}/remote-shell?shellType=${item.id}`,
         showExternalLinkOnHover: true,
-        onClick: () => handlers?.onShellSelect?.(item.id)
-      }))
-    }
+        onClick: () => handlers?.onShellSelect?.(item.id),
+      })),
+    };
   }
 
   return {
@@ -167,6 +163,6 @@ export function toActionsMenuItem(
     disabled: config.disabled,
     href: config.href,
     showExternalLinkOnHover: config.showExternalLinkOnHover,
-    onClick: handlers?.onClick
-  }
+    onClick: handlers?.onClick,
+  };
 }

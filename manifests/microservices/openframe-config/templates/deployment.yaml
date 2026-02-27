@@ -13,15 +13,17 @@ spec:
     metadata:
       labels:
         app: openframe-config
-      {{- with .Values.podAnnotations }}
       annotations:
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- end }}
+        prometheus.io/port: "8889"
+        prometheus.io/path: "/management/{{ .Values.global.image.tag }}/prometheus"
     spec:
 
       containers:
         - name: openframe-config
-          image: "{{ .Values.image.repo }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.image.tag .Values.global.image.tag }}"
           ports:
             - containerPort: 8888
               name: http

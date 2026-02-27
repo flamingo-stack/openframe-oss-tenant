@@ -1,14 +1,14 @@
-import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core'
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils'
-import { Shield } from 'lucide-react'
-import type { ReactNode } from 'react'
-import type { PolicyRule } from '../types/ai-policies'
+import type { ApprovalLevel, PermissionCategory } from '@flamingo-stack/openframe-frontend-core';
+import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
+import { Shield } from 'lucide-react';
+import type { ReactNode } from 'react';
+import type { PolicyRule } from '../types/ai-policies';
 
 function slugify(value: string) {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/^-+|-+$/g, '');
 }
 
 export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCategory[]> {
@@ -17,24 +17,24 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
     Map<
       string,
       {
-        id: string
-        name: string
-        icon: ReactNode
-        policies: PermissionCategory['policies']
+        id: string;
+        name: string;
+        icon: ReactNode;
+        policies: PermissionCategory['policies'];
       }
     >
-  >()
+  >();
 
   for (const rule of rules) {
-    const policyGroupName = rule.policyGroup || 'General'
-    const categoryName = rule.category || 'Other'
-    const categoryId = slugify(`${policyGroupName}:${categoryName}`) || 'other'
+    const policyGroupName = rule.policyGroup || 'General';
+    const categoryName = rule.category || 'Other';
+    const categoryId = slugify(`${policyGroupName}:${categoryName}`) || 'other';
 
     if (!groupedByPolicyGroup.has(policyGroupName)) {
-      groupedByPolicyGroup.set(policyGroupName, new Map())
+      groupedByPolicyGroup.set(policyGroupName, new Map());
     }
 
-    const policyGroupMap = groupedByPolicyGroup.get(policyGroupName)!
+    const policyGroupMap = groupedByPolicyGroup.get(policyGroupName)!;
 
     if (!policyGroupMap.has(categoryId)) {
       policyGroupMap.set(categoryId, {
@@ -42,7 +42,7 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
         name: categoryName,
         icon: <Shield className="w-4 h-4" />,
         policies: [],
-      })
+      });
     }
 
     policyGroupMap.get(categoryId)!.policies.push({
@@ -52,10 +52,10 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
       commandPattern: rule.commandPattern,
       toolName: normalizeToolTypeWithFallback(rule.tool),
       approvalLevel: rule.approvalLevel as ApprovalLevel,
-    })
+    });
   }
 
-  const finalGroups = new Map<string, PermissionCategory[]>()
+  const finalGroups = new Map<string, PermissionCategory[]>();
   for (const [policyGroupName, categoriesMap] of groupedByPolicyGroup) {
     const categories = Array.from(categoriesMap.values())
       .sort((a, b) => a.name.localeCompare(b.name))
@@ -67,12 +67,12 @@ export function buildPolicyGroups(rules: PolicyRule[]): Map<string, PermissionCa
         globalPermission: undefined,
         isExpanded: false,
         policies: c.policies,
-      })) satisfies PermissionCategory[]
+      })) satisfies PermissionCategory[];
 
-    finalGroups.set(policyGroupName, categories)
+    finalGroups.set(policyGroupName, categories);
   }
 
-  return finalGroups
+  return finalGroups;
 }
 
 export function clonePolicyGroups(groups: Map<string, PermissionCategory[]>) {
@@ -83,14 +83,14 @@ export function clonePolicyGroups(groups: Map<string, PermissionCategory[]>) {
         ...cat,
         policies: cat.policies.map(p => ({ ...p })),
       })),
-    ])
-  )
+    ]),
+  );
 }
 
 export function mapToObject<T>(entries: Map<string, T>) {
-  const obj: Record<string, T> = {}
+  const obj: Record<string, T> = {};
   entries.forEach((value, key) => {
-    obj[key] = value
-  })
-  return obj
+    obj[key] = value;
+  });
+  return obj;
 }

@@ -143,7 +143,7 @@ spec:
           'until redis-cli -h authentik-redis-0.authentik-redis.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
 
       - name: wait-for-server
-        image: {{ default .Values.registerJob.image.registry .Values.global.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
+        image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         command: ['sh', '-c',
           'until curl -s http://authentik-server:9000/-/health/ready/; do echo waiting for authentik-server; sleep 2; done;']
 

@@ -1,45 +1,45 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { useRouter } from 'next/navigation'
 import {
-  OnboardingWalkthrough,
-  type OnboardingStepConfig,
-  SSOConfigurationIcon,
-  OrganizationsIcon,
   DevicesIcon,
+  DocumentIcon,
+  type OnboardingStepConfig,
+  OnboardingWalkthrough,
+  OrganizationsIcon,
+  SSOConfigurationIcon,
   UsersGroupIcon,
-  DocumentIcon
-} from '@flamingo-stack/openframe-frontend-core'
-import { useOnboardingCompletion } from '../hooks/use-onboarding-completion'
+} from '@flamingo-stack/openframe-frontend-core';
+import { useRouter } from 'next/navigation';
+import React from 'react';
+import { useOnboardingCompletion } from '../hooks/use-onboarding-completion';
 
 /**
  * Dashboard onboarding section using existing hooks for completion detection
  * Eliminates duplicate API calls by leveraging dashboard hooks
  */
 export function OnboardingSection() {
-  const router = useRouter()
-  const { completionStatus, isLoading } = useOnboardingCompletion()
+  const router = useRouter();
+  const { completionStatus, isLoading } = useOnboardingCompletion();
 
   const handleOrganizationAction = React.useCallback(async () => {
-    router.push('/organizations/edit/new')
-  }, [router])
+    router.push('/organizations/edit/new');
+  }, [router]);
 
   const handleDeviceAction = React.useCallback(async () => {
-    router.push('/devices/new')
-  }, [router])
+    router.push('/devices/new');
+  }, [router]);
 
   const handleTeamAction = React.useCallback(async () => {
-    router.push('/settings?tab=company-and-users')
-  }, [router])
+    router.push('/settings?tab=company-and-users');
+  }, [router]);
 
   const handleSsoAction = React.useCallback(async () => {
-    router.push('/settings?tab=sso-configuration')
-  }, [router])
+    router.push('/settings?tab=sso-configuration');
+  }, [router]);
 
   const handleKnowledgeBaseAction = React.useCallback(async () => {
-    window.open('https://www.flamingo.run/knowledge-base', '_blank', 'noopener,noreferrer')
-  }, [])
+    window.open('https://www.flamingo.run/knowledge-base', '_blank', 'noopener,noreferrer');
+  }, []);
 
   const onboardingSteps: OnboardingStepConfig[] = [
     {
@@ -49,7 +49,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <OrganizationsIcon color={color} className="w-6 h-6" />,
       actionText: 'Add Organization',
       completedText: 'Add Organization',
-      onAction: handleOrganizationAction
+      onAction: handleOrganizationAction,
     },
     {
       id: 'device-management',
@@ -58,7 +58,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <DevicesIcon color={color} className="w-6 h-6" />,
       actionText: 'Add Device',
       completedText: 'Add Device',
-      onAction: handleDeviceAction
+      onAction: handleDeviceAction,
     },
     {
       id: 'company-and-team',
@@ -67,7 +67,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <UsersGroupIcon color={color} className="w-6 h-6" />,
       actionText: 'Invite Users',
       completedText: 'Invite Users',
-      onAction: handleTeamAction
+      onAction: handleTeamAction,
     },
     {
       id: 'sso-configuration',
@@ -76,7 +76,7 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <SSOConfigurationIcon color={color} className="w-6 h-6" />,
       actionText: 'Add SSO IdP',
       completedText: 'Add SSO IdP',
-      onAction: handleSsoAction
+      onAction: handleSsoAction,
     },
     {
       id: 'knowledge-base',
@@ -85,10 +85,10 @@ export function OnboardingSection() {
       actionIcon: (color = 'black') => <DocumentIcon color={color} className="w-6 h-6" />,
       actionText: 'Knowledge Base',
       completedText: 'Knowledge Base',
-      onAction: handleKnowledgeBaseAction
+      onAction: handleKnowledgeBaseAction,
       // No checkComplete - auto-completes when clicked
-    }
-  ]
+    },
+  ];
 
   return (
     <OnboardingWalkthrough
@@ -98,5 +98,5 @@ export function OnboardingSection() {
       completionStatus={completionStatus}
       isLoadingCompletion={isLoading}
     />
-  )
+  );
 }

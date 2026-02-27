@@ -1,45 +1,32 @@
-'use client'
+'use client';
 
-import { useEffect, useRef } from 'react'
-import { useAuthStore } from '@app/auth/stores/auth-store'
-import { initializeGraphQLIntrospection } from '@/src/lib/graphql-client'
-import { runtimeEnv } from '@/src/lib/runtime-config'
+import { useEffect, useRef } from 'react';
+import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { initializeGraphQlIntrospection } from '@/lib/graphql-client';
 
 /**
  * GraphQL Introspection Initializer
  *
- * Initializes GraphQL schema introspection after authentication.
- * This enables URL state management hooks to automatically flatten
- * nested GraphQL input types.
- *
- * The introspection happens once per session and caches the schema
- * in localStorage for 24 hours.
+ * Initializes GraphQL schema introspection after authentication is
+ * server-verified via useAuthSession (not stale localStorage).
  */
-export function GraphQLIntrospectionInitializer() {
-  const { isAuthenticated, user } = useAuthStore()
-  const hasInitialized = useRef(false)
+export function GraphQlIntrospectionInitializer() {
+  const { isAuthenticated, isReady } = useAuthSession();
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // Only initialize if authenticated and not already done
-    if (isAuthenticated && user && !hasInitialized.current) {
-      console.log('[GraphQL] User authenticated, initializing introspection...')
+    if (isReady && isAuthenticated && !hasInitialized.current) {
+      hasInitialized.current = true;
 
-      hasInitialized.current = true
-
-      // Initialize introspection (async, non-blocking)
-      initializeGraphQLIntrospection().catch((error) => {
-        console.error('[GraphQL] Introspection initialization failed:', error)
-        // Don't throw - URL state hooks can still work without it
-      })
+      initializeGraphQlIntrospection().catch(error => {
+        console.error('[GraphQL] Introspection initialization failed:', error);
+      });
     }
 
-    // Reset if user logs out
     if (!isAuthenticated && hasInitialized.current) {
-      console.log('[GraphQL] User logged out, resetting introspection flag')
-      hasInitialized.current = false
+      hasInitialized.current = false;
     }
-  }, [isAuthenticated, user])
+  }, [isAuthenticated, isReady]);
 
-  // This component doesn't render anything
-  return null
+  return null;
 }

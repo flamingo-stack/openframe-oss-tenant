@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   AlertDialog,
@@ -9,14 +9,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui'
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 interface EmailVerificationModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  userEmail: string
-  onSubmit: () => Promise<void>
-  isSending: boolean
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  userEmail: string;
+  onSubmit: () => Promise<void>;
+  isSending: boolean;
 }
 
 export function EmailVerificationModal({
@@ -35,8 +35,8 @@ export function EmailVerificationModal({
           </AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
-          Your email <span className="text-warning">{userEmail}</span> has not been verified yet.
-          Would you like to resend the verification email?
+          Your email <span className="text-warning">{userEmail}</span> has not been verified yet. Would you like to
+          resend the verification email?
         </AlertDialogDescription>
         <AlertDialogFooter className="gap-4">
           <AlertDialogCancel
@@ -55,5 +55,5 @@ export function EmailVerificationModal({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

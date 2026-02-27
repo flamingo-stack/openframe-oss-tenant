@@ -1,16 +1,12 @@
-'use client'
+'use client';
 
-import {
-  TabNavigation,
-  getTabComponent,
-  type TabItem,
-} from '@flamingo-stack/openframe-frontend-core'
-import { BracketCurlyIcon, CalendarIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2'
-import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks'
-import { useRouter, usePathname } from 'next/navigation'
-import { useCallback } from 'react'
-import { ScriptsTable } from './scripts-table'
-import { ScriptSchedulesTable } from './script-schedules-table'
+import { getTabComponent, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
+import { BracketCurlyIcon, CalendarIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback } from 'react';
+import { ScriptSchedulesTable } from './script-schedules-table';
+import { ScriptsTable } from './scripts-table';
 
 const SCRIPTS_TABS: TabItem[] = [
   {
@@ -25,36 +21,29 @@ const SCRIPTS_TABS: TabItem[] = [
     icon: CalendarIcon,
     component: ScriptSchedulesTable,
   },
-]
+];
 
 export function ScriptsView() {
-  const router = useRouter()
-  const pathname = usePathname()
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const { params, setParam } = useApiParams({
+  const { params } = useApiParams({
     tab: { type: 'string', default: 'list' },
-  })
+  });
 
   const handleTabChange = useCallback(
     (tabId: string) => {
-      router.replace(`${pathname}?tab=${tabId}`)
+      router.replace(`${pathname}?tab=${tabId}`);
     },
     [router, pathname],
-  )
+  );
 
-  const TabComponent = getTabComponent(SCRIPTS_TABS, params.tab)
+  const TabComponent = getTabComponent(SCRIPTS_TABS, params.tab);
 
   return (
     <div className="flex flex-col w-full">
-      <TabNavigation
-        tabs={SCRIPTS_TABS}
-        activeTab={params.tab}
-        urlSync={false}
-        onTabChange={handleTabChange}
-      />
-      <div className="min-h-[400px]">
-        {TabComponent ? <TabComponent /> : null}
-      </div>
+      <TabNavigation tabs={SCRIPTS_TABS} activeTab={params.tab} urlSync={false} onTabChange={handleTabChange} />
+      <div className="min-h-[400px]">{TabComponent ? <TabComponent /> : null}</div>
     </div>
-  )
+  );
 }
