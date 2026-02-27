@@ -1,7 +1,6 @@
 'use client';
 
 import { FlamingoLogo, OpenFrameLogo, OpenFrameText } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
@@ -11,38 +10,21 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const token = searchParams.get('token') || '';
 
-  const { data, error, isError } = useQuery({
-    queryKey: ['email-verify', token],
-    queryFn: async () => {
-      if (!token) {
-        throw new Error('Verification token is missing.');
-      }
+  useEffect(() => {
+    if (!token) {
+      router.replace(`/auth/error?error=${encodeURIComponent('Invalid verification link. Please try again.')}`);
+      return;
+    }
 
-      const response = await authApiClient.verifyEmail<{ code?: string; message?: string }>(token);
-
+    authApiClient.verifyEmail(token).then(response => {
       if (!response.ok) {
         const message = response.data?.message || 'Verification failed. Please try again.';
-        throw new Error(message);
+        router.replace(`/auth/error?error=${encodeURIComponent(message)}`);
+      } else {
+        window.location.href = response.data?.redirectUrl || '/auth/login';
       }
-
-      return response;
-    },
-    retry: false,
-    refetchOnWindowFocus: false,
-  });
-
-  useEffect(() => {
-    if (isError && error) {
-      router.replace(`/auth/error?error=${encodeURIComponent(error.message)}`);
-    }
-  }, [isError, error, router]);
-
-  useEffect(() => {
-    if (data?.ok && data.status === 302) {
-      const redirectUrl = (data.data as any)?.redirectUrl || '/auth/login';
-      router.replace(redirectUrl);
-    }
-  }, [data, router]);
+    });
+  }, [token, router]);
 
   return (
     <div className="min-h-screen bg-ods-bg flex flex-col items-center justify-between p-10">
