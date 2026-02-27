@@ -89,13 +89,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning className="min-h-screen antialiased font-body" data-app-type="openframe">
         <GoogleTagManager />
         <DeploymentInitializer />
-        {isAuthEnabled() && (
-          <Suspense fallback={null}>
-            <DevTicketObserver />
-            <GraphQlIntrospectionInitializer />
-          </Suspense>
-        )}
         <QueryClientProvider>
+          {isAuthEnabled() && (
+            <Suspense fallback={null}>
+              <DevTicketObserver />
+              <GraphQlIntrospectionInitializer />
+            </Suspense>
+          )}
           <RouteGuard>
             <div className="relative flex min-h-screen flex-col">
               <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>

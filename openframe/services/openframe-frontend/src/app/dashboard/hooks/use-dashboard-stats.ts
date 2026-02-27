@@ -1,18 +1,22 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { dashboardApiService } from '../services/dashboard-api-service';
 import { dashboardQueryKeys } from '../utils/query-keys';
 
 export function useDevicesOverview() {
+  const { isAuthenticated } = useAuthSession();
+
   const query = useQuery({
     queryKey: dashboardQueryKeys.deviceStats(),
     queryFn: dashboardApiService.fetchDeviceStats,
-    staleTime: 1 * 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
+    enabled: isAuthenticated,
+    staleTime: 1 * 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 2,
-    retryDelay: 1000, // 1 second between retries
+    retryDelay: 1000,
   });
 
   return {
@@ -28,13 +32,14 @@ export function useDevicesOverview() {
 }
 
 export function useChatsOverview() {
+  const { isAuthenticated } = useAuthSession();
   const isSaasMode = isSaasTenantMode();
 
   const query = useQuery({
     queryKey: dashboardQueryKeys.chatStats(),
     queryFn: dashboardApiService.fetchChatStats,
-    enabled: isSaasMode,
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    enabled: isSaasMode && isAuthenticated,
+    staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 2,
     retryDelay: 1000,
