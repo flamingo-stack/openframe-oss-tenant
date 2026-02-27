@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoCo
 import org.springframework.boot.autoconfigure.mongo.MongoReactiveAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import com.openframe.data.health.CassandraHealthIndicator;
+import com.openframe.data.cassandra.health.CassandraHealthIndicator;
 
 @SpringBootApplication(exclude = {MongoReactiveAutoConfiguration.class, MongoReactiveDataAutoConfiguration.class})
 @ComponentScan(
@@ -20,7 +20,7 @@ import com.openframe.data.health.CassandraHealthIndicator;
     excludeFilters = {
         @ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,
-            classes = CassandraHealthIndicator.class
+                classes = CassandraHealthIndicator.class
         )
     }
 )
