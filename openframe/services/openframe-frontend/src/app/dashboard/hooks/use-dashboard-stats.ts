@@ -1,13 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { useAuthStore } from '@/app/auth/stores/auth-store';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { dashboardApiService } from '../services/dashboard-api-service';
 import { dashboardQueryKeys } from '../utils/query-keys';
 
 export function useDevicesOverview() {
-  const { isAuthenticated } = useAuthSession();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   const query = useQuery({
     queryKey: dashboardQueryKeys.deviceStats(),
@@ -32,7 +32,7 @@ export function useDevicesOverview() {
 }
 
 export function useChatsOverview() {
-  const { isAuthenticated } = useAuthSession();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const isSaasMode = isSaasTenantMode();
 
   const query = useQuery({

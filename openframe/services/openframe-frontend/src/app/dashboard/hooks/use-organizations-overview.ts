@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { useAuthStore } from '@/app/auth/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import type { GraphQlResponse } from '../../devices/types/device.types';
@@ -205,7 +205,7 @@ async function fetchOrganizationsOverview(_limit: number): Promise<{
 }
 
 export function useOrganizationsOverview(limit: number = 10) {
-  const { isAuthenticated } = useAuthSession();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   const query = useQuery({
     queryKey: dashboardQueryKeys.orgStats(limit),

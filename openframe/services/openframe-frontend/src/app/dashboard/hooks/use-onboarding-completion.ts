@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { useAuthStore } from '@/app/auth/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { dashboardQueryKeys } from '../utils/query-keys';
 import { useDevicesOverview } from './use-dashboard-stats';
@@ -10,7 +10,7 @@ import { useOrganizationsOverview } from './use-organizations-overview';
 
 // SSO providers query
 function useActiveSsoProviderCount() {
-  const { isAuthenticated } = useAuthSession();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   const query = useQuery({
     queryKey: dashboardQueryKeys.ssoProviders(),
@@ -45,7 +45,7 @@ function useActiveSsoProviderCount() {
 
 // Users count query
 function useUsersCount() {
-  const { isAuthenticated } = useAuthSession();
+  const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
   const query = useQuery({
     queryKey: dashboardQueryKeys.userStats(),

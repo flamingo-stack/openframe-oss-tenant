@@ -5,7 +5,7 @@ import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/compo
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
-import { getDefaultRedirectPath, isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
+import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { useAuthSession } from '../auth/hooks/use-auth-session';
 import { useAuthStore } from '../auth/stores/auth-store';
@@ -31,8 +31,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   const handleLogout = useCallback(() => {
     performLogout();
-    router.push(getDefaultRedirectPath(false));
-  }, [router]);
+  }, []);
 
   const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
