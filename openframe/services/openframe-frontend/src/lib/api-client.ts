@@ -5,7 +5,6 @@
 
 // Constants for localStorage keys (matching use-token-storage.ts)
 const ACCESS_TOKEN_KEY = 'of_access_token';
-const REFRESH_TOKEN_KEY = 'of_refresh_token';
 
 interface ApiRequestOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>;
@@ -19,14 +18,12 @@ interface ApiResponse<T = any> {
   ok: boolean;
 }
 
-import { authApiClient } from './auth-api-client';
 import { forceLogout } from './force-logout';
 import { runtimeEnv } from './runtime-config';
+import { isTokenRefreshing, refreshAccessToken } from './token-refresh-manager';
 
 class ApiClient {
   private isDevTicketEnabled: boolean;
-  private isRefreshing: boolean = false;
-  private refreshPromise: Promise<boolean> | null = null;
   private requestQueue: Array<() => Promise<any>> = [];
 
   constructor() {
@@ -71,89 +68,23 @@ class ApiClient {
   }
 
   /**
-   * Refresh the access token using the refresh token
-   */
-  private async refreshAccessToken(): Promise<boolean> {
-    // If already refreshing, wait for the existing promise
-    if (this.isRefreshing && this.refreshPromise) {
-      return this.refreshPromise;
-    }
-
-    this.isRefreshing = true;
-
-    // Create the refresh promise
-    this.refreshPromise = (async () => {
-      try {
-        // Get tenant ID from auth store with robust fallbacks
-        const { useAuthStore } = await import('../app/auth/stores/auth-store');
-        const authState = useAuthStore.getState();
-        const storeTenantId = authState.tenantId;
-        const userTenantId = (authState.user as any)?.organizationId || (authState.user as any)?.tenantId;
-        const tenantId = storeTenantId || userTenantId;
-
-        if (!tenantId) {
-          console.warn('[API Client] No tenant ID found for refresh; attempting refresh without tenantId');
-        }
-
-        const responseRaw = await authApiClient.refresh(tenantId);
-        // Adapter to existing logic
-        const response = {
-          ok: responseRaw.ok,
-          status: responseRaw.status,
-          headers: new Headers(),
-          json: async () => responseRaw.data as any,
-        } as unknown as Response;
-
-        if (response.ok) {
-          if (this.isDevTicketEnabled) {
-            let newAccessToken: string | null = null;
-            let newRefreshToken: string | null = null;
-
-            const data = responseRaw.data;
-            if (data) {
-              newAccessToken = data.access_token || data.accessToken || null;
-              newRefreshToken = data.refresh_token || data.refreshToken || null;
-            }
-
-            if (newAccessToken) {
-              localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
-              if (newRefreshToken) {
-                localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-              }
-              return true;
-            } else {
-              return false;
-            }
-          }
-
-          return true;
-        } else {
-          return false;
-        }
-      } catch (_error) {
-        return false;
-      } finally {
-        this.isRefreshing = false;
-        this.refreshPromise = null;
-
-        const queue = [...this.requestQueue];
-        if (queue.length > 0) {
-          this.requestQueue = [];
-          queue.forEach(retryRequest => retryRequest());
-        }
-      }
-    })();
-
-    return this.refreshPromise;
-  }
-
-  /**
    * Force logout the user using unified logout utility
    */
   private async forceLogout(): Promise<void> {
     await forceLogout({
       reason: 'API Client - Authentication failure',
     });
+  }
+
+  /**
+   * Drain the request queue after refresh completes
+   */
+  private drainQueue(): void {
+    const queue = [...this.requestQueue];
+    this.requestQueue = [];
+    for (const retryRequest of queue) {
+      retryRequest();
+    }
   }
 
   /**
@@ -195,7 +126,6 @@ class ApiClient {
         const isAuthPage = currentPath.startsWith('/auth');
 
         if (isAuthPage) {
-          // Just return the 401 without forcing logout
           return {
             data: undefined,
             error: 'Unauthorized',
@@ -204,7 +134,7 @@ class ApiClient {
           };
         }
 
-        if (this.isRefreshing) {
+        if (isTokenRefreshing()) {
           return new Promise<ApiResponse<T>>(resolve => {
             this.requestQueue.push(async () => {
               const result = await this.request<T>(path, options, true);
@@ -213,27 +143,21 @@ class ApiClient {
           });
         }
 
-        const refreshSuccess = await this.refreshAccessToken();
+        const refreshSuccess = await refreshAccessToken();
 
-        const queue = [...this.requestQueue];
-        this.requestQueue = [];
+        this.drainQueue();
 
         if (refreshSuccess) {
-          queue.forEach(retryRequest => retryRequest());
           return this.request<T>(path, options, true);
-        } else {
-          queue.forEach(retryRequest => {
-            retryRequest().catch(() => {});
-          });
-
-          await this.forceLogout();
-
-          return {
-            error: 'Authentication failed - please login again',
-            status: 401,
-            ok: false,
-          };
         }
+
+        await this.forceLogout();
+
+        return {
+          error: 'Authentication failed - please login again',
+          status: 401,
+          ok: false,
+        };
       }
 
       // Parse response
@@ -269,47 +193,6 @@ class ApiClient {
           status: 0,
           ok: false,
         };
-      }
-
-      // Check if this might be a 401 error masquerading as a network error
-      // This can happen in localhost deployments where fetch fails completely on 401
-      if (!skipAuth && !isRetry) {
-        // Check if on auth page - skip refresh/logout to prevent loops
-        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-        const isAuthPage = currentPath.startsWith('/auth');
-
-        if (!isAuthPage) {
-          if (this.isRefreshing) {
-            return new Promise<ApiResponse<T>>(resolve => {
-              this.requestQueue.push(async () => {
-                const result = await this.request<T>(path, options, true);
-                resolve(result);
-              });
-            });
-          }
-
-          const refreshSuccess = await this.refreshAccessToken();
-
-          const queue = [...this.requestQueue];
-          this.requestQueue = [];
-
-          if (refreshSuccess) {
-            queue.forEach(retryRequest => retryRequest());
-            return this.request<T>(path, options, true);
-          } else {
-            queue.forEach(retryRequest => {
-              retryRequest().catch(() => {});
-            });
-
-            await this.forceLogout();
-
-            return {
-              error: 'Authentication failed - please login again',
-              status: 401,
-              ok: false,
-            };
-          }
-        }
       }
 
       return {
