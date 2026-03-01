@@ -39,7 +39,7 @@ cassandra:
 
 
   metrics:
-    enabled: true
+    enabled: false
     image:
       registry: ghcr.io/flamingo-stack/registry
       repository: bitnamilegacy/cassandra-exporter

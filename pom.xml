@@ -44,7 +44,7 @@
         <jsonwebtoken.version>0.11.5</jsonwebtoken.version>
         <grpc.version>1.58.0</grpc.version>
         <!-- Centralized OpenFrame OSS libs version -->
-        <openframe.libs.version>5.35.1</openframe.libs.version>
+        <openframe.libs.version>5.37.2</openframe.libs.version>
     </properties>
 
     <modules>
@@ -282,7 +282,17 @@
             </dependency>
             <dependency>
                 <groupId>com.openframe.oss</groupId>
-                <artifactId>openframe-data</artifactId>
+                <artifactId>openframe-tactical-sdk</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-data-device-aspect</artifactId>
+                <version>${openframe.libs.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.openframe.oss</groupId>
+                <artifactId>openframe-tool-agent-nats-installation</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>
             <dependency>
@@ -303,11 +313,6 @@
             <dependency>
                 <groupId>com.openframe.oss</groupId>
                 <artifactId>fleetmdm</artifactId>
-                <version>${openframe.libs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.openframe.oss</groupId>
-                <artifactId>tacticalrmm</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>
             <dependency>

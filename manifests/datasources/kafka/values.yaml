@@ -22,7 +22,6 @@ kafka:
 
   existingKraftSecret: "kafka-kraft"
 
-
   broker:
     resourcesPreset: medium
     replicaCount: 1
@@ -63,7 +62,7 @@ kafka:
 
   metrics:
     jmx:
-      enabled: true
+      enabled: false
       image:
         registry: ghcr.io/flamingo-stack/registry
         repository: bitnamilegacy/jmx-exporter
