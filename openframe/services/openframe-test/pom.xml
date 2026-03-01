@@ -19,6 +19,7 @@
         <junit-platform.version>1.10.2</junit-platform.version>
         <jedis.version>7.2.0</jedis.version>
         <maven-assembly-plugin.version>3.6.0</maven-assembly-plugin.version>
+        <allure.version>2.25.0</allure.version>
     </properties>
 
     <dependencies>
@@ -41,6 +42,11 @@
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
             <version>${jedis.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-junit5</artifactId>
+            <version>${allure.version}</version>
         </dependency>
     </dependencies>
 
