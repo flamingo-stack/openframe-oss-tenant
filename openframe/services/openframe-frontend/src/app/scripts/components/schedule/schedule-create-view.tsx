@@ -2,7 +2,6 @@
 
 import {
   DetailPageContainer,
-  LoadError,
   Select,
   SelectContent,
   SelectItem,
@@ -25,7 +24,6 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../../hooks/use-script-schedule-mutations';
-import { useScripts } from '../../hooks/use-scripts';
 import {
   buildCreatePayload,
   type CreateScheduleFormData,
@@ -48,7 +46,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const isMdUp = useMdUp();
   const isEditMode = Boolean(scheduleId);
   const { schedule, isLoading: isLoadingSchedule } = useScriptSchedule(scheduleId ?? '');
-  const { scripts, error: scriptsError } = useScripts();
   const createMutation = useCreateScriptSchedule();
   const updateMutation = useUpdateScriptSchedule();
 
@@ -132,22 +129,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const onSubmit = useCallback(
     async (data: CreateScheduleFormData) => {
       try {
-        // Validate that selected scripts are compatible with supported platforms
-        for (const action of data.actions) {
-          const script = scripts.find(s => s.id === action.script);
-          if (script && script.supported_platforms?.length) {
-            const hasMatch = script.supported_platforms.some(p => data.supportedPlatforms.includes(p));
-            if (!hasMatch) {
-              toast({
-                title: 'Platform conflict',
-                description: `Script "${script.name}" does not support any of the selected platforms.`,
-                variant: 'destructive',
-              });
-              return;
-            }
-          }
-        }
-
         const payload = buildCreatePayload(data);
         if (isEditMode && scheduleId) {
           await updateMutation.mutateAsync({ id: scheduleId, payload });
@@ -174,7 +155,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         });
       }
     },
-    [isEditMode, scheduleId, scripts, createMutation, updateMutation, toast, router],
+    [isEditMode, scheduleId, createMutation, updateMutation, toast, router],
   );
 
   const onFormError = useCallback(
@@ -216,10 +197,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       handleBack,
     ],
   );
-
-  if (scriptsError) {
-    return <LoadError message={`Error loading scripts: ${scriptsError}`} />;
-  }
 
   if (isEditMode && isLoadingSchedule) {
     return <ScheduleCreateSkeleton />;
@@ -370,7 +347,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
               <ScheduleActionFormCard
                 key={field.id}
                 index={index}
-                scripts={scripts}
                 supportedPlatforms={supportedPlatforms}
                 onRemove={() => remove(index)}
               />

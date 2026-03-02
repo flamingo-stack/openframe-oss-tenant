@@ -1,5 +1,5 @@
 name: Setup Telepresence
-description: Setup JDK, install Telepresence, connect to cluster, and setup port-forwarding
+description: Install Telepresence and connect to cluster
 
 runs:
   using: composite
@@ -17,15 +17,3 @@ runs:
         telepresence connect
         echo "✅ Connected to cluster"
 
-    - name: Setup port-forwarding to services
-      shell: bash
-      run: |
-        kubectl port-forward svc/openframe-gateway -n microservices 8100:8100 > /tmp/pf-gateway.log 2>&1 &
-        echo $! > /tmp/pf-gateway.pid
-        sleep 5
-
-        if ! kill -0 $(cat /tmp/pf-gateway.pid) 2>/dev/null; then
-        cat /tmp/pf-gateway.log
-        exit 1
-        fi
-        echo "✅ Port-forwarding established"

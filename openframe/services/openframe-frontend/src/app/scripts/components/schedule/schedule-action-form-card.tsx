@@ -3,14 +3,13 @@
 import { OS_PLATFORMS, ScriptArguments } from '@flamingo-stack/openframe-frontend-core';
 import { TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Autocomplete, Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useMemo } from 'react';
+import { type FocusEvent, useMemo } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
-import type { ScriptEntry } from '../../stores/scripts-store';
+import { useScriptsAutocomplete } from '../../hooks/use-scripts-autocomplete';
 import type { CreateScheduleFormData } from '../../types/script-schedule.types';
 
 interface ScheduleActionFormCardProps {
   index: number;
-  scripts: ScriptEntry[];
   supportedPlatforms: string[];
   onRemove: () => void;
 }
@@ -25,22 +24,27 @@ function ScriptPlatformIcons({ platforms }: { platforms: string[] }) {
   );
 }
 
-export function ScheduleActionFormCard({ index, scripts, supportedPlatforms, onRemove }: ScheduleActionFormCardProps) {
+export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: ScheduleActionFormCardProps) {
   const { control, setValue, watch } = useFormContext<CreateScheduleFormData>();
   const selectedScriptId = watch(`actions.${index}.script`);
 
-  const filteredScripts = useMemo(
-    () =>
-      scripts.filter(
-        s => s.id === selectedScriptId || s.supported_platforms?.some(p => supportedPlatforms.includes(p)),
-      ),
-    [scripts, supportedPlatforms, selectedScriptId],
+  const { scripts, isLoading, inputValue, onInputChange, onOpen, onClose, onClear } = useScriptsAutocomplete(
+    supportedPlatforms,
+    selectedScriptId || undefined,
   );
 
-  const scriptOptions = useMemo(() => filteredScripts.map(s => ({ label: s.name, value: s.id })), [filteredScripts]);
+  // Fires only when focus leaves the entire autocomplete widget (not on internal focus moves)
+  const handleBlur = (e: FocusEvent<HTMLDivElement>) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) onClose();
+  };
+
+  const scriptOptions = useMemo(() => scripts.map(s => ({ label: s.name, value: s.id })), [scripts]);
 
   const handleScriptChange = (scriptId: number | null) => {
-    if (!scriptId) return;
+    if (!scriptId) {
+      onClear();
+      return;
+    }
     const script = scripts.find(s => s.id === scriptId);
     if (script) {
       setValue(`actions.${index}.script`, script.id);
@@ -49,30 +53,33 @@ export function ScheduleActionFormCard({ index, scripts, supportedPlatforms, onR
     }
   };
 
+  const autocompleteProps = {
+    options: scriptOptions,
+    value: selectedScriptId || null,
+    onChange: handleScriptChange,
+    placeholder: 'Select a script...',
+    filterOptions: () => scriptOptions,
+    onInputChange,
+    loading: isLoading,
+    loadingText: 'Searching scripts...',
+    noOptionsText: inputValue ? 'No scripts match your search' : 'No scripts available',
+    renderOption: (option: { label: string; value: number }) => (
+      <span className="inline-flex items-center">
+        {option.label}
+        <ScriptPlatformIcons platforms={scripts.find(s => s.id === option.value)?.supported_platforms || []} />
+      </span>
+    ),
+  } as const;
+
   return (
     <div className="border border-ods-border rounded-[6px] p-4 flex flex-col gap-4">
       {/* Mobile: Select + Trash row */}
       <div className="flex md:hidden gap-2 items-end">
-        <div className="flex-1 flex flex-col gap-1">
+        <div className="flex-1 flex flex-col gap-1" onFocus={onOpen} onBlur={handleBlur}>
           <Controller
             name={`actions.${index}.script`}
             control={control}
-            render={({ field }) => (
-              <Autocomplete<number>
-                options={scriptOptions}
-                value={field.value || null}
-                onChange={handleScriptChange}
-                placeholder="Select a script..."
-                renderOption={option => (
-                  <span className="inline-flex items-center">
-                    {option.label}
-                    <ScriptPlatformIcons
-                      platforms={filteredScripts.find(s => s.id === option.value)?.supported_platforms || []}
-                    />
-                  </span>
-                )}
-              />
-            )}
+            render={() => <Autocomplete<number> {...autocompleteProps} />}
           />
         </div>
         <Button variant="card" size="icon" onClick={onRemove} className="text-[var(--ods-attention-red-error,#f36666)]">
@@ -100,27 +107,12 @@ export function ScheduleActionFormCard({ index, scripts, supportedPlatforms, onR
 
       {/* Tablet+: Select + Timeout + Trash in one row */}
       <div className="hidden md:grid md:grid-cols-[1fr_auto_auto] gap-4 items-end">
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1" onFocus={onOpen} onBlur={handleBlur}>
           <Label className="text-ods-text-secondary font-medium text-[14px]">Select Script</Label>
           <Controller
             name={`actions.${index}.script`}
             control={control}
-            render={({ field }) => (
-              <Autocomplete<number>
-                options={scriptOptions}
-                value={field.value || null}
-                onChange={handleScriptChange}
-                placeholder="Select a script..."
-                renderOption={option => (
-                  <span className="inline-flex items-center">
-                    {option.label}
-                    <ScriptPlatformIcons
-                      platforms={filteredScripts.find(s => s.id === option.value)?.supported_platforms || []}
-                    />
-                  </span>
-                )}
-              />
-            )}
+            render={() => <Autocomplete<number> {...autocompleteProps} />}
           />
         </div>
 
