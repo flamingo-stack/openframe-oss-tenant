@@ -1,20 +1,16 @@
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", windows))]
 mod standard_to_gui_app;
-#[cfg(windows)]
-mod standard_to_gui_app_win;
 
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::{info, warn};
 
 use super::ToolUpdaterDeps;
-use crate::models::{InstalledTool, Installation, DownloadConfiguration, InstallationType};
+use crate::models::{DownloadConfiguration, Installation, InstallationType, InstalledTool};
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", windows))]
 use standard_to_gui_app::StandardToGuiAppMigrator;
-#[cfg(windows)]
-use standard_to_gui_app_win::StandardToGuiAppMigrator;
 
 #[derive(Debug, Clone, Default)]
 pub struct MigrationContext {

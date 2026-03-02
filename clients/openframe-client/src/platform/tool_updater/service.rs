@@ -1,7 +1,6 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tokio::fs;
 use tracing::{info, warn};
 
 use super::{
@@ -9,7 +8,7 @@ use super::{
     backup_binary, download_and_write_binary, cleanup_backup, restore_from_backup,
 };
 use crate::models::{InstalledTool, Installation, DownloadConfiguration};
-use crate::platform::{binary_writer, DirectoryManager, system_service};
+use crate::platform::{binary_writer, DirectoryManager, system_service, remove_app_bundle_path};
 
 pub struct ServiceToolUpdater {
     deps: ToolUpdaterDeps,
@@ -91,13 +90,7 @@ impl ToolUpdater for ServiceToolUpdater {
             info!(tool_id = %tool_agent_id, "Detected .app bundle - using full extraction");
 
             // Remove old .app bundle if exists
-            if let Some(app_bundle) = DirectoryManager::find_app_bundle_path(&exec_path) {
-                if app_bundle.exists() {
-                    info!(tool_id = %tool_agent_id, "Removing old .app bundle: {}", app_bundle.display());
-                    fs::remove_dir_all(&app_bundle).await
-                        .with_context(|| format!("Failed to remove old app bundle: {}", app_bundle.display()))?;
-                }
-            }
+            remove_app_bundle_path(&exec_path).await?;
 
             // Extract entire archive to tool folder
             let tool_folder = self.deps.directory_manager.get_tool_folder(tool_agent_id);

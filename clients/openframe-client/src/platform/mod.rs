@@ -21,6 +21,8 @@ pub mod powershell;
 // Re-export commonly used items
 pub use binary_writer::{write_executable, set_executable_permissions};
 pub use directories::{DirectoryError, DirectoryManager};
+#[cfg(target_os = "macos")]
+pub use directories::{remove_app_bundle, remove_app_bundle_path};
 pub use dmg_extractor::DmgExtractor;
 #[cfg(target_os = "windows")]
 pub use file_lock::{format_locking_processes, get_locking_processes, is_file_in_use_error, log_file_lock_info, LockingProcess};

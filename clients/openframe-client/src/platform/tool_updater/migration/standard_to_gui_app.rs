@@ -1,13 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use std::path::PathBuf;
-use tokio::fs;
 use tracing::{info, warn};
 
-use super::{ToolMigrator, MigrationContext};
-use crate::models::{InstalledTool, Installation, DownloadConfiguration, InstallationType};
+use super::{MigrationContext, ToolMigrator};
+use crate::models::{DownloadConfiguration, Installation, InstallationType, InstalledTool};
 use crate::platform::tool_updater::ToolUpdaterDeps;
-use crate::platform::DirectoryManager;
 
 pub(super) struct StandardToGuiAppMigrator {
     deps: ToolUpdaterDeps,
@@ -51,35 +48,15 @@ impl ToolMigrator for StandardToGuiAppMigrator {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Migrating: Standard -> GuiApp");
 
-        // 1. Remove old standard binary
-        let old_agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
-        if old_agent_path.exists() {
-            info!(tool_id = %tool_agent_id, "Removing old standard binary: {}", old_agent_path.display());
-            fs::remove_file(&old_agent_path).await.ok();
+        #[cfg(target_os = "macos")]
+        {
+            self.migrate_macos(tool, config).await
         }
 
-        // 2. Download and extract new .app bundle to /Applications
-        let applications_dir = PathBuf::from("/Applications");
-        info!(tool_id = %tool_agent_id, "Installing GuiApp to: {}", applications_dir.display());
-
-        self.deps.github_download_service
-            .download_and_extract_all(config, &applications_dir)
-            .await?;
-
-        // 3. Resolve executable path from .app bundle
-        let new_app_path = applications_dir.join(&config.target_file_name);
-        let executable_path = if DirectoryManager::find_app_bundle_path(&new_app_path).is_some() {
-            applications_dir.join(&config.target_file_name).to_string_lossy().to_string()
-        } else {
-            new_app_path.join("Contents/MacOS").join(tool_agent_id).to_string_lossy().to_string()
-        };
-
-        info!(tool_id = %tool_agent_id, "Migration complete, new executable: {}", executable_path);
-
-        Ok(Installation::GuiApp {
-            executable_path,
-            bundle_id: config.bundle_id.clone(),
-        })
+        #[cfg(windows)]
+        {
+            self.migrate_windows(tool, config).await
+        }
     }
 
     async fn finalize(
@@ -88,8 +65,6 @@ impl ToolMigrator for StandardToGuiAppMigrator {
         new_installation: &Installation,
         ctx: &MigrationContext,
     ) -> Result<()> {
-        use crate::platform::user_session::{get_console_user, launch_as_user};
-
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Finalizing migration: Standard -> GuiApp");
 
@@ -97,20 +72,122 @@ impl ToolMigrator for StandardToGuiAppMigrator {
             return Ok(());
         }
 
-        let Installation::GuiApp { executable_path, bundle_id } = new_installation else {
+        let Installation::GuiApp {
+            executable_path,
+            bundle_id,
+        } = new_installation
+        else {
             return Ok(());
         };
 
+        #[cfg(target_os = "macos")]
+        {
+            self.finalize_macos(tool, executable_path, bundle_id.as_deref())
+                .await
+        }
+
+        #[cfg(windows)]
+        {
+            self.finalize_windows(tool, executable_path).await
+        }
+    }
+
+    async fn rollback(&self, tool: &InstalledTool, _ctx: &MigrationContext) -> Result<()> {
+        let tool_agent_id = &tool.tool_agent_id;
+        warn!(
+            tool_id = %tool_agent_id,
+            "Rollback for Standard->GuiApp migration: binary may be lost. Reinstall required."
+        );
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "macos")]
+impl StandardToGuiAppMigrator {
+    async fn migrate_macos(
+        &self,
+        tool: &InstalledTool,
+        config: &DownloadConfiguration,
+    ) -> Result<Installation> {
+        use crate::platform::DirectoryManager;
+        use std::path::PathBuf;
+        use tokio::fs;
+
+        let tool_agent_id = &tool.tool_agent_id;
+
+        // 1. Remove old standard binary
+        let old_agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
+        if old_agent_path.exists() {
+            info!(
+                tool_id = %tool_agent_id,
+                "Removing old standard binary: {}",
+                old_agent_path.display()
+            );
+            fs::remove_file(&old_agent_path).await.ok();
+        }
+
+        // 2. Download and extract new .app bundle to /Applications
+        let applications_dir = PathBuf::from("/Applications");
+        info!(
+            tool_id = %tool_agent_id,
+            "Installing GuiApp to: {}",
+            applications_dir.display()
+        );
+
+        self.deps
+            .github_download_service
+            .download_and_extract_all(config, &applications_dir)
+            .await?;
+
+        // 3. Resolve executable path from .app bundle
+        let new_app_path = applications_dir.join(&config.target_file_name);
+        let executable_path =
+            if DirectoryManager::find_app_bundle_path(&new_app_path).is_some() {
+                applications_dir
+                    .join(&config.target_file_name)
+                    .to_string_lossy()
+                    .to_string()
+            } else {
+                new_app_path
+                    .join("Contents/MacOS")
+                    .join(tool_agent_id)
+                    .to_string_lossy()
+                    .to_string()
+            };
+
+        info!(
+            tool_id = %tool_agent_id,
+            "Migration complete, new executable: {}",
+            executable_path
+        );
+
+        Ok(Installation::GuiApp {
+            executable_path,
+            bundle_id: config.bundle_id.clone(),
+        })
+    }
+
+    async fn finalize_macos(
+        &self,
+        tool: &InstalledTool,
+        executable_path: &str,
+        bundle_id: Option<&str>,
+    ) -> Result<()> {
+        use crate::platform::preferences_writer::{args_to_pairs, write as write_preferences};
+        use crate::platform::user_session::{get_console_user, launch_as_user};
+
+        let tool_agent_id = &tool.tool_agent_id;
+
         // Write preferences if bundle_id exists
         if let Some(bid) = bundle_id {
-            use crate::platform::preferences_writer::{write, args_to_pairs};
-
-            let resolved_args = self.deps.command_params_resolver
+            let resolved_args = self
+                .deps
+                .command_params_resolver
                 .process(tool_agent_id, tool.run_command_args.clone())
                 .unwrap_or_else(|_| tool.run_command_args.clone());
 
             let prefs = args_to_pairs(&resolved_args);
-            if let Err(e) = write(bid, prefs) {
+            if let Err(e) = write_preferences(bid, prefs) {
                 warn!(tool_id = %tool_agent_id, "Failed to write preferences: {:#}", e);
             }
         }
@@ -131,7 +208,11 @@ impl ToolMigrator for StandardToGuiAppMigrator {
 
         match launch_as_user(executable_path, &launch_args, &user).await {
             Ok(child) => {
-                info!(tool_id = %tool_agent_id, "GuiApp launched after migration, PID: {:?}", child.id());
+                info!(
+                    tool_id = %tool_agent_id,
+                    "GuiApp launched after migration, PID: {:?}",
+                    child.id()
+                );
             }
             Err(e) => {
                 warn!(tool_id = %tool_agent_id, "Failed to launch GuiApp: {:#}", e);
@@ -140,13 +221,69 @@ impl ToolMigrator for StandardToGuiAppMigrator {
 
         Ok(())
     }
+}
 
-    async fn rollback(&self, tool: &InstalledTool, _ctx: &MigrationContext) -> Result<()> {
+#[cfg(windows)]
+impl StandardToGuiAppMigrator {
+    async fn migrate_windows(
+        &self,
+        tool: &InstalledTool,
+        config: &DownloadConfiguration,
+    ) -> Result<Installation> {
+        use crate::platform::tool_updater::download_and_write_binary;
+
         let tool_agent_id = &tool.tool_agent_id;
-        warn!(
+
+        let agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
+        download_and_write_binary(&self.deps, config, &agent_path, tool_agent_id).await?;
+
+        let executable_path = agent_path.to_string_lossy().to_string();
+        info!(
             tool_id = %tool_agent_id,
-            "Rollback for Standard->GuiApp migration: old binary may be lost. Reinstall required."
+            "Migration binary written: {}",
+            executable_path
         );
+
+        Ok(Installation::GuiApp {
+            executable_path,
+            bundle_id: config.bundle_id.clone(),
+        })
+    }
+
+    async fn finalize_windows(&self, tool: &InstalledTool, executable_path: &str) -> Result<()> {
+        let tool_agent_id = &tool.tool_agent_id;
+
+        let args = self
+            .deps
+            .command_params_resolver
+            .process(tool_agent_id, tool.run_command_args.clone())
+            .unwrap_or_else(|_| tool.run_command_args.clone());
+
+        // Launch in user session so it's visible in the system tray
+        match crate::services::tool_run_manager::launch_process_in_user_session(
+            executable_path,
+            &args,
+        ) {
+            Ok((pid, process_handle)) => {
+                info!(
+                    tool_id = %tool_agent_id,
+                    "GuiApp launched in user session after migration, PID: {}",
+                    pid
+                );
+                // Fire-and-forget — ToolRunManager picks up lifecycle on next restart
+                unsafe {
+                    let _ = windows::Win32::Foundation::CloseHandle(process_handle);
+                }
+            }
+            Err(e) => {
+                warn!(
+                    tool_id = %tool_agent_id,
+                    "Failed to launch GuiApp after migration: {:#}",
+                    e
+                );
+            }
+        }
+
         Ok(())
     }
 }

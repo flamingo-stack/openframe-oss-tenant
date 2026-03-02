@@ -11,6 +11,7 @@
 ///
 /// The DirectoryManager struct provides a common API that hides platform-specific
 /// implementation details.
+use anyhow::{Context, Result};
 use directories::BaseDirs;
 use std::fs;
 use std::io;
@@ -797,6 +798,48 @@ impl DirectoryManager {
     pub fn is_app_bundle_path(path: &Path) -> bool {
         path.to_string_lossy().contains(".app/")
     }
+}
+
+
+#[cfg(target_os = "macos")]
+pub async fn remove_app_bundle(executable_path: &str) -> Result<()> {
+    let path = PathBuf::from(executable_path);
+    let Some(app_bundle) = DirectoryManager::find_app_bundle_path(&path) else {
+        warn!("Could not find .app bundle in path: {}", executable_path);
+        return Ok(());
+    };
+
+    if !app_bundle.exists() {
+        info!("App bundle already removed: {}", app_bundle.display());
+        return Ok(());
+    }
+
+    info!("Removing .app bundle: {}", app_bundle.display());
+    tokio::fs::remove_dir_all(&app_bundle).await
+        .with_context(|| format!("Failed to remove app bundle: {}", app_bundle.display()))?;
+
+    info!("Successfully removed app bundle: {}", app_bundle.display());
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+pub async fn remove_app_bundle_path(executable_path: &Path) -> Result<()> {
+    let Some(app_bundle) = DirectoryManager::find_app_bundle_path(executable_path) else {
+        warn!("Could not find .app bundle in path: {}", executable_path.display());
+        return Ok(());
+    };
+
+    if !app_bundle.exists() {
+        info!("App bundle already removed: {}", app_bundle.display());
+        return Ok(());
+    }
+
+    info!("Removing .app bundle: {}", app_bundle.display());
+    tokio::fs::remove_dir_all(&app_bundle).await
+        .with_context(|| format!("Failed to remove app bundle: {}", app_bundle.display()))?;
+
+    info!("Successfully removed app bundle: {}", app_bundle.display());
+    Ok(())
 }
 
 #[cfg(test)]

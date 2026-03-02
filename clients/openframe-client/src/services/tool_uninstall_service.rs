@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
 use tracing::{info, warn, debug};
 use tokio::process::Command;
-use tokio::fs;
-use std::path::PathBuf;
 use crate::models::{InstalledTool, Installation};
 use crate::services::InstalledToolsService;
 use crate::services::ToolCommandParamsResolver;
 use crate::services::ToolKillService;
 use crate::platform::DirectoryManager;
+#[cfg(target_os = "macos")]
+use crate::platform::remove_app_bundle;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
 
@@ -160,35 +160,14 @@ impl ToolUninstallService {
 
         #[cfg(target_os = "macos")]
         {
-            self.remove_macos_app_bundle(executable_path).await;
+            if let Err(e) = remove_app_bundle(executable_path).await {
+                warn!("Failed to remove .app bundle: {:#}", e);
+            }
         }
 
         #[cfg(not(target_os = "macos"))]
         {
             let _ = executable_path;
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    async fn remove_macos_app_bundle(&self, executable_path: &str) {
-        let path = PathBuf::from(executable_path);
-        let Some(app_bundle) = path.ancestors()
-            .find(|p| p.extension().map_or(false, |ext| ext == "app"))
-        else {
-            warn!("Could not find .app bundle in path: {}", executable_path);
-            return;
-        };
-
-        if !app_bundle.exists() {
-            info!("App bundle already removed: {}", app_bundle.display());
-            return;
-        }
-
-        info!("Removing .app bundle: {}", app_bundle.display());
-        if let Err(e) = fs::remove_dir_all(app_bundle).await {
-            warn!("Failed to remove .app bundle {}: {:#}", app_bundle.display(), e);
-        } else {
-            info!("Successfully removed .app bundle: {}", app_bundle.display());
         }
     }
 }

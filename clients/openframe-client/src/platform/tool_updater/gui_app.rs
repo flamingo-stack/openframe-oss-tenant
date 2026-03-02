@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use std::path::PathBuf;
-use tokio::fs;
 use tracing::{info, warn, error};
 
 use super::{ToolUpdater, ToolUpdaterDeps, UpdateContext};
 use crate::models::{InstalledTool, Installation, DownloadConfiguration};
 use crate::platform::user_session::{get_console_user, launch_as_user};
-use crate::platform::DirectoryManager;
+use crate::platform::remove_app_bundle;
+use crate::platform::preferences_writer::{write as write_preferences, args_to_pairs};
 
 pub struct GuiAppToolUpdater {
     deps: ToolUpdaterDeps,
@@ -16,26 +16,6 @@ pub struct GuiAppToolUpdater {
 impl GuiAppToolUpdater {
     pub fn new(deps: ToolUpdaterDeps) -> Self {
         Self { deps }
-    }
-
-    async fn remove_app_bundle(&self, executable_path: &str) -> Result<()> {
-        let path = PathBuf::from(executable_path);
-        let Some(app_bundle) = DirectoryManager::find_app_bundle_path(&path) else {
-            warn!("Could not find .app bundle in path: {}", executable_path);
-            return Ok(());
-        };
-
-        if !app_bundle.exists() {
-            info!("App bundle already removed: {}", app_bundle.display());
-            return Ok(());
-        }
-
-        info!("Removing .app bundle: {}", app_bundle.display());
-        fs::remove_dir_all(&app_bundle).await
-            .with_context(|| format!("Failed to remove app bundle: {}", app_bundle.display()))?;
-
-        info!("Successfully removed app bundle: {}", app_bundle.display());
-        Ok(())
     }
 }
 
@@ -71,7 +51,7 @@ impl ToolUpdater for GuiAppToolUpdater {
         };
 
         info!(tool_id = %tool_agent_id, "Removing old app bundle");
-        self.remove_app_bundle(executable_path).await?;
+        remove_app_bundle(executable_path).await?;
 
         let applications_dir = PathBuf::from("/Applications");
 
@@ -116,8 +96,6 @@ impl ToolUpdater for GuiAppToolUpdater {
         };
 
         if let Some(bid) = bundle_id {
-            use crate::platform::preferences_writer::{write, args_to_pairs};
-
             // Resolve placeholders (e.g., ${client.serverUrl}) before writing preferences
             let resolved_args = self.deps.command_params_resolver
                 .process(tool_agent_id, tool.run_command_args.clone())
@@ -127,7 +105,7 @@ impl ToolUpdater for GuiAppToolUpdater {
                 });
 
             let prefs = args_to_pairs(&resolved_args);
-            if let Err(e) = write(bid, prefs) {
+            if let Err(e) = write_preferences(bid, prefs) {
                 warn!(tool_id = %tool_agent_id, "Failed to write preferences: {:#}", e);
             }
         }
@@ -168,6 +146,7 @@ impl ToolUpdater for GuiAppToolUpdater {
 mod tests {
     use super::*;
     use std::path::Path;
+    use crate::platform::DirectoryManager;
 
     #[test]
     fn test_find_app_bundle_path() {
