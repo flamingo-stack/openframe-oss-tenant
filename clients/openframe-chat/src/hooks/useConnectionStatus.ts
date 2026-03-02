@@ -100,7 +100,11 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
       if (!apiBaseUrl || !token) return '';
-      return buildNatsWsUrl(apiBaseUrl, { token, includeAuthParam: true });
+      return buildNatsWsUrl(apiBaseUrl, { 
+        token,
+        includeAuthParam: true,
+        source: 'dashboard',
+      });
     };
   }, [apiBaseUrl, token]);
 

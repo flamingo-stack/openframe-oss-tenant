@@ -412,6 +412,7 @@ export function DialogSubscription({
       return buildNatsWsUrl(apiBaseUrl, {
         token: token || undefined,
         includeAuthParam: isDevTicketEnabled,
+        source: 'dashboard',
       });
     };
   }, [apiBaseUrl, token, isDevTicketEnabled]);

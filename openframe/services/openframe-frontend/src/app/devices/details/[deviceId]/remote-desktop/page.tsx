@@ -55,14 +55,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   }, [deviceDataParam]);
 
   // Fetch device data internally if no legacy data provided
-  const { deviceDetails, isLoading: isDeviceLoading, error: deviceError, fetchDeviceById } = useDeviceDetails();
-
-  // Fetch device on mount if no legacy data
-  useEffect(() => {
-    if (!legacyDeviceData && deviceId) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, legacyDeviceData, fetchDeviceById]);
+  const {
+    deviceDetails,
+    isLoading: isDeviceLoading,
+    error: deviceError,
+  } = useDeviceDetails(!legacyDeviceData ? deviceId : null, { polling: false });
 
   // Extract device info from either legacy data or fetched data
   const meshcentralAgentId = useMemo(() => {
