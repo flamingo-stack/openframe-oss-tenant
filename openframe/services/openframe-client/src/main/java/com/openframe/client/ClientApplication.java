@@ -20,7 +20,7 @@ import com.openframe.data.cassandra.health.CassandraHealthIndicator;
     excludeFilters = {
         @ComponentScan.Filter(
             type = FilterType.ASSIGNABLE_TYPE,
-                classes = CassandraHealthIndicator.class
+            classes = CassandraHealthIndicator.class
         )
     }
 )
