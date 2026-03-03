@@ -199,7 +199,7 @@ jobs:
         env:
           TEST_BASE_URL: localhost
           TEST_USER_DOMAIN: localhost
-          MONGODB_URI: mongodb://localhost:27017/openframe
+          MONGODB_URI: mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017
           MONGODB_DATABASE: openframe
           MONGODB_AUTH_DATABASE: admin
           TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
