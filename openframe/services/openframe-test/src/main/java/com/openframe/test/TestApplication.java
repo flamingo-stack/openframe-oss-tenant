@@ -1,9 +1,9 @@
 package com.openframe.test;
 
+import com.openframe.test.listener.SlackListener;
 import com.openframe.test.runner.TestRunner;
 import com.openframe.test.runner.TestRunnerConfig;
 import io.qameta.allure.junitplatform.AllureJunitPlatform;
-import io.restassured.RestAssured;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.platform.launcher.TestPlan;
 import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
@@ -16,13 +16,12 @@ public class TestApplication {
     private static final String TEST_PACKAGE = "com.openframe.test.tests";
 
     public static void main(String[] args) {
-        RestAssured.useRelaxedHTTPSValidation();
         AllureJunitPlatform allureListener = new AllureJunitPlatform();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
-
+        SlackListener slackListener = new SlackListener(System.getenv("SLACK_HOOK"));
         TestRunnerConfig config = TestRunnerConfig.builder()
                 .testPackage(TEST_PACKAGE)
-                .testListeners(allureListener, summaryListener)
+                .testListeners(allureListener, summaryListener, slackListener)
                 .build();
 
         TestRunner testRunner = new TestRunner(config);
@@ -47,6 +46,7 @@ public class TestApplication {
         } else {
             log.error("Registration tests failed - interrupting execution");
         }
+        slackListener.sendResults("oss", "localhost", "");
         System.exit(testsPassed ? 0 : 1);
     }
 }
