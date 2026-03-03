@@ -46,7 +46,7 @@ public class TestApplication {
             log.info("Run OSS tests");
             LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
                     .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeTags("oss"), excludeClassNamePatterns("UserInvitationsTest"))
+                    .filters(includeTags("oss"), excludeClassNamePatterns(".*UserInvitationsTest"))
                     .build();
             TestPlan testPlan = testRunner.discover(request);
             logTestList(testRunner.list(testPlan));
@@ -56,7 +56,7 @@ public class TestApplication {
 
             request = LauncherDiscoveryRequestBuilder.request()
                     .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns("UserTest"))
+                    .filters(includeClassNamePatterns(".*UserTest"))
                     .build();
             testPlan = testRunner.discover(request);
             logTestList(testRunner.list(testPlan));
@@ -66,7 +66,7 @@ public class TestApplication {
 
             request = LauncherDiscoveryRequestBuilder.request()
                     .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns("UserInvitationsTest"))
+                    .filters(includeClassNamePatterns(".*UserInvitationsTest"))
                     .build();
             testPlan = testRunner.discover(request);
             logTestList(testRunner.list(testPlan));
@@ -76,7 +76,7 @@ public class TestApplication {
 
             request = LauncherDiscoveryRequestBuilder.request()
                     .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns("ResetPasswordTest"))
+                    .filters(includeClassNamePatterns(".*ResetPasswordTest"))
                     .build();
             testPlan = testRunner.discover(request);
             logTestList(testRunner.list(testPlan));
