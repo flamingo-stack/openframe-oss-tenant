@@ -15,8 +15,6 @@ public class TestApplication {
     private static final String TEST_PACKAGE = "com.openframe.test.tests";
 
     public static void main(String[] args) {
-//        io.restassured.RestAssured.filters(new AllureRestAssured(), new RequestLoggingFilter());
-
         AllureJunitPlatform allureListener = new AllureJunitPlatform();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
 
