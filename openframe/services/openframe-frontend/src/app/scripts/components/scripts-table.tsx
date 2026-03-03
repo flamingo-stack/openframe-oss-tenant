@@ -285,7 +285,7 @@ export function ScriptsTable() {
   };
 
   const handleNewScript = useCallback(() => {
-    router.push('/scripts/edit/new');
+    router.push('/scripts/create');
   }, [router]);
 
   const handleFilterChange = useCallback(

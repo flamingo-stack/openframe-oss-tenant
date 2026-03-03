@@ -50,6 +50,7 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
                     : () => {
                         const current = getValues('supported_platforms');
                         const has = current.includes(p.id);
+                        if (has && current.length <= 1) return;
                         setValue('supported_platforms', has ? current.filter(id => id !== p.id) : [...current, p.id], {
                           shouldValidate: true,
                         });
@@ -79,10 +80,17 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
         <Controller
           name="name"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div className="space-y-1">
               <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Name</Label>
-              <Input type="text" value={field.value} onChange={field.onChange} placeholder="Enter Script Name Here" />
+              <Input
+                type="text"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="Enter Script Name Here"
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
+              />
             </div>
           )}
         />
@@ -90,11 +98,11 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
         <Controller
           name="shell"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div className="space-y-1">
               <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Shell Type</Label>
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans'] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
+                <SelectTrigger error={fieldState.error?.message} invalid={!!fieldState.error}>
                   <SelectValue placeholder="Select Shell Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -115,11 +123,11 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
         <Controller
           name="category"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div className="space-y-1">
               <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Category</Label>
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full bg-ods-card border border-ods-border px-3 py-3 font-['DM_Sans'] font-medium text-ods-text-primary hover:bg-ods-bg-hover focus:ring-0 rounded-md">
+                <SelectTrigger error={fieldState.error?.message} invalid={!!fieldState.error}>
                   <SelectValue placeholder="Select Category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -137,15 +145,17 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
         <Controller
           name="default_timeout"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <div className="space-y-1">
               <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Timeout</Label>
               <Input
                 type="number"
                 value={field.value}
-                onChange={e => field.onChange(parseInt(e.target.value) || 90)}
+                onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
                 placeholder="90"
                 endAdornment={<span className="text-sm text-ods-text-secondary">Seconds</span>}
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
               />
             </div>
           )}

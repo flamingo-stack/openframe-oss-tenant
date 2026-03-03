@@ -34,7 +34,6 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
-  const watchedName = form.watch('name');
   const watchedSupportedPlatforms = form.watch('supported_platforms');
 
   const handleBack = useCallback(() => {
@@ -59,11 +58,11 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         label: 'Save Script',
         onClick: handleSave,
         variant: 'primary' as const,
-        disabled: isSubmitting || !watchedName.trim(),
+        disabled: isSubmitting,
         loading: isSubmitting,
       },
     ],
-    [handleSave, isSubmitting, watchedName],
+    [handleSave, isSubmitting],
   );
 
   if (isLoadingScript) {

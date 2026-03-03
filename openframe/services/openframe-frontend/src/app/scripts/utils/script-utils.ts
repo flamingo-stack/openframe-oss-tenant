@@ -1,9 +1,11 @@
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core';
 import { OS_PLATFORMS } from '@flamingo-stack/openframe-frontend-core';
 
+// Hidden platforms that won't show at all in the UI (not selectable, not visible) - currently only Linux due to pending support, but structure in place for future additions
 const HIDDEN_PLATFORMS: OSPlatformId[] = ['linux'];
 
-export const DISABLED_PLATFORMS: OSPlatformId[] = ['darwin'];
+// Disabled platforms that shows but with badge "Coming Soon" (not selectable) - currently none, but structure in place for future additions
+export const DISABLED_PLATFORMS: OSPlatformId[] = [];
 
 export const AVAILABLE_PLATFORMS = OS_PLATFORMS.filter(p => !HIDDEN_PLATFORMS.includes(p.id));
 
