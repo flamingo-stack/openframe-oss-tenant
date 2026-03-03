@@ -59,7 +59,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       repeatInterval: 1,
       repeatPeriod: 'day',
       weekdays: 0,
-      supportedPlatforms: ['windows', 'linux', 'darwin'],
+      supportedPlatforms: ['windows'],
       enabled: true,
       actions: [
         {
@@ -107,10 +107,11 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
           methods.setValue(
             'supportedPlatforms',
             current.filter(p => p !== platform),
+            { shouldValidate: true },
           );
         }
       } else {
-        methods.setValue('supportedPlatforms', [...current, platform]);
+        methods.setValue('supportedPlatforms', [...current, platform], { shouldValidate: true });
       }
     },
     [methods],
@@ -137,6 +138,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
           });
+          router.push(`/scripts/schedules/${scheduleId}`);
         } else {
           const result = await createMutation.mutateAsync(payload);
           toast({
@@ -158,19 +160,6 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
     [isEditMode, scheduleId, createMutation, updateMutation, toast, router],
   );
 
-  const onFormError = useCallback(
-    (errors: any) => {
-      const firstError = Object.values(errors)[0] as any;
-      const message = firstError?.message || firstError?.root?.message || 'Please fix validation errors';
-      toast({
-        title: 'Validation error',
-        description: message,
-        variant: 'destructive',
-      });
-    },
-    [toast],
-  );
-
   const actions = useMemo(
     () => [
       {
@@ -181,21 +170,12 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       },
       {
         label: isEditMode ? 'Update Schedule' : 'Save Schedule',
-        onClick: handleSubmit(onSubmit, onFormError),
+        onClick: handleSubmit(onSubmit),
         variant: 'primary' as const,
         loading: isSubmitting || createMutation.isPending || updateMutation.isPending,
       },
     ],
-    [
-      isEditMode,
-      handleSubmit,
-      onSubmit,
-      onFormError,
-      isSubmitting,
-      createMutation.isPending,
-      updateMutation.isPending,
-      handleBack,
-    ],
+    [isEditMode, handleSubmit, onSubmit, isSubmitting, createMutation.isPending, updateMutation.isPending, handleBack],
   );
 
   if (isEditMode && isLoadingSchedule) {
@@ -219,19 +199,21 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             <Controller
               name="name"
               control={control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <Input
                   placeholder="Enter schedule name"
                   value={field.value}
                   onChange={field.onChange}
                   className="w-full"
+                  error={fieldState.error?.message}
+                  invalid={!!fieldState.error}
                 />
               )}
             />
           </div>
 
           {/* Note + Date + Repeat */}
-          <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-wrap items-start gap-4">
             {/* <div className="flex flex-col gap-1 md:w-[220px] w-full">
               <Label className="text-ods-text-secondary font-medium text-[14px]">Note</Label>
               <Controller
@@ -250,13 +232,15 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             <Controller
               name="scheduledDate"
               control={control}
-              render={({ field }) => (
+              render={({ field, fieldState }) => (
                 <DatePickerInputSimple
                   placeholder="Select Date"
                   value={field.value}
                   onChange={field.onChange}
                   showTime
                   className="md:w-auto w-full"
+                  error={fieldState.error?.message}
+                  invalid={!!fieldState.error}
                 />
               )}
             />
@@ -283,12 +267,14 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                   <Controller
                     name="repeatInterval"
                     control={control}
-                    render={({ field }) => (
+                    render={({ field, fieldState }) => (
                       <Input
                         type="number"
                         className="w-[100px]"
                         value={field.value}
-                        onChange={e => field.onChange(Number(e.target.value) || 1)}
+                        onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                        error={fieldState.error?.message}
+                        invalid={!!fieldState.error}
                       />
                     )}
                   />
@@ -349,6 +335,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
                 index={index}
                 supportedPlatforms={supportedPlatforms}
                 onRemove={() => remove(index)}
+                canRemove={fields.length > 1}
               />
             ))}
 

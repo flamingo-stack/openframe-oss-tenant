@@ -83,7 +83,7 @@ function EditorSkeleton() {
 export function EditScriptSkeleton() {
   return (
     <div className="min-h-screen bg-ods-bg">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="mx-auto p-6 space-y-6">
         {/* Header: Back link */}
         <Skeleton className="h-5 w-40" />
 

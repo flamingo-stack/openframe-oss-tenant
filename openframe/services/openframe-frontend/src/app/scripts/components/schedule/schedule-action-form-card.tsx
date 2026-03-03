@@ -12,6 +12,7 @@ interface ScheduleActionFormCardProps {
   index: number;
   supportedPlatforms: string[];
   onRemove: () => void;
+  canRemove: boolean;
 }
 
 function ScriptPlatformIcons({ platforms }: { platforms: string[] }) {
@@ -24,7 +25,12 @@ function ScriptPlatformIcons({ platforms }: { platforms: string[] }) {
   );
 }
 
-export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: ScheduleActionFormCardProps) {
+export function ScheduleActionFormCard({
+  index,
+  supportedPlatforms,
+  onRemove,
+  canRemove,
+}: ScheduleActionFormCardProps) {
   const { control, setValue, watch } = useFormContext<CreateScheduleFormData>();
   const selectedScriptId = watch(`actions.${index}.script`);
 
@@ -47,9 +53,9 @@ export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: 
     }
     const script = scripts.find(s => s.id === scriptId);
     if (script) {
-      setValue(`actions.${index}.script`, script.id);
-      setValue(`actions.${index}.name`, script.name);
-      setValue(`actions.${index}.timeout`, script.default_timeout || 90);
+      setValue(`actions.${index}.script`, script.id, { shouldValidate: true });
+      setValue(`actions.${index}.name`, script.name, { shouldValidate: true });
+      setValue(`actions.${index}.timeout`, script.default_timeout || 90, { shouldValidate: true });
     }
   };
 
@@ -72,17 +78,29 @@ export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: 
   } as const;
 
   return (
-    <div className="border border-ods-border rounded-[6px] p-4 flex flex-col gap-4">
+    <div className="border border-ods-border rounded-[6px] p-4 pb-6 flex flex-col gap-4">
       {/* Mobile: Select + Trash row */}
-      <div className="flex md:hidden gap-2 items-end">
+      <div className="flex md:hidden gap-2 items-start">
         <div className="flex-1 flex flex-col gap-1" onFocus={onOpen} onBlur={handleBlur}>
           <Controller
             name={`actions.${index}.script`}
             control={control}
-            render={() => <Autocomplete<number> {...autocompleteProps} />}
+            render={({ fieldState }) => (
+              <Autocomplete<number>
+                {...autocompleteProps}
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
+              />
+            )}
           />
         </div>
-        <Button variant="card" size="icon" onClick={onRemove} className="text-[var(--ods-attention-red-error,#f36666)]">
+        <Button
+          variant="card"
+          size="icon"
+          onClick={onRemove}
+          disabled={!canRemove}
+          className="text-[var(--ods-attention-red-error,#f36666)] disabled:opacity-30"
+        >
           <TrashIcon size={20} />
         </Button>
       </div>
@@ -93,26 +111,34 @@ export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: 
         <Controller
           name={`actions.${index}.timeout`}
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <Input
               type="number"
               className="w-full"
               value={field.value}
-              onChange={e => field.onChange(Number(e.target.value) || 0)}
+              onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
               endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
+              error={fieldState.error?.message}
+              invalid={!!fieldState.error}
             />
           )}
         />
       </div>
 
       {/* Tablet+: Select + Timeout + Trash in one row */}
-      <div className="hidden md:grid md:grid-cols-[1fr_auto_auto] gap-4 items-end">
+      <div className="hidden md:grid md:grid-cols-[1fr_auto_auto] gap-4">
         <div className="flex flex-col gap-1" onFocus={onOpen} onBlur={handleBlur}>
           <Label className="text-ods-text-secondary font-medium text-[14px]">Select Script</Label>
           <Controller
             name={`actions.${index}.script`}
             control={control}
-            render={() => <Autocomplete<number> {...autocompleteProps} />}
+            render={({ fieldState }) => (
+              <Autocomplete<number>
+                {...autocompleteProps}
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
+              />
+            )}
           />
         </div>
 
@@ -121,21 +147,33 @@ export function ScheduleActionFormCard({ index, supportedPlatforms, onRemove }: 
           <Controller
             name={`actions.${index}.timeout`}
             control={control}
-            render={({ field }) => (
+            render={({ field, fieldState }) => (
               <Input
                 type="number"
                 className="w-[160px]"
+                placeholder="90"
                 value={field.value}
-                onChange={e => field.onChange(Number(e.target.value) || 0)}
+                onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
                 endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
               />
             )}
           />
         </div>
 
-        <Button variant="card" size="icon" onClick={onRemove} className="text-[var(--ods-attention-red-error,#f36666)]">
-          <TrashIcon size={20} />
-        </Button>
+        <div className="flex flex-col gap-1">
+          <Label className="text-ods-text-secondary font-medium text-[14px] invisible">Action</Label>
+          <Button
+            variant="card"
+            size="icon"
+            onClick={onRemove}
+            disabled={!canRemove}
+            className="text-[var(--ods-attention-red-error,#f36666)] disabled:opacity-30"
+          >
+            <TrashIcon size={20} />
+          </Button>
+        </div>
       </div>
 
       {/* Script Arguments & Env Vars */}
