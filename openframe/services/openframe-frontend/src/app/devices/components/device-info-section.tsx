@@ -51,11 +51,9 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.updatedAt
-              ? `${new Date(device.updatedAt).toLocaleDateString()} ${new Date(device.updatedAt).toLocaleTimeString()}`
-              : device.lastSeen
-                ? `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}`
-                : 'Unknown'}
+            {device.lastSeen
+              ? `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}`
+              : 'Unknown'}
           </p>
           <p className="text-ods-text-secondary text-xs mt-1">Last Seen</p>
         </div>

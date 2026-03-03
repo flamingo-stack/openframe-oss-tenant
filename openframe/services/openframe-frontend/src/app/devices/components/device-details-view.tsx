@@ -42,17 +42,11 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { deviceDetails, isLoading, error, fetchDeviceById, lastUpdated } = useDeviceDetails();
+  const { deviceDetails, isLoading, error, lastUpdated } = useDeviceDetails(deviceId);
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false);
   const [shellDropdownOpen, setShellDropdownOpen] = useState(false);
   const [, forceUpdate] = useState({});
-
-  useEffect(() => {
-    if (deviceId) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, fetchDeviceById]);
 
   // Force re-render every second to update relative time display
   useEffect(() => {

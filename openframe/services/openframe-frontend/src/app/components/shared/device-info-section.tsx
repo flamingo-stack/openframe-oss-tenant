@@ -1,7 +1,6 @@
 'use client';
 
 import { CardLoader, DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useEffect } from 'react';
 import { DeviceDetailsButton } from '../../devices/components/device-details-button';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
 import type { Device } from '../../devices/types/device.types';
@@ -14,14 +13,9 @@ interface DeviceInfoSectionProps {
 }
 
 export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }: DeviceInfoSectionProps) {
-  const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails();
-
-  useEffect(() => {
-    // Only fetch if we don't already have device data and we have a deviceId
-    if (deviceId && !deviceFromProps) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, deviceFromProps, fetchDeviceById]);
+  const { deviceDetails, isLoading } = useDeviceDetails(deviceId && !deviceFromProps ? deviceId : null, {
+    polling: false,
+  });
 
   // Use device from props if available, otherwise use fetched deviceDetails
   const device = deviceFromProps || deviceDetails;
