@@ -6,11 +6,10 @@ import { EditScriptPage } from '../../components/script/edit-script-page';
 
 export default function EditScriptPageWrapper() {
   const params = useParams<{ id?: string }>();
-  const rawId = params?.id;
-  const id = rawId === 'new' ? null : typeof rawId === 'string' ? rawId : null;
+  const id = typeof params?.id === 'string' ? params.id : null;
   return (
     <AppLayout>
-      <EditScriptPage scriptId={typeof id === 'string' ? id : null} />
+      <EditScriptPage scriptId={id} />
     </AppLayout>
   );
 }

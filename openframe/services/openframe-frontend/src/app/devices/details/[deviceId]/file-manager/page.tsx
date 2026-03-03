@@ -3,7 +3,7 @@
 import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import { useRouter } from 'next/navigation';
-import { use, useEffect } from 'react';
+import { use } from 'react';
 import { AppLayout } from '@/app/components/app-layout';
 import { FileManagerContainer } from '@/app/devices/details/[deviceId]/file-manager/components/file-manager-container';
 import { useDeviceDetails } from '@/app/devices/hooks/use-device-details';
@@ -20,13 +20,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
 
-  const { deviceDetails, isLoading, error, fetchDeviceById } = useDeviceDetails();
-
-  useEffect(() => {
-    if (deviceId) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, fetchDeviceById]);
+  const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId, { polling: false });
 
   const meshcentralAgentId = deviceDetails ? getMeshCentralAgentId(deviceDetails) : undefined;
 

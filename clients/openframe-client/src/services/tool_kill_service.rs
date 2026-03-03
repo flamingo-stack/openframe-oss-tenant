@@ -2,8 +2,8 @@ use anyhow::{Context, Result};
 use tracing::{info, warn, error};
 use sysinfo::{System, Signal, Pid};
 use tokio::time::{sleep, Duration};
-use crate::models::InstalledTool;
-use crate::models::download_configuration::InstallationType;
+use tokio::process::Command;
+use crate::models::{InstalledTool, Installation};
 
 /// Service responsible for stopping/killing tool processes
 #[derive(Clone)]
@@ -205,15 +205,18 @@ impl ToolKillService {
     }
 
     pub async fn stop_installed_tool(&self, tool: &InstalledTool) -> Result<()> {
-        match tool.installation_type {
-            InstallationType::GuiApp => {
-                let exec_path = tool.executable_path.as_deref()
-                    .context("GUI app has no executable path")?;
-                info!("Stopping GUI app by executable path: {}", exec_path);
-                self.stop_tool_by_path(exec_path).await
+        match &tool.installation {
+            Installation::GuiApp { executable_path, .. } => {
+                info!("Stopping GUI app by executable path: {}", executable_path);
+                self.stop_tool_by_path(executable_path).await
             }
-            InstallationType::Standard => {
+            Installation::Standard { .. } => {
                 self.stop_tool(&tool.tool_agent_id).await
+            }
+            Installation::Service { service_name, .. } => {
+                info!(tool_id = %tool.tool_agent_id, service_name = %service_name,
+                      "Stopping Service type tool via system service manager");
+                self.stop_service(service_name).await
             }
         }
     }
@@ -241,6 +244,152 @@ impl ToolKillService {
         #[cfg(any(target_os = "macos", target_os = "linux"))]
         {
             format!("/{}/{}", tool_id, asset_id).to_lowercase()
+        }
+    }
+
+    pub async fn stop_service(&self, service_name: &str) -> Result<()> {
+        info!("Stopping service: {}", service_name);
+
+        #[cfg(target_os = "windows")]
+        {
+            self.stop_service_windows(service_name).await
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            self.stop_service_macos(service_name).await
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            self.stop_service_linux(service_name).await
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn stop_service_windows(&self, service_name: &str) -> Result<()> {
+        info!("Stopping Windows service via sc stop: {}", service_name);
+
+        let output = Command::new("sc")
+            .args(["stop", service_name])
+            .output()
+            .await
+            .with_context(|| format!("Failed to execute sc stop for service: {}", service_name))?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        if output.status.success() {
+            info!("Service {} stopped successfully", service_name);
+            // Wait for service to fully stop
+            self.wait_for_service_stop_windows(service_name).await?;
+            Ok(())
+        } else if stderr.contains("1062") || stdout.contains("1062") {
+            // Error 1062: The service has not been started
+            info!("Service {} is not running (error 1062)", service_name);
+            Ok(())
+        } else if stderr.contains("1060") || stdout.contains("1060") {
+            // Error 1060: The specified service does not exist
+            warn!("Service {} does not exist (error 1060)", service_name);
+            Ok(())
+        } else {
+            error!("Failed to stop service {}: stdout={}, stderr={}", service_name, stdout, stderr);
+            Err(anyhow::anyhow!(
+                "Failed to stop service {}: {}",
+                service_name,
+                stderr
+            ))
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<()> {
+        let max_attempts = 10;
+        for attempt in 1..=max_attempts {
+            sleep(Duration::from_millis(500)).await;
+
+            let output = Command::new("sc")
+                .args(["query", service_name])
+                .output()
+                .await?;
+
+            let stdout = String::from_utf8_lossy(&output.stdout);
+
+            if stdout.contains("STOPPED") {
+                info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
+                return Ok(());
+            }
+
+            if attempt == max_attempts {
+                warn!("Service {} did not confirm stopped after {} attempts", service_name, max_attempts);
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn stop_service_macos(&self, service_name: &str) -> Result<()> {
+        let plist_path = format!("/Library/LaunchDaemons/{}.plist", service_name);
+        info!("Stopping macOS service via sudo launchctl unload: {}", plist_path);
+
+        // Check if plist exists
+        if !std::path::Path::new(&plist_path).exists() {
+            warn!("Plist not found at {}, service may not be installed", plist_path);
+            return Ok(());
+        }
+
+        let output = Command::new("sudo")
+            .args(["launchctl", "unload", &plist_path])
+            .output()
+            .await
+            .with_context(|| format!("Failed to execute sudo launchctl unload for: {}", plist_path))?;
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        if output.status.success() {
+            info!("Service unloaded successfully: {}", plist_path);
+            Ok(())
+        } else if stderr.contains("Could not find specified service") {
+            info!("Service not loaded (already stopped): {}", plist_path);
+            Ok(())
+        } else if stderr.contains("No such file or directory") {
+            warn!("Plist not found: {}", plist_path);
+            Ok(())
+        } else {
+            error!("Failed to unload service {}: {}", plist_path, stderr);
+            Err(anyhow::anyhow!(
+                "Failed to unload service {}: {}",
+                plist_path,
+                stderr
+            ))
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    async fn stop_service_linux(&self, service_name: &str) -> Result<()> {
+        info!("Stopping Linux service via systemctl stop: {}", service_name);
+
+        let output = Command::new("systemctl")
+            .args(["stop", service_name])
+            .output()
+            .await
+            .with_context(|| format!("Failed to execute systemctl stop for service: {}", service_name))?;
+
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        if output.status.success() {
+            info!("Service {} stopped successfully", service_name);
+            Ok(())
+        } else if stderr.contains("not loaded") || stderr.contains("not found") {
+            warn!("Service {} not found or not loaded", service_name);
+            Ok(())
+        } else {
+            error!("Failed to stop service {}: {}", service_name, stderr);
+            Err(anyhow::anyhow!(
+                "Failed to stop service {}: {}",
+                service_name,
+                stderr
+            ))
         }
     }
 }

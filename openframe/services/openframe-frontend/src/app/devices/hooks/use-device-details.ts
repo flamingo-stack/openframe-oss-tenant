@@ -1,13 +1,23 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { GET_DEVICE_QUERY } from '../queries/devices-queries';
-import { Battery, Device, DeviceGraphQlNode, GraphQlResponse, MdmInfo, Software, User } from '../types/device.types';
-import { FleetHost } from '../types/fleet.types';
+import type {
+  Battery,
+  Device,
+  DeviceGraphQlNode,
+  GraphQlResponse,
+  MdmInfo,
+  Software,
+  User,
+} from '../types/device.types';
+import type { FleetHost } from '../types/fleet.types';
+import { deviceQueryKeys } from '../utils/query-keys';
 
 /**
  * Create Device object directly from API responses
@@ -290,142 +300,105 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
   };
 }
 
-export function useDeviceDetails() {
+async function fetchDeviceDetails(machineId: string): Promise<Device> {
+  // 1) Fetch primary device from GraphQL
+  const response = await apiClient.post<GraphQlResponse<{ device: DeviceGraphQlNode }>>('/api/graphql', {
+    query: GET_DEVICE_QUERY,
+    variables: { machineId },
+  });
+
+  if (!response.ok) {
+    throw new Error(response.error || `Request failed with status ${response.status}`);
+  }
+
+  const graphqlResponse = response.data;
+  if (!graphqlResponse?.data?.device) {
+    throw new Error('Device not found');
+  }
+  if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
+    throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
+  }
+
+  const node = graphqlResponse.data.device;
+
+  // 2) Use toolConnections to fetch Tactical details if present
+  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
+  let tacticalData: any | null = null;
+  if (tactical?.agentToolId) {
+    const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
+    if (tResponse.ok) {
+      tacticalData = tResponse.data;
+    }
+  }
+
+  // 2.5) Fetch Fleet MDM details if present
+  const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM');
+  let fleetData: any | null = null;
+  if (fleet?.agentToolId) {
+    // Validate that agentToolId is a valid numeric string before calling Fleet API
+    const fleetHostId = Number(fleet.agentToolId);
+    if (Number.isInteger(fleetHostId) && fleetHostId > 0) {
+      const fResponse = await fleetApiClient.getHost(fleetHostId);
+      if (fResponse.ok && fResponse.data?.host) {
+        fleetData = fResponse.data.host;
+      }
+    } else {
+      console.warn(`Invalid Fleet host ID format: "${fleet.agentToolId}" - expected numeric ID`);
+    }
+  }
+
+  // 3) Create Device object directly - no normalization
+  return createDevice(node, tacticalData, fleetData);
+}
+
+interface UseDeviceDetailsOptions {
+  polling?: boolean;
+}
+
+export function useDeviceDetails(machineId: string | null | undefined, options?: UseDeviceDetailsOptions) {
   const { toast } = useToast();
-  const [deviceDetails, setDeviceDetails] = useState<Device | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const isPollingRef = useRef(false);
+  const { polling = true } = options ?? {};
+  const toastShownRef = useRef(false);
 
-  const fetchDeviceById = useCallback(
-    async (machineId: string, silent = false) => {
-      if (!machineId) {
-        setError('machineId is required');
-        return;
-      }
-
-      // Only show loading state for initial (non-silent) fetches
-      if (!silent) {
-        setIsLoading(true);
-      }
-      setError(null);
-
-      try {
-        // 1) Fetch primary device from GraphQL
-        const response = await apiClient.post<GraphQlResponse<{ device: DeviceGraphQlNode }>>('/api/graphql', {
-          query: GET_DEVICE_QUERY,
-          variables: { machineId },
-        });
-
-        if (!response.ok) {
-          throw new Error(response.error || `Request failed with status ${response.status}`);
+  const query = useQuery({
+    queryKey: deviceQueryKeys.detail(machineId ?? ''),
+    queryFn: () => fetchDeviceDetails(machineId!),
+    enabled: !!machineId,
+    staleTime: 3_000,
+    retry: 1,
+    retryDelay: 1_000,
+    refetchInterval: polling
+      ? query => {
+          const data = query.state.data as Device | undefined;
+          if (!data) return false;
+          const tacticalAgentId = data.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId;
+          const meshcentralAgentId = data.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;
+          const hasAllAgents = Boolean(tacticalAgentId && meshcentralAgentId);
+          return hasAllAgents ? 10_000 : 5_000;
         }
+      : false,
+  });
 
-        const graphqlResponse = response.data;
-        if (!graphqlResponse?.data?.device) {
-          setDeviceDetails(null);
-          setError('Device not found');
-          return;
-        }
-        if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
-        }
-
-        const node = graphqlResponse.data.device;
-
-        // 2) Use toolConnections to fetch Tactical details if present
-        const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
-        let tacticalData: any | null = null;
-        if (tactical?.agentToolId) {
-          const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
-          if (tResponse.ok) {
-            tacticalData = tResponse.data;
-          }
-        }
-
-        // 2.5) Fetch Fleet MDM details if present
-        const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM');
-        let fleetData: any | null = null;
-        if (fleet?.agentToolId) {
-          // Validate that agentToolId is a valid numeric string before calling Fleet API
-          const fleetHostId = Number(fleet.agentToolId);
-          if (Number.isInteger(fleetHostId) && fleetHostId > 0) {
-            const fResponse = await fleetApiClient.getHost(fleetHostId);
-            if (fResponse.ok && fResponse.data?.host) {
-              fleetData = fResponse.data.host;
-            }
-          } else {
-            console.warn(`Invalid Fleet host ID format: "${fleet.agentToolId}" - expected numeric ID`);
-          }
-        }
-
-        // 3) Create Device object directly - no normalization
-        const merged: Device = createDevice(node, tacticalData, fleetData);
-
-        setDeviceDetails(merged);
-        setLastUpdated(Date.now());
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device details';
-        setError(errorMessage);
-
-        // Only show toast for initial (non-silent) fetches
-        if (!silent) {
-          toast({
-            title: 'Failed to Load Device Details',
-            description: errorMessage,
-            variant: 'destructive',
-          });
-        }
-      } finally {
-        if (!silent) {
-          setIsLoading(false);
-        }
-      }
-    },
-    [toast],
-  );
-
-  const clearDeviceDetails = useCallback(() => {
-    setDeviceDetails(null);
-    setError(null);
-    setLastUpdated(null);
-  }, []);
-
-  // Polling logic with adaptive intervals
+  // Toast only on initial load failure (no cached data)
   useEffect(() => {
-    if (!deviceDetails?.machineId) return;
-
-    // Extract agent IDs from toolConnections
-    const tacticalAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId;
-    const meshcentralAgentId = deviceDetails.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;
-
-    // Adaptive interval based on agent connection status
-    // Fast polling (5s) when agents are missing, slow polling (10s) when all connected
-    const hasAllAgents = Boolean(tacticalAgentId && meshcentralAgentId);
-    const pollingInterval = hasAllAgents ? 10000 : 5000; // 10s or 5s
-
-    isPollingRef.current = true;
-
-    const intervalId = setInterval(() => {
-      if (isPollingRef.current) {
-        // Silent refresh - no loading states or error toasts
-        fetchDeviceById(deviceDetails.machineId, true);
-      }
-    }, pollingInterval);
-
-    return () => {
-      clearInterval(intervalId);
-      isPollingRef.current = false;
-    };
-  }, [deviceDetails?.machineId, deviceDetails?.toolConnections, fetchDeviceById]);
+    if (query.error && !query.data && !toastShownRef.current) {
+      toastShownRef.current = true;
+      toast({
+        title: 'Failed to Load Device Details',
+        description: query.error instanceof Error ? query.error.message : 'Failed to fetch device details',
+        variant: 'destructive',
+      });
+    }
+    if (!query.error) {
+      toastShownRef.current = false;
+    }
+  }, [query.error, query.data, toast]);
 
   return {
-    deviceDetails,
-    isLoading,
-    error,
-    fetchDeviceById,
-    clearDeviceDetails,
-    lastUpdated,
+    deviceDetails: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+    lastUpdated: query.dataUpdatedAt || null,
   };
 }

@@ -34,13 +34,11 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
     return shellTypeParam === 'powershell' ? 'powershell' : 'cmd';
   }, [shellTypeParam]);
 
-  const { deviceDetails, isLoading: isDeviceLoading, error: deviceError, fetchDeviceById } = useDeviceDetails();
-
-  useEffect(() => {
-    if (deviceId) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, fetchDeviceById]);
+  const {
+    deviceDetails,
+    isLoading: isDeviceLoading,
+    error: deviceError,
+  } = useDeviceDetails(deviceId, { polling: false });
 
   const meshcentralAgentId = useMemo(() => {
     return deviceDetails?.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL')?.agentToolId;

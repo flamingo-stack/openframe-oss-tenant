@@ -99,6 +99,21 @@ class TacticalApiClient {
     return this.get('/scripts/');
   }
 
+  async getScriptsV2(params?: {
+    search?: string;
+    cursor?: string;
+    page_size?: number;
+    supported_platforms?: string;
+  }): Promise<ApiResponse<{ next: string | null; previous: string | null; results: any[] }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.cursor) queryParams.append('cursor', params.cursor);
+    if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+    if (params?.supported_platforms) queryParams.append('supported_platforms', params.supported_platforms);
+    const qs = queryParams.toString();
+    return this.get(qs ? `/v2/scripts/?${qs}` : '/v2/scripts/');
+  }
+
   async getScript(scriptId: string): Promise<ApiResponse<any>> {
     return this.get(`/scripts/${scriptId}/`);
   }

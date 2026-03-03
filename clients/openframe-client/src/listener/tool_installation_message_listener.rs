@@ -7,7 +7,7 @@ use tokio::time::Duration;
 use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use crate::services::AgentConfigurationService;
 use crate::models::tool_installation_message::ToolInstallationMessage;
 

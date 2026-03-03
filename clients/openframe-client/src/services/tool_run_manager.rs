@@ -8,7 +8,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use crate::models::installed_tool::InstalledTool;
+use crate::models::installed_tool::{InstalledTool, Installation};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
@@ -223,7 +223,7 @@ fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Res
 }
 
 #[cfg(windows)]
-fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
+pub(crate) fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = match get_active_user_session() {
             Some(id) => {
@@ -465,26 +465,29 @@ impl ToolRunManager {
     }
 
     async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
-        self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
+        if tool.installation.is_service() {
+            info!(tool_id = %tool.tool_agent_id, "Installation::Service - self-managed, skipping launch");
+            self.clear_running_tool(&tool.tool_agent_id).await;
+            return Ok(());
+        }
 
-        #[cfg(windows)]
-        let running_tools = self.running_tools.clone();
+        self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
         let updating_tools = self.updating_tools.clone();
         let params_processor = self.params_processor.clone();
-        tokio::spawn({
+        let running_tools = self.running_tools.clone();
+        let installation = tool.installation.clone();
 
-            async move {
-                loop {
-                    while updating_tools.read().await.contains(&tool.tool_agent_id) {
-                        info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
-                        sleep(Duration::from_secs(1)).await;
-                    }
+        tokio::spawn(async move {
+            loop {
+                while updating_tools.read().await.contains(&tool.tool_agent_id) {
+                    info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
+                    sleep(Duration::from_secs(1)).await;
+                }
 
-                    // exchange args placeholders to real values
-                    let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
-                        Ok(args) => args,
-                        Err(e) => {
+                let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
+                    Ok(args) => args,
+                    Err(e) => {
                         error!("Failed to resolve tool {} run command args: {:#}", tool.tool_agent_id, e);
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
@@ -494,7 +497,7 @@ impl ToolRunManager {
                 debug!("Running tool {} with args: {:?}", tool.tool_agent_id, processed_args);
 
                 let command_path = params_processor.directory_manager
-                    .get_tool_executable_path(&tool.tool_agent_id, tool.executable_path.as_deref())
+                    .get_tool_executable_path(&tool.tool_agent_id, installation.executable_path())
                     .to_string_lossy()
                     .to_string();
 
@@ -502,90 +505,53 @@ impl ToolRunManager {
                     warn!("Executable not found at: {}", command_path);
                 }
 
-                // On Windows, check session type to determine launch method
-                #[cfg(windows)]
-                {
-                    use crate::models::SessionType;
-                    
-                    match tool.session_type {
-                        SessionType::User => {
-                            // openframe-chat: launch in background mode when started by daemon
-                            let launch_args = if tool.tool_agent_id == "openframe-chat" {
-                                let mut args = processed_args.clone();
-                                args.push("--background".to_string());
-                                args
-                            } else {
-                                processed_args.clone()
-                            };
-
-                            info!("Launching {} in USER session (GUI application)", tool.tool_agent_id);
-                            match launch_process_in_user_session(&command_path, &launch_args) {
+                match &installation {
+                    Installation::GuiApp { executable_path: _, bundle_id } => {
+                        #[cfg(windows)]
+                        {
+                            info!("Launching {} as GuiApp in USER session", tool.tool_agent_id);
+                            match launch_process_in_user_session(&command_path, &processed_args) {
                                 Ok((pid, process_handle)) => {
                                     info!("{} launched successfully in USER session with PID: {}", tool.tool_agent_id, pid);
-                                    
+
                                     // Wait for process to exit in blocking thread to avoid blocking async runtime
                                     let exit_code = tokio::task::spawn_blocking(move || {
                                         use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
-                                        
+
                                         unsafe {
                                             let _ = WaitForSingleObject(process_handle, INFINITE);
-                                            
+
                                             // Get exit code
                                             let mut exit_code: u32 = 0;
                                             let _ = GetExitCodeProcess(process_handle, &mut exit_code);
                                             let _ = CloseHandle(process_handle);
-                                            
+
                                             exit_code
                                         }
                                     }).await.unwrap_or(1);
-                                    
+
                                     warn!(tool_id = %tool.tool_agent_id,
                                           "{} process exited with code {} - restarting in {} seconds",
                                           tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
-                                    
+
                                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                     continue;
                                 }
                                 Err(e) => {
                                     error!(tool_id = %tool.tool_agent_id, error = %e,
-                                           "Failed to launch {} in USER session - retrying in {} seconds", 
+                                           "Failed to launch {} as GuiApp - retrying in {} seconds",
                                            tool.tool_agent_id, RETRY_DELAY_SECONDS);
                                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                                     continue;
                                 }
                             }
                         }
-                        SessionType::Console => {
-                            // Temporarily skipping console mode since in this mode only the mesh agent runs,
-                            // which is now installed separately as a service.
-                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
-                            let mut set = running_tools.write().await;
-                            set.remove(&tool.tool_agent_id);
-                            return;
-                        }
-                        SessionType::Service => {
-                            info!("Launching {} as SERVICE (standard spawn)", tool.tool_agent_id);
-                            // Continue to standard spawn below
-                        }
-                    }
-                    
-                    // If we reached here and session_type is Service, continue to standard spawn
-                    if tool.session_type != SessionType::Service {
-                        // User or Console sessions are handled above and continue the loop
-                        // This should never be reached, but just in case
-                        continue;
-                    }
-                }
 
-// macOS: Handle session types
-                #[cfg(target_os = "macos")]
-                {
-                    use crate::models::SessionType;
-                    use crate::platform::user_session::{get_console_user, launch_as_user, is_process_running};
+                        #[cfg(target_os = "macos")]
+                        {
+                            use crate::platform::user_session::{get_console_user, launch_as_user, is_process_running};
 
-                    match tool.session_type {
-                        SessionType::User => {
-                            info!(tool_id = %tool.tool_agent_id, "Launching as USER session (GUI) on macOS - single launch, no restart");
+                            info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS - single launch, no restart");
 
                             // Check if already running
                             if is_process_running(&command_path).await {
@@ -594,15 +560,15 @@ impl ToolRunManager {
                             }
 
                             let Some(user) = get_console_user() else {
-                                error!(tool_id = %tool.tool_agent_id, "No console user, cannot launch USER session tool");
+                                error!(tool_id = %tool.tool_agent_id, "No console user, cannot launch GuiApp");
                                 return;
                             };
 
                             // For GUI apps with bundle_id: write config to preferences and launch without args
-                            let launch_args = match &tool.bundle_id {
-                                Some(bundle_id) => {
+                            let launch_args = match bundle_id {
+                                Some(bid) => {
                                     let prefs = crate::platform::preferences_writer::args_to_pairs(&processed_args);
-                                    if let Err(e) = crate::platform::preferences_writer::write(bundle_id, prefs) {
+                                    if let Err(e) = crate::platform::preferences_writer::write(bid, prefs) {
                                         error!(tool_id = %tool.tool_agent_id, "Failed to write preferences: {:#}", e);
                                     }
 
@@ -633,7 +599,7 @@ impl ToolRunManager {
                                         });
                                     }
 
-                                    info!(tool_id = %tool.tool_agent_id, "USER session tool launched - no lifecycle monitoring");
+                                    info!(tool_id = %tool.tool_agent_id, "GuiApp launched - no lifecycle monitoring");
                                 }
                                 Err(e) => {
                                     error!(tool_id = %tool.tool_agent_id, "Failed to launch as user: {:#}", e);
@@ -642,27 +608,22 @@ impl ToolRunManager {
 
                             return;
                         }
-                        SessionType::Console => {
-                            info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
-                            return;
-                        }
-                        SessionType::Service => {
-                            // Continue to standard spawn below
+
+                        #[cfg(all(unix, not(target_os = "macos")))]
+                        {
+                            warn!(tool_id = %tool.tool_agent_id, "GuiApp on Linux - falling back to standard spawn");
                         }
                     }
-                }
-
-                // For other Unix platforms, skip Console session type
-                #[cfg(all(unix, not(target_os = "macos")))]
-                {
-                    use crate::models::SessionType;
-                    if tool.session_type == SessionType::Console {
-                        info!(tool_id = %tool.tool_agent_id, "SessionType::Console - skipping launch");
+                    Installation::Service { .. } => {
+                        info!(tool_id = %tool.tool_agent_id, "Installation::Service - should not reach here");
+                        running_tools.write().await.remove(&tool.tool_agent_id);
                         return;
                     }
+                    Installation::Standard { .. } => {
+                        info!(tool_id = %tool.tool_agent_id, "Launching as Standard (managed process)");
+                    }
                 }
 
-                // For all other tools (or non-Windows), use standard spawn
                 let mut child = match Command::new(&command_path)
                     .args(&processed_args)
                     .stdout(Stdio::piped())
@@ -706,22 +667,19 @@ impl ToolRunManager {
                     Ok(status) => {
                         if status.success() {
                             warn!(tool_id = %tool.tool_agent_id,
-                                  "Tool completed successfully but should keep running - restarting in {} seconds", 
+                                  "Tool completed successfully but should keep running - restarting in {} seconds",
                                   RETRY_DELAY_SECONDS);
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         } else {
                             error!(tool_id = %tool.tool_agent_id, exit_status = %status,
                                    "Tool failed with exit status - restarting in {} seconds", RETRY_DELAY_SECONDS);
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         }
                     }
                     Err(e) => {
                         error!(tool_id = %tool.tool_agent_id, error = %e,
                                "Failed to wait for tool process - restarting in {} seconds: {:#}", RETRY_DELAY_SECONDS, e);
-                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                     }
                 }
-                }
+                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
             }
         });
 

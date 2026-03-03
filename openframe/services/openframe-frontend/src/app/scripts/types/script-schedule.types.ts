@@ -134,8 +134,8 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
 
 const scheduleActionSchema = z.object({
   script: z.number().min(1, 'Please select a script'),
-  name: z.string().min(1, 'Name is required'),
-  timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
+  name: z.string().min(1, 'Please enter a script name'),
+  timeout: z.number({ error: 'Invalid value' }).min(1, 'Timeout required'),
   script_args: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
   env_vars: z.array(z.object({ id: z.string(), key: z.string(), value: z.string() })),
 });
@@ -143,16 +143,16 @@ const scheduleActionSchema = z.object({
 export type ScheduleActionFormData = z.infer<typeof scheduleActionSchema>;
 
 export const createScheduleFormSchema = z.object({
-  name: z.string().min(1, 'Schedule name is required').max(255),
+  name: z.string().min(1, 'Please enter a schedule name').max(255, 'Name must not exceed 255 characters'),
   note: z.string().optional(),
-  scheduledDate: z.date({ message: 'Please select a schedule date' }),
+  scheduledDate: z.date({ message: 'Please select a date and time' }),
   repeatEnabled: z.boolean(),
-  repeatInterval: z.number().min(1),
+  repeatInterval: z.number().min(1, 'Interval must be at least 1'),
   repeatPeriod: z.enum(['day', 'week', 'month']),
   weekdays: z.number(),
-  supportedPlatforms: z.array(z.string()).min(1, 'Select at least one platform'),
+  supportedPlatforms: z.array(z.string()).min(1, 'Please select at least one platform'),
   enabled: z.boolean(),
-  actions: z.array(scheduleActionSchema).min(1, 'Add at least one script action'),
+  actions: z.array(scheduleActionSchema).min(1, 'Please add at least one script'),
 });
 
 export type CreateScheduleFormData = z.infer<typeof createScheduleFormSchema>;
