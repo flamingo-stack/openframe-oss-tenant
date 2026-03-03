@@ -8,7 +8,9 @@ use super::{
     backup_binary, download_and_write_binary, cleanup_backup, restore_from_backup,
 };
 use crate::models::{InstalledTool, Installation, DownloadConfiguration};
-use crate::platform::{binary_writer, DirectoryManager, system_service, remove_app_bundle_path};
+use crate::platform::{binary_writer, DirectoryManager, system_service};
+#[cfg(target_os = "macos")]
+use crate::platform::remove_app_bundle_path;
 
 pub struct ServiceToolUpdater {
     deps: ToolUpdaterDeps,
@@ -86,6 +88,7 @@ impl ToolUpdater for ServiceToolUpdater {
         let exec_path = self.resolve_executable_path(tool);
 
         // For .app bundles: remove old bundle, extract entire archive
+        #[cfg(target_os = "macos")]
         if Self::is_app_bundle_download(config) {
             info!(tool_id = %tool_agent_id, "Detected .app bundle - using full extraction");
 
