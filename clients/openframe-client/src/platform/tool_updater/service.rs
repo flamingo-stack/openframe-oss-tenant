@@ -110,11 +110,11 @@ impl ToolUpdater for ServiceToolUpdater {
             }
 
             info!(tool_id = %tool_agent_id, "App bundle extracted successfully");
-            Ok(())
-        } else {
-            // Standard single binary update
-            download_and_write_binary(&self.deps, config, &exec_path, tool_agent_id).await
+            return Ok(());
         }
+
+        // Standard single binary update
+        download_and_write_binary(&self.deps, config, &exec_path, tool_agent_id).await
     }
 
     async fn finalize(
