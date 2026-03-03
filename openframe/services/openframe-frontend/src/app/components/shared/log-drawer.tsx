@@ -12,7 +12,6 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
-import { useEffect } from 'react';
 import { DeviceDetailsButton } from '../../devices/components/device-details-button';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status';
@@ -38,13 +37,7 @@ interface LogDrawerProps {
 }
 
 function DrawerDeviceCard({ deviceId }: { deviceId: string }) {
-  const { deviceDetails, isLoading, fetchDeviceById } = useDeviceDetails();
-
-  useEffect(() => {
-    if (deviceId) {
-      fetchDeviceById(deviceId);
-    }
-  }, [deviceId, fetchDeviceById]);
+  const { deviceDetails, isLoading } = useDeviceDetails(deviceId, { polling: false });
 
   if (isLoading) {
     return <CardLoader items={2} containerClassName="p-0" />;
