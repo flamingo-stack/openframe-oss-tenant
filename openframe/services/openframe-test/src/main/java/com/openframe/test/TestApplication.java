@@ -12,8 +12,6 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 
 import static com.openframe.test.SummaryLogger.logSummary;
 import static com.openframe.test.SummaryLogger.logTestList;
-import static org.junit.platform.engine.discovery.ClassNameFilter.excludeClassNamePatterns;
-import static org.junit.platform.engine.discovery.ClassNameFilter.includeClassNamePatterns;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectPackage;
 import static org.junit.platform.launcher.TagFilter.includeTags;
 
@@ -46,7 +44,7 @@ public class TestApplication {
             log.info("Run OSS tests");
             LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
                     .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeTags("oss"), excludeClassNamePatterns(".*UserInvitationsTest"))
+                    .filters(includeTags("oss"))
                     .build();
             TestPlan testPlan = testRunner.discover(request);
             logTestList(testRunner.list(testPlan));
@@ -54,35 +52,15 @@ public class TestApplication {
             logSummary(summaryListener.getSummary());
             testsPassed = summaryListener.getSummary().getTestsFailedCount() == 0;
 
-            request = LauncherDiscoveryRequestBuilder.request()
-                    .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns(".*UserTest"))
-                    .build();
-            testPlan = testRunner.discover(request);
-            logTestList(testRunner.list(testPlan));
-            testRunner.run(testPlan);
-            logSummary(summaryListener.getSummary());
-            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
-
-            request = LauncherDiscoveryRequestBuilder.request()
-                    .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns(".*UserInvitationsTest"))
-                    .build();
-            testPlan = testRunner.discover(request);
-            logTestList(testRunner.list(testPlan));
-            testRunner.run(testPlan);
-            logSummary(summaryListener.getSummary());
-            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
-
-            request = LauncherDiscoveryRequestBuilder.request()
-                    .selectors(selectPackage(config.getTestPackage()))
-                    .filters(includeClassNamePatterns(".*ResetPasswordTest"))
-                    .build();
-            testPlan = testRunner.discover(request);
-            logTestList(testRunner.list(testPlan));
-            testRunner.run(testPlan);
-            logSummary(summaryListener.getSummary());
-            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
+//            request = LauncherDiscoveryRequestBuilder.request()
+//                    .selectors(selectPackage(config.getTestPackage()))
+//                    .filters(includeClassNamePatterns(".*ResetPasswordTest"))
+//                    .build();
+//            testPlan = testRunner.discover(request);
+//            logTestList(testRunner.list(testPlan));
+//            testRunner.run(testPlan);
+//            logSummary(summaryListener.getSummary());
+//            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
         } else {
             log.error("Registration tests failed - interrupting execution");
         }
