@@ -1,8 +1,9 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
-import { type FieldErrors, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../types/edit-script.types';
 import type { ScriptDetails } from './use-script-details';
@@ -52,6 +53,7 @@ async function updateScriptApi(params: { id: string; payload: ScriptPayload }) {
 
 export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEditScriptFormOptions) {
   const { toast } = useToast();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const form = useForm<EditScriptFormData>({
@@ -88,9 +90,11 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
 
   const createMutation = useMutation({
     mutationFn: createScriptApi,
-    onSuccess: () => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: scriptsQueryKeys.all });
       toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
+      const newScriptId = data?.id;
+      router.push(newScriptId ? `/scripts/details/${newScriptId}` : '/scripts');
     },
     onError: err => {
       toast({
@@ -109,6 +113,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         queryClient.invalidateQueries({ queryKey: scriptDetailsQueryKeys.detail(scriptId) });
       }
       toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
+      router.push(`/scripts/details/${scriptId}`);
     },
     onError: err => {
       toast({
@@ -146,24 +151,9 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
     [isEditMode, scriptId, updateMutation, createMutation],
   );
 
-  const onValidationError = useCallback(
-    (errors: FieldErrors<EditScriptFormData>) => {
-      const messages = Object.values(errors)
-        .map(err => err?.message)
-        .filter(Boolean);
-
-      toast({
-        title: 'Validation Error',
-        description: messages.join(', '),
-        variant: 'destructive',
-      });
-    },
-    [toast],
-  );
-
   const handleSave = useCallback(() => {
-    handleSubmit(onSubmit, onValidationError)();
-  }, [handleSubmit, onSubmit, onValidationError]);
+    handleSubmit(onSubmit)();
+  }, [handleSubmit, onSubmit]);
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 

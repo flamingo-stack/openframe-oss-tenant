@@ -328,6 +328,7 @@ impl Client {
             directory_manager.clone(),
             config_service.clone(),
             installed_agent_message_publisher.clone(),
+            tool_command_params_resolver.clone(),
         );
 
         // Initialize tool installation message listener

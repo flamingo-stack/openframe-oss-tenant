@@ -7,6 +7,7 @@ pub enum InstallationType {
     #[default]
     Standard,
     GuiApp,
+    Service,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +22,8 @@ pub struct DownloadConfiguration {
     pub installation_type: InstallationType,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub bundle_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub service_name: Option<String>,
 }
 
 impl DownloadConfiguration {
