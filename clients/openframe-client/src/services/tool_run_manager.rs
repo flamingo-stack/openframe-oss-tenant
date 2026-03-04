@@ -509,8 +509,14 @@ impl ToolRunManager {
                     Installation::GuiApp { executable_path: _, bundle_id } => {
                         #[cfg(windows)]
                         {
+                            // For openframe-chat, add --background flag to start in tray
+                            let mut launch_args = processed_args.clone();
+                            if tool.tool_agent_id == "openframe-chat" {
+                                launch_args.push("--background".to_string());
+                            }
+
                             info!("Launching {} as GuiApp in USER session", tool.tool_agent_id);
-                            match launch_process_in_user_session(&command_path, &processed_args) {
+                            match launch_process_in_user_session(&command_path, &launch_args) {
                                 Ok((pid, process_handle)) => {
                                     info!("{} launched successfully in USER session with PID: {}", tool.tool_agent_id, pid);
 
