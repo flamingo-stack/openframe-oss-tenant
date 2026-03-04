@@ -169,8 +169,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
 
   const supportedPlatforms = mapPlatformsToOsTypes(schedule?.task_supported_platforms ?? []);
 
-  console.log('Supported platforms for schedule:', supportedPlatforms);
-
   const devicesQuery = useQuery({
     queryKey: ['schedule-assign-devices', scheduleId, supportedPlatforms],
     queryFn: () => fetchDevicesByPlatforms(supportedPlatforms),
