@@ -51,10 +51,11 @@ export const GET_MINGO_DIALOG_QUERY = `
 `;
 
 export const GET_DIALOG_MESSAGES_QUERY = `
-  query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int) {
+  query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
       pagination: { cursor: $cursor, limit: $limit }
+      sort: { field: $sortField, direction: $sortDirection }
     ) {
       edges {
         cursor
