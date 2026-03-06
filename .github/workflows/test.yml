@@ -206,7 +206,8 @@ jobs:
           TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
           MONGODB_USERNAME: ${{ secrets.MONGODB_USERNAME }}
           MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
-          SLACK_HOOK: ${{ secrets.SLACK_HOOK }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
         run: |
           java -jar openframe/services/openframe-test/target/openframe-test-1.0.0-SNAPSHOT-jar-with-dependencies.jar
         continue-on-error: true
