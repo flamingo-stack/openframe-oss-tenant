@@ -1,5 +1,6 @@
 package com.openframe.test;
 
+import com.openframe.test.listener.SlackClient;
 import com.openframe.test.listener.SlackListener;
 import com.openframe.test.runner.TestRunner;
 import com.openframe.test.runner.TestRunnerConfig;
@@ -22,7 +23,8 @@ public class TestApplication {
     public static void main(String[] args) {
         AllureJunitPlatform allureListener = new AllureJunitPlatform();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
-        SlackListener slackListener = new SlackListener(System.getenv("SLACK_HOOK"));
+        SlackClient slackClient = new SlackClient(System.getenv("SLACK_BOT_TOKEN"), System.getenv("SLACK_CHANNEL_ID"));
+        SlackListener slackListener = new SlackListener(slackClient);
         TestRunnerConfig config = TestRunnerConfig.builder()
                 .testPackage(TEST_PACKAGE)
                 .testListeners(allureListener, summaryListener, slackListener)
@@ -52,15 +54,15 @@ public class TestApplication {
             logSummary(summaryListener.getSummary());
             testsPassed = summaryListener.getSummary().getTestsFailedCount() == 0;
 
-//            request = LauncherDiscoveryRequestBuilder.request()
-//                    .selectors(selectPackage(config.getTestPackage()))
-//                    .filters(includeClassNamePatterns(".*ResetPasswordTest"))
-//                    .build();
-//            testPlan = testRunner.discover(request);
-//            logTestList(testRunner.list(testPlan));
-//            testRunner.run(testPlan);
-//            logSummary(summaryListener.getSummary());
-//            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
+            request = LauncherDiscoveryRequestBuilder.request()
+                    .selectors(selectPackage(config.getTestPackage()))
+                    .filters(includeTags("reset"))
+                    .build();
+            testPlan = testRunner.discover(request);
+            logTestList(testRunner.list(testPlan));
+            testRunner.run(testPlan);
+            logSummary(summaryListener.getSummary());
+            testsPassed = testsPassed && summaryListener.getSummary().getTestsFailedCount() == 0;
         } else {
             log.error("Registration tests failed - interrupting execution");
         }
