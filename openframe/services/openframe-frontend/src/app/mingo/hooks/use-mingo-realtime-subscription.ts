@@ -9,7 +9,6 @@ import {
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
-import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { runtimeEnv } from '@/lib/runtime-config';
@@ -185,8 +184,6 @@ interface UseDialogChunkProcessorOptions {
 
 function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProcessorOptions = {}) {
   const { onApprove, onReject, approvalStatuses } = options;
-  const queryClient = useQueryClient();
-
   const {
     messagesByDialog,
     getMessages,
@@ -314,7 +311,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       onStreamEnd: () => {
         setTyping(dialogId, false);
         setStreamingMessage(dialogId, null);
-        queryClient.invalidateQueries({ queryKey: ['mingo-dialog-messages', dialogId] });
       },
 
       onSegmentsUpdate: (segments: MessageSegment[]) => {
@@ -342,7 +338,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       addErrorMessage,
       onApprove,
       onReject,
-      queryClient.invalidateQueries,
     ],
   );
 

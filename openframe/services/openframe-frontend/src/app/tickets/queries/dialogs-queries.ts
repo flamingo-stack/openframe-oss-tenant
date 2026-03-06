@@ -83,10 +83,12 @@ export const GET_DIALOG_STATISTICS_QUERY = `
 `;
 
 export const GET_DIALOG_MESSAGES_QUERY = `
-  query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int) {
+  query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
+      chatType: $chatType
       pagination: { cursor: $cursor, limit: $limit }
+      sort: { field: $sortField, direction: $sortDirection }
     ) {
       edges {
         cursor
