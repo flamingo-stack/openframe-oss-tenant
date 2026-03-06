@@ -41,6 +41,13 @@ interface MingoMessagesStore {
 
   // Message Management
   setMessages: (dialogId: string, messages: Message[]) => void;
+  prependMessages: (dialogId: string, messages: Message[]) => void;
+  prependWithBoundaryMerge: (
+    dialogId: string,
+    newMessages: Message[],
+    boundaryMessageId?: string,
+    boundaryUpdates?: Partial<Message>,
+  ) => void;
   addMessage: (dialogId: string, message: Message) => void;
   updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (dialogId: string, messageId: string) => void;
@@ -122,6 +129,37 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         set(state => {
           const newMap = new Map(state.messagesByDialog);
           newMap.set(dialogId, messages);
+          return { messagesByDialog: newMap };
+        });
+      },
+
+      prependMessages: (dialogId: string, messages: Message[]) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog);
+          const currentMessages = newMap.get(dialogId) || [];
+          newMap.set(dialogId, [...messages, ...currentMessages]);
+          return { messagesByDialog: newMap };
+        });
+      },
+
+      prependWithBoundaryMerge: (dialogId, newMessages, boundaryMessageId?, boundaryUpdates?) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog);
+          const currentMessages = [...(newMap.get(dialogId) || [])];
+
+          if (boundaryMessageId && boundaryUpdates) {
+            const idx = currentMessages.findIndex(m => m.id === boundaryMessageId);
+            if (idx !== -1) {
+              currentMessages[idx] = { ...currentMessages[idx], ...boundaryUpdates };
+            }
+          }
+
+          if (newMessages.length > 0) {
+            newMap.set(dialogId, [...newMessages, ...currentMessages]);
+          } else {
+            newMap.set(dialogId, currentMessages);
+          }
+
           return { messagesByDialog: newMap };
         });
       },

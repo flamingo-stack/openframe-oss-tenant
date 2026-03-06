@@ -10,7 +10,7 @@ import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../.
 import { GET_DIALOG_MESSAGES_QUERY, GET_MINGO_DIALOG_QUERY } from '../queries/dialogs-queries';
 import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { DialogResponse, MessagePage, MessagesResponse } from '../types';
+import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
 
 export function useMingoDialogSelection() {
   const { toast } = useToast();
@@ -20,6 +20,7 @@ export function useMingoDialogSelection() {
     activeDialogId,
     setActiveDialogId,
     setMessages,
+    prependWithBoundaryMerge,
     getMessages,
     setLoadingDialog,
     setLoadingMessages,
@@ -80,6 +81,8 @@ export function useMingoDialogSelection() {
   handleApproveRef.current = handleApprove;
   const handleRejectRef = useRef(handleReject);
   handleRejectRef.current = handleReject;
+  const approvalStatusesRef = useRef(approvalStatuses);
+  approvalStatusesRef.current = approvalStatuses;
 
   const dialogQuery = useQuery({
     queryKey: ['mingo-dialog', activeDialogId],
@@ -111,7 +114,9 @@ export function useMingoDialogSelection() {
         variables: {
           dialogId: activeDialogId,
           cursor: pageParam,
-          limit: 100,
+          limit: 50,
+          sortField: 'createdAt',
+          sortDirection: 'DESC',
         },
       });
 
@@ -149,21 +154,9 @@ export function useMingoDialogSelection() {
   });
 
   useEffect(() => {
-    if (messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage && !messagesQuery.isLoading) {
-      messagesQuery.fetchNextPage();
-    }
-  }, [
-    messagesQuery.hasNextPage,
-    messagesQuery.isFetchingNextPage,
-    messagesQuery.isLoading,
-    messagesQuery.fetchNextPage,
-  ]);
-
-  useEffect(() => {
     if (messagesQuery.data?.pages && activeDialogId) {
-      const allGraphQlMessages = messagesQuery.data.pages.flatMap(page => page.messages);
+      const allGraphQlMessages = [...messagesQuery.data.pages].reverse().flatMap(page => [...page.messages].reverse());
 
-      // Extract approval statuses from GraphQL messages
       const extractedStatuses = allGraphQlMessages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
         const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData];
 
@@ -177,62 +170,121 @@ export function useMingoDialogSelection() {
       }, {});
 
       if (Object.keys(extractedStatuses).length > 0) {
-        setApprovalStatuses(prev => ({ ...prev, ...extractedStatuses }));
+        setApprovalStatuses(prev => {
+          const hasChanges = Object.entries(extractedStatuses).some(([k, v]) => prev[k] !== v);
+          return hasChanges ? { ...prev, ...extractedStatuses } : prev;
+        });
       }
     }
   }, [messagesQuery.data?.pages, activeDialogId]);
 
+  const processedPageCountRef = useRef<number>(0);
+  const prevActiveDialogIdRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (messagesQuery.data?.pages && activeDialogId) {
-      const allGraphQlMessages = messagesQuery.data.pages.flatMap(page => page.messages);
+    if (!messagesQuery.data?.pages || !activeDialogId || !messagesQuery.isFetched) return;
 
-      // Convert GraphQL messages to HistoricalMessage format
-      const historicalMessages: HistoricalMessage[] = allGraphQlMessages
-        .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-        .map(msg => ({
-          id: msg.id,
-          dialogId: msg.dialogId,
-          chatType: msg.chatType,
-          createdAt: msg.createdAt,
-          owner: msg.owner,
-          messageData: msg.messageData,
-        }));
+    const pages = messagesQuery.data.pages;
 
-      const assistantConfig = ASSISTANT_CONFIG.MINGO;
-      const { messages: coreMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
-        assistantName: assistantConfig.name,
-        assistantType: assistantConfig.type,
-        chatTypeFilter: CHAT_TYPE.ADMIN,
-        onApprove: handleApproveRef.current,
-        onReject: handleRejectRef.current,
-        approvalStatuses: Object.fromEntries(Object.entries(approvalStatuses).map(([k, v]) => [k, v as any])),
+    if (activeDialogId !== prevActiveDialogIdRef.current) {
+      processedPageCountRef.current = 0;
+      prevActiveDialogIdRef.current = activeDialogId;
+    }
+
+    const previouslyProcessedCount = processedPageCountRef.current;
+    if (pages.length === previouslyProcessedCount) return;
+
+    const allGraphQlMessages = [...pages].reverse().flatMap(page => [...page.messages].reverse());
+
+    const historicalMessages: HistoricalMessage[] = allGraphQlMessages
+      .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
+      .map(msg => ({
+        id: msg.id,
+        dialogId: msg.dialogId,
+        chatType: msg.chatType,
+        createdAt: msg.createdAt,
+        owner: msg.owner,
+        messageData: msg.messageData,
+      }));
+
+    const assistantConfig = ASSISTANT_CONFIG.MINGO;
+    const { messages: allProcessedMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
+      assistantName: assistantConfig.name,
+      assistantType: assistantConfig.type,
+      chatTypeFilter: CHAT_TYPE.ADMIN,
+      onApprove: handleApproveRef.current,
+      onReject: handleRejectRef.current,
+      approvalStatuses: Object.fromEntries(Object.entries(approvalStatusesRef.current).map(([k, v]) => [k, v as any])),
+    });
+
+    if (allProcessedMessages.length === 0) {
+      processedPageCountRef.current = pages.length;
+      return;
+    }
+
+    const existingMessages = getMessages(activeDialogId);
+    const rawPageMessageIds = new Set(allGraphQlMessages.map(msg => msg.id));
+    const processedMessageIds = new Set(allProcessedMessages.map(m => m.id));
+
+    if (previouslyProcessedCount === 0) {
+      const realtimeMessages = existingMessages.filter(m => {
+        if (processedMessageIds.has(m.id)) return false;
+        return !rawPageMessageIds.has(m.id);
       });
+      setMessages(activeDialogId, [...allProcessedMessages, ...realtimeMessages]);
+    } else {
+      const existingIds = new Set(existingMessages.map(m => m.id));
+      const newMessages: Message[] = [];
+      let boundaryMessageIndex = -1;
 
-      const allPagesLoaded = !messagesQuery.hasNextPage && !messagesQuery.isFetchingNextPage;
-      const existingMessages = getMessages(activeDialogId);
-      if (messagesQuery.isFetched && allPagesLoaded && coreMessages.length > 0 && existingMessages.length === 0) {
-        setMessages(activeDialogId, coreMessages);
+      for (let i = 0; i < allProcessedMessages.length; i++) {
+        if (existingIds.has(allProcessedMessages[i].id)) {
+          boundaryMessageIndex = i;
+          break;
+        }
+        newMessages.push(allProcessedMessages[i]);
       }
 
-      const lastPage = messagesQuery.data.pages[messagesQuery.data.pages.length - 1];
-      if (lastPage) {
-        setPagination(
-          lastPage.pageInfo.hasPreviousPage,
-          messagesQuery.data.pages[0]?.pageInfo.startCursor || null,
-          lastPage.pageInfo.endCursor || null,
-        );
+      let boundaryMessageId: string | undefined;
+      let boundaryUpdates: Partial<Message> | undefined;
+
+      if (boundaryMessageIndex >= 0) {
+        const boundaryMessage = allProcessedMessages[boundaryMessageIndex];
+        const existingBoundary = existingMessages.find(m => m.id === boundaryMessage.id);
+
+        if (existingBoundary) {
+          const existingContent = JSON.stringify(existingBoundary.content);
+          const newContent = JSON.stringify(boundaryMessage.content);
+
+          if (existingContent !== newContent) {
+            boundaryMessageId = boundaryMessage.id;
+            boundaryUpdates = { content: boundaryMessage.content };
+          }
+        }
       }
+
+      if (newMessages.length > 0 || boundaryUpdates) {
+        prependWithBoundaryMerge(activeDialogId, newMessages, boundaryMessageId, boundaryUpdates);
+      }
+    }
+
+    processedPageCountRef.current = pages.length;
+
+    const lastPage = pages[pages.length - 1];
+    if (lastPage) {
+      setPagination(
+        lastPage.pageInfo.hasPreviousPage,
+        pages[0]?.pageInfo.startCursor || null,
+        lastPage.pageInfo.endCursor || null,
+      );
     }
   }, [
     messagesQuery.data?.pages,
     activeDialogId,
-    approvalStatuses,
-    messagesQuery.hasNextPage,
     messagesQuery.isFetched,
-    messagesQuery.isFetchingNextPage,
     getMessages,
     setMessages,
+    prependWithBoundaryMerge,
     setPagination,
   ]);
 
@@ -250,5 +302,9 @@ export function useMingoDialogSelection() {
     handleApprove,
     handleReject,
     approvalStatuses,
+    // Pagination state for infinite scroll
+    hasNextPage: messagesQuery.hasNextPage ?? false,
+    fetchNextPage: messagesQuery.fetchNextPage,
+    isFetchingNextPage: messagesQuery.isFetchingNextPage,
   };
 }
