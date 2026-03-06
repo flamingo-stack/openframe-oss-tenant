@@ -52,15 +52,16 @@ export class MeshControlClient {
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
       refreshTokenBeforeReconnect: false, // Disable for MeshCentral
+      heartbeatInterval: 29000,
+      heartbeatMessage: () => JSON.stringify({ action: 'ping' }),
 
       onStateChange: state => {
         if (state === 'connected') {
           this.isOpen = true;
-          if (!this.cookies) {
-            this.requestAuthCookies();
-          }
+          this.requestAuthCookies();
         } else if (state === 'disconnected' || state === 'failed') {
           this.isOpen = false;
+          this.cookies = null;
           this.clearPendingRequests('WebSocket disconnected');
         }
       },
@@ -77,17 +78,20 @@ export class MeshControlClient {
           wasClean: event.wasClean,
         });
       },
-      shouldReconnect: closeEvent => {
-        const authFailureCodes = [1008, 1006, 4401];
-        const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code);
-        return shouldReconnect;
-      },
     });
   }
 
   private handleMessage(e: MessageEvent) {
     try {
       const msg = JSON.parse(e.data as string);
+
+      if (msg?.action === 'ping') {
+        try {
+          this.wsManager?.send(JSON.stringify({ action: 'pong' }));
+        } catch {}
+        return;
+      }
+      if (msg?.action === 'pong') return;
 
       if (msg && msg.action === 'authcookie' && msg.cookie) {
         this.cookies = { authCookie: msg.cookie as string, relayCookie: msg.rcookie };
@@ -286,6 +290,12 @@ export class MeshControlClient {
   }
 
   async reconnect(): Promise<void> {
+    if (this.wsManager?.isConnected()) {
+      if (!this.cookies) {
+        await this.getAuthCookies();
+      }
+      return;
+    }
     this.cookies = null;
     this.wsManager?.reconnect();
     await this.openSession();
@@ -293,5 +303,9 @@ export class MeshControlClient {
 
   isConnected(): boolean {
     return this.isOpen && this.wsManager?.isConnected() === true;
+  }
+
+  getCachedAuthCookie(): string | null {
+    return this.cookies?.authCookie ?? null;
   }
 }

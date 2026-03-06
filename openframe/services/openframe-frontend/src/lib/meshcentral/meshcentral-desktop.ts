@@ -107,6 +107,13 @@ export class MeshDesktop implements DesktopInputHandlers {
 
       const isExt = this.isExtendedKey(e);
 
+      if (e.code === 'CapsLock') {
+        this.send(this.encodeKeyEvent(1, keyCode, isExt));
+        this.send(this.encodeKeyEvent(2, keyCode, isExt));
+        e.preventDefault();
+        return;
+      }
+
       if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
         this.pressedKeys.unshift({ vk: keyCode, extended: isExt });
       }
@@ -126,6 +133,15 @@ export class MeshDesktop implements DesktopInputHandlers {
       if (keyCode == null) return;
 
       const isExt = this.isExtendedKey(e);
+
+      if (e.code === 'CapsLock') {
+        this.send(this.encodeKeyEvent(1, keyCode, isExt));
+        this.send(this.encodeKeyEvent(2, keyCode, isExt));
+        const idx = this.pressedKeys.findIndex(k => k.vk === keyCode);
+        if (idx !== -1) this.pressedKeys.splice(idx, 1);
+        e.preventDefault();
+        return;
+      }
 
       const idx = this.pressedKeys.findIndex(k => k.vk === keyCode);
       if (idx !== -1) {
@@ -496,35 +512,10 @@ export class MeshDesktop implements DesktopInputHandlers {
   }
 
   private shouldPreventDefault(e: KeyboardEvent): boolean {
-    const prevent = [
-      'F1',
-      'F2',
-      'F3',
-      'F4',
-      'F5',
-      'F6',
-      'F7',
-      'F8',
-      'F9',
-      'F10',
-      'F11',
-      'F12',
-      'Tab',
-      'Enter',
-      'Escape',
-      'Backspace',
-      'Delete',
-      'Home',
-      'End',
-      'PageUp',
-      'PageDown',
-    ];
-    // Do not prevent default for pure modifier keys
+    // Allow pure modifier keys to pass through (browser needs them for its own state tracking)
     if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') return false;
-    if (prevent.includes(e.key)) return true;
-    if (e.code && e.code.startsWith('Arrow')) return true;
-    if (e.ctrlKey || e.altKey || e.metaKey) return true;
-    return false;
+    // Prevent default for everything else — all keys should go to the remote machine, not the browser.
+    return true;
   }
 
   sendCtrlAltDel() {

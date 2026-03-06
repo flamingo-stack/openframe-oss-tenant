@@ -39,6 +39,10 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
@@ -99,6 +103,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [remoteSettings, setRemoteSettings] = useState<RemoteSettingsConfig>(DEFAULT_SETTINGS);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const isReconnectingRef = useRef(false);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [currentDisplay, setCurrentDisplay] = useState(0);
@@ -160,42 +165,56 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           authCookie,
           nodeId: meshcentralAgentId,
           protocol: 2,
+          getAuthCookie: () => controlRef.current?.getCachedAuthCookie() ?? null,
+          onBeforeReconnect: async () => {
+            try {
+              const ctrl = controlRef.current;
+              if (ctrl && !ctrl.isConnected()) {
+                await ctrl.openSession();
+              }
+            } catch {}
+          },
           onData: () => {},
           onBinaryData: bytes => {
             desktopRef.current?.onBinaryFrame(bytes);
           },
           onCtrlMessage: () => {},
           onConsoleMessage: msg => {
-            toast({ title: 'Remote Desktop', description: msg, variant: 'default' });
+            toastRef.current({ title: 'Remote Desktop', description: msg, variant: 'default' });
           },
           onRequestPairing: async relayId => {
             try {
               const ctrl = controlRef.current;
               if (!ctrl) return;
               await ctrl.openSession();
+              const cookies = await ctrl.getAuthCookies();
+              tunnelRef.current?.updateAuthCookie(cookies.authCookie);
               ctrl.sendDesktopTunnel(meshcentralAgentId, relayId);
             } catch {}
           },
           onStateChange: s => {
             setState(s);
             if (s === 1 && tunnelRef.current?.getState() === 0) {
+              isReconnectingRef.current = true;
               setIsReconnecting(true);
               setReconnectAttempt(prev => prev + 1);
-              toast({
+              toastRef.current({
                 title: 'Connection Lost',
                 description: 'Attempting to reconnect...',
                 variant: 'info',
               });
-            } else if (s === 3 && isReconnecting) {
+            } else if (s === 3 && isReconnectingRef.current) {
+              isReconnectingRef.current = false;
               setIsReconnecting(false);
-              toast({
+              toastRef.current({
                 title: 'Reconnected',
                 description: 'Connection restored successfully',
                 variant: 'success',
               });
-            } else if (s === 0 && isReconnecting) {
+            } else if (s === 0 && isReconnectingRef.current) {
+              isReconnectingRef.current = false;
               setIsReconnecting(false);
-              toast({
+              toastRef.current({
                 title: 'Reconnection Failed',
                 description: 'Unable to restore connection. Please try again.',
                 variant: 'destructive',
@@ -212,7 +231,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
         } catch {}
         tunnel.start();
       } catch (e) {
-        toast({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' });
+        toastRef.current({ title: 'Remote Desktop failed', description: (e as Error).message, variant: 'destructive' });
       } finally {
         setConnecting(false);
       }
@@ -223,7 +242,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       control?.close();
       tunnelRef.current?.stop();
     };
-  }, [isPageReady, meshcentralAgentId, toast, isReconnecting]);
+  }, [isPageReady, meshcentralAgentId]);
 
   useEffect(() => {
     if (state !== 3) return;
@@ -576,7 +595,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           <div className="h-full bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
             <canvas
               ref={canvasRef}
-              className="block max-w-full max-h-full"
+              tabIndex={0}
+              className="block max-w-full max-h-full outline-none"
               onContextMenu={e => {
                 e.preventDefault();
               }}
