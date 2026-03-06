@@ -566,11 +566,12 @@ impl ToolRunManager {
                             }
 
                             // Wait for console user (handles boot-time when no user logged in yet)
-                            while get_console_user().is_none() {
-                                info!(tool_id = %tool.tool_agent_id, "Waiting for user login...");
+                            let user = loop {
+                                if let Some(u) = get_console_user() {
+                                    break u;
+                                }
                                 sleep(Duration::from_secs(5)).await;
-                            }
-                            let user = get_console_user().unwrap();
+                            };
 
                             // For GUI apps with bundle_id: write config to preferences and launch without args
                             let launch_args = match bundle_id {
