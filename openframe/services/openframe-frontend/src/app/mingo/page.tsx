@@ -40,6 +40,9 @@ export default function Mingo() {
     handleApprove,
     handleReject,
     approvalStatuses,
+    hasNextPage: hasNextMessagePage,
+    fetchNextPage: fetchNextMessagePage,
+    isFetchingNextPage: isFetchingNextMessagePage,
   } = useMingoDialogSelection();
 
   const {
@@ -260,6 +263,9 @@ export default function Mingo() {
                   pendingApprovals={isDraftChat ? [] : pendingApprovals}
                   showAvatars={false}
                   autoScroll={true}
+                  hasNextPage={isDraftChat ? false : hasNextMessagePage}
+                  isFetchingNextPage={isDraftChat ? false : isFetchingNextMessagePage}
+                  onLoadMore={isDraftChat ? undefined : fetchNextMessagePage}
                 />
               ) : (
                 /* Empty state when no dialog is selected */

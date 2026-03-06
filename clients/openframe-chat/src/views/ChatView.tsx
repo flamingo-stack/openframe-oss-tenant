@@ -49,6 +49,9 @@ export function ChatView() {
     awaitingTechnicianResponse,
     isLoadingHistory,
     dialogId,
+    hasNextPage,
+    isFetchingNextPage,
+    loadMoreMessages,
   } = useChat({
     useApi: true,
     useNats: features.nats,
@@ -96,13 +99,16 @@ export function ChatView() {
       />
 
       <ChatContent>
-        {hasMessages ? (
+        {hasMessages || (dialogId && isLoadingHistory) ? (
           <ChatMessageList
             messages={messages}
             dialogId={dialogId || undefined}
             isTyping={isTyping}
             isLoading={isLoadingHistory}
             autoScroll={true}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={loadMoreMessages}
           />
         ) : (
           <div className="flex-1 flex flex-col justify-center items-center px-4">

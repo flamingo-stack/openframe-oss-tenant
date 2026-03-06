@@ -191,6 +191,10 @@ pub fn run() {
                     println!("[INFO] Main window shown on startup");
                 }
             } else {
+                // Explicitly hide window in background mode to ensure it stays hidden
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
                 println!("[INFO] Starting in background mode (tray only)");
             }
 

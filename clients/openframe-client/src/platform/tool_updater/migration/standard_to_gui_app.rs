@@ -253,11 +253,16 @@ impl StandardToGuiAppMigrator {
     async fn finalize_windows(&self, tool: &InstalledTool, executable_path: &str) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
 
-        let args = self
+        let mut args = self
             .deps
             .command_params_resolver
             .process(tool_agent_id, tool.run_command_args.clone())
             .unwrap_or_else(|_| tool.run_command_args.clone());
+
+        // For openframe-chat, add --background flag to start in tray
+        if tool_agent_id == "openframe-chat" {
+            args.push("--background".to_string());
+        }
 
         // Launch in user session so it's visible in the system tray
         match crate::services::tool_run_manager::launch_process_in_user_session(

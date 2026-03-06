@@ -37,6 +37,7 @@ import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
+import { useTicketMessages } from '../hooks/use-ticket-messages';
 import { useDialogDetailsStore } from '../stores/dialog-details-store';
 import type { ClientDialogOwner, DialogOwner, Message } from '../types/dialog.types';
 
@@ -54,21 +55,32 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const {
     currentDialog: dialog,
-    currentMessages: messages,
-    adminMessages,
+    currentMessages: realtimeClientMessages,
+    adminMessages: realtimeAdminMessages,
     isLoadingDialog: isLoading,
-    isLoadingMessages: messagesLoading,
-    hasMoreMessages: hasMore,
     isClientChatTyping,
     isAdminChatTyping,
     fetchDialog,
-    fetchMessages,
-    loadMore,
     clearCurrent,
     updateDialogStatus,
     addRealtimeMessage,
     setTypingIndicator,
   } = useDialogDetailsStore();
+
+  const clientChat = useTicketMessages(dialogId, CHAT_TYPE.CLIENT);
+  const adminChat = useTicketMessages(dialogId, CHAT_TYPE.ADMIN);
+
+  const messages = useMemo(() => {
+    const pageIds = new Set(clientChat.messages.map(m => m.id));
+    const realtimeOnly = realtimeClientMessages.filter(m => !pageIds.has(m.id));
+    return [...clientChat.messages, ...realtimeOnly];
+  }, [clientChat.messages, realtimeClientMessages]);
+
+  const adminMessages = useMemo(() => {
+    const pageIds = new Set(adminChat.messages.map(m => m.id));
+    const realtimeOnly = realtimeAdminMessages.filter(m => !pageIds.has(m.id));
+    return [...adminChat.messages, ...realtimeOnly];
+  }, [adminChat.messages, realtimeAdminMessages]);
   const { putOnHold, resolve, isUpdating } = useDialogStatus();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
@@ -102,18 +114,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     startInitialBuffering();
     hasCaughtUp.current = false;
 
-    const loadData = async () => {
-      await Promise.all([fetchDialog(dialogId), fetchMessages(dialogId)]);
-    };
-
-    loadData();
+    fetchDialog(dialogId);
 
     return () => {
       clearCurrent();
       resetChunkTracking();
       hasCaughtUp.current = false;
     };
-  }, [dialogId, clearCurrent, fetchDialog, fetchMessages, resetChunkTracking, startInitialBuffering]);
+  }, [dialogId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering]);
 
   // Extract approval statuses from messages
   useEffect(() => {
@@ -424,25 +432,17 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
               <ChatMessageList
                 messages={chatData.messages}
+                dialogId={dialogId}
                 autoScroll={true}
                 showAvatars={false}
-                isLoading={messagesLoading}
+                isLoading={clientChat.isLoading}
                 isTyping={isClientChatTyping}
                 pendingApprovals={chatData.pendingApprovals}
                 assistantType={chatData.assistantType}
+                hasNextPage={clientChat.hasNextPage}
+                isFetchingNextPage={clientChat.isFetchingNextPage}
+                onLoadMore={clientChat.fetchNextPage}
               />
-              {hasMore && !messagesLoading && (
-                <div className="p-2 text-center border-t border-ods-border">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => loadMore()}
-                    className="text-ods-text-secondary hover:text-ods-text-primary"
-                  >
-                    Load More Messages
-                  </Button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -476,12 +476,16 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 <ChatMessageList
                   className="flex-1 bg-ods-card border border-ods-border rounded-lg"
                   messages={adminChatData.messages}
+                  dialogId={dialogId}
                   autoScroll={true}
                   showAvatars={false}
-                  isLoading={messagesLoading}
+                  isLoading={adminChat.isLoading}
                   isTyping={isAdminChatTyping}
                   pendingApprovals={adminChatData.pendingApprovals}
                   assistantType={adminChatData.assistantType}
+                  hasNextPage={adminChat.hasNextPage}
+                  isFetchingNextPage={adminChat.isFetchingNextPage}
+                  onLoadMore={adminChat.fetchNextPage}
                 />
               )}
 

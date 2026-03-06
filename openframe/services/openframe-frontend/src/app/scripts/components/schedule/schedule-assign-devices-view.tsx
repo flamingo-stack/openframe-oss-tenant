@@ -39,6 +39,7 @@ import { createDeviceListItem } from '../../../devices/utils/device-transform';
 import { useScriptSchedule, useScriptScheduleAgents } from '../../hooks/use-script-schedule';
 import { useReplaceScheduleAgents } from '../../hooks/use-script-schedule-mutations';
 import { formatScheduleDate, getRepeatLabel } from '../../types/script-schedule.types';
+import { mapPlatformsToOsTypes } from '../../utils/script-utils';
 import { ScheduleAssignDevicesSkeleton } from './schedule-assign-devices-skeleton';
 import { ScheduleInfoBarFromData } from './schedule-info-bar';
 
@@ -49,9 +50,7 @@ interface ScheduleAssignDevicesViewProps {
 async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
   const filter = {
     statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
-    // ...(osTypes.length > 0 && { osTypes }),
-    // TODO: remove after macos/linux support
-    osTypes: ['WINDOWS'],
+    osTypes: platforms,
   };
 
   const response = await apiClient.post<
@@ -85,10 +84,7 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
 
   if (platforms.length === 0) return devices;
 
-  return devices.filter(d => {
-    const platformId = getOSPlatformId(d.osType);
-    return platformId ? platforms.includes(platformId) : false;
-  });
+  return devices;
 }
 
 type SubTab = 'available' | 'selected';
@@ -171,7 +167,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true);
   }
 
-  const supportedPlatforms = schedule?.task_supported_platforms ?? [];
+  const supportedPlatforms = mapPlatformsToOsTypes(schedule?.task_supported_platforms ?? []);
 
   const devicesQuery = useQuery({
     queryKey: ['schedule-assign-devices', scheduleId, supportedPlatforms],

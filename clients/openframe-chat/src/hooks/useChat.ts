@@ -4,7 +4,6 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
-  processHistoricalMessages,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -12,12 +11,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { useDebugMode } from '../contexts/DebugModeContext';
 import { ChatApiService } from '../services/chatApiService';
-import { dialogGraphQlService } from '../services/dialogGraphQLService';
 import { tokenService } from '../services/tokenService';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
 import { useChunkCatchup } from './useChunkCatchup';
+import { useDialogMessages } from './useDialogMessages';
 
 interface UseChatOptions {
   useApi?: boolean;
@@ -33,7 +32,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const [natsStreaming, setNatsStreaming] = useState(false);
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
   const [token, setToken] = useState(tokenService.getCurrentToken());
   const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
@@ -79,6 +77,45 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     onApprove: approvals.handleApproveRequest,
     onReject: approvals.handleRejectRequest,
   });
+
+  const {
+    historicalMessages,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: isLoadingHistoricalMessages,
+    fetchNextPage,
+    escalatedApprovals,
+    reset: resetDialogMessages,
+  } = useDialogMessages(natsDialogId, {
+    enabled: isResumedDialog,
+    onApprove: approvals.handleApproveRequest,
+    onReject: approvals.handleRejectRequest,
+    approvalStatuses: approvals.approvalStatuses,
+  });
+
+  useEffect(() => {
+    if (escalatedApprovals.size > 0) {
+      escalatedApprovalsRef.current = escalatedApprovals;
+    }
+  }, [escalatedApprovals]);
+
+  const allMessages = useMemo(() => {
+    if (messages.messages.length === 0) return historicalMessages;
+
+    if (isResumedDialog && messages.messages[0]?.role === 'assistant') {
+      let cutIndex = historicalMessages.length;
+      for (let i = historicalMessages.length - 1; i >= 0; i--) {
+        if (historicalMessages[i].role === 'assistant') {
+          cutIndex = i;
+        } else {
+          break;
+        }
+      }
+      return [...historicalMessages.slice(0, cutIndex), ...messages.messages];
+    }
+
+    return [...historicalMessages, ...messages.messages];
+  }, [historicalMessages, messages.messages, isResumedDialog]);
 
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
@@ -140,7 +177,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const incompleteState = useMemo(() => {
     if (!isResumedDialog) return undefined;
 
-    const currentMessages = messages.messages;
+    const currentMessages = allMessages;
     const assistantSegments: MessageSegment[] = [];
     let lastAssistantId = '';
     let lastAssistantTimestamp = new Date();
@@ -180,7 +217,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
 
     return undefined;
-  }, [messages.messages, isResumedDialog]);
+  }, [allMessages, isResumedDialog]);
 
   useEffect(() => {
     if (!isResumedDialog || !incompleteState) return;
@@ -256,7 +293,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
       if (!apiBaseUrl || !token) return '';
-      return buildNatsWsUrl(apiBaseUrl, { 
+      return buildNatsWsUrl(apiBaseUrl, {
         token,
         includeAuthParam: true,
         source: 'dashboard',
@@ -426,43 +463,23 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     approvals.clearApprovals();
     resetChunkTracking();
     resetChunkProcessor();
+    resetDialogMessages();
     apiServiceRef.current?.reset();
     if (subscriptionPromiseRef.current) {
       subscriptionPromiseRef.current.reject(new Error('Chat cleared'));
       subscriptionPromiseRef.current = null;
     }
-  }, [messages, approvals, resetChunkTracking, resetChunkProcessor]);
+  }, [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages]);
 
   const resumeDialog = useCallback(
     async (dialogId: string): Promise<boolean> => {
       try {
-        setIsLoadingHistory(true);
         setError(null);
         messages.clearMessages();
         setIsTyping(false);
         setNatsStreaming(false);
         approvals.clearApprovals();
         setIsResumedDialog(true);
-
-        const messagesConnection = await dialogGraphQlService.getDialogMessages(dialogId, null);
-
-        if (!messagesConnection || !messagesConnection.edges) {
-          throw new Error('Failed to load dialog history');
-        }
-
-        const result = processHistoricalMessages(
-          messagesConnection.edges.map(edge => edge.node),
-          {
-            onApprove: approvals.handleApproveRequest,
-            onReject: approvals.handleRejectRequest,
-            approvalStatuses: approvals.approvalStatuses,
-            assistantAvatar: faeAvatar,
-            displayApprovalTypes: ['CLIENT'],
-          },
-        );
-
-        escalatedApprovalsRef.current = result.escalatedApprovals;
-        result.messages.forEach((msg: Message) => messages.addMessage(msg));
 
         setNatsDialogId(dialogId);
         natsDialogIdRef.current = dialogId;
@@ -473,11 +490,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
 
         await waitForNatsSubscription(dialogId);
 
-        setIsLoadingHistory(false);
         return true;
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Failed to resume dialog');
-        setIsLoadingHistory(false);
         setIsResumedDialog(false);
         hasCaughtUp.current = false;
         return false;
@@ -487,7 +502,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   );
 
   return {
-    messages: messages.messages,
+    messages: allMessages,
     isTyping,
     isStreaming: natsStreaming,
     error,
@@ -497,9 +512,12 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     clearMessages,
     resumeDialog,
     quickActions,
-    hasMessages: messages.hasMessages,
+    hasMessages: allMessages.length > 0,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,
-    isLoadingHistory,
+    isLoadingHistory: isLoadingHistoricalMessages,
     isResumedDialog,
+    hasNextPage,
+    isFetchingNextPage,
+    loadMoreMessages: fetchNextPage,
   };
 }

@@ -66,11 +66,12 @@ const GET_RESUMABLE_DIALOG_QUERY = gql`
 `;
 
 const GET_DIALOG_MESSAGES_QUERY = gql`
-  query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int) {
+  query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
       chatType: $chatType
       pagination: { cursor: $cursor, limit: $limit }
+      sort: { field: $sortField, direction: $sortDirection }
     ) {
       edges {
         cursor
@@ -193,48 +194,26 @@ export class DialogGraphQlService {
     }
   }
 
-  async getDialogMessages(
+  async getDialogMessagesPage(
     dialogId: string,
     cursor?: string | null,
-    limit: number = 100,
+    limit: number = 50,
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
-      const allEdges: MessageEdge[] = [];
-      let currentCursor = cursor;
-      let hasNextPage = true;
-      let pageInfo: PageInfo | null = null;
+      const data = await this.request<{ messages: MessagesConnection }>(GET_DIALOG_MESSAGES_QUERY, {
+        dialogId,
+        chatType: 'CLIENT_CHAT',
+        cursor,
+        limit,
+        sortField: 'createdAt',
+        sortDirection: 'DESC',
+      });
 
-      while (hasNextPage) {
-        const data = await this.request<{ messages: MessagesConnection }>(GET_DIALOG_MESSAGES_QUERY, {
-          dialogId,
-          chatType: 'CLIENT_CHAT',
-          cursor: currentCursor,
-          limit,
-        });
-
-        if (!data.messages) {
-          break;
-        }
-
-        allEdges.push(...data.messages.edges);
-        pageInfo = data.messages.pageInfo;
-        hasNextPage = data.messages.pageInfo.hasNextPage;
-        currentCursor = data.messages.pageInfo.endCursor;
-      }
-
-      return {
-        edges: allEdges,
-        pageInfo: pageInfo || {
-          hasNextPage: false,
-          hasPreviousPage: false,
-          startCursor: null,
-          endCursor: null,
-        },
-      };
+      return data.messages || null;
     } catch (error) {
-      console.error('Failed to fetch dialog messages:', error);
+      console.error('Failed to fetch dialog messages page:', error);
       return null;
     }
   }
