@@ -3,7 +3,7 @@
 import { type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useCreateDialogMutation, useSendMessageMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { CoreMessage } from '../types/message.types';
@@ -57,13 +57,19 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   const createDialogMutation = useCreateDialogMutation();
   const sendMessageMutation = useSendMessageMutation();
 
+  const messageCacheRef = useRef(new WeakMap<CoreMessage, ProcessedMessage>());
+
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return [];
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
     const filteredMessages = currentMessages.filter(msg => !msg.id.startsWith('pending-approvals-'));
+    const cache = messageCacheRef.current;
 
     return filteredMessages.map(msg => {
+      const cached = cache.get(msg);
+      if (cached) return cached;
+
       let filteredContent = msg.content;
 
       if (Array.isArray(msg.content)) {
@@ -72,7 +78,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         );
       }
 
-      return {
+      const processed: ProcessedMessage = {
         id: msg.id,
         content: filteredContent,
         role: msg.role,
@@ -80,6 +86,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
       };
+
+      cache.set(msg, processed);
+      return processed;
     });
   }, [dialogId, messagesByDialog]);
 

@@ -134,7 +134,7 @@ class AuthApiClient {
     const url = buildAuthUrl(`/sas/email/verify?token=${encodeURIComponent(token)}`);
     try {
       const res = await fetch(url, {
-        credentials: 'omit',
+        credentials: 'include',
         headers: { Accept: 'application/json' },
         redirect: 'follow',
       });

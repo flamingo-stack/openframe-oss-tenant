@@ -25,6 +25,10 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
@@ -56,6 +60,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   const termRef = useRef<any | null>(null);
   const fitRef = useRef<any | null>(null);
   const tunnelRef = useRef<MeshTunnel | null>(null);
+  const controlRef = useRef<MeshControlClient | null>(null);
   const [state, setState] = useState<TunnelState>(0);
   const [connecting, setConnecting] = useState(false);
   const [hasReceivedData, setHasReceivedData] = useState(false);
@@ -147,6 +152,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
       setConnecting(true);
       try {
         control = new MeshControlClient();
+        controlRef.current = control;
         const { authCookie } = await control.getAuthCookies();
         const term = termRef.current;
         if (!term) throw new Error('Terminal not initialized');
@@ -155,6 +161,15 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
           nodeId: meshcentralAgentId,
           protocol: 1,
           options: { cols: term.cols, rows: term.rows },
+          getAuthCookie: () => controlRef.current?.getCachedAuthCookie() ?? null,
+          onBeforeReconnect: async () => {
+            try {
+              const ctrl = controlRef.current;
+              if (ctrl && !ctrl.isConnected()) {
+                await ctrl.openSession();
+              }
+            } catch {}
+          },
           onData: data => {
             setHasReceivedData(true);
             if (typeof data === 'string') term.write(data);
@@ -162,13 +177,16 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
           },
           onCtrlMessage: () => {},
           onConsoleMessage: msg => {
-            toast({ title: 'Remote Shell', description: msg, variant: 'default' });
+            toastRef.current({ title: 'Remote Shell', description: msg, variant: 'default' });
           },
           onRequestPairing: async relayId => {
             try {
-              if (!control) return;
-              await control.openSession();
-              control.sendRelayTunnel(meshcentralAgentId, relayId, 1);
+              const ctrl = controlRef.current;
+              if (!ctrl) return;
+              await ctrl.openSession();
+              const cookies = await ctrl.getAuthCookies();
+              tunnelRef.current?.updateAuthCookie(cookies.authCookie);
+              ctrl.sendRelayTunnel(meshcentralAgentId, relayId, 1);
             } catch {}
           },
           onStateChange: s => setState(s),
@@ -179,15 +197,16 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
         } catch {}
         tunnel.start();
       } catch (e) {
-        toast({ title: 'Remote Shell failed', description: (e as Error).message, variant: 'destructive' });
+        toastRef.current({ title: 'Remote Shell failed', description: (e as Error).message, variant: 'destructive' });
       } finally {
         setConnecting(false);
       }
     })();
     return () => {
+      controlRef.current = null;
       control?.close();
     };
-  }, [isPageReady, meshcentralAgentId, toast]);
+  }, [isPageReady, meshcentralAgentId]);
 
   const handleBack = () => {
     tunnelRef.current?.stop();

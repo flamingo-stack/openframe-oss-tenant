@@ -1,16 +1,14 @@
 'use client';
 
+import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
 import {
-  NetworkIcon,
+  Hierarchy02Icon,
+  PasscodeIcon,
   ShieldCheckIcon,
-  ShieldKeyIcon,
-  type TabItem,
-  TabNavigation,
+  ShieldKeyholeIcon,
   UserIcon,
   UsersGroupIcon,
-} from '@flamingo-stack/openframe-frontend-core';
-import { SSOConfigurationIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import React from 'react';
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { AiSettingsTab } from './ai-settings';
 import { ApiKeysTab } from './api-keys';
 import { ArchitectureTab } from './architecture';
@@ -23,14 +21,12 @@ interface SettingsTabNavigationProps {
   onTabChange: (tabId: string) => void;
 }
 
-const BoldShieldCheckIcon = (props: any) => <ShieldCheckIcon {...props} strokeWidth={2.5} />;
-
 export const SETTINGS_TABS: TabItem[] = [
-  { id: 'ai-settings', label: 'AI Settings', icon: BoldShieldCheckIcon, component: AiSettingsTab },
-  { id: 'architecture', label: 'Architecture', icon: NetworkIcon, component: ArchitectureTab },
+  { id: 'ai-settings', label: 'AI Settings', icon: ShieldCheckIcon, component: AiSettingsTab },
+  { id: 'architecture', label: 'Architecture', icon: Hierarchy02Icon, component: ArchitectureTab },
   { id: 'company-and-users', label: 'Company & Users', icon: UsersGroupIcon, component: CompanyAndUsersTab },
-  { id: 'api-keys', label: 'API Keys', icon: ShieldKeyIcon, component: ApiKeysTab },
-  { id: 'sso-configuration', label: 'SSO Configuration', icon: SSOConfigurationIcon, component: SsoConfigurationTab },
+  { id: 'api-keys', label: 'API Keys', icon: ShieldKeyholeIcon, component: ApiKeysTab },
+  { id: 'sso-configuration', label: 'SSO Configuration', icon: PasscodeIcon, component: SsoConfigurationTab },
   { id: 'profile', label: 'Profile', icon: UserIcon, component: ProfileTab },
 ];
 

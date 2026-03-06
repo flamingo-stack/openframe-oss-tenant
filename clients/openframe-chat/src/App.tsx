@@ -1,8 +1,19 @@
 import './styles/globals.css';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { DebugModeProvider } from './contexts/DebugModeContext';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { ChatView } from './views/ChatView';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   useConnectionStatus();
@@ -13,9 +24,11 @@ function App() {
   }, []);
 
   return (
-    <DebugModeProvider>
-      <ChatView />
-    </DebugModeProvider>
+    <QueryClientProvider client={queryClient}>
+      <DebugModeProvider>
+        <ChatView />
+      </DebugModeProvider>
+    </QueryClientProvider>
   );
 }
 
