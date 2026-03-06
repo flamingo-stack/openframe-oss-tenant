@@ -108,6 +108,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [currentDisplay, setCurrentDisplay] = useState(0);
   const [firstFrameReceived, setFirstFrameReceived] = useState(false);
+  const [clipboardEnabled, setClipboardEnabled] = useState(true);
 
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings;
@@ -258,6 +259,49 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     }
   }, [state]);
 
+  // Clipboard interceptor
+  useEffect(() => {
+    const desktop = desktopRef.current;
+    if (!desktop) return;
+    if (!clipboardEnabled) {
+      desktop.setClipboardInterceptor?.(null);
+      return;
+    }
+
+    desktop.setClipboardInterceptor?.((type, sendKeys) => {
+      if (type === 'paste') {
+        (async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text && controlRef.current && meshcentralAgentId) {
+              await controlRef.current.setClipboard(meshcentralAgentId, text);
+            }
+          } catch {
+            // Clipboard read failed (permissions/insecure context) — proceed anyway
+          }
+          sendKeys();
+        })();
+      } else {
+        sendKeys();
+        (async () => {
+          try {
+            await new Promise(r => setTimeout(r, 250));
+            if (controlRef.current && meshcentralAgentId) {
+              const text = await controlRef.current.getClipboard(meshcentralAgentId);
+              if (text) await navigator.clipboard.writeText(text);
+            }
+          } catch {
+            // Clipboard write failed (permissions/insecure context) — ignore
+          }
+        })();
+      }
+    });
+
+    return () => {
+      desktop.setClipboardInterceptor?.(null);
+    };
+  }, [clipboardEnabled, meshcentralAgentId, isPageReady]);
+
   const handleBack = () => {
     tunnelRef.current?.stop();
     router.push(`/devices/details/${deviceId}`);
@@ -384,10 +428,11 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       setEnableInput(enabled);
       desktopRef.current?.setViewOnly(!enabled);
     },
+    setClipboardEnabled,
     toast,
   };
 
-  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput);
+  const actionsMenuGroups = createActionsMenuGroups(actionHandlers, enableInput, clipboardEnabled);
 
   const displayMenuGroups: ActionsMenuGroup[] =
     displays.length > 1

@@ -19,6 +19,7 @@ export type DesktopInputHandlers = {
   getDisplayList?(): DisplayInfo[];
   onDisplayListChange?(callback: (displays: DisplayInfo[]) => void): void;
   onFirstFrame?(callback: () => void): void;
+  setClipboardInterceptor?(interceptor: ((type: 'copy' | 'cut' | 'paste', sendKeys: () => void) => void) | null): void;
 };
 
 export class MeshDesktop implements DesktopInputHandlers {
@@ -50,6 +51,33 @@ export class MeshDesktop implements DesktopInputHandlers {
   private onDisplayListCallback: ((displays: DisplayInfo[]) => void) | null = null;
   private firstFrameDrawn = false;
   private onFirstFrameCallback: (() => void) | null = null;
+  private clipboardInterceptor: ((type: 'copy' | 'cut' | 'paste', sendKeys: () => void) => void) | null = null;
+  private metaBufferTimer: ReturnType<typeof setTimeout> | null = null;
+  private bufferedMetaKey: { vk: number; extended: boolean } | null = null;
+
+  setClipboardInterceptor(interceptor: ((type: 'copy' | 'cut' | 'paste', sendKeys: () => void) => void) | null): void {
+    this.clipboardInterceptor = interceptor;
+  }
+
+  private flushMetaBuffer(): void {
+    if (this.bufferedMetaKey) {
+      this.pressedKeys.unshift({ vk: this.bufferedMetaKey.vk, extended: this.bufferedMetaKey.extended });
+      this.send(this.encodeKeyEvent(1, this.bufferedMetaKey.vk, this.bufferedMetaKey.extended));
+      this.bufferedMetaKey = null;
+    }
+    if (this.metaBufferTimer !== null) {
+      clearTimeout(this.metaBufferTimer);
+      this.metaBufferTimer = null;
+    }
+  }
+
+  private cancelMetaBuffer(): void {
+    if (this.metaBufferTimer !== null) {
+      clearTimeout(this.metaBufferTimer);
+      this.metaBufferTimer = null;
+    }
+    this.bufferedMetaKey = null;
+  }
 
   attach(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -114,6 +142,56 @@ export class MeshDesktop implements DesktopInputHandlers {
         return;
       }
 
+      // Buffer Meta (Cmd) key
+      if (e.code === 'MetaLeft' || e.code === 'MetaRight') {
+        e.preventDefault();
+        this.cancelMetaBuffer();
+        this.bufferedMetaKey = { vk: keyCode, extended: isExt };
+        this.metaBufferTimer = setTimeout(() => {
+          this.flushMetaBuffer();
+        }, 50);
+        return;
+      }
+
+      // Clipboard/copy-paste keys
+      if ((e.ctrlKey || e.metaKey) && !e.repeat) {
+        const lowerKey = e.key.toLowerCase();
+        if (lowerKey === 'v' || lowerKey === 'c' || lowerKey === 'x') {
+          this.cancelMetaBuffer();
+
+          if (this.clipboardInterceptor) {
+            e.preventDefault();
+            const heldKeys = [...this.pressedKeys];
+            this.pressedKeys = [];
+            for (const k of heldKeys) {
+              this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+            }
+            const comboName = lowerKey === 'v' ? 'ctrl+v' : lowerKey === 'c' ? 'ctrl+c' : 'ctrl+x';
+            const type = lowerKey === 'v' ? 'paste' : lowerKey === 'c' ? 'copy' : 'cut';
+            const sendKeys = () => {
+              this.sendKeyCombo(comboName);
+            };
+            this.clipboardInterceptor(type, sendKeys);
+            return;
+          }
+          if (e.metaKey) {
+            e.preventDefault();
+            const heldKeys = [...this.pressedKeys];
+            this.pressedKeys = [];
+            for (const k of heldKeys) {
+              this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+            }
+            const comboName = lowerKey === 'v' ? 'ctrl+v' : lowerKey === 'c' ? 'ctrl+c' : 'ctrl+x';
+            this.sendKeyCombo(comboName);
+            return;
+          }
+        }
+      }
+
+      if (this.bufferedMetaKey) {
+        this.flushMetaBuffer();
+      }
+
       if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
         this.pressedKeys.unshift({ vk: keyCode, extended: isExt });
       }
@@ -129,6 +207,12 @@ export class MeshDesktop implements DesktopInputHandlers {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (this.viewOnly) return;
+
+      // If Meta was buffered and never sent, flush then release
+      if ((e.code === 'MetaLeft' || e.code === 'MetaRight') && this.bufferedMetaKey) {
+        this.flushMetaBuffer();
+      }
+
       const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode;
       if (keyCode == null) return;
 
@@ -155,6 +239,7 @@ export class MeshDesktop implements DesktopInputHandlers {
       e.preventDefault();
     };
     const onWindowBlur = () => {
+      this.cancelMetaBuffer();
       const keys = [...this.pressedKeys];
       this.pressedKeys = [];
       for (const k of keys) this.send(this.encodeKeyEvent(2, k.vk, k.extended));
@@ -182,6 +267,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   }
 
   detach() {
+    this.cancelMetaBuffer();
     this.stopped = true;
     this.tileQueue = [];
     this.drawQueue = [];

@@ -130,6 +130,34 @@ export class MeshControlClient {
           }
         }
       }
+
+      // Handle clipboard responses (setclip/getclip)
+      if (msg && msg.action === 'msg' && (msg.type === 'setclip' || msg.type === 'getclip')) {
+        let request = msg.responseid ? this.pendingRequests.get(msg.responseid) : undefined;
+
+        if (!request) {
+          for (const [key, val] of this.pendingRequests) {
+            if (key.startsWith(`${msg.type}_`)) {
+              request = val;
+              if (request) {
+                clearTimeout(request.timeout);
+                this.pendingRequests.delete(key);
+              }
+              break;
+            }
+          }
+        } else {
+          clearTimeout(request.timeout);
+          this.pendingRequests.delete(msg.responseid);
+        }
+        if (request) {
+          if (msg.type === 'getclip') {
+            request.resolve(msg.data ?? null);
+          } else {
+            request.resolve(true);
+          }
+        }
+      }
     } catch (error) {
       console.error('Error handling message:', error);
     }
@@ -277,6 +305,52 @@ export class MeshControlClient {
         clearTimeout(timeout);
         this.pendingRequests.delete(responseid);
         reject(error);
+      }
+    });
+  }
+
+  async setClipboard(nodeId: string, data: string, timeoutMs = 3000): Promise<boolean> {
+    if (!this.wsManager?.isConnected()) return false;
+
+    const responseid = `setclip_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    return new Promise<boolean>(resolve => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(responseid);
+        resolve(false);
+      }, timeoutMs);
+
+      this.pendingRequests.set(responseid, { resolve, reject: () => resolve(false), timeout });
+
+      try {
+        this.wsManager?.send(JSON.stringify({ action: 'msg', type: 'setclip', nodeid: nodeId, data, responseid }));
+      } catch {
+        clearTimeout(timeout);
+        this.pendingRequests.delete(responseid);
+        resolve(false);
+      }
+    });
+  }
+
+  async getClipboard(nodeId: string, timeoutMs = 3000): Promise<string | null> {
+    if (!this.wsManager?.isConnected()) return null;
+
+    const responseid = `getclip_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    return new Promise<string | null>(resolve => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(responseid);
+        resolve(null);
+      }, timeoutMs);
+
+      this.pendingRequests.set(responseid, { resolve, reject: () => resolve(null), timeout });
+
+      try {
+        this.wsManager?.send(JSON.stringify({ action: 'msg', type: 'getclip', nodeid: nodeId, responseid }));
+      } catch {
+        clearTimeout(timeout);
+        this.pendingRequests.delete(responseid);
+        resolve(null);
       }
     });
   }
