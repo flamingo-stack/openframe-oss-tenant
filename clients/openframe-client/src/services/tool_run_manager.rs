@@ -652,7 +652,7 @@ impl ToolRunManager {
                         let reader = BufReader::new(stdout);
                         let mut lines = reader.lines();
                         while let Ok(Some(line)) = lines.next_line().await {
-                            info!(tool_id = %tool_id_clone, "[STDOUT] {}", line);
+                            info!(tool_id = %tool_id_clone, "[stdout] {}", line);
                         }
                     });
                 }
@@ -664,7 +664,7 @@ impl ToolRunManager {
                         let reader = BufReader::new(stderr);
                         let mut lines = reader.lines();
                         while let Ok(Some(line)) = lines.next_line().await {
-                            warn!(tool_id = %tool_id_clone, "[STDERR] {}", line);
+                            info!(tool_id = %tool_id_clone, "[stderr] {}", line);
                         }
                     });
                 }
