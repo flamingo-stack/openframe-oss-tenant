@@ -36,9 +36,7 @@ function OrganizationNameCell({ org }: { org: UiOrganizationEntry }) {
         <OrganizationIcon imageUrl={fullImageUrl} organizationName={org.name} size="md" />
       )}
       <div className="flex flex-col justify-center shrink-0 min-w-0">
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-          {org.name}
-        </span>
+        <span className="text-h4 text-ods-text-primary truncate">{org.name}</span>
         <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
           {org.websiteUrl}
         </span>
@@ -160,9 +158,7 @@ export function OrganizationsTable() {
         width: 'w-1/6',
         renderCell: org => (
           <div className="flex flex-col justify-center shrink-0">
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {org.tier}
-            </span>
+            <span className="text-h4 text-ods-text-primary truncate">{org.tier}</span>
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
               {org.industry}
             </span>
@@ -173,11 +169,7 @@ export function OrganizationsTable() {
         key: 'mrrDisplay',
         label: 'MRR',
         width: 'w-1/6',
-        renderCell: org => (
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
-            {org.mrrDisplay}
-          </span>
-        ),
+        renderCell: org => <span className="text-h4 text-ods-text-primary">{org.mrrDisplay}</span>,
       },
       {
         key: 'lastActivityDisplay',
@@ -188,9 +180,7 @@ export function OrganizationsTable() {
           const [first, second] = org.lastActivityDisplay.split('\n');
           return (
             <div className="flex flex-col justify-center shrink-0">
-              <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                {first}
-              </span>
+              <span className="text-h4 text-ods-text-primary truncate">{first}</span>
               <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                 {second}
               </span>

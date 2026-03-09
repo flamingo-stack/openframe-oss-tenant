@@ -39,9 +39,9 @@ function OnboardingStepCardSkeleton() {
       </div>
       {/* Right - buttons */}
       <div className="flex items-center gap-2 w-full md:w-auto justify-start md:justify-end shrink-0">
-        <Skeleton className="h-14 w-full sm:w-[100px] rounded-[6px]" />{' '}
+        <Skeleton className="h-14 w-full md:w-[100px] rounded-[6px]" />{' '}
         {/* Skip button - h-14 matches Button default */}
-        <Skeleton className="h-14 w-full sm:w-[160px] rounded-[6px]" />{' '}
+        <Skeleton className="h-14 w-full md:w-[160px] rounded-[6px]" />{' '}
         {/* Action button - h-14 matches Button default */}
       </div>
     </div>
@@ -84,7 +84,7 @@ function DevicesSkeleton() {
       {/* p subtitle */}
       <Skeleton className="h-5 w-36" />
       {/* Grid of 2 info cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <InfoCardSkeleton />
         <InfoCardSkeleton />
       </div>
@@ -104,7 +104,7 @@ function ChatsSkeleton() {
       {/* p subtitle */}
       <Skeleton className="h-5 w-32" />
       {/* Grid of 4 info cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <InfoCardSkeleton />
         <InfoCardSkeleton />
         <InfoCardSkeleton />
@@ -208,7 +208,7 @@ export function AppShellSkeleton() {
             <Skeleton className="h-8 w-8 rounded" />
             <div className="flex items-center gap-2">
               <Skeleton className="h-8 w-8 rounded-full" />
-              <div className="hidden sm:block space-y-1">
+              <div className="hidden md:block space-y-1">
                 <Skeleton className="h-4 w-24" />
                 <Skeleton className="h-3 w-32" />
               </div>

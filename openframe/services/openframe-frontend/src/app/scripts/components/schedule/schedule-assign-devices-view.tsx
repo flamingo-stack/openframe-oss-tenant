@@ -273,9 +273,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
                   })}
               </div>
               <div className="flex flex-col truncate">
-                <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                  {device.displayName || device.hostname}
-                </span>
+                <span className="text-h4 text-ods-text-primary truncate">{device.displayName || device.hostname}</span>
                 <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
@@ -397,7 +395,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
               className="mt-1 accent-[var(--open-colors-yellow,#ffc008)]"
             />
             <div className="flex flex-col">
-              <span className="font-medium text-[18px] text-ods-text-primary">Select Specific Devices</span>
+              <span className="text-h4 text-ods-text-primary">Select Specific Devices</span>
               <span className="text-[14px] text-ods-text-secondary">
                 Choose individual devices to include in this script schedule
               </span>
@@ -406,7 +404,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           <label className="flex items-start gap-3 p-4 bg-ods-card border border-ods-border rounded-[6px] opacity-50 cursor-not-allowed">
             <input type="radio" name="selectionMode" value="criteria" disabled className="mt-1" />
             <div className="flex flex-col flex-1">
-              <span className="font-medium text-[18px] text-ods-text-primary">Select Devices by Criteria</span>
+              <span className="text-h4 text-ods-text-primary">Select Devices by Criteria</span>
               <span className="text-[14px] text-ods-text-secondary">
                 Automatically include all devices (current and future) that match your defined criteria
               </span>

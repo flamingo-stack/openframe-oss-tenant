@@ -339,9 +339,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             onClick={handlePutOnHold}
             disabled={isUpdating}
           >
-            <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-              {isUpdating ? 'Updating...' : 'Put On Hold'}
-            </span>
+            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Put On Hold'}</span>
           </Button>
         )}
         {!isResolved && (
@@ -352,9 +350,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             onClick={handleResolve}
             disabled={isUpdating}
           >
-            <span className="font-['DM_Sans'] font-bold text-[18px] text-ods-text-primary tracking-[-0.36px]">
-              {isUpdating ? 'Updating...' : 'Resolve'}
-            </span>
+            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Resolve'}</span>
           </Button>
         )}
       </div>
@@ -417,9 +413,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               activeChatTab !== 'client' ? 'hidden lg:flex' : 'flex',
             )}
           >
-            <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
-              Client Chat
-            </h2>
+            <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Client Chat</h2>
             {/* Messages card */}
             <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
               <ChatMessageList
@@ -453,9 +447,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               activeChatTab !== 'technician' ? 'hidden lg:flex' : 'flex',
             )}
           >
-            <h2 className="hidden lg:block font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-secondary uppercase tracking-[-0.28px]">
-              Technician Chat
-            </h2>
+            <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Technician Chat</h2>
             <div className="flex-1 flex flex-col relative min-h-0">
               {adminMessages.length === 0 ? (
                 /* Empty State */

@@ -73,7 +73,7 @@ export function ScheduleCreateSkeleton() {
         <Skeleton className="h-5 w-48" />
 
         {/* Title + Save button */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <Skeleton className="h-9 w-56" />
           <Skeleton className="h-12 w-[140px] rounded-md" />
         </div>

@@ -17,17 +17,13 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
     {
       key: 'title',
       label: 'TITLE',
-      width: 'w-[70%] sm:flex-1 min-w-0',
-      renderCell: dialog => (
-        <span className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate block">
-          {dialog.title}
-        </span>
-      ),
+      width: 'w-[70%] md:flex-1 min-w-0',
+      renderCell: dialog => <span className="text-h4 text-ods-text-primary truncate block">{dialog.title}</span>,
     },
     {
       key: 'source',
       label: 'SOURCE',
-      hideAt: 'sm',
+      hideAt: 'md',
       renderCell: dialog => {
         const isClientOwner = 'machine' in (dialog.owner || {});
         const clientOwner = isClientOwner ? (dialog.owner as ClientDialogOwner) : null;

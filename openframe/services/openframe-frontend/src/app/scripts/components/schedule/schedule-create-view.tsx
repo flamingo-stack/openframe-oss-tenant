@@ -325,9 +325,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
 
           {/* Scheduled Scripts */}
           <div className="flex flex-col gap-4">
-            <h2 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] tracking-[-0.64px] text-ods-text-primary">
-              Scheduled Scripts
-            </h2>
+            <h2 className="text-h2 text-ods-text-primary">Scheduled Scripts</h2>
 
             {fields.map((field, index) => (
               <ScheduleActionFormCard

@@ -198,7 +198,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         key: 'tool',
         label: 'Tool',
         width: 'w-[150px]',
-        hideAt: 'sm',
+        hideAt: 'md',
         filterable: true,
         filterOptions:
           logFilters?.toolTypes?.map((toolType: string) => ({
@@ -226,7 +226,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         key: 'description',
         label: 'Log Details',
         width: 'flex-1',
-        hideAt: 'xl',
+        hideAt: 'lg',
         renderCell: log => <TableDescriptionCell text={log.description.title} />,
       },
     ];
@@ -254,7 +254,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
         navigateUrl={getLogDetailsUrl(log)}
         showExternalLinkOnHover
         openInNewTab={true}
-        className="bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary font-['DM_Sans'] font-bold text-[18px] px-4 py-3 h-12"
+        className="bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary text-h3 px-4 py-3 h-12"
       >
         Details
       </Button>
@@ -426,9 +426,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       <div className="space-y-4 mt-6">
         {/* Title */}
         <div className="flex items-center justify-between">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-            Logs ({transformedLogs.length})
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary">Logs ({transformedLogs.length})</h3>
         </div>
 
         <div className="flex gap-4 items-stretch h-[48px]">

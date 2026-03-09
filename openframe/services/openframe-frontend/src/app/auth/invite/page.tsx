@@ -221,7 +221,7 @@ export default function InvitePage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 pt-4">
+                <div className="flex flex-col md:flex-row gap-4 md:gap-6 pt-4">
                   <div className="h-12 flex-1 bg-ods-border rounded" />
                   <div className="h-12 flex-1 bg-ods-border rounded" />
                 </div>
@@ -250,7 +250,7 @@ export default function InvitePage() {
               <div className="flex gap-6 items-center">
                 <div className="flex-1"></div>
                 <div className="flex-1">
-                  <Button onClick={() => router.push('/auth')} variant="primary" className="!w-full sm:!w-full">
+                  <Button onClick={() => router.push('/auth')} variant="primary" className="!w-full md:!w-full">
                     Back to Login
                   </Button>
                 </div>
@@ -332,7 +332,7 @@ export default function InvitePage() {
                     className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                   />
                   {password && password.length < 8 && (
-                    <p className="text-xs text-error mt-1">Password must be at least 8 characters</p>
+                    <p className="text-xs text-ods-error mt-1">Password must be at least 8 characters</p>
                   )}
                 </div>
                 <div className="flex-1 flex flex-col gap-1">
@@ -346,18 +346,18 @@ export default function InvitePage() {
                     className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                   />
                   {confirmPassword && password !== confirmPassword && (
-                    <p className="text-xs text-error mt-1">Passwords do not match</p>
+                    <p className="text-xs text-ods-error mt-1">Passwords do not match</p>
                   )}
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center pt-4">
+              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch md:items-center pt-4">
                 <Button
                   onClick={() => router.push('/auth')}
                   disabled={isLoading}
                   variant="outline"
-                  className="w-full sm:flex-1"
+                  className="w-full md:flex-1"
                 >
                   Cancel
                 </Button>
@@ -373,7 +373,7 @@ export default function InvitePage() {
                   }
                   loading={isLoading}
                   variant="primary"
-                  className="w-full sm:flex-1"
+                  className="w-full md:flex-1"
                 >
                   Accept Invitation
                 </Button>
