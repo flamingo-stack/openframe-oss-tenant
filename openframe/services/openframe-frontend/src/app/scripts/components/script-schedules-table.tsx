@@ -75,7 +75,7 @@ export function ScriptSchedulesTable() {
         key: 'name',
         label: 'Script',
         renderCell: schedule => (
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
+          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {schedule.name}
           </span>
         ),
@@ -84,7 +84,7 @@ export function ScriptSchedulesTable() {
         key: 'run_time_date',
         label: 'Date & Time',
         width: 'w-[160px]',
-        hideAt: 'sm',
+        hideAt: 'md',
         renderCell: schedule => {
           const { date, time } = formatScheduleDate(schedule.run_time_date);
           return (

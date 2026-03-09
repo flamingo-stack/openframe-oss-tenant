@@ -21,8 +21,8 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
       <div className="px-6 py-4">
         <p className="text-ods-text-primary">
           Are you sure you want to deactivate{' '}
-          <span className="text-error font-semibold">{apiKeyName || 'this API Key'}</span>? This key will stop working
-          until you reactivate it.
+          <span className="text-ods-error font-semibold">{apiKeyName || 'this API Key'}</span>? This key will stop
+          working until you reactivate it.
         </p>
       </div>
 
@@ -30,7 +30,7 @@ export function DisableApiKeyModal({ isOpen, onClose, apiKeyName, onConfirm }: D
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={onConfirm} variant="outline" className="border-error text-error hover:bg-error/10">
+        <Button onClick={onConfirm} variant="outline" className="border-ods-error text-ods-error hover:bg-ods-error/10">
           Disable API Key
         </Button>
       </ModalFooter>

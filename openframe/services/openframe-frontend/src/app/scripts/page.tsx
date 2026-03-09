@@ -7,7 +7,7 @@ import { ScriptsView } from './components/scripts-view';
 
 export default function Scripts() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout mainClassName="pt-0 md:pt-0">
       <ScriptsView />
     </AppLayout>
   );

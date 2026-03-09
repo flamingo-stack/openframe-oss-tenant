@@ -14,9 +14,7 @@ export function ScriptArgumentsCard({ title, args }: ScriptArgumentsCardProps) {
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <Label className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-        {title}
-      </Label>
+      <Label className="text-h5 text-ods-text-secondary w-full">{title}</Label>
       <InfoCard
         data={{
           items: args.map((arg: string) => {

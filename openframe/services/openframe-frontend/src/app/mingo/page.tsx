@@ -211,7 +211,7 @@ export default function Mingo() {
   }
 
   return (
-    <AppLayout mainClassName="p-0 sm:p-0">
+    <AppLayout mainClassName="p-0 md:p-0">
       <ContentPageContainer
         padding="none"
         showHeader={false}

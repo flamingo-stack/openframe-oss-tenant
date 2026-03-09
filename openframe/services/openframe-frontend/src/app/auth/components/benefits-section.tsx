@@ -105,9 +105,7 @@ export function AuthBenefitsSection() {
           <div className="bg-ods-card border border-ods-border rounded-md w-full p-10">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h2 className="font-heading font-semibold text-[32px] leading-[40px] text-ods-text-primary tracking-[-0.64px]">
-                  Get Early Access
-                </h2>
+                <h2 className="text-h2 text-ods-text-primary tracking-[-0.64px]">Get Early Access</h2>
                 <p className="text-[18px] leading-6 text-ods-text-secondary">
                   Don't have access yet? Join our private beta to get your invitation code and start breaking free from
                   vendor lock-in.
@@ -133,7 +131,7 @@ export function AuthBenefitsSection() {
                 />
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
+              <div className="flex flex-col md:flex-row gap-4 md:gap-6 w-full">
                 <Button onClick={handleJoinWaitlist} disabled={isSubmitting || !isValidEmail(email)}>
                   {isSubmitting ? 'Joining...' : 'Join Waitlist'}
                 </Button>

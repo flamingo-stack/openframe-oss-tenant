@@ -45,15 +45,13 @@ export function DetailsSection({ logDetails }: DetailsSectionProps) {
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Section Title */}
-      <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-        Details
-      </div>
+      <div className="text-h5 text-ods-text-secondary w-full">Details</div>
 
       {/* Details Card */}
       <div className="bg-ods-card border border-ods-border rounded-[6px] w-full">
-        <div className="p-4 sm:p-6">
+        <div className="p-4 md:p-6">
           <div className="w-full overflow-x-auto">
-            <pre className="font-['DM_Sans'] font-medium text-[14px] sm:text-[16px] leading-[20px] sm:leading-[22px] text-ods-text-primary whitespace-pre-wrap break-words min-w-0">
+            <pre className="font-['DM_Sans'] font-medium text-[14px] md:text-[16px] leading-[20px] md:leading-[22px] text-ods-text-primary whitespace-pre-wrap break-words min-w-0">
               {formattedJson}
             </pre>
           </div>

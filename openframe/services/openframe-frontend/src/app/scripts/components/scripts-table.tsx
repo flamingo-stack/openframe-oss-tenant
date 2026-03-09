@@ -166,7 +166,7 @@ export function ScriptsTable() {
         key: 'name',
         label: 'Name',
         renderCell: script => (
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
+          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
             {script.name}
           </span>
         ),
@@ -175,7 +175,7 @@ export function ScriptsTable() {
         key: 'shellType',
         label: 'Shell Type',
         width: 'w-[160px]',
-        hideAt: 'sm',
+        hideAt: 'md',
         filterable: true,
         filterOptions: uniqueShellTypes,
         renderCell: script => <ShellTypeBadge shellType={script.shellType as ShellType} />,
@@ -184,7 +184,7 @@ export function ScriptsTable() {
         key: 'supportedPlatforms',
         label: 'OS',
         width: 'w-[80px]',
-        hideAt: 'xl',
+        hideAt: 'lg',
         filterable: true,
         filterOptions: uniquePlatforms,
         renderCell: script => <OSTypeBadgeGroup osTypes={script.supportedPlatforms} iconSize="w-4 h-4" />,
@@ -195,7 +195,7 @@ export function ScriptsTable() {
         width: 'w-[120px]',
         filterable: true,
         filterOptions: uniqueAddedBy,
-        hideAt: 'xl',
+        hideAt: 'lg',
         renderCell: script => <ToolBadge toolType={normalizeToolTypeWithFallback(script.addedBy)} />,
       },
       {
