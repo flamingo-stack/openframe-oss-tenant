@@ -195,7 +195,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
         <div className="flex flex-col gap-6 overflow-auto">
           {/* Schedule Name */}
           <div className="flex flex-col gap-1">
-            <Label className="text-ods-text-secondary font-medium text-[14px]">Schedule Name</Label>
+            <Label className="text-h4">Schedule Name</Label>
             <Controller
               name="name"
               control={control}
@@ -304,7 +304,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
 
           {/* Supported Platforms */}
           <div className="flex flex-col gap-2">
-            <Label className="text-ods-text-secondary font-medium text-[14px]">Supported Platform</Label>
+            <Label className="text-h4">Supported Platform</Label>
             <div className="flex gap-3 max-w-[920px]">
               {AVAILABLE_PLATFORMS.map(p => {
                 const isDisabled = DISABLED_PLATFORMS.includes(p.id);

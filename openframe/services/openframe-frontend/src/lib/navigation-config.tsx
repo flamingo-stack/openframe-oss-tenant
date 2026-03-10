@@ -24,28 +24,28 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
       label: 'Dashboard',
       icon: <ChartDonutIcon size={24} />,
       path: '/dashboard',
-      isActive: pathname === '/dashboard/',
+      isActive: pathname.startsWith('/dashboard'),
     },
     {
       id: 'organizations',
       label: 'Organizations',
       icon: <IdCardIcon size={24} />,
       path: '/organizations',
-      isActive: pathname === '/organizations/',
+      isActive: pathname.startsWith('/organizations'),
     },
     {
       id: 'devices',
       label: 'Devices',
       icon: <MonitorIcon size={24} />,
       path: '/devices',
-      isActive: pathname === '/devices/',
+      isActive: pathname.startsWith('/devices'),
     },
     {
       id: 'scripts',
       label: 'Scripts',
       icon: <BracketCurlyIcon size={24} />,
       path: '/scripts',
-      isActive: pathname === '/scripts/',
+      isActive: pathname.startsWith('/scripts'),
     },
     ...(featureFlags.monitoring.enabled()
       ? [
@@ -54,7 +54,7 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
             label: 'Monitoring',
             icon: <RadarIcon size={24} />,
             path: '/monitoring',
-            isActive: pathname === '/monitoring/',
+            isActive: pathname.startsWith('/monitoring'),
           },
         ]
       : []),
@@ -63,7 +63,7 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
       label: 'Logs',
       icon: <ClipboardListIcon size={24} />,
       path: '/logs-page',
-      isActive: pathname === '/logs-page/',
+      isActive: pathname.startsWith('/logs-page') || pathname.startsWith('/log-details'),
     },
   ];
 
@@ -74,14 +74,14 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
         label: 'Tickets',
         icon: <TagIcon size={24} />,
         path: '/tickets',
-        isActive: pathname === '/tickets/',
+        isActive: pathname.startsWith('/tickets'),
       },
       {
         id: 'mingo',
         label: 'Mingo',
         icon: <MingoIcon className="w-6 h-6" />,
         path: '/mingo',
-        isActive: pathname === '/mingo/',
+        isActive: pathname.startsWith('/mingo'),
       },
     );
   }
@@ -92,7 +92,7 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
     icon: <Settings02Icon size={24} />,
     path: '/settings',
     section: 'secondary',
-    isActive: pathname === '/settings/',
+    isActive: pathname.startsWith('/settings'),
   });
 
   return baseItems;
