@@ -3,91 +3,50 @@
 import { ViewToggle } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { Button, ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import {
-  useApiParams,
-  useCursorPaginationState,
-  useTablePagination,
-} from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
+import { useDeviceFilters } from '../hooks/use-device-filters';
 import { useDevices } from '../hooks/use-devices';
-import { type Device } from '../types/device.types';
+import type { Device } from '../types/device.types';
 import { DevicesGrid } from './devices-grid';
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns';
 
 export function DevicesView() {
   const router = useRouter();
 
-  // Extra URL params not handled by cursor pagination hook (viewMode and filters)
-  const {
-    params: extraParams,
-    setParam: setExtraParam,
-    setParams: setExtraParams,
-  } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
     statuses: { type: 'array', default: [] },
     osTypes: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
     viewMode: { type: 'string', default: 'table' },
   });
 
+  const debouncedSearch = useDebounce(params.search, 300);
+
   // Backend filters from URL params (default excludes ARCHIVED and DELETED)
   const filters = useMemo(
     () => ({
-      statuses: extraParams.statuses.length > 0 ? extraParams.statuses : DEFAULT_VISIBLE_STATUSES,
-      osTypes: extraParams.osTypes,
-      organizationIds: extraParams.organizationIds,
+      statuses: params.statuses.length > 0 ? params.statuses : DEFAULT_VISIBLE_STATUSES,
+      osTypes: params.osTypes,
+      organizationIds: params.organizationIds,
     }),
-    [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds],
+    [params.statuses, params.osTypes, params.organizationIds],
   );
 
-  const {
-    devices,
-    deviceFilters,
-    isLoading,
-    error,
-    searchDevices,
-    pageInfo,
-    fetchNextPage,
-    fetchFirstPage,
-    hasLoadedBeyondFirst,
-    setHasLoadedBeyondFirst,
-    fetchDevices,
-    fetchDeviceFilters,
-    markInitialLoadDone,
-  } = useDevices(filters);
+  const { devices, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error, refetch } = useDevices(
+    filters,
+    debouncedSearch,
+  );
 
-  // Unified cursor pagination state management (no prefix, uses 'search' and 'cursor')
-  const {
-    searchInput,
-    setSearchInput,
-    hasLoadedBeyondFirst: hookHasLoadedBeyondFirst,
-    handleNextPage,
-    handleResetToFirstPage,
-    params: paginationParams,
-    setParams: setPaginationParams,
-  } = useCursorPaginationState({
-    onInitialLoad: (search, cursor) => {
-      if (cursor) {
-        fetchDevices(search, cursor);
-        setHasLoadedBeyondFirst(true);
-      } else {
-        fetchDevices(search);
-      }
-      fetchDeviceFilters();
-      markInitialLoadDone();
-    },
-    onSearchChange: search => searchDevices(search),
-  });
+  const { data: deviceFilters } = useDeviceFilters(filters);
 
-  const columns = useMemo(() => getDeviceTableColumns(deviceFilters), [deviceFilters]);
+  const columns = useMemo(() => getDeviceTableColumns(deviceFilters ?? null), [deviceFilters]);
 
   // Refresh callback for after archive/delete actions
-  const refreshDevices = useCallback(() => {
-    fetchDevices(paginationParams.search);
-  }, [fetchDevices, paginationParams.search]);
-
-  const renderRowActions = useMemo(() => getDeviceTableRowActions(refreshDevices), [refreshDevices]);
+  const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
 
   // Navigate to device details on row click
   const handleRowClick = useCallback(
@@ -100,60 +59,31 @@ export function DevicesView() {
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
-      // Reset cursor and update filter params
-      setPaginationParams({ cursor: '' });
-      setExtraParams({
+      setParams({
         statuses: columnFilters.status || [],
         osTypes: columnFilters.os || [],
         organizationIds: columnFilters.organization || [],
       });
-      setHasLoadedBeyondFirst(false);
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
-    [setExtraParams, setPaginationParams, setHasLoadedBeyondFirst],
-  );
-
-  const onNext = useCallback(async () => {
-    if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
-      await handleNextPage(pageInfo.endCursor, () => fetchNextPage(paginationParams.search));
-    }
-  }, [pageInfo, handleNextPage, fetchNextPage, paginationParams.search]);
-
-  const onReset = useCallback(async () => {
-    await handleResetToFirstPage(() => fetchFirstPage(paginationParams.search));
-  }, [handleResetToFirstPage, fetchFirstPage, paginationParams.search]);
-
-  const cursorPagination = useTablePagination(
-    pageInfo
-      ? {
-          type: 'server',
-          hasNextPage: pageInfo.hasNextPage,
-          hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
-          startCursor: pageInfo.startCursor,
-          endCursor: pageInfo.endCursor,
-          itemCount: devices.length,
-          itemName: 'devices',
-          onNext,
-          onReset,
-          showInfo: true,
-        }
-      : null,
+    [setParams],
   );
 
   // Convert URL params to table filters format
   const tableFilters = useMemo(
     () => ({
-      status: extraParams.statuses,
-      os: extraParams.osTypes,
-      organization: extraParams.organizationIds,
+      status: params.statuses,
+      os: params.osTypes,
+      organization: params.organizationIds,
     }),
-    [extraParams.statuses, extraParams.osTypes, extraParams.organizationIds],
+    [params.statuses, params.osTypes, params.organizationIds],
   );
 
   const viewToggle = (
     <>
       <ViewToggle
-        value={extraParams.viewMode as 'table' | 'grid'}
-        onValueChange={value => setExtraParam('viewMode', value)}
+        value={params.viewMode as 'table' | 'grid'}
+        onValueChange={value => setParam('viewMode', value)}
         className="bg-ods-card border border-ods-border h-12"
       />
       <Button
@@ -174,21 +104,41 @@ export function DevicesView() {
       options: column.filterOptions || [],
     }));
 
+  const gridSentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (params.viewMode !== 'grid' || !hasNextPage || isFetchingNextPage) return;
+    const sentinel = gridSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0]?.isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [params.viewMode, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   return (
     <ListPageLayout
       title="Devices"
       headerActions={viewToggle}
       searchPlaceholder="Search for Devices"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
+      searchValue={params.search}
+      onSearch={value => setParam('search', value)}
       error={error}
       padding="none"
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       currentMobileFilters={tableFilters}
+      stickyHeader
     >
       {/* Conditional View Rendering */}
-      {extraParams.viewMode === 'table' ? (
+      {params.viewMode === 'table' ? (
         // Table View
         <Table
           data={devices}
@@ -203,11 +153,25 @@ export function DevicesView() {
           onFilterChange={handleFilterChange}
           showFilters={true}
           rowClassName="mb-1"
-          cursorPagination={cursorPagination}
+          infiniteScroll={{
+            hasNextPage,
+            isFetchingNextPage,
+            onLoadMore: () => fetchNextPage(),
+            skeletonRows: 2,
+          }}
+          stickyHeader
+          stickyHeaderOffset="top-[56px]"
         />
       ) : (
         // Grid View
-        <DevicesGrid devices={devices} isLoading={isLoading} filters={filters} />
+        <DevicesGrid
+          devices={devices}
+          isLoading={isLoading}
+          filters={filters}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          sentinelRef={gridSentinelRef}
+        />
       )}
     </ListPageLayout>
   );

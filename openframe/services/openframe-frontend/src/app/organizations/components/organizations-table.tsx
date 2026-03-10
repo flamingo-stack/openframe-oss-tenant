@@ -3,11 +3,7 @@
 import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import {
-  useApiParams,
-  useCursorPaginationState,
-  useTablePagination,
-} from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -48,68 +44,34 @@ function OrganizationNameCell({ org }: { org: UiOrganizationEntry }) {
 export function OrganizationsTable() {
   const router = useRouter();
 
-  // Extra URL params for filters (not search/cursor which are handled by pagination hook)
-  const { params: filterParams, setParams: setFilterParams } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
     tier: { type: 'array', default: [] },
     industry: { type: 'array', default: [] },
   });
 
+  const debouncedSearch = useDebounce(params.search, 300);
+
+  const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
+    useOrganizations(debouncedSearch);
+
   const prevFiltersKeyRef = useRef<string | null>(null);
-
-  // Backend filters from URL params
-  const backendFilters = useMemo(
-    () => ({
-      tiers: filterParams.tier,
-      industries: filterParams.industry,
-    }),
-    [filterParams.tier, filterParams.industry],
-  );
-
-  // Stable filter key for detecting changes
   const filtersKey = useMemo(
     () =>
       JSON.stringify({
-        tiers: filterParams.tier?.sort() || [],
-        industries: filterParams.industry?.sort() || [],
+        tiers: [...(params.tier || [])].sort(),
+        industries: [...(params.industry || [])].sort(),
       }),
-    [filterParams.tier, filterParams.industry],
+    [params.tier, params.industry],
   );
 
-  const {
-    organizations,
-    isLoading,
-    error,
-    pageInfo,
-    hasLoadedBeyondFirst,
-    setHasLoadedBeyondFirst,
-    fetchOrganizations,
-    fetchNextPage,
-    fetchFirstPage,
-    searchOrganizations,
-    markInitialLoadDone,
-  } = useOrganizations(backendFilters);
-
-  // Unified cursor pagination state management (no prefix, uses 'search' and 'cursor')
-  const {
-    searchInput,
-    setSearchInput,
-    hasLoadedBeyondFirst: hookHasLoadedBeyondFirst,
-    handleNextPage,
-    handleResetToFirstPage,
-    params: paginationParams,
-    setParams: setPaginationParams,
-  } = useCursorPaginationState({
-    onInitialLoad: (search, cursor) => {
-      if (cursor) {
-        fetchOrganizations(search || '', cursor, backendFilters);
-        setHasLoadedBeyondFirst(true);
-      } else {
-        fetchOrganizations(search || '', null, backendFilters);
-      }
-      markInitialLoadDone();
-    },
-    onSearchChange: search => searchOrganizations(search),
-  });
+  // Scroll to top when filters change
+  useEffect(() => {
+    if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    }
+    prevFiltersKeyRef.current = filtersKey;
+  }, [filtersKey]);
 
   const transformed: UiOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`;
@@ -127,22 +89,20 @@ export function OrganizationsTable() {
     }));
   }, [organizations]);
 
-  // Client-side filtering for tier/industry (after fetching from server)
+  // Client-side filtering for tier/industry (backend doesn't support these filters)
   const filteredOrganizations = useMemo(() => {
     let filtered = transformed;
 
-    // Apply tier filter from URL params
-    if (filterParams.tier && filterParams.tier.length > 0) {
-      filtered = filtered.filter(org => filterParams.tier.includes(org.tier));
+    if (params.tier && params.tier.length > 0) {
+      filtered = filtered.filter(org => params.tier.includes(org.tier));
     }
 
-    // Apply industry filter from URL params
-    if (filterParams.industry && filterParams.industry.length > 0) {
-      filtered = filtered.filter(org => filterParams.industry.includes(org.industry));
+    if (params.industry && params.industry.length > 0) {
+      filtered = filtered.filter(org => params.industry.includes(org.industry));
     }
 
     return filtered;
-  }, [transformed, filterParams.tier, filterParams.industry]);
+  }, [transformed, params.tier, params.industry]);
 
   const columns: TableColumn<UiOrganizationEntry>[] = useMemo(
     () => [
@@ -192,75 +152,26 @@ export function OrganizationsTable() {
     [],
   );
 
-  // Refetch when filters change
-  const initialFilterLoadDone = useRef(false);
-  useEffect(() => {
-    if (initialFilterLoadDone.current) {
-      // Only refetch if filters actually changed (not on mount)
-      if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {
-        const refetch = async () => {
-          await searchOrganizations(paginationParams.search);
-        };
-        refetch();
-        setHasLoadedBeyondFirst(false);
-      }
-    } else {
-      initialFilterLoadDone.current = true;
-    }
-    prevFiltersKeyRef.current = filtersKey;
-  }, [filtersKey, paginationParams.search, searchOrganizations, setHasLoadedBeyondFirst]);
-
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
-      // Reset cursor and update filter params
-      setPaginationParams({ cursor: '' });
-      setFilterParams({
+      setParams({
         tier: columnFilters.tier || [],
         industry: columnFilters.industry || [],
       });
-      setHasLoadedBeyondFirst(false);
     },
-    [setFilterParams, setPaginationParams, setHasLoadedBeyondFirst],
-  );
-
-  const onNext = useCallback(async () => {
-    if (pageInfo?.hasNextPage && pageInfo?.endCursor) {
-      await handleNextPage(pageInfo.endCursor, () => fetchNextPage(paginationParams.search));
-    }
-  }, [pageInfo, handleNextPage, fetchNextPage, paginationParams.search]);
-
-  const onReset = useCallback(async () => {
-    await handleResetToFirstPage(() => fetchFirstPage(paginationParams.search));
-  }, [handleResetToFirstPage, fetchFirstPage, paginationParams.search]);
-
-  const cursorPagination = useTablePagination(
-    pageInfo
-      ? {
-          type: 'server',
-          hasNextPage: pageInfo.hasNextPage,
-          hasLoadedBeyondFirst: hasLoadedBeyondFirst || hookHasLoadedBeyondFirst,
-          startCursor: pageInfo.startCursor ?? undefined,
-          endCursor: pageInfo.endCursor ?? undefined,
-          itemCount: organizations.length,
-          itemName: 'organizations',
-          onNext,
-          onReset,
-          showInfo: true,
-        }
-      : null,
+    [setParams],
   );
 
   const handleAddOrganization = useCallback(() => {
     router.push('/organizations/edit/new');
   }, [router]);
 
-  // Convert URL params to table filters format
   const tableFilters = useMemo(
     () => ({
-      tier: filterParams.tier,
-      industry: filterParams.industry,
+      tier: params.tier,
+      industry: params.industry,
     }),
-    [filterParams.tier, filterParams.industry],
+    [params.tier, params.industry],
   );
 
   const actions = useMemo(
@@ -279,11 +190,12 @@ export function OrganizationsTable() {
       title="Organizations"
       actions={actions}
       searchPlaceholder="Search for Organization"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
+      searchValue={params.search}
+      onSearch={value => setParam('search', value)}
       error={error}
       background="default"
       padding="none"
+      stickyHeader
     >
       <Table
         data={filteredOrganizations}
@@ -297,7 +209,14 @@ export function OrganizationsTable() {
         showFilters={false}
         rowClassName="mb-1"
         onRowClick={row => router.push(`/organizations/details/${row.id}`)}
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage,
+          isFetchingNextPage,
+          onLoadMore: () => fetchNextPage(),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
       />
     </ListPageLayout>
   );
