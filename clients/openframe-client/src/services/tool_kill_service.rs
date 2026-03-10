@@ -215,10 +215,17 @@ impl ToolKillService {
             Installation::Standard { .. } => {
                 self.stop_tool(&tool.tool_agent_id).await
             }
-            Installation::Service { service_name, .. } => {
+            Installation::Service { service_name, executable_path } => {
                 info!(tool_id = %tool.tool_agent_id, service_name = %service_name,
                       "Stopping Service type tool via system service manager");
-                self.stop_service(service_name).await
+                self.stop_service(service_name).await?;
+
+                // Kill any remaining processes by executable path (detached children)
+                if let Some(path) = executable_path {
+                    info!(tool_id = %tool.tool_agent_id, "Killing remaining processes by path: {}", path);
+                    self.stop_tool_by_path(path).await?;
+                }
+                Ok(())
             }
         }
     }
