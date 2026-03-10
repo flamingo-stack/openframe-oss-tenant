@@ -55,13 +55,14 @@ impl ToolKillService {
 
         let mut pids_to_stop = Vec::new();
 
-        // Find all matching processes
+        // Find all matching processes by cmdline OR executable path
         for (pid, process) in sys.processes() {
             let cmd_items = process.cmd();
             let cmdline = cmd_items.join(" ").to_lowercase();
+            let exe_path = process.exe().map(|p| p.to_string_lossy().to_lowercase()).unwrap_or_default();
 
-            if cmdline.contains(pattern) {
-                info!("Found process for {} with pid {}", description, pid);
+            if cmdline.contains(pattern) || exe_path.contains(pattern) {
+                info!("Found process for {} with pid {} (exe: {})", description, pid, exe_path);
                 pids_to_stop.push(*pid);
             }
         }
