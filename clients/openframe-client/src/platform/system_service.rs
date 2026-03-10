@@ -48,58 +48,6 @@ pub async fn start_service(service_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Get PID of a running Windows service via sc queryex
-#[cfg(target_os = "windows")]
-pub async fn get_service_pid(service_name: &str) -> Option<u32> {
-    let output = Command::new("sc")
-        .args(["queryex", service_name])
-        .output()
-        .await
-        .ok()?;
-
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    // Parse PID from "        PID                : 1234"
-    for line in stdout.lines() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix("PID") {
-            if let Some(pid_str) = rest.trim().strip_prefix(':') {
-                if let Ok(pid) = pid_str.trim().parse::<u32>() {
-                    if pid != 0 {
-                        info!("Service {} has PID: {}", service_name, pid);
-                        return Some(pid);
-                    }
-                }
-            }
-        }
-    }
-    None
-}
-
-/// Force kill a process and all its children via taskkill /F /T /PID
-#[cfg(target_os = "windows")]
-pub async fn force_kill_process_tree(pid: u32) -> Result<()> {
-    use tracing::warn;
-
-    info!("Force killing process tree for PID: {}", pid);
-
-    let output = Command::new("taskkill")
-        .args(["/F", "/T", "/PID", &pid.to_string()])
-        .output()
-        .await
-        .with_context(|| format!("Failed to execute taskkill for PID: {}", pid))?;
-
-    if output.status.success() {
-        info!("Process tree for PID {} killed successfully", pid);
-    } else {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        // Ignore "not found" errors - process may have already exited
-        if !stderr.contains("not found") {
-            warn!("taskkill for PID {} returned: {}", pid, stderr);
-        }
-    }
-    Ok(())
-}
-
 /// Start a Linux service via systemctl start
 #[cfg(target_os = "linux")]
 pub async fn start_service(service_name: &str) -> Result<()> {

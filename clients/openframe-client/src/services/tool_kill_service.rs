@@ -4,8 +4,6 @@ use sysinfo::{System, Signal, Pid};
 use tokio::time::{sleep, Duration};
 use tokio::process::Command;
 use crate::models::{InstalledTool, Installation};
-#[cfg(target_os = "windows")]
-use crate::platform::{get_service_pid, force_kill_process_tree};
 
 /// Service responsible for stopping/killing tool processes
 #[derive(Clone)]
@@ -280,9 +278,6 @@ impl ToolKillService {
     async fn stop_service_windows(&self, service_name: &str) -> Result<()> {
         info!("Stopping Windows service via sc stop: {}", service_name);
 
-        // Get service PID before stopping (for force kill fallback)
-        let service_pid = get_service_pid(service_name).await;
-
         let output = Command::new("sc")
             .args(["stop", service_name])
             .output()
@@ -294,7 +289,7 @@ impl ToolKillService {
 
         if output.status.success() {
             info!("Service {} stop initiated", service_name);
-            self.wait_for_service_stop_windows(service_name, service_pid).await
+            self.wait_for_service_stop_windows(service_name).await
         } else if stderr.contains("1062") || stdout.contains("1062") {
             // Error 1062: The service has not been started
             info!("Service {} is not running (error 1062)", service_name);
@@ -314,7 +309,7 @@ impl ToolKillService {
     }
 
     #[cfg(target_os = "windows")]
-    async fn wait_for_service_stop_windows(&self, service_name: &str, service_pid: Option<u32>) -> Result<()> {
+    async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<()> {
         const MAX_ATTEMPTS: u32 = 20; // 10 seconds total
 
         for attempt in 1..=MAX_ATTEMPTS {
@@ -331,23 +326,9 @@ impl ToolKillService {
                 info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
                 return Ok(());
             }
-
-            // If stuck in STOP_PENDING for too long, force kill
-            if stdout.contains("STOP_PENDING") && attempt >= 10 {
-                if let Some(pid) = service_pid {
-                    warn!("Service {} stuck in STOP_PENDING, force killing PID {}", service_name, pid);
-                    force_kill_process_tree(pid).await?;
-                }
-            }
         }
 
-        // Final fallback: force kill if we have the PID
-        if let Some(pid) = service_pid {
-            warn!("Service {} did not stop gracefully, force killing PID {}", service_name, pid);
-            force_kill_process_tree(pid).await?;
-            sleep(Duration::from_secs(1)).await;
-        }
-
+        warn!("Service {} did not confirm stopped after {} attempts", service_name, MAX_ATTEMPTS);
         Ok(())
     }
 

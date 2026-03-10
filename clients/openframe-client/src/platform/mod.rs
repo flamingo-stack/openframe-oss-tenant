@@ -32,5 +32,3 @@ pub use tool_updater::{create_updater, ToolUpdater, ToolUpdaterDeps, UpdateConte
 pub use uninstall::remove_directory_with_retry;
 #[cfg(target_os = "windows")]
 pub use powershell::get_powershell_path;
-#[cfg(target_os = "windows")]
-pub use system_service::{get_service_pid, force_kill_process_tree};
