@@ -243,8 +243,17 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
     // Tags
     tags: node.tags || tacticalData?.custom_fields || [],
 
-    // Tool Connections
-    toolConnections: node.toolConnections,
+    // Tool Connections (enriched with status from Tactical/Fleet API)
+    toolConnections: (node.toolConnections || []).map(tc => {
+      const base = { ...tc };
+      if (tc.toolType === 'TACTICAL_RMM' && tacticalData?.status != null) {
+        return { ...base, status: String(tacticalData.status).toLowerCase() };
+      }
+      if (tc.toolType === 'FLEET_MDM' && fleetData?.status != null) {
+        return { ...base, status: String(fleetData.status).toLowerCase() };
+      }
+      return base;
+    }),
     installedAgents: node.installedAgents,
 
     // Misc

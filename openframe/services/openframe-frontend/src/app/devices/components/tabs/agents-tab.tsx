@@ -29,6 +29,11 @@ const agentTypeToToolType: Record<string, string> = {
 
 const AGENT_TYPES_WITH_STATUS = new Set(['TACTICAL_RMM', 'FLEET_MDM', 'MESHCENTRAL']);
 
+/** Normalize API status: only "online" → ONLINE (green), overdue/offline/other → OFFLINE (red) */
+function getAgentDisplayStatus(raw: string | undefined): string {
+  return raw?.toLowerCase() === 'online' ? 'online' : 'offline';
+}
+
 export function AgentsTab({ device }: AgentsTabProps) {
   const toolConnections = Array.isArray(device?.toolConnections) ? device.toolConnections : [];
   const installedAgents = Array.isArray(device?.installedAgents) ? device.installedAgents : [];
@@ -48,7 +53,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
       toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_'),
       agentToolId: connection?.agentToolId,
       hasConnection: !!connection,
-      status: 'offline' as const,
+      status: getAgentDisplayStatus(connection?.status),
     };
   });
 
@@ -64,7 +69,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         toolType: tc.toolType,
         agentToolId: tc.agentToolId,
         hasConnection: true,
-        status: 'offline' as const,
+        status: getAgentDisplayStatus(tc.status),
       });
     }
   });
@@ -84,7 +89,8 @@ export function AgentsTab({ device }: AgentsTabProps) {
         {hasAgents ? (
           combinedAgents.map((agent: any, idx: number) => {
             const toolType = normalizeToolTypeWithFallback(agent.toolType);
-            const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
+            const displayStatus = getAgentDisplayStatus(agent.status);
+            const statusConfig = getDeviceStatusConfig(displayStatus);
             const items = [];
 
             if (agent.agentToolId) {
