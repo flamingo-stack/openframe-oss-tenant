@@ -115,7 +115,6 @@ export function useLogs(filters: LogFilterInput = {}, search = '') {
 
   const logs = useMemo(() => query.data?.pages.flatMap(page => page.logs) ?? [], [query.data?.pages]);
 
-  // Reset to first page only (avoids refetching all loaded pages)
   const resetToFirstPage = useCallback(() => {
     queryClient.resetQueries({ queryKey: logsQueryKeys.list(filters, search) });
   }, [queryClient, filters, search]);
