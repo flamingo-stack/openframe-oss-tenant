@@ -121,9 +121,7 @@ export function LogDrawer({
               <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3">
                 {infoFields.map(field => (
                   <div key={typeof field.label === 'string' ? field.label : ''} className="flex flex-col gap-0.5">
-                    <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-                      {field.value || '—'}
-                    </span>
+                    <span className="text-h4 text-ods-text-primary truncate">{field.value || '—'}</span>
                     <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
                       {field.label}
                     </span>

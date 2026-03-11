@@ -325,7 +325,12 @@ export function SsoConfigModal({
 
       <ModalFooter className="justify-between">
         {isEnabled && onDisable ? (
-          <Button onClick={handleDisable} variant="outline" className="border-error text-error" disabled={isSubmitting}>
+          <Button
+            onClick={handleDisable}
+            variant="outline"
+            className="border-ods-error text-ods-error"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? 'Disabling...' : 'Disable'}
           </Button>
         ) : (

@@ -1,4 +1,4 @@
-import { apiClient } from '../api-client';
+import { isTokenRefreshing, refreshAccessToken, waitForRefresh } from '../token-refresh-manager';
 
 export type WebSocketState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'failed';
 
@@ -12,10 +12,14 @@ export interface WebSocketManagerOptions {
   onOpen?: (event: Event) => void;
   onClose?: (event: CloseEvent) => void;
   shouldReconnect?: (closeEvent: CloseEvent) => boolean;
+  onBeforeReconnect?: () => Promise<void> | void;
   refreshTokenBeforeReconnect?: boolean;
   protocols?: string | string[];
   binaryType?: BinaryType;
   enableMessageQueue?: boolean;
+  heartbeatInterval?: number;
+  heartbeatMessage?: string | (() => string);
+  heartbeatTimeout?: number;
 }
 
 export class WebSocketManager {
@@ -25,10 +29,23 @@ export class WebSocketManager {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private messageQueue: Array<string | ArrayBuffer | Blob> = [];
   private isDisposed = false;
+  private isConnecting = false;
   private lastConnectTime = 0;
   private lastRefreshAttempt = 0;
   private browserListenersAttached = false;
-  private options: Required<Omit<WebSocketManagerOptions, 'protocols'>> & Pick<WebSocketManagerOptions, 'protocols'>;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
+  private heartbeatTimeoutTimer: NodeJS.Timeout | null = null;
+  private lastMessageTime = 0;
+  private options: Required<
+    Omit<
+      WebSocketManagerOptions,
+      'protocols' | 'heartbeatInterval' | 'heartbeatMessage' | 'heartbeatTimeout' | 'onBeforeReconnect'
+    >
+  > &
+    Pick<
+      WebSocketManagerOptions,
+      'protocols' | 'heartbeatInterval' | 'heartbeatMessage' | 'heartbeatTimeout' | 'onBeforeReconnect'
+    >;
 
   constructor(options: WebSocketManagerOptions) {
     this.options = {
@@ -45,11 +62,7 @@ export class WebSocketManager {
       },
       onOpen: () => {},
       onClose: () => {},
-      shouldReconnect: closeEvent => {
-        // Reconnect on abnormal closure or auth failure (1008, 1006, 4401)
-        const authFailureCodes = [1008, 1006, 4401];
-        return !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code);
-      },
+      shouldReconnect: () => true,
       refreshTokenBeforeReconnect: true,
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
@@ -68,6 +81,10 @@ export class WebSocketManager {
     if (!this.options.refreshTokenBeforeReconnect) return true;
 
     try {
+      if (isTokenRefreshing()) {
+        return await waitForRefresh();
+      }
+
       // Throttle refresh checks to at most once every 30 seconds unless forced
       if (!forceRefresh) {
         const sinceLast = Date.now() - this.lastRefreshAttempt;
@@ -76,21 +93,8 @@ export class WebSocketManager {
         }
       }
 
-      // If we recently connected successfully, token is likely still valid
-      const timeSinceLastConnect = Date.now() - this.lastConnectTime;
-      if (!forceRefresh && timeSinceLastConnect < 2 * 60 * 1000) {
-        // 2 minutes
-        return true;
-      }
-
       this.lastRefreshAttempt = Date.now();
-      const response = await apiClient.get('/api/me');
-
-      if (response.ok) {
-        return true;
-      } else {
-        return false;
-      }
+      return await refreshAccessToken();
     } catch (_error) {
       return false;
     }
@@ -104,12 +108,14 @@ export class WebSocketManager {
   async connect(): Promise<void> {
     if (
       this.isDisposed ||
+      this.isConnecting ||
       this.socket?.readyState === WebSocket.OPEN ||
       this.socket?.readyState === WebSocket.CONNECTING
     ) {
       return;
     }
 
+    this.isConnecting = true;
     this.cleanup();
     this.attachBrowserListeners();
     this.setState('connecting');
@@ -121,6 +127,7 @@ export class WebSocketManager {
       this.socket.binaryType = this.options.binaryType;
       this.setupEventHandlers();
     } catch (_error) {
+      this.isConnecting = false;
       this.setState('failed');
       this.scheduleReconnect(false);
     }
@@ -130,6 +137,7 @@ export class WebSocketManager {
     if (!this.socket) return;
 
     this.socket.onopen = event => {
+      this.isConnecting = false;
       this.setState('connected');
       this.reconnectAttempt = 0;
       this.lastConnectTime = Date.now();
@@ -140,11 +148,13 @@ export class WebSocketManager {
       }
 
       this.flushMessageQueue();
+      this.startHeartbeat();
 
       this.options.onOpen(event);
     };
 
     this.socket.onmessage = event => {
+      this.lastMessageTime = Date.now();
       this.options.onMessage(event);
     };
 
@@ -153,15 +163,15 @@ export class WebSocketManager {
     };
 
     this.socket.onclose = event => {
+      this.isConnecting = false;
       this.setState('disconnected');
-
       this.options.onClose(event);
 
       if (!this.isDisposed && this.options.shouldReconnect(event)) {
-        // Check for auth failure (1008 or specific close reasons)
+        // Check for auth failure (1008, 4401 or specific close reasons)
         const isAuthFailure =
           event.code === 1008 ||
-          event.code === 1006 ||
+          event.code === 4401 ||
           event.reason?.toLowerCase().includes('auth') ||
           event.reason?.toLowerCase().includes('unauthorized');
 
@@ -201,8 +211,23 @@ export class WebSocketManager {
       }
 
       const tokenRefreshed = await this.refreshTokenIfNeeded(forceRefresh);
+
+      if (this.socket?.readyState === WebSocket.OPEN) {
+        this.setState('connected');
+        return;
+      }
+
       if (!tokenRefreshed && this.options.refreshTokenBeforeReconnect) {
-        this.setState('failed');
+        this.scheduleReconnect(forceRefresh);
+        return;
+      }
+
+      try {
+        await this.options.onBeforeReconnect?.();
+      } catch {}
+
+      // Re-check after async hook — connection might have recovered
+      if (this.isDisposed || this.socket?.readyState === WebSocket.OPEN) {
         return;
       }
 
@@ -276,7 +301,7 @@ export class WebSocketManager {
     // Tab visible again — if we're in a bad state, reconnect immediately
     if (!this.isDisposed && (this.state === 'failed' || this.state === 'disconnected')) {
       this.reconnectAttempt = 0;
-      this.connect();
+      this.scheduleReconnect(false);
     }
   };
 
@@ -286,7 +311,7 @@ export class WebSocketManager {
       (this.state === 'disconnected' || this.state === 'failed' || this.state === 'reconnecting')
     ) {
       this.reconnectAttempt = 0;
-      this.connect();
+      this.scheduleReconnect(false);
     }
   };
 
@@ -313,7 +338,66 @@ export class WebSocketManager {
     window.removeEventListener('offline', this.handleOffline);
   }
 
+  private startHeartbeat() {
+    this.stopHeartbeat();
+    const interval = this.options.heartbeatInterval;
+    if (!interval) return;
+
+    const timeout = this.options.heartbeatTimeout ?? Math.round(interval * 1.5);
+    const getMessage = () => {
+      const msg = this.options.heartbeatMessage ?? 'ping';
+      return typeof msg === 'function' ? msg() : msg;
+    };
+
+    this.lastMessageTime = Date.now();
+
+    this.heartbeatTimer = setInterval(() => {
+      if (this.socket?.readyState === WebSocket.OPEN) {
+        try {
+          this.socket.send(getMessage());
+        } catch (_error) {
+          this.handleStaleConnection();
+          return;
+        }
+
+        this.heartbeatTimeoutTimer = setTimeout(() => {
+          if (Date.now() - this.lastMessageTime >= timeout) {
+            this.handleStaleConnection();
+          }
+        }, timeout);
+      }
+    }, interval);
+  }
+
+  private stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+    if (this.heartbeatTimeoutTimer) {
+      clearTimeout(this.heartbeatTimeoutTimer);
+      this.heartbeatTimeoutTimer = null;
+    }
+  }
+
+  private handleStaleConnection() {
+    this.stopHeartbeat();
+    if (this.socket) {
+      try {
+        this.socket.close(4000, 'Heartbeat timeout');
+      } catch (_error) {
+        this.cleanup();
+        if (!this.isDisposed) {
+          this.scheduleReconnect(false);
+        }
+      }
+    }
+  }
+
   private cleanup() {
+    this.isConnecting = false;
+    this.stopHeartbeat();
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
@@ -347,6 +431,15 @@ export class WebSocketManager {
 
   isConnected(): boolean {
     return this.socket?.readyState === WebSocket.OPEN;
+  }
+
+  isConnectionHealthy(): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) return false;
+    if (this.options.heartbeatInterval) {
+      const timeout = this.options.heartbeatTimeout ?? Math.round(this.options.heartbeatInterval * 1.5);
+      return Date.now() - this.lastMessageTime < timeout;
+    }
+    return true;
   }
 
   dispose() {

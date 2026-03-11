@@ -50,7 +50,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
                 className: 'w-5 h-5 text-ods-text-secondary',
               })}
           </div>
-          <div className="font-['DM_Sans'] font-medium text-[18px] leading-[20px] text-ods-text-primary truncate">
+          <div className="text-h4 text-ods-text-primary truncate">
             <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
               {device.displayName || device.hostname}
             </p>
@@ -116,7 +116,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       label: 'OS',
       width: 'w-[120px] md:w-1/6',
       filterable: true,
-      hideAt: 'sm',
+      hideAt: 'md',
       filterOptions:
         deviceFilters?.osTypes?.map((os: any) => ({
           id: os.value,

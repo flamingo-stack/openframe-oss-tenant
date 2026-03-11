@@ -47,14 +47,15 @@ export function useAuthSession() {
       if (response.status === 401) {
         return null;
       }
-      // For other errors (network, 5xx), return null but don't clear auth
-      return null;
+      // For transient errors (500, network), throw so React Query retries
+      // and preserves previous query.data (doesn't overwrite with null)
+      throw new Error(response.error || `Auth check failed with status ${response.status}`);
     },
     staleTime: 4 * 60 * 1000, // 4 minutes
     refetchInterval: query => {
       return query.state.data?.authenticated ? runtimeEnv.authCheckIntervalMs() : false;
     },
-    retry: 1,
+    retry: 2,
     retryDelay: 1000,
   });
 
@@ -90,20 +91,33 @@ export function useAuthSession() {
       // Only logout if we got a definitive "not authenticated" response
       // and we're not still loading
       const currentState = useAuthStore.getState();
-      if (currentState.isAuthenticated && query.fetchStatus === 'idle') {
-        // Session expired - clear state
+      if (currentState.isAuthenticated && query.fetchStatus === 'idle' && !query.isError) {
+        // Session expired (401) - clear state
+        // Skip logout if query is in error state (transient 5xx/network errors)
         storeLogout();
       }
     }
-  }, [query.data, query.isLoading, query.fetchStatus, storeLogin, storeLogout, setTenantId, fetchFullProfile]);
+  }, [
+    query.data,
+    query.isLoading,
+    query.isError,
+    query.fetchStatus,
+    storeLogin,
+    storeLogout,
+    setTenantId,
+    fetchFullProfile,
+  ]);
 
   const recheck = () => {
     queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
   };
 
+  const isReady = !query.isLoading && !(query.isError && query.data === undefined);
+
   return {
-    isReady: !query.isLoading,
+    isReady,
     isAuthenticated: !!query.data?.authenticated,
+    isError: query.isError,
     user: query.data?.user ?? null,
     recheck,
   };

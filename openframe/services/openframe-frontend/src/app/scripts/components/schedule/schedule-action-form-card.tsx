@@ -107,7 +107,7 @@ export function ScheduleActionFormCard({
 
       {/* Mobile: Timeout full width */}
       <div className="flex md:hidden flex-col gap-1">
-        <Label className="text-ods-text-secondary font-medium text-[14px]">Timeout</Label>
+        <Label className="text-h4">Timeout</Label>
         <Controller
           name={`actions.${index}.timeout`}
           control={control}
@@ -128,7 +128,7 @@ export function ScheduleActionFormCard({
       {/* Tablet+: Select + Timeout + Trash in one row */}
       <div className="hidden md:grid md:grid-cols-[1fr_auto_auto] gap-4">
         <div className="flex flex-col gap-1" onFocus={onOpen} onBlur={handleBlur}>
-          <Label className="text-ods-text-secondary font-medium text-[14px]">Select Script</Label>
+          <Label className="text-h4">Select Script</Label>
           <Controller
             name={`actions.${index}.script`}
             control={control}
@@ -143,7 +143,7 @@ export function ScheduleActionFormCard({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label className="text-ods-text-secondary font-medium text-[14px]">Timeout</Label>
+          <Label className="text-h4">Timeout</Label>
           <Controller
             name={`actions.${index}.timeout`}
             control={control}
@@ -163,7 +163,7 @@ export function ScheduleActionFormCard({
         </div>
 
         <div className="flex flex-col gap-1">
-          <Label className="text-ods-text-secondary font-medium text-[14px] invisible">Action</Label>
+          <Label className="text-h4 invisible">Action</Label>
           <Button
             variant="card"
             size="icon"

@@ -115,7 +115,7 @@ export function Policies() {
         key: 'status',
         label: 'Status',
         width: 'w-[120px]',
-        hideAt: 'sm',
+        hideAt: 'md',
         renderCell: policy => <PolicyStatusCell policy={policy} />,
       },
     ],

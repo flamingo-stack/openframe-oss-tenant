@@ -102,9 +102,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         {/* Script Syntax */}
         {scriptDetails.script_body && (
           <div className="flex flex-col gap-1">
-            <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-              Syntax
-            </div>
+            <div className="text-h5 text-ods-text-secondary w-full">Syntax</div>
             <ScriptEditor value={scriptDetails.script_body} shell={scriptDetails.shell} readOnly height="400px" />
           </div>
         )}

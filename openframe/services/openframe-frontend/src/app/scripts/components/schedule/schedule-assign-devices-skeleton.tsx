@@ -64,7 +64,7 @@ function DeviceRowSkeleton() {
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-5 w-32" />
       </div>
-      <Skeleton className="h-6 w-[120px] hidden sm:block" />
+      <Skeleton className="h-6 w-[120px] hidden md:block" />
       <Skeleton className="h-6 w-[80px] hidden md:block" />
       <Skeleton className="h-8 w-[80px] hidden md:block rounded-md" />
       <Skeleton className="h-10 w-10 rounded-md" />
@@ -90,7 +90,7 @@ export function ScheduleAssignDevicesSkeleton() {
         <Skeleton className="h-5 w-40" />
 
         {/* Title + Save button */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <Skeleton className="h-9 w-44" />
           <Skeleton className="h-12 w-[130px] rounded-md" />
         </div>

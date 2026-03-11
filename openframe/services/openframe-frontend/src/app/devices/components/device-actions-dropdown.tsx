@@ -313,7 +313,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
               device will be hidden from the default view but can be restored later.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-4 flex-col sm:flex-row">
+          <AlertDialogFooter className="mt-6 gap-4 flex-col md:flex-row">
             <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
               Cancel
             </AlertDialogCancel>
@@ -341,14 +341,14 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
               undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-4 flex-col sm:flex-row">
+          <AlertDialogFooter className="mt-6 gap-4 flex-col md:flex-row">
             <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="flex-1 border border-error text-error bg-transparent hover:bg-error/10 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
+              className="flex-1 border border-ods-error text-ods-error bg-transparent hover:bg-ods-error/10 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
             >
               {isDeleting ? 'Deleting...' : 'Delete Device'}
             </AlertDialogAction>

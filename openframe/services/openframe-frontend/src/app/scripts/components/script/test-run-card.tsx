@@ -48,7 +48,7 @@ function getStatusColor(status: TestRunData['status']): string {
       return 'text-[#5ea62e]';
     case 'aborted':
     case 'error':
-      return 'text-error';
+      return 'text-ods-error';
   }
 }
 
@@ -72,37 +72,27 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
         <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden">
           <div className="flex gap-1 items-center">
             <Monitor className="h-6 w-6 text-ods-text-secondary flex-shrink-0" />
-            <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-              {run.deviceName}
-            </span>
+            <span className="text-h4 text-ods-text-primary truncate">{run.deviceName}</span>
           </div>
           <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888] truncate">Device</span>
         </div>
 
         {/* Started */}
         <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {run.startedAt}
-          </span>
+          <span className="text-h4 text-ods-text-primary truncate">{run.startedAt}</span>
           <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Started</span>
         </div>
 
         {/* Duration - mobile + desktop, hidden on tablet (moves to row 2) */}
         <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden md:hidden lg:flex">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary tabular-nums">
-            {formatDuration(run.elapsedSeconds)}
-          </span>
+          <span className="text-h4 text-ods-text-primary tabular-nums">{formatDuration(run.elapsedSeconds)}</span>
           <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Duration</span>
         </div>
 
         {/* Status + Actions - desktop only in row 1 */}
         <div className="hidden lg:flex flex-1 items-center gap-2 h-[80px]">
           <div className="flex-1 flex flex-col justify-center overflow-hidden">
-            <span
-              className={`font-['DM_Sans'] font-medium text-[18px] leading-[24px] ${getStatusColor(run.status)} truncate`}
-            >
-              {getStatusLabel(run.status)}
-            </span>
+            <span className={`text-h4 ${getStatusColor(run.status)} truncate`}>{getStatusLabel(run.status)}</span>
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
           </div>
 
@@ -123,18 +113,14 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
       <div className="flex lg:hidden gap-4 items-center px-4 py-3 border-b border-ods-border">
         {/* Duration - tablet only (on mobile it's in row 1) */}
         <div className="hidden md:flex flex-1 flex-col justify-center h-[80px] overflow-hidden">
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-primary tabular-nums">
-            {formatDuration(run.elapsedSeconds)}
-          </span>
+          <span className="text-h4 text-ods-text-primary tabular-nums">{formatDuration(run.elapsedSeconds)}</span>
           <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Duration</span>
         </div>
 
         {/* Status + Actions */}
         <div className="flex-1 flex items-center gap-2 h-[80px]">
           <div className="flex-1 flex flex-col justify-center">
-            <span className={`font-['DM_Sans'] font-medium text-[18px] leading-[24px] ${getStatusColor(run.status)}`}>
-              {getStatusLabel(run.status)}
-            </span>
+            <span className={`text-h4 ${getStatusColor(run.status)}`}>{getStatusLabel(run.status)}</span>
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
           </div>
 
@@ -158,7 +144,7 @@ export function TestRunCard({ run, onStop }: TestRunCardProps) {
               line.toLowerCase().includes('passed') ||
               line.toLowerCase().includes('completed');
             return (
-              <div key={i} className={isError ? 'text-error' : isSuccess ? 'text-[#5ea62e]' : ''}>
+              <div key={i} className={isError ? 'text-ods-error' : isSuccess ? 'text-[#5ea62e]' : ''}>
                 {line}
               </div>
             );
