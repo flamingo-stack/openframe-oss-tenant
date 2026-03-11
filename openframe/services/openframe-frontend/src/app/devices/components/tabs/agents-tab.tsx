@@ -29,9 +29,32 @@ const agentTypeToToolType: Record<string, string> = {
 
 const AGENT_TYPES_WITH_STATUS = new Set(['TACTICAL_RMM', 'FLEET_MDM', 'MESHCENTRAL']);
 
-/** Normalize API status: only "online" → ONLINE (green), overdue/offline/other → OFFLINE (red) */
-function getAgentDisplayStatus(raw: string | undefined): string {
+/** Tactical RMM: "online" → online, "overdue" | "offline" | other → offline */
+function parseTacticalAgentStatus(raw: string | undefined): 'online' | 'offline' {
   return raw?.toLowerCase() === 'online' ? 'online' : 'offline';
+}
+
+/** Fleet MDM: "online" → online, "offline" | "mia" → offline */
+function parseFleetAgentStatus(raw: string | undefined): 'online' | 'offline' {
+  return raw?.toLowerCase() === 'online' ? 'online' : 'offline';
+}
+
+/** MeshCentral: same as Fleet for display (online/offline) */
+function parseMeshCentralAgentStatus(raw: string | undefined): 'online' | 'offline' {
+  return raw?.toLowerCase() === 'online' ? 'online' : 'offline';
+}
+
+function getAgentDisplayStatus(toolType: string, raw: string | undefined): 'online' | 'offline' {
+  switch (toolType) {
+    case 'TACTICAL_RMM':
+      return parseTacticalAgentStatus(raw);
+    case 'FLEET_MDM':
+      return parseFleetAgentStatus(raw);
+    case 'MESHCENTRAL':
+      return parseMeshCentralAgentStatus(raw);
+    default:
+      return 'offline';
+  }
 }
 
 export function AgentsTab({ device }: AgentsTabProps) {
@@ -47,13 +70,14 @@ export function AgentsTab({ device }: AgentsTabProps) {
     const mappedToolType = agentTypeToToolType[agent.agentType];
     const connection = mappedToolType ? connectionMap.get(mappedToolType) : null;
 
+    const toolType = mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_');
     return {
       agentType: agent.agentType,
       version: agent.version,
-      toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_'),
+      toolType,
       agentToolId: connection?.agentToolId,
       hasConnection: !!connection,
-      status: getAgentDisplayStatus(connection?.status),
+      status: getAgentDisplayStatus(toolType, connection?.status),
     };
   });
 
@@ -69,7 +93,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         toolType: tc.toolType,
         agentToolId: tc.agentToolId,
         hasConnection: true,
-        status: getAgentDisplayStatus(tc.status),
+        status: getAgentDisplayStatus(tc.toolType, tc.status),
       });
     }
   });
@@ -89,8 +113,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         {hasAgents ? (
           combinedAgents.map((agent: any, idx: number) => {
             const toolType = normalizeToolTypeWithFallback(agent.toolType);
-            const displayStatus = getAgentDisplayStatus(agent.status);
-            const statusConfig = getDeviceStatusConfig(displayStatus);
+            const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
             const items = [];
 
             if (agent.agentToolId) {
