@@ -14,7 +14,7 @@ export interface MeshCentralDeviceInfo {
   [key: string]: unknown;
 }
 
-const DEVICEINFO_PATH = '/ws/tools/meshcentral-server/api/deviceinfo';
+const DEVICEINFO_PATH = 'tools/meshcentral-server/api/deviceinfo';
 
 /**
  * Fetch device info for a MeshCentral node.
