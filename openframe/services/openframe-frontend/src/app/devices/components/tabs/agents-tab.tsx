@@ -78,6 +78,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
       agentToolId: connection?.agentToolId,
       hasConnection: !!connection,
       status: getAgentDisplayStatus(toolType, connection?.status),
+      lastSeen: connection?.lastSeen,
     };
   });
 
@@ -94,6 +95,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         agentToolId: tc.agentToolId,
         hasConnection: true,
         status: getAgentDisplayStatus(tc.toolType, tc.status),
+        lastSeen: tc.lastSeen,
       });
     }
   });
@@ -129,6 +131,14 @@ export function AgentsTab({ device }: AgentsTabProps) {
                 label: 'Status',
                 value: <Tag label={statusConfig.label} variant={statusConfig.variant} />,
               });
+              if (agent.lastSeen) {
+                const d = new Date(agent.lastSeen);
+                const formatted =
+                  d.getTime() > 0
+                    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : '—';
+                items.push({ label: 'Last seen', value: formatted });
+              }
             }
 
             return (
