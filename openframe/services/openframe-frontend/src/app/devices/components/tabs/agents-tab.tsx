@@ -113,7 +113,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-fr">
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
         {hasAgents ? (
           combinedAgents.map((agent: any, idx: number) => {
             const toolType = normalizeToolTypeWithFallback(agent.toolType);
@@ -157,7 +157,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
             }
 
             return (
-              <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative h-full">
+              <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative flex flex-col">
                 <div className="absolute top-4 left-4 z-10">
                   <ToolBadge toolType={toolType} />
                 </div>
@@ -179,7 +179,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
                   data={{
                     items: items,
                   }}
-                  className="pt-16 h-full"
+                  className="pt-16 flex-1 min-h-0"
                 />
               </div>
             );
