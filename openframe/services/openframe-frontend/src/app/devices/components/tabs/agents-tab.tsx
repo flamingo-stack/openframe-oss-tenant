@@ -2,6 +2,7 @@
 
 import {
   InfoCard,
+  Tag,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -11,6 +12,7 @@ import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { Info as InfoIcon } from 'lucide-react';
 import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
+import { getDeviceStatusConfig } from '../../utils/device-status';
 
 interface AgentsTabProps {
   device: Device;
@@ -24,6 +26,8 @@ const agentTypeToToolType: Record<string, string> = {
   'openframe-client': 'OPENFRAME_CLIENT',
   osqueryd: 'OSQUERY',
 };
+
+const AGENT_TYPES_WITH_STATUS = new Set(['TACTICAL_RMM', 'FLEET_MDM', 'MESHCENTRAL']);
 
 export function AgentsTab({ device }: AgentsTabProps) {
   const toolConnections = Array.isArray(device?.toolConnections) ? device.toolConnections : [];
@@ -44,6 +48,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
       toolType: mappedToolType || agent.agentType.toUpperCase().replace(/-/g, '_'),
       agentToolId: connection?.agentToolId,
       hasConnection: !!connection,
+      status: 'offline' as const,
     };
   });
 
@@ -59,6 +64,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         toolType: tc.toolType,
         agentToolId: tc.agentToolId,
         hasConnection: true,
+        status: 'offline' as const,
       });
     }
   });
@@ -78,6 +84,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         {hasAgents ? (
           combinedAgents.map((agent: any, idx: number) => {
             const toolType = normalizeToolTypeWithFallback(agent.toolType);
+            const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
             const items = [];
 
             if (agent.agentToolId) {
@@ -86,6 +93,13 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
             if (agent.version) {
               items.push({ label: 'Version', value: agent.version });
+            }
+
+            if (AGENT_TYPES_WITH_STATUS.has(agent.toolType)) {
+              items.push({
+                label: 'Status',
+                value: <Tag label={statusConfig.label} variant={statusConfig.variant} />,
+              });
             }
 
             return (
