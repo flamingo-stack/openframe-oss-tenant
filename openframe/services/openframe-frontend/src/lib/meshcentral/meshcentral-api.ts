@@ -5,13 +5,26 @@
 
 import { apiClient } from '../api-client';
 
-/** MeshCentral deviceinfo response (partial; we only need connection state) */
+/**
+ * MeshCentral deviceinfo response (partial).
+ * API returns nested "Mesh Agent": { "Agent status", "Last agent connection", ... }.
+ */
 export interface MeshCentralDeviceInfo {
-  /** Connection state: odd = agent connected (e.g. 1 = agent, 2 = Intel AMT, ...) */
+  /** Nested block from API: { "Agent status": "Offline"|"Connected now", "Last agent connection": date string, ... } */
+  'Mesh Agent'?: Record<string, unknown>;
+  /** Flattened / alternative keys */
+  agentStatus?: string;
+  status?: string;
+  lastAgentConnection?: string;
   conn?: number;
-  /** Alternative: explicit connected flag */
   connected?: boolean;
   [key: string]: unknown;
+}
+
+function getMeshAgentBlock(info: MeshCentralDeviceInfo | null): Record<string, unknown> | null {
+  if (info == null) return null;
+  const block = info['Mesh Agent'];
+  return block && typeof block === 'object' && !Array.isArray(block) ? block : null;
 }
 
 const DEVICEINFO_PATH = 'tools/meshcentral-server/api/deviceinfo';
@@ -32,10 +45,25 @@ export async function getMeshCentralDeviceInfo(nodeId: string): Promise<MeshCent
 
 /**
  * Derive online/offline status from MeshCentral deviceinfo.
- * conn: odd = connected (1=agent, 2=AMT, 4=CIRA, 16=MQTT).
+ * Prefers "Agent status" / agentStatus: "Connected now" = online, "Offline" = offline.
+ * Fallback: conn (odd = connected), connected (boolean).
  */
 export function parseMeshCentralDeviceStatus(info: MeshCentralDeviceInfo | null): 'online' | 'offline' {
   if (info == null) return 'offline';
+  const mesh = getMeshAgentBlock(info);
+  const statusStr = (
+    (mesh?.['Agent status'] as string) ??
+    info.agentStatus ??
+    info.status ??
+    (info as Record<string, unknown>)['Agent status'] ??
+    ''
+  )
+    .toString()
+    .trim();
+  if (statusStr) {
+    if (/connected\s+now/i.test(statusStr)) return 'online';
+    if (/offline/i.test(statusStr)) return 'offline';
+  }
   if (typeof info.connected === 'boolean') {
     return info.connected ? 'online' : 'offline';
   }
@@ -44,4 +72,23 @@ export function parseMeshCentralDeviceStatus(info: MeshCentralDeviceInfo | null)
     return 'online';
   }
   return 'offline';
+}
+
+/**
+ * Extract last seen string for display from MeshCentral deviceinfo.
+ * "Last agent connection": "Connected now" → null (no date); timestamp string → return as-is or normalized.
+ */
+export function parseMeshCentralLastSeen(info: MeshCentralDeviceInfo | null): string | null {
+  if (info == null) return null;
+  const mesh = getMeshAgentBlock(info);
+  const raw = (
+    (mesh?.['Last agent connection'] as string) ??
+    info.lastAgentConnection ??
+    (info as Record<string, unknown>)['Last agent connection'] ??
+    ''
+  )
+    .toString()
+    .trim();
+  if (!raw || /connected\s+now/i.test(raw)) return null;
+  return raw;
 }

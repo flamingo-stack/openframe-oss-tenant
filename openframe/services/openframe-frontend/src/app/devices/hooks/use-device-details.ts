@@ -5,7 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
-import { getMeshCentralDeviceInfo, parseMeshCentralDeviceStatus } from '@/lib/meshcentral/meshcentral-api';
+import {
+  getMeshCentralDeviceInfo,
+  parseMeshCentralDeviceStatus,
+  parseMeshCentralLastSeen,
+} from '@/lib/meshcentral/meshcentral-api';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { GET_DEVICE_QUERY } from '../queries/devices-queries';
 import type {
@@ -29,6 +33,7 @@ function createDevice(
   tacticalData: any | null,
   fleetData: FleetHost | null,
   meshCentralStatus: 'online' | 'offline' | null,
+  meshCentralLastSeen: string | null,
 ): Device {
   // Transform Fleet software to unified Software type
   const software: Software[] =
@@ -266,8 +271,12 @@ function createDevice(
           ...(fleetData?.seen_time != null && { lastSeen: fleetData.seen_time }),
         };
       }
-      if (tc.toolType === 'MESHCENTRAL' && meshCentralStatus != null) {
-        return { ...base, status: meshCentralStatus };
+      if (tc.toolType === 'MESHCENTRAL') {
+        return {
+          ...base,
+          ...(meshCentralStatus != null && { status: meshCentralStatus }),
+          ...(meshCentralLastSeen != null && { lastSeen: meshCentralLastSeen }),
+        };
       }
       return base;
     }),
@@ -373,16 +382,18 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
     }
   }
 
-  // 2.6) Fetch MeshCentral deviceinfo for status (api/deviceinfo?id=nodeId)
+  // 2.6) Fetch MeshCentral deviceinfo (Agent status, Last agent connection)
   const mesh = node.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL');
   let meshCentralStatus: 'online' | 'offline' | null = null;
+  let meshCentralLastSeen: string | null = null;
   if (mesh?.agentToolId) {
     const meshInfo = await getMeshCentralDeviceInfo(mesh.agentToolId);
     meshCentralStatus = parseMeshCentralDeviceStatus(meshInfo);
+    meshCentralLastSeen = parseMeshCentralLastSeen(meshInfo);
   }
 
   // 3) Create Device object directly - no normalization
-  return createDevice(node, tacticalData, fleetData, meshCentralStatus);
+  return createDevice(node, tacticalData, fleetData, meshCentralStatus, meshCentralLastSeen);
 }
 
 interface UseDeviceDetailsOptions {
