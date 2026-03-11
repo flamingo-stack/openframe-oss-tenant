@@ -34,22 +34,27 @@ const DEVICEINFO_PATH = 'tools/meshcentral-server/api/deviceinfo';
  * @param nodeId - MeshCentral node/device ID (agentToolId from toolConnections)
  * @returns Device info object or null on failure
  */
+/**
+ * Returns null on request failure (network, 4xx/5xx, gateway error) or invalid response.
+ * Callers should treat null as offline and no lastSeen.
+ */
 export async function getMeshCentralDeviceInfo(nodeId: string): Promise<MeshCentralDeviceInfo | null> {
   const path = `${DEVICEINFO_PATH}?id=${encodeURIComponent(nodeId)}`;
   const response = await apiClient.get<MeshCentralDeviceInfo>(path);
   if (!response.ok || response.data == null) {
     return null;
   }
-  return response.data;
+  return typeof response.data === 'object' && !Array.isArray(response.data) ? response.data : null;
 }
 
 /**
  * Derive online/offline status from MeshCentral deviceinfo.
+ * Returns 'offline' on null, malformed data, or unknown status string.
  * Prefers "Agent status" / agentStatus: "Connected now" = online, "Offline" = offline.
  * Fallback: conn (odd = connected), connected (boolean).
  */
 export function parseMeshCentralDeviceStatus(info: MeshCentralDeviceInfo | null): 'online' | 'offline' {
-  if (info == null) return 'offline';
+  if (info == null || typeof info !== 'object') return 'offline';
   const mesh = getMeshAgentBlock(info);
   const statusStr = (
     (mesh?.['Agent status'] as string) ??
@@ -76,10 +81,10 @@ export function parseMeshCentralDeviceStatus(info: MeshCentralDeviceInfo | null)
 
 /**
  * Extract last seen string for display from MeshCentral deviceinfo.
- * "Last agent connection": "Connected now" → null (no date); timestamp string → return as-is or normalized.
+ * Returns null on null, malformed data, or when value is "Connected now".
  */
 export function parseMeshCentralLastSeen(info: MeshCentralDeviceInfo | null): string | null {
-  if (info == null) return null;
+  if (info == null || typeof info !== 'object') return null;
   const mesh = getMeshAgentBlock(info);
   const raw = (
     (mesh?.['Last agent connection'] as string) ??

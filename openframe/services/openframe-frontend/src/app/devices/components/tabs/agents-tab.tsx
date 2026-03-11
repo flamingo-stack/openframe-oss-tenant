@@ -79,6 +79,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
       hasConnection: !!connection,
       status: getAgentDisplayStatus(toolType, connection?.status),
       lastSeen: connection?.lastSeen,
+      lastFetched: connection?.lastFetched,
     };
   });
 
@@ -96,6 +97,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         hasConnection: true,
         status: getAgentDisplayStatus(tc.toolType, tc.status),
         lastSeen: tc.lastSeen,
+        lastFetched: tc.lastFetched,
       });
     }
   });
@@ -126,11 +128,16 @@ export function AgentsTab({ device }: AgentsTabProps) {
               items.push({ label: 'Version', value: agent.version });
             }
 
-            if (AGENT_TYPES_WITH_STATUS.has(agent.toolType)) {
-              items.push({
-                label: 'Status',
-                value: <Tag label={statusConfig.label} variant={statusConfig.variant} />,
-              });
+            if (
+              AGENT_TYPES_WITH_STATUS.has(agent.toolType) &&
+              (agent.status != null || agent.lastSeen != null || agent.lastFetched != null)
+            ) {
+              if (agent.status != null) {
+                items.push({
+                  label: 'Status',
+                  value: <Tag label={statusConfig.label} variant={statusConfig.variant} />,
+                });
+              }
               if (agent.lastSeen) {
                 const d = new Date(agent.lastSeen);
                 const formatted =
@@ -138,6 +145,14 @@ export function AgentsTab({ device }: AgentsTabProps) {
                     ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                     : '—';
                 items.push({ label: 'Last seen', value: formatted });
+              }
+              if (agent.lastFetched) {
+                const d = new Date(agent.lastFetched);
+                const formatted =
+                  d.getTime() > 0
+                    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                    : '—';
+                items.push({ label: 'Last fetched', value: formatted });
               }
             }
 

@@ -269,6 +269,7 @@ function createDevice(
           ...base,
           ...(fleetData?.status != null && { status: String(fleetData.status).toLowerCase() }),
           ...(fleetData?.seen_time != null && { lastSeen: fleetData.seen_time }),
+          ...(fleetData?.detail_updated_at != null && { lastFetched: fleetData.detail_updated_at }),
         };
       }
       if (tc.toolType === 'MESHCENTRAL') {
@@ -383,13 +384,18 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
   }
 
   // 2.6) Fetch MeshCentral deviceinfo (Agent status, Last agent connection)
+  // On error or parse failure: treat as offline, no lastSeen — don't fail whole device load
   const mesh = node.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL');
   let meshCentralStatus: 'online' | 'offline' | null = null;
   let meshCentralLastSeen: string | null = null;
   if (mesh?.agentToolId) {
-    const meshInfo = await getMeshCentralDeviceInfo(mesh.agentToolId);
-    meshCentralStatus = parseMeshCentralDeviceStatus(meshInfo);
-    meshCentralLastSeen = parseMeshCentralLastSeen(meshInfo);
+    try {
+      const meshInfo = await getMeshCentralDeviceInfo(mesh.agentToolId);
+      meshCentralStatus = parseMeshCentralDeviceStatus(meshInfo);
+      meshCentralLastSeen = parseMeshCentralLastSeen(meshInfo);
+    } catch {
+      // Don't set status — UI won't show status/lastSeen when we couldn't get data
+    }
   }
 
   // 3) Create Device object directly - no normalization

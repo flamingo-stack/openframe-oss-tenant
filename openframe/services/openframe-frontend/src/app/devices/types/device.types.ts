@@ -89,6 +89,8 @@ export interface ToolConnection {
   status: string;
   /** ISO date string: Tactical last_seen, Fleet seen_time — shown under status */
   lastSeen?: string;
+  /** Fleet detail_updated_at — when host details were last fetched */
+  lastFetched?: string;
   metadata?: any;
   connectedAt?: string;
   lastSyncAt?: string;
