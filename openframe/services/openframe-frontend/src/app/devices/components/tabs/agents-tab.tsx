@@ -120,14 +120,6 @@ export function AgentsTab({ device }: AgentsTabProps) {
             const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
             const items = [];
 
-            if (agent.agentToolId) {
-              items.push({ label: 'ID', value: agent.agentToolId, copyable: true });
-            }
-
-            if (agent.version) {
-              items.push({ label: 'Version', value: agent.version });
-            }
-
             if (
               AGENT_TYPES_WITH_STATUS.has(agent.toolType) &&
               (agent.status != null || agent.lastSeen != null || agent.lastFetched != null)
@@ -146,14 +138,23 @@ export function AgentsTab({ device }: AgentsTabProps) {
                     : '—';
                 items.push({ label: 'Last seen', value: formatted });
               }
-              if (agent.lastFetched) {
-                const d = new Date(agent.lastFetched);
-                const formatted =
-                  d.getTime() > 0
-                    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : '—';
-                items.push({ label: 'Last fetched', value: formatted });
-              }
+            }
+
+            if (agent.agentToolId) {
+              items.push({ label: 'ID', value: agent.agentToolId, copyable: true });
+            }
+
+            if (agent.version) {
+              items.push({ label: 'Version', value: agent.version });
+            }
+
+            if (AGENT_TYPES_WITH_STATUS.has(agent.toolType) && agent.lastFetched != null) {
+              const d = new Date(agent.lastFetched);
+              const formatted =
+                d.getTime() > 0
+                  ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : '—';
+              items.push({ label: 'Last fetched', value: formatted });
             }
 
             return (
