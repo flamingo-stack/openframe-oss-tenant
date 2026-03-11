@@ -95,7 +95,7 @@ export function LiveTestPanel({
 
           <div className="flex items-center gap-2">
             {!isRunning && (
-              <Button variant="outline" size="sm" leftIcon={<RotateCcw size={14} />} onClick={onTestAgain}>
+              <Button variant="outline" size="sm" onClick={onTestAgain}>
                 Test Again
               </Button>
             )}

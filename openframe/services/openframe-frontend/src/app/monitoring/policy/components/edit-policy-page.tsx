@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  CardLoader,
-  FormPageContainer,
-  Label,
-  LoadError,
-  NotFoundError,
-  OS_TYPES,
-} from '@flamingo-stack/openframe-frontend-core';
-import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { CardLoader, FormPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Play } from 'lucide-react';
@@ -26,7 +18,6 @@ const policyFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   query: z.string(),
-  platform: z.string(),
 });
 
 type PolicyFormData = z.infer<typeof policyFormSchema>;
@@ -67,7 +58,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       name: '',
       description: '',
       query: '',
-      platform: '',
     },
   });
 
@@ -80,7 +70,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         name: policyDetails.name,
         description: policyDetails.description || '',
         query: policyDetails.query || '',
-        platform: policyDetails.platform || '',
       });
     }
   }, [policyDetails, isExistingPolicy, reset]);
@@ -99,7 +88,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         name: data.name,
         description: data.description,
         query: data.query,
-        platform: data.platform || undefined,
+        platform: undefined,
       };
 
       if (isExistingPolicy && numericId) {
@@ -138,18 +127,10 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const actions = useMemo(() => {
     const items = [];
-    if (isExistingPolicy) {
-      items.push({
-        label: 'Cancel',
-        onClick: handleBack,
-        variant: 'outline' as const,
-      });
-    }
     items.push({
       label: 'Test Policy',
       onClick: handleTestPolicy,
       variant: 'outline' as const,
-      icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
     });
     items.push({
@@ -159,18 +140,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       disabled: isSaving || !nameValue.trim(),
     });
     return items;
-  }, [
-    handleSubmit,
-    onSubmit,
-    onFormError,
-    isSaving,
-    nameValue,
-    isExistingPolicy,
-    handleBack,
-    handleTestPolicy,
-    queryValue,
-    campaign.isRunning,
-  ]);
+  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, handleTestPolicy, queryValue, campaign.isRunning]);
 
   if (isLoadingPolicy && isExistingPolicy) {
     return <CardLoader items={4} />;
@@ -213,52 +183,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             onClose={handleCloseTestPanel}
           />
         )}
-
-        {/* Supported Platform */}
-        <div className="space-y-1">
-          <Label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Supported Platform
-          </Label>
-          <div className="pt-2">
-            <Controller
-              name="platform"
-              control={control}
-              render={({ field }) => {
-                const selectedPlatformIds = field.value
-                  ? field.value
-                      .split(',')
-                      .map(p => p.trim())
-                      .filter(Boolean)
-                      .flatMap(platformId => {
-                        const os = OS_TYPES.find(o => o.platformId === platformId);
-                        return os ? [os.id] : [];
-                      })
-                  : [];
-
-                return (
-                  <PushButtonSelector
-                    options={OS_TYPES.map(os => ({
-                      id: os.id,
-                      name: os.label,
-                      icon: <os.icon className="w-5 h-5" />,
-                    }))}
-                    selectedIds={selectedPlatformIds}
-                    onSelectionChange={selectedIds => {
-                      const platformStr = selectedIds
-                        .flatMap(id => {
-                          const os = OS_TYPES.find(o => o.id === id);
-                          return os ? [os.platformId] : [];
-                        })
-                        .join(',');
-                      field.onChange(platformStr);
-                    }}
-                    multiSelect={true}
-                  />
-                );
-              }}
-            />
-          </div>
-        </div>
 
         {/* Name */}
         <div className="space-y-1">

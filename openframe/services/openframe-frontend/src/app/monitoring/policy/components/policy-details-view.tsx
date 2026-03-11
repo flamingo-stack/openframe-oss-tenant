@@ -74,20 +74,6 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
 
         <div className="border-t border-ods-border pt-4 grid grid-cols-2 md:grid-cols-4 gap-6">
           <div>
-            {policyDetails.platform ? (
-              <OSTypeBadgeGroup
-                osTypes={policyDetails.platform
-                  .split(',')
-                  .map(p => p.trim())
-                  .filter(Boolean)}
-              />
-            ) : (
-              <p className="text-ods-text-primary font-medium">All Platforms</p>
-            )}
-            <p className="text-ods-text-secondary text-xs mt-1">Platform</p>
-          </div>
-
-          <div>
             <span
               className={`px-2 py-1 rounded-md text-sm font-medium border ${
                 policyDetails.critical
@@ -109,14 +95,12 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
             <p className="text-[var(--ods-attention-red-error)] font-medium">{policyDetails.failing_host_count}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Failing Hosts</p>
           </div>
-        </div>
 
-        {policyDetails.author_name && (
-          <div className="border-t border-ods-border pt-4 mt-4">
+          <div>
             <p className="text-ods-text-primary font-medium">{policyDetails.author_name}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Author</p>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Query */}

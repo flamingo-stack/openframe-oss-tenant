@@ -136,18 +136,10 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
   const actions = useMemo(() => {
     const items = [];
-    if (isExistingQuery) {
-      items.push({
-        label: 'Cancel',
-        onClick: handleBack,
-        variant: 'outline' as const,
-      });
-    }
     items.push({
       label: 'Test Query',
       onClick: handleTestQuery,
       variant: 'outline' as const,
-      icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
     });
     items.push({
@@ -163,8 +155,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     onFormError,
     isSaving,
     nameValue,
-    isExistingQuery,
-    handleBack,
     handleTestQuery,
     queryValue,
     campaign.isRunning,

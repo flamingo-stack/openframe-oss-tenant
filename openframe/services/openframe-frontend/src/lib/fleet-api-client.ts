@@ -31,11 +31,13 @@ interface Host {
 
 class FleetApiClient {
   private baseUrl: string;
+  private wsBaseUrl: string;
 
   constructor() {
     // Build base from tenant host when provided; otherwise relative via apiClient
     const tenantHost = runtimeEnv.tenantHostUrl() || '';
     this.baseUrl = `${tenantHost}/tools/fleetmdm-server`;
+    this.wsBaseUrl = `${tenantHost}/ws/tools/fleetmdm-server`;
   }
 
   private buildFleetUrl(path: string): string {
@@ -324,6 +326,16 @@ class FleetApiClient {
 
   getBaseUrl(): string {
     return this.baseUrl;
+  }
+
+  getWsBaseUrl(): string {
+    return this.wsBaseUrl;
+  }
+
+  getSockJsUrl(): string {
+    const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
+    const sessionId = Math.random().toString(36).substring(2, 10);
+    return `${this.wsBaseUrl}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
   }
 }
 
