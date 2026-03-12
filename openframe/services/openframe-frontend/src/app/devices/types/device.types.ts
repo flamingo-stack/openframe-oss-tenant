@@ -279,7 +279,7 @@ export interface DeviceFilters {
   statuses: DeviceFilterValue[];
   deviceTypes: DeviceFilterValue[];
   osTypes: DeviceFilterValue[];
-  organizationIds: DeviceFilterValue[];
+  organizationIds: DeviceFilterTag[];
   tags: DeviceFilterTag[];
   filteredCount: number;
 }

@@ -5,8 +5,8 @@ import type React from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { getFullImageUrl } from '@/lib/image-url';
-import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
-import type { Device } from '../types/device.types';
+import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../constants/device-statuses';
+import type { Device, DeviceFilters } from '../types/device.types';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceActionsDropdown } from './device-actions-dropdown';
 
@@ -36,7 +36,7 @@ function OrganizationCell({ device }: { device: Device }) {
   );
 }
 
-export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[] {
+export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): TableColumn<Device>[] {
   return [
     {
       key: 'device',
@@ -66,34 +66,19 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || [];
         // Show only DEFAULT_VISIBLE_STATUSES (excludes ARCHIVED and DELETED)
-        const normalStatuses = statuses.filter((s: any) =>
-          (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value),
-        );
-        // ARCHIVED shown separately below a divider, DELETED is completely hidden
-        const archivedStatus = statuses.find((s: any) => s.value === 'ARCHIVED');
+        const normalStatuses = statuses.filter(s => (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value));
 
-        const options: any[] = normalStatuses.map((status: any) => ({
-          id: status.value,
-          label: getDeviceStatusConfig(status.value).label,
-          value: status.value,
-        }));
-
-        // Add separator and archived if exists in data
-        if (archivedStatus) {
-          options.push({
-            id: 'separator-archived',
-            label: '',
-            value: '',
-            type: 'separator',
+        return normalStatuses
+          .map(status => ({
+            id: status.value,
+            label: getDeviceStatusConfig(status.value).label,
+            value: status.value,
+          }))
+          .sort((a, b) => {
+            if (a.value === DEVICE_STATUS.ARCHIVED) return 1;
+            if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
+            return 0;
           });
-          options.push({
-            id: archivedStatus.value,
-            label: getDeviceStatusConfig(archivedStatus.value).label,
-            value: archivedStatus.value,
-          });
-        }
-
-        return options;
       })(),
       renderCell: device => {
         const statusConfig = getDeviceStatusConfig(device.status);
@@ -118,7 +103,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       filterable: true,
       hideAt: 'md',
       filterOptions:
-        deviceFilters?.osTypes?.map((os: any) => ({
+        deviceFilters?.osTypes?.map(os => ({
           id: os.value,
           label: os.value,
           value: os.value,
@@ -136,7 +121,7 @@ export function getDeviceTableColumns(deviceFilters?: any): TableColumn<Device>[
       hideAt: 'lg',
       filterable: true,
       filterOptions: deduplicateFilterOptions(
-        deviceFilters?.organizationIds?.map((org: any) => ({
+        deviceFilters?.organizationIds?.map(org => ({
           id: org.value,
           label: org.label,
           value: org.value,

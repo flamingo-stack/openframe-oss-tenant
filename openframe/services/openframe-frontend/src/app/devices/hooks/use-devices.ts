@@ -29,6 +29,8 @@ export const devicesQueryKeys = {
 export function useDevices(filters: DeviceFilterInput = {}, search = '') {
   const { toast } = useToast();
 
+  console.log('Fetching devices with filters:', filters, 'and search:', search);
+
   const query = useInfiniteQuery<DevicesPage, Error>({
     queryKey: devicesQueryKeys.list(filters, search),
     queryFn: async ({ pageParam }) => {
