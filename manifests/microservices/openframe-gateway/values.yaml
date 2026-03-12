@@ -34,7 +34,7 @@ initImage:
 image:
   registry: ghcr.io/flamingo-stack/openframe-oss-tenant
   repository: openframe-gateway
-  tag: latest
+  tag: ""
 
 resources:
   requests:
