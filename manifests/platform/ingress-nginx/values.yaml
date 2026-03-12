@@ -73,7 +73,3 @@ ingress-nginx:
     service:
       type: NodePort
       externalTrafficPolicy: Local
-
-    serviceAccount:
-      imagePullSecretsNames:
-        - name: docker-pat-secret
