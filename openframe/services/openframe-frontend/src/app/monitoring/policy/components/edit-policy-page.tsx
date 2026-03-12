@@ -3,7 +3,6 @@
 import { CardLoader, FormPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -13,6 +12,8 @@ import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
+import { usePolicyHosts, useReplacePolicyHosts } from '../hooks/use-policy-hosts';
+import { PolicyDeviceSelector } from './policy-device-selector';
 
 const policyFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -40,7 +41,22 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   } = usePolicyDetails(isExistingPolicy ? numericId : null);
   const { createPolicy, isCreating, updatePolicy, isUpdating } = usePolicies();
 
-  const isSaving = isCreating || isUpdating;
+  const { hosts: currentHosts, isLoading: isLoadingHosts } = usePolicyHosts(isExistingPolicy ? numericId : null);
+  const replacePolicyHostsMutation = useReplacePolicyHosts();
+
+  const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
+  const [hostsInitialized, setHostsInitialized] = useState(false);
+
+  // Initialize selected hosts from current assignment (edit mode)
+  if (!hostsInitialized && !isLoadingHosts && isExistingPolicy && currentHosts.length > 0) {
+    setSelectedFleetHostIds(new Set(currentHosts.map(h => h.id)));
+    setHostsInitialized(true);
+  }
+  if (!hostsInitialized && !isLoadingHosts && (!isExistingPolicy || currentHosts.length === 0)) {
+    setHostsInitialized(true);
+  }
+
+  const isSaving = isCreating || isUpdating || replacePolicyHostsMutation.isPending;
 
   const campaign = useLiveCampaign();
   const [showTestPanel, setShowTestPanel] = useState(false);
@@ -91,17 +107,35 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         platform: undefined,
       };
 
+      const hostIds = Array.from(selectedFleetHostIds);
+
       if (isExistingPolicy && numericId) {
         updatePolicy(numericId, payload, {
-          onSuccess: () => router.push(`/monitoring/policy/${numericId}`),
+          onSuccess: async () => {
+            try {
+              await replacePolicyHostsMutation.mutateAsync({ policyId: numericId, hostIds });
+            } catch {
+              // Policy saved but hosts failed — error toast shown by mutation hook
+            }
+            router.push(`/monitoring/policy/${numericId}`);
+          },
         });
       } else {
         createPolicy(payload, {
-          onSuccess: () => router.push('/monitoring?tab=policies'),
+          onSuccess: async policy => {
+            try {
+              if (hostIds.length > 0) {
+                await replacePolicyHostsMutation.mutateAsync({ policyId: policy.id, hostIds });
+              }
+            } catch {
+              // Policy created but hosts failed — error toast shown by mutation hook
+            }
+            router.push('/monitoring?tab=policies');
+          },
         });
       }
     },
-    [isExistingPolicy, numericId, createPolicy, updatePolicy, router],
+    [isExistingPolicy, numericId, createPolicy, updatePolicy, router, selectedFleetHostIds, replacePolicyHostsMutation],
   );
 
   const onFormError = useCallback(() => {
@@ -224,6 +258,18 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             render={({ field }) => (
               <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
             )}
+          />
+        </div>
+
+        {/* Assigned Devices */}
+        <div className="space-y-1">
+          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
+            Assigned Devices
+          </label>
+          <PolicyDeviceSelector
+            selectedFleetHostIds={selectedFleetHostIds}
+            onSelectionChange={setSelectedFleetHostIds}
+            disabled={isSaving}
           />
         </div>
       </div>

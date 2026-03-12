@@ -149,16 +149,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       disabled: isSaving || !nameValue.trim(),
     });
     return items;
-  }, [
-    handleSubmit,
-    onSubmit,
-    onFormError,
-    isSaving,
-    nameValue,
-    handleTestQuery,
-    queryValue,
-    campaign.isRunning,
-  ]);
+  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, handleTestQuery, queryValue, campaign.isRunning]);
 
   if (isLoadingQuery && isExistingQuery) {
     return <CardLoader items={4} />;

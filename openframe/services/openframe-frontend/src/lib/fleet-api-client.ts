@@ -9,6 +9,11 @@ import { Query, QueryReportParams, QueryReportResponse } from '../app/monitoring
 import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
 import { runtimeEnv } from './runtime-config';
 
+export interface PolicyHost {
+  id: number;
+  hostname: string;
+}
+
 export interface FleetLabel {
   id: number;
   name: string;
@@ -139,6 +144,42 @@ class FleetApiClient {
 
   async runPolicyOnHost(policyId: number, hostId: number): Promise<ApiResponse<any>> {
     return this.post(`/api/latest/fleet/policies/${policyId}/run`, { host_id: hostId });
+  }
+
+  // Fleet specific methods - Policy Host Assignments
+
+  async getPolicyHosts(
+    policyId: number,
+    params?: { page?: number; per_page?: number },
+  ): Promise<
+    ApiResponse<{
+      hosts: PolicyHost[];
+      meta: { has_next_results: boolean; has_previous_results: boolean };
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params?.per_page !== undefined) queryParams.append('per_page', params.per_page.toString());
+    const queryString = queryParams.toString();
+    const path = queryString
+      ? `/api/v1/fleet/policies/${policyId}/hosts?${queryString}`
+      : `/api/v1/fleet/policies/${policyId}/hosts`;
+    return this.get(path);
+  }
+
+  async addHostsToPolicy(policyId: number, hostIds: number[]): Promise<ApiResponse<{ added: number }>> {
+    return this.post(`/api/v1/fleet/policies/${policyId}/hosts`, { host_ids: hostIds });
+  }
+
+  async removeHostsFromPolicy(policyId: number, hostIds: number[]): Promise<ApiResponse<{ removed: number }>> {
+    return this.request(`/api/v1/fleet/policies/${policyId}/hosts`, {
+      method: 'DELETE',
+      body: JSON.stringify({ host_ids: hostIds }),
+    });
+  }
+
+  async replacePolicyHosts(policyId: number, hostIds: number[]): Promise<ApiResponse<void>> {
+    return this.put(`/api/v1/fleet/policies/${policyId}/hosts`, { host_ids: hostIds });
   }
 
   // Fleet specific methods - Queries
