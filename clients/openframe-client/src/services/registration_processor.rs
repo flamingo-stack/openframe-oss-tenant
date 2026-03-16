@@ -24,16 +24,15 @@ impl RegistrationProcessor {
     }
 
     pub async fn process(&self) -> Result<()> {
-        let machine_id = self.config_service.get_machine_id().await?;
-        if !machine_id.is_empty() {
+        let (client_id, _) = self.config_service.get_client_credentials().await?;
+        if !client_id.is_empty() {
             info!(
-                "Existing machine_id detected ({}). Skipping registration.",
-                machine_id
+                "Existing client_id detected. Skipping registration."
             );
             return Ok(());
         }
 
-        info!("No machine_id found – starting registration loop");
+        info!("No client_id found – starting registration loop");
         loop {
             match self.attempt_registration().await {
                 Ok(_) => {

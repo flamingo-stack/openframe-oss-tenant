@@ -23,15 +23,20 @@ impl AgentConfigurationService {
         })
     }
 
-    pub async fn save_registration_data(&self, machine_id: String, client_id: String, client_secret: String) -> Result<()> {
+    pub async fn save_registration_data(&self, client_id: String, client_secret: String, machine_id: String) -> Result<()> {
         let mut config = self.get()?;
-        config.machine_id = machine_id;
         config.client_id = client_id;
         config.client_secret = client_secret;
-        
+        config.machine_id = machine_id;
+
         self.save(&config).await?;
-        
+
         Ok(())
+    }
+
+    pub async fn get_machine_id(&self) -> Result<String> {
+        let config = self.get()?;
+        Ok(config.machine_id.clone())
     }
 
     pub async fn update_tokens(&self, access_token: String, refresh_token: String) -> Result<()> {
@@ -42,11 +47,6 @@ impl AgentConfigurationService {
         self.save(&config).await?;
         
         Ok(())
-    }
-
-    pub async fn get_machine_id(&self) -> Result<String> {
-        let config = self.get()?;
-        Ok(config.machine_id.clone())
     }
 
     pub async fn get_client_credentials(&self) -> Result<(String, String)> {

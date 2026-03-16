@@ -73,7 +73,7 @@ fn main() -> Result<()> {
     ensure_admin_privileges();
 
     // Initialize logging first
-    if let Err(e) = openframe::logging::init(None, None) {
+    if let Err(e) = openframe::logging::init(None, None, None) {
         eprintln!("Failed to initialize logging: {}", e);
         process::exit(1);
     }

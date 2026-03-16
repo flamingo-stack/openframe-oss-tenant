@@ -1,6 +1,6 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
-use crate::services::AgentConfigurationService;
+use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::config::update_config::{
     CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
     INITIAL_RETRY_DELAY_MS,

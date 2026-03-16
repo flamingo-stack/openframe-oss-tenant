@@ -5,7 +5,7 @@ use tracing::{info, warn};
 
 fn main() -> Result<()> {
     // Initialize basic logging
-    openframe::logging::init(None, None)?;
+    openframe::logging::init(None, None, None)?;
 
     // Check if we're running with admin/root privileges
     let is_admin = PermissionUtils::is_admin();

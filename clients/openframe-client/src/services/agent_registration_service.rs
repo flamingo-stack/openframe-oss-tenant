@@ -43,9 +43,9 @@ impl AgentRegistrationService {
             .context("Failed to register agent")?;
 
         self.config_service.save_registration_data(
-            response.machine_id.clone(),
             response.client_id.clone(),
-            response.client_secret.clone()
+            response.client_secret.clone(),
+            response.machine_id.clone()
         ).await
         .context("Failed to save registration data")?;
 

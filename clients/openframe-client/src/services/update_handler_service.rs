@@ -7,6 +7,7 @@ use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::update_cleanup_service::UpdateCleanupService;
 use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
+
 #[derive(Clone)]
 pub struct UpdateHandlerService {
     state_service: UpdateStateService,
@@ -93,30 +94,30 @@ impl UpdateHandlerService {
     }
 
     async fn send_nats_notification(&self, version: &str) {
-        match self.config_service.get_machine_id().await {
-            Ok(machine_id) => {
-                for attempt in 1..=5 {
-                    match self.installed_agent_publisher
-                        .publish(machine_id.clone(), "openframe-client".to_string(), version.to_string())
-                        .await
-                    {
-                        Ok(_) => {
-                            info!("Successfully published NATS notification for update to {}", version);
-                            return;
-                        }
-                        Err(e) => {
-                            if attempt < 5 {
-                                warn!("Failed to publish NATS notification (attempt {}/5): {:#}. Retrying...", attempt, e);
-                                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                            } else {
-                                warn!("Failed to publish NATS notification after 5 attempts: {:#}", e);
-                            }
-                        }
-                    }
-                }
-            }
+        let machine_id = match self.config_service.get_machine_id().await {
+            Ok(id) => id,
             Err(e) => {
                 warn!("Failed to get machine_id for NATS notification: {:#}", e);
+                return;
+            }
+        };
+        for attempt in 1..=5 {
+            match self.installed_agent_publisher
+                .publish(machine_id.clone(), "openframe-client".to_string(), version.to_string())
+                .await
+            {
+                Ok(_) => {
+                    info!("Successfully published NATS notification for update to {}", version);
+                    return;
+                }
+                Err(e) => {
+                    if attempt < 5 {
+                        warn!("Failed to publish NATS notification (attempt {}/5): {:#}. Retrying...", attempt, e);
+                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                    } else {
+                        warn!("Failed to publish NATS notification after 5 attempts: {:#}", e);
+                    }
+                }
             }
         }
     }

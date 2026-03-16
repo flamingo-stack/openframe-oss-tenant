@@ -224,38 +224,37 @@ impl ToolConnectionProcessingManager {
                 };
 
                 // Publish tool connection message
-                match config_service.get_machine_id().await {
-                    Ok(machine_id) => {
-                        if let Err(e) = tool_connection_publisher
-                            .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
-                            .await
-                        {
-                            error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");
-                            // Retry publishing on next cycle
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                            continue;
-                        }
-
-                        if let Err(e) = tool_connection_service.save(ToolConnection {
-                            tool_agent_id: tool.tool_agent_id.clone(),
-                            agent_tool_id: agent_tool_id.clone(),
-                            published: true,
-                        }).await {
-                            error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                            continue;
-                        }
-
-                        info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
-                        // Stop processing after successful publish
-                        break;
-                    }
+                let machine_id = match config_service.get_machine_id().await {
+                    Ok(id) => id,
                     Err(e) => {
-                        error!("Failed to get machine_id: {:#}", e);
+                        error!(tool_id = %tool.tool_id, error = %e, "Failed to get machine_id");
                         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                         continue;
                     }
+                };
+                if let Err(e) = tool_connection_publisher
+                    .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
+                    .await
+                {
+                    error!(tool_id = %tool.tool_id, error = %e, "Failed to publish tool connection message");
+                    // Retry publishing on next cycle
+                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    continue;
                 }
+
+                if let Err(e) = tool_connection_service.save(ToolConnection {
+                    tool_agent_id: tool.tool_agent_id.clone(),
+                    agent_tool_id: agent_tool_id.clone(),
+                    published: true,
+                }).await {
+                    error!(tool_id = %tool.tool_id, error = %e, "Failed to save tool connection record");
+                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                    continue;
+                }
+
+                info!(tool_id = %tool.tool_id, agent_tool_id = %agent_tool_id, "Tool connection message published successfully and saved");
+                // Stop processing after successful publish
+                break;
             }
         });
 

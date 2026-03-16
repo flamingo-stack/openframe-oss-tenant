@@ -197,8 +197,8 @@ impl tracing::field::Visit for JsonVisitor {
     }
 }
 
-/// Initialize logging with optional endpoint and agent ID
-pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::Result<()> {
+/// Initialize logging with optional endpoint, agent ID, and machine ID
+pub fn init(log_endpoint: Option<String>, agent_id: Option<String>, machine_id: Option<String>) -> std::io::Result<()> {
     // Check if logging is already initialized
     static INIT: std::sync::Once = std::sync::Once::new();
     let mut init_result = Ok(());
@@ -346,9 +346,9 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
 
         // Initialize log shipping if endpoint is provided
         if let Some(endpoint) = log_endpoint {
-            if let Some(agent) = agent_id.clone() {
+            if let (Some(agent), Some(machine)) = (agent_id.clone(), machine_id.clone()) {
                 // Create a log shipper instance
-                let shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone());
+                let shipper = shipping::LogShipper::new(endpoint.clone(), agent.clone(), machine.clone());
                 // No need to do anything else, shipper already starts itself with its background task
                 tracing::info!("Log shipping initialized to endpoint: {}", endpoint);
             }

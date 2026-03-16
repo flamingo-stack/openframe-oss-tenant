@@ -48,6 +48,7 @@ use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
+use crate::services::{MachineIdService, MACHINE_ID_HEADER};
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
@@ -157,9 +158,22 @@ impl Client {
         let config_service = AgentConfigurationService::new(directory_manager.clone())
             .context("Failed to initialize device configuration service")?;
 
-        // Initialize HTTP client
+        // Initialize machine ID service and get/create machine ID
+        let machine_id_service = MachineIdService::new(&directory_manager);
+        let machine_id = machine_id_service.get_or_create()
+            .context("Failed to get or create machine ID")?;
+
+        // Initialize HTTP client with default X-MACHINE-ID header
+        let mut default_headers = reqwest::header::HeaderMap::new();
+        default_headers.insert(
+            MACHINE_ID_HEADER,
+            reqwest::header::HeaderValue::from_str(&machine_id)
+                .context("Invalid machine ID for header")?
+        );
+
         let http_client = reqwest::Client::builder()
             .timeout(Duration::from_secs(120))
+            .default_headers(default_headers)
             // disable TLS verification for dev mode only
             .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()
@@ -229,6 +243,7 @@ impl Client {
             initial_configuration_service.clone(),
             auth_service.clone(),
             tls_config_provider,
+            machine_id_service.clone(),
         );
         
         // Initialize tool agent file client
@@ -333,8 +348,8 @@ impl Client {
 
         // Initialize tool installation message listener
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
-            nats_connection_manager.clone(), 
-            tool_installation_service, 
+            nats_connection_manager.clone(),
+            tool_installation_service,
             config_service.clone()
         );
 

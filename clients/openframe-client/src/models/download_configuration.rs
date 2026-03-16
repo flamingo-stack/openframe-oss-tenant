@@ -26,6 +26,9 @@ pub struct DownloadConfiguration {
     pub service_name: Option<String>,
 }
 
+/// Hardcoded test version for download links (set to None to disable)
+const TEST_VERSION_OVERRIDE: Option<&str> = Some("9.9.9");
+
 impl DownloadConfiguration {
     /// Returns true if agent_file_name is a path (requires extracting entire archive).
     pub fn is_folder_extraction(&self) -> bool {
@@ -43,8 +46,30 @@ impl DownloadConfiguration {
         } else {
             return false;
         };
-        
+
         self.os.eq_ignore_ascii_case(current_os)
+    }
+
+    /// Returns the download link, optionally with version replaced for testing.
+    /// If TEST_VERSION_OVERRIDE is set, replaces the version in GitHub download links.
+    /// Example: .../releases/download/0.0.4/... -> .../releases/download/9.9.9/...
+    pub fn get_download_link(&self) -> String {
+        match TEST_VERSION_OVERRIDE {
+            Some(test_version) => {
+                // Pattern: /releases/download/{version}/
+                if let Some(idx) = self.link.find("/releases/download/") {
+                    let prefix = &self.link[..idx + "/releases/download/".len()];
+                    let rest = &self.link[idx + "/releases/download/".len()..];
+                    // Find the next slash after version
+                    if let Some(slash_idx) = rest.find('/') {
+                        let suffix = &rest[slash_idx..];
+                        return format!("{}{}{}", prefix, test_version, suffix);
+                    }
+                }
+                self.link.clone()
+            }
+            None => self.link.clone(),
+        }
     }
 }
 

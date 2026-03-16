@@ -219,18 +219,18 @@ impl ToolAgentUpdateService {
 
     async fn publish_installed_agent_message(&self, tool_agent_id: &str, version: &str) {
         info!(tool_id = %tool_agent_id, "Publishing installed agent message");
-        match self.config_service.get_machine_id().await {
-            Ok(machine_id) => {
-                if let Err(e) = self.installed_agent_publisher
-                    .publish(machine_id, tool_agent_id.to_string(), version.to_string())
-                    .await
-                {
-                    warn!(tool_id = %tool_agent_id, error = %e, "Failed to publish installed agent message");
-                }
-            }
+        let machine_id = match self.config_service.get_machine_id().await {
+            Ok(id) => id,
             Err(e) => {
-                warn!(tool_id = %tool_agent_id, error = %e, "Failed to get machine_id");
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to get machine_id for NATS notification");
+                return;
             }
+        };
+        if let Err(e) = self.installed_agent_publisher
+            .publish(machine_id, tool_agent_id.to_string(), version.to_string())
+            .await
+        {
+            warn!(tool_id = %tool_agent_id, error = %e, "Failed to publish installed agent message");
         }
     }
 }

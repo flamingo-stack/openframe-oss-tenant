@@ -4,6 +4,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
+use crate::services::MachineIdService;
 use std::sync::Arc;
 use std::env;
 use log::error;
@@ -16,20 +17,22 @@ pub struct NatsConnectionManager {
     config_service: AgentConfigurationService,
     tls_config_provider: LocalTlsConfigProvider,
     initial_configuration_service: InitialConfigurationService,
-    auth_service: AgentAuthService
+    auth_service: AgentAuthService,
+    machine_id_service: MachineIdService,
 }
 
 impl NatsConnectionManager {
 
     const NATS_DEVICE_USER: &'static str = "machine";
     const NATS_DEVICE_PASSWORD: &'static str = "";
-    
+
     pub fn new(
         nats_server_url: String,
         config_service: AgentConfigurationService,
         initial_configuration_service: InitialConfigurationService,
         auth_service: AgentAuthService,
         tls_config_provider: LocalTlsConfigProvider,
+        machine_id_service: MachineIdService,
     ) -> Self {
         Self {
             client: Arc::new(RwLock::new(None)),
@@ -37,7 +40,8 @@ impl NatsConnectionManager {
             config_service,
             tls_config_provider,
             initial_configuration_service,
-            auth_service
+            auth_service,
+            machine_id_service,
         }
     }
 
@@ -45,19 +49,24 @@ impl NatsConnectionManager {
         info!("Connecting to NATS server");
 
         let connection_url = self.build_nats_connection_url().await?;
-        let machine_id = self.config_service.get_machine_id().await?;
+
+        // Server-assigned machine_id for NATS connection name (identifies the machine in NATS)
+        let server_machine_id = self.config_service.get_machine_id().await?;
+
+        // Local machine_id for x-machine-id header (used for rate limiting)
+        let local_machine_id = self.machine_id_service.get();
 
         // Cloned dependencies for auth callback
         let auth_service = self.auth_service.clone();
         let config_service = self.config_service.clone();
         let nats_server_url = self.nats_server_url.clone();
-        
+
         // TODO: token fallback and connection retry
         let mut connect_options = async_nats::ConnectOptions::new()
-            .name(machine_id.clone())
+            .name(server_machine_id)
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
             .retry_on_initial_connect()
-            .reconnect_delay_callback(|attempt| {
+            .reconnect_delay_callback(|_attempt| {
                 std::time::Duration::from_secs(5)
             })
             .ping_interval(std::time::Duration::from_secs(10))
@@ -76,7 +85,7 @@ impl NatsConnectionManager {
                     }
                 }
             )
-            .custom_header("X-MACHINE-ID", &machine_id);
+            .custom_header("x-machine-id", &local_machine_id);
 
         // Only add TLS config in development mode
         if self.initial_configuration_service.is_local_mode()? {

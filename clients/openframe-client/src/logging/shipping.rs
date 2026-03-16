@@ -22,12 +22,13 @@ pub struct LogShipper {
 }
 
 impl LogShipper {
-    pub fn new(endpoint: String, agent_id: String) -> Self {
+    pub fn new(endpoint: String, agent_id: String, machine_id: String) -> Self {
         let (sender, receiver) = mpsc::channel(1000);
 
         // Clone values before moving them
         let endpoint_clone = endpoint.clone();
         let agent_id_clone = agent_id.clone();
+        let machine_id_clone = machine_id.clone();
 
         let shipper = LogShipper {
             sender,
@@ -37,7 +38,7 @@ impl LogShipper {
 
         // Spawn background shipping task
         tokio::spawn(async move {
-            Self::ship_logs(receiver, endpoint_clone, agent_id_clone).await;
+            Self::ship_logs(receiver, endpoint_clone, agent_id_clone, machine_id_clone).await;
         });
 
         shipper
@@ -48,9 +49,18 @@ impl LogShipper {
         Ok(())
     }
 
-    async fn ship_logs(mut receiver: mpsc::Receiver<String>, endpoint: String, agent_id: String) {
+    async fn ship_logs(mut receiver: mpsc::Receiver<String>, endpoint: String, agent_id: String, machine_id: String) {
         let mut batch = Vec::with_capacity(BATCH_SIZE);
-        let client = reqwest::Client::new();
+
+        let mut default_headers = reqwest::header::HeaderMap::new();
+        if let Ok(header_value) = reqwest::header::HeaderValue::from_str(&machine_id) {
+            default_headers.insert(crate::services::MACHINE_ID_HEADER, header_value);
+        }
+
+        let client = reqwest::Client::builder()
+            .default_headers(default_headers)
+            .build()
+            .unwrap_or_else(|_| reqwest::Client::new());
 
         loop {
             tokio::select! {

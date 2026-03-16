@@ -2,11 +2,9 @@ use crate::models::MachineHeartbeatMessage;
 use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use anyhow::Result;
-use serde_json;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use tokio::sync::RwLock;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 const HEARTBEAT_LOG_INTERVAL: u64 = 60;
 
@@ -34,9 +32,9 @@ impl MachineHeartbeatPublisher {
 
         let heartbeat_message = MachineHeartbeatMessage::new();
         let message_json = serde_json::to_string(&heartbeat_message)?;
-        
+
         let topic = format!("machine.{}.heartbeat", machine_id);
-        
+
         self.nats_publisher.publish(&topic, &message_json).await?;
         self.log_heartbeat(&machine_id);
         Ok(())
