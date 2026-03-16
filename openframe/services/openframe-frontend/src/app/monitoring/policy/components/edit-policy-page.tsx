@@ -1,19 +1,31 @@
 'use client';
 
-import { CardLoader, FormPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core';
+import {
+  CardLoader,
+  FormPageContainer,
+  Input,
+  Label,
+  LoadError,
+  NotFoundError,
+  Textarea,
+} from '@flamingo-stack/openframe-frontend-core';
+import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { DeviceSelector } from '../../../components/shared/device-selector';
+import type { Device } from '../../../devices/types/device.types';
+import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
+import { usePolicyDevices } from '../hooks/use-policy-devices';
 import { usePolicyHosts, useReplacePolicyHosts } from '../hooks/use-policy-hosts';
-import { PolicyDeviceSelector } from './policy-device-selector';
 
 const policyFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,6 +38,11 @@ type PolicyFormData = z.infer<typeof policyFormSchema>;
 interface EditPolicyPageProps {
   policyId: string | null;
 }
+
+const getDeviceKey = (d: Device) => {
+  const id = getFleetHostId(d);
+  return id !== undefined ? String(id) : undefined;
+};
 
 export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   const router = useRouter();
@@ -43,6 +60,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const { hosts: currentHosts, isLoading: isLoadingHosts } = usePolicyHosts(isExistingPolicy ? numericId : null);
   const replacePolicyHostsMutation = useReplacePolicyHosts();
+  const { devices: policyDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const [hostsInitialized, setHostsInitialized] = useState(false);
@@ -55,6 +73,21 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   if (!hostsInitialized && !isLoadingHosts && (!isExistingPolicy || currentHosts.length === 0)) {
     setHostsInitialized(true);
   }
+
+  const stringSelectedIds = useMemo(
+    () => new Set(Array.from(selectedFleetHostIds).map(String)),
+    [selectedFleetHostIds],
+  );
+
+  const handleDeviceSelectionChange = useCallback((ids: Set<string>) => {
+    setSelectedFleetHostIds(
+      new Set(
+        Array.from(ids)
+          .map(Number)
+          .filter(n => !Number.isNaN(n)),
+      ),
+    );
+  }, []);
 
   const isSaving = isCreating || isUpdating || replacePolicyHostsMutation.isPending;
 
@@ -147,12 +180,12 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const handleTestPolicy = useCallback(() => {
     setShowTestPanel(true);
-    campaign.startCampaign(queryValue);
-  }, [campaign, queryValue]);
+    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
+  }, [campaign, queryValue, selectedFleetHostIds]);
 
   const handleTestAgain = useCallback(() => {
-    campaign.startCampaign(queryValue);
-  }, [campaign, queryValue]);
+    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
+  }, [campaign, queryValue, selectedFleetHostIds]);
 
   const handleCloseTestPanel = useCallback(() => {
     campaign.stopCampaign();
@@ -198,7 +231,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       actions={actions}
       padding="none"
     >
-      <div className="space-y-10">
+      <div className="space-y-6 md:space-y-8">
         {/* Test Policy Panel */}
         {showTestPanel && (
           <LiveTestPanel
@@ -219,39 +252,16 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         )}
 
         {/* Name */}
-        <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
-          <div
-            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
-          >
-            <input
-              type="text"
-              {...register('name')}
-              className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-              placeholder="Enter Policy Name"
-            />
-          </div>
-          {errors.name && <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{errors.name.message}</p>}
+        <div className="md:max-w-[280px]">
+          <Input {...register('name')} label="Name" placeholder="Enter Policy Name" error={errors.name?.message} />
         </div>
 
         {/* Description */}
-        <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Description
-          </label>
-          <div className="bg-ods-card rounded-md border border-ods-border relative">
-            <textarea
-              {...register('description')}
-              rows={4}
-              className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
-              placeholder="Enter Policy Description"
-            />
-          </div>
-        </div>
+        <Textarea {...register('description')} label="Description" rows={3} placeholder="Enter Policy Description" />
 
         {/* Query */}
         <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Query</label>
+          <Label className="!mb-0">Query</Label>
           <Controller
             name="query"
             control={control}
@@ -259,17 +269,29 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
               <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
             )}
           />
+          <a
+            href="https://osquery.io/schema"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-ods-text-secondary hover:text-ods-text-primary transition-colors"
+          >
+            <InfoCircleIcon size={16} />
+            Osquery Documentation
+          </a>
         </div>
 
-        {/* Assigned Devices */}
+        {/* Devices */}
         <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Assigned Devices
-          </label>
-          <PolicyDeviceSelector
-            selectedFleetHostIds={selectedFleetHostIds}
-            onSelectionChange={setSelectedFleetHostIds}
+          <h2 className="text-h2 tracking-[-0.64px] text-ods-text-primary">Devices</h2>
+          <DeviceSelector
+            devices={policyDevices}
+            loading={isLoadingDevices}
+            selectedIds={stringSelectedIds}
+            getDeviceKey={getDeviceKey}
+            onSelectionChange={handleDeviceSelectionChange}
+            infiniteScroll={infiniteScroll}
             disabled={isSaving}
+            addAllBehavior="merge"
           />
         </div>
       </div>

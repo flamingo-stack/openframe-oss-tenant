@@ -70,7 +70,7 @@ function parseSockJsFrame(raw: string): {
 }
 
 export interface UseLiveCampaignReturn {
-  startCampaign: (sql: string) => Promise<void>;
+  startCampaign: (sql: string, hostIds: number[]) => Promise<void>;
   stopCampaign: () => void;
   isRunning: boolean;
   startedAt: Date | null;
@@ -299,7 +299,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   );
 
   const startCampaign = useCallback(
-    async (sql: string) => {
+    async (sql: string, hostIds: number[]) => {
       if (!sql.trim()) {
         toast({ title: 'Query is required', description: 'Enter a query before testing', variant: 'destructive' });
         return;
@@ -321,14 +321,17 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       setConnectionState('disconnected');
 
       try {
-        // 1. Get "All Hosts" label
-        const labelId = await getAllHostsLabelId();
+        // 1. Build target selection — use selected hosts if provided, otherwise fall back to all hosts
+        const selected =
+          hostIds.length > 0
+            ? { hosts: hostIds, labels: [], teams: [] }
+            : { hosts: [], labels: [await getAllHostsLabelId()], teams: [] };
 
         // 2. Create campaign
         const res = await fleetApiClient.runLiveQuery({
           query: sql,
           query_id: null,
-          selected: { hosts: [], labels: [labelId], teams: [] },
+          selected,
         });
 
         if (!res.ok || !res.data?.campaign) {
@@ -410,9 +413,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         };
 
         socket.onclose = () => {
-          // Connection closed — if campaign wasn't finished, mark as stopped
+          // Connection closed — stop the campaign if it hasn't finished naturally
           if (isMountedRef.current && campaignIdRef.current === campaignId) {
-            setConnectionState('disconnected');
+            stopCampaign();
           }
         };
       } catch (error) {
@@ -425,7 +428,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         }
       }
     },
-    [cleanup, fleetApiToken, handleCampaignMessage, toast],
+    [cleanup, fleetApiToken, handleCampaignMessage, stopCampaign, toast],
   );
 
   return {

@@ -1,11 +1,15 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PlusCircleIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  DashboardInfoCard,
   DeviceCardCompact,
-  ListPageLayout,
+  Input,
+  ListPageContainer,
   MoreActionsMenu,
+  PageError,
+  Skeleton,
   Table,
   type TableColumn,
   Tag,
@@ -14,9 +18,10 @@ import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/o
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePolicies } from '../../hooks/use-policies';
+import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 function parsePlatforms(platform: string | undefined): string[] {
   if (!platform) return [];
@@ -61,6 +66,7 @@ export function Policies() {
   }, [debouncedSearchInput, setParams]);
 
   const { policies, isLoading, error } = usePolicies();
+  const summary = usePolicySummary();
 
   const filteredPolicies = useMemo(() => {
     if (!params.search || params.search.trim() === '') return policies;
@@ -173,18 +179,56 @@ export function Policies() {
     [handleAddPolicy],
   );
 
+  if (error) {
+    return <PageError message={error} />;
+  }
+
   return (
-    <ListPageLayout
-      title="Policies"
-      actions={actions}
-      searchPlaceholder="Search for Policies"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
-      error={error}
-      background="default"
-      padding="none"
-      className="pt-6"
-    >
+    <ListPageContainer title="Policies" actions={actions} background="default" padding="none" className="pt-6">
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {summary.isLoading ? (
+          <>
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </>
+        ) : (
+          <>
+            <DashboardInfoCard title="Total Policies" value={summary.totalPolicies} />
+            <DashboardInfoCard
+              title="Compliance Rate"
+              value={`${summary.totalPassingEvaluations}/${summary.totalEvaluations}`}
+              percentage={summary.complianceRate}
+              showProgress
+            />
+            <DashboardInfoCard
+              title="Failed Policies"
+              value={summary.failingPolicies}
+              percentage={summary.failingPoliciesPercentage}
+              showProgress
+            />
+            <DashboardInfoCard
+              title="Non-Compliant Devices"
+              value={summary.isLoadingHosts ? '...' : summary.nonCompliantDevices}
+              percentage={summary.isLoadingHosts ? undefined : summary.nonCompliantDevicesPercentage}
+              showProgress={!summary.isLoadingHosts}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Search Bar */}
+      <Input
+        placeholder="Search for Policies"
+        onChange={e => setSearchInput(e.target.value)}
+        value={searchInput}
+        className="w-full"
+        startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+      />
+
+      {/* Table */}
       <Table
         data={paginatedPolicies}
         columns={columns}
@@ -202,6 +246,6 @@ export function Policies() {
         cursorPagination={cursorPagination}
         renderRowActions={renderRowActions}
       />
-    </ListPageLayout>
+    </ListPageContainer>
   );
 }
