@@ -3,30 +3,34 @@
 import {
   CardLoader,
   FormPageContainer,
+  Input,
   Label,
   LoadError,
   NotFoundError,
-  OS_TYPES,
+  Textarea,
 } from '@flamingo-stack/openframe-frontend-core';
-import { PushButtonSelector } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { DeviceSelector } from '../../../components/shared/device-selector';
+import type { Device } from '../../../devices/types/device.types';
+import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
+import { usePolicyDevices } from '../hooks/use-policy-devices';
+import { usePolicyHosts, useReplacePolicyHosts } from '../hooks/use-policy-hosts';
 
 const policyFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   query: z.string(),
-  platform: z.string(),
 });
 
 type PolicyFormData = z.infer<typeof policyFormSchema>;
@@ -34,6 +38,11 @@ type PolicyFormData = z.infer<typeof policyFormSchema>;
 interface EditPolicyPageProps {
   policyId: string | null;
 }
+
+const getDeviceKey = (d: Device) => {
+  const id = getFleetHostId(d);
+  return id !== undefined ? String(id) : undefined;
+};
 
 export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   const router = useRouter();
@@ -49,7 +58,38 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   } = usePolicyDetails(isExistingPolicy ? numericId : null);
   const { createPolicy, isCreating, updatePolicy, isUpdating } = usePolicies();
 
-  const isSaving = isCreating || isUpdating;
+  const { hosts: currentHosts, isLoading: isLoadingHosts } = usePolicyHosts(isExistingPolicy ? numericId : null);
+  const replacePolicyHostsMutation = useReplacePolicyHosts();
+  const { devices: policyDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
+
+  const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
+  const [hostsInitialized, setHostsInitialized] = useState(false);
+
+  // Initialize selected hosts from current assignment (edit mode)
+  if (!hostsInitialized && !isLoadingHosts && isExistingPolicy && currentHosts.length > 0) {
+    setSelectedFleetHostIds(new Set(currentHosts.map(h => h.id)));
+    setHostsInitialized(true);
+  }
+  if (!hostsInitialized && !isLoadingHosts && (!isExistingPolicy || currentHosts.length === 0)) {
+    setHostsInitialized(true);
+  }
+
+  const stringSelectedIds = useMemo(
+    () => new Set(Array.from(selectedFleetHostIds).map(String)),
+    [selectedFleetHostIds],
+  );
+
+  const handleDeviceSelectionChange = useCallback((ids: Set<string>) => {
+    setSelectedFleetHostIds(
+      new Set(
+        Array.from(ids)
+          .map(Number)
+          .filter(n => !Number.isNaN(n)),
+      ),
+    );
+  }, []);
+
+  const isSaving = isCreating || isUpdating || replacePolicyHostsMutation.isPending;
 
   const campaign = useLiveCampaign();
   const [showTestPanel, setShowTestPanel] = useState(false);
@@ -67,7 +107,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       name: '',
       description: '',
       query: '',
-      platform: '',
     },
   });
 
@@ -80,7 +119,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         name: policyDetails.name,
         description: policyDetails.description || '',
         query: policyDetails.query || '',
-        platform: policyDetails.platform || '',
       });
     }
   }, [policyDetails, isExistingPolicy, reset]);
@@ -99,20 +137,38 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         name: data.name,
         description: data.description,
         query: data.query,
-        platform: data.platform || undefined,
+        platform: undefined,
       };
+
+      const hostIds = Array.from(selectedFleetHostIds);
 
       if (isExistingPolicy && numericId) {
         updatePolicy(numericId, payload, {
-          onSuccess: () => router.push(`/monitoring/policy/${numericId}`),
+          onSuccess: async () => {
+            try {
+              await replacePolicyHostsMutation.mutateAsync({ policyId: numericId, hostIds });
+            } catch {
+              // Policy saved but hosts failed — error toast shown by mutation hook
+            }
+            router.push(`/monitoring/policy/${numericId}`);
+          },
         });
       } else {
         createPolicy(payload, {
-          onSuccess: () => router.push('/monitoring?tab=policies'),
+          onSuccess: async policy => {
+            try {
+              if (hostIds.length > 0) {
+                await replacePolicyHostsMutation.mutateAsync({ policyId: policy.id, hostIds });
+              }
+            } catch {
+              // Policy created but hosts failed — error toast shown by mutation hook
+            }
+            router.push('/monitoring?tab=policies');
+          },
         });
       }
     },
-    [isExistingPolicy, numericId, createPolicy, updatePolicy, router],
+    [isExistingPolicy, numericId, createPolicy, updatePolicy, router, selectedFleetHostIds, replacePolicyHostsMutation],
   );
 
   const onFormError = useCallback(() => {
@@ -124,12 +180,12 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const handleTestPolicy = useCallback(() => {
     setShowTestPanel(true);
-    campaign.startCampaign(queryValue);
-  }, [campaign, queryValue]);
+    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
+  }, [campaign, queryValue, selectedFleetHostIds]);
 
   const handleTestAgain = useCallback(() => {
-    campaign.startCampaign(queryValue);
-  }, [campaign, queryValue]);
+    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
+  }, [campaign, queryValue, selectedFleetHostIds]);
 
   const handleCloseTestPanel = useCallback(() => {
     campaign.stopCampaign();
@@ -138,18 +194,10 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const actions = useMemo(() => {
     const items = [];
-    if (isExistingPolicy) {
-      items.push({
-        label: 'Cancel',
-        onClick: handleBack,
-        variant: 'outline' as const,
-      });
-    }
     items.push({
       label: 'Test Policy',
       onClick: handleTestPolicy,
       variant: 'outline' as const,
-      icon: <Play size={16} />,
       disabled: !queryValue.trim() || campaign.isRunning,
     });
     items.push({
@@ -159,18 +207,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       disabled: isSaving || !nameValue.trim(),
     });
     return items;
-  }, [
-    handleSubmit,
-    onSubmit,
-    onFormError,
-    isSaving,
-    nameValue,
-    isExistingPolicy,
-    handleBack,
-    handleTestPolicy,
-    queryValue,
-    campaign.isRunning,
-  ]);
+  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, handleTestPolicy, queryValue, campaign.isRunning]);
 
   if (isLoadingPolicy && isExistingPolicy) {
     return <CardLoader items={4} />;
@@ -194,7 +231,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       actions={actions}
       padding="none"
     >
-      <div className="space-y-10">
+      <div className="space-y-6 md:space-y-8">
         {/* Test Policy Panel */}
         {showTestPanel && (
           <LiveTestPanel
@@ -214,92 +251,47 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
           />
         )}
 
-        {/* Supported Platform */}
-        <div className="space-y-1">
-          <Label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Supported Platform
-          </Label>
-          <div className="pt-2">
-            <Controller
-              name="platform"
-              control={control}
-              render={({ field }) => {
-                const selectedPlatformIds = field.value
-                  ? field.value
-                      .split(',')
-                      .map(p => p.trim())
-                      .filter(Boolean)
-                      .flatMap(platformId => {
-                        const os = OS_TYPES.find(o => o.platformId === platformId);
-                        return os ? [os.id] : [];
-                      })
-                  : [];
-
-                return (
-                  <PushButtonSelector
-                    options={OS_TYPES.map(os => ({
-                      id: os.id,
-                      name: os.label,
-                      icon: <os.icon className="w-5 h-5" />,
-                    }))}
-                    selectedIds={selectedPlatformIds}
-                    onSelectionChange={selectedIds => {
-                      const platformStr = selectedIds
-                        .flatMap(id => {
-                          const os = OS_TYPES.find(o => o.id === id);
-                          return os ? [os.platformId] : [];
-                        })
-                        .join(',');
-                      field.onChange(platformStr);
-                    }}
-                    multiSelect={true}
-                  />
-                );
-              }}
-            />
-          </div>
-        </div>
-
         {/* Name */}
-        <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Name</label>
-          <div
-            className={`bg-ods-card rounded-md border px-3 py-3 h-[60px] flex items-center ${errors.name ? 'border-[var(--ods-attention-red-error)]' : 'border-ods-border'}`}
-          >
-            <input
-              type="text"
-              {...register('name')}
-              className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary"
-              placeholder="Enter Policy Name"
-            />
-          </div>
-          {errors.name && <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{errors.name.message}</p>}
+        <div className="md:max-w-[280px]">
+          <Input {...register('name')} label="Name" placeholder="Enter Policy Name" error={errors.name?.message} />
         </div>
 
         {/* Description */}
-        <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">
-            Description
-          </label>
-          <div className="bg-ods-card rounded-md border border-ods-border relative">
-            <textarea
-              {...register('description')}
-              rows={4}
-              className="w-full bg-transparent text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary outline-none placeholder:text-ods-text-secondary p-3 resize-none"
-              placeholder="Enter Policy Description"
-            />
-          </div>
-        </div>
+        <Textarea {...register('description')} label="Description" rows={3} placeholder="Enter Policy Description" />
 
         {/* Query */}
         <div className="space-y-1">
-          <label className="text-lg font-['DM_Sans:Medium',_sans-serif] font-medium text-ods-text-primary">Query</label>
+          <Label className="!mb-0">Query</Label>
           <Controller
             name="query"
             control={control}
             render={({ field }) => (
               <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
             )}
+          />
+          <a
+            href="https://osquery.io/schema"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-ods-text-secondary hover:text-ods-text-primary transition-colors"
+          >
+            <InfoCircleIcon size={16} />
+            Osquery Documentation
+          </a>
+        </div>
+
+        {/* Devices */}
+        <div className="space-y-1">
+          <h2 className="text-h2 tracking-[-0.64px] text-ods-text-primary">Devices</h2>
+          <DeviceSelector
+            devices={policyDevices}
+            loading={isLoadingDevices}
+            selectedIds={stringSelectedIds}
+            getDeviceKey={getDeviceKey}
+            onSelectionChange={handleDeviceSelectionChange}
+            infiniteScroll={infiniteScroll}
+            disabled={isSaving}
+            addAllBehavior="merge"
           />
         </div>
       </div>

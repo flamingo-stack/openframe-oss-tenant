@@ -94,9 +94,9 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
 
       {/* Query */}
       {queryDetails.query && (
-        <div className="bg-ods-card border border-ods-border rounded-lg mt-6">
-          <div className="p-4 border-b border-ods-border">
-            <h3 className="text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
+        <div className="mt-6">
+          <div className="">
+            <h3 className="font-mono text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
           </div>
           <ScriptEditor value={queryDetails.query} shell="sql" readOnly height="300px" />
         </div>

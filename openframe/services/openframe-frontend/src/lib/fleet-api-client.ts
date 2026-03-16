@@ -9,6 +9,11 @@ import { Query, QueryReportParams, QueryReportResponse } from '../app/monitoring
 import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
 import { runtimeEnv } from './runtime-config';
 
+export interface PolicyHost {
+  id: number;
+  hostname: string;
+}
+
 export interface FleetLabel {
   id: number;
   name: string;
@@ -19,23 +24,32 @@ export interface FleetLabel {
 
 interface Host {
   id: number;
+  uuid: string;
   hostname: string;
-  status: string;
+  computer_name: string;
+  display_name: string;
   platform: string;
   os_version: string;
-  agent_version: string;
-  last_seen: string;
-  created_at: string;
-  updated_at: string;
+  status: string;
+  seen_time: string;
+  primary_ip: string;
+  hardware_model: string;
+  hardware_serial: string;
+  agent_version?: string;
+  last_seen?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 class FleetApiClient {
   private baseUrl: string;
+  private wsBaseUrl: string;
 
   constructor() {
     // Build base from tenant host when provided; otherwise relative via apiClient
     const tenantHost = runtimeEnv.tenantHostUrl() || '';
     this.baseUrl = `${tenantHost}/tools/fleetmdm-server`;
+    this.wsBaseUrl = `${tenantHost}/ws/tools/fleetmdm-server`;
   }
 
   private buildFleetUrl(path: string): string {
@@ -137,6 +151,42 @@ class FleetApiClient {
 
   async runPolicyOnHost(policyId: number, hostId: number): Promise<ApiResponse<any>> {
     return this.post(`/api/latest/fleet/policies/${policyId}/run`, { host_id: hostId });
+  }
+
+  // Fleet specific methods - Policy Host Assignments
+
+  async getPolicyHosts(
+    policyId: number,
+    params?: { page?: number; per_page?: number },
+  ): Promise<
+    ApiResponse<{
+      hosts: PolicyHost[];
+      meta: { has_next_results: boolean; has_previous_results: boolean };
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params?.per_page !== undefined) queryParams.append('per_page', params.per_page.toString());
+    const queryString = queryParams.toString();
+    const path = queryString
+      ? `/api/v1/fleet/policies/${policyId}/hosts?${queryString}`
+      : `/api/v1/fleet/policies/${policyId}/hosts`;
+    return this.get(path);
+  }
+
+  async addHostsToPolicy(policyId: number, hostIds: number[]): Promise<ApiResponse<{ added: number }>> {
+    return this.post(`/api/v1/fleet/policies/${policyId}/hosts`, { host_ids: hostIds });
+  }
+
+  async removeHostsFromPolicy(policyId: number, hostIds: number[]): Promise<ApiResponse<{ removed: number }>> {
+    return this.request(`/api/v1/fleet/policies/${policyId}/hosts`, {
+      method: 'DELETE',
+      body: JSON.stringify({ host_ids: hostIds }),
+    });
+  }
+
+  async replacePolicyHosts(policyId: number, hostIds: number[]): Promise<ApiResponse<void>> {
+    return this.put(`/api/v1/fleet/policies/${policyId}/hosts`, { host_ids: hostIds });
   }
 
   // Fleet specific methods - Queries
@@ -242,6 +292,42 @@ class FleetApiClient {
     return this.get(path);
   }
 
+  // Fleet specific methods - Query Host Assignments
+
+  async getQueryHosts(
+    queryId: number,
+    params?: { page?: number; per_page?: number },
+  ): Promise<
+    ApiResponse<{
+      hosts: PolicyHost[];
+      meta: { has_next_results: boolean; has_previous_results: boolean };
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
+    if (params?.per_page !== undefined) queryParams.append('per_page', params.per_page.toString());
+    const queryString = queryParams.toString();
+    const path = queryString
+      ? `/api/v1/fleet/queries/${queryId}/hosts?${queryString}`
+      : `/api/v1/fleet/queries/${queryId}/hosts`;
+    return this.get(path);
+  }
+
+  async addHostsToQuery(queryId: number, hostIds: number[]): Promise<ApiResponse<{ added: number }>> {
+    return this.post(`/api/v1/fleet/queries/${queryId}/hosts`, { host_ids: hostIds });
+  }
+
+  async removeHostsFromQuery(queryId: number, hostIds: number[]): Promise<ApiResponse<{ removed: number }>> {
+    return this.request(`/api/v1/fleet/queries/${queryId}/hosts`, {
+      method: 'DELETE',
+      body: JSON.stringify({ host_ids: hostIds }),
+    });
+  }
+
+  async replaceQueryHosts(queryId: number, hostIds: number[]): Promise<ApiResponse<void>> {
+    return this.put(`/api/v1/fleet/queries/${queryId}/hosts`, { host_ids: hostIds });
+  }
+
   // Fleet specific methods - Hosts
 
   async getHosts(params?: {
@@ -253,6 +339,9 @@ class FleetApiClient {
     per_page?: number;
     page?: number;
     disable_failing_policies?: boolean;
+    policy_id?: number;
+    policy_response?: 'passing' | 'failing';
+    device_mapping?: boolean;
   }): Promise<ApiResponse<{ hosts: Host[] }>> {
     const queryParams = new URLSearchParams();
     if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
@@ -265,6 +354,9 @@ class FleetApiClient {
     if (params?.disable_failing_policies !== undefined) {
       queryParams.append('disable_failing_policies', params.disable_failing_policies.toString());
     }
+    if (params?.policy_id) queryParams.append('policy_id', params.policy_id.toString());
+    if (params?.policy_response) queryParams.append('policy_response', params.policy_response);
+    if (params?.device_mapping !== undefined) queryParams.append('device_mapping', params.device_mapping.toString());
 
     const queryString = queryParams.toString();
     const path = queryString ? `/api/latest/fleet/hosts?${queryString}` : '/api/latest/fleet/hosts';
@@ -312,6 +404,34 @@ class FleetApiClient {
     return this.delete(`/api/latest/fleet/labels/id/${id}`);
   }
 
+  // Fleet specific methods - Counts
+
+  async getPoliciesCount(params?: { query?: string }): Promise<ApiResponse<{ count: number }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.query) queryParams.append('query', params.query);
+    const queryString = queryParams.toString();
+    const path = queryString ? `/api/v1/fleet/policies/count?${queryString}` : '/api/v1/fleet/policies/count';
+    return this.get(path);
+  }
+
+  async getHostsCount(params?: {
+    policy_id?: number;
+    policy_response?: 'passing' | 'failing';
+    query?: string;
+    status?: string;
+    team_id?: number;
+  }): Promise<ApiResponse<{ count: number }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.policy_id) queryParams.append('policy_id', params.policy_id.toString());
+    if (params?.policy_response) queryParams.append('policy_response', params.policy_response);
+    if (params?.query) queryParams.append('query', params.query);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    const queryString = queryParams.toString();
+    const path = queryString ? `/api/v1/fleet/hosts/count?${queryString}` : '/api/v1/fleet/hosts/count';
+    return this.get(path);
+  }
+
   // Fleet specific methods - Packs
 
   async getPacks(): Promise<ApiResponse<any[]>> {
@@ -324,6 +444,29 @@ class FleetApiClient {
 
   getBaseUrl(): string {
     return this.baseUrl;
+  }
+
+  getWsBaseUrl(): string {
+    return this.wsBaseUrl;
+  }
+
+  getSockJsUrl(): string {
+    // Unbiased random integer in [0, range) via rejection sampling
+    const unbiasedRandom = (range: number): number => {
+      const max = 0x100000000; // 2^32
+      const limit = max - (max % range);
+      const buf = new Uint32Array(1);
+      let value: number;
+      do {
+        crypto.getRandomValues(buf);
+        value = buf[0];
+      } while (value >= limit);
+      return value % range;
+    };
+
+    const serverId = String(unbiasedRandom(999)).padStart(3, '0');
+    const sessionId = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).padStart(8, '0').substring(0, 8);
+    return `${this.wsBaseUrl}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
   }
 }
 
