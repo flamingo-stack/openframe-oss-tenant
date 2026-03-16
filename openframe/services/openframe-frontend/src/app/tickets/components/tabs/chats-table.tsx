@@ -2,13 +2,13 @@
 
 import { BoxArchiveIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useCursorPaginationState, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup';
 import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation';
 import { useDialogsQuery } from '../../hooks/use-dialogs-query';
-import { ClientDialogOwner, Dialog } from '../../types/dialog.types';
+import type { ClientDialogOwner, Dialog } from '../../types/dialog.types';
 import { getDialogTableColumns } from '../dialog-table-columns';
 
 interface ChatsTableProps {
@@ -19,28 +19,17 @@ interface ChatsTableProps {
 
 export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: ChatsTableProps) {
   const router = useRouter();
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
 
   // Lazy organization lookup - doesn't block initial render
   const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup();
   const archiveResolvedMutation = useArchiveResolvedMutation();
 
-  const {
-    searchInput,
-    setSearchInput,
-    hasLoadedBeyondFirst,
-    handleNextPage: handleNextPageHook,
-    handleResetToFirstPage: handleResetToFirstPageHook,
-    params: paginationParams,
-  } = useCursorPaginationState({
-    onInitialLoad: (search, cursor) => {},
-    onSearchChange: _search => {},
-  });
-
-  const { dialogs, pageInfo, isLoading, error, hasNextPage, endCursor, startCursor } = useDialogsQuery({
+  const { dialogs, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useDialogsQuery({
     archived: isArchived,
-    search: paginationParams.search,
+    search: debouncedSearch,
     statusFilters,
-    cursor: paginationParams.cursor,
   });
 
   useEffect(() => {
@@ -91,6 +80,9 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       if (onStatusFilterChange) {
         onStatusFilterChange(newStatusFilters);
       }
+
+      // Scroll to top on filter change
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
     [isArchived, onStatusFilterChange],
   );
@@ -98,33 +90,6 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   const hasResolvedDialogs = useMemo(() => {
     return !isArchived && dialogs.some((d: Dialog) => d.status === 'RESOLVED');
   }, [dialogs, isArchived]);
-
-  const onNext = useCallback(() => {
-    if (hasNextPage && endCursor) {
-      handleNextPageHook(endCursor, () => Promise.resolve());
-    }
-  }, [hasNextPage, endCursor, handleNextPageHook]);
-
-  const onReset = useCallback(() => {
-    handleResetToFirstPageHook(() => Promise.resolve());
-  }, [handleResetToFirstPageHook]);
-
-  const cursorPagination = useTablePagination(
-    pageInfo
-      ? {
-          type: 'server',
-          hasNextPage: hasNextPage,
-          hasLoadedBeyondFirst: hasLoadedBeyondFirst,
-          startCursor: startCursor,
-          endCursor: endCursor,
-          itemCount: dialogs.length,
-          itemName: 'chats',
-          onNext: onNext,
-          onReset: onReset,
-          showInfo: true,
-        }
-      : null,
-  );
 
   const title = isArchived ? 'Archived Chats' : 'Current Chats';
   const emptyMessage = isArchived
@@ -155,8 +120,8 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     <ListPageLayout
       title={title}
       searchPlaceholder="Search for Chat"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
+      searchValue={search}
+      onSearch={setSearch}
       error={error}
       padding="none"
       className="pt-6"
@@ -165,6 +130,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       mobileFilterGroups={filterGroups}
       // TODO: This is a hack to get the filters to work, replace in future
       currentMobileFilters={{ status: statusFilters || [] }}
+      stickyHeader
     >
       <Table
         data={dialogs}
@@ -179,7 +145,14 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
         onFilterChange={handleFilterChange}
         showFilters={!isArchived}
         rowClassName="mb-1"
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage,
+          isFetchingNextPage,
+          onLoadMore: () => fetchNextPage(),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
       />
     </ListPageLayout>
   );

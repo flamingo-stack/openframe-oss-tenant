@@ -4,7 +4,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useState } from 'react';
 import { apiClient } from '../../../lib/api-client';
 import { GET_LOG_DETAILS_QUERY } from '../../logs-page/queries/logs-queries';
-import type { LogEntry } from '../../logs-page/stores/logs-store';
+import type { LogEntry } from '../../logs-page/types/log.types';
 
 interface LogDetailsResponse {
   logDetails: LogEntry;

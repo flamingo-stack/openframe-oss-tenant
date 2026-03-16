@@ -61,7 +61,7 @@ export function LiveTestPanel({
       </h3>
 
       {/* Card container */}
-      <div className="bg-ods-card border border-ods-border rounded-[6px] h-[600px] overflow-clip flex flex-col">
+      <div className="bg-ods-card border border-ods-border rounded-[6px] max-h-[600px] overflow-clip flex flex-col">
         {/* Header row */}
         <div className="flex items-center justify-between px-4 h-[56px] border-b border-ods-border shrink-0">
           <div className="flex items-center gap-6">
@@ -95,7 +95,7 @@ export function LiveTestPanel({
 
           <div className="flex items-center gap-2">
             {!isRunning && (
-              <Button variant="outline" size="sm" leftIcon={<RotateCcw size={14} />} onClick={onTestAgain}>
+              <Button variant="outline" size="sm" onClick={onTestAgain}>
                 Test Again
               </Button>
             )}
@@ -139,7 +139,7 @@ export function LiveTestPanel({
             title=""
             data={results}
             loading={isRunning && results.length === 0}
-            skeletonRows={5}
+            skeletonRows={4}
             emptyMessage={isRunning ? 'Waiting for results...' : 'No results returned'}
             columnOrder={['host_display_name']}
             exportFilename={`test-${mode}-results`}

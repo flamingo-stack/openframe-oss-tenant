@@ -55,7 +55,7 @@ export function useAuthSession() {
     refetchInterval: query => {
       return query.state.data?.authenticated ? runtimeEnv.authCheckIntervalMs() : false;
     },
-    retry: 1,
+    retry: 2,
     retryDelay: 1000,
   });
 
@@ -112,9 +112,12 @@ export function useAuthSession() {
     queryClient.invalidateQueries({ queryKey: authSessionQueryKey });
   };
 
+  const isReady = !query.isLoading && !(query.isError && query.data === undefined);
+
   return {
-    isReady: !query.isLoading,
+    isReady,
     isAuthenticated: !!query.data?.authenticated,
+    isError: query.isError,
     user: query.data?.user ?? null,
     recheck,
   };

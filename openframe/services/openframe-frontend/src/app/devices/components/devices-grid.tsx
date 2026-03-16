@@ -1,4 +1,4 @@
-import { ContentLoadingContainer, DeviceCardSkeletonGrid } from '@flamingo-stack/openframe-frontend-core/components';
+import { DeviceCardSkeleton, DeviceCardSkeletonGrid } from '@flamingo-stack/openframe-frontend-core/components';
 import { DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
 import type { Device } from '../types/device.types';
@@ -12,9 +12,19 @@ interface DevicesGridProps {
     deviceTypes?: string[];
     osTypes?: string[];
   };
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  sentinelRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function DevicesGrid({ devices, isLoading, filters }: DevicesGridProps) {
+export function DevicesGrid({
+  devices,
+  isLoading,
+  filters,
+  hasNextPage,
+  isFetchingNextPage,
+  sentinelRef,
+}: DevicesGridProps) {
   const router = useRouter();
 
   const handleDeviceClick = (device: Device) => {
@@ -55,17 +65,15 @@ export function DevicesGrid({ devices, isLoading, filters }: DevicesGridProps) {
         </div>
       ) : null}
 
-      <ContentLoadingContainer
-        isLoading={isLoading}
-        skeletonComponent={<DeviceCardSkeletonGrid count={12} />}
-        minHeight="min-h-[400px] md:min-h-[900px]"
-      >
-        {devices.length === 0 ? (
-          <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-            <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {isLoading && devices.length === 0 ? (
+        <DeviceCardSkeletonGrid count={12} />
+      ) : devices.length === 0 ? (
+        <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
+          <p className="text-ods-text-secondary">No devices found. Try adjusting your search or filters.</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {devices.map(device => {
               const statusConfig = getDeviceStatusConfig(device.status);
               return (
@@ -97,9 +105,11 @@ export function DevicesGrid({ devices, isLoading, filters }: DevicesGridProps) {
                 />
               );
             })}
+            {isFetchingNextPage && Array.from({ length: 4 }, (_, i) => <DeviceCardSkeleton key={`skeleton-${i}`} />)}
           </div>
-        )}
-      </ContentLoadingContainer>
+          {hasNextPage && <div ref={sentinelRef} className="h-1" aria-hidden="true" />}
+        </>
+      )}
     </div>
   );
 }
