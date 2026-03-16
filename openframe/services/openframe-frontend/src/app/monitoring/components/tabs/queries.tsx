@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 function formatInterval(seconds: number): string {
   if (seconds === 0) return 'Manual';
