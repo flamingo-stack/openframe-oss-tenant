@@ -451,8 +451,9 @@ class FleetApiClient {
   }
 
   getSockJsUrl(): string {
-    const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-    const sessionId = Math.random().toString(36).substring(2, 10);
+    const randomValues = crypto.getRandomValues(new Uint32Array(2));
+    const serverId = String(randomValues[0] % 999).padStart(3, '0');
+    const sessionId = randomValues[1].toString(36).padStart(8, '0').substring(0, 8);
     return `${this.wsBaseUrl}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
   }
 }
