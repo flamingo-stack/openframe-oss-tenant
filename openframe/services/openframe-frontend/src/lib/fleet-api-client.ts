@@ -451,9 +451,21 @@ class FleetApiClient {
   }
 
   getSockJsUrl(): string {
-    const randomValues = crypto.getRandomValues(new Uint32Array(2));
-    const serverId = String(randomValues[0] % 999).padStart(3, '0');
-    const sessionId = randomValues[1].toString(36).padStart(8, '0').substring(0, 8);
+    // Unbiased random integer in [0, range) via rejection sampling
+    const unbiasedRandom = (range: number): number => {
+      const max = 0x100000000; // 2^32
+      const limit = max - (max % range);
+      const buf = new Uint32Array(1);
+      let value: number;
+      do {
+        crypto.getRandomValues(buf);
+        value = buf[0];
+      } while (value >= limit);
+      return value % range;
+    };
+
+    const serverId = String(unbiasedRandom(999)).padStart(3, '0');
+    const sessionId = crypto.getRandomValues(new Uint32Array(1))[0].toString(36).padStart(8, '0').substring(0, 8);
     return `${this.wsBaseUrl}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
   }
 }
