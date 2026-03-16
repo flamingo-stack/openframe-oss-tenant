@@ -181,7 +181,7 @@ pub(crate) async fn download_and_write_binary(
     target_path: &Path,
     tool_agent_id: &str,
 ) -> Result<()> {
-    info!(tool_id = %tool_agent_id, "Downloading binary from: {}", config.get_download_link());
+    info!(tool_id = %tool_agent_id, "Downloading binary from: {}", config.link);
     let binary_bytes = deps.github_download_service
         .download_and_extract(config)
         .await

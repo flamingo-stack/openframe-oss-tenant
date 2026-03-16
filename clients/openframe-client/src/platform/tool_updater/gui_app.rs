@@ -55,7 +55,7 @@ impl ToolUpdater for GuiAppToolUpdater {
 
         let applications_dir = PathBuf::from("/Applications");
 
-        info!(tool_id = %tool_agent_id, "Downloading and installing new version from: {}", config.get_download_link());
+        info!(tool_id = %tool_agent_id, "Downloading and installing new version from: {}", config.link);
         self.deps.github_download_service
             .download_and_extract_all(config, &applications_dir)
             .await

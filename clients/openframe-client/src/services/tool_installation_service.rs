@@ -224,7 +224,7 @@ impl ToolInstallationService {
                                 .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
                             let config = self.github_download_service.find_config_for_current_os(download_configs)
                                 .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
-                            info!("Downloading Github asset: {} from {}", asset.id, config.get_download_link());
+                            info!("Downloading Github asset: {} from {}", asset.id, config.link);
 
                             self.github_download_service
                                 .download_and_extract(config)

@@ -27,12 +27,11 @@ impl GithubDownloadService {
     /// Downloads and extracts agent binary from the given download configuration
     /// Returns the binary bytes ready to be written to disk
     pub async fn download_and_extract(&self, config: &DownloadConfiguration) -> Result<Bytes> {
-        let download_link = config.get_download_link();
-        info!("Downloading from: {}", download_link);
+        info!("Downloading from: {}", config.link);
 
         // Download the archive with retry
-        let archive_bytes = self.download_with_retry(&download_link).await
-            .with_context(|| format!("Failed to download from: {}", download_link))?;
+        let archive_bytes = self.download_with_retry(&config.link).await
+            .with_context(|| format!("Failed to download from: {}", &config.link))?;
 
         info!("Downloaded {} bytes", archive_bytes.len());
 
@@ -293,11 +292,10 @@ impl GithubDownloadService {
     /// Downloads archive and extracts all contents to target path (macOS only).
     #[cfg(target_os = "macos")]
     pub async fn download_and_extract_all(&self, config: &DownloadConfiguration, target_dir: &Path) -> Result<()> {
-        let download_link = config.get_download_link();
-        info!("Downloading archive from: {}", download_link);
+        info!("Downloading archive from: {}", config.link);
 
-        let archive_bytes = self.download_with_retry(&download_link).await
-            .with_context(|| format!("Failed to download from: {}", download_link))?;
+        let archive_bytes = self.download_with_retry(&config.link).await
+            .with_context(|| format!("Failed to download from: {}", &config.link))?;
 
         info!("Downloaded {} bytes", archive_bytes.len());
 

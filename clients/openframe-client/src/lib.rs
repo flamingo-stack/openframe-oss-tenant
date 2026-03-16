@@ -163,7 +163,6 @@ impl Client {
         let machine_id = machine_id_service.get_or_create()
             .context("Failed to get or create machine ID")?;
 
-        // Initialize HTTP client with default X-MACHINE-ID header
         let mut default_headers = reqwest::header::HeaderMap::new();
         default_headers.insert(
             MACHINE_ID_HEADER,
