@@ -11,6 +11,7 @@ import {
 import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
 
@@ -43,7 +44,8 @@ export function Queries() {
     }
   }, [debouncedSearchInput, setParams]);
 
-  const { queries, isLoading, error } = useQueries();
+  const { queries, isLoading, error, deleteQuery } = useQueries();
+  const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
 
   const filteredQueries = useMemo(() => {
     if (!params.search || params.search.trim() === '') return queries;
@@ -86,6 +88,10 @@ export function Queries() {
       {
         label: 'Query Details',
         onClick: () => router.push(`/monitoring/query/${query.id}`),
+      },
+      {
+        label: 'Delete Query',
+        onClick: () => setQueryToDelete(query),
       },
     ],
     [router],
@@ -160,6 +166,21 @@ export function Queries() {
         onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
         renderRowActions={renderRowActions}
+      />
+      <ConfirmDeleteMonitoringModal
+        open={!!queryToDelete}
+        onOpenChange={open => {
+          if (!open) setQueryToDelete(null);
+        }}
+        itemName={queryToDelete?.name ?? ''}
+        itemType="query"
+        onConfirm={() => {
+          if (queryToDelete) {
+            deleteQuery(queryToDelete.id, {
+              onSuccess: () => setQueryToDelete(null),
+            });
+          }
+        }}
       />
     </ListPageLayout>
   );

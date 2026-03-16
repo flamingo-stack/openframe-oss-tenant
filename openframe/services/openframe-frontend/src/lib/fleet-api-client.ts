@@ -146,7 +146,7 @@ class FleetApiClient {
   }
 
   async deletePolicy(policyId: number): Promise<ApiResponse<void>> {
-    return this.delete(`/api/latest/fleet/policies/${policyId}`);
+    return this.post('/api/latest/fleet/policies/delete', { ids: [policyId] });
   }
 
   async runPolicyOnHost(policyId: number, hostId: number): Promise<ApiResponse<any>> {
@@ -253,7 +253,7 @@ class FleetApiClient {
   }
 
   async deleteQuery(queryId: number): Promise<ApiResponse<void>> {
-    return this.delete(`/api/latest/fleet/queries/${queryId}`);
+    return this.delete(`/api/latest/fleet/queries/id/${queryId}`);
   }
 
   async runQuery(

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Button,
   CardLoader,
   DetailPageContainer,
   LoadError,
@@ -8,10 +9,13 @@ import {
   NotFoundError,
   QueryReportTable,
 } from '@flamingo-stack/openframe-frontend-core';
+import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Edit2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { useQueries } from '../../hooks/use-queries';
 import { useQueryDetails } from '../hooks/use-query-details';
 import { useQueryReport } from '../hooks/use-query-report';
 
@@ -35,6 +39,8 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const { toast } = useToast();
   const { queryDetails, isLoading, error } = useQueryDetails(isValidId ? numericId : null);
   const { rows, isLoading: isReportLoading } = useQueryReport(isValidId ? numericId : null);
+  const { deleteQuery, isDeleting } = useQueries();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleBack = () => {
     router.push('/monitoring?tab=queries');
@@ -42,6 +48,12 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
 
   const handleEditQuery = () => {
     router.push(`/monitoring/query/edit/${queryId}`);
+  };
+
+  const handleDeleteQuery = () => {
+    deleteQuery(numericId, {
+      onSuccess: () => router.push('/monitoring?tab=queries'),
+    });
   };
 
   if (isLoading) {
@@ -64,15 +76,25 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         onClick: handleBack,
       }}
       headerActions={
-        <MoreActionsMenu
-          items={[
-            {
-              label: 'Edit Query',
-              icon: <Edit2 size={20} />,
-              onClick: handleEditQuery,
-            },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
+            variant="card"
+            onClick={handleEditQuery}
+          >
+            Edit
+          </Button>
+          <MoreActionsMenu
+            items={[
+              {
+                label: 'Delete Query',
+                icon: <TrashIcon />,
+                onClick: () => setIsDeleteModalOpen(true),
+                disabled: isDeleting,
+              },
+            ]}
+          />
+        </div>
       }
     >
       {/* Query Info */}
@@ -116,6 +138,13 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
           }}
         />
       </div>
+      <ConfirmDeleteMonitoringModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        itemName={queryDetails.name}
+        itemType="query"
+        onConfirm={handleDeleteQuery}
+      />
     </DetailPageContainer>
   );
 }

@@ -17,6 +17,7 @@ import {
 import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
@@ -65,8 +66,9 @@ export function Policies() {
     }
   }, [debouncedSearchInput, setParams]);
 
-  const { policies, isLoading, error } = usePolicies();
+  const { policies, isLoading, error, deletePolicy } = usePolicies();
   const summary = usePolicySummary();
+  const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
     if (!params.search || params.search.trim() === '') return policies;
@@ -133,6 +135,10 @@ export function Policies() {
       {
         label: 'Policy Details',
         onClick: () => router.push(`/monitoring/policy/${policy.id}`),
+      },
+      {
+        label: 'Delete Policy',
+        onClick: () => setPolicyToDelete(policy),
       },
     ],
     [router],
@@ -245,6 +251,21 @@ export function Policies() {
         onRowClick={handleRowClick}
         cursorPagination={cursorPagination}
         renderRowActions={renderRowActions}
+      />
+      <ConfirmDeleteMonitoringModal
+        open={!!policyToDelete}
+        onOpenChange={open => {
+          if (!open) setPolicyToDelete(null);
+        }}
+        itemName={policyToDelete?.name ?? ''}
+        itemType="policy"
+        onConfirm={() => {
+          if (policyToDelete) {
+            deletePolicy(policyToDelete.id, {
+              onSuccess: () => setPolicyToDelete(null),
+            });
+          }
+        }}
       />
     </ListPageContainer>
   );

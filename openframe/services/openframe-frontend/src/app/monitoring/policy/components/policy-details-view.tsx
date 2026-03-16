@@ -1,15 +1,19 @@
 'use client';
 
 import {
+  Button,
   CardLoader,
   DetailPageContainer,
   LoadError,
   MoreActionsMenu,
   NotFoundError,
 } from '@flamingo-stack/openframe-frontend-core';
-import { Edit2 } from 'lucide-react';
+import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
 import { PolicyDevicesTable } from './policy-devices-table';
 
@@ -23,6 +27,8 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const isValidId = !isNaN(numericId);
 
   const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
+  const { deletePolicy, isDeleting } = usePolicies();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleBack = () => {
     router.push('/monitoring?tab=policies');
@@ -30,6 +36,12 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
 
   const handleEditPolicy = () => {
     router.push(`/monitoring/policy/edit/${policyId}`);
+  };
+
+  const handleDeletePolicy = () => {
+    deletePolicy(numericId, {
+      onSuccess: () => router.push('/monitoring?tab=policies'),
+    });
   };
 
   if (isLoading) {
@@ -52,15 +64,25 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         onClick: handleBack,
       }}
       headerActions={
-        <MoreActionsMenu
-          items={[
-            {
-              label: 'Edit Policy',
-              icon: <Edit2 size={20} />,
-              onClick: handleEditPolicy,
-            },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
+            variant="card"
+            onClick={handleEditPolicy}
+          >
+            Edit
+          </Button>
+          <MoreActionsMenu
+            items={[
+              {
+                label: 'Delete Policy',
+                icon: <TrashIcon />,
+                onClick: () => setIsDeleteModalOpen(true),
+                disabled: isDeleting,
+              },
+            ]}
+          />
+        </div>
       }
     >
       {/* Policy Info */}
@@ -120,6 +142,13 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           <PolicyDevicesTable policyId={numericId} />
         </div>
       </div>
+      <ConfirmDeleteMonitoringModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        itemName={policyDetails.name}
+        itemType="policy"
+        onConfirm={handleDeletePolicy}
+      />
     </DetailPageContainer>
   );
 }
