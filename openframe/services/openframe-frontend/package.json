@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack -p ${PORT:-3000}",
-    "dev:turbo": "next dev -p ${PORT:-3000}",
+    "dev": "next dev -p ${PORT:-3000}",
     "build": "next build",
     "build:local": "next build --webpack",
     "start": "next start -p ${PORT:-3000}",
@@ -17,7 +16,7 @@
     "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky || true"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.60",
+    "@flamingo-stack/openframe-frontend-core": "0.0.62",
     "@hookform/resolvers": "^5.2.2",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.90.16",
