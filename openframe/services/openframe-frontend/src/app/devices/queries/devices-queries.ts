@@ -77,13 +77,12 @@ export const GET_DEVICES_QUERY = `
             disconnectedAt
           }
           tags {
-            id
-            name
+            tagId
+            key
             description
             color
-            organizationId
+            values
             createdAt
-            createdBy
           }
         }
         cursor
@@ -131,13 +130,12 @@ export const GET_DEVICE_QUERY = `
       registeredAt
       updatedAt
       tags {
-        id
-        name
+        tagId
+        key
         description
         color
-        organizationId
+        values
         createdAt
-        createdBy
       }
       toolConnections {
         id

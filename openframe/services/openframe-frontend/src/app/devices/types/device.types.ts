@@ -64,13 +64,12 @@ export interface MdmInfo {
  * Device Tag type
  */
 export interface DeviceTag {
-  id: string;
-  name: string;
+  tagId: string;
+  key: string;
   description?: string;
   color?: string;
-  organizationId: string;
-  createdAt: string;
-  createdBy: string;
+  values: string[];
+  createdAt?: string;
 }
 
 /**
@@ -330,13 +329,12 @@ export type DevicesGraphQlNode = {
   registeredAt?: string;
   updatedAt?: string;
   tags?: Array<{
-    id: string;
-    name: string;
+    tagId: string;
+    key: string;
     description?: string;
     color?: string;
-    organizationId: string;
-    createdAt: string;
-    createdBy: string;
+    values: string[];
+    createdAt?: string;
   }>;
   toolConnections?: ToolConnection[];
   installedAgents?: InstalledAgent[];
@@ -372,13 +370,12 @@ export type DeviceGraphQlNode = {
   registeredAt?: string;
   updatedAt?: string;
   tags?: Array<{
-    id: string;
-    name: string;
+    tagId: string;
+    key: string;
     description?: string;
     color?: string;
-    organizationId: string;
-    createdAt: string;
-    createdBy: string;
+    values: string[];
+    createdAt?: string;
   }>;
   toolConnections?: ToolConnection[];
   installedAgents?: InstalledAgent[];
