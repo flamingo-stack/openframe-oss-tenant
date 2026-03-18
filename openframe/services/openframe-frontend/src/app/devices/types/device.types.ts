@@ -279,7 +279,7 @@ export interface DeviceFilters {
   deviceTypes: DeviceFilterValue[];
   osTypes: DeviceFilterValue[];
   organizationIds: DeviceFilterTag[];
-  tags: DeviceFilterTag[];
+  tagKeys: DeviceFilterTag[];
   filteredCount: number;
 }
 
@@ -288,7 +288,8 @@ export interface DeviceFilterInput {
   deviceTypes?: string[];
   osTypes?: string[];
   organizationIds?: string[];
-  tags?: string[];
+  tagKeys?: string[];
+  tagValues?: string[];
 }
 
 export interface GraphQlResponse<T> {
