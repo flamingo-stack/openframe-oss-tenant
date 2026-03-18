@@ -371,7 +371,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   return (
     <DetailPageContainer
-      title={dialog.title}
+      title={dialog.title || 'Untitled Dialog'}
       backButton={{
         label: 'Back to Chats',
         onClick: () => router.push('/tickets'),

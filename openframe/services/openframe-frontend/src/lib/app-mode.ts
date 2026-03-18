@@ -96,11 +96,6 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
     }
   }
 
-  // Feature flag: monitoring pages
-  if (pathname.startsWith('/monitoring') && !featureFlags.monitoring.enabled()) {
-    return false;
-  }
-
   return true;
 }
 
