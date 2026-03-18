@@ -160,7 +160,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const handleBeforeReconnect = useCallback(async () => {
     try {
-      await apiClient.get('/api/user/me');
+      await apiClient.get('/api/me');
     } catch {
       // If refresh fails, apiClient will force-logout
     }
