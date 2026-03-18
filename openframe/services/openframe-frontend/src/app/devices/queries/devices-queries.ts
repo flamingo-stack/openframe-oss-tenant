@@ -22,7 +22,7 @@ export const GET_DEVICE_FILTERS_QUERY = `
         label
         count
       }
-      tags {
+      tagKeys {
         value
         label
         count
