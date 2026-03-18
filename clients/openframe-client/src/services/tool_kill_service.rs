@@ -53,13 +53,14 @@ impl ToolKillService {
 
         let mut pids_to_stop = Vec::new();
 
-        // Find all matching processes
+        // Find all matching processes by cmdline OR executable path
         for (pid, process) in sys.processes() {
             let cmd_items = process.cmd();
             let cmdline = cmd_items.join(" ").to_lowercase();
+            let exe_path = process.exe().map(|p| p.to_string_lossy().to_lowercase()).unwrap_or_default();
 
-            if cmdline.contains(pattern) {
-                info!("Found process for {} with pid {}", description, pid);
+            if cmdline.contains(pattern) || exe_path.contains(pattern) {
+                info!("Found process for {} with pid {} (exe: {})", description, pid, exe_path);
                 pids_to_stop.push(*pid);
             }
         }
@@ -213,10 +214,17 @@ impl ToolKillService {
             Installation::Standard { .. } => {
                 self.stop_tool(&tool.tool_agent_id).await
             }
-            Installation::Service { service_name, .. } => {
+            Installation::Service { service_name, executable_path } => {
                 info!(tool_id = %tool.tool_agent_id, service_name = %service_name,
                       "Stopping Service type tool via system service manager");
-                self.stop_service(service_name).await
+                self.stop_service(service_name).await?;
+
+                // Kill any remaining processes by executable path (detached children)
+                if let Some(path) = executable_path {
+                    info!(tool_id = %tool.tool_agent_id, "Killing remaining processes by path: {}", path);
+                    self.stop_tool_by_path(path).await?;
+                }
+                Ok(())
             }
         }
     }
@@ -280,10 +288,8 @@ impl ToolKillService {
         let stderr = String::from_utf8_lossy(&output.stderr);
 
         if output.status.success() {
-            info!("Service {} stopped successfully", service_name);
-            // Wait for service to fully stop
-            self.wait_for_service_stop_windows(service_name).await?;
-            Ok(())
+            info!("Service {} stop initiated", service_name);
+            self.wait_for_service_stop_windows(service_name).await
         } else if stderr.contains("1062") || stdout.contains("1062") {
             // Error 1062: The service has not been started
             info!("Service {} is not running (error 1062)", service_name);
@@ -304,8 +310,9 @@ impl ToolKillService {
 
     #[cfg(target_os = "windows")]
     async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<()> {
-        let max_attempts = 10;
-        for attempt in 1..=max_attempts {
+        const MAX_ATTEMPTS: u32 = 20; // 10 seconds total
+
+        for attempt in 1..=MAX_ATTEMPTS {
             sleep(Duration::from_millis(500)).await;
 
             let output = Command::new("sc")
@@ -319,11 +326,9 @@ impl ToolKillService {
                 info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
                 return Ok(());
             }
-
-            if attempt == max_attempts {
-                warn!("Service {} did not confirm stopped after {} attempts", service_name, max_attempts);
-            }
         }
+
+        warn!("Service {} did not confirm stopped after {} attempts", service_name, MAX_ATTEMPTS);
         Ok(())
     }
 

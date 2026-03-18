@@ -185,7 +185,9 @@ export function AuthSignupSection({
                 disabled={isLoading || !!prefillEmail}
                 className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
               />
-              {email.trim() && !isEmailValid && <p className="text-xs text-error mt-1">Enter a valid email address</p>}
+              {email.trim() && !isEmailValid && (
+                <p className="text-xs text-ods-error mt-1">Enter a valid email address</p>
+              )}
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">
@@ -201,7 +203,7 @@ export function AuthSignupSection({
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
                 {isSaasShared && password && password.length < 8 && (
-                  <p className="text-xs text-error mt-1">Password must be at least 8 characters</p>
+                  <p className="text-xs text-ods-error mt-1">Password must be at least 8 characters</p>
                 )}
               </div>
               <div className="flex-1 flex flex-col gap-1">
@@ -216,13 +218,13 @@ export function AuthSignupSection({
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
                 {confirmPassword && password !== confirmPassword && (
-                  <p className="text-xs text-error mt-1">Passwords do not match</p>
+                  <p className="text-xs text-ods-error mt-1">Passwords do not match</p>
                 )}
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center">
-              <Button onClick={onBack} disabled={isLoading} variant="outline" className="w-full sm:flex-1">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-stretch md:items-center">
+              <Button onClick={onBack} disabled={isLoading} variant="outline" className="w-full md:flex-1">
                 Back
               </Button>
               <Button
@@ -230,7 +232,7 @@ export function AuthSignupSection({
                 disabled={!isFormValid || isLoading}
                 loading={isLoading}
                 variant="primary"
-                className="w-full sm:flex-1"
+                className="w-full md:flex-1"
               >
                 {getButtonText()}
               </Button>

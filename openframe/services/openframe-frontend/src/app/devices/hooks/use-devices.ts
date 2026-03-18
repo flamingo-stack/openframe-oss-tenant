@@ -1,94 +1,57 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { GET_DEVICE_FILTERS_QUERY, GET_DEVICES_QUERY } from '../queries/devices-queries';
-import { Device, DeviceFilterInput, DeviceFilters, DevicesGraphQlNode, GraphQlResponse } from '../types/device.types';
+import { GET_DEVICES_QUERY } from '../queries/devices-queries';
+import type { Device, DeviceFilterInput, DevicesGraphQlNode, GraphQlResponse } from '../types/device.types';
 import { createDeviceListItem } from '../utils/device-transform';
 
-export function useDevices(filters: DeviceFilterInput = {}) {
+const DEVICES_PAGE_SIZE = 20;
+
+interface DevicesPage {
+  devices: Device[];
+  pageInfo: {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+  };
+  filteredCount: number;
+}
+
+export const devicesQueryKeys = {
+  all: ['devices'] as const,
+  list: (filters: DeviceFilterInput, search: string) => ['devices', 'list', filters, search] as const,
+};
+
+export function useDevices(filters: DeviceFilterInput = {}, search = '') {
   const { toast } = useToast();
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [deviceFilters, setDeviceFilters] = useState<DeviceFilters | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pageInfo, setPageInfo] = useState<any>(null);
-  const [filteredCount, setFilteredCount] = useState(0);
-  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false);
 
-  // Stabilize filters to prevent infinite loops while still detecting changes
-  const filtersKey = JSON.stringify(filters);
-  const stableFilters = useMemo(() => filters, [filters]);
-  const filtersRef = useRef(stableFilters);
-  filtersRef.current = stableFilters;
-
-  const fetchDevices = useCallback(
-    async (searchTerm?: string, cursor?: string | null) => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await apiClient.post<
-          GraphQlResponse<{
-            devices: {
-              edges: Array<{ node: DevicesGraphQlNode; cursor: string }>;
-              pageInfo: { hasNextPage: boolean; hasPreviousPage: boolean; startCursor?: string; endCursor?: string };
-              filteredCount: number;
+  const query = useInfiniteQuery<DevicesPage, Error>({
+    queryKey: devicesQueryKeys.list(filters, search),
+    queryFn: async ({ pageParam }) => {
+      const response = await apiClient.post<
+        GraphQlResponse<{
+          devices: {
+            edges: Array<{ node: DevicesGraphQlNode; cursor: string }>;
+            pageInfo: {
+              hasNextPage: boolean;
+              hasPreviousPage: boolean;
+              startCursor?: string;
+              endCursor?: string;
             };
-          }>
-        >('/api/graphql', {
-          query: GET_DEVICES_QUERY,
-          variables: {
-            filter: filtersRef.current,
-            pagination: { limit: 10, cursor: cursor || null },
-            search: searchTerm || '',
-            sort: { field: 'status', direction: 'DESC' },
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(response.error || `Request failed with status ${response.status}`);
-        }
-
-        const graphqlResponse = response.data;
-        if (!graphqlResponse?.data) {
-          throw new Error('No data received from server');
-        }
-        if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
-          throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
-        }
-
-        const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
-
-        // Create Device objects directly
-        const transformedDevices: Device[] = nodes.map(createDeviceListItem);
-
-        setDevices(transformedDevices);
-        setPageInfo(graphqlResponse.data.devices.pageInfo);
-        setFilteredCount(graphqlResponse.data.devices.filteredCount);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch devices';
-        setError(errorMessage);
-
-        toast({
-          title: 'Failed to Load Devices',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [toast],
-  );
-
-  const fetchDeviceFilters = useCallback(async () => {
-    try {
-      const response = await apiClient.post<GraphQlResponse<{ deviceFilters: DeviceFilters }>>('/api/graphql', {
-        query: GET_DEVICE_FILTERS_QUERY,
+            filteredCount: number;
+          };
+        }>
+      >('/api/graphql', {
+        query: GET_DEVICES_QUERY,
         variables: {
-          filter: filtersRef.current,
+          filter: filters,
+          pagination: { limit: DEVICES_PAGE_SIZE, cursor: (pageParam as string) || null },
+          search: search || '',
+          sort: { field: 'status', direction: 'DESC' },
         },
       });
 
@@ -97,98 +60,47 @@ export function useDevices(filters: DeviceFilterInput = {}) {
       }
 
       const graphqlResponse = response.data;
-      if (!graphqlResponse?.data) return;
+      if (!graphqlResponse?.data) {
+        throw new Error('No data received from server');
+      }
       if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
         throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
       }
 
-      setDeviceFilters(graphqlResponse.data.deviceFilters);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch device filters';
-      console.error('Device filters error:', errorMessage);
-    }
-  }, []);
+      const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
+      const devices = nodes.map(createDeviceListItem);
 
-  const searchDevices = useCallback(
-    (searchTerm: string) => {
-      setHasLoadedBeyondFirst(false); // Reset pagination state on new search
-      fetchDevices(searchTerm);
-    },
-    [fetchDevices],
-  );
-
-  const refreshDevices = useCallback(() => {
-    fetchDevices();
-    fetchDeviceFilters();
-  }, [fetchDevices, fetchDeviceFilters]);
-
-  // Note: Initial fetch is controlled by the view component, not the hook
-  // This allows views to pass cursor from URL on initial load
-  // Track if first fetch has been done (set by view component)
-  const initialLoadDone = useRef(false);
-  // Track previous filters to detect actual changes vs initial render
-  const prevFiltersKey = useRef<string | null>(null);
-
-  // Function to mark initial load as done (called by view component after first fetch)
-  const markInitialLoadDone = useCallback(() => {
-    initialLoadDone.current = true;
-    // Also set the initial filters key so we don't refetch on first render
-    prevFiltersKey.current = filtersKey;
-  }, [filtersKey]);
-
-  const fetchNextPage = useCallback(
-    async (searchTerm: string) => {
-      if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
-        return;
-      }
-      setHasLoadedBeyondFirst(true);
-      return fetchDevices(searchTerm, pageInfo.endCursor);
-    },
-    [pageInfo, fetchDevices],
-  );
-
-  const fetchFirstPage = useCallback(
-    async (searchTerm: string) => {
-      setHasLoadedBeyondFirst(false);
-      return fetchDevices(searchTerm);
-    },
-    [fetchDevices],
-  );
-
-  // Refetch when filters change (after initial load, and only when filters ACTUALLY changed)
-  useEffect(() => {
-    // Only refetch if:
-    // 1. Initial load is done
-    // 2. Previous filters key was set (not first render after initial load)
-    // 3. Filters actually changed
-    if (initialLoadDone.current && prevFiltersKey.current !== null && prevFiltersKey.current !== filtersKey) {
-      const refetch = async () => {
-        await fetchDevices();
-        await fetchDeviceFilters();
+      return {
+        devices,
+        pageInfo: graphqlResponse.data.devices.pageInfo,
+        filteredCount: graphqlResponse.data.devices.filteredCount,
       };
-      refetch();
+    },
+    getNextPageParam: lastPage => (lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined),
+    initialPageParam: undefined as string | undefined,
+    staleTime: 30 * 1000,
+  });
+
+  useEffect(() => {
+    if (query.error) {
+      toast({
+        title: 'Failed to Load Devices',
+        description: query.error.message,
+        variant: 'destructive',
+      });
     }
-    // Update previous filters key (but only after initial load)
-    if (initialLoadDone.current) {
-      prevFiltersKey.current = filtersKey;
-    }
-  }, [filtersKey, fetchDevices, fetchDeviceFilters]);
+  }, [query.error, toast]);
+
+  const devices = useMemo(() => query.data?.pages.flatMap(page => page.devices) ?? [], [query.data?.pages]);
 
   return {
     devices,
-    deviceFilters,
-    isLoading,
-    error,
-    searchDevices,
-    refreshDevices,
-    fetchDevices,
-    fetchDeviceFilters,
-    pageInfo,
-    filteredCount,
-    fetchNextPage,
-    fetchFirstPage,
-    hasLoadedBeyondFirst,
-    setHasLoadedBeyondFirst,
-    markInitialLoadDone,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage ?? false,
+    fetchNextPage: query.fetchNextPage,
+    error: query.error?.message ?? null,
+    filteredCount: query.data?.pages[0]?.filteredCount ?? 0,
+    refetch: query.refetch,
   };
 }

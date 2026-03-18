@@ -182,7 +182,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 }}
               />
               {orgEmail.trim() && !isOrgEmailValid && (
-                <p className="text-xs text-error mt-1">Enter a valid email address</p>
+                <p className="text-xs text-ods-error mt-1">Enter a valid email address</p>
               )}
             </div>
             <div className="flex-1 flex flex-col gap-1">
@@ -200,7 +200,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 }}
               />
               {orgName.trim() && !isOrgNameValid && (
-                <p className="text-xs text-error mt-1">
+                <p className="text-xs text-ods-error mt-1">
                   Organization Name must be 2-100 characters and may include letters, numbers, spaces, and
                   &.,&apos;&quot;()-
                 </p>
@@ -292,9 +292,9 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 }}
                 placeholder="Enter Code Here"
                 disabled={isLoading}
-                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-error' : ''}`}
+                className={`bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 ${accessCodeError ? 'border-ods-error' : ''}`}
               />
-              {accessCodeError && <p className="text-xs text-error mt-1">{accessCodeError}</p>}
+              {accessCodeError && <p className="text-xs text-ods-error mt-1">{accessCodeError}</p>}
             </div>
           )}
 
@@ -314,7 +314,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 }
                 loading={isLoading || isValidatingAccessCode || isCheckingDomain}
                 variant="primary"
-                className="!w-full sm:!w-full"
+                className="!w-full md:!w-full"
               >
                 {isValidatingAccessCode ? 'Validating...' : isCheckingDomain ? 'Checking...' : 'Continue'}
               </Button>
@@ -353,14 +353,14 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3 w-full"
             />
             {signInEmail.trim() && !isSignInEmailValid && (
-              <p className="text-xs text-error mt-1">Enter a valid email address</p>
+              <p className="text-xs text-ods-error mt-1">Enter a valid email address</p>
             )}
           </div>
 
           {/* Button Row with Forgot Password */}
           <div className="flex gap-6 items-center">
             <div className="flex-1 flex items-center">
-              <Button onClick={() => setShowForgotPassword(true)} variant="ghost" className="!w-full sm:!w-full">
+              <Button onClick={() => setShowForgotPassword(true)} variant="ghost" className="!w-full md:!w-full">
                 Forgot password?
               </Button>
             </div>
@@ -370,7 +370,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={!isSignInEmailValid || isSigningIn || isLoading}
                 loading={isSigningIn || isLoading}
                 variant="primary"
-                className="!w-full sm:!w-full"
+                className="!w-full md:!w-full"
               >
                 Continue
               </Button>

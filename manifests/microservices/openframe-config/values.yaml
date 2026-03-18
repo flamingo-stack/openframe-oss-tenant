@@ -12,7 +12,7 @@ registerJob:
 image:
   registry: ghcr.io/flamingo-stack/openframe-oss-tenant
   repository: openframe-config
-  tag: latest
+  tag: ""
 
 resources:
   requests:

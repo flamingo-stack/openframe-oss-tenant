@@ -1,10 +1,9 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../../devices/constants/device-statuses';
+import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries';
 import type { GraphQlResponse } from '../../devices/types/device.types';
-import { GET_LOGS_QUERY } from '../../logs-page/queries/logs-queries';
 import { DIALOG_STATUS } from '../../tickets/constants';
 import { GET_DIALOG_STATISTICS_QUERY } from '../../tickets/queries/dialogs-queries';
 

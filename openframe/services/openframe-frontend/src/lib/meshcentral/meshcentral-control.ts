@@ -52,15 +52,16 @@ export class MeshControlClient {
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
       refreshTokenBeforeReconnect: false, // Disable for MeshCentral
+      heartbeatInterval: 29000,
+      heartbeatMessage: () => JSON.stringify({ action: 'ping' }),
 
       onStateChange: state => {
         if (state === 'connected') {
           this.isOpen = true;
-          if (!this.cookies) {
-            this.requestAuthCookies();
-          }
+          this.requestAuthCookies();
         } else if (state === 'disconnected' || state === 'failed') {
           this.isOpen = false;
+          this.cookies = null;
           this.clearPendingRequests('WebSocket disconnected');
         }
       },
@@ -77,17 +78,20 @@ export class MeshControlClient {
           wasClean: event.wasClean,
         });
       },
-      shouldReconnect: closeEvent => {
-        const authFailureCodes = [1008, 1006, 4401];
-        const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code);
-        return shouldReconnect;
-      },
     });
   }
 
   private handleMessage(e: MessageEvent) {
     try {
       const msg = JSON.parse(e.data as string);
+
+      if (msg?.action === 'ping') {
+        try {
+          this.wsManager?.send(JSON.stringify({ action: 'pong' }));
+        } catch {}
+        return;
+      }
+      if (msg?.action === 'pong') return;
 
       if (msg && msg.action === 'authcookie' && msg.cookie) {
         this.cookies = { authCookie: msg.cookie as string, relayCookie: msg.rcookie };
@@ -123,6 +127,34 @@ export class MeshControlClient {
             request.resolve();
           } else {
             request.reject(new Error(msg.result || 'Power action failed'));
+          }
+        }
+      }
+
+      // Handle clipboard responses (setclip/getclip)
+      if (msg && msg.action === 'msg' && (msg.type === 'setclip' || msg.type === 'getclip')) {
+        let request = msg.responseid ? this.pendingRequests.get(msg.responseid) : undefined;
+
+        if (!request) {
+          for (const [key, val] of this.pendingRequests) {
+            if (key.startsWith(`${msg.type}_`)) {
+              request = val;
+              if (request) {
+                clearTimeout(request.timeout);
+                this.pendingRequests.delete(key);
+              }
+              break;
+            }
+          }
+        } else {
+          clearTimeout(request.timeout);
+          this.pendingRequests.delete(msg.responseid);
+        }
+        if (request) {
+          if (msg.type === 'getclip') {
+            request.resolve(msg.data ?? null);
+          } else {
+            request.resolve(true);
           }
         }
       }
@@ -277,6 +309,52 @@ export class MeshControlClient {
     });
   }
 
+  async setClipboard(nodeId: string, data: string, timeoutMs = 3000): Promise<boolean> {
+    if (!this.wsManager?.isConnected()) return false;
+
+    const responseid = `setclip_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    return new Promise<boolean>(resolve => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(responseid);
+        resolve(false);
+      }, timeoutMs);
+
+      this.pendingRequests.set(responseid, { resolve, reject: () => resolve(false), timeout });
+
+      try {
+        this.wsManager?.send(JSON.stringify({ action: 'msg', type: 'setclip', nodeid: nodeId, data, responseid }));
+      } catch {
+        clearTimeout(timeout);
+        this.pendingRequests.delete(responseid);
+        resolve(false);
+      }
+    });
+  }
+
+  async getClipboard(nodeId: string, timeoutMs = 3000): Promise<string | null> {
+    if (!this.wsManager?.isConnected()) return null;
+
+    const responseid = `getclip_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    return new Promise<string | null>(resolve => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(responseid);
+        resolve(null);
+      }, timeoutMs);
+
+      this.pendingRequests.set(responseid, { resolve, reject: () => resolve(null), timeout });
+
+      try {
+        this.wsManager?.send(JSON.stringify({ action: 'msg', type: 'getclip', nodeid: nodeId, responseid }));
+      } catch {
+        clearTimeout(timeout);
+        this.pendingRequests.delete(responseid);
+        resolve(null);
+      }
+    });
+  }
+
   close(): void {
     this.clearPendingRequests('Client closing');
     this.wsManager?.disconnect();
@@ -286,6 +364,12 @@ export class MeshControlClient {
   }
 
   async reconnect(): Promise<void> {
+    if (this.wsManager?.isConnected()) {
+      if (!this.cookies) {
+        await this.getAuthCookies();
+      }
+      return;
+    }
     this.cookies = null;
     this.wsManager?.reconnect();
     await this.openSession();
@@ -293,5 +377,9 @@ export class MeshControlClient {
 
   isConnected(): boolean {
     return this.isOpen && this.wsManager?.isConnected() === true;
+  }
+
+  getCachedAuthCookie(): string | null {
+    return this.cookies?.authCookie ?? null;
   }
 }
