@@ -380,6 +380,10 @@ impl Service {
             return Err(e.into());
         }
 
+        // Repair PATH registry type if corrupted by a previous version
+        #[cfg(target_os = "windows")]
+        crate::platform::windows_path_migration::run();
+
         // Initialize the client
         let client = Client::new()?;
 

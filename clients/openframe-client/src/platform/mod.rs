@@ -16,6 +16,8 @@ pub mod preferences_writer;
 #[cfg(target_os = "windows")]
 pub mod windows_cleanup;
 #[cfg(target_os = "windows")]
+pub mod windows_path_migration;
+#[cfg(target_os = "windows")]
 pub mod powershell;
 
 // Re-export commonly used items
