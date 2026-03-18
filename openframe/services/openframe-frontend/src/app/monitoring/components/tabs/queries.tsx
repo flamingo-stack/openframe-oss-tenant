@@ -8,7 +8,7 @@ import {
   Table,
   type TableColumn,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
@@ -28,19 +28,20 @@ function formatInterval(seconds: number): string {
 export function Queries() {
   const router = useRouter();
 
-  const { params, setParam, setParams } = useApiParams({
+  const { params, setParams } = useApiParams({
     search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
   });
 
   const [searchInput, setSearchInput] = useState(params.search);
   const debouncedSearchInput = useDebounce(searchInput, 300);
   const lastSearchRef = React.useRef(params.search);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (debouncedSearchInput !== lastSearchRef.current) {
       lastSearchRef.current = debouncedSearchInput;
-      setParams({ search: debouncedSearchInput, page: 1 });
+      setParams({ search: debouncedSearchInput });
+      setVisibleCount(PAGE_SIZE);
     }
   }, [debouncedSearchInput, setParams]);
 
@@ -56,12 +57,7 @@ export function Queries() {
     );
   }, [queries, params.search]);
 
-  const paginatedQueries = useMemo(() => {
-    const start = (params.page - 1) * PAGE_SIZE;
-    return filteredQueries.slice(start, start + PAGE_SIZE);
-  }, [filteredQueries, params.page]);
-
-  const totalPages = useMemo(() => Math.ceil(filteredQueries.length / PAGE_SIZE), [filteredQueries.length]);
+  const visibleQueries = useMemo(() => filteredQueries.slice(0, visibleCount), [filteredQueries, visibleCount]);
 
   const columns: TableColumn<Query>[] = useMemo(
     () => [
@@ -123,21 +119,6 @@ export function Queries() {
     [handleAddQuery],
   );
 
-  const cursorPagination = useTablePagination(
-    totalPages > 1
-      ? {
-          type: 'client',
-          currentPage: params.page,
-          totalPages,
-          itemCount: paginatedQueries.length,
-          itemName: 'queries',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
-          showInfo: true,
-        }
-      : null,
-  );
-
   return (
     <ListPageLayout
       title="Queries"
@@ -149,9 +130,10 @@ export function Queries() {
       background="default"
       padding="none"
       className="pt-6"
+      stickyHeader
     >
       <Table
-        data={paginatedQueries}
+        data={visibleQueries}
         columns={columns}
         rowKey="id"
         loading={isLoading}
@@ -164,7 +146,14 @@ export function Queries() {
         showFilters={false}
         rowClassName="mb-1"
         onRowClick={handleRowClick}
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage: visibleCount < filteredQueries.length,
+          isFetchingNextPage: false,
+          onLoadMore: () => setVisibleCount(prev => prev + PAGE_SIZE),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
         renderRowActions={renderRowActions}
       />
       <ConfirmDeleteMonitoringModal
