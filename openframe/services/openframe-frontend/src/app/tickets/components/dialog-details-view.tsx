@@ -249,11 +249,19 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       setIsSendingAdminMessage(true);
       try {
-        await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
+        const response = await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
           dialogId,
           content: trimmedMessage,
           chatType: CHAT_TYPE.ADMIN,
         });
+        if (!response.ok) {
+          toast({
+            title: 'Send Failed',
+            description: response.error || 'Unable to send message',
+            variant: 'destructive',
+            duration: 5000,
+          });
+        }
       } catch (error) {
         toast({
           title: 'Send Failed',

@@ -16,7 +16,7 @@
     "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky || true"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.62",
+    "@flamingo-stack/openframe-frontend-core": "0.0.63",
     "@hookform/resolvers": "^5.2.2",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.90.16",
