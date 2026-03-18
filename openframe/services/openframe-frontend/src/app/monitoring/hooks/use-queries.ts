@@ -67,6 +67,13 @@ async function updateQueryApi({ id, data }: UpdateQueryData): Promise<Query> {
   return (res.data as unknown as { query: Query }).query;
 }
 
+async function deleteQueryApi(id: number): Promise<void> {
+  const res = await fleetApiClient.deleteQuery(id);
+  if (!res.ok) {
+    throw new Error(res.error || `Failed to delete query (${res.status})`);
+  }
+}
+
 // ============ Hook ============
 
 export function useQueries(params?: ListQueriesParams) {
@@ -145,6 +152,37 @@ export function useQueries(params?: ListQueriesParams) {
     );
   };
 
+  // Delete query
+  const deleteQueryMutation = useMutation({
+    mutationFn: deleteQueryApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queriesQueryKeys.all });
+    },
+  });
+
+  const deleteQuery = (
+    id: number,
+    options?: {
+      onSuccess?: () => void;
+      onError?: (error: Error) => void;
+    },
+  ) => {
+    deleteQueryMutation.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: 'Query Deleted',
+          description: 'Query deleted successfully',
+          variant: 'success',
+        });
+        options?.onSuccess?.();
+      },
+      onError: error => {
+        handleApiError(error, toast, 'Failed to delete query');
+        options?.onError?.(error as Error);
+      },
+    });
+  };
+
   return {
     // Data
     queries: queriesQuery.data ?? [],
@@ -162,6 +200,9 @@ export function useQueries(params?: ListQueriesParams) {
 
     updateQuery,
     isUpdating: updateQueryMutation.isPending,
+
+    deleteQuery,
+    isDeleting: deleteQueryMutation.isPending,
 
     // Raw query for advanced use cases
     queriesQuery,

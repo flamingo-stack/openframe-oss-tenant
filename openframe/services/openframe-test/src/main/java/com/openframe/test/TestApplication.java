@@ -23,7 +23,7 @@ public class TestApplication {
     public static void main(String[] args) {
         AllureJunitPlatform allureListener = new AllureJunitPlatform();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
-        SlackClient slackClient = new SlackClient(System.getenv("SLACK_BOT_TOKEN"), System.getenv("SLACK_CHANNEL_ID"));
+        SlackClient slackClient = new SlackClient(System.getenv("SLACK_OAUTH_TOKEN"), "C0AHS6C6G3H");
         SlackListener slackListener = new SlackListener(slackClient);
         TestRunnerConfig config = TestRunnerConfig.builder()
                 .testPackage(TEST_PACKAGE)

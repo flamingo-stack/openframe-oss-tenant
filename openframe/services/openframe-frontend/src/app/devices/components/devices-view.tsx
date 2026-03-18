@@ -6,7 +6,7 @@ import { Button, ListPageLayout, Table } from '@flamingo-stack/openframe-fronten
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
+import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import { useDeviceFilters } from '../hooks/use-device-filters';
 import { useDevices } from '../hooks/use-devices';
 import type { Device } from '../types/device.types';
@@ -29,7 +29,7 @@ export function DevicesView() {
   // Backend filters from URL params (default excludes ARCHIVED and DELETED)
   const filters = useMemo(
     () => ({
-      statuses: params.statuses.length > 0 ? params.statuses : DEFAULT_VISIBLE_STATUSES,
+      statuses: params.statuses.length > 0 ? params.statuses : DEFAULT_DEVICES_LIST_STATUSES,
       osTypes: params.osTypes,
       organizationIds: params.organizationIds,
     }),

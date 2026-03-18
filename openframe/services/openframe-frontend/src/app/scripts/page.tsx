@@ -2,13 +2,16 @@
 
 export const dynamic = 'force-dynamic';
 
+import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { AppLayout } from '../components/app-layout';
 import { ScriptsView } from './components/scripts-view';
 
 export default function Scripts() {
   return (
-    <AppLayout mainClassName="pt-0 md:pt-0">
-      <ScriptsView />
+    <AppLayout>
+      <ContentPageContainer padding="none" showHeader={false}>
+        <ScriptsView />
+      </ContentPageContainer>
     </AppLayout>
   );
 }

@@ -41,7 +41,7 @@ export function ScriptsView() {
   const TabComponent = getTabComponent(SCRIPTS_TABS, params.tab);
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full -mt-4">
       <TabNavigation tabs={SCRIPTS_TABS} activeTab={params.tab} urlSync={false} onTabChange={handleTabChange} />
       <div className="min-h-[400px]">{TabComponent ? <TabComponent /> : null}</div>
     </div>

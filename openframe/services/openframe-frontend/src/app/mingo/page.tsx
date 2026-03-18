@@ -128,6 +128,8 @@ export default function Mingo() {
   );
 
   useEffect(() => {
+    if (isDraftChat) return;
+
     const urlDialogId = searchParams.get('dialogId');
 
     if (urlDialogId !== activeDialogId) {
@@ -141,7 +143,7 @@ export default function Mingo() {
         setActiveDialogId(null);
       }
     }
-  }, [searchParams, activeDialogId, resetUnread, selectDialog, setActiveDialogId, subscribeToDialog]);
+  }, [searchParams, activeDialogId, isDraftChat, resetUnread, selectDialog, setActiveDialogId, subscribeToDialog]);
 
   const handleNewChat = useCallback(() => {
     resetDialog();
