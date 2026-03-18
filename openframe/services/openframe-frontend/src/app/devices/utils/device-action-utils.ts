@@ -52,6 +52,16 @@ export function getTacticalAgentId(device: Device): string | undefined {
 }
 
 /**
+ * Get Fleet MDM host ID (numeric) from device tool connections
+ */
+export function getFleetHostId(device: Device): number | undefined {
+  const connection = getToolConnection(device.toolConnections, 'FLEET_MDM');
+  if (!connection?.agentToolId) return undefined;
+  const id = Number(connection.agentToolId);
+  return isNaN(id) ? undefined : id;
+}
+
+/**
  * Device action availability result
  */
 export interface DeviceActionAvailability {

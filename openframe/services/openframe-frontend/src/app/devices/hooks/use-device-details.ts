@@ -5,6 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
+import {
+  getMeshCentralDeviceInfo,
+  parseMeshCentralDeviceStatus,
+  parseMeshCentralLastSeen,
+} from '@/lib/meshcentral/meshcentral-api';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { GET_DEVICE_QUERY } from '../queries/devices-queries';
 import type {
@@ -23,7 +28,13 @@ import { deviceQueryKeys } from '../utils/query-keys';
  * Create Device object directly from API responses
  * No normalization layer - direct mapping
  */
-function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetData: FleetHost | null): Device {
+function createDevice(
+  node: DeviceGraphQlNode,
+  tacticalData: any | null,
+  fleetData: FleetHost | null,
+  meshCentralStatus: 'online' | 'offline' | null,
+  meshCentralLastSeen: string | null,
+): Device {
   // Transform Fleet software to unified Software type
   const software: Software[] =
     fleetData?.software?.map(fs => ({
@@ -243,8 +254,33 @@ function createDevice(node: DeviceGraphQlNode, tacticalData: any | null, fleetDa
     // Tags
     tags: node.tags || tacticalData?.custom_fields || [],
 
-    // Tool Connections
-    toolConnections: node.toolConnections,
+    // Tool Connections (enriched with status + lastSeen from Tactical / Fleet / MeshCentral API)
+    toolConnections: (node.toolConnections || []).map(tc => {
+      const base = { ...tc };
+      if (tc.toolType === 'TACTICAL_RMM') {
+        return {
+          ...base,
+          ...(tacticalData?.status != null && { status: String(tacticalData.status).toLowerCase() }),
+          ...(tacticalData?.last_seen != null && { lastSeen: tacticalData.last_seen }),
+        };
+      }
+      if (tc.toolType === 'FLEET_MDM') {
+        return {
+          ...base,
+          ...(fleetData?.status != null && { status: String(fleetData.status).toLowerCase() }),
+          ...(fleetData?.seen_time != null && { lastSeen: fleetData.seen_time }),
+          ...(fleetData?.detail_updated_at != null && { lastFetched: fleetData.detail_updated_at }),
+        };
+      }
+      if (tc.toolType === 'MESHCENTRAL') {
+        return {
+          ...base,
+          ...(meshCentralStatus != null && { status: meshCentralStatus }),
+          ...(meshCentralLastSeen != null && { lastSeen: meshCentralLastSeen }),
+        };
+      }
+      return base;
+    }),
     installedAgents: node.installedAgents,
 
     // Misc
@@ -347,8 +383,23 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
     }
   }
 
+  // 2.6) Fetch MeshCentral deviceinfo (Agent status, Last agent connection)
+  // On error or parse failure: treat as offline, no lastSeen — don't fail whole device load
+  const mesh = node.toolConnections?.find(tc => tc.toolType === 'MESHCENTRAL');
+  let meshCentralStatus: 'online' | 'offline' | null = null;
+  let meshCentralLastSeen: string | null = null;
+  if (mesh?.agentToolId) {
+    try {
+      const meshInfo = await getMeshCentralDeviceInfo(mesh.agentToolId);
+      meshCentralStatus = parseMeshCentralDeviceStatus(meshInfo);
+      meshCentralLastSeen = parseMeshCentralLastSeen(meshInfo);
+    } catch {
+      // Don't set status — UI won't show status/lastSeen when we couldn't get data
+    }
+  }
+
   // 3) Create Device object directly - no normalization
-  return createDevice(node, tacticalData, fleetData);
+  return createDevice(node, tacticalData, fleetData, meshCentralStatus, meshCentralLastSeen);
 }
 
 interface UseDeviceDetailsOptions {

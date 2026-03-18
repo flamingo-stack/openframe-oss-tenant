@@ -97,15 +97,11 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           className="flex items-center gap-2 p-3 rounded-[6px] hover:bg-ods-bg-hover transition-colors self-start justify-start"
           leftIcon={<ChevronLeft className="h-6 w-6 text-ods-text-secondary" />}
         >
-          <span className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-ods-text-secondary">
-            Back to Logs
-          </span>
+          <span className="text-h4 text-ods-text-secondary">Back to Logs</span>
         </Button>
 
         {/* Title */}
-        <h1 className="font-['Azeret_Mono'] font-semibold text-[32px] leading-[40px] tracking-[-0.64px] text-ods-text-primary">
-          Log Details
-        </h1>
+        <h1 className="text-h2 text-ods-text-primary">Log Details</h1>
       </div>
 
       {/* Header Actions - Full width on mobile, side-by-side on desktop */}
@@ -113,7 +109,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         <Button
           onClick={handleCopyLogDetails}
           leftIcon={<CopyIcon size={24} />}
-          className="w-full bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px] tracking-[-0.36px] flex items-center justify-center gap-2"
+          className="w-full bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3 flex items-center justify-center gap-2"
         >
           Copy Log Details
         </Button>
@@ -125,18 +121,18 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     <DetailPageContainer headerContent={customHeaderContent} padding="none" className="pt-6">
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start sm:items-center">
+        <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center">
           <Tag label={logDetails.severity} variant={getSeverityVariant(logDetails.severity)} />
-          <span className="font-['DM_Sans'] font-medium text-[16px] sm:text-[18px] leading-[22px] sm:leading-[24px] text-ods-text-primary">
+          <span className="font-['DM_Sans'] font-medium text-[16px] md:text-[18px] leading-[22px] md:leading-[24px] text-ods-text-primary">
             {new Date(logDetails.timestamp).toLocaleString()}
           </span>
         </div>
 
         {/* Log Summary Card */}
         <div className="bg-ods-card border border-ods-border rounded-[8px] w-full">
-          <div className="flex flex-col gap-4 items-start p-4 sm:p-6">
+          <div className="flex flex-col gap-4 items-start p-4 md:p-6">
             <div className="flex flex-col gap-2 w-full">
-              <div className="font-['DM_Sans'] font-medium text-[16px] sm:text-[18px] leading-[22px] sm:leading-[24px] text-ods-text-primary break-words">
+              <div className="font-['DM_Sans'] font-medium text-[16px] md:text-[18px] leading-[22px] md:leading-[24px] text-ods-text-primary break-words">
                 {logDetails.message || 'No message available'}
               </div>
               <div className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">

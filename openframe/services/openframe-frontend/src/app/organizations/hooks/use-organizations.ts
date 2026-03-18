@@ -1,194 +1,138 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { GET_ORGANIZATIONS_QUERY } from '../queries/organizations-queries';
-import { OrganizationEntry, useOrganizationsStore } from '../stores/organizations-store';
 
-type LooseString<T extends string> = T | (string & {});
+const ORGANIZATIONS_PAGE_SIZE = 20;
 
-interface OrganizationsFilterInput {
-  tiers?: LooseString<OrganizationEntry['tier']>[];
-  industries?: string[];
+export interface Organization {
+  id: string;
+  organizationId: string;
+  name: string;
+  websiteUrl: string;
+  contact: {
+    name: string;
+    email: string;
+  };
+  tier: 'Basic' | 'Premium' | 'Enterprise';
+  industry: string;
+  mrrUsd: number;
+  contractDue: string;
+  lastActivity: string;
+  imageUrl?: string | null;
 }
 
-interface PageInfo {
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-  startCursor: string | null;
-  endCursor: string | null;
+interface OrganizationsPage {
+  organizations: Organization[];
+  pageInfo: {
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    startCursor?: string;
+    endCursor?: string;
+  };
+  filteredCount: number;
 }
 
-export function useOrganizations(activeFilters: OrganizationsFilterInput = {}) {
+interface GraphQlResponse<T> {
+  data?: T;
+  errors?: Array<{ message: string }>;
+}
+
+export const organizationsQueryKeys = {
+  all: ['organizations'] as const,
+  list: (search: string) => ['organizations', 'list', search] as const,
+};
+
+export function useOrganizations(search = '') {
   const { toast } = useToast();
-  const { organizations, search, error, setOrganizations, setSearch, setError, clearOrganizations, reset } =
-    useOrganizationsStore();
 
-  // Use LOCAL state for isLoading with initial=true to show skeleton immediately on mount
-  // (before useEffect triggers fetch). This prevents the flash of empty state.
-  const [isLoading, setIsLoading] = useState(true);
+  const query = useInfiniteQuery<OrganizationsPage, Error>({
+    queryKey: organizationsQueryKeys.list(search),
+    queryFn: async ({ pageParam }) => {
+      const response = await apiClient.post<
+        GraphQlResponse<{
+          organizations: {
+            edges: Array<{ node: any; cursor: string }>;
+            pageInfo: {
+              hasNextPage: boolean;
+              hasPreviousPage: boolean;
+              startCursor?: string;
+              endCursor?: string;
+            };
+            filteredCount: number;
+          };
+        }>
+      >('/api/graphql', {
+        query: GET_ORGANIZATIONS_QUERY,
+        variables: {
+          search: search || '',
+          pagination: { limit: ORGANIZATIONS_PAGE_SIZE, cursor: (pageParam as string) || null },
+        },
+      });
 
-  // Pagination state (local to hook, not persisted)
-  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
-  const [hasLoadedBeyondFirst, setHasLoadedBeyondFirst] = useState(false);
-
-  // Stabilize filters to prevent infinite loops while still detecting changes
-  const filtersKey = JSON.stringify(activeFilters);
-  const stableFilters = useMemo(() => activeFilters, [activeFilters]);
-  const filtersRef = useRef(stableFilters);
-  filtersRef.current = stableFilters;
-
-  // Track if first fetch has been done (set by view component)
-  const initialLoadDone = useRef(false);
-  // Track previous filters to detect actual changes vs initial render
-  const prevFiltersKey = useRef<string | null>(null);
-
-  const fetchOrganizations = useCallback(
-    async (searchTerm: string, cursor?: string | null, filters: OrganizationsFilterInput = {}) => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await apiClient.post<any>('/api/graphql', {
-          query: GET_ORGANIZATIONS_QUERY,
-          variables: {
-            search: searchTerm || '',
-            pagination: {
-              limit: 10,
-              cursor: cursor || null,
-            },
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(response.error || `Request failed with status ${response.status}`);
-        }
-
-        const payload = (response.data as any)?.data?.organizations;
-
-        // Handle paginated response structure
-        const edges = Array.isArray(payload?.edges) ? payload.edges : [];
-        const items = edges.map((edge: any) => edge.node);
-
-        const mapped: OrganizationEntry[] = items.map(
-          (o: any): OrganizationEntry => ({
-            id: o.id,
-            organizationId: o.organizationId,
-            name: o.name ?? '-',
-            websiteUrl: o.websiteUrl ?? '-',
-            contact: { name: '', email: '' },
-            tier: 'Basic',
-            industry: o.category ?? '-',
-            mrrUsd: o.monthlyRevenue ?? 0,
-            contractDue: o.contractEndDate ?? '',
-            lastActivity: new Date().toISOString(),
-            imageUrl: o.image?.imageUrl || null,
-          }),
-        );
-
-        setOrganizations(mapped);
-
-        // Update pagination info
-        if (payload?.pageInfo) {
-          setPageInfo({
-            hasNextPage: payload.pageInfo.hasNextPage ?? false,
-            hasPreviousPage: payload.pageInfo.hasPreviousPage ?? false,
-            startCursor: payload.pageInfo.startCursor ?? null,
-            endCursor: payload.pageInfo.endCursor ?? null,
-          });
-        }
-
-        return mapped;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch organizations';
-        console.error('Failed to fetch organizations:', error);
-        setError(errorMessage);
-        toast({
-          title: 'Error fetching organizations',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-        throw error;
-      } finally {
-        setIsLoading(false);
+      if (!response.ok) {
+        throw new Error(response.error || `Request failed with status ${response.status}`);
       }
-    },
-    [setOrganizations, setError, toast],
-  );
 
-  // Function to mark initial load as done (called by view component after first fetch)
-  const markInitialLoadDone = useCallback(() => {
-    initialLoadDone.current = true;
-    // Also set the initial filters key so we don't refetch on first render
-    prevFiltersKey.current = filtersKey;
-  }, [filtersKey]);
-
-  const fetchNextPage = useCallback(
-    async (searchTerm: string) => {
-      if (!pageInfo?.hasNextPage || !pageInfo?.endCursor) {
-        return;
+      const graphqlResponse = response.data;
+      if (!graphqlResponse?.data) {
+        throw new Error('No data received from server');
       }
-      setHasLoadedBeyondFirst(true);
-      return fetchOrganizations(searchTerm, pageInfo.endCursor, filtersRef.current);
-    },
-    [pageInfo, fetchOrganizations],
-  );
+      if (graphqlResponse.errors && graphqlResponse.errors.length > 0) {
+        throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
+      }
 
-  const fetchFirstPage = useCallback(
-    async (searchTerm: string) => {
-      setHasLoadedBeyondFirst(false);
-      return fetchOrganizations(searchTerm, null, filtersRef.current);
-    },
-    [fetchOrganizations],
-  );
+      const nodes = graphqlResponse.data.organizations.edges.map(e => e.node);
+      const organizations: Organization[] = nodes.map(
+        (o: any): Organization => ({
+          id: o.id,
+          organizationId: o.organizationId,
+          name: o.name ?? '-',
+          websiteUrl: o.websiteUrl ?? '-',
+          contact: { name: '', email: '' },
+          tier: 'Basic',
+          industry: o.category ?? '-',
+          mrrUsd: o.monthlyRevenue ?? 0,
+          contractDue: o.contractEndDate ?? '',
+          lastActivity: o.updatedAt || o.createdAt || new Date().toISOString(),
+          imageUrl: o.image?.imageUrl || null,
+        }),
+      );
 
-  const searchOrganizations = useCallback(
-    async (searchTerm: string) => {
-      setSearch(searchTerm);
-      setHasLoadedBeyondFirst(false);
-      return fetchOrganizations(searchTerm, null, filtersRef.current);
-    },
-    [setSearch, fetchOrganizations],
-  );
-
-  const refreshOrganizations = useCallback(async () => {
-    return fetchOrganizations(search, null, filtersRef.current);
-  }, [fetchOrganizations, search]);
-
-  // Refetch when filters change (after initial load, and only when filters ACTUALLY changed)
-  useEffect(() => {
-    // Only refetch if:
-    // 1. Initial load is done
-    // 2. Previous filters key was set (not first render after initial load)
-    // 3. Filters actually changed
-    if (initialLoadDone.current && prevFiltersKey.current !== null && prevFiltersKey.current !== filtersKey) {
-      const refetch = async () => {
-        await fetchOrganizations(search, null, filtersRef.current);
+      return {
+        organizations,
+        pageInfo: graphqlResponse.data.organizations.pageInfo,
+        filteredCount: graphqlResponse.data.organizations.filteredCount,
       };
-      refetch();
+    },
+    getNextPageParam: lastPage => (lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined),
+    initialPageParam: undefined as string | undefined,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => {
+    if (query.error) {
+      toast({
+        title: 'Error fetching organizations',
+        description: query.error.message,
+        variant: 'destructive',
+      });
     }
-    // Update previous filters key (but only after initial load)
-    if (initialLoadDone.current) {
-      prevFiltersKey.current = filtersKey;
-    }
-  }, [filtersKey, fetchOrganizations, search]);
+  }, [query.error, toast]);
+
+  const organizations = useMemo(() => query.data?.pages.flatMap(page => page.organizations) ?? [], [query.data?.pages]);
 
   return {
     organizations,
-    search,
-    isLoading,
-    error,
-    pageInfo,
-    hasLoadedBeyondFirst,
-    setHasLoadedBeyondFirst,
-    fetchOrganizations,
-    fetchNextPage,
-    fetchFirstPage,
-    searchOrganizations,
-    refreshOrganizations,
-    clearOrganizations,
-    reset,
-    markInitialLoadDone,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage ?? false,
+    fetchNextPage: query.fetchNextPage,
+    error: query.error?.message ?? null,
+    filteredCount: query.data?.pages[0]?.filteredCount ?? 0,
+    refetch: query.refetch,
   };
 }

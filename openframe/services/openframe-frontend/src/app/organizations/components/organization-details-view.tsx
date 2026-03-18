@@ -57,7 +57,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         onClick={handleEdit}
         variant="outline"
         leftIcon={<PencilIcon className="w-5 h-5" />}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px]"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3"
       >
         Edit Organization
       </Button>
@@ -65,7 +65,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         onClick={handleDelete}
         variant="outline"
         disabled={organization?.isDefault}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[18px]"
+        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3"
       >
         Delete
       </Button>
@@ -139,9 +139,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       {/* Contacts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-            PRIMARY CONTACT
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary">PRIMARY CONTACT</h3>
           <InfoCard
             data={{
               items: [
@@ -155,9 +153,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         </div>
 
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-            BILLING CONTACT
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary">BILLING CONTACT</h3>
           <InfoCard
             data={{
               items: [
@@ -171,9 +167,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         </div>
 
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-            TECHNICAL CONTACT
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary">TECHNICAL CONTACT</h3>
           <InfoCard
             data={{
               items: [
@@ -189,9 +183,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
       {/* Service Configuration */}
       <div className="mt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-          SERVICE CONFIGURATION
-        </h3>
+        <h3 className="text-h5 text-ods-text-secondary">SERVICE CONFIGURATION</h3>
         <InfoCard
           data={{
             items: [
@@ -212,9 +204,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       </div>
 
       <div className="mt-6">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-          NOTES
-        </h3>
+        <h3 className="text-h5 text-ods-text-secondary">NOTES</h3>
         <div className="flex flex-col gap-3">
           {(organization.notes || []).map((n, i) => (
             <div

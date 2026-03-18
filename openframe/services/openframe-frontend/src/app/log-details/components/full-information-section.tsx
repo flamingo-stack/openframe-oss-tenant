@@ -33,9 +33,7 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
   if (!logDetails) {
     return (
       <div className="flex flex-col gap-1 flex-1 min-w-0">
-        <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-          Full Information
-        </div>
+        <div className="text-h5 text-ods-text-secondary w-full">Full Information</div>
         <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3 items-center justify-center p-8 w-full">
           <div className="text-ods-text-secondary text-center">No log details available</div>
         </div>
@@ -46,47 +44,43 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Section Title */}
-      <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-        Full Information
-      </div>
+      <div className="text-h5 text-ods-text-secondary w-full">Full Information</div>
 
       {/* Info Card */}
       <div className="bg-ods-card border border-ods-border rounded-[6px] w-full">
         <div className="flex flex-col divide-y divide-ods-border">
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <InfoRow label="toolEventId" value={logDetails.toolEventId} />
           </div>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <InfoRow label="ingestDay" value={logDetails.ingestDay} />
           </div>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <div className="flex gap-2 items-center w-full">
-              <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">
-                toolType
-              </div>
+              <div className="text-h4 text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">toolType</div>
               <div className="flex-1 bg-[#3a3a3a] h-px min-h-px min-w-px" />
-              <div className="font-['DM_Sans'] font-medium text-[18px] leading-[24px] text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1">
+              <div className="text-h4 text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1">
                 <ToolBadge toolType={normalizeToolTypeWithFallback(logDetails.toolType)} />
               </div>
             </div>
           </div>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <InfoRow label="eventType" value={logDetails.eventType} />
           </div>
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <InfoRow label="severity" value={logDetails.severity} />
           </div>
           {logDetails.userId && (
-            <div className="p-4 sm:p-6">
+            <div className="p-4 md:p-6">
               <InfoRow label="userId" value={logDetails.userId} />
             </div>
           )}
           {logDetails.deviceId && (
-            <div className="p-4 sm:p-6">
+            <div className="p-4 md:p-6">
               <InfoRow label="deviceId" value={logDetails.deviceId} />
             </div>
           )}
-          <div className="p-4 sm:p-6">
+          <div className="p-4 md:p-6">
             <InfoRow label="timestamp" value={formatTimestamp(logDetails.timestamp)} />
           </div>
         </div>
