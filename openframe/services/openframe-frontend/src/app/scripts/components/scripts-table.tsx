@@ -14,7 +14,7 @@ import {
   Table,
   type TableColumn,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { getOSLabel, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -44,12 +44,12 @@ export function ScriptsTable() {
     addedBy: { type: 'array', default: [] },
     category: { type: 'array', default: [] },
     supportedPlatforms: { type: 'array', default: [] },
-    page: { type: 'number', default: 1 },
   });
   const pageSize = 10;
 
   // Local state for debounced input
   const [searchInput, setSearchInput] = useState(params.search);
+  const [visibleCount, setVisibleCount] = useState(pageSize);
   const debouncedSearchInput = useDebounce(searchInput, 300);
 
   // Sync debounced search to URL (only when value actually changed)
@@ -150,15 +150,7 @@ export function ScriptsTable() {
     return filtered;
   }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category, params.supportedPlatforms]);
 
-  const paginatedScripts = useMemo(() => {
-    const startIndex = (params.page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    return filteredScripts.slice(startIndex, endIndex);
-  }, [filteredScripts, params.page]);
-
-  const totalPages = useMemo(() => {
-    return Math.ceil(filteredScripts.length / pageSize);
-  }, [filteredScripts.length]);
+  const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleCount), [filteredScripts, visibleCount]);
 
   const columns: TableColumn<UiScriptEntry>[] = useMemo(
     () => [
@@ -255,16 +247,16 @@ export function ScriptsTable() {
     );
   }, [router.push, rowActions]);
 
-  // Reset page when search changes
+  // Reset visible count when search changes
   const lastSearchRef = React.useRef(params.search);
   useEffect(() => {
     if (params.search !== lastSearchRef.current) {
       lastSearchRef.current = params.search;
-      setParam('page', 1);
+      setVisibleCount(pageSize);
     }
-  }, [params.search, setParam]);
+  }, [params.search]);
 
-  // Reset page when filters change
+  // Reset visible count when filters change
   const prevFilterKeyRef = React.useRef<string | null>(null);
   useEffect(() => {
     const filterKey = JSON.stringify({
@@ -275,10 +267,10 @@ export function ScriptsTable() {
     });
 
     if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
-      setParam('page', 1);
+      setVisibleCount(pageSize);
     }
     prevFilterKeyRef.current = filterKey;
-  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms, setParam]);
+  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms]);
 
   const handleRowClick = (script: UiScriptEntry) => {
     router.push(`/scripts/details/${script.id}`);
@@ -291,29 +283,14 @@ export function ScriptsTable() {
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
       setParams({
-        page: 1,
         shellType: columnFilters.shellType || [],
         addedBy: columnFilters.addedBy || [],
         category: columnFilters.category || [],
         supportedPlatforms: columnFilters.supportedPlatforms || [],
       });
+      setVisibleCount(pageSize);
     },
     [setParams],
-  );
-
-  const cursorPagination = useTablePagination(
-    totalPages > 1
-      ? {
-          type: 'client',
-          currentPage: params.page,
-          totalPages,
-          itemCount: paginatedScripts.length,
-          itemName: 'scripts',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
-          showInfo: true,
-        }
-      : null,
   );
 
   // Convert URL params to table filters format
@@ -360,10 +337,11 @@ export function ScriptsTable() {
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       currentMobileFilters={tableFilters}
+      stickyHeader
     >
       {/* Table */}
       <Table
-        data={paginatedScripts}
+        data={visibleScripts}
         columns={columns}
         rowKey="id"
         loading={isLoading}
@@ -378,7 +356,14 @@ export function ScriptsTable() {
         showFilters={true}
         rowClassName="mb-1"
         onRowClick={handleRowClick}
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage: visibleCount < filteredScripts.length,
+          isFetchingNextPage: false,
+          onLoadMore: () => setVisibleCount(prev => prev + pageSize),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
         renderRowActions={renderRowActions}
       />
     </ListPageLayout>
