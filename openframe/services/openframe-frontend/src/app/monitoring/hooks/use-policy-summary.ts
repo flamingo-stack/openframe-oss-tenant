@@ -2,10 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { fleetApiClient, type Host } from '@/lib/fleet-api-client';
+import { fleetApiClient } from '@/lib/fleet-api-client';
 import type { Policy } from '../types/policies.types';
 import type { PolicySummaryStats } from '../types/policy-summary.types';
 import { computePolicySummary } from '../utils/compute-policy-summary';
+import { type LivePolicyCountsMap, useLivePolicyCounts } from './use-live-policy-counts';
 
 // ============ Query Keys ============
 
@@ -26,18 +27,31 @@ async function fetchPoliciesForSummary(): Promise<Policy[]> {
 }
 
 /**
- * Fetch failing hosts for each policy that has failures, and all assigned hosts
+ * Fetch failing hosts for each policy that has live failures, and all assigned hosts
  * for each policy that has any assignments. Returns deduplicated host ID sets.
  */
-async function fetchDedupedHostIds(policies: Policy[]): Promise<{
+async function fetchDedupedHostIds(
+  policies: Policy[],
+  liveCounts: LivePolicyCountsMap,
+): Promise<{
   nonCompliantHostIds: Set<number>;
   totalAssignedHostIds: Set<number>;
 }> {
   const nonCompliantHostIds = new Set<number>();
   const totalAssignedHostIds = new Set<number>();
 
-  const policiesWithFailures = policies.filter(p => p.failing_host_count > 0);
-  const policiesWithAssignments = policies.filter(p => p.passing_host_count + p.failing_host_count > 0);
+  // Use live counts to determine which policies have failures/assignments
+  const policiesWithFailures = policies.filter(p => {
+    const live = liveCounts.get(p.id);
+    return (live?.failing ?? p.failing_host_count) > 0;
+  });
+
+  const policiesWithAssignments = policies.filter(p => {
+    const live = liveCounts.get(p.id);
+    const passing = live?.passing ?? p.passing_host_count;
+    const failing = live?.failing ?? p.failing_host_count;
+    return passing + failing > 0;
+  });
 
   const failingHostPromises = policiesWithFailures.map(async policy => {
     const res = await fleetApiClient.getHosts({
@@ -97,12 +111,17 @@ export function usePolicySummary() {
   });
 
   const policies = policiesQuery.data ?? [];
-  const policyIds = useMemo(() => policies.map(p => p.id).sort(), [policies]);
+  const policyIds = useMemo(() => policies.map(p => p.id), [policies]);
+
+  // Fetch live counts (real-time from hosts/count endpoint)
+  const { countsMap: liveCounts, isLoading: isLoadingCounts } = useLivePolicyCounts(policyIds);
+
+  const sortedPolicyIds = useMemo(() => [...policyIds].sort(), [policyIds]);
 
   const hostDedupQuery = useQuery({
-    queryKey: policySummaryQueryKeys.hostDedup(policyIds),
-    queryFn: () => fetchDedupedHostIds(policies),
-    enabled: policies.length > 0,
+    queryKey: policySummaryQueryKeys.hostDedup(sortedPolicyIds),
+    queryFn: () => fetchDedupedHostIds(policies, liveCounts),
+    enabled: policies.length > 0 && !isLoadingCounts,
     staleTime: 2 * 60 * 1000,
   });
 
@@ -110,15 +129,16 @@ export function usePolicySummary() {
     () =>
       computePolicySummary(
         policies,
+        liveCounts.size > 0 ? liveCounts : undefined,
         hostDedupQuery.data?.nonCompliantHostIds,
         hostDedupQuery.data?.totalAssignedHostIds,
       ),
-    [policies, hostDedupQuery.data],
+    [policies, liveCounts, hostDedupQuery.data],
   );
 
   return {
     ...summary,
-    isLoading: policiesQuery.isLoading,
+    isLoading: policiesQuery.isLoading || isLoadingCounts,
     isLoadingHosts: hostDedupQuery.isLoading,
     error: policiesQuery.error?.message ?? hostDedupQuery.error?.message ?? null,
     refetch: async () => {

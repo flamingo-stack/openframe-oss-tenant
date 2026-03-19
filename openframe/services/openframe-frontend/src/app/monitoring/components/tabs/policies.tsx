@@ -16,6 +16,7 @@ import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { useLivePolicyCounts } from '../../hooks/use-live-policy-counts';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
@@ -30,15 +31,15 @@ function parsePlatforms(platform: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function PolicyStatusCell({ policy }: { policy: Policy }) {
-  const isFailing = policy.failing_host_count > 0;
+function PolicyStatusCell({ failingCount }: { failingCount: number }) {
+  const isFailing = failingCount > 0;
 
   return (
     <div className="flex flex-col items-start gap-1">
       <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
       {isFailing && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {policy.failing_host_count} {policy.failing_host_count === 1 ? 'device' : 'devices'}
+          {failingCount} {failingCount === 1 ? 'device' : 'devices'}
         </span>
       )}
     </div>
@@ -64,6 +65,8 @@ export function Policies() {
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
   const summary = usePolicySummary();
+  const policyIds = useMemo(() => policies.map(p => p.id), [policies]);
+  const { countsMap: liveCounts } = useLivePolicyCounts(policyIds);
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
@@ -115,10 +118,13 @@ export function Policies() {
         label: 'Status',
         width: 'w-[120px]',
         hideAt: 'md',
-        renderCell: policy => <PolicyStatusCell policy={policy} />,
+        renderCell: policy => {
+          const failingCount = liveCounts.get(policy.id)?.failing ?? policy.failing_host_count;
+          return <PolicyStatusCell failingCount={failingCount} />;
+        },
       },
     ],
-    [],
+    [liveCounts],
   );
 
   const rowActions = useCallback(
@@ -197,12 +203,14 @@ export function Policies() {
               value={summary.failingPolicies}
               percentage={summary.failingPoliciesPercentage}
               showProgress
+              progressColor="var(--ods-attention-red-error)"
             />
             <DashboardInfoCard
               title="Non-Compliant Devices"
               value={summary.isLoadingHosts ? '...' : summary.nonCompliantDevices}
               percentage={summary.isLoadingHosts ? undefined : summary.nonCompliantDevicesPercentage}
               showProgress={!summary.isLoadingHosts}
+              progressColor="var(--ods-attention-red-error)"
             />
           </>
         )}
