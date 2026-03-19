@@ -17,8 +17,8 @@ export const GET_LOG_FILTERS_QUERY = `
 `;
 
 export const GET_LOGS_QUERY = `
-  query GetLogs($filter: LogFilterInput, $pagination: CursorPaginationInput, $search: String) {
-    logs(filter: $filter, pagination: $pagination, search: $search) {
+  query GetLogs($filter: LogFilterInput, $first: Int, $after: String, $search: String) {
+    logs(filter: $filter, first: $first, after: $after, search: $search) {
       edges {
         node {
           toolEventId

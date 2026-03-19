@@ -10,6 +10,7 @@ const GET_INTEGRATED_TOOLS_QUERY = `
     integratedTools(filter: $filter, search: $search) {
       tools {
         id
+        rawId
         name
         description
         icon

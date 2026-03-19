@@ -55,7 +55,8 @@ async function fetchDevicesPage(cursor: string | null): Promise<DevicesPage> {
     query: GET_DEVICES_QUERY,
     variables: {
       filter: { statuses: DEFAULT_DEVICES_LIST_STATUSES },
-      pagination: { limit: DEVICES_PAGE_SIZE, cursor },
+      first: DEVICES_PAGE_SIZE,
+      after: cursor,
       search: '',
     },
   });

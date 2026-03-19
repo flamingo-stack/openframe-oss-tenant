@@ -51,7 +51,7 @@ function useUsersCount() {
     queryKey: dashboardQueryKeys.userStats(),
     queryFn: async () => {
       const res = await apiClient.post<any>('/api/graphql', {
-        query: `query { users(pagination: { limit: 1 }) { filteredCount } }`,
+        query: `query { users(first: 1) { filteredCount } }`,
       });
       if (!res.ok) return 0;
       return res.data?.data?.users?.filteredCount ?? 0;

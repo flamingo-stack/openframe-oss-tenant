@@ -9,6 +9,7 @@ const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
       edges {
         node {
           id
+          rawId
           organizationId
           name
         }

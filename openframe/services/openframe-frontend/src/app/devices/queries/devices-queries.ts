@@ -33,11 +33,12 @@ export const GET_DEVICE_FILTERS_QUERY = `
 `;
 
 export const GET_DEVICES_QUERY = `
-  query GetDevices($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String, $sort: SortInput) {
-    devices(filter: $filter, pagination: $pagination, search: $search, sort: $sort) {
+  query GetDevices($filter: DeviceFilterInput, $first: Int, $after: String, $search: String, $sort: SortInput) {
+    devices(filter: $filter, first: $first, after: $after, search: $search, sort: $sort) {
       edges {
         node {
           id
+          rawId
           machineId
           hostname
           displayName
@@ -49,6 +50,7 @@ export const GET_DEVICES_QUERY = `
           lastSeen
           organization {
             id
+            rawId
             organizationId
             name
             image {
@@ -102,6 +104,7 @@ export const GET_DEVICE_QUERY = `
   query GetDevice($machineId: String!) {
     device(machineId: $machineId) {
       id
+      rawId
       machineId
       hostname
       displayName
@@ -113,6 +116,7 @@ export const GET_DEVICE_QUERY = `
       lastSeen
       organization {
         id
+        rawId
         organizationId
         name
         image {
@@ -161,8 +165,8 @@ export const GET_DEVICE_QUERY = `
 `;
 
 export const GET_DEVICES_OVERVIEW_QUERY = `
-  query GetDevicesOverview($filter: DeviceFilterInput, $pagination: CursorPaginationInput, $search: String) {
-    devices(filter: $filter, pagination: $pagination, search: $search) {
+  query GetDevicesOverview($filter: DeviceFilterInput, $first: Int, $after: String, $search: String) {
+    devices(filter: $filter, first: $first, after: $after, search: $search) {
       edges {
         node {
           status

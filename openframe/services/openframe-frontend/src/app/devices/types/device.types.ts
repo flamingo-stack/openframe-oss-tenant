@@ -302,6 +302,7 @@ export interface GraphQlResponse<T> {
 
 export type DevicesGraphQlNode = {
   id: string;
+  rawId?: string;
   machineId?: string;
   hostname: string;
   displayName?: string;
@@ -343,6 +344,7 @@ export type DevicesGraphQlNode = {
 
 export type DeviceGraphQlNode = {
   id: string;
+  rawId?: string;
   machineId: string;
   hostname: string;
   displayName?: string;

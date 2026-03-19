@@ -66,7 +66,8 @@ export function usePolicyDevices() {
         query: GET_DEVICES_QUERY,
         variables: {
           filter,
-          pagination: { limit: DEVICES_PAGE_SIZE, cursor: (pageParam as string) || null },
+          first: DEVICES_PAGE_SIZE,
+          after: (pageParam as string) || null,
           search: '',
         },
       });
