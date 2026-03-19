@@ -74,10 +74,6 @@ export function AuthBenefitsSection() {
     [toast],
   );
 
-  const handleJoinCommunity = () => {
-    window.open(getSlackCommunityJoinUrl(), '_blank');
-  };
-
   if (appMode === 'saas-shared') {
     return (
       <div className="bg-ods-card border-l border-ods-border w-full h-full min-h-screen flex items-center justify-center p-6 lg:p-20">
@@ -115,21 +111,6 @@ export function AuthBenefitsSection() {
                 submitLabel="Join Waitlist"
                 successLabel="You're in!"
               />
-
-              <Button
-                onClick={handleJoinCommunity}
-                variant="outline"
-                leftIcon={
-                  <OpenmspLogo
-                    className="w-5 h-5 flex-shrink-0"
-                    innerFrontBubbleColor="#f1f1f1"
-                    frontBubbleColor="#000000"
-                    backBubbleColor="#FFC008"
-                  />
-                }
-              >
-                Join Community
-              </Button>
             </div>
           </div>
         </div>
