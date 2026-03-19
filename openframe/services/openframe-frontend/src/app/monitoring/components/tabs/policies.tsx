@@ -1,22 +1,20 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DashboardInfoCard,
   DeviceCardCompact,
-  Input,
-  ListPageContainer,
+  ListPageLayout,
   MoreActionsMenu,
-  PageError,
   Skeleton,
   Table,
   type TableColumn,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicySummary } from '../../hooks/use-policy-summary';
@@ -54,18 +52,15 @@ export function Policies() {
     search: { type: 'string', default: '' },
   });
 
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearchInput = useDebounce(searchInput, 300);
-  const lastSearchRef = React.useRef(params.search);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  useEffect(() => {
-    if (debouncedSearchInput !== lastSearchRef.current) {
-      lastSearchRef.current = debouncedSearchInput;
-      setParams({ search: debouncedSearchInput });
+  const handleSearch = useCallback(
+    (term: string) => {
+      setParams({ search: term });
       setVisibleCount(PAGE_SIZE);
-    }
-  }, [debouncedSearchInput, setParams]);
+    },
+    [setParams],
+  );
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
   const summary = usePolicySummary();
@@ -166,12 +161,19 @@ export function Policies() {
     [handleAddPolicy],
   );
 
-  if (error) {
-    return <PageError message={error} />;
-  }
-
   return (
-    <ListPageContainer title="Policies" actions={actions} background="default" padding="none" className="pt-6">
+    <ListPageLayout
+      title="Policies"
+      actions={actions}
+      searchPlaceholder="Search for Policies"
+      searchValue={params.search}
+      onSearch={handleSearch}
+      background="default"
+      padding="none"
+      className="pt-6"
+      error={error}
+      stickyHeader
+    >
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {summary.isLoading ? (
@@ -205,15 +207,6 @@ export function Policies() {
           </>
         )}
       </div>
-
-      {/* Search Bar */}
-      <Input
-        placeholder="Search for Policies"
-        onChange={e => setSearchInput(e.target.value)}
-        value={searchInput}
-        className="w-full"
-        startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-      />
 
       {/* Table */}
       <Table
@@ -255,6 +248,6 @@ export function Policies() {
           }
         }}
       />
-    </ListPageContainer>
+    </ListPageLayout>
   );
 }
