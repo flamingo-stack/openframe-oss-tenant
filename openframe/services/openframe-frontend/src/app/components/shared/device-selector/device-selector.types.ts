@@ -34,6 +34,8 @@ export interface DeviceSelectorProps {
   rowKey?: string;
   /** "replace" replaces entire selection on Add All; "merge" adds to existing. Default: "merge". */
   addAllBehavior?: 'replace' | 'merge';
+  /** Extra columns */
+  extraColumns?: TableColumn<Device>[];
 }
 
 export interface DeviceTabContentProps {
