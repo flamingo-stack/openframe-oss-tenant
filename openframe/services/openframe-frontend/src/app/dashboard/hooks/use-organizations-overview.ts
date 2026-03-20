@@ -45,7 +45,6 @@ const GET_ORGANIZATIONS_QUERY = `
       edges {
         node {
           id
-          rawId
           organizationId
           name
           websiteUrl

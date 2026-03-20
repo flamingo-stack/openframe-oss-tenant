@@ -38,7 +38,6 @@ export const GET_DEVICES_QUERY = `
       edges {
         node {
           id
-          rawId
           machineId
           hostname
           displayName
@@ -50,7 +49,6 @@ export const GET_DEVICES_QUERY = `
           lastSeen
           organization {
             id
-            rawId
             organizationId
             name
             image {
@@ -104,7 +102,6 @@ export const GET_DEVICE_QUERY = `
   query GetDevice($machineId: String!) {
     device(machineId: $machineId) {
       id
-      rawId
       machineId
       hostname
       displayName
@@ -116,7 +113,6 @@ export const GET_DEVICE_QUERY = `
       lastSeen
       organization {
         id
-        rawId
         organizationId
         name
         image {

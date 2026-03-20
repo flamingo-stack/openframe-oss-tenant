@@ -4,7 +4,6 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
       edges {
         node {
           id
-          rawId
           organizationId
           name
           category
@@ -44,7 +43,6 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
       edges {
         node {
           id
-          rawId
           organizationId
           name
           isDefault
@@ -61,7 +59,6 @@ export const GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY = `#graphql
   query GetOrganizationByOrganizationId($organizationId: String!) {
     organizationByOrganizationId(organizationId: $organizationId) {
       id
-      rawId
       organizationId
       name
       category
@@ -109,10 +106,9 @@ export const GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY = `#graphql
 `;
 
 export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
-  query GetOrganizationById($id: String!) {
+  query GetOrganizationById($id: ID!) {
     organization(id: $id) {
       id
-      rawId
       organizationId
       name
       category
