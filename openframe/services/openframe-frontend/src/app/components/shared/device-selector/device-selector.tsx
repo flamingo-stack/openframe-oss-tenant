@@ -36,6 +36,7 @@ export function DeviceSelector({
   showSelectionModeRadio = true,
   headerContent,
   addAllBehavior = 'merge',
+  extraColumns,
 }: DeviceSelectorProps) {
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
     useDeviceSelector({ devices, selectedIds, getDeviceKey });
@@ -107,8 +108,9 @@ export function DeviceSelector({
           return <OSTypeBadge osType={device.osType} />;
         },
       },
+      ...(extraColumns ?? []),
     ],
-    [],
+    [extraColumns],
   );
 
   const renderRowActions = useMemo(

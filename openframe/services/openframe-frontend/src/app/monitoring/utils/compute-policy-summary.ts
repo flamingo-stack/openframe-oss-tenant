@@ -1,3 +1,4 @@
+import type { LivePolicyCountsMap } from '../hooks/use-live-policy-counts';
 import type { Policy } from '../types/policies.types';
 import type { PolicySummaryStats } from '../types/policy-summary.types';
 
@@ -18,15 +19,17 @@ const EMPTY_SUMMARY: PolicySummaryStats = {
 };
 
 /**
- * Compute policy compliance summary from a list of policies and optional
- * deduplicated host ID sets.
+ * Compute policy compliance summary from a list of policies, live counts,
+ * and optional deduplicated host ID sets.
  *
- * @param policies - Array of policies (each includes passing/failing host counts)
+ * @param policies - Array of policies
+ * @param liveCounts - Real-time failing/passing counts per policy from hosts/count endpoint
  * @param nonCompliantHostIds - Unique host IDs that fail at least one policy
  * @param totalAssignedHostIds - Unique host IDs assigned to any policy
  */
 export function computePolicySummary(
   policies: Policy[],
+  liveCounts: LivePolicyCountsMap | undefined,
   nonCompliantHostIds?: Set<number>,
   totalAssignedHostIds?: Set<number>,
 ): PolicySummaryStats {
@@ -39,11 +42,15 @@ export function computePolicySummary(
   let latestUpdate: string | null = null;
 
   for (const policy of policies) {
-    if (policy.failing_host_count > 0) {
+    const live = liveCounts?.get(policy.id);
+    const failing = live?.failing ?? policy.failing_host_count;
+    const passing = live?.passing ?? policy.passing_host_count;
+
+    if (failing > 0) {
       failingPolicies++;
     }
-    totalPassingEvaluations += policy.passing_host_count;
-    totalFailingEvaluations += policy.failing_host_count;
+    totalPassingEvaluations += passing;
+    totalFailingEvaluations += failing;
 
     if (policy.host_count_updated_at && (!latestUpdate || policy.host_count_updated_at > latestUpdate)) {
       latestUpdate = policy.host_count_updated_at;

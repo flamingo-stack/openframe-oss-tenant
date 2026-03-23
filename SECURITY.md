@@ -81,7 +81,12 @@ Flamingo AI implements reasonable technical and organizational safeguards, but *
 Use of Flamingo AI products is entirely at your own risk. Customers are solely responsible for compliance with applicable data protection laws when deploying Flamingo AI software or participating in OpenMSP.  
 
 
-## 11. Contact Information
+## 11. Text Messaging Opt-In Data
+
+Text messaging originator opt-in data and consent will not be shared with any third parties, excluding aggregators and providers of the Text Message services.
+
+
+## 12. Contact Information
 
 **Privacy Inquiries:** privacy@flamingo.so  
 **General Information:** info@flamingo.so  
@@ -89,3 +94,4 @@ Use of Flamingo AI products is entirely at your own risk. Customers are solely r
 ---
 
 *By using Flamingo AI products, you acknowledge and agree to this Privacy Policy.*  
+

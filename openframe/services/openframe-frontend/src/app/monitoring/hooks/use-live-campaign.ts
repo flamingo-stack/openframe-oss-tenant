@@ -74,7 +74,6 @@ export interface UseLiveCampaignReturn {
   stopCampaign: () => void;
   isRunning: boolean;
   startedAt: Date | null;
-  durationMs: number;
   results: QueryResultRow[];
   errors: CampaignError[];
   totals: CampaignTotals | null;
@@ -177,7 +176,6 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
 
   const [isRunning, setIsRunning] = useState(false);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [durationMs, setDurationMs] = useState(0);
   const [results, setResults] = useState<QueryResultRow[]>([]);
   const [errors, setErrors] = useState<CampaignError[]>([]);
   const [totals, setTotals] = useState<CampaignTotals | null>(null);
@@ -187,17 +185,12 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const [campaignStatus, setCampaignStatus] = useState<'' | 'pending' | 'finished'>('');
 
   const wsRef = useRef<WebSocket | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const previousDataRef = useRef<string | null>(null);
   const responseCountRef = useRef({ results: 0, errors: 0 });
   const campaignIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
 
   const cleanup = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -253,7 +246,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
             return;
           }
 
-          const hasError = msg.data.error !== null;
+          const hasError = msg.data.error != null;
           if (hasError) {
             const err: CampaignError = {
               host_id: msg.data.host?.id,
@@ -319,6 +312,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       setHostsFailed(0);
       setCampaignStatus('');
       setConnectionState('disconnected');
+      setStartedAt(null);
 
       try {
         // 1. Build target selection — use selected hosts if provided, otherwise fall back to all hosts
@@ -341,18 +335,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         const campaignId = res.data.campaign.id;
         campaignIdRef.current = campaignId;
 
-        // 3. Start timer
-        const now = new Date();
-        setStartedAt(now);
-        setDurationMs(0);
+        // 3. Start campaign state
+        setStartedAt(new Date());
         setIsRunning(true);
-
-        const startTime = now.getTime();
-        timerRef.current = setInterval(() => {
-          if (isMountedRef.current) {
-            setDurationMs(Date.now() - startTime);
-          }
-        }, 1000);
 
         // 4. Open native WebSocket with SockJS framing
         let wsUrl = buildWsUrl(fleetApiClient.getSockJsUrl());
@@ -436,7 +421,6 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
     stopCampaign,
     isRunning,
     startedAt,
-    durationMs,
     results,
     errors,
     totals,

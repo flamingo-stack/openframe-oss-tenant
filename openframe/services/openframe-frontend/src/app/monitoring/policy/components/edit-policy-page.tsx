@@ -9,16 +9,21 @@ import {
   NotFoundError,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core';
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
 import { DeviceSelector } from '../../../components/shared/device-selector';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
+import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
@@ -43,6 +48,40 @@ const getDeviceKey = (d: Device) => {
   const id = getFleetHostId(d);
   return id !== undefined ? String(id) : undefined;
 };
+
+const monitoringExtraColumns: TableColumn<Device>[] = [
+  {
+    key: 'organization',
+    label: 'ORGANIZATION',
+    width: 'w-1/4',
+    hideAt: 'lg',
+    renderCell: (device: Device) => {
+      const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
+      return (
+        <div className="flex items-center gap-3">
+          {featureFlags.organizationImages.displayEnabled() && (
+            <OrganizationIcon
+              imageUrl={fullImageUrl}
+              organizationName={device.organization || 'Organization'}
+              size="sm"
+            />
+          )}
+          <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
+        </div>
+      );
+    },
+  },
+  {
+    key: 'status',
+    label: 'STATUS',
+    width: 'w-[140px]',
+    hideAt: 'md',
+    renderCell: (device: Device) => {
+      const config = getDeviceStatusConfig(device.status);
+      return <Tag label={config.label} variant={config.variant} />;
+    },
+  },
+];
 
 export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   const router = useRouter();
@@ -99,7 +138,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     control,
     handleSubmit,
     reset,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<PolicyFormData>({
     resolver: zodResolver(policyFormSchema),
@@ -110,8 +149,8 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     },
   });
 
-  const nameValue = watch('name');
-  const queryValue = watch('query');
+  const [hasQuery, setHasQuery] = useState(false);
+  const [hasName, setHasName] = useState(false);
 
   useEffect(() => {
     if (policyDetails && isExistingPolicy) {
@@ -120,6 +159,8 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
         description: policyDetails.description || '',
         query: policyDetails.query || '',
       });
+      setHasQuery(!!policyDetails.query?.trim());
+      setHasName(!!policyDetails.name?.trim());
     }
   }, [policyDetails, isExistingPolicy, reset]);
 
@@ -180,12 +221,12 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const handleTestPolicy = useCallback(() => {
     setShowTestPanel(true);
-    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
-  }, [campaign, queryValue, selectedFleetHostIds]);
+    campaign.startCampaign(getValues('query'), Array.from(selectedFleetHostIds));
+  }, [campaign, getValues, selectedFleetHostIds]);
 
   const handleTestAgain = useCallback(() => {
-    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
-  }, [campaign, queryValue, selectedFleetHostIds]);
+    campaign.startCampaign(getValues('query'), Array.from(selectedFleetHostIds));
+  }, [campaign, getValues, selectedFleetHostIds]);
 
   const handleCloseTestPanel = useCallback(() => {
     campaign.stopCampaign();
@@ -198,16 +239,16 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
       label: 'Test Policy',
       onClick: handleTestPolicy,
       variant: 'outline' as const,
-      disabled: !queryValue.trim() || campaign.isRunning,
+      disabled: !hasQuery || campaign.isRunning,
     });
     items.push({
       label: 'Save Policy',
       onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
-      disabled: isSaving || !nameValue.trim(),
+      disabled: isSaving || !hasName,
     });
     return items;
-  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, handleTestPolicy, queryValue, campaign.isRunning]);
+  }, [handleSubmit, onSubmit, onFormError, isSaving, hasName, handleTestPolicy, hasQuery, campaign.isRunning]);
 
   if (isLoadingPolicy && isExistingPolicy) {
     return <CardLoader items={4} />;
@@ -238,7 +279,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             mode="policy"
             isRunning={campaign.isRunning}
             startedAt={campaign.startedAt}
-            durationMs={campaign.durationMs}
             results={campaign.results}
             errors={campaign.errors}
             totals={campaign.totals}
@@ -253,7 +293,14 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
         {/* Name */}
         <div className="md:max-w-[280px]">
-          <Input {...register('name')} label="Name" placeholder="Enter Policy Name" error={errors.name?.message} />
+          <Input
+            {...register('name', {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => setHasName(!!e.target.value.trim()),
+            })}
+            label="Name"
+            placeholder="Enter Policy Name"
+            error={errors.name?.message}
+          />
         </div>
 
         {/* Description */}
@@ -266,7 +313,15 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             name="query"
             control={control}
             render={({ field }) => (
-              <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
+              <ScriptEditor
+                value={field.value}
+                onChange={val => {
+                  field.onChange(val);
+                  setHasQuery(!!val?.trim());
+                }}
+                shell="sql"
+                height="300px"
+              />
             )}
           />
           <a
@@ -292,6 +347,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             infiniteScroll={infiniteScroll}
             disabled={isSaving}
             addAllBehavior="merge"
+            extraColumns={monitoringExtraColumns}
           />
         </div>
       </div>

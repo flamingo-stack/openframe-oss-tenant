@@ -1,23 +1,22 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DashboardInfoCard,
   DeviceCardCompact,
-  Input,
-  ListPageContainer,
+  ListPageLayout,
   MoreActionsMenu,
-  PageError,
   Skeleton,
   Table,
   type TableColumn,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { useLivePolicyCounts } from '../../hooks/use-live-policy-counts';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
@@ -32,15 +31,15 @@ function parsePlatforms(platform: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function PolicyStatusCell({ policy }: { policy: Policy }) {
-  const isFailing = policy.failing_host_count > 0;
+function PolicyStatusCell({ failingCount }: { failingCount: number }) {
+  const isFailing = failingCount > 0;
 
   return (
     <div className="flex flex-col items-start gap-1">
       <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
       {isFailing && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {policy.failing_host_count} {policy.failing_host_count === 1 ? 'device' : 'devices'}
+          {failingCount} {failingCount === 1 ? 'device' : 'devices'}
         </span>
       )}
     </div>
@@ -54,21 +53,20 @@ export function Policies() {
     search: { type: 'string', default: '' },
   });
 
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearchInput = useDebounce(searchInput, 300);
-  const lastSearchRef = React.useRef(params.search);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  useEffect(() => {
-    if (debouncedSearchInput !== lastSearchRef.current) {
-      lastSearchRef.current = debouncedSearchInput;
-      setParams({ search: debouncedSearchInput });
+  const handleSearch = useCallback(
+    (term: string) => {
+      setParams({ search: term });
       setVisibleCount(PAGE_SIZE);
-    }
-  }, [debouncedSearchInput, setParams]);
+    },
+    [setParams],
+  );
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
   const summary = usePolicySummary();
+  const policyIds = useMemo(() => policies.map(p => p.id), [policies]);
+  const { countsMap: liveCounts } = useLivePolicyCounts(policyIds);
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
@@ -120,10 +118,13 @@ export function Policies() {
         label: 'Status',
         width: 'w-[120px]',
         hideAt: 'md',
-        renderCell: policy => <PolicyStatusCell policy={policy} />,
+        renderCell: policy => {
+          const failingCount = liveCounts.get(policy.id)?.failing ?? policy.failing_host_count;
+          return <PolicyStatusCell failingCount={failingCount} />;
+        },
       },
     ],
-    [],
+    [liveCounts],
   );
 
   const rowActions = useCallback(
@@ -166,12 +167,19 @@ export function Policies() {
     [handleAddPolicy],
   );
 
-  if (error) {
-    return <PageError message={error} />;
-  }
-
   return (
-    <ListPageContainer title="Policies" actions={actions} background="default" padding="none" className="pt-6">
+    <ListPageLayout
+      title="Policies"
+      actions={actions}
+      searchPlaceholder="Search for Policies"
+      searchValue={params.search}
+      onSearch={handleSearch}
+      background="default"
+      padding="none"
+      className="pt-6"
+      error={error}
+      stickyHeader
+    >
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {summary.isLoading ? (
@@ -195,25 +203,18 @@ export function Policies() {
               value={summary.failingPolicies}
               percentage={summary.failingPoliciesPercentage}
               showProgress
+              progressColor="var(--ods-attention-red-error)"
             />
             <DashboardInfoCard
               title="Non-Compliant Devices"
               value={summary.isLoadingHosts ? '...' : summary.nonCompliantDevices}
               percentage={summary.isLoadingHosts ? undefined : summary.nonCompliantDevicesPercentage}
               showProgress={!summary.isLoadingHosts}
+              progressColor="var(--ods-attention-red-error)"
             />
           </>
         )}
       </div>
-
-      {/* Search Bar */}
-      <Input
-        placeholder="Search for Policies"
-        onChange={e => setSearchInput(e.target.value)}
-        value={searchInput}
-        className="w-full"
-        startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-      />
 
       {/* Table */}
       <Table
@@ -255,6 +256,6 @@ export function Policies() {
           }
         }}
       />
-    </ListPageContainer>
+    </ListPageLayout>
   );
 }
