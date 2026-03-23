@@ -9,6 +9,7 @@ import {
   type TableColumn,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAuthStore } from '../../../auth/stores/auth-store';
 import { InvitationStatus } from '../../hooks/use-invitations';
@@ -40,6 +41,7 @@ const statusToVariant = {
 } as const satisfies Record<UnifiedUserStatus, 'success' | 'grey' | 'warning' | 'error'>;
 
 export function CompanyAndUsersTab() {
+  const router = useRouter();
   const {
     records,
     isLoading,
@@ -198,6 +200,7 @@ export function CompanyAndUsersTab() {
       background="default"
       padding="none"
       className="pt-6"
+      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <Table
         data={records}
