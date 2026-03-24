@@ -21,6 +21,7 @@ export const GET_LOGS_QUERY = `
     logs(filter: $filter, first: $first, after: $after, search: $search) {
       edges {
         node {
+          id
           toolEventId
           eventType
           ingestDay
@@ -46,7 +47,7 @@ export const GET_LOGS_QUERY = `
 `;
 
 export const GET_LOG_DETAILS_QUERY = `
-  query GetLogDetails($logId: ID!, $ingestDay: String!, $toolType: String!, $eventType: String!, $timestamp: Instant!) {
+  query GetLogDetails($logId: String!, $ingestDay: String!, $toolType: String!, $eventType: String!, $timestamp: Instant!) {
     logDetails(
       toolEventId: $logId
       ingestDay: $ingestDay
@@ -54,6 +55,7 @@ export const GET_LOG_DETAILS_QUERY = `
       eventType: $eventType
       timestamp: $timestamp
     ) {
+      id
       toolEventId
       eventType
       ingestDay
