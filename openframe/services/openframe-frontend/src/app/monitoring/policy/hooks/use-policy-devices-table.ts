@@ -21,29 +21,6 @@ interface DevicesResponseData {
   };
 }
 
-/**
- * Deduplicate devices by Fleet host ID, keeping the device with the most recent lastSeen.
- */
-function deduplicateByFleetId(devices: Device[]): Device[] {
-  const byFleetId = new Map<number, Device>();
-  for (const device of devices) {
-    const fleetId = getFleetHostId(device);
-    if (fleetId === undefined) continue;
-
-    const existing = byFleetId.get(fleetId);
-    if (!existing) {
-      byFleetId.set(fleetId, device);
-    } else {
-      const existingTime = new Date(existing.lastSeen || existing.last_seen || 0).getTime();
-      const newTime = new Date(device.lastSeen || device.last_seen || 0).getTime();
-      if (newTime > existingTime) {
-        byFleetId.set(fleetId, device);
-      }
-    }
-  }
-  return Array.from(byFleetId.values());
-}
-
 interface DevicesPage {
   devices: Device[];
   hasNextPage: boolean;
@@ -96,7 +73,10 @@ async function fetchAllDevices(): Promise<Device[]> {
   return allDevices;
 }
 
-export function usePolicyDevicesTable(policyId: number | null) {
+export function usePolicyDevicesTable(
+  policyId: number | null,
+  assignedHostIds?: Array<{ id: number; hostname: string }>,
+) {
   const { hosts: failingHosts, isLoading: isLoadingFailing } = usePolicyResponseHosts(policyId, 'failing');
   const { hosts: passingHosts, isLoading: isLoadingPassing } = usePolicyResponseHosts(policyId, 'passing');
 
@@ -108,63 +88,70 @@ export function usePolicyDevicesTable(policyId: number | null) {
   const rows: PolicyDeviceRow[] = useMemo(() => {
     if (!devicesQuery.data) return [];
 
-    const fleetDevices = devicesQuery.data.filter(d => getFleetHostId(d) !== undefined);
-    const deduplicated = deduplicateByFleetId(fleetDevices);
+    const statusMap = new Map<number, ComplianceStatus>();
+    for (const host of failingHosts) statusMap.set(host.id, 'non-compliant');
+    for (const host of passingHosts) {
+      if (!statusMap.has(host.id)) statusMap.set(host.id, 'passing');
+    }
+    if (assignedHostIds) {
+      for (const host of assignedHostIds) {
+        if (!statusMap.has(host.id)) statusMap.set(host.id, 'pending');
+      }
+    }
 
     const deviceByFleetId = new Map<number, Device>();
-    for (const device of deduplicated) {
+    for (const device of devicesQuery.data) {
       const fleetId = getFleetHostId(device);
-      if (fleetId !== undefined) {
+      if (fleetId === undefined) continue;
+      const existing = deviceByFleetId.get(fleetId);
+      if (
+        !existing ||
+        new Date(device.lastSeen || device.last_seen || 0) > new Date(existing.lastSeen || existing.last_seen || 0)
+      ) {
         deviceByFleetId.set(fleetId, device);
       }
     }
 
-    const processedIds = new Set<number>();
+    const fleetHostMap = new Map<number, { hostname: string; display_name: string }>();
+    for (const h of failingHosts) fleetHostMap.set(h.id, h);
+    for (const h of passingHosts) {
+      if (!fleetHostMap.has(h.id)) fleetHostMap.set(h.id, h);
+    }
+    if (assignedHostIds) {
+      for (const h of assignedHostIds) {
+        if (!fleetHostMap.has(h.id)) fleetHostMap.set(h.id, { hostname: h.hostname, display_name: h.hostname });
+      }
+    }
 
-    function buildRow(
-      fleetHostId: number,
-      hostname: string,
-      displayName: string,
-      status: ComplianceStatus,
-    ): PolicyDeviceRow {
-      const device = deviceByFleetId.get(fleetHostId);
-      return {
-        id: String(fleetHostId),
-        hostname,
-        displayName: device?.displayName || device?.hostname || displayName || hostname,
+    const result: PolicyDeviceRow[] = [];
+    for (const [fleetId, status] of statusMap) {
+      const device = deviceByFleetId.get(fleetId);
+      const host = fleetHostMap.get(fleetId);
+      result.push({
+        id: String(fleetId),
+        hostname: device?.hostname || host?.hostname || `Host ${fleetId}`,
+        displayName:
+          device?.displayName || device?.hostname || host?.display_name || host?.hostname || `Host ${fleetId}`,
         deviceType: device?.type,
         organization: device?.organization,
         organizationImageUrl: device?.organizationImageUrl,
         osType: device?.osType,
         complianceStatus: status,
         machineId: device?.machineId,
-        fleetHostId,
-      };
+        fleetHostId: fleetId,
+      });
     }
 
-    const result: PolicyDeviceRow[] = [];
-
-    for (const host of failingHosts) {
-      if (processedIds.has(host.id)) continue;
-      processedIds.add(host.id);
-      result.push(buildRow(host.id, host.hostname, host.display_name, 'non-compliant'));
-    }
-
-    for (const host of passingHosts) {
-      if (processedIds.has(host.id)) continue;
-      processedIds.add(host.id);
-      result.push(buildRow(host.id, host.hostname, host.display_name, 'passing'));
-    }
-
+    const statusOrder: Record<ComplianceStatus, number> = { 'non-compliant': 0, pending: 1, passing: 2 };
     result.sort((a, b) => {
       if (a.complianceStatus !== b.complianceStatus) {
-        return a.complianceStatus === 'non-compliant' ? -1 : 1;
+        return statusOrder[a.complianceStatus] - statusOrder[b.complianceStatus];
       }
       return a.displayName.localeCompare(b.displayName);
     });
 
     return result;
-  }, [devicesQuery.data, failingHosts, passingHosts]);
+  }, [devicesQuery.data, failingHosts, passingHosts, assignedHostIds]);
 
   return {
     rows,

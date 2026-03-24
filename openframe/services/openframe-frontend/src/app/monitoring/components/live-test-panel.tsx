@@ -4,7 +4,7 @@ import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
 import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core';
 import { Square, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
+import type { CampaignEmptyResult, CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
 
 export interface LiveTestPanelProps {
   mode: 'query' | 'policy';
@@ -12,6 +12,7 @@ export interface LiveTestPanelProps {
   startedAt: Date | null;
   results: QueryResultRow[];
   errors: CampaignError[];
+  emptyResults: CampaignEmptyResult[];
   totals: CampaignTotals | null;
   hostsResponded: number;
   hostsFailed: number;
@@ -39,6 +40,7 @@ export function LiveTestPanel({
   startedAt,
   results,
   errors,
+  emptyResults,
   totals,
   hostsResponded,
   hostsFailed,
@@ -143,6 +145,25 @@ export function LiveTestPanel({
               ))}
               {errors.length > 10 && (
                 <p className="text-xs text-ods-text-secondary">...and {errors.length - 10} more</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Empty results warning */}
+        {isFinished && emptyResults.length > 0 && (
+          <div className="px-4 py-3 border-b border-ods-border shrink-0">
+            <p className="text-sm font-medium text-[var(--color-warning)]">
+              {emptyResults.length} host{emptyResults.length !== 1 ? 's' : ''} returned no data
+            </p>
+            <div className="mt-1 space-y-0.5 max-h-24 overflow-y-auto">
+              {emptyResults.slice(0, 10).map((item, i) => (
+                <p key={i} className="text-xs text-ods-text-secondary">
+                  {item.host_display_name}
+                </p>
+              ))}
+              {emptyResults.length > 10 && (
+                <p className="text-xs text-ods-text-secondary">...and {emptyResults.length - 10} more</p>
               )}
             </div>
           </div>

@@ -45,12 +45,17 @@ export function computePolicySummary(
     const live = liveCounts?.get(policy.id);
     const failing = live?.failing ?? policy.failing_host_count;
     const passing = live?.passing ?? policy.passing_host_count;
+    const responded = live?.responded ?? passing + failing;
+    const hasPending = (policy.hosts_include_any?.length ?? 0) > responded;
 
     if (failing > 0) {
       failingPolicies++;
     }
-    totalPassingEvaluations += passing;
-    totalFailingEvaluations += failing;
+
+    if (!hasPending) {
+      totalPassingEvaluations += passing;
+      totalFailingEvaluations += failing;
+    }
 
     if (policy.host_count_updated_at && (!latestUpdate || policy.host_count_updated_at > latestUpdate)) {
       latestUpdate = policy.host_count_updated_at;
