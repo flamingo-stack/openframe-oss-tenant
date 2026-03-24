@@ -25,11 +25,6 @@ export const featureFlags = {
       return runtimeEnv.featureSsoAllowDomain();
     },
   },
-  monitoring: {
-    enabled(): boolean {
-      return runtimeEnv.featureMonitoring();
-    },
-  },
 } as const;
 
 /**

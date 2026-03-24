@@ -18,6 +18,8 @@ type TunnelCallbacks = {
   onBinaryData?: (data: Uint8Array) => void;
   onCtrlMessage?: (msg: any) => void;
   onRequestPairing?: (relayId: string) => void;
+  getAuthCookie?: () => string | null;
+  onBeforeReconnect?: () => Promise<void>;
 };
 
 export class MeshTunnel {
@@ -44,15 +46,17 @@ export class MeshTunnel {
 
   start() {
     const protocol = this.params.protocol ?? 1;
-    const qs = new URLSearchParams({
-      browser: '1',
-      p: String(protocol),
-      nodeid: this.params.nodeId,
-      id: this.id,
-    });
-    if (this.params.authCookie) qs.append('auth', this.params.authCookie);
 
     const buildUrl = () => {
+      const qs = new URLSearchParams({
+        browser: '1',
+        p: String(protocol),
+        nodeid: this.params.nodeId,
+        id: this.id,
+      });
+      const cookie = this.params.getAuthCookie?.() ?? this.params.authCookie;
+      if (cookie) qs.append('auth', cookie);
+
       let url = buildWsUrl(`/meshrelay.ashx?${qs.toString()}`);
 
       try {
@@ -76,6 +80,11 @@ export class MeshTunnel {
       binaryType: 'arraybuffer',
       enableMessageQueue: true,
       refreshTokenBeforeReconnect: true,
+      onBeforeReconnect: async () => {
+        try {
+          await this.params.onBeforeReconnect?.();
+        } catch {}
+      },
 
       onStateChange: wsState => {
         // Map WebSocketManager states to TunnelState
@@ -105,13 +114,6 @@ export class MeshTunnel {
       },
       onClose: () => {
         this.clearLatencyTimer();
-      },
-      shouldReconnect: closeEvent => {
-        // Reconnect on auth failures and abnormal closures
-        const authFailureCodes = [1008, 1006, 4401];
-        const shouldReconnect = !closeEvent.wasClean || authFailureCodes.includes(closeEvent.code);
-
-        return shouldReconnect;
       },
     });
 
@@ -253,6 +255,9 @@ export class MeshTunnel {
   }
 
   reconnect() {
+    if (this.wsManager?.isConnected()) {
+      return;
+    }
     this.isHandshakeComplete = false;
     this.wsManager?.reconnect();
   }
@@ -263,5 +268,9 @@ export class MeshTunnel {
 
   isConnected(): boolean {
     return this.state === 3;
+  }
+
+  updateAuthCookie(cookie: string) {
+    this.params.authCookie = cookie;
   }
 }

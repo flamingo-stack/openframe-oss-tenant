@@ -27,7 +27,7 @@ spec:
 
       containers:
         - name: openframe-client
-          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.image.tag .Values.global.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.global.image.tag .Values.image.tag }}"
           ports:
             - containerPort: 8097
               name: http

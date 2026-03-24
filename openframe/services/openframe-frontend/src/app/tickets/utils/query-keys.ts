@@ -6,7 +6,6 @@ export interface DialogsQueryParams {
   archived: boolean;
   search?: string;
   statusFilters?: string[];
-  cursor?: string;
 }
 
 export const dialogsQueryKeys = {
@@ -16,7 +15,7 @@ export const dialogsQueryKeys = {
   // All list queries (paginated results)
   lists: () => [...dialogsQueryKeys.all, 'list'] as const,
 
-  // Specific list query with parameters
+  // Specific list query with parameters (no cursor — managed by useInfiniteQuery)
   list: (params: DialogsQueryParams) =>
     [
       ...dialogsQueryKeys.lists(),
@@ -24,7 +23,6 @@ export const dialogsQueryKeys = {
         archived: params.archived,
         search: params.search || '',
         statusFilters: params.statusFilters || [],
-        cursor: params.cursor || '',
       },
     ] as const,
 } as const;

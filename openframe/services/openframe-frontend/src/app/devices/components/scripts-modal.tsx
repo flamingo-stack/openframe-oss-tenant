@@ -275,7 +275,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                   placeholder="Search for Script"
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="bg-transparent text-ods-text-secondary font-['DM_Sans'] font-medium text-[18px] leading-[24px] flex-1 placeholder-ods-text-secondary focus:outline-none"
+                  className="bg-transparent text-ods-text-secondary text-h4 flex-1 placeholder-ods-text-secondary focus:outline-none"
                 />
               </div>
 
@@ -289,9 +289,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                       variant="outline"
                       className="bg-ods-card border border-ods-border rounded-[6px] px-2 py-2 h-8 flex items-center justify-center"
                     >
-                      <span className="font-['Azeret_Mono'] font-medium text-[14px] text-ods-text-primary tracking-[-0.28px] leading-[20px] uppercase">
-                        {category}
-                      </span>
+                      <span className="text-h5 text-ods-text-primary">{category}</span>
                     </Button>
                   ))}
                 </div>
@@ -340,13 +338,11 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                             key={script.id}
                             onClick={() => handleScriptToggle(script.id)}
                             className={`flex gap-4 items-center justify-start px-4 py-3 cursor-pointer border-b border-ods-border ${
-                              isSelected ? 'bg-accent-active' : 'bg-ods-bg'
+                              isSelected ? 'bg-ods-accent-active' : 'bg-ods-bg'
                             } ${index === filteredScripts.length - 1 ? 'border-b-0' : ''}`}
                           >
                             <div className="flex flex-col flex-1">
-                              <div className="font-['DM_Sans'] font-medium text-[18px] text-ods-text-primary leading-[24px] mb-1">
-                                {script.name}
-                              </div>
+                              <div className="text-h4 text-ods-text-primary mb-1">{script.name}</div>
                               <div
                                 className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
                                   isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'

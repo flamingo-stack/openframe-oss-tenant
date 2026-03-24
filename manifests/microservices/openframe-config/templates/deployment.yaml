@@ -23,7 +23,7 @@ spec:
 
       containers:
         - name: openframe-config
-          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.image.tag .Values.global.image.tag }}"
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.global.image.tag .Values.image.tag }}"
           ports:
             - containerPort: 8888
               name: http

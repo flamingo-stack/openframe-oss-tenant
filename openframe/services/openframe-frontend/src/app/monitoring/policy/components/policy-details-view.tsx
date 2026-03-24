@@ -1,17 +1,21 @@
 'use client';
 
 import {
+  Button,
   CardLoader,
   DetailPageContainer,
   LoadError,
   MoreActionsMenu,
   NotFoundError,
 } from '@flamingo-stack/openframe-frontend-core';
-import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { Edit2 } from 'lucide-react';
+import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
+import { PolicyDevicesTable } from './policy-devices-table';
 
 interface PolicyDetailsViewProps {
   policyId: string;
@@ -23,6 +27,8 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const isValidId = !isNaN(numericId);
 
   const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
+  const { deletePolicy, isDeleting } = usePolicies();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleBack = () => {
     router.push('/monitoring?tab=policies');
@@ -30,6 +36,12 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
 
   const handleEditPolicy = () => {
     router.push(`/monitoring/policy/edit/${policyId}`);
+  };
+
+  const handleDeletePolicy = () => {
+    deletePolicy(numericId, {
+      onSuccess: () => router.push('/monitoring?tab=policies'),
+    });
   };
 
   if (isLoading) {
@@ -52,15 +64,25 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         onClick: handleBack,
       }}
       headerActions={
-        <MoreActionsMenu
-          items={[
-            {
-              label: 'Edit Policy',
-              icon: <Edit2 size={20} />,
-              onClick: handleEditPolicy,
-            },
-          ]}
-        />
+        <div className="flex items-center gap-2">
+          <Button
+            leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
+            variant="card"
+            onClick={handleEditPolicy}
+          >
+            Edit
+          </Button>
+          <MoreActionsMenu
+            items={[
+              {
+                label: 'Delete Policy',
+                icon: <TrashIcon />,
+                onClick: () => setIsDeleteModalOpen(true),
+                disabled: isDeleting,
+              },
+            ]}
+          />
+        </div>
       }
     >
       {/* Policy Info */}
@@ -73,20 +95,6 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         )}
 
         <div className="border-t border-ods-border pt-4 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div>
-            {policyDetails.platform ? (
-              <OSTypeBadgeGroup
-                osTypes={policyDetails.platform
-                  .split(',')
-                  .map(p => p.trim())
-                  .filter(Boolean)}
-              />
-            ) : (
-              <p className="text-ods-text-primary font-medium">All Platforms</p>
-            )}
-            <p className="text-ods-text-secondary text-xs mt-1">Platform</p>
-          </div>
-
           <div>
             <span
               className={`px-2 py-1 rounded-md text-sm font-medium border ${
@@ -109,25 +117,38 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
             <p className="text-[var(--ods-attention-red-error)] font-medium">{policyDetails.failing_host_count}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Failing Hosts</p>
           </div>
-        </div>
 
-        {policyDetails.author_name && (
-          <div className="border-t border-ods-border pt-4 mt-4">
+          <div>
             <p className="text-ods-text-primary font-medium">{policyDetails.author_name}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Author</p>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Query */}
       {policyDetails.query && (
-        <div className="bg-ods-card border border-ods-border rounded-lg mt-6">
-          <div className="p-4 border-b border-ods-border">
-            <h3 className="text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
+        <div className="mt-6">
+          <div className="">
+            <h3 className="font-mono text-ods-text-secondary text-xs font-semibold uppercase tracking-wider">QUERY</h3>
           </div>
           <ScriptEditor value={policyDetails.query} shell="sql" readOnly height="300px" />
         </div>
       )}
+
+      {/* Policy Devices */}
+      <div className="mt-6">
+        <h1 className="text-h2 tracking-[-0.64px] text-ods-text-primary pt-6">Devices</h1>
+        <div className="pt-4">
+          <PolicyDevicesTable policyId={numericId} />
+        </div>
+      </div>
+      <ConfirmDeleteMonitoringModal
+        open={isDeleteModalOpen}
+        onOpenChange={setIsDeleteModalOpen}
+        itemName={policyDetails.name}
+        itemType="policy"
+        onConfirm={handleDeletePolicy}
+      />
     </DetailPageContainer>
   );
 }

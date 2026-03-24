@@ -1,5 +1,6 @@
 'use client';
 
+import { WaitlistForm } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   AutomateEverythingIcon,
   CutVendorCostsIcon,
@@ -8,56 +9,44 @@ import {
   OpenmspLogo,
   ReclaimProfitsIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { BenefitCard, Button, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { BenefitCard, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { getSlackCommunityJoinUrl } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+
 import { runtimeEnv } from '@/lib/runtime-config';
 
 export function AuthBenefitsSection() {
-  const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const appMode = runtimeEnv.appMode();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const isValidEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleJoinWaitlist = async () => {
-    if (!email || !isValidEmail(email)) {
-      toast({
-        title: 'Invalid Email',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-        duration: 3000,
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const response = await fetch('https://content-api.openframe.ai/api/waitlist', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, platform: 'openframe' }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Success!',
-          description: "You've been added to the waitlist.",
-          variant: 'success',
-          duration: 5000,
+  const handleRegister = useCallback(
+    async (email: string, phone?: string) => {
+      setIsSubmitting(true);
+      try {
+        const response = await fetch('https://content-api.openframe.ai/api/waitlist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, phone: phone || undefined, platform: 'openframe' }),
         });
-        setEmail('');
-      } else {
+
+        if (response.ok) {
+          setIsSuccess(true);
+          toast({
+            title: 'Success!',
+            description: "You've been added to the waitlist.",
+            variant: 'success',
+            duration: 5000,
+          });
+          return;
+        }
+
         const errorData = await response.json();
 
         if (errorData.code === 'DUPLICATE_EMAIL') {
+          setIsSuccess(true);
           toast({
             title: 'Already Registered',
             description: 'This email is already on the waitlist',
@@ -68,24 +57,22 @@ export function AuthBenefitsSection() {
         }
 
         throw new Error(errorData.error || 'Failed to join waitlist');
+      } catch (error) {
+        if (error instanceof Error && !error.message.includes('DUPLICATE_EMAIL')) {
+          toast({
+            title: 'Submission Failed',
+            description: 'Unable to join the waitlist. Please try again later.',
+            variant: 'destructive',
+            duration: 5000,
+          });
+        }
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (error) {
-      if (error instanceof Error && !error.message.includes('DUPLICATE_EMAIL')) {
-        toast({
-          title: 'Submission Failed',
-          description: 'Unable to join the waitlist. Please try again later.',
-          variant: 'destructive',
-          duration: 5000,
-        });
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleJoinCommunity = () => {
-    window.open(getSlackCommunityJoinUrl(), '_blank');
-  };
+    },
+    [toast],
+  );
 
   if (appMode === 'saas-shared') {
     return (
@@ -102,12 +89,10 @@ export function AuthBenefitsSection() {
           </div>
 
           {/* Waitlist Form Container */}
-          <div className="bg-ods-card border border-ods-border rounded-md w-full p-10">
+          <div className="bg-ods-card border border-ods-border rounded-md w-full p-4 md:p-10">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h2 className="font-heading font-semibold text-[32px] leading-[40px] text-ods-text-primary tracking-[-0.64px]">
-                  Get Early Access
-                </h2>
+                <h2 className="text-h2 text-ods-text-primary tracking-[-0.64px]">Get Early Access</h2>
                 <p className="text-[18px] leading-6 text-ods-text-secondary">
                   Don't have access yet? Join our private beta to get your invitation code and start breaking free from
                   vendor lock-in.
@@ -118,40 +103,14 @@ export function AuthBenefitsSection() {
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="waitlist-email" className="text-[18px] text-ods-text-primary">
-                  Email
-                </Label>
-                <Input
-                  id="waitlist-email"
-                  type="email"
-                  placeholder="username@mail.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="bg-ods-card border-ods-border text-[18px] h-12 placeholder:text-ods-text-secondary"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
-                <Button onClick={handleJoinWaitlist} disabled={isSubmitting || !isValidEmail(email)}>
-                  {isSubmitting ? 'Joining...' : 'Join Waitlist'}
-                </Button>
-                <Button
-                  onClick={handleJoinCommunity}
-                  variant="outline"
-                  leftIcon={
-                    <OpenmspLogo
-                      className="w-5 h-5 flex-shrink-0"
-                      innerFrontBubbleColor="#f1f1f1"
-                      frontBubbleColor="#000000"
-                      backBubbleColor="#FFC008"
-                    />
-                  }
-                >
-                  Join Community
-                </Button>
-              </div>
+              <WaitlistForm
+                onRegister={handleRegister}
+                isSubmitting={isSubmitting}
+                isSuccess={isSuccess}
+                geoApiUrl={null}
+                submitLabel="Join Waitlist"
+                successLabel="You're in!"
+              />
             </div>
           </div>
         </div>

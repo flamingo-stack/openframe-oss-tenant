@@ -82,9 +82,7 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
   return (
     <div className="space-y-4 mt-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary">
-          Installed Software ({software.length})
-        </h3>
+        <h3 className="text-h5 text-ods-text-secondary">Installed Software ({software.length})</h3>
       </div>
 
       <Table data={software} columns={columns} rowKey="id" rowClassName="mb-1" />

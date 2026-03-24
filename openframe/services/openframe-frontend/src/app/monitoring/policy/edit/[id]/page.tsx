@@ -6,8 +6,8 @@ import { EditPolicyPage } from '../../components/edit-policy-page';
 
 export default function EditPolicyPageWrapper() {
   const params = useParams<{ id?: string }>();
-  const rawId = params?.id;
-  const id = rawId === 'new' ? null : typeof rawId === 'string' ? rawId : null;
+  const paramId = params?.id;
+  const id = paramId === 'new' ? null : typeof paramId === 'string' ? paramId : null;
   return (
     <AppLayout>
       <EditPolicyPage policyId={id} />

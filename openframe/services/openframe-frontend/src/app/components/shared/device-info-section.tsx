@@ -24,9 +24,7 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
   if (isLoading && !deviceFromProps) {
     return (
       <div className="flex flex-col gap-1 w-full">
-        <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-          Device Info
-        </div>
+        <div className="text-h5 text-ods-text-secondary w-full">Device Info</div>
         <CardLoader items={2} containerClassName="p-0" />
       </div>
     );
@@ -40,9 +38,7 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
   return (
     <div className="flex flex-col gap-1 w-full">
       {/* Section Title */}
-      <div className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary w-full">
-        Device Info
-      </div>
+      <div className="text-h5 text-ods-text-secondary w-full">Device Info</div>
 
       {/* Use DeviceCard component - matching devices-grid.tsx pattern */}
       {device && (

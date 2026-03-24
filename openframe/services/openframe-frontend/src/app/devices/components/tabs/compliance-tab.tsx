@@ -41,9 +41,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
       <div className="mt-6">
         {/* Patch Management Section */}
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            PATCH MANAGEMENT
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">PATCH MANAGEMENT</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -86,9 +84,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
         {/* Windows Update Policy Section */}
         {Object.keys(winupdatepolicy).length > 0 && (
           <div className="pt-6">
-            <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-              WINDOWS UPDATE POLICY
-            </h3>
+            <h3 className="text-h5 text-ods-text-secondary mb-4">WINDOWS UPDATE POLICY</h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <InfoCard
@@ -164,9 +160,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
 
         {/* Policy Compliance Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            POLICY COMPLIANCE
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">POLICY COMPLIANCE</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -223,9 +217,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
 
         {/* Compliance Checks Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            COMPLIANCE CHECKS
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">COMPLIANCE CHECKS</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <InfoCard
@@ -259,9 +251,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
         {/* Fleet Issues Section */}
         {issues && Object.keys(issues).length > 0 && (
           <div className="pt-6">
-            <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-              FLEET POLICIES
-            </h3>
+            <h3 className="text-h5 text-ods-text-secondary mb-4">FLEET POLICIES</h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <InfoCard
@@ -299,15 +289,13 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
         {/* Fleet Labels Section */}
         {labels.length > 0 && (
           <div className="pt-6">
-            <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-              FLEET LABELS
-            </h3>
+            <h3 className="text-h5 text-ods-text-secondary mb-4">FLEET LABELS</h3>
 
             <div className="flex flex-wrap gap-2">
               {labels.map((label: any, index: number) => (
                 <span
                   key={index}
-                  className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-xs font-medium uppercase bg-info/20 text-info"
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-[6px] text-xs font-medium uppercase bg-ods-info/20 text-ods-info"
                 >
                   {label.name}
                 </span>

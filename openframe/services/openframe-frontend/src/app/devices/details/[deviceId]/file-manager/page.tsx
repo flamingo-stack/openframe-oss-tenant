@@ -30,7 +30,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
 
   if (error) {
     return (
-      <AppLayout mainClassName="pb-0 sm:pb-0">
+      <AppLayout mainClassName="pb-0 md:pb-0">
         <DetailPageContainer
           title="File Manager"
           className="h-full"
@@ -51,7 +51,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
 
   if (!meshcentralAgentId) {
     return (
-      <AppLayout mainClassName="pb-0 sm:pb-0">
+      <AppLayout mainClassName="pb-0 md:pb-0">
         <DetailPageContainer
           title="File Manager"
           className="h-full"
@@ -76,7 +76,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
   const hostname = deviceDetails?.hostname || deviceDetails?.displayName;
 
   return (
-    <AppLayout mainClassName="pb-0 sm:pb-0">
+    <AppLayout mainClassName="pb-0 md:pb-0">
       <FileManagerContainer deviceId={deviceId} meshcentralAgentId={meshcentralAgentId} hostname={hostname} />
     </AppLayout>
   );
@@ -88,7 +88,7 @@ interface FileManagerPageSkeletonProps {
 
 function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
-    <AppLayout mainClassName="pb-0 sm:pb-0">
+    <AppLayout mainClassName="pb-0 md:pb-0">
       <DetailPageContainer
         title="File Manager"
         className="h-full"

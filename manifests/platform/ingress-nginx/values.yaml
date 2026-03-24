@@ -23,6 +23,7 @@ ingress-nginx:
           registry: ghcr.io/flamingo-stack/registry
           image: ingress-nginx/kube-webhook-certgen
           tag: "v1.5.0"
+          digest: ""
 
     electionID: ingress-controller-leader
 
@@ -73,7 +74,3 @@ ingress-nginx:
     service:
       type: NodePort
       externalTrafficPolicy: Local
-
-    serviceAccount:
-      imagePullSecretsNames:
-        - name: docker-pat-secret

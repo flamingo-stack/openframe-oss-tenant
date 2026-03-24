@@ -133,13 +133,11 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
       {
         key: 'device',
         label: 'DEVICE',
-        hideAt: 'sm' as const,
+        hideAt: 'md',
         renderCell: entry => (
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
-              <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">
-                {entry.agent_hostname}
-              </span>
+              <span className="text-h4 text-ods-text-primary">{entry.agent_hostname}</span>
             </div>
           </div>
         ),
@@ -150,7 +148,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
         hideAt: 'md' as const,
         renderCell: entry => (
           <div className="flex flex-col min-w-0">
-            <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
+            <span className="text-h4 text-ods-text-primary truncate">
               {entry.stdout || entry.stderr || 'No output'}
             </span>
             <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">

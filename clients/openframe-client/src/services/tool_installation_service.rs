@@ -173,9 +173,12 @@ impl ToolInstallationService {
 
         let service_name = config_service_name.or(tool_installation_message.service_name.clone());
 
+        // Use resolved file_path for installation (not original executable_path)
+        let resolved_path = Some(file_path.to_string_lossy().to_string());
+
         let installation = self.build_installation(
             installation_type,
-            executable_path,
+            resolved_path,
             bundle_id,
             service_name,
         )?;

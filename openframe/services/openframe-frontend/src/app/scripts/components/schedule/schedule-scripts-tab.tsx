@@ -63,14 +63,12 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
       {/* Header */}
       <div className="flex gap-4 items-center h-[80px] px-4">
         <div className="flex-1 flex flex-col min-w-0">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">{action.name}</span>
+          <span className="text-h4 text-ods-text-primary truncate">{action.name}</span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">Script</span>
         </div>
 
         <div className="flex flex-col">
-          <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary truncate">
-            {action.timeout} Seconds
-          </span>
+          <span className="text-h4 text-ods-text-primary truncate">{action.timeout} Seconds</span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">Timeout</span>
         </div>
 

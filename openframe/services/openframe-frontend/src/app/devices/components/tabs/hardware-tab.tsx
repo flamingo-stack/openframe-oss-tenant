@@ -275,9 +275,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
       <div className="mt-6">
         {/* Disk Info Section */}
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            DISK INFO
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">DISK INFO</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {diskData.map((disk, index) => (
@@ -331,9 +329,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
         {/* RAM Info Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            RAM INFO
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">RAM INFO</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -366,9 +362,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
         {/* CPU Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            CPU
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">CPU</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {cpuModels.slice(0, 4).map((cpu, index) => (
@@ -408,9 +402,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
         {/* Battery Health Section (macOS) */}
         {batteries.length > 0 && (
           <div className="pt-6">
-            <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-              BATTERY HEALTH
-            </h3>
+            <h3 className="text-h5 text-ods-text-secondary mb-4">BATTERY HEALTH</h3>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {batteries.map((battery, index) => {

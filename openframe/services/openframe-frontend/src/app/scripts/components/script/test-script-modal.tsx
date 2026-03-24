@@ -124,7 +124,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
           query: GET_DEVICES_QUERY,
           variables: {
             filter,
-            pagination: { limit: 100, cursor: null },
+            first: 100,
             search: '',
           },
         },

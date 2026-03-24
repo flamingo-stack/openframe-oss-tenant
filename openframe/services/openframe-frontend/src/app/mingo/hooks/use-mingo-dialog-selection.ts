@@ -229,7 +229,11 @@ export function useMingoDialogSelection() {
     if (previouslyProcessedCount === 0) {
       const realtimeMessages = existingMessages.filter(m => {
         if (processedMessageIds.has(m.id)) return false;
-        return !rawPageMessageIds.has(m.id);
+        if (rawPageMessageIds.has(m.id)) return false;
+        if (m.role === 'user' && m.id.startsWith('optimistic-') && typeof m.content === 'string') {
+          return !allProcessedMessages.some(pm => pm.role === 'user' && pm.content === m.content);
+        }
+        return true;
       });
       setMessages(activeDialogId, [...allProcessedMessages, ...realtimeMessages]);
     } else {

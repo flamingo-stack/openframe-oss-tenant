@@ -14,7 +14,7 @@ export function DevicesOverviewSection() {
         </h2>
         <Skeleton className="h-5 w-48" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
         </div>
@@ -31,7 +31,7 @@ export function DevicesOverviewSection() {
         {devices.total.toLocaleString()} Devices in Total
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <DashboardInfoCard
           title="Online"
           value={devices.active}

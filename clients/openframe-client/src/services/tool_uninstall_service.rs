@@ -143,6 +143,9 @@ impl ToolUninstallService {
         let stdout = String::from_utf8_lossy(&output.stdout);
         info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
 
+        // Cleanup any remaining processes after uninstall command (some tools spawn detached processes)
+        self.cleanup_tool_processes(tool).await;
+
         // Cleanup GUI app bundle if applicable
         self.cleanup_gui_app_bundle(tool).await;
 
@@ -151,6 +154,19 @@ impl ToolUninstallService {
 
     async fn stop_tool_process(&self, tool: &InstalledTool) -> Result<()> {
         self.tool_kill_service.stop_installed_tool(tool).await
+    }
+
+    async fn cleanup_tool_processes(&self, tool: &InstalledTool) {
+        let agent_path = self.directory_manager
+            .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path())
+            .to_string_lossy()
+            .to_string();
+
+        info!("Cleaning up processes for tool {} by path: {}", tool.tool_agent_id, agent_path);
+
+        if let Err(e) = self.tool_kill_service.stop_tool_by_path(&agent_path).await {
+            warn!("Failed to cleanup processes for {}: {:#}", tool.tool_agent_id, e);
+        }
     }
 
     async fn cleanup_gui_app_bundle(&self, tool: &InstalledTool) {

@@ -780,7 +780,7 @@ export function AiSettingsTab() {
                                   e.stopPropagation();
                                   handleUseForCustomPolicy(opt.id);
                                 }}
-                                className="sm:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
+                                className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
                                 leftIcon={<SlidersIcon className="w-4 h-4" />}
                                 disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
                               >

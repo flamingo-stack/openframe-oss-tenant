@@ -17,7 +17,7 @@ initImage:
 image:
   registry: ghcr.io/flamingo-stack/openframe-oss-tenant
   repository: openframe-api
-  tag: latest
+  tag: ""
 
 resources:
   requests:

@@ -150,7 +150,7 @@ export function ProfileTab() {
             {user.emailVerified === false && (
               <button
                 onClick={() => setIsVerificationModalOpen(true)}
-                className="flex items-center gap-1 text-warning hover:text-warning/80 transition-colors"
+                className="flex items-center gap-1 text-ods-warning hover:text-ods-warning/80 transition-colors"
                 title="Email not verified - click to resend verification"
               >
                 <AlertCircle className="w-4 h-4" />
@@ -161,7 +161,7 @@ export function ProfileTab() {
         </div>
 
         {/* Authorized by section - show if SSO provider is known */}
-        {/* <div className="shrink-0 hidden sm:flex items-center gap-2 bg-ods-bg border border-ods-border rounded-lg px-3 py-2">
+        {/* <div className="shrink-0 hidden md:flex items-center gap-2 bg-ods-bg border border-ods-border rounded-lg px-3 py-2">
           <span className="text-sm text-ods-text-secondary">Authorized by</span>
           <GoogleLogo className="w-5 h-5" />
           <MicrosoftIcon className="w-5 h-5" />

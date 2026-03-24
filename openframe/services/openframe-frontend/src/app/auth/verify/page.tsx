@@ -3,7 +3,7 @@
 import { FlamingoLogo, OpenFrameLogo, OpenFrameText } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
-import { authApiClient } from '@/lib/auth-api-client';
+import { runtimeEnv } from '@/lib/runtime-config';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -16,14 +16,9 @@ export default function VerifyEmailPage() {
       return;
     }
 
-    authApiClient.verifyEmail(token).then(response => {
-      if (!response.ok) {
-        const message = response.data?.message || 'Verification failed. Please try again.';
-        router.replace(`/auth/error?error=${encodeURIComponent(message)}`);
-      } else {
-        window.location.href = response.data?.redirectUrl || '/auth/login';
-      }
-    });
+    const base = runtimeEnv.sharedHostUrl();
+    const verifyUrl = `${base}/sas/email/verify?token=${encodeURIComponent(token)}`;
+    window.location.href = verifyUrl;
   }, [token, router]);
 
   return (

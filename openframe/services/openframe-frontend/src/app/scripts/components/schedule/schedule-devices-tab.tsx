@@ -22,7 +22,7 @@ export function ScheduleDevicesTab({ schedule, scheduleId }: ScheduleDevicesTabP
         renderCell: agent => (
           <div className="flex items-center gap-3">
             <div className="flex flex-col">
-              <span className="font-medium text-[18px] leading-[24px] text-ods-text-primary">{agent.hostname}</span>
+              <span className="text-h4 text-ods-text-primary">{agent.hostname}</span>
             </div>
           </div>
         ),

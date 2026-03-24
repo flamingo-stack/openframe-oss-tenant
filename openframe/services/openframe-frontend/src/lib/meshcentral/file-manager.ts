@@ -157,6 +157,14 @@ export class MeshCentralFileManager {
       authCookie: this.authCookie,
       nodeId: this.nodeId,
       protocol: 5,
+      getAuthCookie: () => this.controlClient?.getCachedAuthCookie() ?? null,
+      onBeforeReconnect: async () => {
+        try {
+          if (this.controlClient && !this.controlClient.isConnected()) {
+            await this.controlClient.openSession();
+          }
+        } catch {}
+      },
       onData: data => {
         if (typeof data === 'string') {
           this.handleJsonMessage(data);
@@ -174,6 +182,8 @@ export class MeshCentralFileManager {
           if (!this.controlClient?.isConnected()) {
             await this.controlClient?.openSession();
           }
+          const cookie = this.controlClient?.getCachedAuthCookie();
+          if (cookie) this.authCookie = cookie;
           if (this.nodeId && this.controlClient) {
             this.controlClient.sendFileTunnel(this.nodeId, relayId);
           }

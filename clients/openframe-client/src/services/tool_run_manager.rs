@@ -557,7 +557,7 @@ impl ToolRunManager {
                         {
                             use crate::platform::user_session::{get_console_user, launch_as_user, is_process_running};
 
-                            info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS - single launch, no restart");
+                            info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS");
 
                             // Check if already running
                             if is_process_running(&command_path).await {
@@ -565,9 +565,12 @@ impl ToolRunManager {
                                 return;
                             }
 
-                            let Some(user) = get_console_user() else {
-                                error!(tool_id = %tool.tool_agent_id, "No console user, cannot launch GuiApp");
-                                return;
+                            // Wait for console user (handles boot-time when no user logged in yet)
+                            let user = loop {
+                                if let Some(u) = get_console_user() {
+                                    break u;
+                                }
+                                sleep(Duration::from_secs(5)).await;
                             };
 
                             // For GUI apps with bundle_id: write config to preferences and launch without args

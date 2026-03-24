@@ -34,9 +34,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
       <div className="mt-6">
         {/* Security Posture Section */}
         <div>
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            SECURITY POSTURE
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">SECURITY POSTURE</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -138,9 +136,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
         {/* User Sessions Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            USER SESSIONS
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">USER SESSIONS</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -184,9 +180,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
         {/* Security Agents Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            SECURITY AGENTS
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">SECURITY AGENTS</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -280,9 +274,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
         {/* Network Security Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            NETWORK SECURITY
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">NETWORK SECURITY</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -325,9 +317,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
         {/* Security Alerts Section */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            ALERT CONFIGURATION
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">ALERT CONFIGURATION</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard
@@ -400,9 +390,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
         {/* System Boot Information */}
         <div className="pt-6">
-          <h3 className="font-['Azeret_Mono'] font-medium text-[14px] leading-[20px] tracking-[-0.28px] uppercase text-ods-text-secondary mb-4">
-            SYSTEM BOOT INFORMATION
-          </h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-4">SYSTEM BOOT INFORMATION</h3>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <InfoCard

@@ -11,7 +11,7 @@ export function TicketsView() {
   });
 
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full -mt-4">
       <TicketsTabNavigation activeTab={params.tab} onTabChange={tab => setParam('tab', tab)} />
       <TicketsTabContent
         activeTab={params.tab}

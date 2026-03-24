@@ -1,9 +1,11 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
+use crate::services::AgentConfigurationService;
 use crate::config::update_config::{
-    MAX_CONSUMER_CREATE_RETRIES,
+    CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
     INITIAL_RETRY_DELAY_MS,
     MAX_RETRY_DELAY_MS,
+    CONSUMER_CYCLE_PAUSE_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
     CONSUMER_MAX_DELIVER,
@@ -11,12 +13,12 @@ use crate::config::update_config::{
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
 use async_nats::jetstream::consumer::DeliverPolicy;
+use async_nats::jetstream::Message;
 use tokio::time::Duration;
-use anyhow::{Result, Context};
+use anyhow::Result;
 use async_nats::jetstream;
 use futures::StreamExt;
 use tracing::{error, info, warn};
-use crate::services::AgentConfigurationService;
 use crate::models::openframe_client_update_message::OpenFrameClientUpdateMessage;
 
 #[derive(Clone)]
@@ -31,14 +33,14 @@ impl OpenFrameClientUpdateListener {
     const STREAM_NAME: &'static str = "CLIENT_UPDATE";
 
     pub fn new(
-        nats_connection_manager: NatsConnectionManager, 
-        openframe_client_update_service: OpenFrameClientUpdateService, 
-        config_service: AgentConfigurationService
+        nats_connection_manager: NatsConnectionManager,
+        openframe_client_update_service: OpenFrameClientUpdateService,
+        config_service: AgentConfigurationService,
     ) -> Self {
-        Self { 
-            nats_connection_manager, 
+        Self {
+            nats_connection_manager,
             openframe_client_update_service,
-            config_service 
+            config_service,
         }
     }
 
@@ -46,7 +48,6 @@ impl OpenFrameClientUpdateListener {
     pub async fn start(&self) -> Result<tokio::task::JoinHandle<()>> {
         let listener = self.clone();
         let handle = tokio::spawn(async move {
-            // Reconnection loop - keeps trying to reconnect on failure
             loop {
                 info!("Starting OpenFrame client update listener...");
                 match listener.listen().await {
@@ -58,7 +59,6 @@ impl OpenFrameClientUpdateListener {
                     }
                 }
 
-                // Wait before reconnecting
                 info!(
                     "Reconnecting OpenFrame client update listener in {} seconds...",
                     RECONNECTION_DELAY_MS / 1000
@@ -76,95 +76,115 @@ impl OpenFrameClientUpdateListener {
             .await?;
         let js = jetstream::new((*client).clone());
 
-        let machine_id = self.config_service.get_machine_id().await?;   
+        let machine_id = self.config_service.get_machine_id().await?;
 
-        let consumer = self.create_consumer(&js, &machine_id).await?;
+        let consumer = self.create_consumer(&js, &machine_id).await;
 
         info!("Start listening for OpenFrame client update messages");
         let mut messages = consumer.messages().await?;
-        while let Some(message) = messages.next().await {
-            info!("Received OpenFrame client update message: {:?}", message);
 
-            let message = message?;
-
-            let payload = String::from_utf8_lossy(&message.payload);
-            let client_update_message: OpenFrameClientUpdateMessage = serde_json::from_str(&payload)?;
-            let version = client_update_message.version.clone();
-
-            match self.openframe_client_update_service.process_update(client_update_message).await {
-                Ok(_) => {
-                    // ack
-                    info!("Acknowledging client update message for version: {}", version);
-                    message.ack().await
-                        .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
-                    info!("Client update message acknowledged for version: {}", version);
-                }
+        while let Some(msg_result) = messages.next().await {
+            let message = match msg_result {
+                Ok(msg) => msg,
                 Err(e) => {
-                    // do not ack: let message be redelivered per consumer ack policy
-                    error!("Failed to process client update message for version {}: {:#}", version, e);
-                    info!("Leaving message unacked for potential redelivery: version {}", version);
+                    error!("Failed to receive message: {:#}", e);
+                    continue;
                 }
+            };
+
+            if let Err(e) = self.handle_message(message).await {
+                error!("Failed to handle message: {:#}", e);
             }
         }
+
         Ok(())
     }
 
-    async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> Result<PushConsumer> {
-        let consumer_configuration = Self::build_consumer_configuration(machine_id);
+    async fn handle_message(&self, message: Message) -> Result<()> {
+        let payload = String::from_utf8_lossy(&message.payload);
+        info!("Received OpenFrame client update message: {:?}", payload);
 
-        // Retry loop with exponential backoff
-        let mut retry_count = 0;
-        let mut delay_ms = INITIAL_RETRY_DELAY_MS;
+        let client_update_message: OpenFrameClientUpdateMessage = match serde_json::from_str(&payload) {
+            Ok(msg) => msg,
+            Err(e) => {
+                error!("Failed to parse client update message: {:#}", e);
+                if let Err(ack_err) = message.ack().await {
+                    warn!("Failed to ack malformed message: {}", ack_err);
+                }
+                return Ok(());
+            }
+        };
+
+        let version = client_update_message.version.clone();
+
+        match self.openframe_client_update_service.process_update(client_update_message).await {
+            Ok(_) => {
+                info!("Acknowledging client update message for version: {}", version);
+                message.ack().await
+                    .map_err(|e| anyhow::anyhow!("Failed to ack message: {}", e))?;
+                info!("Client update message acknowledged for version: {}", version);
+            }
+            Err(e) => {
+                error!("Failed to process client update message for version {}: {:#}", version, e);
+                info!("Leaving message unacked for potential redelivery: version {}", version);
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn create_consumer(&self, js: &jetstream::Context, machine_id: &str) -> PushConsumer {
+        let consumer_configuration = Self::build_consumer_configuration(machine_id);
+        let mut cycle = 0u32;
 
         loop {
-            info!(
-                "Creating consumer for stream {} (attempt {}/{})",
-                Self::STREAM_NAME,
-                retry_count + 1,
-                MAX_CONSUMER_CREATE_RETRIES
-            );
+            cycle += 1;
+            let mut delay_ms = INITIAL_RETRY_DELAY_MS;
 
-            // Try to create consumer directly on stream - if it exists, it will return the existing one
-            match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
-                Ok(consumer) => {
-                    info!("Consumer ready for stream: {}", Self::STREAM_NAME);
-                    return Ok(consumer);
-                }
-                Err(e) => {
-                    // Check if this is a "consumer already exists" type error - we can try to get existing consumer
-                    let error_msg = format!("{:?}", e);
-                    if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
-                        warn!("Consumer already exists, attempting to get existing consumer");
-                        // Try to get the existing consumer
-                        let durable_name = Self::build_durable_name(machine_id);
-                        if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
-                            info!("Retrieved existing consumer for stream: {}", Self::STREAM_NAME);
-                            return Ok(existing_consumer);
+            for attempt in 1..=CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
+                info!(
+                    "Creating consumer for stream {} (cycle {}, attempt {}/{})",
+                    Self::STREAM_NAME, cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE
+                );
+
+                match js.create_consumer_on_stream(consumer_configuration.clone(), Self::STREAM_NAME).await {
+                    Ok(consumer) => {
+                        info!("Consumer ready for stream: {}", Self::STREAM_NAME);
+                        return consumer;
+                    }
+                    Err(e) => {
+                        let error_msg = format!("{:?}", e);
+                        if error_msg.contains("consumer name already in use") || error_msg.contains("10013") {
+                            warn!("Consumer already exists, attempting to get existing consumer");
+                            let durable_name = Self::build_durable_name(machine_id);
+                            if let Ok(existing_consumer) = js.get_consumer_from_stream(Self::STREAM_NAME, &durable_name).await {
+                                info!("Retrieved existing consumer for stream: {}", Self::STREAM_NAME);
+                                return existing_consumer;
+                            }
+                        }
+
+                        if attempt < CONSUMER_RETRY_ATTEMPTS_PER_CYCLE {
+                            warn!(
+                                "Failed to create consumer (cycle {}, attempt {}/{}): {:#}. Retrying in {} ms...",
+                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e, delay_ms
+                            );
+                            tokio::time::sleep(Duration::from_millis(delay_ms)).await;
+                            delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
+                        } else {
+                            warn!(
+                                "Failed to create consumer (cycle {}, attempt {}/{}): {:#}",
+                                cycle, attempt, CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, e
+                            );
                         }
                     }
-
-                    retry_count += 1;
-
-                    if retry_count >= MAX_CONSUMER_CREATE_RETRIES {
-                        error!(
-                            "Failed to create consumer after {} attempts: {:#}",
-                            MAX_CONSUMER_CREATE_RETRIES, e
-                        );
-                        return Err(e).context(format!(
-                            "Failed to create consumer after {} retries",
-                            MAX_CONSUMER_CREATE_RETRIES
-                        ));
-                    }
-
-                    warn!(
-                        "Failed to create consumer (attempt {}/{}): {:#}. Retrying in {} ms...",
-                        retry_count, MAX_CONSUMER_CREATE_RETRIES, e, delay_ms
-                    );
-
-                    tokio::time::sleep(Duration::from_millis(delay_ms)).await;
-                    delay_ms = (delay_ms * 2).min(MAX_RETRY_DELAY_MS);
                 }
             }
+
+            info!(
+                "All {} attempts in cycle {} failed. Pausing {} seconds before next cycle...",
+                CONSUMER_RETRY_ATTEMPTS_PER_CYCLE, cycle, CONSUMER_CYCLE_PAUSE_MS / 1000
+            );
+            tokio::time::sleep(Duration::from_millis(CONSUMER_CYCLE_PAUSE_MS)).await;
         }
     }
 
@@ -195,9 +215,6 @@ impl OpenFrameClientUpdateListener {
     }
 
     fn build_durable_name(machine_id: &str) -> String {
-        // v2 suffix forces recreation of consumer with proper DeliverPolicy::Last
-        // Remove v2 suffix once old consumers are cleaned up
         format!("machine_{}_client-update_consumer_v2", machine_id)
     }
-
 }

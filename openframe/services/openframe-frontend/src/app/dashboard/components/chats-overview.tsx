@@ -14,7 +14,7 @@ export function ChatsOverviewSection() {
         </h2>
         <Skeleton className="h-5 w-48" />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -33,7 +33,7 @@ export function ChatsOverviewSection() {
         {chats.total.toLocaleString()} Chats in Total
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardInfoCard
           title="Active Chats"
           value={chats.active}

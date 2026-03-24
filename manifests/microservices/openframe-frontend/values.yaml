@@ -29,7 +29,7 @@ registerJob:
 image:
   registry: ghcr.io/flamingo-stack/openframe-oss-tenant
   repository: openframe-frontend
-  tag: latest
+  tag: ""
 
 resources:
   requests:

@@ -1,6 +1,5 @@
 import { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core';
 import { Keyboard, Moon, Power, RotateCcw, Sunrise } from 'lucide-react';
-import React from 'react';
 
 // Virtual key codes based on Windows Virtual-Key Codes
 export const VK = {
@@ -21,6 +20,7 @@ export interface ActionHandlers {
   sendKeyCombo: (keys: number[]) => void;
   sendPower: (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => void;
   setEnableInput: (enabled: boolean) => void;
+  setClipboardEnabled: (enabled: boolean) => void;
   toast: (options: {
     title: string;
     description: string;
@@ -29,7 +29,11 @@ export interface ActionHandlers {
   }) => void;
 }
 
-export const createActionsMenuGroups = (handlers: ActionHandlers, enableInput: boolean): ActionsMenuGroup[] => [
+export const createActionsMenuGroups = (
+  handlers: ActionHandlers,
+  enableInput: boolean,
+  clipboardEnabled: boolean,
+): ActionsMenuGroup[] => [
   {
     items: [
       {
@@ -187,6 +191,15 @@ export const createActionsMenuGroups = (handlers: ActionHandlers, enableInput: b
         checked: enableInput,
         onClick: () => {
           handlers.setEnableInput(!enableInput);
+        },
+      },
+      {
+        id: 'clipboard-sharing',
+        label: 'Clipboard Sharing',
+        type: 'checkbox',
+        checked: clipboardEnabled,
+        onClick: () => {
+          handlers.setClipboardEnabled(!clipboardEnabled);
         },
       },
     ],

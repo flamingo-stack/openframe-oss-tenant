@@ -1,6 +1,10 @@
 'use client';
 
-import { PoliciesIcon, QueriesIcon, type TabItem } from '@flamingo-stack/openframe-frontend-core';
+import { type TabItem } from '@flamingo-stack/openframe-frontend-core';
+import {
+  BracketCurlyEllipsisVrIcon,
+  FolderShieldIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Policies } from './policies';
 import { Queries } from './queries';
 
@@ -8,19 +12,13 @@ export const MONITORING_TABS: TabItem[] = [
   {
     id: 'policies',
     label: 'Policies',
-    icon: PoliciesIcon,
+    icon: FolderShieldIcon,
     component: Policies,
   },
-  // {
-  //   id: 'checks',
-  //   label: 'Checks',
-  //   icon: PulseIcon,
-  //   component: Checks
-  // },
   {
     id: 'queries',
     label: 'Queries',
-    icon: QueriesIcon,
+    icon: BracketCurlyEllipsisVrIcon,
     component: Queries,
   },
 ];
