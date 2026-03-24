@@ -2,7 +2,7 @@
 
 import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
 import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core';
-import { Square, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Square, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { CampaignEmptyResult, CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
 
@@ -32,6 +32,27 @@ function formatDuration(ms: number): string {
 
 function formatTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function CollapsibleSection({ color, title, children }: { color: string; title: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const Icon = isOpen ? ChevronDown : ChevronRight;
+
+  return (
+    <div className="border-b border-ods-border shrink-0">
+      <button
+        type="button"
+        className="flex items-center gap-2 w-full px-4 py-3 text-left"
+        onClick={() => setIsOpen(prev => !prev)}
+      >
+        <Icon size={14} style={{ color }} />
+        <span className="text-sm font-medium" style={{ color }}>
+          {title}
+        </span>
+      </button>
+      {isOpen && <div className="px-4 pb-3 space-y-0.5 max-h-24 overflow-y-auto">{children}</div>}
+    </div>
+  );
 }
 
 export function LiveTestPanel({
@@ -133,40 +154,34 @@ export function LiveTestPanel({
 
         {/* Error summary */}
         {isFinished && errors.length > 0 && (
-          <div className="px-4 py-3 border-b border-ods-border shrink-0">
-            <p className="text-sm font-medium text-[var(--ods-attention-red-error)]">
-              {errors.length} host{errors.length !== 1 ? 's' : ''} returned errors
-            </p>
-            <div className="mt-1 space-y-0.5 max-h-24 overflow-y-auto">
-              {errors.slice(0, 10).map((err, i) => (
-                <p key={i} className="text-xs text-ods-text-secondary">
-                  {err.host_display_name}: {err.error}
-                </p>
-              ))}
-              {errors.length > 10 && (
-                <p className="text-xs text-ods-text-secondary">...and {errors.length - 10} more</p>
-              )}
-            </div>
-          </div>
+          <CollapsibleSection
+            color="var(--ods-attention-red-error)"
+            title={`${errors.length} host${errors.length !== 1 ? 's' : ''} returned errors`}
+          >
+            {errors.slice(0, 10).map((err, i) => (
+              <p key={i} className="text-xs text-ods-text-secondary">
+                {err.host_display_name}: {err.error}
+              </p>
+            ))}
+            {errors.length > 10 && <p className="text-xs text-ods-text-secondary">...and {errors.length - 10} more</p>}
+          </CollapsibleSection>
         )}
 
         {/* Empty results warning */}
         {isFinished && emptyResults.length > 0 && (
-          <div className="px-4 py-3 border-b border-ods-border shrink-0">
-            <p className="text-sm font-medium text-[var(--color-warning)]">
-              {emptyResults.length} host{emptyResults.length !== 1 ? 's' : ''} returned no data
-            </p>
-            <div className="mt-1 space-y-0.5 max-h-24 overflow-y-auto">
-              {emptyResults.slice(0, 10).map((item, i) => (
-                <p key={i} className="text-xs text-ods-text-secondary">
-                  {item.host_display_name}
-                </p>
-              ))}
-              {emptyResults.length > 10 && (
-                <p className="text-xs text-ods-text-secondary">...and {emptyResults.length - 10} more</p>
-              )}
-            </div>
-          </div>
+          <CollapsibleSection
+            color="var(--color-warning)"
+            title={`${emptyResults.length} host${emptyResults.length !== 1 ? 's' : ''} returned no data`}
+          >
+            {emptyResults.slice(0, 10).map((item, i) => (
+              <p key={i} className="text-xs text-ods-text-secondary">
+                {item.host_display_name}
+              </p>
+            ))}
+            {emptyResults.length > 10 && (
+              <p className="text-xs text-ods-text-secondary">...and {emptyResults.length - 10} more</p>
+            )}
+          </CollapsibleSection>
         )}
 
         {/* Results table */}
