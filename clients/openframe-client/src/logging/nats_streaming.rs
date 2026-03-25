@@ -211,43 +211,57 @@ async fn log_file_reader_task(
     let mut ticker = interval(Duration::from_secs(interval_secs));
     let mut file_position: u64 = 0;
     let mut test_ctx = test_output;
+    let mut pending_batch: Option<(LogBatchMessage, usize, u64)> = None;
 
     loop {
         ticker.tick().await;
 
-        let logs = match read_new_logs(&log_file_path, &mut file_position, MAX_LOGS_PER_BATCH) {
-            Ok(logs) => logs,
-            Err(e) => {
-                error!("Failed to read log file: {:#}", e);
+        // If we have a pending batch from previous failed publish, retry it
+        let (batch, raw_count, new_position) = if let Some((b, rc, np)) = pending_batch.take() {
+            (b, rc, np)
+        } else {
+            // Read new logs
+            let (logs, new_pos) = match read_new_logs(&log_file_path, file_position, MAX_LOGS_PER_BATCH) {
+                Ok(result) => result,
+                Err(e) => {
+                    error!("Failed to read log file: {:#}", e);
+                    continue;
+                }
+            };
+
+            if logs.is_empty() {
                 continue;
             }
+
+            // Get machine_id dynamically (None before registration, Some after)
+            let machine_id = agent_config_service.get_machine_id().await.ok();
+
+            let raw_count = logs.len();
+            let batch = LogBatchMessage {
+                machine_id,
+                hostname: hostname.clone(),
+                tenant_domain: tenant_domain.clone(),
+                logs: logs.deduplicate(),
+            };
+
+            (batch, raw_count, new_pos)
         };
 
-        if logs.is_empty() {
-            continue;
-        }
-
-        // Get machine_id dynamically (None before registration, Some after)
-        let machine_id = agent_config_service.get_machine_id().await.ok();
-
-        let raw_count = logs.len();
-        let batch = LogBatchMessage {
-            machine_id: machine_id.clone(),
-            hostname: hostname.clone(),
-            tenant_domain: tenant_domain.clone(),
-            logs: logs.deduplicate(),
-        };
-
-        // Write to test file if enabled
+        // Write to test file if enabled (only on first attempt)
         if let Some(ref mut ctx) = test_ctx {
-            if let Err(e) = ctx.write(&batch, &machine_id, raw_count) {
+            if let Err(e) = ctx.write(&batch, &batch.machine_id, raw_count) {
                 error!("Failed to write test output: {:#}", e);
             }
         }
 
         // Publish to NATS
         if let Err(e) = connection.publish(&batch).await {
-            error!("Failed to publish log batch: {:#}", e);
+            error!("Failed to publish log batch: {:#} - will retry", e);
+            // Store batch to retry on next tick
+            pending_batch = Some((batch, raw_count, new_position));
+        } else {
+            // Success - advance file position
+            file_position = new_position;
         }
     }
 }
@@ -294,20 +308,20 @@ impl TestOutputContext {
     }
 }
 
+/// Reads new logs from file starting at given position.
+/// Returns logs and the new file position (caller decides whether to advance).
 fn read_new_logs(
     log_file_path: &PathBuf,
-    position: &mut u64,
+    position: u64,
     max_count: usize,
-) -> Result<Vec<LogEntry>> {
+) -> Result<(Vec<LogEntry>, u64)> {
     let mut file = File::open(log_file_path).context("Failed to open log file")?;
 
     // Check if file was truncated (rotated)
     let metadata = file.metadata()?;
-    if metadata.len() < *position {
-        *position = 0;
-    }
+    let start_position = if metadata.len() < position { 0 } else { position };
 
-    file.seek(SeekFrom::Start(*position))?;
+    file.seek(SeekFrom::Start(start_position))?;
 
     let reader = BufReader::new(&file);
     let mut logs = Vec::new();
@@ -325,9 +339,9 @@ fn read_new_logs(
             }
         }
     }
-    *position = file.stream_position()?;
+    let new_position = file.stream_position()?;
 
-    Ok(logs)
+    Ok((logs, new_position))
 }
 
 fn parse_log_line(line: &str) -> Option<LogEntry> {
