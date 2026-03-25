@@ -1,7 +1,6 @@
 # Makefile for OpenFrame OSS Rust project  
 
 CARGO ?= cargo
-OPENFRAME_VERSION ?= 0.0.0-dev
 
 # Optional target for cross-compilation
 TARGET ?= 
@@ -18,15 +17,15 @@ fmt-check:
 	$(CARGO) fmt --all -- --check
 
 clippy:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) clippy --all-targets -- -D warnings
+	$(CARGO) clippy --all-targets -- -D warnings
 
 lint: fmt-check clippy
 
 build:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) build --release --locked $(TARGET_FLAG)
+	$(CARGO) build --release --locked $(TARGET_FLAG)
 
 test: build
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) test --release --locked
+	$(CARGO) test --release --locked
 
 clean:
 	$(CARGO) clean
@@ -37,5 +36,5 @@ crossinstall:
 
 
 crossbuild:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release $(TARGET_FLAG)
+	cross build --release $(TARGET_FLAG)
 
