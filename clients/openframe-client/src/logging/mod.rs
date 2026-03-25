@@ -12,6 +12,7 @@
 /// The logging system is initialized via the `init()` function and should be
 /// called early in the application lifecycle.
 pub mod metrics;
+pub mod nats_streaming;
 pub mod shipping;
 
 use crate::platform::{DirectoryError, DirectoryManager};
@@ -27,7 +28,6 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn, Event, Level, Metadata, Subscriber};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -37,6 +37,13 @@ use tracing_subscriber::{
     prelude::*,
     EnvFilter, Layer, Registry,
 };
+
+/// Maximum log file size before rotation (10 MB)
+const MAX_LOG_FILE_SIZE: u64 = 10 * 1024 * 1024;
+/// Name of the archived log file
+const ARCHIVED_LOG_NAME: &str = "openframe.log.gz";
+/// Interval between rotation checks (60 seconds)
+const ROTATION_CHECK_INTERVAL_SECS: u64 = 60;
 
 // Add non-blocking file writer guard to keep file logging alive
 use tracing_appender::non_blocking::{self, WorkerGuard};
@@ -244,16 +251,17 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             }
         }
 
-        // Try to compress old log files in a background thread
+        // Start background thread for size-based log rotation
         let dir_manager_clone = dir_manager.clone();
+        let log_file_path_clone = log_file_path.clone();
         std::thread::spawn(move || {
-            // This runs in a background thread so we just log any errors
             loop {
-                if let Err(e) = compress_old_logs(&dir_manager_clone) {
-                    log::error!("Error compressing old logs: {:#}", e);
+                // Check every minute if log file needs rotation
+                std::thread::sleep(std::time::Duration::from_secs(ROTATION_CHECK_INTERVAL_SECS));
+
+                if let Err(e) = rotate_log_if_needed(&dir_manager_clone, &log_file_path_clone) {
+                    eprintln!("Error during log rotation: {:#}", e);
                 }
-                // Check for files to compress every hour
-                std::thread::sleep(std::time::Duration::from_secs(3600));
             }
         });
 
@@ -366,124 +374,89 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
     METRICS_STORE.get().cloned()
 }
 
-/// Try to compress old log files
-fn compress_old_logs(dir_manager: &DirectoryManager) -> io::Result<()> {
-    // If we fail to open the log dir that's okay, just return
-    let log_dir = match dir_manager.logs_dir().canonicalize() {
-        Ok(dir) => dir,
-        Err(e) => {
-            log::error!("Failed to get logs directory: {:#}", e);
+/// Check if log file needs rotation and perform it if necessary.
+///
+/// Rotation logic:
+/// 1. Check if current log file exceeds MAX_LOG_FILE_SIZE (10 MB)
+/// 2. If yes:
+///    a. Delete existing archive (openframe.log.gz) if it exists
+///    b. Compress current log file to openframe.log.gz
+///    c. Truncate the current log file (or recreate it)
+fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf) -> io::Result<()> {
+    // Check if log file exists and get its size
+    let metadata = match fs::metadata(log_file_path) {
+        Ok(m) => m,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => {
+            // Log file doesn't exist, nothing to rotate
             return Ok(());
         }
+        Err(e) => return Err(e),
     };
 
-    // Find log files older than 1 day and compress them
-    let mut entries = match fs::read_dir(log_dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            log::error!("Failed to read logs directory: {:#}", e);
-            return Ok(());
-        }
-    };
+    let file_size = metadata.len();
 
-    let one_day_ago = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64
-        - 86400;
+    // Only rotate if file exceeds max size
+    if file_size < MAX_LOG_FILE_SIZE {
+        return Ok(());
+    }
 
-    while let Some(entry) = entries.next() {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(e) => {
-                log::error!(
-                    "Failed to read directory entry: {}",
-                    e
-                );
-                continue;
-            }
-        };
+    eprintln!(
+        "Log file size ({} bytes) exceeds limit ({} bytes), rotating...",
+        file_size, MAX_LOG_FILE_SIZE
+    );
 
-        let metadata = match entry.metadata() {
-            Ok(metadata) => metadata,
-            Err(e) => {
-                log::error!(
-                    "Failed to get metadata for {}: {}",
-                    entry.path().display(),
-                    e
-                );
-                continue;
-            }
-        };
+    // Get the archive path
+    let log_dir = log_file_path.parent().unwrap_or(Path::new("."));
+    let archive_path = log_dir.join(ARCHIVED_LOG_NAME);
 
-        // Skip directories and non-log files
-        if metadata.is_dir() || !entry.file_name().to_string_lossy().ends_with(".log") {
-            continue;
-        }
-
-        // Skip if already compressed
-        if entry.file_name().to_string_lossy().ends_with(".gz") {
-            continue;
-        }
-
-        // Skip if modified in the last day
-        let modified = match metadata.modified() {
-            Ok(time) => match time.duration_since(UNIX_EPOCH) {
-                Ok(duration) => duration.as_secs() as i64,
-                Err(e) => {
-                    log::error!(
-                        "Failed to get modification time for {}: {}",
-                        entry.path().display(),
-                        e
-                    );
-                    continue;
-                }
-            },
-            Err(e) => {
-                log::error!(
-                    "Failed to get modification time for {}: {}",
-                    entry.path().display(),
-                    e
-                );
-                continue;
-            }
-        };
-
-        if modified > one_day_ago {
-            continue;
-        }
-
-        // Compress the file
-        if let Err(e) = compress_log_file(&entry.path()) {
-            log::error!("Failed to compress {}: {}", entry.path().display(), e);
-        } else {
-            log::info!("Compressed old log file: {}", entry.path().display());
+    // Step 1: Delete existing archive if it exists
+    if archive_path.exists() {
+        if let Err(e) = fs::remove_file(&archive_path) {
+            eprintln!("Warning: Failed to remove old archive: {}", e);
+            // Continue anyway, we'll try to overwrite
         }
     }
 
-    Ok(())
-}
+    // Step 2: Read current log file contents
+    let contents = fs::read(log_file_path)?;
 
-/// Check if the given log file is the current day's log
-fn is_current_log(filename: &str) -> bool {
-    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-    filename.contains(&today)
-}
-
-/// Compress a log file using gzip compression
-fn compress_log_file(path: &PathBuf) -> std::io::Result<()> {
-    let mut input = fs::File::open(path)?;
-    let mut contents = Vec::new();
-    input.read_to_end(&mut contents)?;
-
-    let gz_path = path.with_extension("log.gz");
-    let output = fs::File::create(&gz_path)?;
+    // Step 3: Compress to archive
+    let output = fs::File::create(&archive_path)?;
     let mut encoder = GzEncoder::new(output, Compression::default());
     encoder.write_all(&contents)?;
     encoder.finish()?;
 
-    // Remove the original file after successful compression
-    fs::remove_file(path)?;
+    eprintln!("Compressed log to: {}", archive_path.display());
+
+    // Step 4: Truncate the current log file by recreating it
+    // We need to be careful here because the file might be held open by the logger
+    // The safest approach is to truncate it in place
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(log_file_path)?;
+    drop(file);
+
+    // Also update the manual log file handle if it exists
+    if let Some(log_file_arc) = LOG_FILE.get() {
+        if let Ok(mut guard) = log_file_arc.lock() {
+            // Reopen the file for the manual logger
+            match fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_file_path)
+            {
+                Ok(new_file) => {
+                    *guard = Some(new_file);
+                }
+                Err(e) => {
+                    eprintln!("Warning: Failed to reopen log file for manual logger: {}", e);
+                }
+            }
+        }
+    }
+
+    eprintln!("Log rotation completed successfully");
 
     Ok(())
 }
