@@ -12,11 +12,12 @@ import type { PolicyDeviceRow } from '../types/policy-device-row';
 
 interface PolicyDevicesTableProps {
   policyId: number;
+  assignedHostIds?: Array<{ id: number; hostname: string }>;
 }
 
-export function PolicyDevicesTable({ policyId }: PolicyDevicesTableProps) {
+export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesTableProps) {
   const router = useRouter();
-  const { rows, isLoading } = usePolicyDevicesTable(policyId);
+  const { rows, isLoading } = usePolicyDevicesTable(policyId, assignedHostIds);
 
   const columns: TableColumn<PolicyDeviceRow>[] = useMemo(
     () => [
@@ -80,12 +81,15 @@ export function PolicyDevicesTable({ policyId }: PolicyDevicesTableProps) {
         key: 'compliance',
         label: 'STATUS',
         width: 'w-[140px]',
-        renderCell: (row: PolicyDeviceRow) => (
-          <Tag
-            label={row.complianceStatus === 'non-compliant' ? 'Non-Compliant' : 'Passing'}
-            variant={row.complianceStatus === 'non-compliant' ? 'error' : 'success'}
-          />
-        ),
+        renderCell: (row: PolicyDeviceRow) => {
+          if (row.complianceStatus === 'pending') return <Tag label="Pending" variant="warning" />;
+          return (
+            <Tag
+              label={row.complianceStatus === 'non-compliant' ? 'Non-Compliant' : 'Passing'}
+              variant={row.complianceStatus === 'non-compliant' ? 'error' : 'success'}
+            />
+          );
+        },
       },
     ],
     [],

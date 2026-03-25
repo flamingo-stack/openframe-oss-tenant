@@ -1,4 +1,4 @@
-export type ComplianceStatus = 'non-compliant' | 'passing';
+export type ComplianceStatus = 'non-compliant' | 'passing' | 'pending';
 
 export interface PolicyDeviceRow {
   id: string;

@@ -18,6 +18,7 @@ export interface Policy {
   passing_host_count: number;
   failing_host_count: number;
   host_count_updated_at?: string;
+  hosts_include_any?: Array<{ id: number; hostname: string }>;
 }
 
 export interface PolicyFilters {

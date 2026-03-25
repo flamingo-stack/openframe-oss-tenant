@@ -321,6 +321,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             startedAt={campaign.startedAt}
             results={campaign.results}
             errors={campaign.errors}
+            emptyResults={campaign.emptyResults}
             totals={campaign.totals}
             hostsResponded={campaign.hostsResponded}
             hostsFailed={campaign.hostsFailed}

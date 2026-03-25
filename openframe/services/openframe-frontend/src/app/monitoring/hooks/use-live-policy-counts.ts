@@ -7,6 +7,7 @@ import { fleetApiClient } from '@/lib/fleet-api-client';
 export interface LivePolicyCounts {
   failing: number;
   passing: number;
+  responded: number;
 }
 
 export type LivePolicyCountsMap = Map<number, LivePolicyCounts>;
@@ -30,8 +31,9 @@ async function fetchLivePolicyCounts(policyIds: number[]): Promise<LivePolicyCou
   const results = await Promise.all(promises);
 
   for (const { id, type, count } of results) {
-    const existing = countsMap.get(id) ?? { failing: 0, passing: 0 };
+    const existing = countsMap.get(id) ?? { failing: 0, passing: 0, responded: 0 };
     existing[type] = count;
+    existing.responded = existing.passing + existing.failing;
     countsMap.set(id, existing);
   }
 

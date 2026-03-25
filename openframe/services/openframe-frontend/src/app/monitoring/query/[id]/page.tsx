@@ -8,21 +8,21 @@ import { QueryDetailsView } from '../components/query-details-view';
 export default function QueryPageWrapper() {
   const params = useParams<{ id?: string }>();
   const router = useRouter();
-  const rawId = params?.id;
+  const paramId = params?.id;
 
   useEffect(() => {
-    if (rawId === 'new') {
+    if (paramId === 'new') {
       router.replace('/monitoring/query/edit/new');
     }
-  }, [rawId, router]);
+  }, [paramId, router]);
 
-  if (rawId === 'new') {
+  if (paramId === 'new') {
     return null;
   }
 
   return (
     <AppLayout>
-      <QueryDetailsView queryId={rawId || ''} />
+      <QueryDetailsView queryId={paramId || ''} />
     </AppLayout>
   );
 }

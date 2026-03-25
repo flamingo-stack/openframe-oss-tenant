@@ -39,8 +39,8 @@ export interface OrganizationOverviewRow {
 }
 
 const GET_ORGANIZATIONS_QUERY = `
-  query GetOrganizations($pagination: CursorPaginationInput) {
-    organizations(pagination: $pagination) {
+  query GetOrganizations($first: Int) {
+    organizations(first: $first) {
       filteredCount
       edges {
         node {
@@ -84,6 +84,7 @@ async function fetchOrganizationsOverview(_limit: number): Promise<{
   try {
     const orgsResponse = await apiClient.post<GraphQlResponse<OrganizationsResponse>>('/api/graphql', {
       query: GET_ORGANIZATIONS_QUERY,
+      variables: { first: 100 },
     });
 
     if (!orgsResponse.ok) {

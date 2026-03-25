@@ -8,21 +8,21 @@ import { PolicyDetailsView } from '../components/policy-details-view';
 export default function PolicyPageWrapper() {
   const params = useParams<{ id?: string }>();
   const router = useRouter();
-  const rawId = params?.id;
+  const paramId = params?.id;
 
   useEffect(() => {
-    if (rawId === 'new') {
+    if (paramId === 'new') {
       router.replace('/monitoring/policy/edit/new');
     }
-  }, [rawId, router]);
+  }, [paramId, router]);
 
-  if (rawId === 'new') {
+  if (paramId === 'new') {
     return null;
   }
 
   return (
     <AppLayout>
-      <PolicyDetailsView policyId={rawId || ''} />
+      <PolicyDetailsView policyId={paramId || ''} />
     </AppLayout>
   );
 }
