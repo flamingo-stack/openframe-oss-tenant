@@ -199,7 +199,6 @@ export function CompanyAndUsersTab() {
       headerActions={headerActions}
       background="default"
       padding="none"
-      className="pt-6"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <Table

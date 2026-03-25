@@ -15,16 +15,16 @@ export function SettingsNavCard({ href, icon, title, description }: SettingsNavC
   return (
     <Link
       href={href}
-      className="bg-ods-card border border-ods-border rounded-md p-4 flex gap-4 items-center hover:border-ods-text-secondary/50 transition-colors"
+      className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)] flex gap-[var(--spacing-system-s)] items-center"
     >
-      <div className="shrink-0 size-12 rounded bg-ods-bg border border-ods-border flex items-center justify-center text-ods-text-primary">
+      <div className="shrink-0 rounded bg-ods-bg border border-ods-border flex items-center justify-center text-ods-text-secondary  p-[var(--spacing-system-sf)]">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-lg font-bold text-ods-text-primary tracking-tight">{title}</p>
-        <p className="text-sm font-medium text-ods-text-secondary">{description}</p>
+        <p className="text-h3 text-ods-text-primary">{title}</p>
+        <p className="text-h6 text-ods-text-secondary">{description}</p>
       </div>
-      <div className="shrink-0 bg-ods-card border border-ods-border rounded-md p-3">
+      <div className="shrink-0 bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-sf)]">
         <ChevronRight className="size-6 text-ods-text-primary" />
       </div>
     </Link>

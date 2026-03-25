@@ -502,7 +502,6 @@ export function AiSettingsTab() {
       title="AI Settings & Guardrails"
       background="default"
       padding="none"
-      className="pt-6"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <div className="space-y-8">

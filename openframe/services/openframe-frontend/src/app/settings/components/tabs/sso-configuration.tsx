@@ -263,7 +263,6 @@ export function SsoConfigurationTab() {
       title="SSO Configurations"
       background="default"
       padding="none"
-      className="pt-6"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <Input

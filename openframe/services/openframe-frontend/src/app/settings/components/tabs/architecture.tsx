@@ -54,7 +54,6 @@ export function ArchitectureTab({ title = 'Architecture Overview' }: Architectur
       title={title}
       background="default"
       padding="none"
-      className="pt-6"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <div>
