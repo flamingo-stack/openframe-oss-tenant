@@ -1,6 +1,9 @@
 /**
  * Device Command Utilities
  * Unified logic for building device installation and uninstallation commands
+ *
+ * Commands fetch the release version at runtime via the /clients/api/release-version endpoint
+ * using the X-Initial-Key header, then download the matching binary from GitHub releases.
  */
 
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
@@ -9,36 +12,47 @@ const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenan
 const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz';
 const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip';
 
-/**
- * Build the binary download URL for a given version and asset
- */
-export function buildBinaryUrl(version: string, assetName: string): string {
-  if (!version) {
-    return `${RELEASES_BASE_URL}/latest/download/${assetName}`;
+function buildMacCommand(versionUrl: string, initialKey: string, action: string): string {
+  return [
+    `cd ~ && rm -f ${MACOS_BINARY_NAME} openframe-client; \\`,
+    `VERSION=$(curl -sf -H "X-Initial-Key: ${initialKey}" ${versionUrl}) && \\`,
+    '[ -n "$VERSION" ] && \\',
+    'echo "Downloading version: $VERSION" && \\',
+    `curl -fL -o ${MACOS_BINARY_NAME} "${RELEASES_BASE_URL}/download/\${VERSION}/${MACOS_BINARY_NAME}" && \\`,
+    `tar -xzf ${MACOS_BINARY_NAME} && \\`,
+    'sudo chmod +x ./openframe-client && \\',
+    `sudo ./openframe-client ${action}`,
+  ].join('\n');
+}
+
+function buildWindowsCommand(versionUrl: string, initialKey: string, action: string): string {
+  return [
+    '$ErrorActionPreference = "Stop"',
+    'Set-Location ~',
+    "Remove-Item -Path 'openframe-client_windows.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue",
+    `$VERSION = (Invoke-WebRequest -Uri '${versionUrl}' -Headers @{"X-Initial-Key"="${initialKey}"}).Content.Trim()`,
+    'if (-not $VERSION) { throw "Failed to fetch release version" }',
+    'Write-Host "Downloading version: $VERSION"',
+    `Invoke-WebRequest -Uri '${RELEASES_BASE_URL}/download/$VERSION/${WINDOWS_BINARY_NAME}' -OutFile 'openframe-client_windows.zip'`,
+    "Expand-Archive -Path 'openframe-client_windows.zip' -DestinationPath '.' -Force",
+    `Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${action}' -Verb RunAs -Wait`,
+  ].join('; ');
+}
+
+function buildCommand(platform: OSPlatformId, serverBaseUrl: string, initialKey: string, action: string): string {
+  const versionUrl = `${serverBaseUrl}/clients/api/release-version`;
+  if (platform === 'windows') {
+    return buildWindowsCommand(versionUrl, initialKey, action);
   }
-  return `${RELEASES_BASE_URL}/download/${version}/${assetName}`;
-}
-
-/**
- * Get macOS binary URL
- */
-export function getMacBinaryUrl(version: string): string {
-  return buildBinaryUrl(version, MACOS_BINARY_NAME);
-}
-
-/**
- * Get Windows binary URL
- */
-export function getWindowsBinaryUrl(version: string): string {
-  return buildBinaryUrl(version, WINDOWS_BINARY_NAME);
+  return buildMacCommand(versionUrl, initialKey, action);
 }
 
 export interface InstallCommandOptions {
   platform: OSPlatformId;
   serverUrl: string;
+  serverBaseUrl: string;
   initialKey: string;
   orgId: string;
-  releaseVersion: string;
   additionalArgs?: string[];
 }
 
@@ -46,41 +60,24 @@ export interface InstallCommandOptions {
  * Build the device installation command
  */
 export function buildInstallCommand(options: InstallCommandOptions): string {
-  const { platform, serverUrl, initialKey, orgId, releaseVersion, additionalArgs = [] } = options;
-
-  const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgId}`;
+  const { platform, serverUrl, serverBaseUrl, initialKey, orgId, additionalArgs = [] } = options;
   const extras = additionalArgs.length ? ' ' + additionalArgs.join(' ') : '';
-
-  if (platform === 'windows') {
-    const windowsBinaryUrl = getWindowsBinaryUrl(releaseVersion);
-    const argString = `${baseArgs}${extras}`;
-    return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`;
-  }
-
-  // macOS / darwin
-  const macBinaryUrl = getMacBinaryUrl(releaseVersion);
-  return `cd ~ && rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`;
+  const action = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgId}${extras}`;
+  return buildCommand(platform, serverBaseUrl, initialKey, action);
 }
 
 export interface UninstallCommandOptions {
   platform: OSPlatformId;
-  releaseVersion: string;
+  serverBaseUrl: string;
+  initialKey: string;
 }
 
 /**
  * Build the device uninstallation command
  */
 export function buildUninstallCommand(options: UninstallCommandOptions): string {
-  const { platform, releaseVersion } = options;
-
-  if (platform === 'windows') {
-    const windowsBinaryUrl = getWindowsBinaryUrl(releaseVersion);
-    return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList 'uninstall' -Verb RunAs -Wait`;
-  }
-
-  // macOS / darwin
-  const macBinaryUrl = getMacBinaryUrl(releaseVersion);
-  return `cd ~ && rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client uninstall`;
+  const { platform, serverBaseUrl, initialKey } = options;
+  return buildCommand(platform, serverBaseUrl, initialKey, 'uninstall');
 }
 
 /**

@@ -21,20 +21,13 @@ import {
   normalizeOSType,
 } from '@flamingo-stack/openframe-frontend-core';
 import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
-import {
-  ArchiveIcon,
-  CmdIcon,
-  PowerShellIcon,
-  RemoteControlIcon,
-  ScriptIcon,
-  ShellIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { ArchiveIcon, ScriptIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Copy, Folder, MoreVertical, PackageX, Trash2 } from 'lucide-react';
+import { Copy, MoreVertical, PackageX, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useDeviceActions } from '../hooks/use-device-actions';
-import { useReleaseVersion } from '../hooks/use-release-version';
+import { useRegistrationSecret } from '../hooks/use-registration-secret';
 import type { Device } from '../types/device.types';
 import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
@@ -57,7 +50,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUninstallDialog, setShowUninstallDialog] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen });
+  const { initialKey } = useRegistrationSecret();
 
   const deviceName = device.displayName || device.hostname || 'this device';
   const deviceId = device.machineId || device.id;
@@ -68,10 +61,16 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     [device.platform, device.osType, device.operating_system],
   );
 
+  const serverBaseUrl = useMemo(() => {
+    if (typeof window === 'undefined') return 'http://localhost';
+    const { hostname, protocol } = window.location;
+    return `${protocol}//${hostname}`;
+  }, []);
+
   const uninstallCommand = useMemo(() => {
     if (!dropdownOpen && !showUninstallDialog) return '';
-    return buildUninstallCommand({ platform: devicePlatform, releaseVersion });
-  }, [devicePlatform, releaseVersion, dropdownOpen, showUninstallDialog]);
+    return buildUninstallCommand({ platform: devicePlatform, serverBaseUrl, initialKey });
+  }, [devicePlatform, serverBaseUrl, initialKey, dropdownOpen, showUninstallDialog]);
 
   // Copy uninstall command to clipboard
   const copyUninstallCommand = useCallback(async () => {

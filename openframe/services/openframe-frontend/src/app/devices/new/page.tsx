@@ -17,31 +17,18 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppLayout } from '../../components/app-layout';
 import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min';
 import { useRegistrationSecret } from '../hooks/use-registration-secret';
-import { useReleaseVersion } from '../hooks/use-release-version';
+import { buildInstallCommand } from '../utils/device-command-utils';
 
 // Force dynamic rendering for this page due to useSearchParams in AppLayout
 export const dynamic = 'force-dynamic';
 
 type Platform = OSPlatformId;
 
-const RELEASES_BASE_URL = 'https://github.com/flamingo-stack/openframe-oss-tenant/releases';
-const MACOS_BINARY_NAME = 'openframe-client_macos.tar.gz';
-const WINDOWS_BINARY_NAME = 'openframe-client_windows.zip';
-
-const buildBinaryUrl = (version: string, assetName: string) => {
-  if (!version) {
-    return `${RELEASES_BASE_URL}/latest/download/${assetName}`;
-  }
-
-  return `${RELEASES_BASE_URL}/download/${version}/${assetName}`;
-};
-
 export default function NewDevicePage() {
   const router = useRouter();
   const { toast } = useToast();
   const [platform, setPlatform] = useState<Platform>(DEFAULT_OS_PLATFORM);
   const { initialKey } = useRegistrationSecret();
-  const { releaseVersion } = useReleaseVersion();
   const [argInput, setArgInput] = useState('');
   const [args, setArgs] = useState<string[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>('');
@@ -54,6 +41,12 @@ export default function NewDevicePage() {
       return 'localhost --localMode';
     }
     return hostname;
+  }, []);
+
+  const serverBaseUrl = useMemo(() => {
+    if (typeof window === 'undefined') return 'http://localhost';
+    const { hostname, protocol } = window.location;
+    return `${protocol}//${hostname}`;
   }, []);
 
   useEffect(() => {
@@ -94,22 +87,18 @@ export default function NewDevicePage() {
     [addArgument],
   );
 
-  const macBinaryUrl = useMemo(() => buildBinaryUrl(releaseVersion, MACOS_BINARY_NAME), [releaseVersion]);
-
-  const windowsBinaryUrl = useMemo(() => buildBinaryUrl(releaseVersion, WINDOWS_BINARY_NAME), [releaseVersion]);
-
-  const command = useMemo(() => {
-    const orgIdArg = selectedOrgId;
-    const baseArgs = `install --serverUrl ${serverUrl} --initialKey ${initialKey} --orgId ${orgIdArg}`;
-    const extras = args.length ? ' ' + args.join(' ') : '';
-
-    if (platform === 'windows') {
-      const argString = `${baseArgs}${extras}`;
-      return `Set-Location ~; Remove-Item -Path 'openframe-client.zip','openframe-client.exe' -Force -ErrorAction SilentlyContinue; Invoke-WebRequest -Uri '${windowsBinaryUrl}' -OutFile 'openframe-client.zip'; Expand-Archive -Path 'openframe-client.zip' -DestinationPath '.' -Force; Start-Process -FilePath '.\\openframe-client.exe' -ArgumentList '${argString}' -Verb RunAs -Wait`;
-    }
-
-    return `cd ~ && rm -f openframe-client_macos.tar.gz openframe-client 2>/dev/null; curl -L -o openframe-client_macos.tar.gz '${macBinaryUrl}' && tar -xzf openframe-client_macos.tar.gz && sudo chmod +x ./openframe-client && sudo ./openframe-client ${baseArgs}${extras}`;
-  }, [initialKey, args, platform, selectedOrgId, serverUrl, macBinaryUrl, windowsBinaryUrl]);
+  const command = useMemo(
+    () =>
+      buildInstallCommand({
+        platform,
+        serverUrl,
+        serverBaseUrl,
+        initialKey,
+        orgId: selectedOrgId,
+        additionalArgs: args,
+      }),
+    [platform, serverUrl, serverBaseUrl, initialKey, selectedOrgId, args],
+  );
 
   const copyCommand = useCallback(async () => {
     try {

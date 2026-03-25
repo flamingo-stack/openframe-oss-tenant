@@ -1,50 +1,51 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+
+export const registrationSecretQueryKeys = {
+  active: ['registrationSecret', 'active'] as const,
+};
+
+async function fetchActiveSecret(): Promise<string> {
+  const response = await apiClient.get<{ key?: string }>('/api/agent/registration-secret/active');
+  if (!response.ok) {
+    throw new Error(response.error || `Request failed with status ${response.status}`);
+  }
+  if (!response.data?.key) {
+    throw new Error('Active registration secret not found in response');
+  }
+  return response.data.key;
+}
 
 export function useRegistrationSecret() {
   const { toast } = useToast();
-  const [initialKey, setInitialKey] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const fetchActiveSecret = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiClient.get('/api/agent/registration-secret/active');
-      if (!response.ok) {
-        throw new Error(response.error || `Request failed with status ${response.status}`);
-      }
-      const { key } = response.data;
-      if (!key) {
-        throw new Error('Active registration secret not found in response');
-      }
-      setInitialKey(key);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch registration secret';
-      setError(message);
-      toast({
-        title: 'Failed to load registration secret',
-        description: message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  const query = useQuery({
+    queryKey: registrationSecretQueryKeys.active,
+    queryFn: fetchActiveSecret,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+    retryDelay: 1000,
+  });
 
   useEffect(() => {
-    // Auto-fetch on mount
-    fetchActiveSecret();
-  }, [fetchActiveSecret]);
+    if (query.error) {
+      toast({
+        title: 'Failed to load registration secret',
+        description: query.error.message,
+        variant: 'destructive',
+      });
+    }
+  }, [query.error, toast]);
 
   return {
-    initialKey,
-    isLoading,
-    error,
-    refetch: fetchActiveSecret,
+    initialKey: query.data ?? '',
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
   };
 }
