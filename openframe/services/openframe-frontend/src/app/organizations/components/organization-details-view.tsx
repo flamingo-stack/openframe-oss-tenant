@@ -10,6 +10,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { PencilIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useEffect } from 'react';
@@ -26,6 +27,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const router = useRouter();
   const { organization, isLoading, error, fetchOrganizationById } = useOrganizationDetails();
   const { deleteOrganization } = useDeleteOrganization();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     }
     try {
       await deleteOrganization(organization.organizationId);
+      await queryClient.invalidateQueries({ queryKey: ['organizations'] });
       toast({ title: 'Organization deleted', description: `${organization.name} was deleted` });
       router.push('/organizations');
     } catch (e) {
