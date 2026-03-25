@@ -24,7 +24,7 @@ export function useOrganizationsMin(limit: number = 10) {
       try {
         const response = await apiClient.post<any>('/api/graphql', {
           query: GET_ORGANIZATIONS_MIN_QUERY,
-          variables: { search, pagination: { limit, cursor: null } },
+          variables: { search, first: limit },
         });
 
         if (!response.ok) {

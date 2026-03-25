@@ -2,10 +2,11 @@
 
 import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
-import type { WebSocketState } from '@/lib/meshcentral/websocket-manager';
-import { WebSocketManager } from '@/lib/meshcentral/websocket-manager';
+import { runtimeEnv } from '@/lib/runtime-config';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -14,6 +15,11 @@ export interface CampaignError {
   host_display_name: string;
   osquery_version: string;
   error: string;
+}
+
+export interface CampaignEmptyResult {
+  host_id: number;
+  host_display_name: string;
 }
 
 export interface CampaignTotals {
@@ -28,30 +34,12 @@ interface CampaignMessage {
   data: any;
 }
 
-export interface UseLiveCampaignReturn {
-  startCampaign: (sql: string) => Promise<void>;
-  stopCampaign: () => void;
-  isRunning: boolean;
-  startedAt: Date | null;
-  durationMs: number;
-  results: QueryResultRow[];
-  errors: CampaignError[];
-  totals: CampaignTotals | null;
-  hostsResponded: number;
-  hostsFailed: number;
-  connectionState: WebSocketState;
-  campaignStatus: '' | 'pending' | 'finished';
-}
+type SockJsConnectionState = 'disconnected' | 'connecting' | 'connected';
 
-const CAMPAIGN_LIMIT = 250_000;
+// ── SockJS frame helpers ──────────────────────────────────────────
 
-// ── SockJS helpers ─────────────────────────────────────────────────
-
-function buildSockJsUrl(fleetBaseUrl: string): string {
-  const wsBase = fleetBaseUrl.replace(/^http/, 'ws');
-  const serverId = String(Math.floor(Math.random() * 999)).padStart(3, '0');
-  const sessionId = Math.random().toString(36).substring(2, 10);
-  return `${wsBase}/api/v1/fleet/results/${serverId}/${sessionId}/websocket`;
+function buildWsUrl(httpUrl: string): string {
+  return httpUrl.replace(/^http/, 'ws');
 }
 
 function encodeSockJsMessage(msg: object): string {
@@ -64,18 +52,10 @@ function parseSockJsFrame(raw: string): {
   closeInfo?: [number, string];
 } | null {
   if (!raw || raw.length === 0) return null;
-
-  const firstChar = raw[0];
-
-  if (firstChar === 'o') {
-    return { type: 'open' };
-  }
-
-  if (firstChar === 'h') {
-    return { type: 'heartbeat' };
-  }
-
-  if (firstChar === 'a') {
+  const ch = raw[0];
+  if (ch === 'o') return { type: 'open' };
+  if (ch === 'h') return { type: 'heartbeat' };
+  if (ch === 'a') {
     try {
       const strings = JSON.parse(raw.slice(1)) as string[];
       const messages = strings.map(s => JSON.parse(s) as CampaignMessage);
@@ -84,18 +64,32 @@ function parseSockJsFrame(raw: string): {
       return null;
     }
   }
-
-  if (firstChar === 'c') {
+  if (ch === 'c') {
     try {
-      const info = JSON.parse(raw.slice(1)) as [number, string];
-      return { type: 'close', closeInfo: info };
+      return { type: 'close', closeInfo: JSON.parse(raw.slice(1)) as [number, string] };
     } catch {
       return null;
     }
   }
-
   return null;
 }
+
+export interface UseLiveCampaignReturn {
+  startCampaign: (sql: string, hostIds: number[]) => Promise<void>;
+  stopCampaign: () => void;
+  isRunning: boolean;
+  startedAt: Date | null;
+  results: QueryResultRow[];
+  errors: CampaignError[];
+  emptyResults: CampaignEmptyResult[];
+  totals: CampaignTotals | null;
+  hostsResponded: number;
+  hostsFailed: number;
+  connectionState: SockJsConnectionState;
+  campaignStatus: '' | 'pending' | 'finished';
+}
+
+const CAMPAIGN_LIMIT = 250_000;
 
 // ── Cached "All Hosts" label lookup ────────────────────────────────
 
@@ -121,36 +115,91 @@ async function getAllHostsLabelId(): Promise<number> {
   return allHostsLabel.id;
 }
 
+// ── Fleet API token fetch ─────────────────────────────────────────
+
+const GET_FLEET_API_TOKEN_QUERY = `
+  query GetFleetApiToken {
+    integratedTools(search: "fleetmdm") {
+      tools {
+        id
+        toolType
+        credentials {
+          apiKey {
+            key
+          }
+        }
+      }
+    }
+  }
+`;
+
+async function fetchFleetApiToken(): Promise<string> {
+  const response = await apiClient.post<{
+    data?: {
+      integratedTools: {
+        tools: Array<{
+          id: string;
+          toolType: string;
+          credentials?: { apiKey?: { key: string } | null } | null;
+        }>;
+      };
+    };
+    errors?: Array<{ message: string }>;
+  }>('/api/graphql', {
+    query: GET_FLEET_API_TOKEN_QUERY,
+  });
+
+  if (!response.ok) {
+    throw new Error(response.error || 'Failed to fetch Fleet API token');
+  }
+
+  const graphql = response.data;
+  if (graphql?.errors?.length) {
+    throw new Error(graphql.errors[0].message);
+  }
+
+  const tools = graphql?.data?.integratedTools?.tools ?? [];
+  const fleetTool = tools.find(t => t.toolType === 'FLEET_MDM' || t.id === 'fleetmdm-server');
+  const token = fleetTool?.credentials?.apiKey?.key;
+
+  if (!token) {
+    throw new Error('Fleet MDM API token not found');
+  }
+
+  return token;
+}
+
 // ── Hook ───────────────────────────────────────────────────────────
 
 export function useLiveCampaign(): UseLiveCampaignReturn {
   const { toast } = useToast();
 
+  const { data: fleetApiToken } = useQuery({
+    queryKey: ['fleet-api-token'],
+    queryFn: fetchFleetApiToken,
+    staleTime: Number.POSITIVE_INFINITY,
+  });
+
   const [isRunning, setIsRunning] = useState(false);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [durationMs, setDurationMs] = useState(0);
   const [results, setResults] = useState<QueryResultRow[]>([]);
   const [errors, setErrors] = useState<CampaignError[]>([]);
+  const [emptyResults, setEmptyResults] = useState<CampaignEmptyResult[]>([]);
   const [totals, setTotals] = useState<CampaignTotals | null>(null);
   const [hostsResponded, setHostsResponded] = useState(0);
   const [hostsFailed, setHostsFailed] = useState(0);
-  const [connectionState, setConnectionState] = useState<WebSocketState>('disconnected');
+  const [connectionState, setConnectionState] = useState<SockJsConnectionState>('disconnected');
   const [campaignStatus, setCampaignStatus] = useState<'' | 'pending' | 'finished'>('');
 
-  const wsRef = useRef<WebSocketManager | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
   const previousDataRef = useRef<string | null>(null);
   const responseCountRef = useRef({ results: 0, errors: 0 });
   const campaignIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
 
   const cleanup = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
     if (wsRef.current) {
-      wsRef.current.dispose();
+      wsRef.current.close();
       wsRef.current = null;
     }
     previousDataRef.current = null;
@@ -204,7 +253,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
             return;
           }
 
-          const hasError = msg.data.error !== null;
+          const hasError = msg.data.error != null;
           if (hasError) {
             const err: CampaignError = {
               host_id: msg.data.host?.id,
@@ -220,6 +269,15 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
               host_display_name: msg.data.host?.display_name || 'Unknown',
               ...row,
             }));
+            if (rows.length === 0) {
+              setEmptyResults(prev => [
+                ...prev,
+                {
+                  host_id: msg.data.host?.id,
+                  host_display_name: msg.data.host?.display_name || 'Unknown',
+                },
+              ]);
+            }
             setResults(prev => [...prev, ...rows]);
             setHostsResponded(prev => prev + 1);
             count.results += rows.length;
@@ -250,9 +308,14 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   );
 
   const startCampaign = useCallback(
-    async (sql: string) => {
+    async (sql: string, hostIds: number[]) => {
       if (!sql.trim()) {
         toast({ title: 'Query is required', description: 'Enter a query before testing', variant: 'destructive' });
+        return;
+      }
+
+      if (!fleetApiToken) {
+        toast({ title: 'Fleet API token not available', description: 'Please try again', variant: 'destructive' });
         return;
       }
 
@@ -260,21 +323,26 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       cleanup();
       setResults([]);
       setErrors([]);
+      setEmptyResults([]);
       setTotals(null);
       setHostsResponded(0);
       setHostsFailed(0);
       setCampaignStatus('');
       setConnectionState('disconnected');
+      setStartedAt(null);
 
       try {
-        // 1. Get "All Hosts" label
-        const labelId = await getAllHostsLabelId();
+        // 1. Build target selection — use selected hosts if provided, otherwise fall back to all hosts
+        const selected =
+          hostIds.length > 0
+            ? { hosts: hostIds, labels: [], teams: [] }
+            : { hosts: [], labels: [await getAllHostsLabelId()], teams: [] };
 
         // 2. Create campaign
         const res = await fleetApiClient.runLiveQuery({
           query: sql,
           query_id: null,
-          selected: { hosts: [], labels: [labelId], teams: [] },
+          selected,
         });
 
         if (!res.ok || !res.data?.campaign) {
@@ -284,82 +352,74 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         const campaignId = res.data.campaign.id;
         campaignIdRef.current = campaignId;
 
-        // 3. Start timer
-        const now = new Date();
-        setStartedAt(now);
-        setDurationMs(0);
+        // 3. Start campaign state
+        setStartedAt(new Date());
         setIsRunning(true);
 
-        const startTime = now.getTime();
-        timerRef.current = setInterval(() => {
-          if (isMountedRef.current) {
-            setDurationMs(Date.now() - startTime);
+        // 4. Open native WebSocket with SockJS framing
+        let wsUrl = buildWsUrl(fleetApiClient.getSockJsUrl());
+        try {
+          if (runtimeEnv.enableDevTicketObserver() && typeof window !== 'undefined') {
+            const devToken = localStorage.getItem('of_access_token');
+            if (devToken) wsUrl += `?authorization=${encodeURIComponent(devToken)}`;
           }
-        }, 1000);
+        } catch {
+          // Ignore — non-dev-ticket mode
+        }
 
-        // 4. Open WebSocket with SockJS framing
-        const fleetBaseUrl = fleetApiClient.getBaseUrl();
-        const wsUrl = buildSockJsUrl(fleetBaseUrl);
-        const token = localStorage.getItem('of_access_token') || '';
+        setConnectionState('connecting');
+        const socket = new WebSocket(wsUrl);
+        wsRef.current = socket;
 
-        const ws = new WebSocketManager({
-          url: wsUrl,
-          enableMessageQueue: false,
-          refreshTokenBeforeReconnect: false,
-          maxReconnectAttempts: 3,
-          onStateChange: state => {
-            if (isMountedRef.current) setConnectionState(state);
-          },
-          onMessage: event => {
-            const raw = typeof event.data === 'string' ? event.data : '';
+        socket.onopen = () => {
+          if (!isMountedRef.current) return;
+          // WebSocket transport open — wait for SockJS 'o' frame before sending
+        };
 
-            // Deduplication
-            if (raw === previousDataRef.current) return;
-            previousDataRef.current = raw;
+        socket.onmessage = (event: MessageEvent) => {
+          const raw = typeof event.data === 'string' ? event.data : '';
 
-            const frame = parseSockJsFrame(raw);
-            if (!frame) return;
+          // Deduplication
+          if (raw === previousDataRef.current) return;
+          previousDataRef.current = raw;
 
-            switch (frame.type) {
-              case 'open': {
-                // SockJS connection established — send auth + subscribe
-                ws.send(encodeSockJsMessage({ type: 'auth', data: { token } }));
-                ws.send(encodeSockJsMessage({ type: 'select_campaign', data: { campaign_id: campaignId } }));
-                break;
-              }
-              case 'data': {
-                frame.messages?.forEach(msg => handleCampaignMessage(msg));
-                break;
-              }
-              case 'heartbeat': {
-                // Ignore
-                break;
-              }
-              case 'close': {
-                ws.disconnect();
-                break;
-              }
+          const frame = parseSockJsFrame(raw);
+          if (!frame) return;
+
+          switch (frame.type) {
+            case 'open': {
+              setConnectionState('connected');
+              socket.send(encodeSockJsMessage({ type: 'auth', data: { token: fleetApiToken } }));
+              socket.send(encodeSockJsMessage({ type: 'select_campaign', data: { campaign_id: campaignId } }));
+              break;
             }
-          },
-          onError: () => {
-            if (isMountedRef.current) {
-              toast({
-                title: 'WebSocket Error',
-                description: 'Connection error during live campaign',
-                variant: 'destructive',
-              });
-            }
-          },
-          onClose: () => {
-            // Connection closed — if campaign wasn't finished, mark as stopped
-            if (isMountedRef.current && campaignIdRef.current === campaignId) {
-              setConnectionState('disconnected');
-            }
-          },
-        });
+            case 'data':
+              frame.messages?.forEach(msg => handleCampaignMessage(msg));
+              break;
+            case 'heartbeat':
+              break;
+            case 'close':
+              socket.close();
+              break;
+          }
+        };
 
-        wsRef.current = ws;
-        await ws.connect();
+        socket.onerror = () => {
+          if (isMountedRef.current) {
+            toast({
+              title: 'WebSocket Error',
+              description: 'Connection error during live campaign',
+              variant: 'destructive',
+            });
+          }
+        };
+
+        socket.onclose = () => {
+          // Connection closed — stop the campaign if it hasn't finished naturally
+          if (isMountedRef.current && campaignIdRef.current === campaignId) {
+            stopCampaign();
+          }
+        };
       } catch (error) {
         cleanup();
         if (isMountedRef.current) {
@@ -370,7 +430,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         }
       }
     },
-    [cleanup, handleCampaignMessage, toast],
+    [cleanup, fleetApiToken, handleCampaignMessage, stopCampaign, toast],
   );
 
   return {
@@ -378,9 +438,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
     stopCampaign,
     isRunning,
     startedAt,
-    durationMs,
     results,
     errors,
+    emptyResults,
     totals,
     hostsResponded,
     hostsFailed,

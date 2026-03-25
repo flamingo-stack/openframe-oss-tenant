@@ -1,6 +1,6 @@
 export const GET_ORGANIZATIONS_QUERY = `#graphql
-  query GetOrganizations($search: String, $pagination: CursorPaginationInput) {
-    organizations(search: $search, pagination: $pagination) {
+  query GetOrganizations($search: String, $first: Int, $after: String) {
+    organizations(search: $search, first: $first, after: $after) {
       edges {
         node {
           id
@@ -38,8 +38,8 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
 `;
 
 export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
-  query GetOrganizationsMin($search: String, $pagination: CursorPaginationInput) {
-    organizations(search: $search, pagination: $pagination) {
+  query GetOrganizationsMin($search: String, $first: Int) {
+    organizations(search: $search, first: $first) {
       edges {
         node {
           id
@@ -55,8 +55,58 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
   }
 `;
 
+export const GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY = `#graphql
+  query GetOrganizationByOrganizationId($organizationId: String!) {
+    organizationByOrganizationId(organizationId: $organizationId) {
+      id
+      organizationId
+      name
+      category
+      numberOfEmployees
+      websiteUrl
+      notes
+      contactInformation {
+        mailingAddressSameAsPhysical
+        contacts {
+          contactName
+          title
+          phone
+          email
+        }
+        physicalAddress {
+          street1
+          street2
+          city
+          state
+          postalCode
+          country
+        }
+        mailingAddress {
+          street1
+          street2
+          city
+          state
+          postalCode
+          country
+        }
+      }
+      image {
+        imageUrl
+      }
+      monthlyRevenue
+      contractStartDate
+      contractEndDate
+      isDefault
+      createdAt
+      updatedAt
+      deleted
+      deletedAt
+    }
+  }
+`;
+
 export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
-  query GetOrganizationById($id: String!) {
+  query GetOrganizationById($id: ID!) {
     organization(id: $id) {
       id
       organizationId

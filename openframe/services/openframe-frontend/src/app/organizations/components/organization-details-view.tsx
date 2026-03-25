@@ -42,7 +42,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       return;
     }
     try {
-      await deleteOrganization(organization.id);
+      await deleteOrganization(organization.organizationId);
       toast({ title: 'Organization deleted', description: `${organization.name} was deleted` });
       router.push('/organizations');
     } catch (e) {

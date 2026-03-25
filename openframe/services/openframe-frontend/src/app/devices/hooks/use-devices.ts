@@ -49,7 +49,8 @@ export function useDevices(filters: DeviceFilterInput = {}, search = '') {
         query: GET_DEVICES_QUERY,
         variables: {
           filter: filters,
-          pagination: { limit: DEVICES_PAGE_SIZE, cursor: (pageParam as string) || null },
+          first: DEVICES_PAGE_SIZE,
+          after: (pageParam as string) || null,
           search: search || '',
           sort: { field: 'status', direction: 'DESC' },
         },

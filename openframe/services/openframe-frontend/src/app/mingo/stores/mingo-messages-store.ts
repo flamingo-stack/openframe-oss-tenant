@@ -313,6 +313,8 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
                 data.approvalType || '',
                 status,
               );
+            } else if (segment.type === 'error') {
+              accumulator.addError(segment.title, segment.details);
             }
           });
 

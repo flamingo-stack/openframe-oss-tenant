@@ -30,7 +30,11 @@ export function useAiPolicies() {
       const res = await apiClient.get<PolicyTemplateSummary[]>('/chat/api/v1/policies');
       if (!res.ok) throw new Error(res.error || 'Failed to fetch policy templates');
 
-      const list = res.data || [];
+      const list = (res.data || []).sort((a, b) => {
+        if (a.type === 'CUSTOM' && b.type !== 'CUSTOM') return 1;
+        if (a.type !== 'CUSTOM' && b.type === 'CUSTOM') return -1;
+        return 0;
+      });
       setTemplates(list);
 
       const active = list.find(t => t.isActive)?.id || null;
