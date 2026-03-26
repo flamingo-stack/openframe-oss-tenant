@@ -69,7 +69,8 @@ export function useOrganizations(search = '') {
         query: GET_ORGANIZATIONS_QUERY,
         variables: {
           search: search || '',
-          pagination: { limit: ORGANIZATIONS_PAGE_SIZE, cursor: (pageParam as string) || null },
+          first: ORGANIZATIONS_PAGE_SIZE,
+          after: (pageParam as string) || null,
         },
       });
 

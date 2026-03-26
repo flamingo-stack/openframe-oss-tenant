@@ -10,7 +10,7 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
   return {
     // Core Identifiers
     id: node.id,
-    machineId: node.machineId || node.id,
+    machineId: node.machineId || '',
     hostname: node.hostname || node.displayName || '',
     displayName: node.displayName || node.hostname,
 

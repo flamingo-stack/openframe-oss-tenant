@@ -31,9 +31,35 @@ function parsePlatforms(platform: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function PolicyStatusCell({ failingCount }: { failingCount: number }) {
-  const isFailing = failingCount > 0;
+function PolicyStatusCell({
+  failingCount,
+  missingCount,
+  respondedCount,
+}: {
+  failingCount: number;
+  missingCount: number;
+  respondedCount: number;
+}) {
+  if (missingCount > 0 && respondedCount === 0) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <Tag label="Pending" variant="warning" />
+      </div>
+    );
+  }
 
+  if (missingCount > 0) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <Tag label="Partial" variant="warning" />
+        <span className="text-xs font-medium text-[var(--color-warning)]">
+          {missingCount} {missingCount === 1 ? 'device' : 'devices'} left
+        </span>
+      </div>
+    );
+  }
+
+  const isFailing = failingCount > 0;
   return (
     <div className="flex flex-col items-start gap-1">
       <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
@@ -116,11 +142,20 @@ export function Policies() {
       {
         key: 'status',
         label: 'Status',
-        width: 'w-[120px]',
+        width: 'w-[140px]',
         hideAt: 'md',
         renderCell: policy => {
-          const failingCount = liveCounts.get(policy.id)?.failing ?? policy.failing_host_count;
-          return <PolicyStatusCell failingCount={failingCount} />;
+          const live = liveCounts.get(policy.id);
+          const failing = live?.failing ?? policy.failing_host_count;
+          const responded = live?.responded ?? policy.passing_host_count + policy.failing_host_count;
+          const missing = (policy.hosts_include_any?.length ?? 0) - responded;
+          return (
+            <PolicyStatusCell
+              failingCount={failing}
+              missingCount={missing > 0 ? missing : 0}
+              respondedCount={responded}
+            />
+          );
         },
       },
     ],

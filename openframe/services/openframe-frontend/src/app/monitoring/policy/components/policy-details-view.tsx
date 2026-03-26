@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
+import { useLivePolicyCounts } from '../../hooks/use-live-policy-counts';
 import { usePolicies } from '../../hooks/use-policies';
 import { usePolicyDetails } from '../hooks/use-policy-details';
 import { PolicyDevicesTable } from './policy-devices-table';
@@ -28,6 +29,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
 
   const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
   const { deletePolicy, isDeleting } = usePolicies();
+  const { countsMap: liveCounts } = useLivePolicyCounts(isValidId ? [numericId] : []);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleBack = () => {
@@ -109,12 +111,16 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           </div>
 
           <div>
-            <p className="text-[var(--ods-attention-green-success)] font-medium">{policyDetails.passing_host_count}</p>
+            <p className="text-[var(--ods-attention-green-success)] font-medium">
+              {liveCounts.get(numericId)?.passing ?? policyDetails.passing_host_count}
+            </p>
             <p className="text-ods-text-secondary text-xs mt-1">Passing Hosts</p>
           </div>
 
           <div>
-            <p className="text-[var(--ods-attention-red-error)] font-medium">{policyDetails.failing_host_count}</p>
+            <p className="text-[var(--ods-attention-red-error)] font-medium">
+              {liveCounts.get(numericId)?.failing ?? policyDetails.failing_host_count}
+            </p>
             <p className="text-ods-text-secondary text-xs mt-1">Failing Hosts</p>
           </div>
 
@@ -139,7 +145,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
       <div className="mt-6">
         <h1 className="text-h2 tracking-[-0.64px] text-ods-text-primary pt-6">Devices</h1>
         <div className="pt-4">
-          <PolicyDevicesTable policyId={numericId} />
+          <PolicyDevicesTable policyId={numericId} assignedHostIds={policyDetails.hosts_include_any} />
         </div>
       </div>
       <ConfirmDeleteMonitoringModal

@@ -3,7 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { GET_ORGANIZATION_BY_ID_QUERY } from '../queries/organizations-queries';
+import { GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY } from '../queries/organizations-queries';
 
 export interface OrganizationDetails {
   id: string;
@@ -44,15 +44,15 @@ export function useOrganizationDetails() {
       setError(null);
       try {
         const response = await apiClient.post<any>('/api/graphql', {
-          query: GET_ORGANIZATION_BY_ID_QUERY,
-          variables: { id },
+          query: GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY,
+          variables: { organizationId: id },
         });
 
         if (!response.ok) {
           throw new Error(response.error || `Request failed with status ${response.status}`);
         }
 
-        const org = (response.data as any)?.data?.organization;
+        const org = (response.data as any)?.data?.organizationByOrganizationId;
         if (!org) {
           setOrganization(null);
           return null;

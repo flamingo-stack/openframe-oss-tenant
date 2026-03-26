@@ -64,35 +64,30 @@ async function fetchDedupedHostIds(
     return res.data?.hosts ?? [];
   });
 
-  const assignedHostPromises = policiesWithAssignments.map(async policy => {
-    const allHosts: { id: number }[] = [];
-    let page = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      const res = await fleetApiClient.getPolicyHosts(policy.id, { page, per_page: 500 });
-      if (!res.ok) break;
-      const hosts = res.data?.hosts ?? [];
-      allHosts.push(...hosts);
-      hasMore = res.data?.meta?.has_next_results ?? false;
-      page++;
-    }
-
-    return allHosts;
+  const passingHostPromises = policiesWithAssignments.map(async policy => {
+    const res = await fleetApiClient.getHosts({
+      policy_id: policy.id,
+      policy_response: 'passing',
+      per_page: 500,
+      disable_failing_policies: true,
+    });
+    if (!res.ok) return [];
+    return res.data?.hosts ?? [];
   });
 
-  const [failingResults, assignedResults] = await Promise.all([
+  const [failingResults, passingResults] = await Promise.all([
     Promise.all(failingHostPromises),
-    Promise.all(assignedHostPromises),
+    Promise.all(passingHostPromises),
   ]);
 
   for (const hosts of failingResults) {
     for (const host of hosts) {
       nonCompliantHostIds.add(host.id);
+      totalAssignedHostIds.add(host.id);
     }
   }
 
-  for (const hosts of assignedResults) {
+  for (const hosts of passingResults) {
     for (const host of hosts) {
       totalAssignedHostIds.add(host.id);
     }
