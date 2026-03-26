@@ -7,6 +7,9 @@ pub struct AgentConfiguration {
     pub client_secret: String,
     pub access_token: String,
     pub refresh_token: String,
+    /// Unix timestamp (seconds) when the access token expires
+    #[serde(default)]
+    pub token_expires_at: Option<i64>,
 }
 
 impl Default for AgentConfiguration {
@@ -17,6 +20,7 @@ impl Default for AgentConfiguration {
             client_secret: String::new(),
             access_token: String::new(),
             refresh_token: String::new(),
+            token_expires_at: None,
         }
     }
 }

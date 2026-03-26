@@ -34,14 +34,20 @@ impl AgentConfigurationService {
         Ok(())
     }
 
-    pub async fn update_tokens(&self, access_token: String, refresh_token: String) -> Result<()> {
+    pub async fn update_tokens(&self, access_token: String, refresh_token: String, expires_at: Option<i64>) -> Result<()> {
         let mut config = self.get()?;
         config.access_token = access_token;
         config.refresh_token = refresh_token;
-        
+        config.token_expires_at = expires_at;
+
         self.save(&config).await?;
-        
+
         Ok(())
+    }
+
+    pub async fn get_token_expires_at(&self) -> Result<Option<i64>> {
+        let config = self.get()?;
+        Ok(config.token_expires_at)
     }
 
     pub async fn get_machine_id(&self) -> Result<String> {

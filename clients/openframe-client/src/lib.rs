@@ -123,6 +123,7 @@ pub struct Client {
     directory_manager: DirectoryManager,
     registration_processor: RegistrationProcessor,
     auth_processor: InitialAuthenticationProcessor,
+    auth_service: AgentAuthService,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
@@ -375,6 +376,7 @@ impl Client {
             directory_manager,
             registration_processor,
             auth_processor,
+            auth_service,
             nats_connection_manager,
             tool_installation_message_listener,
             openframe_client_update_listener,
@@ -397,6 +399,9 @@ impl Client {
 
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
+
+        // Start token refresh scheduler
+        self.auth_service.clone().start_refresh_scheduler();
 
         // Handle any pending update from previous run (after NATS is connected)
         if let Err(e) = self.update_handler_service.handle_pending_update().await {
