@@ -10,7 +10,8 @@
       "!**/.tsbuildinfo",
       "!**/.next",
       "!**/.yalc",
-      "!**/next-env.d.ts"
+      "!**/next-env.d.ts",
+      "!**/__generated__/**"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
