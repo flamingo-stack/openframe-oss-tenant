@@ -2,7 +2,8 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use tracing::{info, warn};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
-use crate::models::Installation;
+use crate::models::asset_update_message::AssetUpdateMessage;
+use crate::models::{Installation, InstalledAsset};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
@@ -10,7 +11,7 @@ use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
-use crate::platform::{DirectoryManager, ToolUpdaterDeps, needs_migration, detect_actual_installation, run_update, run_migration};
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, binary_writer, needs_migration, detect_actual_installation, run_update, run_migration};
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -232,5 +233,98 @@ impl ToolAgentUpdateService {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to get machine_id");
             }
         }
+    }
+
+    pub async fn process_asset_update(&self, message: AssetUpdateMessage) -> Result<()> {
+        let tool_agent_id = &message.tool_agent_id;
+        let asset_id = &message.asset_id;
+        let new_version = &message.version;
+
+        info!(
+            asset_id = %asset_id,
+            tool_id = %tool_agent_id,
+            version = %new_version,
+            "Processing asset update"
+        );
+
+        // Get installed tool
+        let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
+            Some(tool) => tool,
+            None => {
+                warn!(tool_id = %tool_agent_id, "Tool not installed, skipping asset update");
+                return Ok(());
+            }
+        };
+
+        // Check current asset version
+        let current_version = installed_tool.assets
+            .iter()
+            .find(|a| a.id == *asset_id)
+            .map(|a| a.version.as_str());
+
+        if current_version == Some(new_version.as_str()) {
+            info!(asset_id = %asset_id, version = %new_version, "Asset already at version, skipping");
+            return Ok(());
+        }
+
+        // Find download config for current OS
+        let config = self.github_download_service
+            .find_config_for_current_os(&message.download_configurations)
+            .with_context(|| format!("No download config for current OS: {}", asset_id))?;
+
+        // Get asset filename from config
+        let asset_filename = &config.target_file_name;
+
+        // Stop asset process if executable
+        if message.executable {
+            info!(asset_id = %asset_id, tool_id = %tool_agent_id, "Stopping asset process");
+            if let Err(e) = self.tool_kill_service.stop_asset(asset_id, tool_agent_id).await {
+                warn!(asset_id = %asset_id, error = %e, "Failed to stop asset process (continuing)");
+            }
+        }
+
+        // Download asset
+        let bytes = self.github_download_service
+            .download_and_extract(config)
+            .await
+            .with_context(|| format!("Failed to download asset: {}", asset_id))?;
+
+        // Write asset to disk
+        let asset_path = self.directory_manager.get_asset_path(tool_agent_id, asset_filename, message.executable);
+
+        if message.executable {
+            binary_writer::write_executable(&bytes, &asset_path).await
+                .with_context(|| format!("Failed to write executable asset: {}", asset_id))?;
+        } else {
+            tokio::fs::write(&asset_path, &bytes).await
+                .with_context(|| format!("Failed to write asset: {}", asset_id))?;
+        }
+
+        info!(asset_id = %asset_id, path = %asset_path.display(), "Asset written");
+
+        // Update installed tool assets
+        if let Some(asset) = installed_tool.assets.iter_mut().find(|a| a.id == *asset_id) {
+            asset.version = new_version.to_string();
+        } else {
+            installed_tool.assets.push(InstalledAsset {
+                id: asset_id.clone(),
+                version: new_version.to_string(),
+            });
+        }
+
+        self.installed_tools_service.save(installed_tool).await
+            .with_context(|| format!("Failed to save installed tool after asset update: {}", tool_agent_id))?;
+
+        // Publish installed message
+        self.publish_installed_agent_message(asset_id, new_version).await;
+
+        info!(
+            asset_id = %asset_id,
+            tool_id = %tool_agent_id,
+            version = %new_version,
+            "Asset update completed"
+        );
+
+        Ok(())
     }
 }
