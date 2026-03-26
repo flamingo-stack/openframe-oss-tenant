@@ -67,6 +67,8 @@ openframe:
             name: fleet.host_activities.events
           fleet-mdm-query-result-events:
             name: fleet.query_results.events
+          fleet-mdm-policy-membership-events:
+            name: fleet.policy_membership.events
         outbound:
           integrated-tool-events: integrated-tool.events.pinot
           devices-topic: devices-topic
