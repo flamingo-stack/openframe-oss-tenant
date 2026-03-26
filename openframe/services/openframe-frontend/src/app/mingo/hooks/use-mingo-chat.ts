@@ -144,7 +144,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
           id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
           content: content.trim(),
-          name: 'You',
+          name: 'Admin',
           timestamp: new Date(),
         };
 

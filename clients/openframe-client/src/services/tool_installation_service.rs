@@ -274,6 +274,12 @@ impl ToolInstallationService {
                 .context("Failed to process installation command params")?;
             debug!("Processed args: {:?}", installation_command_args);
 
+            info!("Stopping any existing processes for {} before installation", tool_agent_id);
+            if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                warn!("Failed to stop existing tool processes before installation: {:#}", e);
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
             let mut cmd = Command::new(&file_path);
             cmd.args(&installation_command_args);
 

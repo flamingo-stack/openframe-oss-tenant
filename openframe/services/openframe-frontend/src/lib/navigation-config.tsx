@@ -11,7 +11,6 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
-import { featureFlags } from './feature-flags';
 
 export const getNavigationItems = (pathname: string): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
@@ -47,17 +46,13 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
       path: '/scripts',
       isActive: pathname.startsWith('/scripts'),
     },
-    ...(featureFlags.monitoring.enabled()
-      ? [
-          {
-            id: 'monitoring',
-            label: 'Monitoring',
-            icon: <RadarIcon size={24} />,
-            path: '/monitoring',
-            isActive: pathname.startsWith('/monitoring'),
-          },
-        ]
-      : []),
+    {
+      id: 'monitoring',
+      label: 'Monitoring',
+      icon: <RadarIcon size={24} />,
+      path: '/monitoring',
+      isActive: pathname.startsWith('/monitoring'),
+    },
     {
       id: 'logs',
       label: 'Logs',

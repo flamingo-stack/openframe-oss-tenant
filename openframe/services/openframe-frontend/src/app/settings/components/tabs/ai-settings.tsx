@@ -7,6 +7,7 @@ import {
   Button,
   GoogleGeminiIcon,
   Label,
+  ListPageContainer,
   OpenAiIcon,
   RadioGroup,
   RadioGroupItem,
@@ -22,6 +23,7 @@ import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-cor
 import { AiRobotIcon, ClaudeIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { AlertCircle, Edit2, Save, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAiConfiguration } from '../../hooks/use-ai-configuration';
@@ -60,6 +62,7 @@ const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
 };
 
 export function AiSettingsTab() {
+  const router = useRouter();
   const { toast } = useToast();
 
   const { configuration, supportedModels, isLoading, isSaving, updateConfiguration } = useAiConfiguration();
@@ -495,361 +498,367 @@ export function AiSettingsTab() {
       : AiRobotIcon;
 
   return (
-    <div className="pt-6 space-y-8">
-      {/* Header with title and edit button */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-ods-text-primary font-bold text-2xl">AI Settings & Guardrails</h2>
-        {!isEditMode ? (
-          <Button
-            variant="outline"
-            leftIcon={<Edit2 className="w-4 h-4" />}
-            onClick={beginEditSession}
-            className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-          >
-            Edit Settings
-          </Button>
-        ) : (
-          <div className="flex gap-3">
-            <Button
-              variant="primary"
-              leftIcon={<Save className="w-4 h-4" />}
-              onClick={handleSave}
-              disabled={
-                !selectedProvider ||
-                !selectedModel ||
-                isSaving ||
-                isPolicyActivating ||
-                isFetchingBaseTemplate ||
-                isSubmitting
-              }
-              className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent/90"
-            >
-              {isSaving || isPolicyActivating || isSubmitting ? 'Saving...' : 'Save Settings'}
-            </Button>
+    <ListPageContainer
+      title="AI Settings & Guardrails"
+      background="default"
+      padding="none"
+      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+    >
+      <div className="space-y-8">
+        {/* Header with title and edit button */}
+        <div className="flex items-center justify-between">
+          {!isEditMode ? (
             <Button
               variant="outline"
-              leftIcon={<X className="w-4 h-4" />}
-              onClick={handleCancel}
-              disabled={isSaving || isPolicyActivating || isFetchingBaseTemplate}
+              leftIcon={<Edit2 className="w-4 h-4" />}
+              onClick={beginEditSession}
               className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
             >
-              Cancel
+              Edit Settings
             </Button>
-          </div>
-        )}
-      </div>
-
-      {/* AI Settings Section */}
-      <div className="space-y-6">
-        {!configuration && !isEditMode ? (
-          <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
-            <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-            <AlertDescription className="text-ods-text-secondary">
-              No AI configuration found. Click "Edit Settings" to set up your AI provider.
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="bg-ods-card border border-ods-border rounded-lg p-4">
-            <div className="grid grid-cols-4 gap-6">
-              {/* Provider Selection - Column 1 */}
-              <div className="space-y-2">
-                {isEditMode ? (
-                  <>
-                    <Label htmlFor="provider" className="text-ods-text-primary">
-                      Fae LLM Provider
-                    </Label>
-                    <Select value={selectedProvider} onValueChange={handleProviderChange} disabled={isSaving}>
-                      <SelectTrigger
-                        id="provider"
-                        className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
-                      >
-                        <SelectValue placeholder="Select a provider" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-ods-card border-ods-border">
-                        {Object.keys(supportedModels)
-                          .map(apiKey => {
-                            const providerKey = API_KEY_TO_PROVIDER[apiKey];
-                            if (!providerKey) return null;
-
-                            const config = PROVIDER_CONFIG[providerKey];
-                            const Icon = config.icon;
-
-                            return (
-                              <SelectItem
-                                key={apiKey}
-                                value={providerKey}
-                                className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon className="w-4 h-4" />
-                                  <span>{config.label}</span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })
-                          .filter(Boolean)}
-                      </SelectContent>
-                    </Select>
-                  </>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-2 bg-ods-system-greys-soft-grey rounded-md">
-                      <span className="text-ods-text-primary font-medium">
-                        {configuration && PROVIDER_CONFIG[configuration.provider as ProviderKey]?.label}
-                      </span>
-                      <ProviderIcon className="w-5 h-5 text-ods-accent" />
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">Fae LLM Provider</Label>
-                  </div>
-                )}
-              </div>
-
-              {/* Model Selection - Column 2 */}
-              <div className="space-y-2">
-                {isEditMode ? (
-                  <>
-                    <Label htmlFor="model" className="text-ods-text-primary">
-                      Provider Model
-                    </Label>
-                    <Select
-                      value={selectedModel}
-                      onValueChange={setSelectedModel}
-                      disabled={!selectedProvider || isSaving}
-                    >
-                      <SelectTrigger
-                        id="model"
-                        className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
-                      >
-                        <SelectValue placeholder="Select a model" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-ods-card border-ods-border">
-                        {getAvailableModels().map(model => (
-                          <SelectItem
-                            key={model.modelName}
-                            value={model.modelName}
-                            className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span>{model.displayName}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                ) : (
-                  <div>
-                    <div className="bg-ods-system-greys-soft-grey rounded-md">
-                      {(() => {
-                        if (!configuration) return null;
-                        const config = PROVIDER_CONFIG[configuration.provider as ProviderKey];
-                        if (!config)
-                          return <span className="text-ods-text-primary font-medium">{configuration.modelName}</span>;
-
-                        const models = supportedModels[config.apiKey as keyof typeof supportedModels] || [];
-                        const currentModel = models.find(m => m.modelName === configuration.modelName);
-
-                        return (
-                          <div className="flex items-center justify-between">
-                            <span className="text-ods-text-primary font-medium">
-                              {currentModel?.displayName || configuration.modelName}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">Provider Model</Label>
-                  </div>
-                )}
-              </div>
-
-              {/* Current Policy Template - Column 3 */}
-              <div className="space-y-2">
-                {!isEditMode && (
-                  <div>
-                    <div className="bg-ods-system-greys-soft-grey rounded-md">
-                      <span className="text-ods-text-primary font-medium">
-                        {(() => {
-                          const currentTemplateId = selectedTemplateId || activeTemplateId;
-                          const currentTemplate = templateOptions.find(t => t.id === currentTemplateId);
-                          return currentTemplate?.label || 'None';
-                        })()}
-                      </span>
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">Fae Guardrails</Label>
-                  </div>
-                )}
-              </div>
-
-              {/* Empty Column 4 */}
-              <div></div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* AI Guardrails Section */}
-      <div className="space-y-6 pt-4">
-        <h3 className="text-ods-text-primary font-semibold text-2xl">AI Guardrails</h3>
-        <div className="space-y-4">
-          {isPoliciesLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-64 w-full" />
-            </div>
-          ) : templateOptions.length === 0 ? (
-            <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
-              <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-              <AlertDescription className="text-ods-text-secondary">No policy templates available.</AlertDescription>
-            </Alert>
           ) : (
-            <>
-              {/* Template chooser (shown only in edit mode) */}
-              {isEditMode && (
-                <div className="bg-ods-card border border-ods-border rounded-md overflow-hidden">
-                  <RadioGroup
-                    value={
-                      customPolicy.enabled && !hasCustomTemplate
-                        ? CUSTOM_CREATION_TEMPLATE_ID
-                        : selectedTemplateId || ''
-                    }
-                    onValueChange={v => {
-                      if (v === CUSTOM_CREATION_TEMPLATE_ID) {
-                        return;
-                      }
-
-                      const selectedOpt = templateOptions.find(t => t.id === v);
-                      const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
-
-                      if (isSelectingCustomType) {
-                        setSelectedTemplateId(v);
-                      } else {
-                        setSelectedTemplateId(v);
-                        resetCustomPolicyState();
-                      }
-                    }}
-                    className="divide-y divide-ods-border gap-0"
-                    disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                  >
-                    {/* All templates */}
-                    {templateOptions.map(opt => {
-                      const id = `policy-template-${opt.id}`;
-                      const isCustomType = opt.type === CUSTOM_TEMPLATE_TYPE;
-
-                      return (
-                        <div
-                          key={opt.id}
-                          className="flex items-start gap-6 pr-6 hover:bg-ods-bg-hover transition-colors"
-                        >
-                          <div className="flex-1 flex gap-3 p-6">
-                            <RadioGroupItem id={id} value={opt.id} className="mt-0.5" />
-                            <div className="flex-1">
-                              <Label
-                                htmlFor={id}
-                                className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
-                              >
-                                {opt.label}
-                                {isCustomType &&
-                                  (() => {
-                                    if (customPolicy.enabled && customPolicy.baseTemplateId) {
-                                      const baseTemplate = templateOptions.find(
-                                        t => t.id === customPolicy.baseTemplateId,
-                                      );
-                                      return baseTemplate ? ` (based on ${baseTemplate.label})` : '';
-                                    }
-                                    if (selectedTemplate?.sourceTemplate) {
-                                      const sourceTemplate = templateOptions.find(
-                                        t => t.id === selectedTemplate.sourceTemplate,
-                                      );
-                                      return sourceTemplate ? ` (based on ${sourceTemplate.label})` : '';
-                                    }
-                                    return '';
-                                  })()}
-                              </Label>
-                              {opt.description && (
-                                <p className="text-sm text-ods-text-secondary leading-relaxed">{opt.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          {/* Show "Use for Custom" on all non-CUSTOM type templates */}
-                          {!isCustomType && (
-                            <div className="flex items-center py-6">
-                              <Button
-                                variant="outline"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleUseForCustomPolicy(opt.id);
-                                }}
-                                className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
-                                leftIcon={<SlidersIcon className="w-4 h-4" />}
-                                disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                              >
-                                Use for Custom Policy
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                    {/* Show custom creation option only when creating new custom and it doesn't exist yet */}
-                    {customPolicy.enabled && !hasCustomTemplate && (
-                      <div className="flex items-start gap-6 pr-6 hover:bg-ods-system-greys-soft-grey/10 transition-colors">
-                        <div className="flex-1 flex gap-3 p-6">
-                          <RadioGroupItem
-                            id="policy-template-custom-creation"
-                            value={CUSTOM_CREATION_TEMPLATE_ID}
-                            className="mt-0.5"
-                          />
-                          <div className="flex-1">
-                            <Label
-                              htmlFor="policy-template-custom-creation"
-                              className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
-                            >
-                              Custom Policy{' '}
-                              {customPolicy.baseTemplateId &&
-                                `(based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`}
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </RadioGroup>
-                </div>
-              )}
-
-              {isPolicyTemplateLoading ? (
-                <Skeleton className="h-64 w-full" />
-              ) : policyGroups.size === 0 ? (
-                <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
-                  <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-                  <AlertDescription className="text-ods-text-secondary">
-                    This policy template has no rules.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-6">
-                  {Array.from(policyGroups.entries()).map(([policyGroupName, categories]) => (
-                    <div key={policyGroupName} className="space-y-2">
-                      <Label className="text-sm font-medium text-ods-text-secondary">{policyGroupName}</Label>
-                      <PolicyConfigurationPanel
-                        categories={categories}
-                        editMode={canEditPolicyRules}
-                        onCategoryToggle={categoryId => handlePolicyCategoryToggle(policyGroupName, categoryId)}
-                        onGlobalPermissionChange={(categoryId, level) =>
-                          handlePolicyGlobalPermissionChange(policyGroupName, categoryId, level)
-                        }
-                        onPolicyPermissionChange={(categoryId, policyId, level) =>
-                          handlePolicyPermissionChange(policyGroupName, categoryId, policyId, level)
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+            <div className="flex gap-3">
+              <Button
+                variant="primary"
+                leftIcon={<Save className="w-4 h-4" />}
+                onClick={handleSave}
+                disabled={
+                  !selectedProvider ||
+                  !selectedModel ||
+                  isSaving ||
+                  isPolicyActivating ||
+                  isFetchingBaseTemplate ||
+                  isSubmitting
+                }
+                className="bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent/90"
+              >
+                {isSaving || isPolicyActivating || isSubmitting ? 'Saving...' : 'Save Settings'}
+              </Button>
+              <Button
+                variant="outline"
+                leftIcon={<X className="w-4 h-4" />}
+                onClick={handleCancel}
+                disabled={isSaving || isPolicyActivating || isFetchingBaseTemplate}
+                className="bg-ods-card border-ods-border text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
+              >
+                Cancel
+              </Button>
+            </div>
           )}
         </div>
+
+        {/* AI Settings Section */}
+        <div className="space-y-6">
+          {!configuration && !isEditMode ? (
+            <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+              <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+              <AlertDescription className="text-ods-text-secondary">
+                No AI configuration found. Click "Edit Settings" to set up your AI provider.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="bg-ods-card border border-ods-border rounded-lg p-4">
+              <div className="grid grid-cols-4 gap-6">
+                {/* Provider Selection - Column 1 */}
+                <div className="space-y-2">
+                  {isEditMode ? (
+                    <>
+                      <Label htmlFor="provider" className="text-ods-text-primary">
+                        Fae LLM Provider
+                      </Label>
+                      <Select value={selectedProvider} onValueChange={handleProviderChange} disabled={isSaving}>
+                        <SelectTrigger
+                          id="provider"
+                          className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
+                        >
+                          <SelectValue placeholder="Select a provider" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-ods-card border-ods-border">
+                          {Object.keys(supportedModels)
+                            .map(apiKey => {
+                              const providerKey = API_KEY_TO_PROVIDER[apiKey];
+                              if (!providerKey) return null;
+
+                              const config = PROVIDER_CONFIG[providerKey];
+                              const Icon = config.icon;
+
+                              return (
+                                <SelectItem
+                                  key={apiKey}
+                                  value={providerKey}
+                                  className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Icon className="w-4 h-4" />
+                                    <span>{config.label}</span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
+                            .filter(Boolean)}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-2 bg-ods-system-greys-soft-grey rounded-md">
+                        <span className="text-ods-text-primary font-medium">
+                          {configuration && PROVIDER_CONFIG[configuration.provider as ProviderKey]?.label}
+                        </span>
+                        <ProviderIcon className="w-5 h-5 text-ods-accent" />
+                      </div>
+                      <Label className="text-ods-text-secondary text-sm block">Fae LLM Provider</Label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Model Selection - Column 2 */}
+                <div className="space-y-2">
+                  {isEditMode ? (
+                    <>
+                      <Label htmlFor="model" className="text-ods-text-primary">
+                        Provider Model
+                      </Label>
+                      <Select
+                        value={selectedModel}
+                        onValueChange={setSelectedModel}
+                        disabled={!selectedProvider || isSaving}
+                      >
+                        <SelectTrigger
+                          id="model"
+                          className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
+                        >
+                          <SelectValue placeholder="Select a model" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-ods-card border-ods-border">
+                          {getAvailableModels().map(model => (
+                            <SelectItem
+                              key={model.modelName}
+                              value={model.modelName}
+                              className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <span>{model.displayName}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </>
+                  ) : (
+                    <div>
+                      <div className="bg-ods-system-greys-soft-grey rounded-md">
+                        {(() => {
+                          if (!configuration) return null;
+                          const config = PROVIDER_CONFIG[configuration.provider as ProviderKey];
+                          if (!config)
+                            return <span className="text-ods-text-primary font-medium">{configuration.modelName}</span>;
+
+                          const models = supportedModels[config.apiKey as keyof typeof supportedModels] || [];
+                          const currentModel = models.find(m => m.modelName === configuration.modelName);
+
+                          return (
+                            <div className="flex items-center justify-between">
+                              <span className="text-ods-text-primary font-medium">
+                                {currentModel?.displayName || configuration.modelName}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <Label className="text-ods-text-secondary text-sm block">Provider Model</Label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Current Policy Template - Column 3 */}
+                <div className="space-y-2">
+                  {!isEditMode && (
+                    <div>
+                      <div className="bg-ods-system-greys-soft-grey rounded-md">
+                        <span className="text-ods-text-primary font-medium">
+                          {(() => {
+                            const currentTemplateId = selectedTemplateId || activeTemplateId;
+                            const currentTemplate = templateOptions.find(t => t.id === currentTemplateId);
+                            return currentTemplate?.label || 'None';
+                          })()}
+                        </span>
+                      </div>
+                      <Label className="text-ods-text-secondary text-sm block">Fae Guardrails</Label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Empty Column 4 */}
+                <div></div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI Guardrails Section */}
+        <div className="space-y-6 pt-4">
+          <h3 className="text-ods-text-primary font-semibold text-2xl">AI Guardrails</h3>
+          <div className="space-y-4">
+            {isPoliciesLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-64 w-full" />
+              </div>
+            ) : templateOptions.length === 0 ? (
+              <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+                <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+                <AlertDescription className="text-ods-text-secondary">No policy templates available.</AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                {/* Template chooser (shown only in edit mode) */}
+                {isEditMode && (
+                  <div className="bg-ods-card border border-ods-border rounded-md overflow-hidden">
+                    <RadioGroup
+                      value={
+                        customPolicy.enabled && !hasCustomTemplate
+                          ? CUSTOM_CREATION_TEMPLATE_ID
+                          : selectedTemplateId || ''
+                      }
+                      onValueChange={v => {
+                        if (v === CUSTOM_CREATION_TEMPLATE_ID) {
+                          return;
+                        }
+
+                        const selectedOpt = templateOptions.find(t => t.id === v);
+                        const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
+
+                        if (isSelectingCustomType) {
+                          setSelectedTemplateId(v);
+                        } else {
+                          setSelectedTemplateId(v);
+                          resetCustomPolicyState();
+                        }
+                      }}
+                      className="divide-y divide-ods-border gap-0"
+                      disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                    >
+                      {/* All templates */}
+                      {templateOptions.map(opt => {
+                        const id = `policy-template-${opt.id}`;
+                        const isCustomType = opt.type === CUSTOM_TEMPLATE_TYPE;
+
+                        return (
+                          <div
+                            key={opt.id}
+                            className="flex items-start gap-6 pr-6 hover:bg-ods-bg-hover transition-colors"
+                          >
+                            <div className="flex-1 flex gap-3 p-6">
+                              <RadioGroupItem id={id} value={opt.id} className="mt-0.5" />
+                              <div className="flex-1">
+                                <Label
+                                  htmlFor={id}
+                                  className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
+                                >
+                                  {opt.label}
+                                  {isCustomType &&
+                                    (() => {
+                                      if (customPolicy.enabled && customPolicy.baseTemplateId) {
+                                        const baseTemplate = templateOptions.find(
+                                          t => t.id === customPolicy.baseTemplateId,
+                                        );
+                                        return baseTemplate ? ` (based on ${baseTemplate.label})` : '';
+                                      }
+                                      if (selectedTemplate?.sourceTemplate) {
+                                        const sourceTemplate = templateOptions.find(
+                                          t => t.id === selectedTemplate.sourceTemplate,
+                                        );
+                                        return sourceTemplate ? ` (based on ${sourceTemplate.label})` : '';
+                                      }
+                                      return '';
+                                    })()}
+                                </Label>
+                                {opt.description && (
+                                  <p className="text-sm text-ods-text-secondary leading-relaxed">{opt.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            {/* Show "Use for Custom" on all non-CUSTOM type templates */}
+                            {!isCustomType && (
+                              <div className="flex items-center py-6">
+                                <Button
+                                  variant="outline"
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    handleUseForCustomPolicy(opt.id);
+                                  }}
+                                  className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
+                                  leftIcon={<SlidersIcon className="w-4 h-4" />}
+                                  disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                                >
+                                  Use for Custom Policy
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {/* Show custom creation option only when creating new custom and it doesn't exist yet */}
+                      {customPolicy.enabled && !hasCustomTemplate && (
+                        <div className="flex items-start gap-6 pr-6 hover:bg-ods-system-greys-soft-grey/10 transition-colors">
+                          <div className="flex-1 flex gap-3 p-6">
+                            <RadioGroupItem
+                              id="policy-template-custom-creation"
+                              value={CUSTOM_CREATION_TEMPLATE_ID}
+                              className="mt-0.5"
+                            />
+                            <div className="flex-1">
+                              <Label
+                                htmlFor="policy-template-custom-creation"
+                                className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
+                              >
+                                Custom Policy{' '}
+                                {customPolicy.baseTemplateId &&
+                                  `(based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`}
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </RadioGroup>
+                  </div>
+                )}
+
+                {isPolicyTemplateLoading ? (
+                  <Skeleton className="h-64 w-full" />
+                ) : policyGroups.size === 0 ? (
+                  <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+                    <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+                    <AlertDescription className="text-ods-text-secondary">
+                      This policy template has no rules.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="space-y-6">
+                    {Array.from(policyGroups.entries()).map(([policyGroupName, categories]) => (
+                      <div key={policyGroupName} className="space-y-2">
+                        <Label className="text-sm font-medium text-ods-text-secondary">{policyGroupName}</Label>
+                        <PolicyConfigurationPanel
+                          categories={categories}
+                          editMode={canEditPolicyRules}
+                          onCategoryToggle={categoryId => handlePolicyCategoryToggle(policyGroupName, categoryId)}
+                          onGlobalPermissionChange={(categoryId, level) =>
+                            handlePolicyGlobalPermissionChange(policyGroupName, categoryId, level)
+                          }
+                          onPolicyPermissionChange={(categoryId, policyId, level) =>
+                            handlePolicyPermissionChange(policyGroupName, categoryId, policyId, level)
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </ListPageContainer>
   );
 }

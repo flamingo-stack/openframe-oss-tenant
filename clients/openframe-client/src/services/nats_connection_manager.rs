@@ -1,11 +1,10 @@
 use anyhow::{Context, Result};
 use async_nats::Client;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use std::sync::Arc;
-use std::env;
 use log::error;
 use crate::services::{AgentAuthService, InitialConfigurationService};
 
@@ -42,22 +41,32 @@ impl NatsConnectionManager {
     }
 
     pub async fn connect(&self) -> Result<()> {
-        info!("Connecting to NATS server");
+        let machine_id = self.config_service.get_machine_id().await?;
+
+        info!(
+            hostname = %self.nats_server_url,
+            "Connecting to NATS server"
+        );
 
         let connection_url = self.build_nats_connection_url().await?;
-        let machine_id = self.config_service.get_machine_id().await?;
 
         // Cloned dependencies for auth callback
         let auth_service = self.auth_service.clone();
         let config_service = self.config_service.clone();
         let nats_server_url = self.nats_server_url.clone();
-        
+        let nats_server_url_for_reconnect = self.nats_server_url.clone();
+
         // TODO: token fallback and connection retry
         let mut connect_options = async_nats::ConnectOptions::new()
             .name(machine_id.clone())
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
             .retry_on_initial_connect()
-            .reconnect_delay_callback(|attempt| {
+            .reconnect_delay_callback(move |attempt| {
+                warn!(
+                    attempt = attempt,
+                    hostname = %nats_server_url_for_reconnect,
+                    "NATS reconnect attempt"
+                );
                 std::time::Duration::from_secs(5)
             })
             .ping_interval(std::time::Duration::from_secs(10))
@@ -100,7 +109,10 @@ impl NatsConnectionManager {
         config_service: AgentConfigurationService,
         nats_server_url: String,
     ) -> std::result::Result<String, async_nats::AuthError> {
-        info!("Auth URL callback triggered - performing reauthentication");
+        info!(
+            hostname = %nats_server_url,
+            "Auth URL callback triggered - performing reauthentication"
+        );
 
         match auth_service.reauthenticate().await {
             Ok(_) => {

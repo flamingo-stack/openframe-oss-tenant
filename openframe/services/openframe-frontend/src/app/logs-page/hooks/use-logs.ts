@@ -74,7 +74,8 @@ export function useLogs(filters: LogFilterInput = {}, search = '') {
         query: GET_LOGS_QUERY,
         variables: {
           filter: filters,
-          pagination: { limit: LOGS_PAGE_SIZE, cursor: (pageParam as string) || null },
+          first: LOGS_PAGE_SIZE,
+          after: (pageParam as string) || null,
           search: search || '',
         },
       });
