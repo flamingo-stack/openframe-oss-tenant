@@ -45,7 +45,6 @@ use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
-use crate::listener::asset_update_listener::AssetUpdateListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
 use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
@@ -129,7 +128,6 @@ pub struct Client {
     tool_installation_message_listener: ToolInstallationMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
-    asset_update_listener: AssetUpdateListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
@@ -356,13 +354,6 @@ impl Client {
         // Initialize tool agent update listener
         let tool_agent_update_listener = ToolAgentUpdateListener::new(
             nats_connection_manager.clone(),
-            tool_agent_update_service.clone(),
-            config_service.clone()
-        );
-
-        // Initialize asset update listener
-        let asset_update_listener = AssetUpdateListener::new(
-            nats_connection_manager.clone(),
             tool_agent_update_service,
             config_service.clone()
         );
@@ -392,7 +383,6 @@ impl Client {
             tool_installation_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
-            asset_update_listener,
             tool_run_manager,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
@@ -456,9 +446,6 @@ impl Client {
 
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;
-
-        // Start asset update listener in background
-        self.asset_update_listener.start().await?;
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
