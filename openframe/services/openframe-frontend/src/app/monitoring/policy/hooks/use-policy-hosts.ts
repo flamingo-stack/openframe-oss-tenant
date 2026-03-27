@@ -66,7 +66,7 @@ export function useReplacePolicyHosts() {
     mutationFn: replacePolicyHostsApi,
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: policyHostsQueryKeys.list(variables.policyId) });
-      queryClient.invalidateQueries({ queryKey: policiesQueryKeys.detail(variables.policyId) });
+      queryClient.invalidateQueries({ queryKey: policiesQueryKeys.all });
     },
     onError: error => {
       handleApiError(error, toast, 'Failed to assign devices to policy');

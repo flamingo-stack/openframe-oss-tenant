@@ -106,7 +106,9 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
           </div>
         )}
 
-        <div className="border-t border-ods-border pt-4 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div
+          className={`grid grid-cols-2 md:grid-cols-4 gap-6 ${queryDetails.description ? 'border-t border-ods-border pt-4' : ''}`}
+        >
           <div>
             <p className="text-ods-text-primary font-medium">{formatInterval(queryDetails.interval)}</p>
             <p className="text-ods-text-secondary text-xs mt-1">Frequency</p>

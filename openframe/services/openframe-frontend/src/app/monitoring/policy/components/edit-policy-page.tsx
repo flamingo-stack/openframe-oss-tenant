@@ -99,7 +99,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const { hosts: currentHosts, isLoading: isLoadingHosts } = usePolicyHosts(isExistingPolicy ? numericId : null);
   const replacePolicyHostsMutation = useReplacePolicyHosts();
-  const { devices: policyDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
+  const { devices: policyDevices, isLoading: isLoadingDevices } = usePolicyDevices();
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const [hostsInitialized, setHostsInitialized] = useState(false);
@@ -345,7 +345,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             selectedIds={stringSelectedIds}
             getDeviceKey={getDeviceKey}
             onSelectionChange={handleDeviceSelectionChange}
-            infiniteScroll={infiniteScroll}
             disabled={isSaving}
             addAllBehavior="merge"
             extraColumns={monitoringExtraColumns}

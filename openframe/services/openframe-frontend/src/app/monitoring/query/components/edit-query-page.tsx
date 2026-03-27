@@ -130,7 +130,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
   const { hosts: currentHosts, isLoading: isLoadingHosts } = useQueryHosts(isExistingQuery ? numericId : null);
   const replaceQueryHostsMutation = useReplaceQueryHosts();
-  const { devices: queryDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
+  const { devices: queryDevices, isLoading: isLoadingDevices } = usePolicyDevices();
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const [hostsInitialized, setHostsInitialized] = useState(false);
@@ -439,7 +439,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             selectedIds={stringSelectedIds}
             getDeviceKey={getDeviceKey}
             onSelectionChange={handleDeviceSelectionChange}
-            infiniteScroll={infiniteScroll}
             disabled={isSaving}
             addAllBehavior="merge"
             extraColumns={monitoringExtraColumns}
