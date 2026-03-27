@@ -18,11 +18,12 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useOrganizationArchive } from '../hooks/use-organization-archive';
-import { useOrganizationDetails } from '../hooks/use-organization-details';
+import { organizationDetailsQueryKeys, useOrganizationDetails } from '../hooks/use-organization-details';
+import { organizationsQueryKeys } from '../hooks/use-organizations';
 import { ArchiveOrganizationModal } from './archive-organization-modal';
 import { RestoreOrganizationModal } from './restore-organization-modal';
 
@@ -32,7 +33,7 @@ interface OrganizationDetailsViewProps {
 
 export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const router = useRouter();
-  const { organization, isLoading, error, fetchOrganizationById } = useOrganizationDetails();
+  const { organization, isLoading, error } = useOrganizationDetails(id);
   const { checkCanArchive, archiveOrganization, restoreOrganization } = useOrganizationArchive();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -43,15 +44,9 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const [isChecking, setIsChecking] = useState(false);
   const [isPending, setIsPending] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      fetchOrganizationById(id);
-    }
-  }, [id, fetchOrganizationById]);
-
   const isArchived = organization?.status === 'ARCHIVED';
 
-  const handleBack = () => router.push('/organizations');
+  const handleBack = () => router.push(isArchived ? '/organizations?tab=archived' : '/organizations');
   const handleEdit = () => router.push(`/organizations/edit/${id}`);
 
   const handleArchiveClick = async () => {
@@ -74,9 +69,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     setIsPending(true);
     try {
       await archiveOrganization(organization.organizationId);
-      await queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      await queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.all });
+      await queryClient.invalidateQueries({ queryKey: organizationDetailsQueryKeys.detail(id) });
       toast({ title: 'Organization archived', description: `${organization.name} was archived` });
-      router.push('/organizations');
+      router.push('/organizations?tab=archived');
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to archive organization';
       toast({ title: 'Archive failed', description: msg, variant: 'destructive' });
@@ -90,9 +86,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     setIsPending(true);
     try {
       await restoreOrganization(organization.organizationId);
-      await queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      await queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.all });
+      await queryClient.invalidateQueries({ queryKey: organizationDetailsQueryKeys.detail(id) });
       toast({ title: 'Organization restored', description: `${organization.name} was restored` });
-      fetchOrganizationById(id);
+      router.push('/organizations');
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to restore organization';
       toast({ title: 'Restore failed', description: msg, variant: 'destructive' });
@@ -151,7 +148,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     <>
       <DetailPageContainer
         title={organization?.name || 'Organization'}
-        backButton={{ label: 'Back to Organizations', onClick: handleBack }}
+        backButton={{
+          label: isArchived ? 'Back to Archived Organizations' : 'Back to Organizations',
+          onClick: handleBack,
+        }}
         headerActions={headerActions}
         padding="none"
       >
