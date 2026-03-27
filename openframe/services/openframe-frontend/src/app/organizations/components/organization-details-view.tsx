@@ -154,7 +154,6 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         backButton={{ label: 'Back to Organizations', onClick: handleBack }}
         headerActions={headerActions}
         padding="none"
-        className="pt-6"
       >
         {/* Top summary row */}
         <div className="bg-ods-card border border-ods-border rounded-lg p-6">
