@@ -24,6 +24,7 @@ export interface OrganizationDetails {
   notes: string[];
   isDefault: boolean;
   imageUrl?: string | null;
+  status: string;
 }
 
 function formatAddress(addr?: any): string {
@@ -97,6 +98,7 @@ export function useOrganizationDetails() {
           notes: org.notes ? [org.notes] : [],
           isDefault: org.isDefault || false,
           imageUrl: org.image?.imageUrl,
+          status: org.status || 'ACTIVE',
         };
 
         setOrganization(mapped);
