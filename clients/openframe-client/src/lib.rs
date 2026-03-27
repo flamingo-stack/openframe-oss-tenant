@@ -395,9 +395,6 @@ impl Client {
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
-        // Initialize NATS log streaming BEFORE registration
-        // This ensures we capture all logs including registration errors
-        // machine_id in JSON payload will be None until registration completes
         match NatsLogStreaming::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
@@ -410,13 +407,11 @@ impl Client {
                     }
                     Err(e) => {
                         error!("Failed to start NATS log streaming: {:#}", e);
-                        // Continue without log streaming - don't block main functionality
                     }
                 }
             }
             Err(e) => {
                 error!("Failed to initialize NATS log streaming: {:#}", e);
-                // Continue without log streaming - don't block main functionality
             }
         }
 

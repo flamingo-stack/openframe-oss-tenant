@@ -230,7 +230,6 @@ impl ToolAgentUpdateService {
         let asset_id = &asset.asset_id;
         let new_version = &asset.version;
 
-        // Check current asset version
         let current_version = installed_tool.assets
             .iter()
             .find(|a| a.id == *asset_id)
@@ -248,15 +247,12 @@ impl ToolAgentUpdateService {
             "Processing asset update"
         );
 
-        // Find download config for current OS
         let config = self.github_download_service
             .find_config_for_current_os(&asset.download_configurations)
             .with_context(|| format!("No download config for current OS: {}", asset_id))?;
 
-        // Get asset filename from config
         let asset_filename = &config.target_file_name;
 
-        // Stop asset process if executable
         if asset.executable {
             info!(asset_id = %asset_id, tool_id = %tool_agent_id, "Stopping asset process");
             if let Err(e) = self.tool_kill_service.stop_asset(asset_id, tool_agent_id).await {
@@ -264,13 +260,11 @@ impl ToolAgentUpdateService {
             }
         }
 
-        // Download asset
         let bytes = self.github_download_service
             .download_and_extract(config)
             .await
             .with_context(|| format!("Failed to download asset: {}", asset_id))?;
 
-        // Write asset to disk
         let asset_path = self.directory_manager.get_asset_path(tool_agent_id, asset_filename, asset.executable);
 
         if asset.executable {
@@ -283,7 +277,6 @@ impl ToolAgentUpdateService {
 
         info!(asset_id = %asset_id, path = %asset_path.display(), "Asset written");
 
-        // Update installed tool assets
         if let Some(existing_asset) = installed_tool.assets.iter_mut().find(|a| a.id == *asset_id) {
             existing_asset.version = new_version.to_string();
         } else {
@@ -295,8 +288,6 @@ impl ToolAgentUpdateService {
 
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save installed tool after asset update: {}", tool_agent_id))?;
-
-        // Publish installed message for asset
         self.publish_installed_agent_message(asset_id, new_version).await;
 
         info!(

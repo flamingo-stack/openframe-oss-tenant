@@ -41,9 +41,7 @@ use tracing_subscriber::{
 
 /// Maximum log file size before rotation (10 MB)
 const MAX_LOG_FILE_SIZE: u64 = 10 * 1024 * 1024;
-/// Name of the archived log file
 const ARCHIVED_LOG_NAME: &str = "openframe.log.gz";
-/// Interval between rotation checks (60 seconds)
 const ROTATION_CHECK_INTERVAL_SECS: u64 = 60;
 
 // Add non-blocking file writer guard to keep file logging alive
@@ -375,28 +373,17 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
     METRICS_STORE.get().cloned()
 }
 
-/// Check if log file needs rotation and perform it if necessary.
-///
-/// Rotation logic:
-/// 1. Check if current log file exceeds MAX_LOG_FILE_SIZE (10 MB)
-/// 2. If yes:
-///    a. Delete existing archive (openframe.log.gz) if it exists
-///    b. Compress current log file to openframe.log.gz
-///    c. Truncate the current log file (or recreate it)
+
 fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf) -> io::Result<()> {
-    // Check if log file exists and get its size
     let metadata = match fs::metadata(log_file_path) {
         Ok(m) => m,
         Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            // Log file doesn't exist, nothing to rotate
             return Ok(());
         }
         Err(e) => return Err(e),
     };
 
     let file_size = metadata.len();
-
-    // Only rotate if file exceeds max size
     if file_size < MAX_LOG_FILE_SIZE {
         return Ok(());
     }
@@ -406,11 +393,9 @@ fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf)
         file_size, MAX_LOG_FILE_SIZE
     );
 
-    // Get the archive path
     let log_dir = log_file_path.parent().unwrap_or(Path::new("."));
     let archive_path = log_dir.join(ARCHIVED_LOG_NAME);
 
-    // Step 1: Delete existing archive if it exists
     if archive_path.exists() {
         if let Err(e) = fs::remove_file(&archive_path) {
             eprintln!("Warning: Failed to remove old archive: {}", e);
@@ -418,10 +403,8 @@ fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf)
         }
     }
 
-    // Step 2: Read current log file contents
     let contents = fs::read(log_file_path)?;
 
-    // Step 3: Compress to archive
     let output = fs::File::create(&archive_path)?;
     let mut encoder = GzEncoder::new(output, Compression::default());
     encoder.write_all(&contents)?;
@@ -429,16 +412,12 @@ fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf)
 
     eprintln!("Compressed log to: {}", archive_path.display());
 
-    // Step 4: Truncate the current log file by recreating it
-    // We need to be careful here because the file might be held open by the logger
-    // The safest approach is to truncate it in place
     let file = fs::OpenOptions::new()
         .write(true)
         .truncate(true)
         .open(log_file_path)?;
     drop(file);
 
-    // Also update the manual log file handle if it exists
     if let Some(log_file_arc) = LOG_FILE.get() {
         if let Ok(mut guard) = log_file_arc.lock() {
             // Reopen the file for the manual logger
