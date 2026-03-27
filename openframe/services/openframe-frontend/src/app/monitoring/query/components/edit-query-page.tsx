@@ -38,7 +38,6 @@ import { useQueryDetails } from '../hooks/use-query-details';
 import { useQueryHosts, useReplaceQueryHosts } from '../hooks/use-query-hosts';
 
 const TIME_UNITS = [
-  { value: 'seconds', label: 'Seconds', multiplier: 1 },
   { value: 'minutes', label: 'Minutes', multiplier: 60 },
   { value: 'hours', label: 'Hours', multiplier: 3600 },
   { value: 'days', label: 'Days', multiplier: 86400 },
@@ -47,14 +46,14 @@ const TIME_UNITS = [
 type TimeUnit = (typeof TIME_UNITS)[number]['value'];
 
 function secondsToUnitValue(totalSeconds: number): { value: number; unit: TimeUnit } {
-  if (totalSeconds === 0) return { value: 0, unit: 'seconds' };
+  if (totalSeconds === 0) return { value: 0, unit: 'minutes' };
   for (let i = TIME_UNITS.length - 1; i >= 0; i--) {
     const { value: unitKey, multiplier } = TIME_UNITS[i];
     if (totalSeconds >= multiplier && totalSeconds % multiplier === 0) {
       return { value: totalSeconds / multiplier, unit: unitKey };
     }
   }
-  return { value: totalSeconds, unit: 'seconds' };
+  return { value: Math.ceil(totalSeconds / 60), unit: 'minutes' };
 }
 
 function unitValueToSeconds(value: number, unit: TimeUnit): number {
@@ -66,7 +65,7 @@ const queryFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   query: z.string(),
-  interval: z.number().min(0),
+  interval: z.number().min(300, 'Minimum interval is 5 minutes'),
 });
 
 type QueryFormData = z.infer<typeof queryFormSchema>;
@@ -162,7 +161,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   const isSaving = isCreating || isUpdating || replaceQueryHostsMutation.isPending;
 
   const [frequencyValue, setFrequencyValue] = useState(0);
-  const [frequencyUnit, setFrequencyUnit] = useState<TimeUnit>('seconds');
+  const [frequencyUnit, setFrequencyUnit] = useState<TimeUnit>('minutes');
 
   const campaign = useLiveCampaign();
   const [showTestPanel, setShowTestPanel] = useState(false);
@@ -252,12 +251,15 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     [isExistingQuery, numericId, createQuery, updateQuery, router, selectedFleetHostIds, replaceQueryHostsMutation],
   );
 
-  const onFormError = useCallback(() => {
-    const firstError = Object.values(errors)[0];
-    if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
-    }
-  }, [errors, toast]);
+  const onFormError = useCallback(
+    (fieldErrors: Record<string, { message?: string }>) => {
+      const firstError = Object.values(fieldErrors)[0];
+      if (firstError?.message) {
+        toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      }
+    },
+    [toast],
+  );
 
   const handleTestQuery = useCallback(() => {
     setShowTestPanel(true);
@@ -389,9 +391,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  {fieldState.error && (
-                    <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{fieldState.error.message}</p>
-                  )}
                 </div>
               );
             }}
@@ -442,6 +441,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             disabled={isSaving}
             addAllBehavior="merge"
             extraColumns={monitoringExtraColumns}
+            isDeviceDisabled={d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined)}
           />
         </div>
       </div>

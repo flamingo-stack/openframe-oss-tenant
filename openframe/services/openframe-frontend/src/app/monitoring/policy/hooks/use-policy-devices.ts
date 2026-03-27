@@ -85,8 +85,16 @@ export function usePolicyDevices() {
 
   const devices = useMemo(() => {
     const allDevices = devicesQuery.data ?? [];
-    const fleetDevices = allDevices.filter(d => getFleetHostId(d) !== undefined);
-    return deduplicateByFleetId(fleetDevices);
+    const fleetDevices: Device[] = [];
+    const nonFleetDevices: Device[] = [];
+    for (const d of allDevices) {
+      if (getFleetHostId(d) !== undefined) {
+        fleetDevices.push(d);
+      } else {
+        nonFleetDevices.push(d);
+      }
+    }
+    return [...deduplicateByFleetId(fleetDevices), ...nonFleetDevices];
   }, [devicesQuery.data]);
 
   return {
