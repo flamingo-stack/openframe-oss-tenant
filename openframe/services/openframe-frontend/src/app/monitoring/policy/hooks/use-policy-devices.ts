@@ -1,20 +1,21 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
-import type { InfiniteScrollConfig } from '../../../components/shared/device-selector';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { createDeviceListItem } from '../../../devices/utils/device-transform';
 
-const DEVICES_PAGE_SIZE = 20;
+const DEVICES_PAGE_SIZE = 100;
 
-interface DevicesPage {
-  devices: Device[];
-  pageInfo: {
-    hasNextPage: boolean;
-    endCursor?: string;
+interface DevicesResponseData {
+  devices: {
+    edges: Array<{ node: DevicesGraphQlNode; cursor: string }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      endCursor?: string;
+    };
   };
 }
 
@@ -41,82 +42,55 @@ function deduplicateByFleetId(devices: Device[]): Device[] {
   return Array.from(byFleetId.values());
 }
 
-export function usePolicyDevices() {
-  const devicesQuery = useInfiniteQuery<DevicesPage, Error>({
-    queryKey: ['policy-device-selector-devices'],
-    queryFn: async ({ pageParam }) => {
-      const filter = {
-        statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE],
-      };
+async function fetchAllDevices(): Promise<Device[]> {
+  const allDevices: Device[] = [];
+  let cursor: string | null = null;
+  let hasMore = true;
 
-      const response = await apiClient.post<
-        GraphQlResponse<{
-          devices: {
-            edges: Array<{ node: DevicesGraphQlNode; cursor: string }>;
-            pageInfo: {
-              hasNextPage: boolean;
-              hasPreviousPage: boolean;
-              startCursor?: string;
-              endCursor?: string;
-            };
-            filteredCount: number;
-          };
-        }>
-      >('/api/graphql', {
+  while (hasMore) {
+    const response: Awaited<ReturnType<typeof apiClient.post<GraphQlResponse<DevicesResponseData>>>> =
+      await apiClient.post('/api/graphql', {
         query: GET_DEVICES_QUERY,
         variables: {
-          filter,
+          filter: { statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE] },
           first: DEVICES_PAGE_SIZE,
-          after: (pageParam as string) || null,
+          after: cursor,
           search: '',
         },
       });
 
-      if (!response.ok) {
-        throw new Error(response.error || 'Failed to fetch devices');
-      }
+    if (!response.ok) {
+      throw new Error(response.error || 'Failed to fetch devices');
+    }
 
-      const graphqlResponse = response.data;
-      if (!graphqlResponse?.data) {
-        throw new Error('No data received from server');
-      }
+    const graphqlResponse = response.data;
+    if (!graphqlResponse?.data) {
+      throw new Error('No data received from server');
+    }
 
-      const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
-      const devices = nodes.map(createDeviceListItem);
+    const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
+    allDevices.push(...nodes.map(createDeviceListItem));
+    hasMore = graphqlResponse.data.devices.pageInfo.hasNextPage;
+    cursor = graphqlResponse.data.devices.pageInfo.endCursor ?? null;
+  }
 
-      return {
-        devices,
-        pageInfo: graphqlResponse.data.devices.pageInfo,
-      };
-    },
-    getNextPageParam: lastPage => (lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined),
-    initialPageParam: undefined as string | undefined,
+  return allDevices;
+}
+
+export function usePolicyDevices() {
+  const devicesQuery = useQuery({
+    queryKey: ['policy-device-selector-devices'],
+    queryFn: fetchAllDevices,
   });
 
-  const flatDevices = useMemo(
-    () => devicesQuery.data?.pages.flatMap(page => page.devices) ?? [],
-    [devicesQuery.data?.pages],
-  );
-
-  // Filter to Fleet MDM devices and deduplicate by Fleet host ID
   const devices = useMemo(() => {
-    const fleetDevices = flatDevices.filter(d => getFleetHostId(d) !== undefined);
+    const allDevices = devicesQuery.data ?? [];
+    const fleetDevices = allDevices.filter(d => getFleetHostId(d) !== undefined);
     return deduplicateByFleetId(fleetDevices);
-  }, [flatDevices]);
-
-  const infiniteScroll: InfiniteScrollConfig | undefined = useMemo(
-    () => ({
-      hasNextPage: devicesQuery.hasNextPage ?? false,
-      isFetchingNextPage: devicesQuery.isFetchingNextPage,
-      onLoadMore: () => devicesQuery.fetchNextPage(),
-      skeletonRows: 2,
-    }),
-    [devicesQuery.hasNextPage, devicesQuery.isFetchingNextPage, devicesQuery.fetchNextPage],
-  );
+  }, [devicesQuery.data]);
 
   return {
     devices,
     isLoading: devicesQuery.isLoading,
-    infiniteScroll,
   };
 }
