@@ -43,14 +43,14 @@ interface GraphQlResponse<T> {
 
 export const organizationsQueryKeys = {
   all: ['organizations'] as const,
-  list: (search: string) => ['organizations', 'list', search] as const,
+  list: (search: string, status?: string) => ['organizations', 'list', search, status] as const,
 };
 
-export function useOrganizations(search = '') {
+export function useOrganizations(search = '', status?: string) {
   const { toast } = useToast();
 
   const query = useInfiniteQuery<OrganizationsPage, Error>({
-    queryKey: organizationsQueryKeys.list(search),
+    queryKey: organizationsQueryKeys.list(search, status),
     queryFn: async ({ pageParam }) => {
       const response = await apiClient.post<
         GraphQlResponse<{
@@ -71,6 +71,7 @@ export function useOrganizations(search = '') {
           search: search || '',
           first: ORGANIZATIONS_PAGE_SIZE,
           after: (pageParam as string) || null,
+          filter: status ? { status } : undefined,
         },
       });
 
