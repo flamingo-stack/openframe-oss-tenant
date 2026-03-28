@@ -13,6 +13,7 @@ import { useOrganizations } from '../hooks/use-organizations';
 
 interface UiOrganizationEntry {
   id: string;
+  organizationId: string;
   name: string;
   contact: string;
   websiteUrl: string;
@@ -41,7 +42,11 @@ function OrganizationNameCell({ org }: { org: UiOrganizationEntry }) {
   );
 }
 
-export function OrganizationsTable() {
+interface OrganizationsTableProps {
+  status?: string;
+}
+
+export function OrganizationsTable({ status }: OrganizationsTableProps) {
   const router = useRouter();
 
   const { params, setParam, setParams } = useApiParams({
@@ -52,8 +57,10 @@ export function OrganizationsTable() {
 
   const debouncedSearch = useDebounce(params.search, 300);
 
-  const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
-    useOrganizations(debouncedSearch);
+  const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useOrganizations(
+    debouncedSearch,
+    status,
+  );
 
   const prevFiltersKeyRef = useRef<string | null>(null);
   const filtersKey = useMemo(
@@ -78,6 +85,7 @@ export function OrganizationsTable() {
 
     return organizations.map(org => ({
       id: org.id,
+      organizationId: org.organizationId,
       name: org.name,
       contact: `${org.contact.email}`,
       websiteUrl: org.websiteUrl,
@@ -194,6 +202,7 @@ export function OrganizationsTable() {
       onSearch={value => setParam('search', value)}
       error={error}
       background="default"
+      className="pt-6"
       padding="none"
       stickyHeader
     >
@@ -208,7 +217,7 @@ export function OrganizationsTable() {
         onFilterChange={handleFilterChange}
         showFilters={false}
         rowClassName="mb-1"
-        onRowClick={row => router.push(`/organizations/details/${row.id}`)}
+        onRowClick={row => router.push(`/organizations/details/${row.organizationId}`)}
         infiniteScroll={{
           hasNextPage,
           isFetchingNextPage,

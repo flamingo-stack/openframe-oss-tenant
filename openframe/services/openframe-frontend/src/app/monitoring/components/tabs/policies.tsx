@@ -13,13 +13,13 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
-import { useLivePolicyCounts } from '../../hooks/use-live-policy-counts';
 import { usePolicies } from '../../hooks/use-policies';
-import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
+import { computePolicySummary, getPolicyStatus, POLICY_STATUS_CONFIG } from '../../utils/compute-policy-summary';
 
 const PAGE_SIZE = 20;
 
@@ -31,15 +31,24 @@ function parsePlatforms(platform: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function PolicyStatusCell({ failingCount }: { failingCount: number }) {
-  const isFailing = failingCount > 0;
+function PolicyStatusCell({ policy }: { policy: Policy }) {
+  const status = getPolicyStatus(policy);
+  const config = POLICY_STATUS_CONFIG[status];
+  const failing = policy.failing_host_count;
+  const responded = policy.passing_host_count + failing;
+  const missing = (policy.hosts_include_any?.length ?? 0) - responded;
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
-      {isFailing && (
+      <Tag label={config.label} variant={config.variant} />
+      {status === 'partial' && missing > 0 && (
+        <span className="text-xs font-medium text-[var(--color-warning)]">
+          {missing} {missing === 1 ? 'device' : 'devices'} left
+        </span>
+      )}
+      {status === 'failing' && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {failingCount} {failingCount === 1 ? 'device' : 'devices'}
+          {failing} {failing === 1 ? 'device' : 'devices'}
         </span>
       )}
     </div>
@@ -64,9 +73,7 @@ export function Policies() {
   );
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
-  const summary = usePolicySummary();
-  const policyIds = useMemo(() => policies.map(p => p.id), [policies]);
-  const { countsMap: liveCounts } = useLivePolicyCounts(policyIds);
+  const summary = useMemo(() => computePolicySummary(policies), [policies]);
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
@@ -116,15 +123,12 @@ export function Policies() {
       {
         key: 'status',
         label: 'Status',
-        width: 'w-[120px]',
+        width: 'w-[140px]',
         hideAt: 'md',
-        renderCell: policy => {
-          const failingCount = liveCounts.get(policy.id)?.failing ?? policy.failing_host_count;
-          return <PolicyStatusCell failingCount={failingCount} />;
-        },
+        renderCell: policy => <PolicyStatusCell policy={policy} />,
       },
     ],
-    [liveCounts],
+    [],
   );
 
   const rowActions = useCallback(
@@ -182,7 +186,7 @@ export function Policies() {
     >
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {summary.isLoading ? (
+        {isLoading ? (
           <>
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
@@ -194,8 +198,8 @@ export function Policies() {
             <DashboardInfoCard title="Total Policies" value={summary.totalPolicies} />
             <DashboardInfoCard
               title="Compliance Rate"
-              value={`${summary.totalPassingEvaluations}/${summary.totalEvaluations}`}
-              percentage={summary.complianceRate}
+              value={`${summary.compliantPolicies}/${summary.compliantPolicies + summary.failingPolicies}`}
+              percentage={summary.compliantPoliciesPercentage}
               showProgress
             />
             <DashboardInfoCard
@@ -206,11 +210,14 @@ export function Policies() {
               progressColor="var(--ods-attention-red-error)"
             />
             <DashboardInfoCard
-              title="Non-Compliant Devices"
-              value={summary.isLoadingHosts ? '...' : summary.nonCompliantDevices}
-              percentage={summary.isLoadingHosts ? undefined : summary.nonCompliantDevicesPercentage}
-              showProgress={!summary.isLoadingHosts}
-              progressColor="var(--ods-attention-red-error)"
+              title="Updated"
+              value={
+                summary.lastUpdatedAt
+                  ? formatDistanceToNow(new Date(summary.lastUpdatedAt), { addSuffix: true })
+                  : 'N/A'
+              }
+              valueClassName="!text-h3"
+              tooltip="Policy compliance stats are updated hourly. View a policy's devices for real-time status."
             />
           </>
         )}

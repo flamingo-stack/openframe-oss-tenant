@@ -17,6 +17,11 @@ export interface CampaignError {
   error: string;
 }
 
+export interface CampaignEmptyResult {
+  host_id: number;
+  host_display_name: string;
+}
+
 export interface CampaignTotals {
   count: number;
   online: number;
@@ -76,6 +81,7 @@ export interface UseLiveCampaignReturn {
   startedAt: Date | null;
   results: QueryResultRow[];
   errors: CampaignError[];
+  emptyResults: CampaignEmptyResult[];
   totals: CampaignTotals | null;
   hostsResponded: number;
   hostsFailed: number;
@@ -84,6 +90,7 @@ export interface UseLiveCampaignReturn {
 }
 
 const CAMPAIGN_LIMIT = 250_000;
+const CAMPAIGN_TIMEOUT_MS = 5 * 60 * 1000;
 
 // ── Cached "All Hosts" label lookup ────────────────────────────────
 
@@ -178,6 +185,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const [startedAt, setStartedAt] = useState<Date | null>(null);
   const [results, setResults] = useState<QueryResultRow[]>([]);
   const [errors, setErrors] = useState<CampaignError[]>([]);
+  const [emptyResults, setEmptyResults] = useState<CampaignEmptyResult[]>([]);
   const [totals, setTotals] = useState<CampaignTotals | null>(null);
   const [hostsResponded, setHostsResponded] = useState(0);
   const [hostsFailed, setHostsFailed] = useState(0);
@@ -189,8 +197,13 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const responseCountRef = useRef({ results: 0, errors: 0 });
   const campaignIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -262,6 +275,15 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
               host_display_name: msg.data.host?.display_name || 'Unknown',
               ...row,
             }));
+            if (rows.length === 0) {
+              setEmptyResults(prev => [
+                ...prev,
+                {
+                  host_id: msg.data.host?.id,
+                  host_display_name: msg.data.host?.display_name || 'Unknown',
+                },
+              ]);
+            }
             setResults(prev => [...prev, ...rows]);
             setHostsResponded(prev => prev + 1);
             count.results += rows.length;
@@ -307,6 +329,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       cleanup();
       setResults([]);
       setErrors([]);
+      setEmptyResults([]);
       setTotals(null);
       setHostsResponded(0);
       setHostsFailed(0);
@@ -353,6 +376,17 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         setConnectionState('connecting');
         const socket = new WebSocket(wsUrl);
         wsRef.current = socket;
+
+        timeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current && campaignIdRef.current === campaignId) {
+            toast({
+              title: 'Test Timed Out',
+              description: 'Live query stopped after 5 minutes',
+              variant: 'destructive',
+            });
+            stopCampaign();
+          }
+        }, CAMPAIGN_TIMEOUT_MS);
 
         socket.onopen = () => {
           if (!isMountedRef.current) return;
@@ -423,6 +457,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
     startedAt,
     results,
     errors,
+    emptyResults,
     totals,
     hostsResponded,
     hostsFailed,

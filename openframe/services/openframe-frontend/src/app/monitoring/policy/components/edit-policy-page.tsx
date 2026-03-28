@@ -99,7 +99,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
 
   const { hosts: currentHosts, isLoading: isLoadingHosts } = usePolicyHosts(isExistingPolicy ? numericId : null);
   const replacePolicyHostsMutation = useReplacePolicyHosts();
-  const { devices: policyDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
+  const { devices: policyDevices, isLoading: isLoadingDevices } = usePolicyDevices();
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const [hostsInitialized, setHostsInitialized] = useState(false);
@@ -212,12 +212,15 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     [isExistingPolicy, numericId, createPolicy, updatePolicy, router, selectedFleetHostIds, replacePolicyHostsMutation],
   );
 
-  const onFormError = useCallback(() => {
-    const firstError = Object.values(errors)[0];
-    if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
-    }
-  }, [errors, toast]);
+  const onFormError = useCallback(
+    (fieldErrors: Record<string, { message?: string }>) => {
+      const firstError = Object.values(fieldErrors)[0];
+      if (firstError?.message) {
+        toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      }
+    },
+    [toast],
+  );
 
   const handleTestPolicy = useCallback(() => {
     setShowTestPanel(true);
@@ -281,6 +284,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             startedAt={campaign.startedAt}
             results={campaign.results}
             errors={campaign.errors}
+            emptyResults={campaign.emptyResults}
             totals={campaign.totals}
             hostsResponded={campaign.hostsResponded}
             hostsFailed={campaign.hostsFailed}
@@ -344,10 +348,10 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             selectedIds={stringSelectedIds}
             getDeviceKey={getDeviceKey}
             onSelectionChange={handleDeviceSelectionChange}
-            infiniteScroll={infiniteScroll}
             disabled={isSaving}
             addAllBehavior="merge"
             extraColumns={monitoringExtraColumns}
+            isDeviceDisabled={d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined)}
           />
         </div>
       </div>
