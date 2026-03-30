@@ -58,7 +58,7 @@ use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService};
-use crate::logging::nats_streaming::NatsLogStreaming;
+use crate::logging::nats_streaming::LogStreamingRunManager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -395,25 +395,12 @@ impl Client {
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
-        match NatsLogStreaming::new(
+        LogStreamingRunManager::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
             &self.directory_manager,
-        ) {
-            Ok(log_streaming) => {
-                match log_streaming.start().await {
-                    Ok(()) => {
-                        info!("NATS log streaming initialized successfully");
-                    }
-                    Err(e) => {
-                        error!("Failed to start NATS log streaming: {:#}", e);
-                    }
-                }
-            }
-            Err(e) => {
-                error!("Failed to initialize NATS log streaming: {:#}", e);
-            }
-        }
+        )?.start().await?;
+        info!("NATS log streaming initialized successfully");
 
         // Process initial registration and authentication
         // if it haven't been done yet

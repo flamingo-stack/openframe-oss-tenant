@@ -1,10 +1,12 @@
 use anyhow::{Context, Result};
+use async_nats::jetstream;
 use std::io::Write;
 use std::path::PathBuf;
 use tokio::time::{interval, Duration};
 use tracing::{debug, error, info};
 
 use crate::platform::DirectoryManager;
+use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::{AgentConfigurationService, InitialConfigurationService};
 
 use super::log_parser::{read_new_logs, LogBatchMessage, LogDeduplicator};
@@ -20,7 +22,7 @@ const NATS_SUBJECT: &str = "agents.logs";
 const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
 
 pub struct NatsLogConnection {
-    client: Option<async_nats::Client>,
+    jetstream: Option<jetstream::Context>,
     server_host: String,
     tenant_domain: String,
     initial_key: String,
@@ -33,7 +35,7 @@ impl NatsLogConnection {
         initial_key: String,
     ) -> Self {
         Self {
-            client: None,
+            jetstream: None,
             server_host,
             tenant_domain,
             initial_key,
@@ -82,30 +84,31 @@ impl NatsLogConnection {
             .await
             .context("Failed to connect to NATS logs endpoint")?;
 
-        self.client = Some(client);
+        self.jetstream = Some(jetstream::new(client));
         info!("NATS logs: initial connection established");
         Ok(())
     }
 
     pub async fn publish(&self, payload: &LogBatchMessage) -> Result<()> {
-        let client = self
-            .client
+        let js = self
+            .jetstream
             .as_ref()
             .context("NATS log connection not initialized")?;
 
         let json = serde_json::to_vec(payload).context("Failed to serialize log batch")?;
 
-        client
-            .publish(NATS_SUBJECT.to_string(), json.into())
+        js.publish(NATS_SUBJECT, json.into())
             .await
-            .context("Failed to publish log batch")?;
+            .context("Failed to publish log batch")?
+            .await
+            .context("Failed to receive publish acknowledgment")?;
 
-        debug!("Published {} logs to NATS", payload.logs.len());
+        debug!("Published {} logs to NATS (ack received)", payload.logs.len());
         Ok(())
     }
 }
 
-pub struct NatsLogStreaming {
+pub struct LogStreamingRunManager {
     server_host: String,
     tenant_domain: String,
     initial_key: String,
@@ -114,7 +117,7 @@ pub struct NatsLogStreaming {
     agent_config_service: AgentConfigurationService,
 }
 
-impl NatsLogStreaming {
+impl LogStreamingRunManager {
     pub fn new(
         initial_config_service: &InitialConfigurationService,
         agent_config_service: &AgentConfigurationService,
@@ -124,11 +127,10 @@ impl NatsLogStreaming {
         let initial_key = initial_config_service.get_initial_key()?;
         let tenant_domain = extract_tenant_domain(&server_host);
 
-        let hostname = hostname::get()
-            .map(|h| h.to_string_lossy().to_string())
-            .unwrap_or_else(|_| "unknown".to_string());
+        let device_data_fetcher = DeviceDataFetcher::new();
+        let hostname = device_data_fetcher.get_hostname().unwrap_or_else(|| "unknown".to_string());
 
-        let log_file_path = super::get_log_file_path(directory_manager);
+        let log_file_path = directory_manager.logs_dir().join("openframe.log");
 
         Ok(Self {
             server_host,
