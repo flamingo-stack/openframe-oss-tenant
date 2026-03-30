@@ -61,7 +61,4 @@ export const runtimeEnv = {
   featureScriptSchedule(): boolean {
     return (getEnvVar('NEXT_PUBLIC_FEATURE_SCRIPT_SCHEDULE') || 'false') === 'true';
   },
-  featureMonitoring(): boolean {
-    return (getEnvVar('NEXT_PUBLIC_FEATURE_MONITORING') || 'false') === 'true';
-  },
 };

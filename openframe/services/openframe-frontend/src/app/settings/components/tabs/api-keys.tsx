@@ -9,6 +9,7 @@ import {
   type TableColumn,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
@@ -18,6 +19,7 @@ import { RegenerateApiKeyModal } from '../../components/regenerate-api-key-modal
 import { type ApiKeyRecord, useApiKeys } from '../../hooks/use-api-keys';
 
 export function ApiKeysTab() {
+  const router = useRouter();
   const { items, isLoading, error, fetchApiKeys, createApiKey, updateApiKey, regenerateApiKey, setApiKeyEnabled } =
     useApiKeys();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -132,7 +134,7 @@ export function ApiKeysTab() {
       headerActions={headerActions}
       background="default"
       padding="none"
-      className="pt-6"
+      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <Table
         data={items}

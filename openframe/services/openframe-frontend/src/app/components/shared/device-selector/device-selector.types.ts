@@ -34,6 +34,10 @@ export interface DeviceSelectorProps {
   rowKey?: string;
   /** "replace" replaces entire selection on Add All; "merge" adds to existing. Default: "merge". */
   addAllBehavior?: 'replace' | 'merge';
+  /** Extra columns */
+  extraColumns?: TableColumn<Device>[];
+  /** Return a tooltip string if the device should be disabled, or undefined if enabled. */
+  isDeviceDisabled?: (device: Device) => string | undefined;
 }
 
 export interface DeviceTabContentProps {
@@ -47,4 +51,6 @@ export interface DeviceTabContentProps {
   selectedCount: number;
   disabled?: boolean;
   infiniteScroll?: InfiniteScrollConfig;
+  /** Return a tooltip string if the device should be disabled, or undefined if enabled. */
+  isDeviceDisabled?: (device: Device) => string | undefined;
 }

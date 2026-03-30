@@ -15,6 +15,7 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
@@ -61,6 +62,7 @@ export function SsoConfigurationTab() {
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig();
   const { fetchTenantDomain, updateSharedAutoProvision } = useTenantDomain();
   const { toast } = useToast();
+  const router = useRouter();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -257,7 +259,12 @@ export function SsoConfigurationTab() {
   }
 
   return (
-    <ListPageContainer title="SSO Configurations" background="default" padding="none" className="pt-6">
+    <ListPageContainer
+      title="SSO Configurations"
+      background="default"
+      padding="none"
+      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+    >
       <Input
         startAdornment={<SearchIcon />}
         placeholder="Search SSO providers"

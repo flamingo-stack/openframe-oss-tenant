@@ -6,8 +6,8 @@ import { EditQueryPage } from '../../components/edit-query-page';
 
 export default function EditQueryPageWrapper() {
   const params = useParams<{ id?: string }>();
-  const rawId = params?.id;
-  const id = rawId === 'new' ? null : typeof rawId === 'string' ? rawId : null;
+  const paramId = params?.id;
+  const id = paramId === 'new' ? null : typeof paramId === 'string' ? paramId : null;
   return (
     <AppLayout>
       <EditQueryPage queryId={id} />

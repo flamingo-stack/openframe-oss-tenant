@@ -39,6 +39,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private remoteWidth = 0;
   private remoteHeight = 0;
   private pressedKeys: Array<{ vk: number; extended: boolean }> = [];
+  private suppressedKeys = new Set<number>();
 
   private tileQueue: Array<{ x: number; y: number; bytes: Uint8Array }> = [];
   private activeDecodes = 0;
@@ -77,6 +78,14 @@ export class MeshDesktop implements DesktopInputHandlers {
       this.metaBufferTimer = null;
     }
     this.bufferedMetaKey = null;
+  }
+
+  private releaseMetaSafely(vk: number, extended: boolean): void {
+    // Ctrl+Win chord trick: Windows treats Win+Ctrl as a chord, not a lone Win tap,
+    // so the Start menu does NOT open.
+    this.send(this.encodeKeyEvent(1, 0x11, false)); // Ctrl DOWN
+    this.send(this.encodeKeyEvent(2, vk, extended)); // Win UP
+    this.send(this.encodeKeyEvent(2, 0x11, false)); // Ctrl UP
   }
 
   attach(canvas: HTMLCanvasElement) {
@@ -164,8 +173,16 @@ export class MeshDesktop implements DesktopInputHandlers {
             const heldKeys = [...this.pressedKeys];
             this.pressedKeys = [];
             for (const k of heldKeys) {
-              this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+              if (k.vk === 0x5b || k.vk === 0x5c) {
+                this.releaseMetaSafely(k.vk, k.extended);
+              } else {
+                this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+              }
             }
+            const letterVk = lowerKey.toUpperCase().charCodeAt(0);
+            this.suppressedKeys.add(0x5b);
+            this.suppressedKeys.add(0x5c);
+            this.suppressedKeys.add(letterVk);
             const comboName = lowerKey === 'v' ? 'ctrl+v' : lowerKey === 'c' ? 'ctrl+c' : 'ctrl+x';
             const type = lowerKey === 'v' ? 'paste' : lowerKey === 'c' ? 'copy' : 'cut';
             const sendKeys = () => {
@@ -179,8 +196,16 @@ export class MeshDesktop implements DesktopInputHandlers {
             const heldKeys = [...this.pressedKeys];
             this.pressedKeys = [];
             for (const k of heldKeys) {
-              this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+              if (k.vk === 0x5b || k.vk === 0x5c) {
+                this.releaseMetaSafely(k.vk, k.extended);
+              } else {
+                this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+              }
             }
+            const letterVk = lowerKey.toUpperCase().charCodeAt(0);
+            this.suppressedKeys.add(0x5b);
+            this.suppressedKeys.add(0x5c);
+            this.suppressedKeys.add(letterVk);
             const comboName = lowerKey === 'v' ? 'ctrl+v' : lowerKey === 'c' ? 'ctrl+c' : 'ctrl+x';
             this.sendKeyCombo(comboName);
             return;
@@ -216,6 +241,14 @@ export class MeshDesktop implements DesktopInputHandlers {
       const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode;
       if (keyCode == null) return;
 
+      if (this.suppressedKeys.has(keyCode)) {
+        this.suppressedKeys.delete(keyCode);
+        const idx = this.pressedKeys.findIndex(k => k.vk === keyCode);
+        if (idx !== -1) this.pressedKeys.splice(idx, 1);
+        e.preventDefault();
+        return;
+      }
+
       const isExt = this.isExtendedKey(e);
 
       if (e.code === 'CapsLock') {
@@ -240,6 +273,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     };
     const onWindowBlur = () => {
       this.cancelMetaBuffer();
+      this.suppressedKeys.clear();
       const keys = [...this.pressedKeys];
       this.pressedKeys = [];
       for (const k of keys) this.send(this.encodeKeyEvent(2, k.vk, k.extended));
@@ -268,6 +302,7 @@ export class MeshDesktop implements DesktopInputHandlers {
 
   detach() {
     this.cancelMetaBuffer();
+    this.suppressedKeys.clear();
     this.stopped = true;
     this.tileQueue = [];
     this.drawQueue = [];

@@ -3,6 +3,7 @@
 import { DetailPageContainer, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { Info as InfoIcon, UsersRound as UsersGroupIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useMemo, useState } from 'react';
@@ -35,8 +36,9 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   const router = useRouter();
   const { toast } = useToast();
   const { createOrganization } = useCreateOrganization();
-  const { organization, fetchOrganizationById } = useOrganizationDetails();
+  const { organization } = useOrganizationDetails(organizationId);
   const { updateOrganization } = useUpdateOrganization();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [general, setGeneral] = useState<GeneralInfoState>(DEFAULT_GENERAL);
@@ -59,11 +61,6 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   });
 
   const [didPrefill, setDidPrefill] = useState(false);
-  React.useEffect(() => {
-    if (organizationId && !didPrefill) {
-      fetchOrganizationById(organizationId).catch(() => {});
-    }
-  }, [organizationId, didPrefill, fetchOrganizationById]);
 
   React.useEffect(() => {
     if (organizationId && organization && !didPrefill) {
@@ -214,6 +211,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
           });
         }
       }
+
+      await queryClient.invalidateQueries({ queryKey: ['organizations'] });
 
       toast({
         title: organizationId ? 'Organization updated' : 'Organization created',

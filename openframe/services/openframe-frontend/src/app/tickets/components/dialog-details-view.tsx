@@ -160,7 +160,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const handleBeforeReconnect = useCallback(async () => {
     try {
-      await apiClient.get('/api/user/me');
+      await apiClient.get('/api/me');
     } catch {
       // If refresh fails, apiClient will force-logout
     }
@@ -249,11 +249,19 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       setIsSendingAdminMessage(true);
       try {
-        await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
+        const response = await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
           dialogId,
           content: trimmedMessage,
           chatType: CHAT_TYPE.ADMIN,
         });
+        if (!response.ok) {
+          toast({
+            title: 'Send Failed',
+            description: response.error || 'Unable to send message',
+            variant: 'destructive',
+            duration: 5000,
+          });
+        }
       } catch (error) {
         toast({
           title: 'Send Failed',
@@ -371,7 +379,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   return (
     <DetailPageContainer
-      title={dialog.title}
+      title={dialog.title || 'Untitled Dialog'}
       backButton={{
         label: 'Back to Chats',
         onClick: () => router.push('/tickets'),

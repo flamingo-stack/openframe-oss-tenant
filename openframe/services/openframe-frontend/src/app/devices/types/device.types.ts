@@ -64,13 +64,12 @@ export interface MdmInfo {
  * Device Tag type
  */
 export interface DeviceTag {
-  id: string;
-  name: string;
+  tagId: string;
+  key: string;
   description?: string;
   color?: string;
-  organizationId: string;
-  createdAt: string;
-  createdBy: string;
+  values: string[];
+  createdAt?: string;
 }
 
 /**
@@ -280,7 +279,7 @@ export interface DeviceFilters {
   deviceTypes: DeviceFilterValue[];
   osTypes: DeviceFilterValue[];
   organizationIds: DeviceFilterTag[];
-  tags: DeviceFilterTag[];
+  tagKeys: DeviceFilterTag[];
   filteredCount: number;
 }
 
@@ -289,7 +288,8 @@ export interface DeviceFilterInput {
   deviceTypes?: string[];
   osTypes?: string[];
   organizationIds?: string[];
-  tags?: string[];
+  tagKeys?: string[];
+  tagValues?: string[];
 }
 
 export interface GraphQlResponse<T> {
@@ -330,13 +330,12 @@ export type DevicesGraphQlNode = {
   registeredAt?: string;
   updatedAt?: string;
   tags?: Array<{
-    id: string;
-    name: string;
+    tagId: string;
+    key: string;
     description?: string;
     color?: string;
-    organizationId: string;
-    createdAt: string;
-    createdBy: string;
+    values: string[];
+    createdAt?: string;
   }>;
   toolConnections?: ToolConnection[];
   installedAgents?: InstalledAgent[];
@@ -372,13 +371,12 @@ export type DeviceGraphQlNode = {
   registeredAt?: string;
   updatedAt?: string;
   tags?: Array<{
-    id: string;
-    name: string;
+    tagId: string;
+    key: string;
     description?: string;
     color?: string;
-    organizationId: string;
-    createdAt: string;
-    createdBy: string;
+    values: string[];
+    createdAt?: string;
   }>;
   toolConnections?: ToolConnection[];
   installedAgents?: InstalledAgent[];

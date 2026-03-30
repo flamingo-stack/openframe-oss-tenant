@@ -14,16 +14,21 @@ import {
   SelectValue,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core';
+import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
 import { DeviceSelector } from '../../../components/shared/device-selector';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
+import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
@@ -33,7 +38,6 @@ import { useQueryDetails } from '../hooks/use-query-details';
 import { useQueryHosts, useReplaceQueryHosts } from '../hooks/use-query-hosts';
 
 const TIME_UNITS = [
-  { value: 'seconds', label: 'Seconds', multiplier: 1 },
   { value: 'minutes', label: 'Minutes', multiplier: 60 },
   { value: 'hours', label: 'Hours', multiplier: 3600 },
   { value: 'days', label: 'Days', multiplier: 86400 },
@@ -42,14 +46,14 @@ const TIME_UNITS = [
 type TimeUnit = (typeof TIME_UNITS)[number]['value'];
 
 function secondsToUnitValue(totalSeconds: number): { value: number; unit: TimeUnit } {
-  if (totalSeconds === 0) return { value: 0, unit: 'seconds' };
+  if (totalSeconds === 0) return { value: 0, unit: 'minutes' };
   for (let i = TIME_UNITS.length - 1; i >= 0; i--) {
     const { value: unitKey, multiplier } = TIME_UNITS[i];
     if (totalSeconds >= multiplier && totalSeconds % multiplier === 0) {
       return { value: totalSeconds / multiplier, unit: unitKey };
     }
   }
-  return { value: totalSeconds, unit: 'seconds' };
+  return { value: Math.ceil(totalSeconds / 60), unit: 'minutes' };
 }
 
 function unitValueToSeconds(value: number, unit: TimeUnit): number {
@@ -61,7 +65,7 @@ const queryFormSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string(),
   query: z.string(),
-  interval: z.number().min(0),
+  interval: z.number().min(300, 'Minimum interval is 5 minutes'),
 });
 
 type QueryFormData = z.infer<typeof queryFormSchema>;
@@ -74,6 +78,40 @@ const getDeviceKey = (d: Device) => {
   const id = getFleetHostId(d);
   return id !== undefined ? String(id) : undefined;
 };
+
+const monitoringExtraColumns: TableColumn<Device>[] = [
+  {
+    key: 'organization',
+    label: 'ORGANIZATION',
+    width: 'w-1/4',
+    hideAt: 'lg',
+    renderCell: (device: Device) => {
+      const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
+      return (
+        <div className="flex items-center gap-3">
+          {featureFlags.organizationImages.displayEnabled() && (
+            <OrganizationIcon
+              imageUrl={fullImageUrl}
+              organizationName={device.organization || 'Organization'}
+              size="sm"
+            />
+          )}
+          <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
+        </div>
+      );
+    },
+  },
+  {
+    key: 'status',
+    label: 'STATUS',
+    width: 'w-[140px]',
+    hideAt: 'md',
+    renderCell: (device: Device) => {
+      const config = getDeviceStatusConfig(device.status);
+      return <Tag label={config.label} variant={config.variant} />;
+    },
+  },
+];
 
 export function EditQueryPage({ queryId }: EditQueryPageProps) {
   const router = useRouter();
@@ -91,7 +129,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
 
   const { hosts: currentHosts, isLoading: isLoadingHosts } = useQueryHosts(isExistingQuery ? numericId : null);
   const replaceQueryHostsMutation = useReplaceQueryHosts();
-  const { devices: queryDevices, isLoading: isLoadingDevices, infiniteScroll } = usePolicyDevices();
+  const { devices: queryDevices, isLoading: isLoadingDevices } = usePolicyDevices();
 
   const [selectedFleetHostIds, setSelectedFleetHostIds] = useState<Set<number>>(new Set());
   const [hostsInitialized, setHostsInitialized] = useState(false);
@@ -123,7 +161,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   const isSaving = isCreating || isUpdating || replaceQueryHostsMutation.isPending;
 
   const [frequencyValue, setFrequencyValue] = useState(0);
-  const [frequencyUnit, setFrequencyUnit] = useState<TimeUnit>('seconds');
+  const [frequencyUnit, setFrequencyUnit] = useState<TimeUnit>('minutes');
 
   const campaign = useLiveCampaign();
   const [showTestPanel, setShowTestPanel] = useState(false);
@@ -133,7 +171,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     control,
     handleSubmit,
     reset,
-    watch,
+    getValues,
     formState: { errors },
   } = useForm<QueryFormData>({
     resolver: zodResolver(queryFormSchema),
@@ -145,8 +183,8 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     },
   });
 
-  const nameValue = watch('name');
-  const queryValue = watch('query');
+  const [hasQuery, setHasQuery] = useState(false);
+  const [hasName, setHasName] = useState(false);
 
   useEffect(() => {
     if (queryDetails && isExistingQuery) {
@@ -157,6 +195,8 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         query: queryDetails.query || '',
         interval: intervalSeconds,
       });
+      setHasQuery(!!queryDetails.query?.trim());
+      setHasName(!!queryDetails.name?.trim());
       const { value, unit } = secondsToUnitValue(intervalSeconds);
       setFrequencyValue(value);
       setFrequencyUnit(unit);
@@ -211,21 +251,24 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     [isExistingQuery, numericId, createQuery, updateQuery, router, selectedFleetHostIds, replaceQueryHostsMutation],
   );
 
-  const onFormError = useCallback(() => {
-    const firstError = Object.values(errors)[0];
-    if (firstError?.message) {
-      toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
-    }
-  }, [errors, toast]);
+  const onFormError = useCallback(
+    (fieldErrors: Record<string, { message?: string }>) => {
+      const firstError = Object.values(fieldErrors)[0];
+      if (firstError?.message) {
+        toast({ title: 'Validation error', description: firstError.message, variant: 'destructive' });
+      }
+    },
+    [toast],
+  );
 
   const handleTestQuery = useCallback(() => {
     setShowTestPanel(true);
-    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
-  }, [campaign, queryValue, selectedFleetHostIds]);
+    campaign.startCampaign(getValues('query'), Array.from(selectedFleetHostIds));
+  }, [campaign, getValues, selectedFleetHostIds]);
 
   const handleTestAgain = useCallback(() => {
-    campaign.startCampaign(queryValue, Array.from(selectedFleetHostIds));
-  }, [campaign, queryValue, selectedFleetHostIds]);
+    campaign.startCampaign(getValues('query'), Array.from(selectedFleetHostIds));
+  }, [campaign, getValues, selectedFleetHostIds]);
 
   const handleCloseTestPanel = useCallback(() => {
     campaign.stopCampaign();
@@ -238,16 +281,16 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       label: 'Test Query',
       onClick: handleTestQuery,
       variant: 'outline' as const,
-      disabled: !queryValue.trim() || campaign.isRunning,
+      disabled: !hasQuery || campaign.isRunning,
     });
     items.push({
       label: 'Save Query',
       onClick: handleSubmit(onSubmit, onFormError),
       variant: 'primary' as const,
-      disabled: isSaving || !nameValue.trim(),
+      disabled: isSaving || !hasName,
     });
     return items;
-  }, [handleSubmit, onSubmit, onFormError, isSaving, nameValue, handleTestQuery, queryValue, campaign.isRunning]);
+  }, [handleSubmit, onSubmit, onFormError, isSaving, hasName, handleTestQuery, hasQuery, campaign.isRunning]);
 
   if (isLoadingQuery && isExistingQuery) {
     return <CardLoader items={4} />;
@@ -278,9 +321,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             mode="query"
             isRunning={campaign.isRunning}
             startedAt={campaign.startedAt}
-            durationMs={campaign.durationMs}
             results={campaign.results}
             errors={campaign.errors}
+            emptyResults={campaign.emptyResults}
             totals={campaign.totals}
             hostsResponded={campaign.hostsResponded}
             hostsFailed={campaign.hostsFailed}
@@ -295,7 +338,14 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         <div className="flex flex-col md:flex-row gap-4 md:items-end">
           {/* Name */}
           <div className="md:max-w-[280px] w-full">
-            <Input {...register('name')} label="Name" placeholder="Enter Query Name" error={errors.name?.message} />
+            <Input
+              {...register('name', {
+                onChange: (e: React.ChangeEvent<HTMLInputElement>) => setHasName(!!e.target.value.trim()),
+              })}
+              label="Name"
+              placeholder="Enter Query Name"
+              error={errors.name?.message}
+            />
           </div>
 
           {/* Frequency */}
@@ -341,9 +391,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
                       </SelectContent>
                     </Select>
                   </div>
-                  {fieldState.error && (
-                    <p className="text-[var(--ods-attention-red-error)] text-sm mt-1">{fieldState.error.message}</p>
-                  )}
                 </div>
               );
             }}
@@ -360,7 +407,15 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             name="query"
             control={control}
             render={({ field }) => (
-              <ScriptEditor value={field.value} onChange={field.onChange} shell="sql" height="300px" />
+              <ScriptEditor
+                value={field.value}
+                onChange={val => {
+                  field.onChange(val);
+                  setHasQuery(!!val?.trim());
+                }}
+                shell="sql"
+                height="300px"
+              />
             )}
           />
           <a
@@ -383,9 +438,10 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             selectedIds={stringSelectedIds}
             getDeviceKey={getDeviceKey}
             onSelectionChange={handleDeviceSelectionChange}
-            infiniteScroll={infiniteScroll}
             disabled={isSaving}
             addAllBehavior="merge"
+            extraColumns={monitoringExtraColumns}
+            isDeviceDisabled={d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined)}
           />
         </div>
       </div>

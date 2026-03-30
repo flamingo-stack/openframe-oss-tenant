@@ -17,6 +17,11 @@ export interface CampaignError {
   error: string;
 }
 
+export interface CampaignEmptyResult {
+  host_id: number;
+  host_display_name: string;
+}
+
 export interface CampaignTotals {
   count: number;
   online: number;
@@ -74,9 +79,9 @@ export interface UseLiveCampaignReturn {
   stopCampaign: () => void;
   isRunning: boolean;
   startedAt: Date | null;
-  durationMs: number;
   results: QueryResultRow[];
   errors: CampaignError[];
+  emptyResults: CampaignEmptyResult[];
   totals: CampaignTotals | null;
   hostsResponded: number;
   hostsFailed: number;
@@ -85,6 +90,7 @@ export interface UseLiveCampaignReturn {
 }
 
 const CAMPAIGN_LIMIT = 250_000;
+const CAMPAIGN_TIMEOUT_MS = 5 * 60 * 1000;
 
 // ── Cached "All Hosts" label lookup ────────────────────────────────
 
@@ -177,9 +183,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
 
   const [isRunning, setIsRunning] = useState(false);
   const [startedAt, setStartedAt] = useState<Date | null>(null);
-  const [durationMs, setDurationMs] = useState(0);
   const [results, setResults] = useState<QueryResultRow[]>([]);
   const [errors, setErrors] = useState<CampaignError[]>([]);
+  const [emptyResults, setEmptyResults] = useState<CampaignEmptyResult[]>([]);
   const [totals, setTotals] = useState<CampaignTotals | null>(null);
   const [hostsResponded, setHostsResponded] = useState(0);
   const [hostsFailed, setHostsFailed] = useState(0);
@@ -187,16 +193,16 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const [campaignStatus, setCampaignStatus] = useState<'' | 'pending' | 'finished'>('');
 
   const wsRef = useRef<WebSocket | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const previousDataRef = useRef<string | null>(null);
   const responseCountRef = useRef({ results: 0, errors: 0 });
   const campaignIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cleanup = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
     if (wsRef.current) {
       wsRef.current.close();
@@ -253,7 +259,7 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
             return;
           }
 
-          const hasError = msg.data.error !== null;
+          const hasError = msg.data.error != null;
           if (hasError) {
             const err: CampaignError = {
               host_id: msg.data.host?.id,
@@ -269,6 +275,15 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
               host_display_name: msg.data.host?.display_name || 'Unknown',
               ...row,
             }));
+            if (rows.length === 0) {
+              setEmptyResults(prev => [
+                ...prev,
+                {
+                  host_id: msg.data.host?.id,
+                  host_display_name: msg.data.host?.display_name || 'Unknown',
+                },
+              ]);
+            }
             setResults(prev => [...prev, ...rows]);
             setHostsResponded(prev => prev + 1);
             count.results += rows.length;
@@ -314,11 +329,13 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
       cleanup();
       setResults([]);
       setErrors([]);
+      setEmptyResults([]);
       setTotals(null);
       setHostsResponded(0);
       setHostsFailed(0);
       setCampaignStatus('');
       setConnectionState('disconnected');
+      setStartedAt(null);
 
       try {
         // 1. Build target selection — use selected hosts if provided, otherwise fall back to all hosts
@@ -341,18 +358,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         const campaignId = res.data.campaign.id;
         campaignIdRef.current = campaignId;
 
-        // 3. Start timer
-        const now = new Date();
-        setStartedAt(now);
-        setDurationMs(0);
+        // 3. Start campaign state
+        setStartedAt(new Date());
         setIsRunning(true);
-
-        const startTime = now.getTime();
-        timerRef.current = setInterval(() => {
-          if (isMountedRef.current) {
-            setDurationMs(Date.now() - startTime);
-          }
-        }, 1000);
 
         // 4. Open native WebSocket with SockJS framing
         let wsUrl = buildWsUrl(fleetApiClient.getSockJsUrl());
@@ -368,6 +376,17 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         setConnectionState('connecting');
         const socket = new WebSocket(wsUrl);
         wsRef.current = socket;
+
+        timeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current && campaignIdRef.current === campaignId) {
+            toast({
+              title: 'Test Timed Out',
+              description: 'Live query stopped after 5 minutes',
+              variant: 'destructive',
+            });
+            stopCampaign();
+          }
+        }, CAMPAIGN_TIMEOUT_MS);
 
         socket.onopen = () => {
           if (!isMountedRef.current) return;
@@ -436,9 +455,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
     stopCampaign,
     isRunning,
     startedAt,
-    durationMs,
     results,
     errors,
+    emptyResults,
     totals,
     hostsResponded,
     hostsFailed,

@@ -1,25 +1,25 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DashboardInfoCard,
   DeviceCardCompact,
-  Input,
-  ListPageContainer,
+  ListPageLayout,
   MoreActionsMenu,
-  PageError,
   Skeleton,
   Table,
   type TableColumn,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
-import { usePolicySummary } from '../../hooks/use-policy-summary';
 import type { Policy } from '../../types/policies.types';
+import { computePolicySummary, getPolicyStatus, POLICY_STATUS_CONFIG } from '../../utils/compute-policy-summary';
 
 const PAGE_SIZE = 20;
 
@@ -32,14 +32,23 @@ function parsePlatforms(platform: string | undefined): string[] {
 }
 
 function PolicyStatusCell({ policy }: { policy: Policy }) {
-  const isFailing = policy.failing_host_count > 0;
+  const status = getPolicyStatus(policy);
+  const config = POLICY_STATUS_CONFIG[status];
+  const failing = policy.failing_host_count;
+  const responded = policy.passing_host_count + failing;
+  const missing = (policy.hosts_include_any?.length ?? 0) - responded;
 
   return (
     <div className="flex flex-col items-start gap-1">
-      <Tag label={isFailing ? 'Failing' : 'Compliant'} variant={isFailing ? 'error' : 'success'} />
-      {isFailing && (
+      <Tag label={config.label} variant={config.variant} />
+      {status === 'partial' && missing > 0 && (
+        <span className="text-xs font-medium text-[var(--color-warning)]">
+          {missing} {missing === 1 ? 'device' : 'devices'} left
+        </span>
+      )}
+      {status === 'failing' && (
         <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {policy.failing_host_count} {policy.failing_host_count === 1 ? 'device' : 'devices'}
+          {failing} {failing === 1 ? 'device' : 'devices'}
         </span>
       )}
     </div>
@@ -49,24 +58,23 @@ function PolicyStatusCell({ policy }: { policy: Policy }) {
 export function Policies() {
   const router = useRouter();
 
-  const { params, setParam, setParams } = useApiParams({
+  const { params, setParams } = useApiParams({
     search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
   });
 
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearchInput = useDebounce(searchInput, 300);
-  const lastSearchRef = React.useRef(params.search);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  useEffect(() => {
-    if (debouncedSearchInput !== lastSearchRef.current) {
-      lastSearchRef.current = debouncedSearchInput;
-      setParams({ search: debouncedSearchInput, page: 1 });
-    }
-  }, [debouncedSearchInput, setParams]);
+  const handleSearch = useCallback(
+    (term: string) => {
+      setParams({ search: term });
+      setVisibleCount(PAGE_SIZE);
+    },
+    [setParams],
+  );
 
-  const { policies, isLoading, error } = usePolicies();
-  const summary = usePolicySummary();
+  const { policies, isLoading, error, deletePolicy } = usePolicies();
+  const summary = useMemo(() => computePolicySummary(policies), [policies]);
+  const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
     if (!params.search || params.search.trim() === '') return policies;
@@ -78,12 +86,7 @@ export function Policies() {
     );
   }, [policies, params.search]);
 
-  const paginatedPolicies = useMemo(() => {
-    const start = (params.page - 1) * PAGE_SIZE;
-    return filteredPolicies.slice(start, start + PAGE_SIZE);
-  }, [filteredPolicies, params.page]);
-
-  const totalPages = useMemo(() => Math.ceil(filteredPolicies.length / PAGE_SIZE), [filteredPolicies.length]);
+  const visiblePolicies = useMemo(() => filteredPolicies.slice(0, visibleCount), [filteredPolicies, visibleCount]);
 
   const columns: TableColumn<Policy>[] = useMemo(
     () => [
@@ -120,7 +123,7 @@ export function Policies() {
       {
         key: 'status',
         label: 'Status',
-        width: 'w-[120px]',
+        width: 'w-[140px]',
         hideAt: 'md',
         renderCell: policy => <PolicyStatusCell policy={policy} />,
       },
@@ -133,6 +136,10 @@ export function Policies() {
       {
         label: 'Policy Details',
         onClick: () => router.push(`/monitoring/policy/${policy.id}`),
+      },
+      {
+        label: 'Delete Policy',
+        onClick: () => setPolicyToDelete(policy),
       },
     ],
     [router],
@@ -153,21 +160,6 @@ export function Policies() {
     router.push('/monitoring/policy/edit/new');
   }, [router]);
 
-  const cursorPagination = useTablePagination(
-    totalPages > 1
-      ? {
-          type: 'client',
-          currentPage: params.page,
-          totalPages,
-          itemCount: paginatedPolicies.length,
-          itemName: 'policies',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
-          showInfo: true,
-        }
-      : null,
-  );
-
   const actions = useMemo(
     () => [
       {
@@ -179,15 +171,22 @@ export function Policies() {
     [handleAddPolicy],
   );
 
-  if (error) {
-    return <PageError message={error} />;
-  }
-
   return (
-    <ListPageContainer title="Policies" actions={actions} background="default" padding="none" className="pt-6">
+    <ListPageLayout
+      title="Policies"
+      actions={actions}
+      searchPlaceholder="Search for Policies"
+      searchValue={params.search}
+      onSearch={handleSearch}
+      background="default"
+      padding="none"
+      className="pt-6"
+      error={error}
+      stickyHeader
+    >
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {summary.isLoading ? (
+        {isLoading ? (
           <>
             <Skeleton className="h-20 w-full" />
             <Skeleton className="h-20 w-full" />
@@ -199,8 +198,8 @@ export function Policies() {
             <DashboardInfoCard title="Total Policies" value={summary.totalPolicies} />
             <DashboardInfoCard
               title="Compliance Rate"
-              value={`${summary.totalPassingEvaluations}/${summary.totalEvaluations}`}
-              percentage={summary.complianceRate}
+              value={`${summary.compliantPolicies}/${summary.compliantPolicies + summary.failingPolicies}`}
+              percentage={summary.compliantPoliciesPercentage}
               showProgress
             />
             <DashboardInfoCard
@@ -208,29 +207,25 @@ export function Policies() {
               value={summary.failingPolicies}
               percentage={summary.failingPoliciesPercentage}
               showProgress
+              progressColor="var(--ods-attention-red-error)"
             />
             <DashboardInfoCard
-              title="Non-Compliant Devices"
-              value={summary.isLoadingHosts ? '...' : summary.nonCompliantDevices}
-              percentage={summary.isLoadingHosts ? undefined : summary.nonCompliantDevicesPercentage}
-              showProgress={!summary.isLoadingHosts}
+              title="Updated"
+              value={
+                summary.lastUpdatedAt
+                  ? formatDistanceToNow(new Date(summary.lastUpdatedAt), { addSuffix: true })
+                  : 'N/A'
+              }
+              valueClassName="!text-h3"
+              tooltip="Policy compliance stats are updated hourly. View a policy's devices for real-time status."
             />
           </>
         )}
       </div>
 
-      {/* Search Bar */}
-      <Input
-        placeholder="Search for Policies"
-        onChange={e => setSearchInput(e.target.value)}
-        value={searchInput}
-        className="w-full"
-        startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-      />
-
       {/* Table */}
       <Table
-        data={paginatedPolicies}
+        data={visiblePolicies}
         columns={columns}
         rowKey="id"
         loading={isLoading}
@@ -243,9 +238,31 @@ export function Policies() {
         showFilters={false}
         rowClassName="mb-1"
         onRowClick={handleRowClick}
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage: visibleCount < filteredPolicies.length,
+          isFetchingNextPage: false,
+          onLoadMore: () => setVisibleCount(prev => prev + PAGE_SIZE),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
         renderRowActions={renderRowActions}
       />
-    </ListPageContainer>
+      <ConfirmDeleteMonitoringModal
+        open={!!policyToDelete}
+        onOpenChange={open => {
+          if (!open) setPolicyToDelete(null);
+        }}
+        itemName={policyToDelete?.name ?? ''}
+        itemType="policy"
+        onConfirm={() => {
+          if (policyToDelete) {
+            deletePolicy(policyToDelete.id, {
+              onSuccess: () => setPolicyToDelete(null),
+            });
+          }
+        }}
+      />
+    </ListPageLayout>
   );
 }

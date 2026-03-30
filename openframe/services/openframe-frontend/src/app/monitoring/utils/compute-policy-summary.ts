@@ -1,75 +1,70 @@
 import type { Policy } from '../types/policies.types';
 import type { PolicySummaryStats } from '../types/policy-summary.types';
 
+export type PolicyStatus = 'compliant' | 'failing' | 'pending' | 'partial';
+
+export const POLICY_STATUS_CONFIG: Record<PolicyStatus, { label: string; variant: 'success' | 'error' | 'warning' }> = {
+  compliant: { label: 'Compliant', variant: 'success' },
+  failing: { label: 'Failing', variant: 'error' },
+  pending: { label: 'Pending', variant: 'warning' },
+  partial: { label: 'Partial', variant: 'warning' },
+};
+
+export function getPolicyStatus(policy: Policy): PolicyStatus {
+  const failing = policy.failing_host_count;
+  const responded = policy.passing_host_count + failing;
+  const missing = (policy.hosts_include_any?.length ?? 0) - responded;
+
+  if (missing > 0 && responded === 0) return 'pending';
+  if (missing > 0) return 'partial';
+  if (failing > 0) return 'failing';
+  return 'compliant';
+}
+
 const EMPTY_SUMMARY: PolicySummaryStats = {
   totalPolicies: 0,
   failingPolicies: 0,
   failingPoliciesPercentage: 0,
   compliantPolicies: 0,
   compliantPoliciesPercentage: 0,
-  totalPassingEvaluations: 0,
-  totalFailingEvaluations: 0,
-  totalEvaluations: 0,
-  complianceRate: 0,
-  nonCompliantDevices: 0,
-  totalAssignedDevices: 0,
-  nonCompliantDevicesPercentage: 0,
   lastUpdatedAt: null,
 };
 
 /**
- * Compute policy compliance summary from a list of policies and optional
- * deduplicated host ID sets.
- *
- * @param policies - Array of policies (each includes passing/failing host counts)
- * @param nonCompliantHostIds - Unique host IDs that fail at least one policy
- * @param totalAssignedHostIds - Unique host IDs assigned to any policy
+ * Compute policy compliance summary from a list of policies.
+ * Only policies with a definitive status (compliant or failing) are included
+ * in compliance stats. Pending and partial policies are excluded.
  */
-export function computePolicySummary(
-  policies: Policy[],
-  nonCompliantHostIds?: Set<number>,
-  totalAssignedHostIds?: Set<number>,
-): PolicySummaryStats {
+export function computePolicySummary(policies: Policy[]): PolicySummaryStats {
   const totalPolicies = policies.length;
   if (totalPolicies === 0) return EMPTY_SUMMARY;
 
   let failingPolicies = 0;
-  let totalPassingEvaluations = 0;
-  let totalFailingEvaluations = 0;
+  let compliantPolicies = 0;
   let latestUpdate: string | null = null;
 
   for (const policy of policies) {
-    if (policy.failing_host_count > 0) {
+    const status = getPolicyStatus(policy);
+
+    if (status === 'compliant') {
+      compliantPolicies++;
+    } else if (status === 'failing') {
       failingPolicies++;
     }
-    totalPassingEvaluations += policy.passing_host_count;
-    totalFailingEvaluations += policy.failing_host_count;
 
     if (policy.host_count_updated_at && (!latestUpdate || policy.host_count_updated_at > latestUpdate)) {
       latestUpdate = policy.host_count_updated_at;
     }
   }
 
-  const compliantPolicies = totalPolicies - failingPolicies;
-  const totalEvaluations = totalPassingEvaluations + totalFailingEvaluations;
-
-  const nonCompliantDevices = nonCompliantHostIds?.size ?? 0;
-  const totalAssignedDevices = totalAssignedHostIds?.size ?? 0;
+  const resolvedPolicies = compliantPolicies + failingPolicies;
 
   return {
     totalPolicies,
     failingPolicies,
-    failingPoliciesPercentage: Math.round((failingPolicies / totalPolicies) * 100),
+    failingPoliciesPercentage: resolvedPolicies > 0 ? Math.round((failingPolicies / resolvedPolicies) * 100) : 0,
     compliantPolicies,
-    compliantPoliciesPercentage: Math.round((compliantPolicies / totalPolicies) * 100),
-    totalPassingEvaluations,
-    totalFailingEvaluations,
-    totalEvaluations,
-    complianceRate: totalEvaluations > 0 ? Math.round((totalPassingEvaluations / totalEvaluations) * 100) : 0,
-    nonCompliantDevices,
-    totalAssignedDevices,
-    nonCompliantDevicesPercentage:
-      totalAssignedDevices > 0 ? Math.round((nonCompliantDevices / totalAssignedDevices) * 100) : 0,
+    compliantPoliciesPercentage: resolvedPolicies > 0 ? Math.round((compliantPolicies / resolvedPolicies) * 100) : 0,
     lastUpdatedAt: latestUpdate,
   };
 }
