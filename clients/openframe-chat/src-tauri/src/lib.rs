@@ -28,6 +28,7 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn get_token(token_state: State<TokenState>) -> Option<String> {
     let token = token_state.current_token.lock().unwrap();
+
     if token.is_some() {
         println!("[INFO] Token requested from frontend");
     } else {

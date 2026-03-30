@@ -28,6 +28,7 @@ impl InitialAuthenticationProcessor {
             info!(
                 "Existing access_token detected. Skipping initial authentication."
             );
+
             return Ok(());
         }
 
