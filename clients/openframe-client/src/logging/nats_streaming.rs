@@ -114,6 +114,7 @@ pub struct LogStreamingRunManager {
     initial_key: String,
     hostname: String,
     log_file_path: PathBuf,
+    offset_file_path: PathBuf,
     agent_config_service: AgentConfigurationService,
 }
 
@@ -131,6 +132,7 @@ impl LogStreamingRunManager {
         let hostname = device_data_fetcher.get_hostname().unwrap_or_else(|| "unknown".to_string());
 
         let log_file_path = directory_manager.logs_dir().join("openframe.log");
+        let offset_file_path = directory_manager.secured_dir().join("log_stream_offset");
 
         Ok(Self {
             server_host,
@@ -138,6 +140,7 @@ impl LogStreamingRunManager {
             initial_key,
             hostname,
             log_file_path,
+            offset_file_path,
             agent_config_service: agent_config_service.clone(),
         })
     }
@@ -170,6 +173,7 @@ impl LogStreamingRunManager {
 
         tokio::spawn(log_file_reader_task(
             self.log_file_path,
+            self.offset_file_path,
             connection,
             self.hostname,
             self.tenant_domain,
@@ -183,6 +187,7 @@ impl LogStreamingRunManager {
 
 async fn log_file_reader_task(
     log_file_path: PathBuf,
+    offset_file_path: PathBuf,
     connection: NatsLogConnection,
     hostname: String,
     tenant_domain: String,
@@ -191,7 +196,7 @@ async fn log_file_reader_task(
 ) {
     let interval_secs = if test_output.is_some() { 5 } else { BATCH_INTERVAL_SECS };
     let mut ticker = interval(Duration::from_secs(interval_secs));
-    let mut file_position: u64 = 0;
+    let mut file_position: u64 = load_offset(&offset_file_path);
     let mut test_ctx = test_output;
     let mut pending_batch: Option<(LogBatchMessage, usize, u64)> = None;
 
@@ -236,15 +241,29 @@ async fn log_file_reader_task(
             }
         }
 
-        // Publish to NATS
+        // Publish to NATS with JetStream ack
         if let Err(e) = connection.publish(&batch).await {
             error!("Failed to publish log batch: {:#} - will retry", e);
             // Store batch to retry on next tick
             pending_batch = Some((batch, raw_count, new_position));
         } else {
-            // Success - advance file position
+            // Success - advance file position and persist
             file_position = new_position;
+            save_offset(&offset_file_path, file_position);
         }
+    }
+}
+
+fn load_offset(path: &PathBuf) -> u64 {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|s| s.trim().parse().ok())
+        .unwrap_or(0)
+}
+
+fn save_offset(path: &PathBuf, offset: u64) {
+    if let Err(e) = std::fs::write(path, offset.to_string()) {
+        error!("Failed to save log offset: {:#}", e);
     }
 }
 
