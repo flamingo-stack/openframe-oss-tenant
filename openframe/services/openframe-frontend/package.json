@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p ${PORT:-3000}",
-    "build": "next build",
+    "build": "relay-compiler && next build",
     "build:local": "next build --webpack",
     "start": "next start -p ${PORT:-3000}",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
