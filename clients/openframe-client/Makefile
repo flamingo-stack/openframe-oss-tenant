@@ -1,15 +1,15 @@
-# Makefile for OpenFrame OSS Rust project  
+# Makefile for OpenFrame OSS Rust project
 
 CARGO ?= cargo
 OPENFRAME_VERSION ?= 0.0.0-dev
 
 # Optional target for cross-compilation
-TARGET ?= 
+TARGET ?=
 ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
-.PHONY: lint build test fmt fmt-check clippy clean crossinstall crossbuild
+.PHONY: fmt fmt-check clippy lint build test clean crossinstall crossbuild
 
 fmt:
 	$(CARGO) fmt --all
@@ -26,16 +26,14 @@ build:
 	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) build --release --locked $(TARGET_FLAG)
 
 test: build
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) test --release --locked
+	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) test --release --locked $(TARGET_FLAG)
 
 clean:
 	$(CARGO) clean
 
-# install cross tool
 crossinstall:
 	$(CARGO) install cross --git https://github.com/cross-rs/cross
 
-
 crossbuild:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release $(TARGET_FLAG)
+	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release --locked $(TARGET_FLAG)
 
