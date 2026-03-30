@@ -14,7 +14,15 @@ fleet:
   replicas: 1
   revisionHistoryLimit: 2
   imageRepository: ghcr.io/flamingo-stack/fleetmdm/fleet
-  imageTag: "latest"
+  imageTag: 0.0.16
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
 
   podAnnotations:
     loki.grafana.com/scrape: "true"
