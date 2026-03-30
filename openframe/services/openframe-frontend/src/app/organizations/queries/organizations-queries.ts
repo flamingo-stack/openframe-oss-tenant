@@ -1,6 +1,6 @@
 export const GET_ORGANIZATIONS_QUERY = `#graphql
-  query GetOrganizations($search: String, $first: Int, $after: String) {
-    organizations(search: $search, first: $first, after: $after) {
+  query GetOrganizations($search: String, $first: Int, $after: String, $filter: OrganizationFilterInput) {
+    organizations(search: $search, first: $first, after: $after, filter: $filter) {
       edges {
         node {
           id
@@ -23,6 +23,8 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
           }
           createdAt
           updatedAt
+          status
+          statusChangedAt
         }
         cursor
       }
@@ -99,8 +101,8 @@ export const GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY = `#graphql
       isDefault
       createdAt
       updatedAt
-      deleted
-      deletedAt
+      status
+      statusChangedAt
     }
   }
 `;
@@ -149,8 +151,8 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
       isDefault
       createdAt
       updatedAt
-      deleted
-      deletedAt
+      status
+      statusChangedAt
     }
   }
 `;
