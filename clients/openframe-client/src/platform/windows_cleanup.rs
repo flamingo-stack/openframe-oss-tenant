@@ -154,7 +154,12 @@ if ($BinDir -ne "") {{
         $newPath = ($pathEntries | Where-Object {{ $_ -ne $BinDir }}) -join ";"
 
         if ($currentPath -ne $newPath) {{
-            Set-ItemProperty -Path $regPath -Name "Path" -Value $newPath -ErrorAction Stop
+            # Write back as ExpandString to preserve REG_EXPAND_SZ type
+            [Microsoft.Win32.Registry]::SetValue(
+                "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+                "Path", $newPath,
+                [Microsoft.Win32.RegistryValueKind]::ExpandString
+            )
 
             # Broadcast environment change
             Add-Type -TypeDefinition @"

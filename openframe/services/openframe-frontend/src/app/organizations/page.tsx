@@ -2,14 +2,23 @@
 
 export const dynamic = 'force-dynamic';
 
+import { getTabComponent } from '@flamingo-stack/openframe-frontend-core';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { AppLayout } from '../components/app-layout';
-import { OrganizationsTable } from './components/organizations-table';
+import { ORGANIZATIONS_TABS, OrganizationsTabNavigation } from './components/organizations-tabs';
 
 export default function Organizations() {
+  const { params, setParam } = useApiParams({
+    tab: { type: 'string', default: 'active' },
+  });
+
+  const TabComponent = getTabComponent(ORGANIZATIONS_TABS, params.tab);
+
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <OrganizationsTable />
+      <div className="flex flex-col w-full -mt-4">
+        <OrganizationsTabNavigation activeTab={params.tab} onTabChange={tab => setParam('tab', tab)} />
+        {TabComponent ? <TabComponent /> : null}
       </div>
     </AppLayout>
   );

@@ -3,7 +3,7 @@
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
 import { PenEditIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useTablePagination } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
@@ -31,11 +31,11 @@ export function ScriptSchedulesTable() {
 
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
-    page: { type: 'number', default: 1 },
   });
   const pageSize = 10;
 
   const [searchInput, setSearchInput] = useState(params.search);
+  const [visibleCount, setVisibleCount] = useState(pageSize);
   const debouncedSearchInput = useDebounce(searchInput, 300);
 
   useEffect(() => {
@@ -53,21 +53,16 @@ export function ScriptSchedulesTable() {
     return schedules.filter(s => s.name.toLowerCase().includes(searchLower));
   }, [schedules, params.search]);
 
-  const paginatedSchedules = useMemo(() => {
-    const start = (params.page - 1) * pageSize;
-    return filteredSchedules.slice(start, start + pageSize);
-  }, [filteredSchedules, params.page]);
+  const visibleSchedules = useMemo(() => filteredSchedules.slice(0, visibleCount), [filteredSchedules, visibleCount]);
 
-  const totalPages = useMemo(() => Math.ceil(filteredSchedules.length / pageSize), [filteredSchedules.length]);
-
-  // Reset page when search changes
+  // Reset visible count when search changes
   const lastSearchRef = React.useRef(params.search);
   useEffect(() => {
     if (params.search !== lastSearchRef.current) {
       lastSearchRef.current = params.search;
-      setParam('page', 1);
+      setVisibleCount(pageSize);
     }
-  }, [params.search, setParam]);
+  }, [params.search]);
 
   const columns: TableColumn<ScriptScheduleListItem>[] = useMemo(
     () => [
@@ -153,21 +148,6 @@ export function ScriptSchedulesTable() {
     );
   }, [router]);
 
-  const cursorPagination = useTablePagination(
-    totalPages > 1
-      ? {
-          type: 'client',
-          currentPage: params.page,
-          totalPages,
-          itemCount: paginatedSchedules.length,
-          itemName: 'schedules',
-          onNext: () => setParam('page', Math.min(params.page + 1, totalPages)),
-          onPrevious: () => setParam('page', Math.max(params.page - 1, 1)),
-          showInfo: true,
-        }
-      : null,
-  );
-
   const actions = useMemo(
     () => [
       {
@@ -190,9 +170,10 @@ export function ScriptSchedulesTable() {
       background="default"
       padding="none"
       className="pt-6"
+      stickyHeader
     >
       <Table
-        data={paginatedSchedules}
+        data={visibleSchedules}
         columns={columns}
         rowKey="id"
         loading={isLoading}
@@ -204,7 +185,14 @@ export function ScriptSchedulesTable() {
         }
         rowClassName="mb-1"
         onRowClick={handleRowClick}
-        cursorPagination={cursorPagination}
+        infiniteScroll={{
+          hasNextPage: visibleCount < filteredSchedules.length,
+          isFetchingNextPage: false,
+          onLoadMore: () => setVisibleCount(prev => prev + pageSize),
+          skeletonRows: 2,
+        }}
+        stickyHeader
+        stickyHeaderOffset="top-[56px]"
         renderRowActions={renderRowActions}
       />
     </ListPageLayout>

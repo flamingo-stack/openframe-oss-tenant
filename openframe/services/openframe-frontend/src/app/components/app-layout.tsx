@@ -65,7 +65,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         showUser: true,
         userName: displayName,
         userEmail: user?.email,
-        onProfile: () => router.push('/settings/?tab=profile'),
+        onProfile: () => router.push('/settings'),
         onLogout: handleLogout,
       }}
     >

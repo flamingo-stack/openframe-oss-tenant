@@ -163,6 +163,8 @@ impl Client {
             // disable TLS verification for dev mode only
             .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()
+            // disable connection pooling to force fresh DNS lookup on each request
+            .pool_max_idle_per_host(0)
             .build()
             .context("Failed to create HTTP client")?;
 

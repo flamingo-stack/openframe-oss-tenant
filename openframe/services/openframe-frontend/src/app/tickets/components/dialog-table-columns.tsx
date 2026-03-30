@@ -18,7 +18,9 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
       key: 'title',
       label: 'TITLE',
       width: 'w-[70%] md:flex-1 min-w-0',
-      renderCell: dialog => <span className="text-h4 text-ods-text-primary truncate block">{dialog.title}</span>,
+      renderCell: dialog => (
+        <span className="text-h4 text-ods-text-primary truncate block">{dialog.title || 'Untitled Dialog'}</span>
+      ),
     },
     {
       key: 'source',

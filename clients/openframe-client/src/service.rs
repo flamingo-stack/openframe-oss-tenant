@@ -380,6 +380,10 @@ impl Service {
             return Err(e.into());
         }
 
+        // Repair PATH registry type if corrupted by a previous version
+        #[cfg(target_os = "windows")]
+        crate::platform::windows_path_migration::run();
+
         // Initialize the client
         let client = Client::new()?;
 
@@ -451,7 +455,9 @@ impl Service {
         }
     }
 
-    /// Add a directory to the Windows system PATH
+    /// Add a directory to the Windows system PATH.
+    /// Preserves the original registry value type (REG_EXPAND_SZ) so that
+    /// %SystemRoot% and similar variables keep working.
     #[cfg(target_os = "windows")]
     fn add_to_windows_path(dir: &std::path::Path) -> Result<()> {
         use winreg::enums::*;
@@ -463,35 +469,34 @@ impl Service {
             KEY_READ | KEY_WRITE,
         ).context("Failed to open registry key - admin rights required")?;
 
-        let current_path: String = env.get_value("Path")
+        let raw_value = env.get_raw_value("Path")
             .context("Failed to read PATH from registry")?;
-        
+        let current_path = Self::reg_value_to_string(&raw_value);
+
         let dir_str = dir.to_string_lossy();
 
-        // Проверяем, не добавлена ли уже
         if current_path.split(';').any(|p| p.trim().eq_ignore_ascii_case(dir_str.trim())) {
             info!("Directory already in PATH: {}", dir_str);
             return Ok(());
         }
 
-        // Добавляем в PATH
         let new_path = if current_path.ends_with(';') {
             format!("{}{}", current_path, dir_str)
         } else {
             format!("{};{}", current_path, dir_str)
         };
 
-        env.set_value("Path", &new_path)
+        env.set_raw_value("Path", &Self::string_to_reg_value(&new_path, raw_value.vtype))
             .context("Failed to write PATH to registry")?;
 
-        // Уведомляем систему об изменении переменных окружения
         Self::broadcast_environment_change()?;
 
         info!("✓ Added {} to system PATH", dir_str);
         Ok(())
     }
 
-    /// Remove a directory from the Windows system PATH
+    /// Remove a directory from the Windows system PATH.
+    /// Preserves the original registry value type (REG_EXPAND_SZ).
     #[cfg(target_os = "windows")]
     fn remove_from_windows_path(dir: &std::path::Path) -> Result<()> {
         use winreg::enums::*;
@@ -503,12 +508,12 @@ impl Service {
             KEY_READ | KEY_WRITE,
         ).context("Failed to open registry key - admin rights required")?;
 
-        let current_path: String = env.get_value("Path")
+        let raw_value = env.get_raw_value("Path")
             .context("Failed to read PATH from registry")?;
-        
+        let current_path = Self::reg_value_to_string(&raw_value);
+
         let dir_str = dir.to_string_lossy();
 
-        // Удаляем директорию из PATH
         let new_path: Vec<&str> = current_path
             .split(';')
             .filter(|p| !p.trim().eq_ignore_ascii_case(dir_str.trim()))
@@ -516,13 +521,35 @@ impl Service {
 
         let new_path = new_path.join(";");
 
-        env.set_value("Path", &new_path)
+        env.set_raw_value("Path", &Self::string_to_reg_value(&new_path, raw_value.vtype))
             .context("Failed to write PATH to registry")?;
 
         Self::broadcast_environment_change()?;
 
         info!("✓ Removed {} from system PATH", dir_str);
         Ok(())
+    }
+
+    /// Decode a raw registry value (UTF-16LE) into a Rust String.
+    #[cfg(target_os = "windows")]
+    fn reg_value_to_string(raw: &winreg::RegValue) -> String {
+        String::from_utf16_lossy(
+            &raw.bytes
+                .chunks_exact(2)
+                .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                .collect::<Vec<u16>>(),
+        )
+        .trim_end_matches('\0')
+        .to_string()
+    }
+
+    /// Encode a Rust String into a raw registry value, preserving the given type.
+    #[cfg(target_os = "windows")]
+    fn string_to_reg_value(s: &str, vtype: winreg::enums::RegType) -> winreg::RegValue {
+        let mut bytes: Vec<u8> = s.encode_utf16().flat_map(|c| c.to_le_bytes()).collect();
+        bytes.push(0);
+        bytes.push(0);
+        winreg::RegValue { vtype, bytes }
     }
 
     /// Broadcast environment change notification to Windows
