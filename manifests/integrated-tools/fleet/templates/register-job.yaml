@@ -3,7 +3,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: fleetmdm-server
+  name: fleet-server
   annotations:
     "argocd.argoproj.io/hook": PostSync
     "argocd.argoproj.io/hook-delete-policy": BeforeHookCreation,HookSucceeded
@@ -19,32 +19,26 @@ spec:
         image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
         envFrom:
           - configMapRef:
+              name: integrated-tools
+          - configMapRef:
               name: fleetmdm-mysql
           - secretRef:
               name: fleetmdm-mysql
         env:
-        - name: FLEET_API_USER_EMAIL
+        - name: FLEET_SETUP_ADMIN_EMAIL
           valueFrom:
             configMapKeyRef:
-              name: fleetmdm-server
-              key: FLEET_API_USER_EMAIL
-        - name: FLEET_API_USER_PASSWORD
+              name: fleet-server
+              key: FLEET_SETUP_ADMIN_EMAIL
+        - name: FLEET_SETUP_ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: fleetmdm-server
-              key: FLEET_API_USER_PASSWORD
+              name: fleet-server
+              key: FLEET_SETUP_ADMIN_PASSWORD
         command:
           - /bin/sh
           - -uc
           - |
-            echo "Getting FLEET_TOKEN..."
-            POD=$(kubectl get pods -n integrated-tools -l app=fleetmdm-server -o jsonpath='{.items[0].metadata.name}')
-            until kubectl exec -n integrated-tools "$POD" -- test -f /etc/fleet/api_token.txt 2>/dev/null; do
-              echo "Waiting for /etc/fleet/api_token.txt to be available..."
-              sleep 5
-            done
-            FLEET_TOKEN=$(kubectl exec -n integrated-tools "$POD" -- cat /etc/fleet/api_token.txt)
-
             echo "Registering FleetMDM Server..."
             echo "Waiting for OpenFrame Management API to become reachable..."
             until curl --head --fail --silent http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do
@@ -65,32 +59,33 @@ spec:
                   "description": "Fleet Device Management Platform",
                   "toolUrls": [
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8070",
+                      "url": "http://fleet-service.integrated-tools.svc.cluster.local",
+                      "port": "8080",
                       "type": "API"
                     },
                     {
-                      "url": "http://fleetmdm-server-0.fleetmdm-server.integrated-tools.svc.cluster.local",
-                      "port": "8070",
+                      "url": "http://fleet-service.integrated-tools.svc.cluster.local",
+                      "port": "8080",
                       "type": "DASHBOARD"
+                    },
+                    {
+                      "url": "ws://fleet-service.integrated-tools.svc.cluster.local",
+                      "port": "8080",
+                      "type": "WS"
                     }
                   ],
                   "category": "Device Management",
                   "platformCategory": "Integrated Tool",
                   "enabled": true,
                   "credentials": {
-                    "username": "'"${FLEET_API_USER_EMAIL}"'",
-                    "password": "'"${FLEET_API_USER_PASSWORD}"'",
-                    "apiKey": {
-                      "key": "'"${FLEET_TOKEN}"'",
-                      "type": "BEARER_TOKEN"
-                    }
+                    "username": "'"${FLEET_SETUP_ADMIN_EMAIL}"'",
+                    "password": "'"${FLEET_SETUP_ADMIN_PASSWORD}"'"
                   },
                   "layer": "Integrated Tools",
                   "layerOrder": 4,
                   "layerColor": "#455A64",
                   "metricsPath": "/metrics",
-                  "healthCheckEndpoint": "/",
+                  "healthCheckEndpoint": "/healthz",
                   "healthCheckInterval": 30,
                   "connectionTimeout": 5000,
                   "readTimeout": 5000,
@@ -108,9 +103,9 @@ spec:
                       "database.server.id": "1",
                       "database.include.list": "'"${MYSQL_DATABASE}"'",
                       "topic.prefix": "fleet_mysql",
-                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities, '"${MYSQL_DATABASE}"'.query_results, '"${MYSQL_DATABASE}"'.policy_membership",
+                      "table.include.list": "'"${MYSQL_DATABASE}"'.activities,'"${MYSQL_DATABASE}"'.host_activities,'"${MYSQL_DATABASE}"'.query_results,'"${MYSQL_DATABASE}"'.policy_membership",
                       "topic.creation.default.replication.factor": 1,
-                      "topic.creation.default.partitions": 10,
+                      "topic.creation.default.partitions": 1,
                       "topic.creation.default.cleanup.policy": "compact",
                       "topic.creation.default.compression.type": "lz4",
                       "transforms": "addHeaderQueryResult,addHeaderQueryResultJSONType,addHeaderPolicyMembership,addHeaderPolicyMembershipJSONType,route",

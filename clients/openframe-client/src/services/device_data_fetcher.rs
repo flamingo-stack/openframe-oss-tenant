@@ -24,7 +24,7 @@ impl DeviceDataFetcher {
     }
 
     pub fn get_agent_version(&self) -> Option<String> {
-        let version = env!("CARGO_PKG_VERSION").to_string();
+        let version = env!("OPENFRAME_VERSION").to_string();
         info!("Agent version: {}", version);
         Some(version)
     }

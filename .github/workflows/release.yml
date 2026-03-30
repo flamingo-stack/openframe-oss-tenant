@@ -187,15 +187,17 @@ jobs:
       - name: Build client
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
+        env:
+          OPENFRAME_VERSION: ${{ inputs.version || 'latest' }}
         run: |
           if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
-              make build TARGET="$RUST_TARGET"
+              make build TARGET="$RUST_TARGET" OPENFRAME_VERSION="$OPENFRAME_VERSION"
             done
           else
-            make build TARGET="${{ matrix.target }}"
+            make build TARGET="${{ matrix.target }}" OPENFRAME_VERSION="$OPENFRAME_VERSION"
           fi          
 
       - name: Sign Windows package
