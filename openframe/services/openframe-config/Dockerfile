@@ -33,8 +33,6 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
 # Stage 2: Runtime image
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
 
-LABEL org.opencontainers.image.description="OpenFrame Config Server Microservice"
-
 WORKDIR /app
 
 COPY --from=builder /build/openframe/services/openframe-config/target/*.jar app.jar

@@ -129,6 +129,7 @@ openframe:
 
 # OpenFrame Gateway OAuth2 Configuration
   auth:
+    error-url: "${TENANT_HOST_URL:https://localhost}/auth/error"
     server:
       url: http://openframe-authorization-server.microservices.svc.cluster.local:9005/sas
       authorize-url: ${TENANT_HOST_URL:https://localhost}/sas

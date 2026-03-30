@@ -90,6 +90,7 @@ export interface UseLiveCampaignReturn {
 }
 
 const CAMPAIGN_LIMIT = 250_000;
+const CAMPAIGN_TIMEOUT_MS = 5 * 60 * 1000;
 
 // ── Cached "All Hosts" label lookup ────────────────────────────────
 
@@ -196,8 +197,13 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
   const responseCountRef = useRef({ results: 0, errors: 0 });
   const campaignIdRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cleanup = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -370,6 +376,17 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
         setConnectionState('connecting');
         const socket = new WebSocket(wsUrl);
         wsRef.current = socket;
+
+        timeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current && campaignIdRef.current === campaignId) {
+            toast({
+              title: 'Test Timed Out',
+              description: 'Live query stopped after 5 minutes',
+              variant: 'destructive',
+            });
+            stopCampaign();
+          }
+        }, CAMPAIGN_TIMEOUT_MS);
 
         socket.onopen = () => {
           if (!isMountedRef.current) return;
