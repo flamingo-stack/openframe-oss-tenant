@@ -1,0 +1,71 @@
+global:
+  image:
+    tag: latest
+
+registerJob:
+  enabled: true
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: curlimages/curl
+    tag: "8.9.1"
+
+
+fleet:
+  replicas: 1
+  revisionHistoryLimit: 2
+  imageRepository: ghcr.io/flamingo-stack/fleetmdm/fleet
+  imageTag: 0.0.16
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+
+  fleet:
+    autoApplySQLMigrations: true
+    tls:
+      enabled: false
+
+  database:
+    address: "fleetmdm-mysql-0.fleetmdm-mysql.integrated-tools.svc.cluster.local:3306"
+    database: "fleet-mdm-database"
+    username: "fleet-mdm-user"
+    secretName: "fleetmdm-mysql"
+    passwordKey: "MYSQL_PASSWORD"
+
+  cache:
+    address: "fleetmdm-redis-0.fleetmdm-redis.integrated-tools.svc.cluster.local:6379"
+    database: "0"
+    usePassword: false
+
+  osquery:
+    logging:
+      filesystem:
+        enableRotation: true
+        enableCompression: true
+        volumeSize: 5Gi
+
+  environments:
+    FLEET_SETUP_ADMIN_EMAIL: "admin@openframe.local"
+    FLEET_OPENFRAME_MODE: "1"
+
+  envsFrom:
+    - name: FLEET_SETUP_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: fleet-server
+          key: FLEET_SETUP_ADMIN_PASSWORD
+
+  mysql:
+    enabled: false
+  redis:
+    enabled: false
