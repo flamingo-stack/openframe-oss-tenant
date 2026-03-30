@@ -96,6 +96,13 @@ data:
         action        = "keep"
       }
 
+      // Drop init containers (they share the pod IP and cause duplicate scrapes)
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_init"]
+        regex         = "true"
+        action        = "drop"
+      }
+
       // Drop non-running pods
       rule {
         source_labels = ["__meta_kubernetes_pod_phase"]

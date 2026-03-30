@@ -30,11 +30,11 @@ export function OnboardingSection() {
   }, [router]);
 
   const handleTeamAction = React.useCallback(async () => {
-    router.push('/settings?tab=company-and-users');
+    router.push('/settings/employees');
   }, [router]);
 
   const handleSsoAction = React.useCallback(async () => {
-    router.push('/settings?tab=sso-configuration');
+    router.push('/settings/sso');
   }, [router]);
 
   const handleKnowledgeBaseAction = React.useCallback(async () => {

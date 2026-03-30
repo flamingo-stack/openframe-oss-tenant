@@ -32,8 +32,6 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
 # Stage 2: Runtime image
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
 
-LABEL org.opencontainers.image.description="OpenFrame Authorization Server Microservice"
-
 WORKDIR /app
 
 COPY --from=builder /build/openframe/services/openframe-authorization-server/target/*.jar app.jar
