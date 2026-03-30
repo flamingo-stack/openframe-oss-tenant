@@ -33,9 +33,6 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
 # Stage 2: Runtime image
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
 
-# Metadata
-LABEL org.opencontainers.image.description="OpenFrame Gateway Microservice"
-
 WORKDIR /app
 
 # Copy the built JAR from builder stage

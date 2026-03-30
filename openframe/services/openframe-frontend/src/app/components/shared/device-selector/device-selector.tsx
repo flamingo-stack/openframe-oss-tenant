@@ -37,6 +37,7 @@ export function DeviceSelector({
   headerContent,
   addAllBehavior = 'merge',
   extraColumns,
+  isDeviceDisabled,
 }: DeviceSelectorProps) {
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
     useDeviceSelector({ devices, selectedIds, getDeviceKey });
@@ -44,6 +45,7 @@ export function DeviceSelector({
   const toggleDevice = useCallback(
     (device: Device) => {
       if (disabled) return;
+      if (isDeviceDisabled?.(device)) return;
       const key = getDeviceKey(device);
       if (key === undefined) return;
 
@@ -55,20 +57,21 @@ export function DeviceSelector({
       }
       onSelectionChange(next);
     },
-    [disabled, getDeviceKey, selectedIds, onSelectionChange],
+    [disabled, isDeviceDisabled, getDeviceKey, selectedIds, onSelectionChange],
   );
 
   const addAllDevices = useCallback(() => {
     if (disabled) return;
     const base = addAllBehavior === 'replace' ? new Set<string>() : new Set(selectedIds);
     for (const d of filteredDevices) {
+      if (isDeviceDisabled?.(d)) continue;
       const key = getDeviceKey(d);
       if (key !== undefined) {
         base.add(key);
       }
     }
     onSelectionChange(base);
-  }, [disabled, addAllBehavior, selectedIds, filteredDevices, getDeviceKey, onSelectionChange]);
+  }, [disabled, isDeviceDisabled, addAllBehavior, selectedIds, filteredDevices, getDeviceKey, onSelectionChange]);
 
   const removeAllSelected = useCallback(() => {
     if (disabled) return;
@@ -104,6 +107,7 @@ export function DeviceSelector({
         key: 'details',
         label: 'DETAILS',
         width: 'w-[100px] md:flex-1',
+        hideAt: 'md',
         renderCell: (device: Device) => {
           return <OSTypeBadge osType={device.osType} />;
         },
@@ -115,6 +119,25 @@ export function DeviceSelector({
 
   const renderRowActions = useMemo(
     () => (device: Device) => {
+      const disabledReason = isDeviceDisabled?.(device);
+
+      if (disabledReason) {
+        return (
+          <div className="flex items-center justify-end gap-2 w-[200px]">
+            <span className="text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
+              {disabledReason}
+            </span>
+            <Button
+              variant="device-action"
+              size="icon"
+              centerIcon={<PlusCircleIcon size={24} />}
+              className="text-ods-text-secondary shrink-0"
+              disabled
+            />
+          </div>
+        );
+      }
+
       const key = getDeviceKey(device);
       if (key === undefined) return null;
 
@@ -122,33 +145,37 @@ export function DeviceSelector({
 
       if (activeSubTab === 'selected') {
         return (
-          <Button
-            variant="device-action"
-            size="icon"
-            onClick={() => toggleDevice(device)}
-            centerIcon={<TrashIcon size={24} />}
-            className="text-[var(--ods-attention-red-error,#d32f2f)] hover:opacity-80"
-            disabled={disabled}
-          />
+          <div className="flex items-center justify-end w-[200px]">
+            <Button
+              variant="device-action"
+              size="icon"
+              onClick={() => toggleDevice(device)}
+              centerIcon={<TrashIcon size={24} />}
+              className="text-[var(--ods-attention-red-error,#d32f2f)] hover:opacity-80"
+              disabled={disabled}
+            />
+          </div>
         );
       }
 
       return (
-        <Button
-          variant="device-action"
-          size="icon"
-          onClick={() => toggleDevice(device)}
-          centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
-          className={
-            isSelected
-              ? 'text-[var(--open-colors-yellow,#ffc008)] border-[var(--open-colors-yellow,#ffc008)] bg-[#7F6004] hover:bg-[#7F6004]'
-              : 'text-ods-text-secondary hover:text-ods-text-primary'
-          }
-          disabled={disabled}
-        />
+        <div className="flex items-center justify-end w-[200px]">
+          <Button
+            variant="device-action"
+            size="icon"
+            onClick={() => toggleDevice(device)}
+            centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
+            className={
+              isSelected
+                ? 'text-[var(--open-colors-yellow,#ffc008)] border-[var(--open-colors-yellow,#ffc008)] bg-[#7F6004] hover:bg-[#7F6004]'
+                : 'text-ods-text-secondary hover:text-ods-text-primary'
+            }
+            disabled={disabled}
+          />
+        </div>
       );
     },
-    [selectedIds, getDeviceKey, toggleDevice, activeSubTab, disabled],
+    [selectedIds, getDeviceKey, isDeviceDisabled, toggleDevice, activeSubTab, disabled],
   );
 
   const assignTabs: TabItem[] = useMemo(
@@ -238,6 +265,7 @@ export function DeviceSelector({
           selectedCount: selectedIds.size,
           disabled,
           infiniteScroll: availableInfiniteScroll,
+          isDeviceDisabled,
         }}
       />
     </div>
