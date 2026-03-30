@@ -1,0 +1,11 @@
+apiVersion: v2
+name: fleet-wrapper
+description: Wrapper chart for Fleet
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+
+dependencies:
+  - name: fleet
+    version: "~0.0.11"
+    repository: "oci://ghcr.io/flamingo-stack/fleetmdm/helm-charts"
