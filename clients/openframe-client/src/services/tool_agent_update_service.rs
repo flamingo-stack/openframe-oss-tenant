@@ -230,15 +230,17 @@ impl ToolAgentUpdateService {
         let asset_id = &asset.asset_id;
         let new_version = &asset.version;
 
-        let current_version = installed_tool.assets
-            .iter()
-            .find(|a| a.id == *asset_id)
-            .map(|a| a.version.as_str());
+        let existing_asset = installed_tool.assets.iter().find(|a| a.id == *asset_id);
 
-        if current_version == Some(new_version.as_str()) {
+        if existing_asset.map(|a| a.version.as_str()) == Some(new_version.as_str()) {
             info!(asset_id = %asset_id, version = %new_version, "Asset already at version, skipping");
             return Ok(());
         }
+
+        // Use executable flag from installed asset (set during first install), fallback to message
+        let is_executable = existing_asset
+            .map(|a| a.executable)
+            .unwrap_or(asset.executable);
 
         info!(
             asset_id = %asset_id,
@@ -253,7 +255,7 @@ impl ToolAgentUpdateService {
 
         let asset_filename = &config.target_file_name;
 
-        if asset.executable {
+        if is_executable {
             info!(asset_id = %asset_id, tool_id = %tool_agent_id, "Stopping asset process");
             if let Err(e) = self.tool_kill_service.stop_asset(asset_id, tool_agent_id).await {
                 warn!(asset_id = %asset_id, error = %e, "Failed to stop asset process (continuing)");
@@ -265,9 +267,9 @@ impl ToolAgentUpdateService {
             .await
             .with_context(|| format!("Failed to download asset: {}", asset_id))?;
 
-        let asset_path = self.directory_manager.get_asset_path(tool_agent_id, asset_filename, asset.executable);
+        let asset_path = self.directory_manager.get_asset_path(tool_agent_id, asset_filename, is_executable);
 
-        if asset.executable {
+        if is_executable {
             binary_writer::write_executable(&bytes, &asset_path).await
                 .with_context(|| format!("Failed to write executable asset: {}", asset_id))?;
         } else {
@@ -283,6 +285,7 @@ impl ToolAgentUpdateService {
             installed_tool.assets.push(InstalledAsset {
                 id: asset_id.clone(),
                 version: new_version.to_string(),
+                executable: is_executable,
             });
         }
 

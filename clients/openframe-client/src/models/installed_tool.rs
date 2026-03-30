@@ -51,6 +51,8 @@ impl Installation {
 pub struct InstalledAsset {
     pub id: String,
     pub version: String,
+    #[serde(default)]
+    pub executable: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
