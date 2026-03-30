@@ -1,7 +1,6 @@
 'use client';
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY } from '../queries/organizations-queries';
 
@@ -24,6 +23,7 @@ export interface OrganizationDetails {
   notes: string[];
   isDefault: boolean;
   imageUrl?: string | null;
+  status: string;
 }
 
 function formatAddress(addr?: any): string {
@@ -32,86 +32,84 @@ function formatAddress(addr?: any): string {
   return parts.filter(Boolean).join(', ');
 }
 
-export function useOrganizationDetails() {
-  const { toast } = useToast();
-  const [organization, setOrganization] = useState<OrganizationDetails | null>(null);
-  const [isLoading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function mapOrganization(org: any): OrganizationDetails {
+  const contacts = Array.isArray(org.contactInformation?.contacts) ? org.contactInformation.contacts : [];
+  const primary = contacts[0] || {};
+  const billing = contacts[1] || {};
+  const technical = contacts[2] || {};
 
-  const fetchOrganizationById = useCallback(
-    async (id: string) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await apiClient.post<any>('/api/graphql', {
-          query: GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY,
-          variables: { organizationId: id },
-        });
-
-        if (!response.ok) {
-          throw new Error(response.error || `Request failed with status ${response.status}`);
-        }
-
-        const org = (response.data as any)?.data?.organizationByOrganizationId;
-        if (!org) {
-          setOrganization(null);
-          return null;
-        }
-
-        const contacts = Array.isArray(org.contactInformation?.contacts) ? org.contactInformation.contacts : [];
-        const primary = contacts[0] || {};
-        const billing = contacts[1] || {};
-        const technical = contacts[2] || {};
-
-        const mapped: OrganizationDetails = {
-          id: org.id,
-          organizationId: org.organizationId,
-          name: org.name || '-',
-          industry: org.category || '-',
-          website: org.websiteUrl || '-',
-          employees: typeof org.numberOfEmployees === 'number' ? org.numberOfEmployees : null,
-          updatedAt: org.updatedAt || org.createdAt || new Date().toISOString(),
-          physicalAddress: formatAddress(org.contactInformation?.physicalAddress),
-          mailingAddress: formatAddress(org.contactInformation?.mailingAddress),
-          primary: {
-            name: primary.contactName || '',
-            title: primary.title || '',
-            email: primary.email || '',
-            phone: primary.phone || '',
-          },
-          billing: {
-            name: billing.contactName || '',
-            title: billing.title || '',
-            email: billing.email || '',
-            phone: billing.phone || '',
-          },
-          technical: {
-            name: technical.contactName || '',
-            title: technical.title || '',
-            email: technical.email || '',
-            phone: technical.phone || '',
-          },
-          mrrUsd: typeof org.monthlyRevenue === 'number' ? org.monthlyRevenue : null,
-          contractStart: org.contractStartDate || null,
-          contractEnd: org.contractEndDate || null,
-          notes: org.notes ? [org.notes] : [],
-          isDefault: org.isDefault || false,
-          imageUrl: org.image?.imageUrl,
-        };
-
-        setOrganization(mapped);
-        return mapped;
-      } catch (e) {
-        const message = e instanceof Error ? e.message : 'Failed to load organization';
-        setError(message);
-        toast({ title: 'Error', description: message, variant: 'destructive' });
-        throw e;
-      } finally {
-        setLoading(false);
-      }
+  return {
+    id: org.id,
+    organizationId: org.organizationId,
+    name: org.name || '-',
+    industry: org.category || '-',
+    website: org.websiteUrl || '-',
+    employees: typeof org.numberOfEmployees === 'number' ? org.numberOfEmployees : null,
+    updatedAt: org.updatedAt || org.createdAt || new Date().toISOString(),
+    physicalAddress: formatAddress(org.contactInformation?.physicalAddress),
+    mailingAddress: formatAddress(org.contactInformation?.mailingAddress),
+    primary: {
+      name: primary.contactName || '',
+      title: primary.title || '',
+      email: primary.email || '',
+      phone: primary.phone || '',
     },
-    [toast],
-  );
+    billing: {
+      name: billing.contactName || '',
+      title: billing.title || '',
+      email: billing.email || '',
+      phone: billing.phone || '',
+    },
+    technical: {
+      name: technical.contactName || '',
+      title: technical.title || '',
+      email: technical.email || '',
+      phone: technical.phone || '',
+    },
+    mrrUsd: typeof org.monthlyRevenue === 'number' ? org.monthlyRevenue : null,
+    contractStart: org.contractStartDate || null,
+    contractEnd: org.contractEndDate || null,
+    notes: org.notes ? [org.notes] : [],
+    isDefault: org.isDefault || false,
+    imageUrl: org.image?.imageUrl,
+    status: org.status || 'ACTIVE',
+  };
+}
 
-  return { organization, isLoading, error, fetchOrganizationById };
+export const organizationDetailsQueryKeys = {
+  all: ['organization-detail'] as const,
+  detail: (id: string) => ['organization-detail', id] as const,
+};
+
+async function fetchOrganization(id: string): Promise<OrganizationDetails> {
+  const response = await apiClient.post<any>('/api/graphql', {
+    query: GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY,
+    variables: { organizationId: id },
+  });
+
+  if (!response.ok) {
+    throw new Error(response.error || `Request failed with status ${response.status}`);
+  }
+
+  const org = (response.data as any)?.data?.organizationByOrganizationId;
+  if (!org) {
+    throw new Error('Organization not found');
+  }
+
+  return mapOrganization(org);
+}
+
+export function useOrganizationDetails(id?: string | null) {
+  const query = useQuery({
+    queryKey: organizationDetailsQueryKeys.detail(id || ''),
+    queryFn: () => fetchOrganization(id!),
+    enabled: !!id,
+  });
+
+  return {
+    organization: query.data ?? null,
+    isLoading: query.isLoading,
+    error: query.error?.message ?? null,
+    refetch: query.refetch,
+  };
 }

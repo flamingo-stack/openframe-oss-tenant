@@ -36,7 +36,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   const router = useRouter();
   const { toast } = useToast();
   const { createOrganization } = useCreateOrganization();
-  const { organization, fetchOrganizationById } = useOrganizationDetails();
+  const { organization } = useOrganizationDetails(organizationId);
   const { updateOrganization } = useUpdateOrganization();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,11 +61,6 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   });
 
   const [didPrefill, setDidPrefill] = useState(false);
-  React.useEffect(() => {
-    if (organizationId && !didPrefill) {
-      fetchOrganizationById(organizationId).catch(() => {});
-    }
-  }, [organizationId, didPrefill, fetchOrganizationById]);
 
   React.useEffect(() => {
     if (organizationId && organization && !didPrefill) {

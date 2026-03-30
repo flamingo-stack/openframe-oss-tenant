@@ -7,16 +7,23 @@ import {
   LoadError,
   MoreActionsMenu,
   NotFoundError,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core';
 import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
-import { useLivePolicyCounts } from '../../hooks/use-live-policy-counts';
 import { usePolicies } from '../../hooks/use-policies';
+import type { Policy } from '../../types/policies.types';
+import { getPolicyStatus, POLICY_STATUS_CONFIG } from '../../utils/compute-policy-summary';
 import { usePolicyDetails } from '../hooks/use-policy-details';
 import { PolicyDevicesTable } from './policy-devices-table';
+
+function PolicyStatusTag({ policy }: { policy: Policy }) {
+  const config = POLICY_STATUS_CONFIG[getPolicyStatus(policy)];
+  return <Tag label={config.label} variant={config.variant} />;
+}
 
 interface PolicyDetailsViewProps {
   policyId: string;
@@ -29,7 +36,6 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
 
   const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
   const { deletePolicy, isDeleting } = usePolicies();
-  const { countsMap: liveCounts } = useLivePolicyCounts(isValidId ? [numericId] : []);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleBack = () => {
@@ -96,7 +102,9 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           </div>
         )}
 
-        <div className="border-t border-ods-border pt-4 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div
+          className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${policyDetails.description ? 'border-t border-ods-border pt-4' : ''}`}
+        >
           <div>
             <span
               className={`px-2 py-1 rounded-md text-sm font-medium border ${
@@ -111,17 +119,8 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           </div>
 
           <div>
-            <p className="text-[var(--ods-attention-green-success)] font-medium">
-              {liveCounts.get(numericId)?.passing ?? policyDetails.passing_host_count}
-            </p>
-            <p className="text-ods-text-secondary text-xs mt-1">Passing Hosts</p>
-          </div>
-
-          <div>
-            <p className="text-[var(--ods-attention-red-error)] font-medium">
-              {liveCounts.get(numericId)?.failing ?? policyDetails.failing_host_count}
-            </p>
-            <p className="text-ods-text-secondary text-xs mt-1">Failing Hosts</p>
+            <PolicyStatusTag policy={policyDetails} />
+            <p className="text-ods-text-secondary text-xs mt-1">Status</p>
           </div>
 
           <div>

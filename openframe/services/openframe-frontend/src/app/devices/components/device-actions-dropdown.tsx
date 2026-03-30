@@ -15,9 +15,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  Modal,
-  ModalHeader,
-  ModalTitle,
   normalizeOSType,
 } from '@flamingo-stack/openframe-frontend-core';
 import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
@@ -29,8 +26,9 @@ import {
   ScriptIcon,
   ShellIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Copy, Folder, MoreVertical, PackageX, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useDeviceActions } from '../hooks/use-device-actions';
@@ -55,9 +53,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showUninstallDialog, setShowUninstallDialog] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen });
+  const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen || showDeleteConfirm });
 
   const deviceName = device.displayName || device.hostname || 'this device';
   const deviceId = device.machineId || device.id;
@@ -69,9 +66,9 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   );
 
   const uninstallCommand = useMemo(() => {
-    if (!dropdownOpen && !showUninstallDialog) return '';
+    if (!dropdownOpen && !showDeleteConfirm) return '';
     return buildUninstallCommand({ platform: devicePlatform, releaseVersion });
-  }, [devicePlatform, releaseVersion, dropdownOpen, showUninstallDialog]);
+  }, [devicePlatform, releaseVersion, dropdownOpen, showDeleteConfirm]);
 
   // Copy uninstall command to clipboard
   const copyUninstallCommand = useCallback(async () => {
@@ -217,17 +214,6 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     // Destructive actions
     const destructiveItems = [];
 
-    // Uninstall Device - always available (shows command to run on device)
-    destructiveItems.push({
-      id: 'uninstall',
-      label: 'Uninstall Device',
-      icon: <PackageX className="w-6 h-6" />,
-      onClick: () => {
-        setDropdownOpen(false);
-        setShowUninstallDialog(true);
-      },
-    });
-
     if (actionAvailability.archiveEnabled) {
       destructiveItems.push({
         id: 'archive',
@@ -330,57 +316,37 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="bg-ods-card border border-ods-border p-8 max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.5px] text-ods-text-primary">
-              Delete Device
-            </AlertDialogTitle>
-            <AlertDialogDescription className="font-['DM_Sans'] text-[16px] leading-[24px] text-ods-text-secondary mt-2">
-              Are you sure you want to delete{' '}
-              <span className="text-ods-attention-red-error font-medium">{deviceName}</span>? This action cannot be
-              undone.
-            </AlertDialogDescription>
+        <AlertDialogContent className="bg-ods-card border border-ods-border p-10 max-w-2xl gap-6">
+          <AlertDialogHeader className="gap-0">
+            <AlertDialogTitle className="text-h2 text-ods-text-primary">Confirm Deletion</AlertDialogTitle>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-4 flex-col md:flex-row">
-            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
+          <AlertDialogDescription className="text-h4 text-ods-text-primary">
+            To uninstall OpenFrame from a <span className="font-medium">{deviceName}</span> device, run the command
+            below.
+          </AlertDialogDescription>
+          <CommandBox
+            command={uninstallCommand}
+            secondaryAction={{
+              label: 'Copy Command',
+              onClick: copyUninstallCommand,
+              icon: <Copy02Icon className="w-5 h-5" />,
+              variant: 'outline',
+            }}
+          />
+          <AlertDialogFooter className="gap-4">
+            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary text-h3 px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="flex-1 border border-ods-error text-ods-error bg-transparent hover:bg-ods-error/10 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
+              className="flex-1 bg-ods-error text-ods-bg text-h3 px-4 py-3 rounded-[6px] hover:bg-ods-error/90"
             >
               {isDeleting ? 'Deleting...' : 'Delete Device'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Uninstall Device Modal */}
-      <Modal
-        isOpen={showUninstallDialog}
-        onClose={() => setShowUninstallDialog(false)}
-        className="max-w-2xl w-full text-left"
-      >
-        <ModalHeader>
-          <ModalTitle>Uninstall Device</ModalTitle>
-          <p className="text-ods-text-secondary text-sm mt-1">
-            Run this command on <span className="text-ods-accent font-medium">{deviceName}</span> to uninstall the
-            OpenFrame client.
-          </p>
-        </ModalHeader>
-        <div className="px-6 py-4">
-          <CommandBox
-            command={uninstallCommand}
-            primaryAction={{
-              label: 'Copy Command',
-              onClick: copyUninstallCommand,
-              icon: <Copy className="w-5 h-5" />,
-              variant: 'primary',
-            }}
-          />
-        </div>
-      </Modal>
     </div>
   );
 }

@@ -42,7 +42,11 @@ function OrganizationNameCell({ org }: { org: UiOrganizationEntry }) {
   );
 }
 
-export function OrganizationsTable() {
+interface OrganizationsTableProps {
+  status?: string;
+}
+
+export function OrganizationsTable({ status }: OrganizationsTableProps) {
   const router = useRouter();
 
   const { params, setParam, setParams } = useApiParams({
@@ -53,8 +57,10 @@ export function OrganizationsTable() {
 
   const debouncedSearch = useDebounce(params.search, 300);
 
-  const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } =
-    useOrganizations(debouncedSearch);
+  const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useOrganizations(
+    debouncedSearch,
+    status,
+  );
 
   const prevFiltersKeyRef = useRef<string | null>(null);
   const filtersKey = useMemo(
@@ -196,6 +202,7 @@ export function OrganizationsTable() {
       onSearch={value => setParam('search', value)}
       error={error}
       background="default"
+      className="pt-6"
       padding="none"
       stickyHeader
     >
