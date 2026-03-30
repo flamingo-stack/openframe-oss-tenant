@@ -32,8 +32,6 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
 # Stage 2: Runtime image
 FROM --platform=$BUILDPLATFORM eclipse-temurin:21-jre-alpine
 
-LABEL org.opencontainers.image.description="OpenFrame is a platform for building and deploying AI agents."
-
 WORKDIR /app
 
 COPY --from=builder /build/openframe/services/openframe-api/target/*.jar app.jar
