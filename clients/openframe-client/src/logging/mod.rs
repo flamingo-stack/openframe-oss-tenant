@@ -12,6 +12,7 @@
 /// The logging system is initialized via the `init()` function and should be
 /// called early in the application lifecycle.
 pub mod log_parser;
+pub mod log_rotation;
 pub mod metrics;
 pub mod nats_streaming;
 pub mod shipping;
@@ -38,11 +39,6 @@ use tracing_subscriber::{
     prelude::*,
     EnvFilter, Layer, Registry,
 };
-
-/// Maximum log file size before rotation (10 MB)
-const MAX_LOG_FILE_SIZE: u64 = 10 * 1024 * 1024;
-const ARCHIVED_LOG_NAME: &str = "openframe.log.gz";
-const ROTATION_CHECK_INTERVAL_SECS: u64 = 60;
 
 // Add non-blocking file writer guard to keep file logging alive
 use tracing_appender::non_blocking::{self, WorkerGuard};
@@ -250,19 +246,8 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             }
         }
 
-        // Start background thread for size-based log rotation
-        let dir_manager_clone = dir_manager.clone();
-        let log_file_path_clone = log_file_path.clone();
-        std::thread::spawn(move || {
-            loop {
-                // Check every minute if log file needs rotation
-                std::thread::sleep(std::time::Duration::from_secs(ROTATION_CHECK_INTERVAL_SECS));
-
-                if let Err(e) = rotate_log_if_needed(&dir_manager_clone, &log_file_path_clone) {
-                    eprintln!("Error during log rotation: {:#}", e);
-                }
-            }
-        });
+        // Note: Log rotation is handled by LogStreamingRunManager to ensure
+        // all logs are streamed before rotation occurs.
 
         // Create metrics layer and store
         let (metrics_layer, metrics_store) = metrics::MetricsLayer::new();
@@ -373,73 +358,6 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
     METRICS_STORE.get().cloned()
 }
 
-
-fn rotate_log_if_needed(dir_manager: &DirectoryManager, log_file_path: &PathBuf) -> io::Result<()> {
-    let metadata = match fs::metadata(log_file_path) {
-        Ok(m) => m,
-        Err(e) if e.kind() == io::ErrorKind::NotFound => {
-            return Ok(());
-        }
-        Err(e) => return Err(e),
-    };
-
-    let file_size = metadata.len();
-    if file_size < MAX_LOG_FILE_SIZE {
-        return Ok(());
-    }
-
-    eprintln!(
-        "Log file size ({} bytes) exceeds limit ({} bytes), rotating...",
-        file_size, MAX_LOG_FILE_SIZE
-    );
-
-    let log_dir = log_file_path.parent().unwrap_or(Path::new("."));
-    let archive_path = log_dir.join(ARCHIVED_LOG_NAME);
-
-    if archive_path.exists() {
-        if let Err(e) = fs::remove_file(&archive_path) {
-            eprintln!("Warning: Failed to remove old archive: {}", e);
-            // Continue anyway, we'll try to overwrite
-        }
-    }
-
-    let contents = fs::read(log_file_path)?;
-
-    let output = fs::File::create(&archive_path)?;
-    let mut encoder = GzEncoder::new(output, Compression::default());
-    encoder.write_all(&contents)?;
-    encoder.finish()?;
-
-    eprintln!("Compressed log to: {}", archive_path.display());
-
-    let file = fs::OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open(log_file_path)?;
-    drop(file);
-
-    if let Some(log_file_arc) = LOG_FILE.get() {
-        if let Ok(mut guard) = log_file_arc.lock() {
-            // Reopen the file for the manual logger
-            match fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(log_file_path)
-            {
-                Ok(new_file) => {
-                    *guard = Some(new_file);
-                }
-                Err(e) => {
-                    eprintln!("Warning: Failed to reopen log file for manual logger: {}", e);
-                }
-            }
-        }
-    }
-
-    eprintln!("Log rotation completed successfully");
-
-    Ok(())
-}
 
 /// Get the current log file path
 pub fn get_log_file_path(dir_manager: &DirectoryManager) -> PathBuf {

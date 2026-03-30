@@ -10,6 +10,7 @@ use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::{AgentConfigurationService, InitialConfigurationService};
 
 use super::log_parser::{read_new_logs, LogBatchMessage, LogDeduplicator};
+use super::log_rotation::LogRotationManager;
 
 // TODO: Set to false when backend is ready
 const TEST_MODE: bool = true;
@@ -171,9 +172,14 @@ impl LogStreamingRunManager {
 
         connection.connect().await?;
 
+        let rotation_manager = LogRotationManager::new(
+            self.log_file_path.clone(),
+            self.offset_file_path.clone(),
+        );
+
         tokio::spawn(log_file_reader_task(
             self.log_file_path,
-            self.offset_file_path,
+            rotation_manager,
             connection,
             self.hostname,
             self.tenant_domain,
@@ -187,7 +193,7 @@ impl LogStreamingRunManager {
 
 async fn log_file_reader_task(
     log_file_path: PathBuf,
-    offset_file_path: PathBuf,
+    rotation_manager: LogRotationManager,
     connection: NatsLogConnection,
     hostname: String,
     tenant_domain: String,
@@ -196,7 +202,7 @@ async fn log_file_reader_task(
 ) {
     let interval_secs = if test_output.is_some() { 5 } else { BATCH_INTERVAL_SECS };
     let mut ticker = interval(Duration::from_secs(interval_secs));
-    let mut file_position: u64 = load_offset(&offset_file_path);
+    let mut file_position: u64 = rotation_manager.load_offset();
     let mut test_ctx = test_output;
     let mut pending_batch: Option<(LogBatchMessage, usize, u64)> = None;
 
@@ -217,6 +223,8 @@ async fn log_file_reader_task(
             };
 
             if logs.is_empty() {
+                // No new logs - check if rotation is needed
+                rotation_manager.rotate_if_ready(&mut file_position);
                 continue;
             }
 
@@ -249,21 +257,8 @@ async fn log_file_reader_task(
         } else {
             // Success - advance file position and persist
             file_position = new_position;
-            save_offset(&offset_file_path, file_position);
+            rotation_manager.save_offset(file_position);
         }
-    }
-}
-
-fn load_offset(path: &PathBuf) -> u64 {
-    std::fs::read_to_string(path)
-        .ok()
-        .and_then(|s| s.trim().parse().ok())
-        .unwrap_or(0)
-}
-
-fn save_offset(path: &PathBuf, offset: u64) {
-    if let Err(e) = std::fs::write(path, offset.to_string()) {
-        error!("Failed to save log offset: {:#}", e);
     }
 }
 

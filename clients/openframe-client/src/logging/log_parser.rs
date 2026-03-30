@@ -59,20 +59,8 @@ pub fn read_new_logs(
 }
 
 fn parse_log_line(line: &str) -> Option<LogEntry> {
-    if line.starts_with("20") {
-        let ts_end = line.find('Z')?;
-        let ts = &line[..=ts_end];
-        let rest = line[ts_end + 1..].trim_start();
-        let level_end = rest.find(char::is_whitespace)?;
-        let level = &rest[..level_end];
-        let msg = rest[level_end..].trim_start();
-
-        return Some(LogEntry {
-            ts: ts.to_string(),
-            level: level.to_uppercase(),
-            msg: msg.to_string(),
-            count: None,
-        });
+    if let Some(entry) = parse_tracing_format(line) {
+        return Some(entry);
     }
 
     let line = line.strip_prefix("stdout:").unwrap_or(line).trim_start();
@@ -101,6 +89,28 @@ fn parse_log_line(line: &str) -> Option<LogEntry> {
 
 fn is_client_log(entry: &LogEntry) -> bool {
     entry.msg.starts_with("openframe") || entry.msg.starts_with("async_nats")
+}
+
+/// Parse OpenFrame tracing compact format
+fn parse_tracing_format(line: &str) -> Option<LogEntry> {
+    let ts_end = line.find('Z')?;
+    let ts = &line[..=ts_end];
+
+    // Validate ISO 8601 timestamp with chrono
+    chrono::DateTime::parse_from_rfc3339(ts).ok()?;
+
+    let rest = line[ts_end + 1..].trim_start();
+    let level_end = rest.find(char::is_whitespace)?;
+    let level = &rest[..level_end];
+
+    let msg = rest[level_end..].trim_start();
+
+    Some(LogEntry {
+        ts: ts.to_string(),
+        level: level.to_uppercase(),
+        msg: msg.to_string(),
+        count: None,
+    })
 }
 
 pub trait LogDeduplicator {
