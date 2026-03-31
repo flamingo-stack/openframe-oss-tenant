@@ -3,6 +3,7 @@
 import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
 import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
@@ -48,7 +49,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   return (
     <CoreAppLayout
-      mainClassName={mainClassName}
+      mainClassName={cn('pb-20 md:pb-20', mainClassName)}
       sidebarConfig={sidebarConfig}
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={{
