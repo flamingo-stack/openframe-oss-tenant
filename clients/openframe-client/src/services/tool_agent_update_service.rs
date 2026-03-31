@@ -255,11 +255,12 @@ impl ToolAgentUpdateService {
 
         let asset_filename = &config.target_file_name;
 
-        if is_executable {
-            info!(asset_id = %asset_id, tool_id = %tool_agent_id, "Stopping asset process");
-            if let Err(e) = self.tool_kill_service.stop_asset(asset_id, tool_agent_id).await {
-                warn!(asset_id = %asset_id, error = %e, "Failed to stop asset process (continuing)");
-            }
+        self.tool_run_manager.mark_updating(tool_agent_id).await;
+
+        info!(tool_id = %tool_agent_id, asset_id = %asset_id, "Stopping tool for asset update");
+        if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+            self.tool_run_manager.clear_updating(tool_agent_id).await;
+            return Err(e).with_context(|| format!("Failed to stop tool {} for asset update", tool_agent_id));
         }
 
         let bytes = self.github_download_service
@@ -291,13 +292,16 @@ impl ToolAgentUpdateService {
 
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save installed tool after asset update: {}", tool_agent_id))?;
+
+        self.tool_run_manager.clear_updating(tool_agent_id).await;
+
         self.publish_installed_agent_message(asset_id, new_version).await;
 
         info!(
             asset_id = %asset_id,
             tool_id = %tool_agent_id,
             version = %new_version,
-            "Asset update completed"
+            "Asset update completed, tool will be restarted by run manager"
         );
 
         Ok(())
