@@ -11,7 +11,10 @@
 ///
 /// The logging system is initialized via the `init()` function and should be
 /// called early in the application lifecycle.
+pub mod log_parser;
+pub mod log_rotation;
 pub mod metrics;
+pub mod nats_streaming;
 pub mod shipping;
 
 use crate::platform::{DirectoryError, DirectoryManager};
@@ -27,7 +30,6 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use tracing::{error, info, warn, Event, Level, Metadata, Subscriber};
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
@@ -244,18 +246,8 @@ pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::
             }
         }
 
-        // Try to compress old log files in a background thread
-        let dir_manager_clone = dir_manager.clone();
-        std::thread::spawn(move || {
-            // This runs in a background thread so we just log any errors
-            loop {
-                if let Err(e) = compress_old_logs(&dir_manager_clone) {
-                    log::error!("Error compressing old logs: {:#}", e);
-                }
-                // Check for files to compress every hour
-                std::thread::sleep(std::time::Duration::from_secs(3600));
-            }
-        });
+        // Note: Log rotation is handled by LogStreamingRunManager to ensure
+        // all logs are streamed before rotation occurs.
 
         // Create metrics layer and store
         let (metrics_layer, metrics_store) = metrics::MetricsLayer::new();
@@ -366,127 +358,6 @@ pub fn get_metrics_store() -> Option<Arc<RwLock<MetricsStore>>> {
     METRICS_STORE.get().cloned()
 }
 
-/// Try to compress old log files
-fn compress_old_logs(dir_manager: &DirectoryManager) -> io::Result<()> {
-    // If we fail to open the log dir that's okay, just return
-    let log_dir = match dir_manager.logs_dir().canonicalize() {
-        Ok(dir) => dir,
-        Err(e) => {
-            log::error!("Failed to get logs directory: {:#}", e);
-            return Ok(());
-        }
-    };
-
-    // Find log files older than 1 day and compress them
-    let mut entries = match fs::read_dir(log_dir) {
-        Ok(entries) => entries,
-        Err(e) => {
-            log::error!("Failed to read logs directory: {:#}", e);
-            return Ok(());
-        }
-    };
-
-    let one_day_ago = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs() as i64
-        - 86400;
-
-    while let Some(entry) = entries.next() {
-        let entry = match entry {
-            Ok(entry) => entry,
-            Err(e) => {
-                log::error!(
-                    "Failed to read directory entry: {}",
-                    e
-                );
-                continue;
-            }
-        };
-
-        let metadata = match entry.metadata() {
-            Ok(metadata) => metadata,
-            Err(e) => {
-                log::error!(
-                    "Failed to get metadata for {}: {}",
-                    entry.path().display(),
-                    e
-                );
-                continue;
-            }
-        };
-
-        // Skip directories and non-log files
-        if metadata.is_dir() || !entry.file_name().to_string_lossy().ends_with(".log") {
-            continue;
-        }
-
-        // Skip if already compressed
-        if entry.file_name().to_string_lossy().ends_with(".gz") {
-            continue;
-        }
-
-        // Skip if modified in the last day
-        let modified = match metadata.modified() {
-            Ok(time) => match time.duration_since(UNIX_EPOCH) {
-                Ok(duration) => duration.as_secs() as i64,
-                Err(e) => {
-                    log::error!(
-                        "Failed to get modification time for {}: {}",
-                        entry.path().display(),
-                        e
-                    );
-                    continue;
-                }
-            },
-            Err(e) => {
-                log::error!(
-                    "Failed to get modification time for {}: {}",
-                    entry.path().display(),
-                    e
-                );
-                continue;
-            }
-        };
-
-        if modified > one_day_ago {
-            continue;
-        }
-
-        // Compress the file
-        if let Err(e) = compress_log_file(&entry.path()) {
-            log::error!("Failed to compress {}: {}", entry.path().display(), e);
-        } else {
-            log::info!("Compressed old log file: {}", entry.path().display());
-        }
-    }
-
-    Ok(())
-}
-
-/// Check if the given log file is the current day's log
-fn is_current_log(filename: &str) -> bool {
-    let today = chrono::Local::now().format("%Y-%m-%d").to_string();
-    filename.contains(&today)
-}
-
-/// Compress a log file using gzip compression
-fn compress_log_file(path: &PathBuf) -> std::io::Result<()> {
-    let mut input = fs::File::open(path)?;
-    let mut contents = Vec::new();
-    input.read_to_end(&mut contents)?;
-
-    let gz_path = path.with_extension("log.gz");
-    let output = fs::File::create(&gz_path)?;
-    let mut encoder = GzEncoder::new(output, Compression::default());
-    encoder.write_all(&contents)?;
-    encoder.finish()?;
-
-    // Remove the original file after successful compression
-    fs::remove_file(path)?;
-
-    Ok(())
-}
 
 /// Get the current log file path
 pub fn get_log_file_path(dir_manager: &DirectoryManager) -> PathBuf {

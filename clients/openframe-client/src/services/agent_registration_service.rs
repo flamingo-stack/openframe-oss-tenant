@@ -49,11 +49,6 @@ impl AgentRegistrationService {
         ).await
         .context("Failed to save registration data")?;
 
-        // TODO: make job for retry perspective
-        if env::var("OPENFRAME_DEV_MODE").is_err() {
-            self.initial_configuration_service.clear_initial_key()
-                .context("Failed to clear initial key")?;   
-        }
 
         Ok(response)
     }
