@@ -69,7 +69,6 @@ const logsTableRelayFragment = graphql`
           ingestDay
           toolType
           severity
-          userId
           deviceId
           hostname
           organizationId
