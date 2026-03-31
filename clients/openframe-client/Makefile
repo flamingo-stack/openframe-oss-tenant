@@ -26,7 +26,7 @@ build:
 	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) build --release --locked $(TARGET_FLAG)
 
 test: build
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) test --release --locked $(TARGET_FLAG)
+	OPENFRAME_VERSION=$(OPENFRAME_VERSION) $(CARGO) test --release --locked
 
 clean:
 	$(CARGO) clean
@@ -35,5 +35,5 @@ crossinstall:
 	$(CARGO) install cross --git https://github.com/cross-rs/cross
 
 crossbuild:
-	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release --locked $(TARGET_FLAG)
+	OPENFRAME_VERSION=$(OPENFRAME_VERSION) cross build --release $(TARGET_FLAG)
 
