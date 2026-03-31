@@ -73,7 +73,7 @@ openframe/services/openframe-frontend/package-lock.json
 openframe/services/openframe-frontend/next-env.d.ts
 
 # Relay compiler generated artifacts
-**/__generated__/
+**/__generated__/*.ts
 
 # Yalc
 .yalc
