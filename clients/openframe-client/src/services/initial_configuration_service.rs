@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
 
-use crate::models::InitialConfiguration;
+use crate::models::{DeviceTag, InitialConfiguration};
 use crate::platform::directories::DirectoryManager;
 
 #[derive(Clone)]
@@ -45,6 +45,11 @@ impl InitialConfigurationService {
     pub fn get_local_ca_cert_path(&self) -> Result<String> {
         let config = self.get()?;
         Ok(config.local_ca_cert_path.clone())
+    }
+
+    pub fn get_tags(&self) -> Result<Vec<DeviceTag>> {
+        let config = self.get()?;
+        Ok(config.tags)
     }
 
     fn get(&self) -> Result<InitialConfiguration> {
