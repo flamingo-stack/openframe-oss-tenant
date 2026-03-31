@@ -21,10 +21,13 @@ spec:
 
     spec:
       initContainers:
+        - name: wait-for-config-server
+          image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
         - name: wait-for-management-server
           image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
           command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do sleep 1; done"]
-          
+
       containers:
         - name: openframe-external-api
           image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ default .Values.global.image.tag .Values.image.tag }}"

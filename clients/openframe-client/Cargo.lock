@@ -1578,6 +1578,7 @@ dependencies = [
  "flate2",
  "futures",
  "hostname",
+ "indexmap",
  "is_elevated",
  "libc",
  "log",
