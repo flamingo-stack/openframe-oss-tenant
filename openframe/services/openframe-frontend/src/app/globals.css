@@ -35,10 +35,3 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
-
-/* HubSpot chat widget: hide on mobile */
-@media (max-width: 799px) {
-  #hubspot-messages-iframe-container {
-    display: none !important;
-  }
-}

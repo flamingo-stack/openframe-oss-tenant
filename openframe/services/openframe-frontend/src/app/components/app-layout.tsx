@@ -49,7 +49,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   return (
     <CoreAppLayout
-      mainClassName={cn('md:pb-20', mainClassName)}
+      mainClassName={cn('pb-20 md:pb-20', mainClassName)}
       sidebarConfig={sidebarConfig}
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={{
