@@ -247,12 +247,6 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup Node.js
-        if: steps.should_run.outputs.run == 'true' && contains(matrix.name, 'openframe-chat')
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
       - name: Prepare Rust tools
         uses: ./.github/steps/rust-setup
         if: steps.should_run.outputs.run == 'true'
