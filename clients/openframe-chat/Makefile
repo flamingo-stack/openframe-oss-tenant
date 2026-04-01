@@ -20,7 +20,8 @@ clippy:
 lint: fmt-check clippy
 
 build:
-	npm install --prefer-offline
+	rm -rf node_modules
+	npm install
 	npx tauri build $(TARGET_FLAG)
 
 test: build

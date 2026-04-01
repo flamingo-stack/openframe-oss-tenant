@@ -64,6 +64,7 @@ client/Cargo.lock
 **/multi-platform-hub
 .**.json
 client/chat-client/src-tauri/gen
+clients/openframe-chat/package-lock.json
 .next/
 tsconfig.tsbuildinfo
 /artifacts/
