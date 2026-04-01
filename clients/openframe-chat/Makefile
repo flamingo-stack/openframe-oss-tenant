@@ -20,7 +20,7 @@ clippy:
 lint: fmt-check clippy
 
 build:
-	npm ci
+	npm install --prefer-offline
 	npx tauri build $(TARGET_FLAG)
 
 test: build
