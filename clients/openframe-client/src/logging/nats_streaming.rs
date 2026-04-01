@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 use async_nats::jetstream;
+use async_nats::jetstream::context::PublishErrorKind;
 use std::path::PathBuf;
+use std::time::Instant;
 use tokio::time::{interval, Duration};
-use tracing::{debug, error, info};
+use tracing::{error, info, warn};
 
 use crate::platform::DirectoryManager;
 use crate::services::device_data_fetcher::DeviceDataFetcher;
@@ -15,7 +17,7 @@ const BATCH_INTERVAL_SECS: u64 = 60;
 const MAX_LOGS_PER_BATCH: usize = 50;
 const RECONNECT_DELAY_SECS: u64 = 5;
 const NATS_SUBJECT: &str = "agents.logs";
-// Hardcoded machine ID for NATS header (used before registration)
+const NON_RETRIABLE_TIMEOUT_SECS: u64 = 120; // 2 min retry then skip
 const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
 
 pub struct NatsLogConnection {
@@ -86,23 +88,31 @@ impl NatsLogConnection {
         Ok(())
     }
 
-    pub async fn publish(&self, payload: &LogBatchMessage) -> Result<()> {
+    pub async fn publish(&self, payload: &LogBatchMessage) -> Result<(), PublishErrorKind> {
         let js = self
             .jetstream
             .as_ref()
-            .context("NATS log connection not initialized")?;
+            .ok_or(PublishErrorKind::Other)?;
 
-        let json = serde_json::to_vec(payload).context("Failed to serialize log batch")?;
+        let json = serde_json::to_vec(payload)
+            .map_err(|_| PublishErrorKind::Other)?;
 
         js.publish(NATS_SUBJECT, json.into())
             .await
-            .context("Failed to publish log batch")?
+            .map_err(|e| e.kind())?
             .await
-            .context("Failed to receive publish acknowledgment")?;
+            .map_err(|e| e.kind())?;
 
-        debug!("Published {} logs to NATS (ack received)", payload.logs.len());
+        info!("Published {} logs to NATS", payload.logs.len());
         Ok(())
     }
+}
+
+fn is_retriable_error(kind: &PublishErrorKind) -> bool {
+    matches!(
+        kind,
+        PublishErrorKind::TimedOut | PublishErrorKind::BrokenPipe
+    )
 }
 
 pub struct LogStreamingRunManager {
@@ -170,6 +180,13 @@ impl LogStreamingRunManager {
     }
 }
 
+struct PendingBatch {
+    batch: LogBatchMessage,
+    position: u64,
+    first_attempt: Instant,
+    is_retriable: bool,
+}
+
 async fn log_file_reader_task(
     log_file_path: PathBuf,
     rotation_manager: LogRotationManager,
@@ -180,14 +197,21 @@ async fn log_file_reader_task(
 ) {
     let mut ticker = interval(Duration::from_secs(BATCH_INTERVAL_SECS));
     let mut file_position: u64 = rotation_manager.load_offset();
-    let mut pending_batch: Option<(LogBatchMessage, u64)> = None;
+    let mut pending: Option<PendingBatch> = None;
 
     loop {
         ticker.tick().await;
 
         // If we have a pending batch from previous failed publish, retry it
-        let (batch, new_position) = if let Some((b, np)) = pending_batch.take() {
-            (b, np)
+        let (batch, new_position, first_attempt, is_retriable) = if let Some(p) = pending.take() {
+            // Check if non-retriable batch exceeded timeout
+            if !p.is_retriable && p.first_attempt.elapsed().as_secs() >= NON_RETRIABLE_TIMEOUT_SECS {
+                warn!("Skipping log batch after {} retries (non-retriable error)", NON_RETRIABLE_TIMEOUT_SECS);
+                file_position = p.position;
+                rotation_manager.save_offset(file_position);
+                continue;
+            }
+            (p.batch, p.position, p.first_attempt, p.is_retriable)
         } else {
             // Read new logs
             let (logs, new_pos) = match read_new_logs(&log_file_path, file_position, MAX_LOGS_PER_BATCH) {
@@ -214,17 +238,25 @@ async fn log_file_reader_task(
                 logs: logs.deduplicate(),
             };
 
-            (batch, new_pos)
+            (batch, new_pos, Instant::now(), true)
         };
 
         // Publish to NATS with JetStream ack
-        if let Err(e) = connection.publish(&batch).await {
-            error!("Failed to publish log batch: {:#} - will retry", e);
-            pending_batch = Some((batch, new_position));
-        } else {
-            // Success - advance file position and persist
-            file_position = new_position;
-            rotation_manager.save_offset(file_position);
+        match connection.publish(&batch).await {
+            Ok(()) => {
+                file_position = new_position;
+                rotation_manager.save_offset(file_position);
+            }
+            Err(kind) => {
+                let retriable = is_retriable_error(&kind);
+                error!("Failed to publish log batch: {:?} (retriable: {}) - will retry", kind, retriable);
+                pending = Some(PendingBatch {
+                    batch,
+                    position: new_position,
+                    first_attempt,
+                    is_retriable: is_retriable && retriable,
+                });
+            }
         }
     }
 }
