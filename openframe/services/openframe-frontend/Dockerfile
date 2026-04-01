@@ -12,13 +12,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ARG GITHUB_TOKEN
 
 # Copy dependency manifests first for best layer caching
-COPY package.json ./
+COPY package.json package-lock.json ./
 
-# Install dependencies (no lockfile in repo) + cache npm download artifacts
+# Install dependencies deterministically from lockfile + cache npm download artifacts
 RUN --mount=type=cache,target=/root/.npm \
     --mount=type=secret,id=GITHUB_TOKEN,required=false \
     export GITHUB_TOKEN="${GITHUB_TOKEN:-$(cat /run/secrets/GITHUB_TOKEN 2>/dev/null)}" && \
-    npm install --no-audit --no-fund
+    npm ci --no-audit --no-fund
 
 ##########
 # build
@@ -49,10 +49,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install production dependencies (lockfile is not committed in this repo)
-COPY package.json ./
+# Copy production dependencies (pruned from full install)
+COPY package.json package-lock.json ./
 COPY --from=deps /app/node_modules ./node_modules
-RUN npm install --no-audit --no-fund --omit=dev
+RUN npm prune --omit=dev
 
 # Copy build output and public assets
 COPY --from=builder /app/dist ./dist

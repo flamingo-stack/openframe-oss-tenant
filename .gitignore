@@ -63,13 +63,10 @@ client/Cargo.lock
 **/dist
 **/multi-platform-hub
 .**.json
-client/chat-client/package-lock.json
 client/chat-client/src-tauri/gen
 .next/
-openframe/services/openframe-frontend/pnpm-lock.yaml
 tsconfig.tsbuildinfo
 /artifacts/
-openframe/services/openframe-frontend/package-lock.json
 openframe/services/openframe-frontend/next-env.d.ts
 
 # Relay compiler generated artifacts
