@@ -77,7 +77,6 @@ export const GET_DEVICES_QUERY = `
             disconnectedAt
           }
           tags {
-            tagId
             key
             description
             color
@@ -130,7 +129,6 @@ export const GET_DEVICE_QUERY = `
       registeredAt
       updatedAt
       tags {
-        tagId
         key
         description
         color
