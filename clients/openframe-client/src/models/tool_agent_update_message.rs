@@ -8,7 +8,7 @@ pub struct ToolAgentUpdateMessage {
     pub version: String,
     pub download_configurations: Vec<DownloadConfiguration>,
     #[serde(default)]
-    pub asset: Option<AssetUpdate>,
+    pub assets: Vec<AssetUpdate>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

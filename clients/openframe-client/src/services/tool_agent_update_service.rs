@@ -84,8 +84,7 @@ impl ToolAgentUpdateService {
             info!("Tool {} is already at version {}, skipping tool update", tool_agent_id, new_version);
         }
 
-        // 2. Asset update (if asset field present and version changed)
-        if let Some(asset) = &message.asset {
+        for asset in &message.assets {
             self.do_asset_update(tool_agent_id, asset, &mut installed_tool).await?;
         }
 
