@@ -1,11 +1,12 @@
 'use client';
 
 import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { PageError, SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { AlertCircle, Pencil } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { authApiClient } from '@/lib/auth-api-client';
+import { getFullImageUrl } from '@/lib/image-url';
 import { apiClient } from '../../../../lib/api-client';
 import { handleApiError } from '../../../../lib/handle-api-error';
 import { useAuthStore } from '../../../auth/stores';
@@ -82,13 +83,6 @@ export function ProfileTab() {
     }
   };
 
-  // Get initials for avatar placeholder
-  const getInitials = () => {
-    const first = user?.firstName?.charAt(0) || '';
-    const last = user?.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || 'UN';
-  };
-
   useEffect(() => {
     fetchFullProfile();
   }, [fetchFullProfile]);
@@ -117,19 +111,7 @@ export function ProfileTab() {
       {/* Profile Card */}
       <div className="bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
         {/* Avatar */}
-        <div className="shrink-0">
-          {user.image?.imageUrl ? (
-            <img
-              src={user.image.imageUrl}
-              alt="Profile"
-              className="w-12 h-12 rounded-full object-cover border border-ods-border"
-            />
-          ) : (
-            <div className="w-12 h-12 rounded-full bg-ods-bg border border-ods-border flex items-center justify-center">
-              <span className="text-sm font-medium text-ods-text-secondary">{getInitials()}</span>
-            </div>
-          )}
-        </div>
+        <SquareAvatar src={getFullImageUrl(user.image?.imageUrl)} fallback={displayName} size="lg" variant="round" />
 
         {/* Name and Email */}
         <div className="flex-1 min-w-0 overflow-hidden">
@@ -188,6 +170,7 @@ export function ProfileTab() {
         onClose={() => setIsEditModalOpen(false)}
         user={user}
         onSave={updateProfile}
+        onImageChange={image => updateUser({ image })}
         isSaving={isUpdating}
       />
 

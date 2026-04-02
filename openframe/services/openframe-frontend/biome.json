@@ -10,7 +10,9 @@
       "!**/.tsbuildinfo",
       "!**/.next",
       "!**/.yalc",
-      "!**/next-env.d.ts"
+      "!**/next-env.d.ts",
+      "!**/__generated__/**",
+      "!**/schema.graphql"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },

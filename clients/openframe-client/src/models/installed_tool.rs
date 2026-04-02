@@ -47,6 +47,14 @@ impl Installation {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+pub struct InstalledAsset {
+    pub id: String,
+    pub version: String,
+    #[serde(default)]
+    pub executable: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledTool {
     pub tool_agent_id: String,
@@ -59,6 +67,8 @@ pub struct InstalledTool {
     pub uninstallation_command_args: Option<Vec<String>>,
     #[serde(default)]
     pub installation: Installation,
+    #[serde(default)]
+    pub assets: Vec<InstalledAsset>,
 }
 
 impl Default for InstalledTool {
@@ -72,6 +82,7 @@ impl Default for InstalledTool {
             tool_agent_id_command_args: Vec::new(),
             uninstallation_command_args: None,
             installation: Installation::default(),
+            assets: Vec::new(),
         }
     }
 }
