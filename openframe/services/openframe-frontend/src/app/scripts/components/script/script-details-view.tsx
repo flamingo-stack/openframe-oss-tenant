@@ -84,7 +84,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
           supportedPlatforms={scriptDetails.supported_platforms}
           category={scriptDetails.category}
         />
-
         {/* Script Arguments and Environment Variables */}
         {(scriptDetails.args?.length > 0 || scriptDetails.env_vars?.length > 0) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -98,14 +97,13 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
             )}
           </div>
         )}
-
         {/* Script Syntax */}
         {scriptDetails.script_body && (
           <div className="flex flex-col gap-1">
             <div className="text-h5 text-ods-text-secondary w-full">Syntax</div>
             <ScriptEditor value={scriptDetails.script_body} shell={scriptDetails.shell} readOnly height="400px" />
           </div>
-        )}
+        )}{' '}
       </div>
     </DetailPageContainer>
   );
