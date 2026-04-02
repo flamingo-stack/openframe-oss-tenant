@@ -6,6 +6,7 @@ import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { useAuthSession } from '../auth/hooks/use-auth-session';
@@ -56,7 +57,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         user: {
           userName: displayName,
           userEmail: user?.email,
-          userAvatarUrl: user?.image?.imageUrl || null,
+          userAvatarUrl: getFullImageUrl(user?.image?.imageUrl) || null,
           userRole: user?.role,
         },
         onLogout: handleLogout,
@@ -66,6 +67,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         showUser: true,
         userName: displayName,
         userEmail: user?.email,
+        userAvatarUrl: getFullImageUrl(user?.image?.imageUrl),
         onProfile: () => router.push('/settings'),
         onLogout: handleLogout,
       }}
