@@ -22,14 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "next-env.d.ts",
-    "dist/types/**/*.ts",
-    "dist/dev/types/**/*.ts",
-    "src/**/__generated__/**/*.ts"
-  ],
-  "exclude": ["node_modules", "multi-platform-hub/**/*"]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "multi-platform-hub/**/*", "eslint.config.mjs"]
 }

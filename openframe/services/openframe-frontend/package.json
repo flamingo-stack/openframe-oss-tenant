@@ -52,7 +52,6 @@
     "@types/relay-runtime": "^20.1.1",
     "autoprefixer": "^10.4.0",
     "eslint": "^9.27.0",
-    "eslint-config-next": "16.0.7",
     "eslint-plugin-relay": "^2.0.0",
     "husky": "^9.1.7",
     "postcss": "^8.5.3",

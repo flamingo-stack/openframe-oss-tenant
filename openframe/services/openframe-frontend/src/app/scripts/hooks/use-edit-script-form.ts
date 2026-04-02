@@ -71,8 +71,9 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         default_timeout: scriptDetails.default_timeout,
         args:
           scriptDetails.args?.map((arg: string, i: number) => {
-            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-            return { id: String(i), key: key || '', value: rest.join('=') || '' };
+            const spaceIdx = arg.indexOf(' ');
+            if (spaceIdx === -1) return { id: String(i), key: arg, value: '' };
+            return { id: String(i), key: arg.substring(0, spaceIdx), value: arg.substring(spaceIdx + 1) };
           }) || [],
         script_body: scriptDetails.script_body || '',
         run_as_user: scriptDetails.run_as_user,
@@ -133,7 +134,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         name: data.name,
         shell: data.shell,
         default_timeout: data.default_timeout,
-        args: filteredArgs.map(arg => (arg.value ? `${arg.key}=${arg.value}` : arg.key)),
+        args: filteredArgs.map(arg => (arg.value ? `${arg.key} ${arg.value}` : arg.key)),
         script_body: data.script_body,
         run_as_user: data.run_as_user,
         env_vars: filteredEnvVars.map(envVar => `${envVar.key}=${envVar.value}`),

@@ -103,7 +103,7 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
             code: formValues.script_body,
             timeout: formValues.default_timeout,
             run_as_user: formValues.run_as_user,
-            args: formValues.args.filter(a => a.key.trim() !== '').map(a => (a.value ? `${a.key}=${a.value}` : a.key)),
+            args: formValues.args.filter(a => a.key.trim() !== '').map(a => (a.value ? `${a.key} ${a.value}` : a.key)),
             env_vars: formValues.env_vars.filter(e => e.key.trim() !== '').map(e => `${e.key}=${e.value}`),
           },
           { signal: controller.signal },

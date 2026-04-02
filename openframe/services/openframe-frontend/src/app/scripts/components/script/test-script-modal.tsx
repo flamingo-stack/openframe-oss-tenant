@@ -213,7 +213,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[900px] flex flex-col">
       <ModalHeader>
         <div className="flex items-center justify-between w-full">
-          <ModalTitle>Select Device</ModalTitle>
+          <ModalTitle>Select Online Device</ModalTitle>
           <button
             type="button"
             onClick={onClose}
@@ -228,10 +228,10 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
         {/* Search & Organization Filter */}
         <div className="px-6 py-4 grid grid-cols-1 gap-4">
           <div className="flex flex-col gap-3">
-            <Label className="text-ods-text-primary font-semibold text-lg">Search by Device</Label>
+            <Label className="text-ods-text-primary font-semibold text-lg">Search by Online Devices</Label>
             <Input
               startAdornment={<SearchIcon />}
-              placeholder="Search for Devices"
+              placeholder="Search by online devices"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />

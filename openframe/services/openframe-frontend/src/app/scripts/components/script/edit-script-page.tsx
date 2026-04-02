@@ -4,7 +4,7 @@ import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-fron
 import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEditScriptForm } from '../../hooks/use-edit-script-form';
 import { useScriptDetails } from '../../hooks/use-script-details';
 import { useTestRuns } from '../../hooks/use-test-runs';
@@ -33,8 +33,17 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   const { testRuns, handleRunTest, handleStopRun } = useTestRuns(form.getValues);
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
+  const testRunsEndRef = useRef<HTMLDivElement>(null);
+  const prevTestRunsCount = useRef(testRuns.length);
 
   const watchedSupportedPlatforms = form.watch('supported_platforms');
+
+  useEffect(() => {
+    if (testRuns.length > prevTestRunsCount.current) {
+      testRunsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    prevTestRunsCount.current = testRuns.length;
+  }, [testRuns.length]);
 
   const handleBack = useCallback(() => {
     router.push('/scripts');
@@ -93,17 +102,19 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       actions={actions}
       padding="none"
     >
+      <ScriptFormFields form={form} />
+
       {testRuns.length > 0 && (
         <div>
-          <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Test Output</Label>
+          <Label className="text-h5 text-ods-text-primary">Script Testing</Label>
           <div className="flex flex-col gap-3">
             {testRuns.map(run => (
               <TestRunCard key={run.id} run={run} onStop={handleStopRun} />
             ))}
+            <div ref={testRunsEndRef} />
           </div>
         </div>
       )}
-      <ScriptFormFields form={form} />
 
       <TestScriptModal
         isOpen={isTestModalOpen}

@@ -71,7 +71,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     if (scriptDetails) {
       reset({
         timeout: Number(scriptDetails.default_timeout) || 90,
-        scriptArgs: parseKeyValues(scriptDetails.args),
+        scriptArgs: parseKeyValues(scriptDetails.args, ' '),
         envVars: parseKeyValues(scriptDetails.env_vars),
       });
     }
@@ -126,7 +126,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
           agents: selectedAgentIds,
           script: Number(scriptDetails?.id),
           timeout: data.timeout,
-          args: serializeKeyValues(data.scriptArgs),
+          args: serializeKeyValues(data.scriptArgs, ' '),
           env_vars: serializeKeyValues(data.envVars),
           run_as_user: Boolean(scriptDetails?.run_as_user) || false,
         };

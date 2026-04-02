@@ -89,7 +89,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         {(scriptDetails.args?.length > 0 || scriptDetails.env_vars?.length > 0) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {scriptDetails.args?.length > 0 ? (
-              <ScriptArgumentsCard title="Default Script Arguments" args={scriptDetails.args} />
+              <ScriptArgumentsCard title="Default Script Arguments" args={scriptDetails.args} separator=" " />
             ) : (
               <div />
             )}
