@@ -404,21 +404,17 @@ impl Client {
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
-        // Process initial registration and authentication
-        // if it haven't been done yet
-        // Processors retry it till success
-        self.registration_processor.process().await?;
-        self.auth_processor.process().await?;
-
         self.initial_key_service.ensure_initial_key().await?;
 
-        // Start log streaming (requires initial_key)
         LogStreamingRunManager::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
             &self.directory_manager,
         )?.start().await?;
         info!("NATS log streaming initialized successfully");
+
+        self.registration_processor.process().await?;
+        self.auth_processor.process().await?;
 
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
