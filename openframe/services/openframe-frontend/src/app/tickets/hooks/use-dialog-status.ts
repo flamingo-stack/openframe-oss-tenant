@@ -1,9 +1,11 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { DialogStatus } from '../types/dialog.types';
+import { invalidateAllDialogs } from '../utils/query-keys';
 
 interface UpdateStatusResponse {
   success: boolean;
@@ -16,6 +18,7 @@ interface UpdateStatusResponse {
 
 export function useDialogStatus() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const updateDialogStatus = useCallback(
@@ -40,6 +43,8 @@ export function useDialogStatus() {
           duration: 3000,
         });
 
+        invalidateAllDialogs(queryClient);
+
         return true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to update dialog status';
@@ -57,7 +62,7 @@ export function useDialogStatus() {
         setIsUpdating(false);
       }
     },
-    [isUpdating, toast],
+    [isUpdating, toast, queryClient],
   );
 
   const putOnHold = useCallback(
