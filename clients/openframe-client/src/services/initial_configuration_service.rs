@@ -69,6 +69,19 @@ impl InitialConfigurationService {
         Ok(())
     }
 
+    pub fn is_initial_key_missing(&self) -> Result<bool> {
+        let config = self.get()?;
+        Ok(config.initial_key.is_empty())
+    }
+
+    pub fn update_initial_key(&self, initial_key: String) -> Result<()> {
+        let mut config = self.get()?;
+        config.initial_key = initial_key;
+        self.save(&config)
+            .context("Failed to save initial configuration with new initial key")?;
+        Ok(())
+    }
+
     pub fn save(&self, config: &InitialConfiguration) -> Result<()> {
         let config_json = serde_json::to_string_pretty(config)
             .context("Failed to serialize initial configuration to JSON")?;

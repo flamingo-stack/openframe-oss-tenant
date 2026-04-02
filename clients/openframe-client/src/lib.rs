@@ -57,7 +57,7 @@ use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService};
+use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
 use crate::logging::nats_streaming::LogStreamingRunManager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -135,6 +135,7 @@ pub struct Client {
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
+    initial_key_service: InitialKeyService,
 }
 
 impl Client {
@@ -248,6 +249,13 @@ impl Client {
             http_client.clone(),
             http_url.clone(),
             config_service.clone()
+        );
+
+        let initial_key_service = InitialKeyService::new(
+            http_client.clone(),
+            http_url.clone(),
+            initial_configuration_service.clone(),
+            config_service.clone(),
         );
 
         // Initialize installed tools service
@@ -389,24 +397,28 @@ impl Client {
             update_handler_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
+            initial_key_service,
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
+        // Process initial registration and authentication
+        // if it haven't been done yet
+        // Processors retry it till success
+        self.registration_processor.process().await?;
+        self.auth_processor.process().await?;
+
+        self.initial_key_service.ensure_initial_key().await?;
+
+        // Start log streaming (requires initial_key)
         LogStreamingRunManager::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
             &self.directory_manager,
         )?.start().await?;
         info!("NATS log streaming initialized successfully");
-
-        // Process initial registration and authentication
-        // if it haven't been done yet
-        // Processors retry it till success
-        self.registration_processor.process().await?;
-        self.auth_processor.process().await?;
 
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
