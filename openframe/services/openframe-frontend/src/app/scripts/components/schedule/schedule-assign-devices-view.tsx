@@ -10,10 +10,12 @@ import { DeviceSelector } from '../../../components/shared/device-selector';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
+import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
 import { createDeviceListItem } from '../../../devices/utils/device-transform';
 import { useScriptSchedule, useScriptScheduleAgents } from '../../hooks/use-script-schedule';
 import { useReplaceScheduleAgents } from '../../hooks/use-script-schedule-mutations';
 import { formatScheduleDate, getRepeatLabel } from '../../types/script-schedule.types';
+import { getDevicePrimaryId } from '../../utils/device-helpers';
 import { mapPlatformsToOsTypes } from '../../utils/script-utils';
 import { ScheduleAssignDevicesSkeleton } from './schedule-assign-devices-skeleton';
 import { ScheduleInfoBarFromData } from './schedule-info-bar';
@@ -58,7 +60,7 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
   return nodes.map(createDeviceListItem);
 }
 
-const getDeviceKey = (d: Device) => d.tacticalAgentId;
+const getDeviceKey = getDevicePrimaryId;
 
 export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesViewProps) {
   const router = useRouter();
@@ -70,16 +72,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const [selectedAgentIds, setSelectedAgentIds] = useState<Set<string>>(new Set());
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize selected agents from current assignment
-  if (!isInitialized && !isLoadingAgents && currentAgents.length > 0) {
-    const ids = new Set(currentAgents.map(a => a.agent_id));
-    setSelectedAgentIds(ids);
-    setIsInitialized(true);
-  }
-  if (!isInitialized && !isLoadingAgents && currentAgents.length === 0) {
-    setIsInitialized(true);
-  }
-
   const supportedPlatforms = mapPlatformsToOsTypes(schedule?.task_supported_platforms ?? []);
 
   const devicesQuery = useQuery({
@@ -88,24 +80,64 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     enabled: Boolean(scheduleId) && Boolean(schedule),
   });
 
-  // Only include devices that have a Tactical RMM agent_id
   const allDevices = useMemo(() => {
-    return (devicesQuery.data ?? []).filter(d => !!d.tacticalAgentId);
+    const all = devicesQuery.data ?? [];
+    const withTactical: Device[] = [];
+    const withoutTactical: Device[] = [];
+    for (const d of all) {
+      if (getTacticalAgentId(d)) {
+        withTactical.push(d);
+      } else {
+        withoutTactical.push(d);
+      }
+    }
+    return [...withTactical, ...withoutTactical];
   }, [devicesQuery.data]);
+
+  // Initialize selected devices from current agent assignment
+  // Map tactical agent IDs back to device primary IDs
+  if (!isInitialized && !isLoadingAgents && allDevices.length > 0) {
+    const agentIdSet = new Set(currentAgents.map(a => a.agent_id));
+    const ids = new Set(
+      allDevices
+        .filter(d => {
+          const tacticalId = getTacticalAgentId(d);
+          return tacticalId && agentIdSet.has(tacticalId);
+        })
+        .map(d => getDevicePrimaryId(d)),
+    );
+    setSelectedAgentIds(ids);
+    setIsInitialized(true);
+  }
+  if (!isInitialized && !isLoadingAgents && currentAgents.length === 0 && !devicesQuery.isLoading) {
+    setIsInitialized(true);
+  }
 
   const handleBack = useCallback(() => {
     router.push(`/scripts/schedules/${scheduleId}`);
   }, [router, scheduleId]);
 
   const handleSave = useCallback(async () => {
+    const selectedDevices = allDevices.filter(d => selectedAgentIds.has(getDevicePrimaryId(d)));
+    const agentIds = selectedDevices.map(d => getTacticalAgentId(d)).filter((id): id is string => !!id);
+
+    if (agentIds.length === 0) {
+      toast({
+        title: 'No compatible agents',
+        description: 'Selected devices have no Tactical agent IDs.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await replaceAgentsMutation.mutateAsync({
         id: scheduleId,
-        agents: Array.from(selectedAgentIds),
+        agents: agentIds,
       });
       toast({
         title: 'Devices saved',
-        description: `${selectedAgentIds.size} device(s) assigned to schedule.`,
+        description: `${agentIds.length} device(s) assigned to schedule.`,
         variant: 'success',
       });
       router.push(`/scripts/schedules/${scheduleId}?tab=schedule-devices`);
@@ -113,7 +145,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       const msg = e instanceof Error ? e.message : 'Failed to save devices';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });
     }
-  }, [replaceAgentsMutation, scheduleId, selectedAgentIds, toast, router]);
+  }, [replaceAgentsMutation, scheduleId, selectedAgentIds, allDevices, toast, router]);
 
   const actions = useMemo(
     () => [
@@ -162,6 +194,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           getDeviceKey={getDeviceKey}
           onSelectionChange={setSelectedAgentIds}
           addAllBehavior="replace"
+          isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
           headerContent={
             <ScheduleInfoBarFromData
               name={schedule.name}

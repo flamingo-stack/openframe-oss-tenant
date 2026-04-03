@@ -15,14 +15,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
+import { DeviceSelector } from '../../../components/shared/device-selector';
 import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
-import { useDeviceFilter } from '../../hooks/use-device-filter';
-import { useDeviceSelection } from '../../hooks/use-device-selection';
 import { useRunScriptData } from '../../hooks/use-run-script-data';
 import { scriptArgumentSchema } from '../../types/edit-script.types';
 import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../../utils/device-helpers';
 import { parseKeyValues, serializeKeyValues } from '../../utils/script-key-values';
-import { DeviceSelectionPanel } from './device-selection-panel';
 import { ExecutionStartedModal } from './execution-started-modal';
 
 interface RunScriptViewProps {
@@ -47,13 +45,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     scriptError,
     devices: allDevices,
     isLoadingDevices,
-    devicesError,
   } = useRunScriptData({ scriptId });
 
-  const { searchTerm, setSearchTerm, selectedOrgIds, setSelectedOrgIds, organizationOptions, filteredDevices } =
-    useDeviceFilter({ devices: allDevices });
-
-  const { selectedIds, selectedCount, toggleSelect, selectAllDisplayed, clearSelection } = useDeviceSelection();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const {
     control,
@@ -83,7 +77,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
 
   const onSubmit = useCallback(
     async (data: RunFormData) => {
-      if (selectedCount === 0) {
+      if (selectedIds.size === 0) {
         toast({
           title: 'No devices selected',
           description: 'Please select at least one device.',
@@ -93,7 +87,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
       }
 
       try {
-        const selectedDevices = filteredDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)));
+        const selectedDevices = allDevices.filter(d => selectedIds.has(getDevicePrimaryId(d)));
         const selectedAgentIds = selectedDevices.map(d => getTacticalAgentId(d)).filter((id): id is string => !!id);
 
         if (selectedAgentIds.length === 0) {
@@ -142,7 +136,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         toast({ title: 'Submission failed', description: msg, variant: 'destructive' });
       }
     },
-    [selectedCount, filteredDevices, selectedIds, scriptDetails, toast],
+    [allDevices, selectedIds, scriptDetails, toast],
   );
 
   const handleCloseExecutionModal = useCallback(() => {
@@ -170,11 +164,11 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         label: 'Run Script',
         onClick: handleSubmit(onSubmit, onFormError),
         variant: 'primary' as const,
-        disabled: selectedCount === 0,
+        disabled: selectedIds.size === 0,
         loading: isSubmitting,
       },
     ],
-    [handleSubmit, onSubmit, onFormError, selectedCount, isSubmitting],
+    [handleSubmit, onSubmit, onFormError, selectedIds.size, isSubmitting],
   );
 
   if (isLoadingScript) {
@@ -254,21 +248,18 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
           />
         </div>
 
-        <DeviceSelectionPanel
-          devices={filteredDevices}
-          isLoading={isLoadingDevices}
-          error={devicesError}
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          organizationOptions={organizationOptions}
-          selectedOrgIds={selectedOrgIds}
-          onOrgIdsChange={setSelectedOrgIds}
-          selectedIds={selectedIds}
-          onToggleSelect={toggleSelect}
-          onSelectAll={() => selectAllDisplayed(filteredDevices)}
-          onClearSelection={clearSelection}
-          selectedCount={selectedCount}
-        />
+        <div className="pt-6 space-y-1">
+          <DeviceSelector
+            devices={allDevices}
+            loading={isLoadingDevices}
+            selectedIds={selectedIds}
+            getDeviceKey={getDevicePrimaryId}
+            onSelectionChange={setSelectedIds}
+            showSelectionModeRadio={false}
+            addAllBehavior="replace"
+            isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
+          />
+        </div>
       </div>
 
       <ExecutionStartedModal

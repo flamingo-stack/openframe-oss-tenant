@@ -1,10 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../devices/queries/devices-queries';
-import { Device, DevicesGraphQlNode, GraphQlResponse } from '../../devices/types/device.types';
+import { type Device, type DevicesGraphQlNode, type GraphQlResponse } from '../../devices/types/device.types';
+import { getTacticalAgentId } from '../../devices/utils/device-action-utils';
 import { createDeviceListItem } from '../../devices/utils/device-transform';
 import { mapPlatformsToOsTypes } from '../utils/script-utils';
 import { useScriptDetails } from './use-script-details';
@@ -74,6 +76,20 @@ export function useRunScriptData({ scriptId }: UseRunScriptDataOptions) {
     enabled: !!scriptDetails,
   });
 
+  const devices = useMemo(() => {
+    const all = devicesQuery.data ?? [];
+    const withTactical: Device[] = [];
+    const withoutTactical: Device[] = [];
+    for (const d of all) {
+      if (getTacticalAgentId(d)) {
+        withTactical.push(d);
+      } else {
+        withoutTactical.push(d);
+      }
+    }
+    return [...withTactical, ...withoutTactical];
+  }, [devicesQuery.data]);
+
   return {
     // Script
     scriptDetails,
@@ -81,7 +97,7 @@ export function useRunScriptData({ scriptId }: UseRunScriptDataOptions) {
     scriptError,
 
     // Devices
-    devices: devicesQuery.data ?? [],
+    devices,
     isLoadingDevices: devicesQuery.isLoading,
     devicesError: devicesQuery.error?.message ?? null,
   };

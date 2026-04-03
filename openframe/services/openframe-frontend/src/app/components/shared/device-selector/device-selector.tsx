@@ -1,7 +1,7 @@
 'use client';
 
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   CheckCircleIcon,
   MonitorIcon,
@@ -17,10 +17,14 @@ import {
   type TabItem,
   type TableColumn,
   TabNavigation,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useMemo } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
 import type { Device } from '../../../devices/types/device.types';
+import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import type { DeviceSelectorProps } from './device-selector.types';
 import { DeviceTabContent } from './device-tab-content';
 import { useDeviceSelector } from './use-device-selector';
@@ -36,7 +40,7 @@ export function DeviceSelector({
   showSelectionModeRadio = true,
   headerContent,
   addAllBehavior = 'merge',
-  extraColumns,
+  singleSelect = false,
   isDeviceDisabled,
 }: DeviceSelectorProps) {
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
@@ -49,6 +53,11 @@ export function DeviceSelector({
       const key = getDeviceKey(device);
       if (key === undefined) return;
 
+      if (singleSelect) {
+        onSelectionChange(selectedIds.has(key) ? new Set() : new Set([key]));
+        return;
+      }
+
       const next = new Set(selectedIds);
       if (next.has(key)) {
         next.delete(key);
@@ -57,7 +66,7 @@ export function DeviceSelector({
       }
       onSelectionChange(next);
     },
-    [disabled, isDeviceDisabled, getDeviceKey, selectedIds, onSelectionChange],
+    [disabled, isDeviceDisabled, getDeviceKey, selectedIds, onSelectionChange, singleSelect],
   );
 
   const addAllDevices = useCallback(() => {
@@ -95,7 +104,7 @@ export function DeviceSelector({
               </div>
               <div className="flex flex-col truncate">
                 <span className="text-h4 text-ods-text-primary truncate">{device.displayName || device.hostname}</span>
-                <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
+                <span className="text-h6 text-ods-text-secondary truncate">
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
               </div>
@@ -112,9 +121,38 @@ export function DeviceSelector({
           return <OSTypeBadge osType={device.osType} />;
         },
       },
-      ...(extraColumns ?? []),
+      {
+        key: 'organization',
+        label: 'ORGANIZATION',
+        width: 'w-1/4',
+        hideAt: 'lg',
+        renderCell: (device: Device) => {
+          const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
+          return (
+            <div className="flex items-center gap-3">
+              {featureFlags.organizationImages.displayEnabled() && (
+                <OrganizationIcon
+                  imageUrl={fullImageUrl}
+                  organizationName={device.organization || 'Organization'}
+                  size="sm"
+                />
+              )}
+              <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'status',
+        label: 'STATUS',
+        width: 'w-[90px]',
+        renderCell: (device: Device) => {
+          const config = getDeviceStatusConfig(device.status);
+          return <Tag label={config.label} variant={config.variant} className="w-min" />;
+        },
+      },
     ],
-    [extraColumns],
+    [],
   );
 
   const renderRowActions = useMemo(
@@ -123,7 +161,7 @@ export function DeviceSelector({
 
       if (disabledReason) {
         return (
-          <div className="flex items-center justify-end gap-2 w-[200px]">
+          <div className="flex items-center justify-end gap-2 w-[130px]">
             <span className="text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
               {disabledReason}
             </span>
@@ -145,13 +183,13 @@ export function DeviceSelector({
 
       if (activeSubTab === 'selected') {
         return (
-          <div className="flex items-center justify-end w-[200px]">
+          <div className="flex items-center justify-end w-[130px]">
             <Button
               variant="device-action"
               size="icon"
               onClick={() => toggleDevice(device)}
               centerIcon={<TrashIcon size={24} />}
-              className="text-[var(--ods-attention-red-error,#d32f2f)] hover:opacity-80"
+              className="text-ods-error hover:opacity-80"
               disabled={disabled}
             />
           </div>
@@ -159,7 +197,7 @@ export function DeviceSelector({
       }
 
       return (
-        <div className="flex items-center justify-end w-[200px]">
+        <div className="flex items-center justify-end w-[130px]">
           <Button
             variant="device-action"
             size="icon"
@@ -167,7 +205,7 @@ export function DeviceSelector({
             centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
             className={
               isSelected
-                ? 'text-[var(--open-colors-yellow,#ffc008)] border-[var(--open-colors-yellow,#ffc008)] bg-[#7F6004] hover:bg-[#7F6004]'
+                ? 'text-ods-accent border-ods-accent bg-ods-accent-active hover:bg-ods-accent-active'
                 : 'text-ods-text-secondary hover:text-ods-text-primary'
             }
             disabled={disabled}
@@ -188,12 +226,12 @@ export function DeviceSelector({
       },
       {
         id: 'selected',
-        label: `Selected Devices (${selectedIds.size})`,
+        label: singleSelect ? `Selected Device (${selectedIds.size})` : `Selected Devices (${selectedIds.size})`,
         icon: CheckCircleIcon,
         component: DeviceTabContent,
       },
     ],
-    [selectedIds.size],
+    [selectedIds.size, singleSelect],
   );
 
   const ActiveTabComponent = getTabComponent(assignTabs, activeSubTab);
@@ -206,18 +244,18 @@ export function DeviceSelector({
 
       {showSelectionModeRadio && (
         <div className="flex flex-col gap-3">
-          <label className="flex items-start gap-3 p-4 bg-ods-card border border-[var(--open-colors-yellow,#ffc008)] rounded-[6px] cursor-pointer">
+          <label className="flex items-start gap-3 p-4 bg-ods-card border border-ods-accent rounded-[6px] cursor-pointer">
             <input
               type="radio"
               name="selectionMode"
               value="specific"
               defaultChecked
               disabled={disabled}
-              className="mt-1 accent-[var(--open-colors-yellow,#ffc008)]"
+              className="mt-1 accent-ods-accent"
             />
             <div className="flex flex-col">
               <span className="text-h4 text-ods-text-primary">Select Specific Devices</span>
-              <span className="text-[14px] text-ods-text-secondary">
+              <span className="text-h6 text-ods-text-secondary">
                 Choose individual devices to include in this selection
               </span>
             </div>
@@ -226,18 +264,18 @@ export function DeviceSelector({
             <input type="radio" name="selectionMode" value="criteria" disabled className="mt-1" />
             <div className="flex flex-col flex-1">
               <span className="text-h4 text-ods-text-primary">Select Devices by Criteria</span>
-              <span className="text-[14px] text-ods-text-secondary">
+              <span className="text-h6 text-ods-text-secondary">
                 Automatically include all devices (current and future) that match your defined criteria
               </span>
             </div>
-            <span className="font-['Azeret_Mono'] font-medium text-[12px] px-3 py-1 bg-ods-card border border-ods-border rounded-[4px] text-ods-text-secondary uppercase tracking-wider">
+            <span className="text-h5 px-3 py-1 bg-ods-card border border-ods-border rounded-[4px] text-ods-text-secondary">
               Coming Soon
             </span>
           </label>
         </div>
       )}
 
-      <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} />
+      {!singleSelect && <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} />}
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
@@ -252,11 +290,11 @@ export function DeviceSelector({
       </div>
 
       <TabContent
-        activeTab={activeSubTab}
+        activeTab={singleSelect ? 'available' : activeSubTab}
         TabComponent={ActiveTabComponent}
         componentProps={{
-          mode: activeSubTab,
-          devices: displayDevices,
+          mode: singleSelect ? 'available' : activeSubTab,
+          devices: singleSelect ? filteredDevices : displayDevices,
           columns,
           loading,
           renderRowActions,
@@ -265,6 +303,7 @@ export function DeviceSelector({
           selectedCount: selectedIds.size,
           disabled,
           infiniteScroll: availableInfiniteScroll,
+          singleSelect,
           isDeviceDisabled,
         }}
       />
