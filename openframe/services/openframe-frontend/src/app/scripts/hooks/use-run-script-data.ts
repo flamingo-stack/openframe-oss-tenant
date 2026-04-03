@@ -41,6 +41,7 @@ async function fetchDevicesForScript(supportedPlatforms: string[]): Promise<Devi
       filter,
       first: 100,
       search: '',
+      sort: { field: 'status', direction: 'DESC' },
     },
   });
 

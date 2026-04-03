@@ -44,6 +44,7 @@ async function fetchDevicesByPlatforms(platforms: string[]): Promise<Device[]> {
       filter,
       first: 100,
       search: '',
+      sort: { field: 'status', direction: 'DESC' },
     },
   });
 

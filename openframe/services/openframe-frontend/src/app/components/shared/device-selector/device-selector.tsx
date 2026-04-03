@@ -205,7 +205,7 @@ export function DeviceSelector({
             centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
             className={
               isSelected
-                ? 'text-ods-accent border-ods-accent bg-ods-accent-active hover:bg-ods-accent-active'
+                ? 'text-ods-accent border-ods-accent bg-[var(--ods-open-yellow-secondary)] hover:bg-[var(--ods-open-yellow-secondary-hover)]'
                 : 'text-ods-text-secondary hover:text-ods-text-primary'
             }
             disabled={disabled}

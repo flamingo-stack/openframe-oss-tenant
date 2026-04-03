@@ -46,7 +46,7 @@ async function fetchDevicesForTest(supportedPlatforms: string[]): Promise<Device
     }>
   >('/api/graphql', {
     query: GET_DEVICES_QUERY,
-    variables: { filter, first: 100, search: '' },
+    variables: { filter, first: 100, search: '', sort: { field: 'status', direction: 'DESC' } },
   });
 
   if (!response.ok) {
