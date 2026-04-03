@@ -110,6 +110,8 @@ export function AuthBenefitsSection() {
                 geoApiUrl={null}
                 submitLabel="Join Waitlist"
                 successLabel="You're in!"
+                privacyPolicyUrl="https://www.flamingo.run/privacy-policy"
+                termsOfServiceUrl="https://www.flamingo.run/terms-of-service"
               />
             </div>
           </div>

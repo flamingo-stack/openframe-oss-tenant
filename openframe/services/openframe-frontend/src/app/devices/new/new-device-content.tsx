@@ -21,6 +21,7 @@ import { AntivirusWarning } from '../components/antivirus-warning';
 import { useInstallCommand } from '../hooks/use-install-command';
 import type { DeviceTagWithId } from './components/device-tags-editor';
 import { DeviceTagsEditor } from './components/device-tags-editor';
+import { TAG_REGEX } from './components/tag-row';
 
 const newDeviceContentQuery = graphql`
   query newDeviceContentQuery($first: Int!) {
@@ -78,7 +79,15 @@ export function NewDeviceContent() {
   const organizationId = useWatch({ control: form.control, name: 'organizationId' });
   const platform = useWatch({ control: form.control, name: 'platform' });
 
-  const validTags = useMemo(() => tags.filter(t => t.key && t.values.length > 0), [tags]);
+  const validTags = useMemo(() => {
+    const seen = new Set<string>();
+    return tags.filter(t => {
+      if (!t.key || t.values.length === 0) return false;
+      if (seen.has(t.key)) return false;
+      seen.add(t.key);
+      return true;
+    });
+  }, [tags]);
 
   const { command, initialKey } = useInstallCommand({ organizationId, platform, tags: validTags });
 
@@ -113,8 +122,27 @@ export function NewDeviceContent() {
       toast({ title: 'Secret unavailable', description: 'Registration secret not loaded yet', variant: 'destructive' });
       return false;
     }
+    const filledTags = tags.filter(t => t.key);
+    const hasInvalidTags = filledTags.some(t => !TAG_REGEX.test(t.key) || t.values.some(v => !TAG_REGEX.test(v)));
+    if (hasInvalidTags) {
+      toast({
+        title: 'Invalid tags',
+        description: 'Tag keys and values can only contain letters, numbers, underscores, hyphens, and dots',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    const keys = filledTags.map(t => t.key);
+    if (new Set(keys).size !== keys.length) {
+      toast({
+        title: 'Duplicate tags',
+        description: 'Each tag key must be unique. Please remove duplicate tags.',
+        variant: 'destructive',
+      });
+      return false;
+    }
     return true;
-  }, [form, initialKey, toast]);
+  }, [form, initialKey, tags, toast]);
 
   const copyCommand = useCallback(async () => {
     if (!(await validateBeforeAction())) return;

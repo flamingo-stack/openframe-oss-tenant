@@ -43,8 +43,6 @@ interface DeviceTagsEditorProps {
   onTagsChange: (tags: DeviceTagWithId[]) => void;
 }
 
-let nextTagId = 0;
-
 export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceTagsEditorProps) {
   const queryData = useLazyLoadQuery<DeviceTagsEditorQueryType>(
     deviceTagsEditorRootQuery,
@@ -53,8 +51,7 @@ export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceT
   );
 
   const addTag = useCallback(() => {
-    nextTagId += 1;
-    onTagsChange([...tags, { id: `tag-${nextTagId}`, key: '', values: [] }]);
+    onTagsChange([...tags, { id: crypto.randomUUID(), key: '', values: [] }]);
   }, [tags, onTagsChange]);
 
   const updateTag = useCallback(
@@ -74,7 +71,7 @@ export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceT
   const existingKeys = tags.map(t => t.key).filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-[var(--spacing-system-l)]">
       {tags.map((tag, index) => (
         <TagRow
           key={tag.id}
