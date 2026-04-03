@@ -14,7 +14,16 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useState, useTransition } from 'react';
+import {
+  forwardRef,
+  Suspense,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { graphql, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { logsTableRelay_query$key as LogsFragmentKey } from '@/__generated__/logsTableRelay_query.graphql';
 import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@/__generated__/logsTableRelayPaginationQuery.graphql';
@@ -24,7 +33,7 @@ import { LogDrawer } from '../../components/shared';
 import type { LogFilterInput } from '../types/log.types';
 
 // ----------------------------------------------------------------
-// GraphQL definitions — colocated with the component per Relay convention
+// GraphQL definitions
 // ----------------------------------------------------------------
 
 const LOGS_PAGE_SIZE = 20;
@@ -122,41 +131,48 @@ export interface LogsTableRelayRef {
   refresh: () => void;
 }
 
+interface LogsTableContentProps {
+  deviceId?: string;
+  embedded: boolean;
+  backendFilters: LogFilterInput;
+  debouncedSearch: string;
+  tableFilters: Record<string, string[]>;
+  onFilterChange: (filters: Record<string, any[]>) => void;
+  onRefreshRef: React.RefObject<(() => void) | null>;
+}
+
 // ----------------------------------------------------------------
-// Component
+// Columns (static, without filter options — used for loading skeleton)
 // ----------------------------------------------------------------
 
-export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>(function LogsTableRelay(
-  { deviceId, embedded = false }: LogsTableRelayProps,
-  ref,
-) {
+function getBaseColumns(embedded: boolean): TableColumn<UiLogEntry>[] {
+  const allColumns: TableColumn<UiLogEntry>[] = [
+    { key: 'logId', label: 'Log ID', width: 'w-[200px]' },
+    { key: 'status', label: 'Status', width: 'w-[120px]', filterable: true },
+    { key: 'tool', label: 'Tool', width: 'w-[150px]', hideAt: 'md', filterable: true },
+    { key: 'source', label: 'SOURCE', width: 'w-[120px]', hideAt: 'md', filterable: true },
+    { key: 'description', label: 'Log Details', width: 'flex-1', hideAt: 'lg' },
+  ];
+  return embedded ? allColumns.filter(col => col.key !== 'source') : allColumns;
+}
+
+// ----------------------------------------------------------------
+// Inner content — uses Relay hooks, must be inside Suspense
+// ----------------------------------------------------------------
+
+function LogsTableContent({
+  deviceId,
+  embedded,
+  backendFilters,
+  debouncedSearch,
+  tableFilters,
+  onFilterChange,
+  onRefreshRef,
+}: LogsTableContentProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
-
-  // --- URL state ---
-  const { params, setParam, setParams } = useApiParams({
-    search: { type: 'string', default: '' },
-    severities: { type: 'array', default: [] },
-    toolTypes: { type: 'array', default: [] },
-    organizationIds: { type: 'array', default: [] },
-  });
-
-  const debouncedSearch = useDebounce(params.search, 300);
   const [selectedLog, setSelectedLog] = useState<UiLogEntry | null>(null);
 
-  const backendFilters: LogFilterInput = useMemo(
-    () => ({
-      severities: params.severities,
-      toolTypes: params.toolTypes,
-      organizationIds: params.organizationIds,
-      deviceId,
-    }),
-    [params.severities, params.toolTypes, params.organizationIds, deviceId],
-  );
-
-  // --- Relay: root query ---
-  // store-and-network: shows cached data instantly, then silently refetches in the background.
-  // No Suspense trigger when cache exists — seamless revalidation on every mount.
   const queryData = useLazyLoadQuery<LogsQueryType>(
     logsTableRelayQuery,
     {
@@ -168,13 +184,11 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     { fetchPolicy: 'store-and-network' },
   );
 
-  // --- Relay: pagination fragment ---
   const { data, loadNext, hasNext, isLoadingNext, refetch } = usePaginationFragment<
     LogsPaginationQueryType,
     LogsFragmentKey
   >(logsTableRelayFragment, queryData);
 
-  // --- Filters from the same root query (no extra request) ---
   const logFilters = useMemo(
     () =>
       queryData.logFilters
@@ -191,7 +205,6 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     [queryData.logFilters],
   );
 
-  // --- Flatten edges → array ---
   const logs = useMemo(() => {
     const edges = data.logs?.edges ?? [];
     return edges.map(edge => {
@@ -213,7 +226,6 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     });
   }, [data.logs?.edges]);
 
-  // --- Pagination: load next page ---
   const fetchNextPage = useCallback(() => {
     if (hasNext && !isLoadingNext) {
       loadNext(LOGS_PAGE_SIZE, {
@@ -230,7 +242,6 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     }
   }, [hasNext, isLoadingNext, loadNext, toast]);
 
-  // --- Reset / refresh ---
   const resetToFirstPage = useCallback(() => {
     startTransition(() => {
       refetch(
@@ -245,16 +256,9 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     });
   }, [refetch, backendFilters, debouncedSearch]);
 
-  // --- Expose refresh via ref ---
-  useImperativeHandle(
-    ref,
-    () => ({
-      refresh: () => resetToFirstPage(),
-    }),
-    [resetToFirstPage],
-  );
+  // Expose refresh to parent via mutable ref
+  onRefreshRef.current = resetToFirstPage;
 
-  // --- Transform to UI format ---
   const transformedLogs: UiLogEntry[] = useMemo(() => {
     return logs.map(log => ({
       id: log.toolEventId,
@@ -288,7 +292,6 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     }));
   }, [logs]);
 
-  // --- Columns ---
   const columns: TableColumn<UiLogEntry>[] = useMemo(() => {
     const allColumns: TableColumn<UiLogEntry>[] = [
       {
@@ -358,7 +361,6 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     return allColumns;
   }, [embedded, logFilters]);
 
-  // --- Handlers ---
   const getLogDetailsUrl = useCallback((log: UiLogEntry): string => {
     const original = log.originalLogEntry || log;
     const id = log.id || log.logId;
@@ -367,7 +369,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
 
   const renderRowActions = useCallback(
     (log: UiLogEntry) => (
-      <Button variant="outline" navigateUrl={getLogDetailsUrl(log)} openInNewTab={true}>
+      <Button variant="card" navigateUrl={getLogDetailsUrl(log)} openInNewTab={true}>
         Log Details
       </Button>
     ),
@@ -382,51 +384,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     setSelectedLog(null);
   }, []);
 
-  const handleFilterChange = useCallback(
-    (columnFilters: Record<string, any[]>) => {
-      setParams({
-        severities: columnFilters.status || [],
-        toolTypes: columnFilters.tool || [],
-        organizationIds: columnFilters.source || [],
-      });
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
-    },
-    [setParams],
-  );
-
-  const handleRefresh = useCallback(() => {
-    resetToFirstPage();
-  }, [resetToFirstPage]);
-
-  const tableFilters = useMemo(
-    () => ({
-      status: params.severities,
-      tool: params.toolTypes,
-      source: params.organizationIds,
-    }),
-    [params.severities, params.toolTypes, params.organizationIds],
-  );
-
-  const actions = useMemo(
-    () => [
-      {
-        label: 'Refresh',
-        icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
-        onClick: handleRefresh,
-      },
-    ],
-    [handleRefresh],
-  );
-
-  const filterGroups = columns
-    .filter(column => column.filterable)
-    .map(column => ({
-      id: column.key,
-      title: column.label,
-      options: column.filterOptions || [],
-    }));
-
-  const tableContent = (
+  return (
     <>
       <Table
         data={transformedLogs}
@@ -442,7 +400,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
         onRowClick={handleRowClick}
         renderRowActions={!embedded ? renderRowActions : undefined}
         filters={tableFilters}
-        onFilterChange={handleFilterChange}
+        onFilterChange={onFilterChange}
         showFilters={true}
         rowClassName="mb-1"
         infiniteScroll={{
@@ -477,12 +435,130 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
       />
     </>
   );
+}
+
+// ----------------------------------------------------------------
+// Loading fallback — Table skeleton with base columns
+// ----------------------------------------------------------------
+
+function LogsTableSkeleton({ embedded }: { embedded: boolean }) {
+  const columns = useMemo(() => getBaseColumns(embedded), [embedded]);
+  return (
+    <Table
+      data={[]}
+      columns={columns}
+      rowKey="id"
+      loading={true}
+      skeletonRows={10}
+      emptyMessage=""
+      showFilters={true}
+      rowClassName="mb-1"
+    />
+  );
+}
+
+// ----------------------------------------------------------------
+// Outer component — layout shell with internal Suspense
+// ----------------------------------------------------------------
+
+export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>(function LogsTableRelay(
+  { deviceId, embedded = false }: LogsTableRelayProps,
+  ref,
+) {
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
+    severities: { type: 'array', default: [] },
+    toolTypes: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] },
+  });
+
+  const debouncedSearch = useDebounce(params.search, 300);
+
+  const backendFilters: LogFilterInput = useMemo(
+    () => ({
+      severities: params.severities,
+      toolTypes: params.toolTypes,
+      organizationIds: params.organizationIds,
+      deviceId,
+    }),
+    [params.severities, params.toolTypes, params.organizationIds, deviceId],
+  );
+
+  const tableFilters = useMemo(
+    () => ({
+      status: params.severities,
+      tool: params.toolTypes,
+      source: params.organizationIds,
+    }),
+    [params.severities, params.toolTypes, params.organizationIds],
+  );
+
+  const handleFilterChange = useCallback(
+    (columnFilters: Record<string, any[]>) => {
+      setParams({
+        severities: columnFilters.status || [],
+        toolTypes: columnFilters.tool || [],
+        organizationIds: columnFilters.source || [],
+      });
+      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    },
+    [setParams],
+  );
+
+  // Mutable ref so inner component can expose refresh without re-renders
+  const refreshRef = useRef<(() => void) | null>(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      refresh: () => refreshRef.current?.(),
+    }),
+    [],
+  );
+
+  const handleRefresh = useCallback(() => {
+    refreshRef.current?.();
+  }, []);
+
+  const actions = useMemo(
+    () => [
+      {
+        label: 'Refresh',
+        icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
+        onClick: handleRefresh,
+      },
+    ],
+    [handleRefresh],
+  );
+
+  const baseColumns = useMemo(() => getBaseColumns(embedded), [embedded]);
+  const filterGroups = baseColumns
+    .filter(column => column.filterable)
+    .map(column => ({
+      id: column.key,
+      title: column.label,
+      options: [],
+    }));
+
+  const content = (
+    <Suspense fallback={<LogsTableSkeleton embedded={embedded} />}>
+      <LogsTableContent
+        deviceId={deviceId}
+        embedded={embedded}
+        backendFilters={backendFilters}
+        debouncedSearch={debouncedSearch}
+        tableFilters={tableFilters}
+        onFilterChange={handleFilterChange}
+        onRefreshRef={refreshRef}
+      />
+    </Suspense>
+  );
 
   if (embedded) {
     return (
       <div className="space-y-4 mt-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-h5 text-ods-text-secondary">Logs ({transformedLogs.length})</h3>
+          <h3 className="text-h5 text-ods-text-secondary">Logs</h3>
         </div>
 
         <div className="flex gap-4 items-stretch h-[48px]">
@@ -509,7 +585,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
           </div>
         </div>
 
-        {tableContent}
+        {content}
       </div>
     );
   }
@@ -529,7 +605,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
       currentMobileFilters={tableFilters}
       stickyHeader
     >
-      {tableContent}
+      {content}
     </ListPageLayout>
   );
 });

@@ -10,70 +10,59 @@ let runIdCounter = 0;
 
 export function useTestRuns(getFormValues: () => EditScriptFormData) {
   const { toast } = useToast();
-  const [testRuns, setTestRuns] = useState<TestRunData[]>([]);
-  const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
-  const timersRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const [testRun, setTestRun] = useState<TestRunData | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     return () => {
-      abortControllersRef.current.forEach(c => {
-        c.abort();
-      });
-      timersRef.current.forEach(t => {
-        clearInterval(t);
-      });
-      abortControllersRef.current.clear();
-      timersRef.current.clear();
+      abortControllerRef.current?.abort();
+      if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  const stopRunTimer = useCallback((runId: string) => {
-    const timer = timersRef.current.get(runId);
-    if (timer) {
-      clearInterval(timer);
-      timersRef.current.delete(runId);
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
   }, []);
 
-  const startRunTimer = useCallback(
-    (runId: string, startTime: number) => {
-      stopRunTimer(runId);
-      const timer = setInterval(() => {
+  const startTimer = useCallback(
+    (startTime: number) => {
+      stopTimer();
+      timerRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        setTestRuns(prev =>
-          prev.map(r => (r.id === runId && r.status === 'running' ? { ...r, elapsedSeconds: elapsed } : r)),
-        );
+        setTestRun(prev => (prev?.status === 'running' ? { ...prev, elapsedSeconds: elapsed } : prev));
       }, 1000);
-      timersRef.current.set(runId, timer);
     },
-    [stopRunTimer],
+    [stopTimer],
   );
 
-  const handleStopRun = useCallback(
-    (runId: string) => {
-      abortControllersRef.current.get(runId)?.abort();
-      abortControllersRef.current.delete(runId);
-      stopRunTimer(runId);
-      setTestRuns(prev =>
-        prev.map(r =>
-          r.id === runId
-            ? {
-                ...r,
-                status: 'aborted',
-                output: [...r.output, 'Script execution aborted by user.'],
-              }
-            : r,
-        ),
-      );
-    },
-    [stopRunTimer],
-  );
+  const handleStopRun = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    stopTimer();
+    setTestRun(prev =>
+      prev
+        ? {
+            ...prev,
+            status: 'aborted',
+            output: [...prev.output, 'Script execution aborted by user.'],
+          }
+        : prev,
+    );
+  }, [stopTimer]);
 
   const handleRunTest = useCallback(
     async (device: SelectedTestDevice) => {
+      // Abort previous run if still in progress
+      abortControllerRef.current?.abort();
+      stopTimer();
+
       const runId = `run-${++runIdCounter}`;
       const controller = new AbortController();
-      abortControllersRef.current.set(runId, controller);
+      abortControllerRef.current = controller;
 
       const formValues = getFormValues();
       const startTime = Date.now();
@@ -92,8 +81,8 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
         elapsedSeconds: 0,
       };
 
-      setTestRuns(prev => [...prev, newRun]);
-      startRunTimer(runId, startTime);
+      setTestRun(newRun);
+      startTimer(startTime);
 
       try {
         const response = await tacticalApiClient.post(
@@ -111,8 +100,8 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
 
         if (controller.signal.aborted) return;
 
-        stopRunTimer(runId);
-        abortControllersRef.current.delete(runId);
+        stopTimer();
+        abortControllerRef.current = null;
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
 
         if (!response.ok) {
@@ -145,17 +134,15 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
           outputLines.push('Script completed with no output.');
         }
 
-        setTestRuns(prev =>
-          prev.map(r =>
-            r.id === runId
-              ? {
-                  ...r,
-                  elapsedSeconds: elapsed,
-                  status: 'completed',
-                  output: outputLines,
-                }
-              : r,
-          ),
+        setTestRun(prev =>
+          prev?.id === runId
+            ? {
+                ...prev,
+                elapsedSeconds: elapsed,
+                status: 'completed',
+                output: outputLines,
+              }
+            : prev,
         );
 
         toast({
@@ -166,22 +153,20 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
 
-        stopRunTimer(runId);
-        abortControllersRef.current.delete(runId);
+        stopTimer();
+        abortControllerRef.current = null;
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
         const errorMsg = err instanceof Error ? err.message : 'Script execution failed';
 
-        setTestRuns(prev =>
-          prev.map(r =>
-            r.id === runId
-              ? {
-                  ...r,
-                  elapsedSeconds: elapsed,
-                  status: 'error',
-                  output: [...r.output, `Error: ${errorMsg}`],
-                }
-              : r,
-          ),
+        setTestRun(prev =>
+          prev?.id === runId
+            ? {
+                ...prev,
+                elapsedSeconds: elapsed,
+                status: 'error',
+                output: [...prev.output, `Error: ${errorMsg}`],
+              }
+            : prev,
         );
 
         toast({
@@ -191,8 +176,12 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
         });
       }
     },
-    [getFormValues, toast, startRunTimer, stopRunTimer],
+    [getFormValues, toast, startTimer, stopTimer],
   );
 
-  return { testRuns, handleRunTest, handleStopRun };
+  const clearTestRun = useCallback(() => {
+    setTestRun(null);
+  }, []);
+
+  return { testRun, handleRunTest, handleStopRun, clearTestRun };
 }

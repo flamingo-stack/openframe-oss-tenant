@@ -1,18 +1,23 @@
 'use client';
 
 import {
-  Button,
   type DeviceType,
   getDeviceTypeIcon,
   Modal,
-  ModalFooter,
   ModalHeader,
   ModalTitle,
+  Tag,
 } from '@flamingo-stack/openframe-frontend-core';
-import { SelectButton } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Autocomplete, Input, Label, ListLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Filter02Icon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  Input,
+  MobileFilterModal,
+  Table,
+  type TableColumn,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
@@ -20,10 +25,7 @@ import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
 import type { Device, DevicesGraphQlNode, GraphQlResponse } from '../../../devices/types/device.types';
 import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
-import { getDeviceOperatingSystem } from '../../../devices/utils/device-status';
 import { createDeviceListItem } from '../../../devices/utils/device-transform';
-import { useOrganizationsMin } from '../../../organizations/hooks/use-organizations-min';
-import { getDevicePrimaryId } from '../../utils/device-helpers';
 import { mapPlatformsToOsTypes } from '../../utils/script-utils';
 
 export interface SelectedTestDevice {
@@ -38,6 +40,13 @@ interface TestScriptModalProps {
   supportedPlatforms: string[];
 }
 
+function getStatusLabel(status?: string): string {
+  const upper = status?.toUpperCase();
+  if (upper === 'ONLINE') return 'ACTIVE';
+  if (upper === 'OFFLINE') return 'OFFLINE';
+  return upper || 'UNKNOWN';
+}
+
 export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPlatforms }: TestScriptModalProps) {
   const { toast } = useToast();
 
@@ -45,22 +54,12 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
   const debouncedSearch = useDebounce(searchTerm, 300);
   const [allDevices, setAllDevices] = useState<Device[]>([]);
   const [isLoadingDevices, setIsLoadingDevices] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>({});
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const hasFetchedRef = useRef(false);
   const prevPlatformsRef = useRef<string>(JSON.stringify(supportedPlatforms));
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Organization filter
-  const { items: allOrganizations, fetch: fetchOrgs } = useOrganizationsMin();
-  const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (isOpen) {
-      fetchOrgs('');
-    }
-  }, [isOpen, fetchOrgs]);
-
-  // Invalidate cached devices when supported platforms change
   useEffect(() => {
     const key = JSON.stringify(supportedPlatforms);
     if (key !== prevPlatformsRef.current) {
@@ -68,20 +67,12 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
       hasFetchedRef.current = false;
       abortControllerRef.current?.abort();
       setAllDevices([]);
-      setSelectedDeviceId(null);
     }
   }, [supportedPlatforms]);
 
-  const organizationOptions = useMemo(() => {
-    return allOrganizations.map(org => ({
-      label: org.name,
-      value: org.organizationId,
-    }));
-  }, [allOrganizations]);
-
-  // Client-side filtered devices (by search term + selected orgs)
   const filteredDevices = useMemo(() => {
     let filtered = allDevices;
+
     const term = (debouncedSearch || '').toLowerCase();
     if (term) {
       filtered = filtered.filter(d => {
@@ -90,11 +81,24 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
         return name.includes(term) || os.includes(term);
       });
     }
-    if (selectedOrgIds.length > 0) {
-      filtered = filtered.filter(d => d.organizationId && selectedOrgIds.includes(d.organizationId));
+
+    const deviceTypeFilter = columnFilters.device;
+    if (deviceTypeFilter?.length) {
+      filtered = filtered.filter(d => deviceTypeFilter.includes(d.type?.toLowerCase() || ''));
     }
+
+    const orgFilter = columnFilters.organization;
+    if (orgFilter?.length) {
+      filtered = filtered.filter(d => d.organizationId && orgFilter.includes(d.organizationId));
+    }
+
+    const statusFilter = columnFilters.status;
+    if (statusFilter?.length) {
+      filtered = filtered.filter(d => statusFilter.includes(d.status?.toUpperCase() || ''));
+    }
+
     return filtered;
-  }, [allDevices, debouncedSearch, selectedOrgIds]);
+  }, [allDevices, debouncedSearch, columnFilters]);
 
   const fetchDevices = useCallback(async () => {
     abortControllerRef.current?.abort();
@@ -122,11 +126,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
         '/api/graphql',
         {
           query: GET_DEVICES_QUERY,
-          variables: {
-            filter,
-            first: 100,
-            search: '',
-          },
+          variables: { filter, first: 100, search: '' },
         },
         { signal: controller.signal },
       );
@@ -146,8 +146,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
       }
 
       const nodes = graphqlResponse.data.devices.edges.map(e => e.node);
-      const items = nodes.map(createDeviceListItem);
-      setAllDevices(items);
+      setAllDevices(nodes.map(createDeviceListItem));
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       const msg = err instanceof Error ? err.message : 'Failed to load devices';
@@ -168,7 +167,6 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     }
   }, [isOpen, fetchDevices, hasPlatforms]);
 
-  // Abort fetch on unmount or modal close
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort();
@@ -181,39 +179,120 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     }
   }, [isOpen]);
 
-  const handleSelectDevice = (device: Device) => {
-    setSelectedDeviceId(getDevicePrimaryId(device));
-  };
+  const handleRowClick = useCallback(
+    (device: Device) => {
+      const agentToolId = getTacticalAgentId(device);
 
-  const handleConfirm = useCallback(() => {
-    if (!selectedDeviceId) return;
+      if (!agentToolId) {
+        toast({
+          title: 'No Tactical Agent',
+          description: 'This device has no Tactical RMM agent connected.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    const selectedDevice = filteredDevices.find(d => getDevicePrimaryId(d) === selectedDeviceId);
-    if (!selectedDevice) return;
-
-    const agentToolId = getTacticalAgentId(selectedDevice);
-
-    if (!agentToolId) {
-      toast({
-        title: 'No Tactical Agent',
-        description: 'This device has no Tactical RMM agent connected.',
-        variant: 'destructive',
+      onDeviceSelected({
+        agentToolId,
+        deviceName: device.displayName || device.hostname,
       });
-      return;
-    }
+      onClose();
+    },
+    [toast, onDeviceSelected, onClose],
+  );
 
-    onDeviceSelected({
-      agentToolId,
-      deviceName: selectedDevice.displayName || selectedDevice.hostname,
-    });
-    onClose();
-  }, [selectedDeviceId, filteredDevices, toast, onDeviceSelected, onClose]);
+  const deviceTypeOptions = useMemo(() => {
+    const types = new Set(allDevices.map(d => d.type?.toLowerCase()).filter(Boolean));
+    return Array.from(types).map(t => ({
+      id: t as string,
+      label: (t as string).charAt(0).toUpperCase() + (t as string).slice(1),
+      value: t as string,
+    }));
+  }, [allDevices]);
+
+  const organizationOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const d of allDevices) {
+      const orgId = d.organizationId;
+      const orgName = d.organization;
+      if (orgId && orgName && !seen.has(orgId)) {
+        seen.set(orgId, orgName);
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({ id, label: name, value: id }));
+  }, [allDevices]);
+
+  const statusOptions = useMemo(() => {
+    const statuses = new Set(allDevices.map(d => d.status?.toUpperCase()).filter(Boolean));
+    return Array.from(statuses).map(s => ({ id: s as string, label: getStatusLabel(s), value: s as string }));
+  }, [allDevices]);
+
+  const columns: TableColumn<Device>[] = useMemo(
+    () => [
+      {
+        key: 'device',
+        label: 'DEVICE',
+        filterable: true,
+        filterOptions: deviceTypeOptions,
+        renderCell: (device: Device) => {
+          const lastSeen = device.last_seen || device.lastSeen;
+          const deviceType = device.type?.toLowerCase() as DeviceType;
+          return (
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
+                {getDeviceTypeIcon(deviceType, { className: 'size-4 text-ods-text-secondary' })}
+              </div>
+              <div className="flex flex-col truncate">
+                <span className="text-lg font-medium text-ods-text-primary truncate">
+                  {device.displayName || device.hostname}
+                </span>
+                <span className="text-sm font-medium text-ods-text-secondary truncate">
+                  Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
+                </span>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        key: 'organization',
+        label: 'ORGANIZATION',
+        width: 'w-[200px]',
+        hideAt: 'md',
+        filterable: true,
+        filterOptions: organizationOptions,
+        renderCell: (device: Device) => (
+          <span className="text-sm font-medium text-ods-text-secondary truncate">{device.organization || '—'}</span>
+        ),
+      },
+      {
+        key: 'status',
+        label: 'STATUS',
+        width: 'w-[160px]',
+        filterable: true,
+        filterOptions: statusOptions,
+        renderCell: (device: Device) => (
+          <Tag label={getStatusLabel(device.status)} variant={'success'} className="w-min" />
+        ),
+      },
+    ],
+    [deviceTypeOptions, organizationOptions, statusOptions],
+  );
+
+  const handleFilterChange = useCallback((filters: Record<string, any[]>) => {
+    setColumnFilters(filters);
+  }, []);
+
+  const filterGroups = useMemo(
+    () => columns.filter(c => c.filterable).map(c => ({ id: c.key, title: c.label, options: c.filterOptions || [] })),
+    [columns],
+  );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[900px] flex flex-col">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-6xl h-[90vh] max-h-[900px] flex flex-col">
       <ModalHeader>
         <div className="flex items-center justify-between w-full">
-          <ModalTitle>Select Online Device</ModalTitle>
+          <ModalTitle>Select Device</ModalTitle>
           <button
             type="button"
             onClick={onClose}
@@ -224,77 +303,60 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
         </div>
       </ModalHeader>
 
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-        {/* Search & Organization Filter */}
-        <div className="px-6 py-4 grid grid-cols-1 gap-4">
-          <div className="flex flex-col gap-3">
-            <Label className="text-ods-text-primary font-semibold text-lg">Search by Online Devices</Label>
-            <Input
-              startAdornment={<SearchIcon />}
-              placeholder="Search by online devices"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-3">
-            <Label className="text-ods-text-primary font-semibold text-lg">Filter by Organization</Label>
-            <Autocomplete
-              startAdornment={<SearchIcon />}
-              placeholder="Select Organization"
-              options={organizationOptions}
-              value={selectedOrgIds}
-              onChange={setSelectedOrgIds}
-              limitTags={2}
-              multiple
-            />
-          </div>
-        </div>
-
-        {/* Device List */}
-        <div className="flex-1 min-h-0 px-6 pb-4 overflow-y-auto">
-          {!hasPlatforms ? (
-            <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-              <p className="text-ods-text-secondary">
-                Select at least one supported platform to see available devices.
-              </p>
-            </div>
-          ) : isLoadingDevices ? (
-            <ListLoader />
-          ) : filteredDevices.length === 0 ? (
-            <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-              <p className="text-ods-text-secondary">No devices found. Try adjusting your search.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {filteredDevices.map(device => {
-                const id = getDevicePrimaryId(device);
-                const deviceType = device.type?.toLowerCase() as DeviceType;
-                const isSelected = selectedDeviceId === id;
-
-                return (
-                  <SelectButton
-                    key={id}
-                    title={device.displayName || device.hostname}
-                    icon={getDeviceTypeIcon(deviceType, { className: 'w-5 h-5' })}
-                    description={getDeviceOperatingSystem(device.osType)}
-                    selected={isSelected}
-                    onClick={() => handleSelectDevice(device)}
-                  />
-                );
-              })}
-            </div>
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col px-10 pt-4 pb-10 gap-6">
+        <div className="flex gap-4 items-center">
+          <Input
+            startAdornment={<SearchIcon />}
+            placeholder="Search for Devices"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="flex-1"
+          />
+          {filterGroups.length > 0 && (
+            <Button
+              variant="search"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileFilterOpen(true)}
+              aria-label="Open filters"
+            >
+              <Filter02Icon />
+            </Button>
           )}
         </div>
-      </div>
 
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={handleConfirm} disabled={!selectedDeviceId}>
-          Run Test
-        </Button>
-      </ModalFooter>
+        {filterGroups.length > 0 && (
+          <MobileFilterModal
+            isOpen={mobileFilterOpen}
+            onClose={() => setMobileFilterOpen(false)}
+            filterGroups={filterGroups}
+            onFilterChange={handleFilterChange}
+            currentFilters={columnFilters}
+          />
+        )}
+
+        {!hasPlatforms ? (
+          <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
+            <p className="text-ods-text-secondary">Select at least one supported platform to see available devices.</p>
+          </div>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto bg-ods-bg border border-ods-border rounded-[6px] px-4 pb-4">
+            <Table
+              data={filteredDevices}
+              columns={columns}
+              rowKey="id"
+              loading={isLoadingDevices}
+              skeletonRows={8}
+              emptyMessage="No devices found"
+              showFilters={true}
+              filters={columnFilters}
+              onFilterChange={handleFilterChange}
+              onRowClick={handleRowClick}
+              stickyHeader
+            />
+          </div>
+        )}
+      </div>
     </Modal>
   );
 }
