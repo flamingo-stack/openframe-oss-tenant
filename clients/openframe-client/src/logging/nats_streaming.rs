@@ -14,6 +14,7 @@ use super::log_rotation::LogRotationManager;
 const BATCH_INTERVAL_SECS: u64 = 60;
 const MAX_LOGS_PER_BATCH: usize = 50;
 const RECONNECT_DELAY_SECS: u64 = 5;
+const INITIAL_KEY_CHECK_INTERVAL_SECS: u64 = 10;
 const NATS_SUBJECT: &str = "agents.logs";
 // Hardcoded machine ID for NATS header (used before registration)
 const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
@@ -108,10 +109,10 @@ impl NatsLogConnection {
 pub struct LogStreamingRunManager {
     server_host: String,
     tenant_domain: String,
-    initial_key: String,
     hostname: String,
     log_file_path: PathBuf,
     offset_file_path: PathBuf,
+    initial_config_service: InitialConfigurationService,
     agent_config_service: AgentConfigurationService,
 }
 
@@ -122,7 +123,6 @@ impl LogStreamingRunManager {
         directory_manager: &DirectoryManager,
     ) -> Result<Self> {
         let server_host = initial_config_service.get_server_url()?;
-        let initial_key = initial_config_service.get_initial_key()?;
         let tenant_domain = extract_tenant_domain(&server_host);
 
         let device_data_fetcher = DeviceDataFetcher::new();
@@ -134,39 +134,60 @@ impl LogStreamingRunManager {
         Ok(Self {
             server_host,
             tenant_domain,
-            initial_key,
             hostname,
             log_file_path,
             offset_file_path,
+            initial_config_service: initial_config_service.clone(),
             agent_config_service: agent_config_service.clone(),
         })
     }
 
-    /// Start the log streaming background task.
     pub async fn start(self) -> Result<()> {
-        let mut connection = NatsLogConnection::new(
-            self.server_host.clone(),
-            self.tenant_domain.clone(),
-            self.initial_key.clone(),
-        );
+        tokio::spawn(async move {
+            let initial_key = self.wait_for_initial_key().await;
 
-        connection.connect().await?;
+            let mut connection = NatsLogConnection::new(
+                self.server_host.clone(),
+                self.tenant_domain.clone(),
+                initial_key,
+            );
 
-        let rotation_manager = LogRotationManager::new(
-            self.log_file_path.clone(),
-            self.offset_file_path.clone(),
-        );
+            if let Err(e) = connection.connect().await {
+                error!("Failed to connect to NATS logs: {:#}", e);
+                return;
+            }
 
-        tokio::spawn(log_file_reader_task(
-            self.log_file_path,
-            rotation_manager,
-            connection,
-            self.hostname,
-            self.tenant_domain,
-            self.agent_config_service,
-        ));
+            let rotation_manager = LogRotationManager::new(
+                self.log_file_path.clone(),
+                self.offset_file_path.clone(),
+            );
+
+            log_file_reader_task(
+                self.log_file_path,
+                rotation_manager,
+                connection,
+                self.hostname,
+                self.tenant_domain,
+                self.agent_config_service,
+            ).await;
+        });
 
         Ok(())
+    }
+
+    async fn wait_for_initial_key(&self) -> String {
+        loop {
+            match self.initial_config_service.get_initial_key() {
+                Ok(key) if !key.is_empty() => {
+                    info!("NATS log streaming: initial key available, starting");
+                    return key;
+                }
+                _ => {
+                    debug!("NATS log streaming: waiting for initial key...");
+                    tokio::time::sleep(Duration::from_secs(INITIAL_KEY_CHECK_INTERVAL_SECS)).await;
+                }
+            }
+        }
     }
 }
 
