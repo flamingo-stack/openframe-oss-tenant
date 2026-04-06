@@ -2,6 +2,7 @@ import './styles/globals.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { DebugModeProvider } from './contexts/DebugModeContext';
+import { FeatureFlagsGate, FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { ChatView } from './views/ChatView';
 
@@ -25,9 +26,13 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <DebugModeProvider>
-        <ChatView />
-      </DebugModeProvider>
+      <FeatureFlagsProvider>
+        <FeatureFlagsGate>
+          <DebugModeProvider>
+            <ChatView />
+          </DebugModeProvider>
+        </FeatureFlagsGate>
+      </FeatureFlagsProvider>
     </QueryClientProvider>
   );
 }

@@ -3,7 +3,6 @@
  * Controls whether the app runs in auth-only mode or full application mode
  */
 
-import { featureFlags } from './feature-flags';
 import { runtimeEnv } from './runtime-config';
 
 export type AppMode = 'oss-tenant' | 'saas-tenant' | 'saas-shared';

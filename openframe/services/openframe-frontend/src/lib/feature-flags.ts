@@ -35,6 +35,11 @@ export const featureFlags = {
       return getFlagValue('ssoAutoAllow', () => runtimeEnv.featureSsoAllowDomain());
     },
   },
+  dialogStop: {
+    enabled(): boolean {
+      return getFlagValue('dialog-stop', () => false);
+    },
+  },
 } as const;
 
 /**

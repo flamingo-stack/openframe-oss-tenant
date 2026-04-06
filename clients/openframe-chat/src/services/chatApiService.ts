@@ -116,6 +116,27 @@ export class ChatApiService {
     }
   }
 
+  async stopGeneration(args: { dialogId: string; chatType: 'CLIENT_CHAT' }): Promise<void> {
+    await tokenService.ensureTokenReady();
+
+    const url = `${this.getApiBaseUrl()}/chat/api/v1/dialogs/${args.dialogId}/stop`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ chatType: args.chatType }),
+    }).catch(err => {
+      if (this.debugMode) {
+        throw new Error(`Network error stopping generation: ${err.message}\nURL: ${url}\nDialog ID: ${args.dialogId}`);
+      }
+      throw err;
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`Failed to stop generation: ${response.status} ${response.statusText}\n${errorText}`);
+    }
+  }
+
   setDebugMode(enabled: boolean) {
     this.debugMode = enabled;
   }
