@@ -94,7 +94,6 @@ impl ToolUpdater for GuiAppToolUpdater {
             if let Some(u) = get_console_user() {
                 break u;
             }
-            info!(tool_id = %tool_agent_id, "No console user, waiting for login...");
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         };
 
