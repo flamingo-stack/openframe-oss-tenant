@@ -266,7 +266,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
   const renderTrigger = () => {
     if (context === 'table') {
-      return <Button variant="outline" centerIcon={<MoreVertical />} onClick={handleTriggerClick}></Button>;
+      return <Button variant="card" centerIcon={<MoreVertical />} onClick={handleTriggerClick}></Button>;
     }
 
     // Detail context: same 3 dots button style

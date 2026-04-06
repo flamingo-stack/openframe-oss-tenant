@@ -12,6 +12,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
+import { featureFlags } from '@/lib/feature-flags';
 import { AppLayout } from '../components/app-layout';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
@@ -49,6 +50,7 @@ export default function Mingo() {
     messages: processedMessages,
     createDialog,
     sendMessage,
+    stopGeneration,
     approvals: pendingApprovals,
     isCreatingDialog,
     isTyping,
@@ -298,6 +300,7 @@ export default function Mingo() {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
+                  onStop={featureFlags.dialogStop.enabled() && isTyping ? stopGeneration : undefined}
                   sending={isTyping || isCreatingDialog || isSelectingDialog}
                   autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"

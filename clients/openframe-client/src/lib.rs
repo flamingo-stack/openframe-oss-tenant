@@ -57,7 +57,8 @@ use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService};
+use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
+use crate::logging::nats_streaming::LogStreamingRunManager;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -131,6 +132,10 @@ pub struct Client {
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
     update_handler_service: UpdateHandlerService,
+    // Services needed for log streaming initialization
+    initial_configuration_service: InitialConfigurationService,
+    agent_configuration_service: AgentConfigurationService,
+    initial_key_service: Arc<InitialKeyService>,
 }
 
 impl Client {
@@ -245,6 +250,13 @@ impl Client {
             http_url.clone(),
             config_service.clone()
         );
+
+        let initial_key_service = Arc::new(InitialKeyService::new(
+            http_client.clone(),
+            http_url.clone(),
+            initial_configuration_service.clone(),
+            config_service.clone(),
+        ));
 
         // Initialize installed tools service
         let installed_tools_service = InstalledToolsService::new(directory_manager.clone())
@@ -383,15 +395,24 @@ impl Client {
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
             update_handler_service,
+            initial_configuration_service,
+            agent_configuration_service: config_service,
+            initial_key_service,
         })
     }
 
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
-        // Process initial registration and authentication
-        // if it haven't been done yet
-        // Processors retry it till success
+        self.initial_key_service.clone().ensure_initial_key().await;
+
+        LogStreamingRunManager::new(
+            &self.initial_configuration_service,
+            &self.agent_configuration_service,
+            &self.directory_manager,
+        )?.start().await?;
+        info!("NATS log streaming initialized successfully");
+
         self.registration_processor.process().await?;
         self.auth_processor.process().await?;
 

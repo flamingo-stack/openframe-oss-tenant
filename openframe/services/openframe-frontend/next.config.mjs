@@ -7,6 +7,13 @@ const nextConfig = {
   images: {
     unoptimized: true, // No server-side image optimization
   },
+  compiler: {
+    relay: {
+      src: './src',
+      language: 'typescript',
+      artifactDirectory: './src/__generated__',
+    },
+  },
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     // App mode configuration

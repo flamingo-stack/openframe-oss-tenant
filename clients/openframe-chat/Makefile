@@ -20,7 +20,7 @@ clippy:
 lint: fmt-check clippy
 
 build:
-	rm -rf node_modules package-lock.json
+	rm -rf node_modules
 	npm install
 	npx tauri build $(TARGET_FLAG)
 

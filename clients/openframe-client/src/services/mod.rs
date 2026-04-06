@@ -30,6 +30,7 @@ pub mod github_download_service;
 pub mod update_state_service;
 pub mod update_cleanup_service;
 pub mod update_handler_service;
+pub mod initial_key_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
@@ -60,3 +61,4 @@ pub use machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 pub use update_state_service::UpdateStateService;
 pub use update_cleanup_service::UpdateCleanupService;
 pub use update_handler_service::UpdateHandlerService;
+pub use initial_key_service::InitialKeyService;

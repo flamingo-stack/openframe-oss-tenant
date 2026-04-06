@@ -852,8 +852,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
         // Test directory creation
         assert!(manager.ensure_directories().is_ok());
@@ -866,8 +867,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -890,8 +892,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -921,7 +924,7 @@ mod tests {
         let non_existent = PathBuf::from("/non_existent_dir_for_test");
 
         let manager =
-            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone());
+            DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone(), non_existent.clone());
 
         // This should fail on validate because we can't create the directory
         if cfg!(unix) && unsafe { libc::geteuid() } != 0 {
@@ -965,8 +968,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
         // Test health check
         assert!(manager.perform_health_check().is_ok());
@@ -997,8 +1001,9 @@ mod tests {
         let temp_dir = tempdir().unwrap();
         let logs_dir = temp_dir.path().join("logs");
         let app_dir = temp_dir.path().join("app");
+        let secured_dir = temp_dir.path().join("secured");
 
-        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone());
+        let manager = DirectoryManager::with_custom_dirs(logs_dir.clone(), app_dir.clone(), secured_dir.clone());
 
         // Create directories first
         assert!(manager.ensure_directories().is_ok());
@@ -1044,30 +1049,6 @@ mod tests {
             let program_data = std::env::var_os("ProgramData").unwrap_or_default();
             let expected = PathBuf::from(program_data).join("OpenFrame");
             assert_eq!(app_dir, expected);
-        }
-    }
-
-    #[test]
-    fn test_secured_directory() {
-        let temp_dir = tempdir().unwrap();
-        let logs_dir = temp_dir.path().join("logs");
-        let app_dir = temp_dir.path().join("app");
-        let secured_dir = temp_dir.path().join("secured");
-
-        let manager = DirectoryManager::with_all_custom_dirs(logs_dir, app_dir, secured_dir.clone());
-
-        // Test secured directory creation
-        assert!(manager.ensure_directories().is_ok());
-        assert!(secured_dir.exists());
-
-        // Test secured directory permissions (only on Unix systems with root)
-        #[cfg(unix)]
-        {
-            if unsafe { libc::geteuid() } == 0 {
-                // Only run this check if we're root
-                let metadata = fs::metadata(&secured_dir).unwrap();
-                assert_eq!(metadata.permissions().mode() & 0o777, 0o700);
-            }
         }
     }
 

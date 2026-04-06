@@ -11,13 +11,15 @@ import {
 import { ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useCallback, useEffect, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
-import { features } from '../config/features';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 
 export function ChatView() {
+  const { flags } = useFeatureFlags();
+
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
     provider: string;
@@ -41,6 +43,7 @@ export function ChatView() {
     isTyping,
     isStreaming,
     sendMessage,
+    stopGeneration,
     handleQuickAction,
     quickActions,
     hasMessages,
@@ -54,7 +57,7 @@ export function ChatView() {
     loadMoreMessages,
   } = useChat({
     useApi: true,
-    useNats: features.nats,
+    useNats: true,
     onMetadataUpdate: handleMetadataUpdate,
   });
 
@@ -170,6 +173,7 @@ export function ChatView() {
       <ChatFooter>
         <ChatInput
           onSend={sendMessage}
+          onStop={flags['dialog-stop'] && isStreaming ? stopGeneration : undefined}
           sending={isStreaming}
           awaitingResponse={awaitingTechnicianResponse}
           placeholder="Enter your request here..."

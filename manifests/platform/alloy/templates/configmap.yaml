@@ -144,10 +144,18 @@ data:
         target_label  = "__address__"
       }
 
-      // Copy pod labels
+      // Promote only useful pod labels (avoid blanket labelmap to prevent label bloat)
       rule {
-        action = "labelmap"
-        regex  = "__meta_kubernetes_pod_label_(.+)"
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+        target_label  = "app"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_component"]
+        target_label  = "component"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_instance"]
+        target_label  = "instance_name"
       }
 
       // Add namespace label

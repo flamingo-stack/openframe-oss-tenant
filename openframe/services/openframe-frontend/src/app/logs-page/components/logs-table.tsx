@@ -14,6 +14,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
+import Link from 'next/link';
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { LogDrawer } from '../../components/shared';
@@ -203,6 +204,19 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`;
   }, []);
 
+  const renderEmbeddedRowActions = useCallback(
+    (log: UiLogEntry) => (
+      <Button
+        variant="card"
+        navigateUrl={getLogDetailsUrl(log)}
+        className="bg-ods-card border-ods-border hover:bg-ods-bg-hover text-ods-text-primary text-h3 px-4 py-3 h-12"
+      >
+        Log Details
+      </Button>
+    ),
+    [getLogDetailsUrl],
+  );
+
   const renderRowActions = useCallback(
     (log: UiLogEntry) => (
       <Button
@@ -284,7 +298,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
             : 'No logs found. Try adjusting your search or filters.'
         }
         onRowClick={handleRowClick}
-        renderRowActions={!embedded ? renderRowActions : undefined}
+        renderRowActions={!embedded ? renderRowActions : renderEmbeddedRowActions}
         filters={tableFilters}
         onFilterChange={handleFilterChange}
         showFilters={true}

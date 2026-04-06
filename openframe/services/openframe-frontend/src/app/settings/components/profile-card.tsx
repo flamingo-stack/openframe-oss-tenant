@@ -2,7 +2,8 @@
 
 import { Button, Skeleton, Tag } from '@flamingo-stack/openframe-frontend-core';
 import { AlertCircleIcon, PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { PageError, SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '../../auth/stores';
 
 interface ProfileCardProps {
@@ -13,12 +14,6 @@ interface ProfileCardProps {
 export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) {
   const user = useAuthStore(state => state.user);
   const isLoadingProfile = useAuthStore(state => state.isLoadingProfile);
-
-  const getInitials = () => {
-    const first = user?.firstName?.charAt(0) || '';
-    const last = user?.lastName?.charAt(0) || '';
-    return (first + last).toUpperCase() || 'UN';
-  };
 
   const displayName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : '—';
 
@@ -32,19 +27,7 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)] flex items-center gap-[var(--spacing-system-m)]">
-      <div className="shrink-0">
-        {user.image?.imageUrl ? (
-          <img
-            src={user.image.imageUrl}
-            alt="Profile"
-            className="w-12 h-12 rounded-full object-cover border border-ods-border"
-          />
-        ) : (
-          <div className="w-12 h-12 rounded-full bg-ods-bg border border-ods-border flex items-center justify-center">
-            <span className="text-h4 text-ods-text-secondary">{getInitials()}</span>
-          </div>
-        )}
-      </div>
+      <SquareAvatar src={getFullImageUrl(user.image?.imageUrl)} fallback={displayName} size="lg" variant="round" />
 
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-center gap-2">

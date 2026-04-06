@@ -5,10 +5,12 @@ import './globals.css';
 import '@flamingo-stack/openframe-frontend-core/styles';
 import { azeretMono, dmSans } from '@/lib/fonts';
 import { Toaster } from '@/lib/openframe-core-ui';
+import { FeatureFlagsGate } from '../components/feature-flags-gate';
 import { GraphQlIntrospectionInitializer } from '../components/graphql-introspection-initializer';
 import { RouteGuard } from '../components/route-guard';
 import { isAuthEnabled } from '../lib/app-mode';
 import { QueryClientProvider } from '../lib/query-client-provider';
+import { RelayProvider } from '../lib/relay';
 import { DevTicketObserver } from './auth/components/dev-ticket-observer';
 import { AppShellSkeleton } from './components/app-shell-skeleton';
 import { DeploymentInitializer } from './components/deployment-initializer';
@@ -89,19 +91,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning className="min-h-screen antialiased font-body" data-app-type="openframe">
         <GoogleTagManager />
         <DeploymentInitializer />
-        <QueryClientProvider>
-          {isAuthEnabled() && (
-            <Suspense fallback={null}>
-              <DevTicketObserver />
-              <GraphQlIntrospectionInitializer />
-            </Suspense>
-          )}
-          <RouteGuard>
-            <div className="relative flex min-h-screen flex-col">
-              <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
-            </div>
-          </RouteGuard>
-        </QueryClientProvider>
+        <RelayProvider>
+          <QueryClientProvider>
+            {isAuthEnabled() && (
+              <Suspense fallback={null}>
+                <DevTicketObserver />
+                <GraphQlIntrospectionInitializer />
+              </Suspense>
+            )}
+            <FeatureFlagsGate>
+              <RouteGuard>
+                <div className="relative flex min-h-screen flex-col">
+                  <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
+                </div>
+              </RouteGuard>
+            </FeatureFlagsGate>
+          </QueryClientProvider>
+        </RelayProvider>
         <Toaster />
       </body>
     </html>

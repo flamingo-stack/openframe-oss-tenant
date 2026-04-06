@@ -19,9 +19,6 @@ import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { getProviderIcon } from '../utils/get-provider-icon';
 
-// Feature flag: enabled by default, can disable with env var
-const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
-
 interface SsoConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,6 +54,7 @@ export function SsoConfigModal({
   onSubmit,
   onDisable,
 }: SsoConfigModalProps) {
+  const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [isSingleTenant, setIsSingleTenant] = useState(false);
@@ -125,7 +123,16 @@ export function SsoConfigModal({
       return false;
     }
     return true;
-  }, [clientId, clientSecret, isMicrosoft, isSingleTenant, msTenantId, autoProvisionUsers, allowedDomains]);
+  }, [
+    clientId,
+    clientSecret,
+    isMicrosoft,
+    isSingleTenant,
+    msTenantId,
+    isDomainAllowlistEnabled,
+    autoProvisionUsers,
+    allowedDomains,
+  ]);
 
   const handleSubmit = async () => {
     if (!canSubmit || !onSubmit) return;

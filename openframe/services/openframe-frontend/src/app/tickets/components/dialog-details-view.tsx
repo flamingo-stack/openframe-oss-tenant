@@ -21,6 +21,7 @@ import { CheckCircle, Clock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { DeviceInfoSection } from '../../components/shared';
 import {
   API_ENDPOINTS,
@@ -241,6 +242,31 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     },
     [handleRejectRequest, toast],
   );
+
+  const handleStopGeneration = useCallback(async () => {
+    try {
+      const response = await apiClient.post(`/chat/api/v1/dialogs/${dialogId}/stop`, {
+        chatType: CHAT_TYPE.ADMIN,
+      });
+      if (!response.ok) {
+        toast({
+          title: 'Stop Failed',
+          description: response.error || 'Unable to stop generation',
+          variant: 'destructive',
+          duration: 5000,
+        });
+      } else {
+        setTypingIndicator(true, false);
+      }
+    } catch (error) {
+      toast({
+        title: 'Stop Failed',
+        description: error instanceof Error ? error.message : 'Unable to stop generation',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    }
+  }, [dialogId, toast, setTypingIndicator]);
 
   const handleSendAdminMessage = useCallback(
     async (message: string) => {
@@ -494,6 +520,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 reserveAvatarOffset={false}
                 placeholder="Enter your Request..."
                 onSend={handleSendAdminMessage}
+                onStop={featureFlags.dialogStop.enabled() && isAdminChatTyping ? handleStopGeneration : undefined}
                 sending={isSendingAdminMessage || isAdminChatTyping}
                 autoFocus={false}
                 className="mt-2 bg-ods-card rounded-lg max-w-full"

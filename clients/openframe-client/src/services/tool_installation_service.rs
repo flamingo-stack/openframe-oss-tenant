@@ -318,6 +318,7 @@ impl ToolInstallationService {
             tool_agent_id_command_args: tool_installation_message.tool_agent_id_command_args.unwrap_or_default(),
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             installation,
+            assets: Vec::new(),
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await

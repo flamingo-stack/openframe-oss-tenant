@@ -444,6 +444,24 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     [messages, useNats, natsDialogId, waitForNatsSubscription],
   );
 
+  const stopGeneration = useCallback(async () => {
+    const api = apiServiceRef.current;
+    const dialogId = natsDialogId;
+    if (!api || !dialogId) return;
+
+    try {
+      await api.stopGeneration({ dialogId, chatType: 'CLIENT_CHAT' });
+    } catch (err) {
+      console.error('[CHAT] Failed to stop generation:', err);
+    } finally {
+      setIsTyping(false);
+      setNatsStreaming(false);
+      const resolve = natsDoneResolverRef.current;
+      natsDoneResolverRef.current = null;
+      if (resolve) resolve();
+    }
+  }, [natsDialogId]);
+
   const handleQuickAction = useCallback(
     (actionText: string) => {
       sendMessage(actionText);
@@ -508,6 +526,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     error,
     dialogId: natsDialogId,
     sendMessage,
+    stopGeneration,
     handleQuickAction,
     clearMessages,
     resumeDialog,

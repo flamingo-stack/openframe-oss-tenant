@@ -14,21 +14,16 @@ import {
   SelectValue,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { featureFlags } from '@/lib/feature-flags';
-import { getFullImageUrl } from '@/lib/image-url';
 import { DeviceSelector } from '../../../components/shared/device-selector';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
-import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { LiveTestPanel } from '../../components/live-test-panel';
 import { useLiveCampaign } from '../../hooks/use-live-campaign';
@@ -78,40 +73,6 @@ const getDeviceKey = (d: Device) => {
   const id = getFleetHostId(d);
   return id !== undefined ? String(id) : undefined;
 };
-
-const monitoringExtraColumns: TableColumn<Device>[] = [
-  {
-    key: 'organization',
-    label: 'ORGANIZATION',
-    width: 'w-1/4',
-    hideAt: 'lg',
-    renderCell: (device: Device) => {
-      const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
-      return (
-        <div className="flex items-center gap-3">
-          {featureFlags.organizationImages.displayEnabled() && (
-            <OrganizationIcon
-              imageUrl={fullImageUrl}
-              organizationName={device.organization || 'Organization'}
-              size="sm"
-            />
-          )}
-          <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
-        </div>
-      );
-    },
-  },
-  {
-    key: 'status',
-    label: 'STATUS',
-    width: 'w-[140px]',
-    hideAt: 'md',
-    renderCell: (device: Device) => {
-      const config = getDeviceStatusConfig(device.status);
-      return <Tag label={config.label} variant={config.variant} />;
-    },
-  },
-];
 
 export function EditQueryPage({ queryId }: EditQueryPageProps) {
   const router = useRouter();
@@ -440,7 +401,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             onSelectionChange={handleDeviceSelectionChange}
             disabled={isSaving}
             addAllBehavior="merge"
-            extraColumns={monitoringExtraColumns}
             isDeviceDisabled={d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined)}
           />
         </div>

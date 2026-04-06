@@ -1,8 +1,8 @@
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use tracing::{info, warn};
 use anyhow::{Context, Result};
-use crate::models::tool_agent_update_message::ToolAgentUpdateMessage;
-use crate::models::Installation;
+use crate::models::tool_agent_update_message::{ToolAgentUpdateMessage, AssetUpdate};
+use crate::models::{Installation, InstalledAsset};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
@@ -10,7 +10,7 @@ use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::ToolCommandParamsResolver;
-use crate::platform::{DirectoryManager, ToolUpdaterDeps, needs_migration, detect_actual_installation, run_update, run_migration};
+use crate::platform::{DirectoryManager, ToolUpdaterDeps, binary_writer, needs_migration, detect_actual_installation, run_update, run_migration};
 
 #[derive(Clone)]
 pub struct ToolAgentUpdateService {
@@ -71,24 +71,65 @@ impl ToolAgentUpdateService {
             }
         };
 
-        // Check if version is different
-        if installed_tool.version == *new_version {
-            info!("Tool {} is already at version {}, no update needed", tool_agent_id, new_version);
+        let needs_tool_update = installed_tool.version != *new_version;
+        let assets_to_update: Vec<_> = message.assets.as_ref()
+            .map(|assets| assets.iter().filter(|a| {
+                let existing = installed_tool.assets.iter().find(|ia| ia.id == a.asset_id);
+                existing.map(|e| e.version.as_str()) != Some(a.version.as_str())
+            }).collect())
+            .unwrap_or_default();
+
+        if !needs_tool_update && assets_to_update.is_empty() {
+            info!("Tool {} and all assets already at target versions, nothing to update", tool_agent_id);
             return Ok(());
         }
 
-        info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
-
+        // Mark as updating once for all updates
         self.tool_run_manager.mark_updating(tool_agent_id).await;
 
-        let result = self.do_update(new_version, &message, &mut installed_tool).await;
+        let result = self.do_updates(
+            &message,
+            &mut installed_tool,
+            needs_tool_update,
+            &assets_to_update,
+        ).await;
 
+        // Clear updating flag - tool_run_manager will restart the tool
         self.tool_run_manager.clear_updating(tool_agent_id).await;
 
         result
     }
 
-    async fn do_update(
+    async fn do_updates(
+        &self,
+        message: &ToolAgentUpdateMessage,
+        installed_tool: &mut crate::models::installed_tool::InstalledTool,
+        needs_tool_update: bool,
+        assets_to_update: &[&AssetUpdate],
+    ) -> Result<()> {
+        let tool_agent_id = &message.tool_agent_id;
+        let new_version = &message.version;
+
+        // 1. Tool update (if version changed)
+        if needs_tool_update {
+            info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
+            self.do_tool_update(new_version, message, installed_tool).await?;
+        } else if !assets_to_update.is_empty() {
+            // Only assets to update - stop tool once before all asset updates
+            info!(tool_id = %tool_agent_id, "Stopping tool for asset updates");
+            self.tool_kill_service.stop_tool(tool_agent_id).await
+                .with_context(|| format!("Failed to stop tool {} for asset updates", tool_agent_id))?;
+        }
+
+        // 2. Asset updates (tool already stopped by tool_update or above)
+        for asset in assets_to_update {
+            self.do_asset_update(tool_agent_id, asset, installed_tool).await?;
+        }
+
+        Ok(())
+    }
+
+    async fn do_tool_update(
         &self,
         new_version: &str,
         message: &ToolAgentUpdateMessage,
@@ -217,19 +258,95 @@ impl ToolAgentUpdateService {
         Ok(())
     }
 
-    async fn publish_installed_agent_message(&self, tool_agent_id: &str, version: &str) {
-        info!(tool_id = %tool_agent_id, "Publishing installed agent message");
+    async fn do_asset_update(
+        &self,
+        tool_agent_id: &str,
+        asset: &AssetUpdate,
+        installed_tool: &mut crate::models::installed_tool::InstalledTool,
+    ) -> Result<()> {
+        let asset_id = &asset.asset_id;
+        let new_version = &asset.version;
+
+        let existing_asset = installed_tool.assets.iter().find(|a| a.id == *asset_id);
+
+        if existing_asset.map(|a| a.version.as_str()) == Some(new_version.as_str()) {
+            info!(asset_id = %asset_id, version = %new_version, "Asset already at version, skipping");
+            return Ok(());
+        }
+
+        // Use executable flag from installed asset (set during first install), fallback to message
+        let is_executable = existing_asset
+            .map(|a| a.executable)
+            .unwrap_or(asset.executable);
+
+        info!(
+            asset_id = %asset_id,
+            tool_id = %tool_agent_id,
+            version = %new_version,
+            "Processing asset update"
+        );
+
+        let config = self.github_download_service
+            .find_config_for_current_os(&asset.download_configurations)
+            .with_context(|| format!("No download config for current OS: {}", asset_id))?;
+
+        let asset_filename = &config.target_file_name;
+
+        let bytes = self.github_download_service
+            .download_and_extract(config)
+            .await
+            .with_context(|| format!("Failed to download asset: {}", asset_id))?;
+
+        let asset_path = self.directory_manager.get_asset_path(tool_agent_id, asset_filename, is_executable);
+
+        if is_executable {
+            binary_writer::write_executable(&bytes, &asset_path).await
+                .with_context(|| format!("Failed to write executable asset: {}", asset_id))?;
+        } else {
+            tokio::fs::write(&asset_path, &bytes).await
+                .with_context(|| format!("Failed to write asset: {}", asset_id))?;
+        }
+
+        info!(asset_id = %asset_id, path = %asset_path.display(), "Asset written");
+
+        if let Some(existing_asset) = installed_tool.assets.iter_mut().find(|a| a.id == *asset_id) {
+            existing_asset.version = new_version.to_string();
+        } else {
+            installed_tool.assets.push(InstalledAsset {
+                id: asset_id.clone(),
+                version: new_version.to_string(),
+                executable: is_executable,
+            });
+        }
+
+        self.installed_tools_service.save(installed_tool.clone()).await
+            .with_context(|| format!("Failed to save installed tool after asset update: {}", tool_agent_id))?;
+
+        self.publish_installed_agent_message(asset_id, new_version).await;
+
+        info!(
+            asset_id = %asset_id,
+            tool_id = %tool_agent_id,
+            version = %new_version,
+            "Asset update completed"
+        );
+
+        Ok(())
+    }
+
+    async fn publish_installed_agent_message(&self, id: &str, version: &str) {
+        info!(id = %id, "Publishing installed agent message");
         match self.config_service.get_machine_id().await {
             Ok(machine_id) => {
                 if let Err(e) = self.installed_agent_publisher
-                    .publish(machine_id, tool_agent_id.to_string(), version.to_string())
+                    .publish(machine_id, id.to_string(), version.to_string())
                     .await
                 {
-                    warn!(tool_id = %tool_agent_id, error = %e, "Failed to publish installed agent message");
+                    warn!(id = %id, error = %e, "Failed to publish installed agent message");
                 }
             }
             Err(e) => {
-                warn!(tool_id = %tool_agent_id, error = %e, "Failed to get machine_id");
+                warn!(id = %id, error = %e, "Failed to get machine_id");
             }
         }
     }

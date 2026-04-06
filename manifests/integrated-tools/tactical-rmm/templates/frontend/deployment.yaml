@@ -1,11 +1,14 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: tactical-frontend
+  annotations:
+    keel.sh/policy: force
+    keel.sh/trigger: poll
+    keel.sh/match-tag: "true"
 spec:
-  serviceName: tactical-frontend
   replicas: 1
-  revisionHistoryLimit: 10
+  revisionHistoryLimit: 2
   selector:
     matchLabels:
       app: tactical-frontend
@@ -18,7 +21,8 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
-      priorityClassName: tactical-rmm
+      securityContext:
+        runAsNonRoot: true
 
       containers:
       - name: tactical-frontend
@@ -27,18 +31,20 @@ spec:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: tactical-default
-        - configMapRef:
-            name: tactical-postgres
-        - configMapRef:
-            name: tactical-redis
-        - secretRef:
-            name: tactical-postgres
+            name: tactical-frontend
 
-        volumeMounts:
-        - name: frontend-data
-          mountPath: /opt/tactical
-      volumes:
-      - name: frontend-data
-        persistentVolumeClaim:
-          claimName: tactical-frontend
+        resources:
+            {{- toYaml .Values.tactical.frontend.resources | nindent 12 }}
+
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30

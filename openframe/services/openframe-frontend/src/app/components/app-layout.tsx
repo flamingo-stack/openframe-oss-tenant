@@ -3,8 +3,10 @@
 import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
 import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { useAuthSession } from '../auth/hooks/use-auth-session';
@@ -48,14 +50,14 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   return (
     <CoreAppLayout
-      mainClassName={mainClassName}
+      mainClassName={cn('pb-20 md:pb-20', mainClassName)}
       sidebarConfig={sidebarConfig}
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={{
         user: {
           userName: displayName,
           userEmail: user?.email,
-          userAvatarUrl: user?.image?.imageUrl || null,
+          userAvatarUrl: getFullImageUrl(user?.image?.imageUrl) || null,
           userRole: user?.role,
         },
         onLogout: handleLogout,
@@ -65,6 +67,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         showUser: true,
         userName: displayName,
         userEmail: user?.email,
+        userAvatarUrl: getFullImageUrl(user?.image?.imageUrl),
         onProfile: () => router.push('/settings'),
         onLogout: handleLogout,
       }}
