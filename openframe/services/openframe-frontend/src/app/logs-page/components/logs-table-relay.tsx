@@ -369,7 +369,7 @@ function LogsTableContent({
 
   const renderRowActions = useCallback(
     (log: UiLogEntry) => (
-      <Button variant="card" navigateUrl={getLogDetailsUrl(log)} openInNewTab={true}>
+      <Button variant="card" navigateUrl={getLogDetailsUrl(log)} openInNewTab={true} showExternalLinkOnHover>
         Log Details
       </Button>
     ),
