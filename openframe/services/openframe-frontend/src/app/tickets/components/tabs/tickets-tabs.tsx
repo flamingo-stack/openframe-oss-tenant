@@ -9,13 +9,13 @@ import { ArchivedChats, CurrentChats } from './chats-table';
 export const TICKETS_TABS: TabItem[] = [
   {
     id: 'current',
-    label: 'Current Chats',
+    label: 'Current Tickets',
     icon: TagsIcon,
     component: CurrentChats,
   },
   {
     id: 'archived',
-    label: 'Archived Chats',
+    label: 'Archive',
     icon: BoxArchiveIcon,
     component: ArchivedChats,
   },

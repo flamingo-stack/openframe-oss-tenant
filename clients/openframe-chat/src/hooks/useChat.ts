@@ -33,6 +33,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
+  const [isTicketPreview, setIsTicketPreview] = useState(false);
   const [token, setToken] = useState(tokenService.getCurrentToken());
   const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
 
@@ -476,6 +477,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     setError(null);
     setNatsDialogId(null);
     setIsResumedDialog(false);
+    setIsTicketPreview(false);
     hasCaughtUp.current = false;
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
@@ -488,6 +490,47 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       subscriptionPromiseRef.current = null;
     }
   }, [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages]);
+
+  const showTicketPreview = useCallback(
+    (ticket: { title: string; description?: string }) => {
+      messages.clearMessages();
+      setIsTyping(false);
+      setNatsStreaming(false);
+      setError(null);
+      setNatsDialogId(null);
+      setIsResumedDialog(false);
+      setIsTicketPreview(true);
+      hasCaughtUp.current = false;
+      escalatedApprovalsRef.current.clear();
+      approvals.clearApprovals();
+      resetChunkTracking();
+      resetChunkProcessor();
+      resetDialogMessages();
+      apiServiceRef.current?.reset();
+
+      const content = [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        ticket.title,
+        '',
+        'Description:',
+        ticket.description || '(No description provided)',
+      ].join('\n');
+
+      const syntheticMessage: Message = {
+        id: `ticket-preview-${Date.now()}`,
+        role: 'assistant',
+        name: 'Fae',
+        content,
+        timestamp: new Date(),
+        avatar: faeAvatar,
+      };
+
+      messages.addMessage(syntheticMessage);
+    },
+    [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages],
+  );
 
   const resumeDialog = useCallback(
     async (dialogId: string): Promise<boolean> => {
@@ -530,8 +573,10 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     handleQuickAction,
     clearMessages,
     resumeDialog,
+    showTicketPreview,
     quickActions,
     hasMessages: allMessages.length > 0,
+    isTicketPreview,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,
     isLoadingHistory: isLoadingHistoricalMessages,
     isResumedDialog,

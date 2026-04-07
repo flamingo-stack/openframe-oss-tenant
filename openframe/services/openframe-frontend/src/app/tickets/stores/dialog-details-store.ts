@@ -1,20 +1,7 @@
 import { create } from 'zustand';
-import { apiClient } from '@/lib/api-client';
 import { MESSAGE_TYPE, OWNER_TYPE } from '../constants';
-import { GET_DIALOG_QUERY } from '../queries/dialogs-queries';
+import { getDialogService } from '../services';
 import type { Dialog, Message } from '../types/dialog.types';
-
-interface DialogResponse {
-  dialog: Dialog;
-}
-
-interface GraphQlResponse<T> {
-  data?: T;
-  errors?: Array<{
-    message: string;
-    extensions?: any;
-  }>;
-}
 
 interface DialogDetailsStore {
   // Current dialog state
@@ -35,7 +22,7 @@ interface DialogDetailsStore {
   isAdminChatTyping: boolean;
 
   // Actions
-  fetchDialog: (dialogId: string) => Promise<Dialog | null>;
+  fetchDialog: (dialogId: string, version?: 'v1' | 'v2') => Promise<Dialog | null>;
   clearCurrent: () => void;
   updateDialogStatus: (status: string) => void;
   addRealtimeMessage: (message: Message, isAdmin: boolean) => void;
@@ -56,8 +43,9 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
   isClientChatTyping: false,
   isAdminChatTyping: false,
 
-  fetchDialog: async (dialogId: string) => {
+  fetchDialog: async (dialogId: string, version: 'v1' | 'v2' = 'v1') => {
     const state = get();
+    const service = getDialogService(version);
 
     if (state.currentDialogId !== dialogId || state.currentDialog === null) {
       set({
@@ -69,16 +57,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
 
     try {
-      const response = await apiClient.post<GraphQlResponse<DialogResponse>>('/chat/graphql', {
-        query: GET_DIALOG_QUERY,
-        variables: { id: dialogId },
-      });
-
-      if (!response.ok) {
-        throw new Error(response.error || `Request failed with status ${response.status}`);
-      }
-
-      const dialog = response.data?.data?.dialog || null;
+      const dialog = await service.fetchDialog(dialogId);
 
       set(s => ({
         currentDialog: dialog,
@@ -126,7 +105,8 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
 
   addRealtimeMessage: (message: Message, isAdmin: boolean) => {
     const state = get();
-    if (!state.currentDialogId || message.dialogId !== state.currentDialogId) return;
+    const matchId = state.currentDialog?.dialogId ?? state.currentDialogId;
+    if (!matchId || message.dialogId !== matchId) return;
 
     const TEXT_TYPE = MESSAGE_TYPE.TEXT;
     const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT;

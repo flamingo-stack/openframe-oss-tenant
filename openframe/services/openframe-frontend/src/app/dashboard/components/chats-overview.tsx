@@ -39,17 +39,17 @@ export function ChatsOverviewSection() {
           value={chats.active}
           percentage={chats.activePercentage}
           showProgress
-          href="/mingo"
+          href="/tickets?status=ACTIVE&status=ACTION_REQUIRED&status=ON_HOLD"
         />
         <DashboardInfoCard
           title="Resolved Chats"
           value={chats.resolved}
           percentage={chats.resolvedPercentage}
           showProgress
-          href="/mingo"
+          href="/tickets?status=RESOLVED"
         />
-        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} href="/mingo" />
-        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} href="/mingo" />
+        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} href="/tickets" />
+        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} href="/tickets" />
       </div>
     </div>
   );

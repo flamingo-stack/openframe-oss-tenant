@@ -1,30 +1,43 @@
 'use client';
 
 import {
+  ActionsMenu,
+  type ActionsMenuGroup,
   Button,
   ChatApprovalStatus,
   ChatInput,
   ChatMessageList,
   DetailPageContainer,
   type HistoricalMessage,
+  LoadError,
   MessageCircleIcon,
   type MessageSegment,
+  NotFoundError,
   processHistoricalMessagesWithErrors,
   Tabs,
   TabsList,
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
-import { DetailLoader, ProcessedMessage } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  DetailLoader,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  getTicketStatusTag,
+  ProcessedMessage,
+  TicketInfoSection,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { CheckCircle, Clock } from 'lucide-react';
+import { CheckCircle, ChevronDown, Clock, Monitor, PenLine } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
+import { useAuthStore } from '@/stores';
 import { DeviceInfoSection } from '../../components/shared';
+import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
-  API_ENDPOINTS,
   APPROVAL_STATUS,
   type ApprovalStatus,
   ASSISTANT_CONFIG,
@@ -37,8 +50,12 @@ import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
+import { useDialogVersion } from '../hooks/use-dialog-version';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
+import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
+import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../hooks/use-ticket-notes';
+import { getDialogService } from '../services';
 import { useDialogDetailsStore } from '../stores/dialog-details-store';
 import type { ClientDialogOwner, DialogOwner, Message } from '../types/dialog.types';
 
@@ -49,6 +66,8 @@ interface DialogDetailsViewProps {
 export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const version = useDialogVersion();
+  const service = getDialogService(version);
 
   const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
@@ -59,6 +78,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     currentMessages: realtimeClientMessages,
     adminMessages: realtimeAdminMessages,
     isLoadingDialog: isLoading,
+    dialogError,
     isClientChatTyping,
     isAdminChatTyping,
     fetchDialog,
@@ -68,8 +88,45 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     setTypingIndicator,
   } = useDialogDetailsStore();
 
-  const clientChat = useTicketMessages(dialogId, CHAT_TYPE.CLIENT);
-  const adminChat = useTicketMessages(dialogId, CHAT_TYPE.ADMIN);
+  const currentUser = useAuthStore(state => state.user);
+
+  const refetchDialog = useCallback(() => {
+    fetchDialog(dialogId, version);
+  }, [fetchDialog, dialogId, version]);
+  const addNoteMutation = useAddTicketNote(refetchDialog);
+  const updateNoteMutation = useUpdateTicketNote(refetchDialog);
+  const deleteNoteMutation = useDeleteTicketNote(refetchDialog);
+
+  const { download: downloadAttachment } = useDownloadTicketAttachment();
+
+  // Transform backend notes to core UI TicketNote format
+  const uiNotes = useMemo(() => {
+    if (!dialog?.notes) return [];
+    return dialog.notes.map(note => ({
+      id: note.id,
+      text: note.content,
+      authorName: note.authorName || 'Unknown',
+      createdAt: note.createdAt,
+      isOwn: currentUser?.id === note.authorId,
+    }));
+  }, [dialog?.notes, currentUser?.id]);
+
+  // Transform backend attachments to core UI TicketAttachment format
+  const uiAttachments = useMemo(() => {
+    if (!dialog?.attachments) return [];
+    return dialog.attachments.map(att => ({
+      id: att.id,
+      fileName: att.fileName,
+      fileSize: att.fileSize ? formatFileSize(att.fileSize) : '',
+      onDownload: () => downloadAttachment(att.id, att.fileName),
+    }));
+  }, [dialog?.attachments, downloadAttachment]);
+
+  // In v2 the URL param is the ticket ID; messages belong to the linked dialog
+  const messageDialogId = version === 'v2' ? (dialog?.dialogId ?? null) : dialogId;
+
+  const clientChat = useTicketMessages(messageDialogId, CHAT_TYPE.CLIENT);
+  const adminChat = useTicketMessages(messageDialogId, CHAT_TYPE.ADMIN);
 
   const messages = useMemo(() => {
     const pageIds = new Set(clientChat.messages.map(m => m.id));
@@ -86,11 +143,12 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
+  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState('client');
   const hasCaughtUp = useRef(false);
 
   const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
-    dialogId,
+    dialogId: messageDialogId ?? '',
     onStreamStart: isAdmin => {
       setTypingIndicator(isAdmin, true);
     },
@@ -104,7 +162,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   });
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
-    dialogId,
+    dialogId: messageDialogId ?? '',
     onChunkReceived: processRealtimeChunk,
   });
 
@@ -115,14 +173,21 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     startInitialBuffering();
     hasCaughtUp.current = false;
 
-    fetchDialog(dialogId);
+    fetchDialog(dialogId, version);
 
     return () => {
       clearCurrent();
       resetChunkTracking();
       hasCaughtUp.current = false;
     };
-  }, [dialogId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering]);
+  }, [dialogId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering, version]);
+
+  // Default to technician tab when ticket is admin-owned (no client chat)
+  useEffect(() => {
+    if (dialog?.owner?.type === 'ADMIN' && activeChatTab === 'client') {
+      setActiveChatTab('technician');
+    }
+  }, [dialog?.owner?.type, activeChatTab]);
 
   // Extract approval statuses from messages
   useEffect(() => {
@@ -153,11 +218,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   );
 
   const handleNatsSubscribed = useCallback(async () => {
-    if (!hasCaughtUp.current && dialogId) {
+    if (!hasCaughtUp.current && messageDialogId) {
       hasCaughtUp.current = true;
       await catchUpChunks();
     }
-  }, [dialogId, catchUpChunks]);
+  }, [messageDialogId, catchUpChunks]);
 
   const handleBeforeReconnect = useCallback(async () => {
     try {
@@ -168,18 +233,18 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   }, []);
 
   const { reconnectionCount } = useNatsDialogSubscription({
-    enabled: !!dialogId,
-    dialogId,
+    enabled: !!messageDialogId,
+    dialogId: messageDialogId,
     onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
     onBeforeReconnect: handleBeforeReconnect,
   });
 
   useEffect(() => {
-    if (reconnectionCount > 0 && dialogId) {
+    if (reconnectionCount > 0 && messageDialogId) {
       resetAndCatchUp();
     }
-  }, [reconnectionCount, dialogId, resetAndCatchUp]);
+  }, [reconnectionCount, messageDialogId, resetAndCatchUp]);
 
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;
@@ -275,19 +340,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       setIsSendingAdminMessage(true);
       try {
-        const response = await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
-          dialogId,
-          content: trimmedMessage,
-          chatType: CHAT_TYPE.ADMIN,
-        });
-        if (!response.ok) {
-          toast({
-            title: 'Send Failed',
-            description: response.error || 'Unable to send message',
-            variant: 'destructive',
-            duration: 5000,
-          });
-        }
+        await service.sendMessage(dialogId, trimmedMessage, CHAT_TYPE.ADMIN);
       } catch (error) {
         toast({
           title: 'Send Failed',
@@ -299,7 +352,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         setIsSendingAdminMessage(false);
       }
     },
-    [dialogId, isSendingAdminMessage, toast],
+    [dialogId, isSendingAdminMessage, toast, service],
   );
 
   const processMessages = useCallback(
@@ -365,25 +418,65 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     [adminMessages, processMessages],
   );
 
+  const [actionsOpen, setActionsOpen] = useState(false);
+
   const headerActions = useMemo(() => {
     if (!dialog) return null;
 
-    const isHoldOrResolved = dialog.status === DIALOG_STATUS.ON_HOLD || dialog.status === DIALOG_STATUS.RESOLVED;
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
+    const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
+
+    const menuGroups: ActionsMenuGroup[] = [
+      {
+        items: [
+          ...(featureFlags.tickets.enabled()
+            ? [
+                {
+                  id: 'edit-ticket',
+                  label: 'Edit Ticket',
+                  icon: <PenLine className="w-6 h-6" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/tickets/new?edit=${dialog.id}`);
+                  },
+                },
+              ]
+            : []),
+          ...(!isOnHold && !isResolved
+            ? [
+                {
+                  id: 'put-on-hold',
+                  label: 'Put On Hold',
+                  icon: <Clock className="w-6 h-6" />,
+                  disabled: isUpdating,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    handlePutOnHold();
+                  },
+                },
+              ]
+            : []),
+        ],
+      },
+    ];
 
     return (
       <div className="flex gap-4 items-center">
-        {!isHoldOrResolved && (
-          <Button
-            variant="ghost"
-            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<Clock className="h-6 w-6 text-ods-text-primary" />}
-            onClick={handlePutOnHold}
-            disabled={isUpdating}
-          >
-            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Put On Hold'}</span>
-          </Button>
-        )}
+        <DropdownMenu modal={false} open={actionsOpen} onOpenChange={setActionsOpen}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              rightIcon={<ChevronDown className="h-5 w-5 text-ods-text-primary ml-2" />}
+              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+            >
+              <span className="text-h3 text-ods-text-primary">Actions</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="p-0 border-none">
+            <ActionsMenu groups={menuGroups} onItemClick={() => setActionsOpen(false)} />
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {!isResolved && (
           <Button
             variant="ghost"
@@ -397,11 +490,22 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         )}
       </div>
     );
-  }, [dialog, isUpdating, handlePutOnHold, handleResolve]);
+  }, [dialog, isUpdating, actionsOpen, handlePutOnHold, handleResolve, router]);
 
-  if (isLoading || !dialog) {
+  if (isLoading) {
     return <DetailLoader />;
   }
+
+  if (dialogError) {
+    return <LoadError message={`Error loading ticket: ${dialogError}`} />;
+  }
+
+  if (!dialog) {
+    return <NotFoundError message="Ticket not found" />;
+  }
+
+  const isAdminOwner = dialog.owner?.type === 'ADMIN';
+  const deviceMachineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
 
   return (
     <DetailPageContainer
@@ -415,64 +519,172 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
-      {/* Device Info Section */}
-      {isClientOwner(dialog.owner) && dialog.owner.machineId && (
-        <DeviceInfoSection
-          deviceId={dialog.owner.machineId}
-          device={
-            dialog.owner.machine
-              ? {
-                  id: dialog.owner.machine.id,
-                  machineId: dialog.owner.machine.machineId,
-                  hostname: dialog.owner.machine.hostname,
-                  displayName: dialog.owner.machine.hostname,
-                }
-              : undefined
-          }
+      {/* Ticket / Device Info Section — hidden on mobile (shown via tab instead) */}
+      {version === 'v2' ? (
+        <TicketInfoSection
+          className="hidden lg:block shrink-0"
+          organization={{
+            name:
+              dialog.organizationName ||
+              (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
+              'Unassigned',
+          }}
+          user="Unassigned"
+          device={{
+            name:
+              dialog.deviceHostname ||
+              (isClientOwner(dialog.owner)
+                ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
+                : undefined) ||
+              'Unassigned',
+            icon: <Monitor className="size-4" />,
+            onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+          }}
+          statusTag={getTicketStatusTag(dialog.status)}
+          onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
+          expanded={isTicketInfoExpanded}
+          assigned={{ name: dialog.assignedName || 'Unassigned' }}
+          createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
+          description={dialog.description || dialog.title || ''}
+          attachments={uiAttachments}
+          tags={(dialog.labels || []).map(l => l.name)}
+          knowledgeBaseArticles={[]}
+          notes={uiNotes}
+          isAddingNote={addNoteMutation.isPending}
+          onAddNote={text => {
+            if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
+          }}
+          onEditNote={(id, text) => {
+            updateNoteMutation.mutate({ id, content: text });
+          }}
+          onDeleteNote={id => {
+            deleteNoteMutation.mutate(id);
+          }}
         />
+      ) : (
+        isClientOwner(dialog.owner) &&
+        dialog.owner.machineId && (
+          <DeviceInfoSection
+            deviceId={dialog.owner.machineId}
+            device={
+              dialog.owner.machine
+                ? {
+                    id: dialog.owner.machine.id,
+                    machineId: dialog.owner.machine.machineId,
+                    hostname: dialog.owner.machine.hostname,
+                    displayName: dialog.owner.machine.hostname,
+                  }
+                : undefined
+            }
+          />
+        )
       )}
 
       {/* Chat Section */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-[500px]">
         {/* Tab bar — visible only on mobile/tablet */}
         <Tabs value={activeChatTab} onValueChange={setActiveChatTab} className="lg:hidden mb-2">
           <TabsList className="w-full">
-            <TabsTrigger value="client" className="flex-1">
-              Client Chat
-            </TabsTrigger>
+            {!isAdminOwner && (
+              <TabsTrigger value="client" className="flex-1">
+                Client Chat
+              </TabsTrigger>
+            )}
             <TabsTrigger value="technician" className="flex-1">
               Technician Chat
             </TabsTrigger>
+            {version === 'v2' && (
+              <TabsTrigger value="info" className="flex-1">
+                Ticket Details
+              </TabsTrigger>
+            )}
           </TabsList>
         </Tabs>
 
-        {/* Chat panels — tabs on mobile, side-by-side on desktop */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
-          {/* Client Chat */}
-          <div
-            className={cn(
-              'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
-              activeChatTab !== 'client' ? 'hidden lg:flex' : 'flex',
-            )}
-          >
-            <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Client Chat</h2>
-            {/* Messages card */}
-            <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
-              <ChatMessageList
-                messages={chatData.messages}
-                dialogId={dialogId}
-                autoScroll={true}
-                showAvatars={false}
-                isLoading={clientChat.isLoading}
-                isTyping={isClientChatTyping}
-                pendingApprovals={chatData.pendingApprovals}
-                assistantType={chatData.assistantType}
-                hasNextPage={clientChat.hasNextPage}
-                isFetchingNextPage={clientChat.isFetchingNextPage}
-                onLoadMore={clientChat.fetchNextPage}
-              />
-            </div>
+        {/* Ticket Details panel — visible only on mobile when info tab active */}
+        {version === 'v2' && activeChatTab === 'info' && (
+          <div className="lg:hidden flex-1 min-h-0 overflow-auto">
+            <TicketInfoSection
+              organization={{
+                name:
+                  dialog.organizationName ||
+                  (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
+                  'Unassigned',
+              }}
+              user="Unassigned"
+              device={{
+                name:
+                  dialog.deviceHostname ||
+                  (isClientOwner(dialog.owner)
+                    ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
+                    : undefined) ||
+                  'Unassigned',
+                icon: <Monitor className="size-4" />,
+                onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+              }}
+              statusTag={{
+                label: dialog.status.replace('_', ' '),
+                variant:
+                  dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED'
+                    ? 'success'
+                    : dialog.status === 'ACTION_REQUIRED'
+                      ? 'primary'
+                      : dialog.status === 'ON_HOLD'
+                        ? 'error'
+                        : 'outline',
+              }}
+              expanded={true}
+              assigned={{ name: dialog.assignedName || 'Unassigned' }}
+              createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
+              description={dialog.description || dialog.title || ''}
+              attachments={uiAttachments}
+              tags={(dialog.labels || []).map(l => l.name)}
+              knowledgeBaseArticles={[]}
+              notes={uiNotes}
+              onAddNote={text => {
+                if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
+              }}
+              onEditNote={(id, text) => {
+                updateNoteMutation.mutate({ id, content: text });
+              }}
+              onDeleteNote={id => {
+                deleteNoteMutation.mutate(id);
+              }}
+            />
           </div>
+        )}
+
+        {/* Chat panels — tabs on mobile, side-by-side on desktop */}
+        <div
+          className={cn('flex-1 flex flex-col lg:flex-row gap-6 min-h-0', activeChatTab === 'info' && 'hidden lg:flex')}
+        >
+          {/* Client Chat — hidden for admin-owned tickets */}
+          {!isAdminOwner && (
+            <div
+              className={cn(
+                'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
+                activeChatTab !== 'client' ? 'hidden lg:flex' : 'flex',
+              )}
+            >
+              <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Client Chat</h2>
+              {/* Messages card */}
+              <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
+                <ChatMessageList
+                  messages={chatData.messages}
+                  dialogId={dialogId}
+                  autoScroll={true}
+                  showAvatars={false}
+                  isLoading={clientChat.isLoading}
+                  isTyping={isClientChatTyping}
+                  pendingApprovals={chatData.pendingApprovals}
+                  assistantType={chatData.assistantType}
+                  hasNextPage={clientChat.hasNextPage}
+                  isFetchingNextPage={clientChat.isFetchingNextPage}
+                  onLoadMore={clientChat.fetchNextPage}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Technician Chat */}
           <div

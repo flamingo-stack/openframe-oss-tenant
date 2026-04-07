@@ -40,9 +40,9 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     () => [
       {
         label: 'Edit Script',
+        variant: 'card' as const,
         icon: <PenEditIcon size={20} />,
         onClick: handleEditScript,
-        variant: 'outline' as const,
       },
       {
         label: 'Run Script',

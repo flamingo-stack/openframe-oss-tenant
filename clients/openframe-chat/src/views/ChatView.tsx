@@ -1,4 +1,6 @@
 import {
+  ActionsMenu,
+  Button,
   ChatContainer,
   ChatContent,
   ChatFooter,
@@ -6,14 +8,23 @@ import {
   ChatInput,
   ChatMessageList,
   ChatQuickAction,
+  ChatTicketList,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
   ModelDisplay,
 } from '@flamingo-stack/openframe-frontend-core';
-import { ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
+import { NewTicketModal } from '../components/NewTicketModal';
+import { WelcomeScreen } from '../components/WelcomeScreen';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
+import { useTickets } from '../hooks/useTickets';
+import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 
@@ -25,7 +36,9 @@ export function ChatView() {
     provider: string;
     contextWindow: number;
   } | null>(null);
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null);
+  const { showWelcome, completeWelcome } = useWelcomeScreen();
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
@@ -49,6 +62,8 @@ export function ChatView() {
     hasMessages,
     clearMessages,
     resumeDialog,
+    showTicketPreview,
+    isTicketPreview,
     awaitingTechnicianResponse,
     isLoadingHistory,
     dialogId,
@@ -61,6 +76,8 @@ export function ChatView() {
     onMetadataUpdate: handleMetadataUpdate,
   });
 
+  const { toast } = useToast();
+
   const fetchResumableDialog = useCallback(() => {
     dialogGraphQlService.getResumableDialog().then(dialog => {
       setResumableDialog(dialog);
@@ -68,15 +85,46 @@ export function ChatView() {
   }, []);
 
   useEffect(() => {
-    // Fetch resumable dialog on component mount
-    fetchResumableDialog();
-  }, [fetchResumableDialog]);
+    if (!flags.tickets) {
+      fetchResumableDialog();
+    }
+  }, [flags.tickets, fetchResumableDialog]);
 
   const handleNewChat = useCallback(() => {
     clearMessages();
-    // Fetch resumable dialog after clearing messages
-    fetchResumableDialog();
-  }, [clearMessages, fetchResumableDialog]);
+    if (!flags.tickets) {
+      fetchResumableDialog();
+    }
+  }, [clearMessages, flags.tickets, fetchResumableDialog]);
+
+  const ticketsHook = useTickets({ enabled: flags.tickets });
+
+  const displayTickets = flags.tickets ? ticketsHook.tickets : [];
+
+  const handleTicketClick = useCallback(
+    async (ticketId: string) => {
+      if (flags.tickets) {
+        const dialogId = ticketsHook.getDialogId(ticketId);
+        if (!dialogId) {
+          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+          if (ticketDetails) {
+            showTicketPreview(ticketDetails);
+          } else {
+            toast({
+              title: 'Error',
+              description: 'Failed to load ticket details',
+              variant: 'destructive',
+            });
+          }
+          return;
+        }
+        await resumeDialog(dialogId);
+      } else {
+        await resumeDialog(ticketId);
+      }
+    },
+    [ticketsHook, resumeDialog, showTicketPreview, toast, flags],
+  );
 
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
@@ -91,15 +139,59 @@ export function ChatView() {
         }
       : null);
 
+  if (showWelcome) {
+    return <WelcomeScreen onGetStarted={completeWelcome} />;
+  }
+
   return (
     <ChatContainer>
       <ChatHeader
         userAvatar={faeAvatar}
-        showNewChat={hasMessages}
-        onNewChat={handleNewChat}
         connectionStatus={status}
         serverUrl={serverUrl}
+        headerActions={
+          <>
+            {flags.tickets && (
+              <Button
+                onClick={() => setIsTicketModalOpen(true)}
+                variant="outline"
+                leftIcon={<TagIcon className="w-5 h-5" color="var(--color-text-secondary)" />}
+                className="border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover"
+              >
+                Create Ticket
+              </Button>
+            )}
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  centerIcon={<Ellipsis01Icon className="w-5 h-5" color="var(--color-text-secondary)" />}
+                  className="border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover"
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="p-0 border-none">
+                <ActionsMenu
+                  groups={[
+                    {
+                      items: [
+                        {
+                          id: 'new-chat',
+                          label: 'New Chat',
+                          icon: <PlusCircleIcon className="w-6 h-6" color="var(--color-text-secondary)" />,
+                          disabled: !hasMessages,
+                          onClick: handleNewChat,
+                        },
+                      ],
+                    },
+                  ]}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
       />
+      <NewTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
 
       <ChatContent>
         {hasMessages || (dialogId && isLoadingHistory) ? (
@@ -114,57 +206,84 @@ export function ChatView() {
             onLoadMore={loadMoreMessages}
           />
         ) : (
-          <div className="flex-1 flex flex-col justify-center items-center px-4">
+          <div className="flex-1 flex flex-col justify-center items-center px-4 min-h-0">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-light text-white mb-2">Hey! How can I help?</h1>
-              <p className="text-gray-400">Describe what's happening and I'll take a look.</p>
+              <h1 className="text-h2 mb-2">Hey! How can I help?</h1>
+              <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
             </div>
 
-            {/* Resumable Dialog */}
-            {resumableDialog && (
-              <div className="w-full max-w-2xl mb-6">
-                <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
-                  Resume Previous Conversation
-                </h3>
-                <div
-                  className="p-4 bg-ods-card rounded-lg border border-ods-border hover:bg-ods-bg-hover transition-colors cursor-pointer"
-                  onClick={async () => {
-                    const success = await resumeDialog(resumableDialog.id);
-                    if (success) {
-                      setResumableDialog(null); // Clear resumable dialog after successful resume
-                    }
-                  }}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="flex gap-2 text-ods-text-primary font-medium">
-                      <ClockHistoryIcon />
-                      Last Topic: {resumableDialog.title || 'Untitled Conversation'}
-                    </h4>
-                    <span className="text-xs text-ods-text-secondary">
-                      {new Date(resumableDialog.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex text-ods-text-secondary">Whould you like to continue?</div>
-                </div>
-              </div>
-            )}
+            {flags.tickets ? (
+              <>
+                {/* Tickets List */}
+                <ChatTicketList className="w-full max-w-2xl" tickets={displayTickets} onTicketClick={handleTicketClick} />
 
-            {/* Quick Actions */}
-            {quickActions.length > 0 && (
-              <div className="w-full max-w-2xl">
-                <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
-                <div className="space-y-1">
-                  {quickActions.map(action => (
-                    <ChatQuickAction
-                      className="bg-ods-card"
-                      key={action.id}
-                      text={action.text}
-                      onAction={handleQuickAction}
-                      disabled={isDisconnected}
-                    />
-                  ))}
-                </div>
-              </div>
+                {/* Quick Actions — shown only when no tickets */}
+                {displayTickets.length === 0 && quickActions.length > 0 && (
+                  <div className="w-full max-w-2xl">
+                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
+                    <div className="space-y-1">
+                      {quickActions.map(action => (
+                        <ChatQuickAction
+                          className="bg-ods-card"
+                          key={action.id}
+                          text={action.text}
+                          onAction={handleQuickAction}
+                          disabled={isDisconnected}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                {/* Resumable Dialog */}
+                {resumableDialog && (
+                  <div className="w-full max-w-2xl mb-6">
+                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
+                      Resume Previous Conversation
+                    </h3>
+                    <div
+                      className="p-4 bg-ods-card rounded-lg border border-ods-border hover:bg-ods-bg-hover transition-colors cursor-pointer"
+                      onClick={async () => {
+                        const success = await resumeDialog(resumableDialog.id);
+                        if (success) {
+                          setResumableDialog(null);
+                        }
+                      }}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="flex gap-2 text-ods-text-primary font-medium">
+                          <ClockHistoryIcon />
+                          Last Topic: {resumableDialog.title || 'Untitled Conversation'}
+                        </h4>
+                        <span className="text-xs text-ods-text-secondary">
+                          {new Date(resumableDialog.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex text-ods-text-secondary">Would you like to continue?</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Actions */}
+                {quickActions.length > 0 && (
+                  <div className="w-full max-w-2xl">
+                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
+                    <div className="space-y-1">
+                      {quickActions.map(action => (
+                        <ChatQuickAction
+                          className="bg-ods-card"
+                          key={action.id}
+                          text={action.text}
+                          onAction={handleQuickAction}
+                          disabled={isDisconnected}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -175,7 +294,7 @@ export function ChatView() {
           onSend={sendMessage}
           onStop={flags['dialog-stop'] && isStreaming ? stopGeneration : undefined}
           sending={isStreaming}
-          awaitingResponse={awaitingTechnicianResponse}
+          awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
           placeholder="Enter your request here..."
           className={hasMessages ? '' : 'max-w-2xl mx-auto'}
           reserveAvatarOffset={hasMessages}

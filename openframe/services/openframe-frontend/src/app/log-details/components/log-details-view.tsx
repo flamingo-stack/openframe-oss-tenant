@@ -87,38 +87,23 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     );
   }
 
-  const customHeaderContent = (
-    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 w-full">
-      <div className="flex flex-col gap-2 flex-1">
-        {/* Back Button */}
-        <Button
-          onClick={handleBackToLogs}
-          variant="ghost"
-          className="flex items-center gap-2 p-3 rounded-[6px] hover:bg-ods-bg-hover transition-colors self-start justify-start"
-          leftIcon={<ChevronLeft className="h-6 w-6 text-ods-text-secondary" />}
-        >
-          <span className="text-h4 text-ods-text-secondary">Back to Logs</span>
-        </Button>
-
-        {/* Title */}
-        <h1 className="text-h2 text-ods-text-primary">Log Details</h1>
-      </div>
-
-      {/* Header Actions - Full width on mobile, side-by-side on desktop */}
-      <div className="w-full md:w-auto">
-        <Button
-          onClick={handleCopyLogDetails}
-          leftIcon={<CopyIcon size={24} />}
-          className="w-full bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3 flex items-center justify-center gap-2"
-        >
-          Copy Log Details
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
-    <DetailPageContainer headerContent={customHeaderContent} padding="none" className="pt-6">
+    <DetailPageContainer
+      title="Log Details"
+      backButton={{
+        label: 'Back to Logs',
+        onClick: handleBackToLogs,
+      }}
+      actions={[
+        {
+          label: 'Copy Log Details',
+          onClick: handleCopyLogDetails,
+          variant: 'card' as const,
+          icon: <CopyIcon size={24} />,
+        },
+      ]}
+      padding="none"
+    >
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center">

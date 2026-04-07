@@ -16,6 +16,8 @@
         "title": "Fae Chat",
         "width": 1000,
         "height": 800,
+        "minWidth": 800,
+        "minHeight": 720,
         "resizable": true,
         "fullscreen": false,
         "closable": true,

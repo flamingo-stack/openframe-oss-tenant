@@ -1,7 +1,7 @@
 'use client';
 
 import { ViewToggle } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
@@ -88,8 +88,8 @@ export function DevicesView() {
       />
       <Button
         onClick={() => router.push('/devices/new')}
-        leftIcon={<PlusCircleIcon className="w-5 h-5" whiteOverlay />}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
+        variant="card"
+        leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
       >
         Add Device
       </Button>

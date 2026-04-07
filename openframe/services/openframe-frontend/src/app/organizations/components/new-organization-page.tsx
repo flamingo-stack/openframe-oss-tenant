@@ -232,7 +232,6 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       title={organizationId ? 'Edit Organization' : 'New Organization'}
       backButton={{ label: 'Back to Organizations', onClick: () => router.push('/organizations') }}
       padding="none"
-      className="pt-6"
       headerActions={
         <Button
           variant="primary"
