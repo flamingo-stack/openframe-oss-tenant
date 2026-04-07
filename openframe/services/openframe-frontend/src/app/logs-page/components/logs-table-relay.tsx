@@ -524,6 +524,7 @@ export const LogsTableRelay = forwardRef<LogsTableRelayRef, LogsTableRelayProps>
     () => [
       {
         label: 'Refresh',
+        variant: 'card' as const,
         icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleRefresh,
       },

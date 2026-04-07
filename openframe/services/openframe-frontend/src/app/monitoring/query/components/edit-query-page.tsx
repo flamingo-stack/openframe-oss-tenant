@@ -241,7 +241,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     items.push({
       label: 'Test Query',
       onClick: handleTestQuery,
-      variant: 'outline' as const,
+      variant: 'card' as const,
       disabled: !hasQuery || campaign.isRunning,
     });
     items.push({

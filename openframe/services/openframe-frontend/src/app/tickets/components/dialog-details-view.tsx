@@ -148,7 +148,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const hasCaughtUp = useRef(false);
 
   const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
-    dialogId,
+    dialogId: messageDialogId ?? '',
     onStreamStart: isAdmin => {
       setTypingIndicator(isAdmin, true);
     },
@@ -162,7 +162,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   });
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
-    dialogId,
+    dialogId: messageDialogId ?? '',
     onChunkReceived: processRealtimeChunk,
   });
 
@@ -218,11 +218,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   );
 
   const handleNatsSubscribed = useCallback(async () => {
-    if (!hasCaughtUp.current && dialogId) {
+    if (!hasCaughtUp.current && messageDialogId) {
       hasCaughtUp.current = true;
       await catchUpChunks();
     }
-  }, [dialogId, catchUpChunks]);
+  }, [messageDialogId, catchUpChunks]);
 
   const handleBeforeReconnect = useCallback(async () => {
     try {
@@ -233,18 +233,18 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   }, []);
 
   const { reconnectionCount } = useNatsDialogSubscription({
-    enabled: !!dialogId,
-    dialogId,
+    enabled: !!messageDialogId,
+    dialogId: messageDialogId,
     onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
     onBeforeReconnect: handleBeforeReconnect,
   });
 
   useEffect(() => {
-    if (reconnectionCount > 0 && dialogId) {
+    if (reconnectionCount > 0 && messageDialogId) {
       resetAndCatchUp();
     }
-  }, [reconnectionCount, dialogId, resetAndCatchUp]);
+  }, [reconnectionCount, messageDialogId, resetAndCatchUp]);
 
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;

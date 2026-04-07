@@ -202,7 +202,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     items.push({
       label: 'Test Policy',
       onClick: handleTestPolicy,
-      variant: 'outline' as const,
+      variant: 'card' as const,
       disabled: !hasQuery || campaign.isRunning,
     });
     items.push({

@@ -69,11 +69,13 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
     () => [
       {
         label: 'Edit Devices',
+        variant: 'card' as const,
         onClick: handleEditDevices,
         icon: <PenEditIcon size={20} />,
       },
       {
         label: 'Edit Schedule',
+        variant: 'card' as const,
         onClick: handleEditSchedule,
         icon: <PenEditIcon size={20} />,
       },

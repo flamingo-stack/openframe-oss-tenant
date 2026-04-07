@@ -105,7 +105,8 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
 
   addRealtimeMessage: (message: Message, isAdmin: boolean) => {
     const state = get();
-    if (!state.currentDialogId || message.dialogId !== state.currentDialogId) return;
+    const matchId = state.currentDialog?.dialogId ?? state.currentDialogId;
+    if (!matchId || message.dialogId !== matchId) return;
 
     const TEXT_TYPE = MESSAGE_TYPE.TEXT;
     const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT;
