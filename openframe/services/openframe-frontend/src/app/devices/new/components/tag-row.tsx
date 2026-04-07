@@ -1,7 +1,7 @@
 'use client';
 
 import type { AutocompleteOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Autocomplete, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Trash2 } from 'lucide-react';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { graphql, useLazyLoadQuery, useRefetchableFragment } from 'react-relay';
@@ -77,8 +77,9 @@ interface TagValueAutocompleteProps {
   tagKey: string;
   values: string[];
   onChange: (values: string[]) => void;
-  showLabel: boolean;
   error?: string;
+  label?: string;
+  className?: string;
 }
 
 function TagValueAutocomplete({
@@ -86,8 +87,9 @@ function TagValueAutocomplete({
   tagKey,
   values,
   onChange,
-  showLabel,
   error,
+  label,
+  className,
 }: TagValueAutocompleteProps) {
   const [isRefetching, startTransition] = useTransition();
 
@@ -114,16 +116,13 @@ function TagValueAutocomplete({
     });
   }, [debouncedInput, organizationId, tagKey, refetchValues]);
 
-  const serverOptions: AutocompleteOption[] = useMemo(
-    () => (valueData.tagValueSuggestions ?? []).filter(v => !values.includes(v)).map(v => ({ label: v, value: v })),
-    [valueData, values],
-  );
-
-  const mergedOptions = useMemo(() => {
-    const serverValues = new Set(serverOptions.map(o => o.value));
-    const selectedOnly = values.filter(v => !serverValues.has(v)).map(v => ({ label: v, value: v }));
-    return [...selectedOnly, ...serverOptions];
-  }, [serverOptions, values]);
+  const mergedOptions: AutocompleteOption[] = useMemo(() => {
+    const suggestions = (valueData.tagValueSuggestions ?? []).map(v => ({ label: v, value: v }));
+    if (input) return suggestions;
+    const serverValues = new Set(suggestions.map(o => o.value));
+    const extraSelected = values.filter(v => !serverValues.has(v)).map(v => ({ label: v, value: v }));
+    return [...suggestions, ...extraSelected];
+  }, [valueData, values, input]);
 
   const handleInputChange = useCallback((value: string) => {
     setInput(value);
@@ -144,8 +143,9 @@ function TagValueAutocomplete({
       value={values}
       onChange={handleChange}
       onInputChange={handleInputChange}
-      label={showLabel ? 'Tag Values' : undefined}
       placeholder={values.length > 0 ? 'Add More...' : 'Enter value...'}
+      label={label}
+      className={className}
       loading={isRefetching}
       error={error}
       disableClientFilter
@@ -162,9 +162,9 @@ interface TagRowProps {
   tag: DeviceTag & { id: string };
   onChange: (tag: DeviceTag) => void;
   onDelete: () => void;
-  showLabels: boolean;
   existingKeys: string[];
   keySuggestionsRef: KeySuggestionsFragmentKey;
+  isFirst?: boolean;
 }
 
 export function TagRow({
@@ -172,9 +172,9 @@ export function TagRow({
   tag,
   onChange,
   onDelete,
-  showLabels,
   existingKeys,
   keySuggestionsRef,
+  isFirst,
 }: TagRowProps) {
   const [isKeyRefetching, startKeyTransition] = useTransition();
 
@@ -224,6 +224,8 @@ export function TagRow({
     [onChange, tag.key],
   );
 
+  const labelClassName = isFirst ? '[&>label]:hidden md:[&>label]:block' : undefined;
+
   const isDuplicateKey = tag.key !== '' && existingKeys.filter(k => k === tag.key).length > 1;
   const keyError = useMemo(() => {
     if (isDuplicateKey) return 'Duplicate tag — this key is already used';
@@ -232,15 +234,16 @@ export function TagRow({
   const valuesError = useMemo(() => validateTagValues(tag.values), [tag.values]);
 
   return (
-    <div className="flex gap-2 items-start w-full">
-      <div className="flex-1 min-w-0">
+    <div className="flex flex-col md:flex-row gap-[var(--spacing-system-l)] md:gap-[var(--spacing-system-s)] items-start w-full">
+      <div className="w-full md:flex-1 min-w-0">
         <Autocomplete
           options={mergedKeyOptions}
           value={tag.key || null}
           onChange={handleKeyChange}
           onInputChange={handleKeyInputChange}
-          label={showLabels ? 'Device Tag Name' : undefined}
           placeholder="Enter tag key..."
+          label={isFirst ? 'Device Tag Name' : undefined}
+          className={labelClassName}
           loading={isKeyRefetching}
           error={keyError}
           disableClientFilter
@@ -249,7 +252,7 @@ export function TagRow({
         />
       </div>
 
-      <div className="flex-1 flex gap-2 items-start min-w-0">
+      <div className="w-full md:flex-1 flex gap-[var(--spacing-system-s)] items-end min-w-0">
         <div className="flex-1 min-w-0">
           {tag.key ? (
             <Suspense
@@ -259,8 +262,9 @@ export function TagRow({
                   options={[]}
                   value={tag.values}
                   onChange={() => {}}
-                  label={showLabels ? 'Tag Values' : undefined}
                   placeholder="Enter value..."
+                  label={isFirst ? 'Tag Values' : undefined}
+                  className={labelClassName}
                   disabled
                   loading
                 />
@@ -271,8 +275,9 @@ export function TagRow({
                 tagKey={tag.key}
                 values={tag.values}
                 onChange={handleValuesChange}
-                showLabel={showLabels}
                 error={valuesError}
+                label={isFirst ? 'Tag Values' : undefined}
+                className={labelClassName}
               />
             </Suspense>
           ) : (
@@ -281,21 +286,22 @@ export function TagRow({
               options={[]}
               value={[]}
               onChange={() => {}}
-              label={showLabels ? 'Tag Values' : undefined}
               placeholder="Enter value..."
+              label={isFirst ? 'Tag Values' : undefined}
+              className={labelClassName}
               disabled
             />
           )}
         </div>
 
-        <button
+        <Button
           type="button"
+          variant="card"
+          size="icon"
           onClick={onDelete}
-          className={`flex items-center justify-center h-12 w-12 bg-ods-card border border-ods-border rounded-[6px] text-[var(--ods-attention-red-error)] hover:bg-[#2a2a2a] transition-colors shrink-0 ${showLabels ? 'mt-7' : ''}`}
           aria-label="Remove tag row"
-        >
-          <Trash2 className="w-6 h-6" />
-        </button>
+          centerIcon={<Trash2 className="size-4 md:size-6 " color="var(--ods-attention-red-error)" />}
+        />
       </div>
     </div>
   );

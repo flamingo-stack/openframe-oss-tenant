@@ -18,10 +18,10 @@
     "type-check": "tsc --noEmit",
     "prepare": "cd ../../.. && husky openframe/services/openframe-frontend/.husky || true",
     "core:link": "yalc link @flamingo-stack/openframe-frontend-core",
-    "core:unlink": "yalc unlink @flamingo-stack/openframe-frontend-core"
+    "core:unlink": "yalc remove @flamingo-stack/openframe-frontend-core"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.95",
+    "@flamingo-stack/openframe-frontend-core": "0.0.96",
     "@hookform/resolvers": "^5.2.2",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.90.16",

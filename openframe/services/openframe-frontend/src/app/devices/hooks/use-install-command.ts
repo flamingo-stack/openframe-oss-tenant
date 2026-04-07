@@ -24,17 +24,9 @@ interface UseInstallCommandOptions {
 }
 
 function buildTagArgs(tags: DeviceTag[], platform: OSPlatformId): string {
-  let result = '';
-  for (const tag of tags) {
-    for (const value of tag.values) {
-      if (platform === 'windows') {
-        result += ` --tag "${tag.key}=${value}"`;
-      } else {
-        result += ` --tag '${tag.key}=${value}'`;
-      }
-    }
-  }
-  return result;
+  const quote = platform === 'windows' ? '"' : "'";
+  const args = tags.flatMap(tag => tag.values.map(value => ` --tag ${quote}${tag.key}=${value}${quote}`));
+  return args.join('');
 }
 
 export function useInstallCommand({ organizationId, platform, tags = [] }: UseInstallCommandOptions) {

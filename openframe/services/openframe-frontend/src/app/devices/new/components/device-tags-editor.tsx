@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@flamingo-stack/openframe-frontend-core';
 import { PlusCircle } from 'lucide-react';
 import { useCallback } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
@@ -71,29 +72,33 @@ export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceT
   const existingKeys = tags.map(t => t.key).filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-[var(--spacing-system-l)]">
-      {tags.map((tag, index) => (
-        <TagRow
-          key={tag.id}
-          organizationId={organizationId}
-          tag={tag}
-          onChange={updated => updateTag(tag.id, updated)}
-          onDelete={() => deleteTag(tag.id)}
-          showLabels={index === 0}
-          existingKeys={existingKeys}
-          keySuggestionsRef={queryData as KeySuggestionsFragmentKey}
-        />
-      ))}
+    <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <div className="flex flex-col gap-[var(--spacing-system-l)]">
+        {tags.map((tag, index) => (
+          <TagRow
+            key={tag.id}
+            organizationId={organizationId}
+            tag={tag}
+            onChange={updated => updateTag(tag.id, updated)}
+            onDelete={() => deleteTag(tag.id)}
+            existingKeys={existingKeys}
+            keySuggestionsRef={queryData as KeySuggestionsFragmentKey}
+            isFirst={index === 0}
+          />
+        ))}
 
-      <button
-        type="button"
-        onClick={addTag}
-        disabled={!organizationId}
-        className="flex items-center gap-2 py-3 text-ods-text-primary hover:text-ods-text-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <PlusCircle className="w-6 h-6" />
-        <span className="text-lg font-bold tracking-[-0.36px]">Add Device Tag</span>
-      </button>
+        <Button
+          type="button"
+          variant="ghost-subtle"
+          className="text-ods-text-primary self-start"
+          onClick={addTag}
+          disabled={!organizationId}
+          leftIcon={<PlusCircle className="size-6" />}
+          noPadding
+        >
+          Add Device Tag
+        </Button>
+      </div>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { ChevronDown, Folder } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useDeviceDetails } from '../hooks/use-device-details';
+import type { Device } from '../types/device.types';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceActionsDropdown } from './device-actions-dropdown';
@@ -33,6 +34,25 @@ import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
+
+function DeviceStatusAndTags({ device }: { device: Device }) {
+  const statusConfig = getDeviceStatusConfig(device.status);
+  const tagValues = device.tags?.flatMap(tag => tag.values.map(value => ({ id: `${tag.tagId}-${value}`, value })));
+
+  return (
+    <div className="flex gap-2 items-center flex-wrap py-4">
+      <Tag label={statusConfig.label} variant={statusConfig.variant} />
+      {tagValues?.map(tag => (
+        <span
+          key={tag.id}
+          className="bg-ods-card border border-ods-border rounded-[6px] px-2 h-8 flex items-center justify-center font-mono font-medium text-sm text-ods-text-primary uppercase tracking-tight"
+        >
+          {tag.value}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 interface DeviceDetailsViewProps {
   deviceId: string;
@@ -216,20 +236,15 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         onClick: handleBack,
       }}
       subtitle={
-        <div className="flex gap-3 items-center">
-          {normalizedDevice?.status &&
-            (() => {
-              const statusConfig = getDeviceStatusConfig(normalizedDevice.status);
-              return <Tag label={statusConfig.label} variant={statusConfig.variant} />;
-            })()}
-          {lastUpdated && (
-            <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>
-          )}
-        </div>
+        lastUpdated ? (
+          <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>
+        ) : undefined
       }
       headerActions={headerActions}
       padding="none"
     >
+      <DeviceStatusAndTags device={normalizedDevice} />
+
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         <DeviceInfoSection device={normalizedDevice} />
