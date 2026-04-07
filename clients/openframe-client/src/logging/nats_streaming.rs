@@ -17,13 +17,14 @@ const RECONNECT_DELAY_SECS: u64 = 5;
 const INITIAL_KEY_CHECK_INTERVAL_SECS: u64 = 10;
 const NATS_SUBJECT: &str = "agents.logs";
 // Hardcoded machine ID for NATS header (used before registration)
-const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
+const DEFAULT_MACHINE_ID: &str = "openframe-client";
 
 pub struct NatsLogConnection {
     jetstream: Option<jetstream::Context>,
     server_host: String,
     tenant_domain: String,
     initial_key: String,
+    machine_id: String,
 }
 
 impl NatsLogConnection {
@@ -37,22 +38,26 @@ impl NatsLogConnection {
             server_host,
             tenant_domain,
             initial_key,
+            machine_id: DEFAULT_MACHINE_ID.to_string(),
         }
     }
 
-    pub async fn connect(&mut self) -> Result<()> {
+    pub fn get_machine_id(&self) -> &str {
+        &self.machine_id
+    }
+
+    pub async fn connect(&mut self, retry: bool) -> Result<()> {
         let url = format!("wss://{}/ws/nats-logs", self.server_host);
         info!(
-            "NATS logs: connecting to {} (tenant={})",
-            url, self.tenant_domain
+            "NATS logs: connecting to {} (tenant={}, machine_id={})",
+            url, self.tenant_domain, self.machine_id
         );
 
         let tenant_domain = self.tenant_domain.clone();
-        let client = async_nats::ConnectOptions::new()
+        let mut opts = async_nats::ConnectOptions::new()
             .custom_header("x-tenant-domain", &self.tenant_domain)
             .custom_header("x-initial-key", &self.initial_key)
-            .custom_header("x-machine-id", NATS_HEADER_MACHINE_ID)
-            .retry_on_initial_connect()
+            .custom_header("x-machine-id", &self.machine_id)
             .reconnect_delay_callback(|attempt| {
                 let delay = Duration::from_secs(RECONNECT_DELAY_SECS);
                 error!("NATS logs: reconnecting, attempt {}", attempt);
@@ -77,14 +82,46 @@ impl NatsLogConnection {
                         _ => {}
                     }
                 }
-            })
+            });
+
+        if retry {
+            opts = opts.retry_on_initial_connect();
+        }
+
+        let client = opts
             .connect(&url)
             .await
             .context("Failed to connect to NATS logs endpoint")?;
 
         self.jetstream = Some(jetstream::new(client));
-        info!("NATS logs: initial connection established");
+        info!("NATS logs: connection established (machine_id={})", self.machine_id);
         Ok(())
+    }
+
+    pub async fn reconnect_with_machine_id(&mut self, machine_id: String) -> Result<()> {
+        if self.machine_id == machine_id {
+            return Ok(());
+        }
+
+        info!(
+            "NATS logs: reconnecting with new machine_id (old={}, new={})",
+            self.machine_id, machine_id
+        );
+
+        // Save old state in case connect fails
+        let old_machine_id = self.machine_id.clone();
+        let old_jetstream = self.jetstream.take();
+
+        self.machine_id = machine_id;
+
+        match self.connect(false).await {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                self.machine_id = old_machine_id;
+                self.jetstream = old_jetstream;
+                Err(e)
+            }
+        }
     }
 
     pub async fn publish(&self, payload: &LogBatchMessage) -> Result<()> {
@@ -152,7 +189,7 @@ impl LogStreamingRunManager {
                 initial_key,
             );
 
-            if let Err(e) = connection.connect().await {
+            if let Err(e) = connection.connect(true).await {
                 error!("Failed to connect to NATS logs: {:#}", e);
                 return;
             }
@@ -194,7 +231,7 @@ impl LogStreamingRunManager {
 async fn log_file_reader_task(
     log_file_path: PathBuf,
     rotation_manager: LogRotationManager,
-    connection: NatsLogConnection,
+    mut connection: NatsLogConnection,
     hostname: String,
     tenant_domain: String,
     agent_config_service: AgentConfigurationService,
@@ -205,6 +242,19 @@ async fn log_file_reader_task(
 
     loop {
         ticker.tick().await;
+
+        if let Ok(registered_machine_id) = agent_config_service.get_machine_id().await {
+            if !registered_machine_id.is_empty()
+                && connection.get_machine_id() != registered_machine_id
+            {
+                if let Err(e) = connection
+                    .reconnect_with_machine_id(registered_machine_id)
+                    .await
+                {
+                    error!("Failed to reconnect NATS with new machine_id: {:#}", e);
+                }
+            }
+        }
 
         // If we have a pending batch from previous failed publish, retry it
         let (batch, new_position) = if let Some((b, np)) = pending_batch.take() {
@@ -225,8 +275,11 @@ async fn log_file_reader_task(
                 continue;
             }
 
-            // Get machine_id dynamically (None before registration, Some after)
-            let machine_id = agent_config_service.get_machine_id().await.ok();
+            let machine_id = if connection.get_machine_id() == DEFAULT_MACHINE_ID {
+                None
+            } else {
+                Some(connection.get_machine_id().to_string())
+            };
 
             let batch = LogBatchMessage {
                 machine_id,
