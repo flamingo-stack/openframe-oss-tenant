@@ -59,6 +59,7 @@ export const ASSISTANT_CONFIG = {
 export type AssistantType = (typeof ASSISTANT_CONFIG)[keyof typeof ASSISTANT_CONFIG]['type'];
 
 export const API_ENDPOINTS = {
+  GRAPHQL: '/chat/graphql',
   APPROVAL_REQUEST: '/chat/api/v1/approval-requests',
   SEND_MESSAGE: '/chat/api/v1/messages',
   DIALOG_CHUNKS: '/chat/api/v1/dialogs',

@@ -9,8 +9,8 @@ import {
   useChunkCatchup as useChunkCatchupCore,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useMemo } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { API_ENDPOINTS } from '../constants';
+import { getDialogService } from '../services';
+import { useDialogVersion } from './use-dialog-version';
 
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn };
 
@@ -20,27 +20,18 @@ interface UseChunkCatchupOptions {
 }
 
 export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions): UseChunkCatchupReturn {
+  const version = useDialogVersion();
+  const service = getDialogService(version);
+
   const fetchChunks = useCallback(
     async (
       dialogId: string,
       chatType: (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE],
       fromSequenceId?: number | null,
     ): Promise<ChunkData[]> => {
-      let url = `${API_ENDPOINTS.DIALOG_CHUNKS}/${dialogId}/chunks?chatType=${chatType}`;
-      if (fromSequenceId !== null && fromSequenceId !== undefined) {
-        url += `&fromSequenceId=${fromSequenceId}`;
-      }
-
-      const response = await apiClient.get<ChunkData[]>(url);
-
-      if (!response.ok) {
-        console.error(`Failed to fetch ${chatType} chunks:`, response.status);
-        return [];
-      }
-
-      return response.data || [];
+      return service.fetchChunks(dialogId, chatType, fromSequenceId);
     },
-    [],
+    [service],
   );
 
   const options = useMemo<CoreChunkCatchupOptions>(

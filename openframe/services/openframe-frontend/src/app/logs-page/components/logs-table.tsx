@@ -269,6 +269,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     () => [
       {
         label: 'Refresh',
+        variant: 'card' as const,
         icon: <Refresh02HrIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleRefresh,
       },

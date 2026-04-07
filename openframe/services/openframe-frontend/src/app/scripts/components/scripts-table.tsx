@@ -308,6 +308,7 @@ export function ScriptsTable() {
     () => [
       {
         label: 'Add Script',
+        variant: 'card' as const,
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleNewScript,
       },

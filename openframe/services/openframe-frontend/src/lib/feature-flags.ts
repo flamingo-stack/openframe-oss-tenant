@@ -40,6 +40,11 @@ export const featureFlags = {
       return getFlagValue('dialog-stop', () => false);
     },
   },
+  tickets: {
+    enabled(): boolean {
+      return getFlagValue('tickets', () => false);
+    },
+  },
 } as const;
 
 /**
