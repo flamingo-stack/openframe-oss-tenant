@@ -1,14 +1,23 @@
 'use client';
 
 import { ViewToggle } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { Filter02Icon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  FilterModal,
+  PageError,
+  PageLayout,
+  Table,
+  TagSearchInput,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
+import { useCallback, useMemo } from 'react';
 import { useDeviceFilters } from '../hooks/use-device-filters';
 import { useDevices } from '../hooks/use-devices';
+import { useDevicesUrlParams } from '../hooks/use-devices-url-params';
+import { useGridInfiniteScroll } from '../hooks/use-grid-infinite-scroll';
+import { useTagFilterModal } from '../hooks/use-tag-filter-modal';
 import type { Device } from '../types/device.types';
 import { DevicesGrid } from './devices-grid';
 import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns';
@@ -16,25 +25,19 @@ import { getDeviceTableColumns, getDeviceTableRowActions } from './devices-table
 export function DevicesView() {
   const router = useRouter();
 
-  const { params, setParam, setParams } = useApiParams({
-    search: { type: 'string', default: '' },
-    statuses: { type: 'array', default: [] },
-    osTypes: { type: 'array', default: [] },
-    organizationIds: { type: 'array', default: [] },
-    viewMode: { type: 'string', default: 'table' },
-  });
-
-  const debouncedSearch = useDebounce(params.search, 300);
-
-  // Backend filters from URL params (default excludes ARCHIVED and DELETED)
-  const filters = useMemo(
-    () => ({
-      statuses: params.statuses.length > 0 ? params.statuses : DEFAULT_DEVICES_LIST_STATUSES,
-      osTypes: params.osTypes,
-      organizationIds: params.organizationIds,
-    }),
-    [params.statuses, params.osTypes, params.organizationIds],
-  );
+  const {
+    params,
+    setParam,
+    setParams,
+    debouncedSearch,
+    filters,
+    tableFilters,
+    tagOptions,
+    handleFilterChange,
+    handleTagRemove,
+    handleClearAll,
+    handleTagSubmit,
+  } = useDevicesUrlParams();
 
   const { devices, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error, refetch } = useDevices(
     filters,
@@ -44,102 +47,108 @@ export function DevicesView() {
   const { data: deviceFilters } = useDeviceFilters(filters);
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters ?? null), [deviceFilters]);
-
-  // Refresh callback for after archive/delete actions
   const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
 
-  // Navigate to device details on row click
+  const {
+    isOpen: filterModalOpen,
+    open: openFilterModal,
+    close: closeFilterModal,
+    isMdUp,
+    filterGroups,
+    tagFilterKeys,
+    handleFilterChange: handleModalFilterChange,
+    handleTagsChange: handleModalTagsChange,
+    selectedTags,
+  } = useTagFilterModal({
+    tags: params.tags,
+    deviceFilters: deviceFilters ?? null,
+    columns,
+    setParams,
+  });
+
+  const gridSentinelRef = useGridInfiniteScroll({
+    enabled: params.viewMode === 'grid',
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  });
+
   const handleRowClick = useCallback(
     (device: Device) => {
-      const id = device.machineId || device.id;
-      router.push(`/devices/details/${id}`);
+      router.push(`/devices/details/${device.machineId || device.id}`);
     },
     [router],
   );
 
-  const handleFilterChange = useCallback(
-    (columnFilters: Record<string, any[]>) => {
-      setParams({
-        statuses: columnFilters.status || [],
-        osTypes: columnFilters.os || [],
-        organizationIds: columnFilters.organization || [],
-      });
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
-    },
-    [setParams],
-  );
-
-  // Convert URL params to table filters format
-  const tableFilters = useMemo(
-    () => ({
-      status: params.statuses,
-      os: params.osTypes,
-      organization: params.organizationIds,
-    }),
-    [params.statuses, params.osTypes, params.organizationIds],
-  );
-
-  const viewToggle = (
-    <>
-      <ViewToggle
-        value={params.viewMode as 'table' | 'grid'}
-        onValueChange={value => setParam('viewMode', value)}
-        className="bg-ods-card border border-ods-border h-12"
-      />
-      <Button
-        onClick={() => router.push('/devices/new')}
-        variant="card"
-        leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-      >
-        Add Device
-      </Button>
-    </>
-  );
-
-  const filterGroups = columns
-    .filter(column => column.filterable)
-    .map(column => ({
-      id: column.key,
-      title: column.label,
-      options: column.filterOptions || [],
-    }));
-
-  const gridSentinelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (params.viewMode !== 'grid' || !hasNextPage || isFetchingNextPage) return;
-    const sentinel = gridSentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0]?.isIntersecting) {
-          fetchNextPage();
-        }
-      },
-      { rootMargin: '200px' },
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [params.viewMode, hasNextPage, isFetchingNextPage, fetchNextPage]);
+  if (error) {
+    return <PageError message={error} />;
+  }
 
   return (
-    <ListPageLayout
+    <PageLayout
       title="Devices"
-      headerActions={viewToggle}
-      searchPlaceholder="Search for Devices"
-      searchValue={params.search}
-      onSearch={value => setParam('search', value)}
-      error={error}
+      headerActions={
+        <HeaderActions
+          viewMode={params.viewMode}
+          onViewModeChange={v => setParam('viewMode', v)}
+          onAddDevice={() => router.push('/devices/new')}
+        />
+      }
       padding="none"
-      onMobileFilterChange={handleFilterChange}
-      mobileFilterGroups={filterGroups}
-      currentMobileFilters={tableFilters}
-      stickyHeader
+      className="gap-4 md:gap-6"
+      contentClassName="flex flex-col"
     >
-      {/* Conditional View Rendering */}
+      <div
+        className={cn(
+          'flex gap-[var(--spacing-system-m)] items-center',
+          'sticky -top-4 md:-top-6 z-20 bg-ods-bg -mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-2',
+        )}
+      >
+        <div className="flex-1 min-w-0">
+          <TagSearchInput
+            tags={tagOptions}
+            searchValue={params.search}
+            onSearchChange={value => setParam('search', value)}
+            onTagRemove={handleTagRemove}
+            onClearAll={handleClearAll}
+            onSubmit={handleTagSubmit}
+            placeholder="Search for Devices"
+            addMorePlaceholder="Add More..."
+          />
+        </div>
+        {isMdUp ? (
+          <Button
+            variant="card"
+            onClick={openFilterModal}
+            leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+            className="shrink-0"
+          >
+            Filter Tags
+          </Button>
+        ) : (
+          <Button
+            variant="card"
+            size="icon"
+            onClick={openFilterModal}
+            centerIcon={<Filter02Icon className="text-ods-text-secondary" />}
+            className="shrink-0"
+          />
+        )}
+      </div>
+
+      <FilterModal
+        isOpen={filterModalOpen}
+        onClose={closeFilterModal}
+        filterGroups={filterGroups}
+        onFilterChange={handleModalFilterChange}
+        currentFilters={!isMdUp ? tableFilters : undefined}
+        tagFilterKeys={tagFilterKeys}
+        selectedTags={selectedTags}
+        onTagsChange={handleModalTagsChange}
+        className="max-w-[600px]"
+      />
+
       {params.viewMode === 'table' ? (
-        // Table View
         <Table
           data={devices}
           columns={columns}
@@ -163,7 +172,6 @@ export function DevicesView() {
           stickyHeaderOffset="top-[56px]"
         />
       ) : (
-        // Grid View
         <DevicesGrid
           devices={devices}
           isLoading={isLoading}
@@ -173,6 +181,33 @@ export function DevicesView() {
           sentinelRef={gridSentinelRef}
         />
       )}
-    </ListPageLayout>
+    </PageLayout>
+  );
+}
+
+function HeaderActions({
+  viewMode,
+  onViewModeChange,
+  onAddDevice,
+}: {
+  viewMode: string;
+  onViewModeChange: (value: 'table' | 'grid') => void;
+  onAddDevice: () => void;
+}) {
+  return (
+    <>
+      <ViewToggle
+        value={viewMode as 'table' | 'grid'}
+        onValueChange={onViewModeChange}
+        className="bg-ods-card border border-ods-border h-12"
+      />
+      <Button
+        variant={'card'}
+        onClick={onAddDevice}
+        leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
+      >
+        Add Device
+      </Button>
+    </>
   );
 }

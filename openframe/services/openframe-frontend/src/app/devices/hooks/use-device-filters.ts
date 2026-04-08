@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { GET_DEVICE_FILTERS_QUERY } from '../queries/devices-queries';
 import type { DeviceFilterInput, DeviceFilters, GraphQlResponse } from '../types/device.types';
@@ -31,6 +31,7 @@ export function useDeviceFilters(filters: DeviceFilterInput = {}) {
 
       return graphqlResponse.data.deviceFilters;
     },
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 }
