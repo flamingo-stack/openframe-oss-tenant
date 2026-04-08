@@ -1,6 +1,0 @@
-dependencies:
-- name: redis
-  repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
-  version: 23.2.12
-digest: sha256:14788ff96456782bcacaeb6969cb45d0417d6444830983513f3cf06de781ca9d
-generated: "2026-04-07T17:20:01.550077+03:00"
