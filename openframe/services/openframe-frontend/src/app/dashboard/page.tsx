@@ -1,13 +1,7 @@
 'use client';
 
-import nextDynamic from 'next/dynamic';
 import { AppLayout } from '../components/app-layout';
-import DashboardLoading from './loading';
-
-const DashboardContent = nextDynamic(() => import('./components/dashboard-content'), {
-  ssr: false,
-  loading: () => <DashboardLoading />,
-});
+import DashboardContent from './components/dashboard-content';
 
 export default function Dashboard() {
   return (

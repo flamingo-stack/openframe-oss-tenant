@@ -1,8 +1,7 @@
 'use client';
 
 import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useOrganizationsOverview } from '../hooks/use-organizations-overview';
 
@@ -46,14 +45,6 @@ const OrganizationsSkeleton = function OrganizationsSkeleton() {
  */
 export function OrganizationsOverviewSection() {
   const { rows, loading, error, totalOrganizations } = useOrganizationsOverview(10);
-  const router = useRouter();
-
-  const handleOrgClick = useCallback(
-    (organizationId: string) => {
-      router.push(`/devices?organizationIds=${organizationId}`);
-    },
-    [router],
-  );
 
   const organizationRows = useMemo(() => {
     if (loading && rows.length === 0) {
@@ -73,7 +64,7 @@ export function OrganizationsOverviewSection() {
           <OrganizationCard
             organization={org}
             fetchedImageUrl={fullImageUrl}
-            onClick={() => handleOrgClick(org.organizationId)}
+            href={`/organizations/details/${org.organizationId}`}
             deviceCount={org.total}
           />
 
@@ -105,7 +96,7 @@ export function OrganizationsOverviewSection() {
         </div>
       );
     });
-  }, [rows, loading, error, handleOrgClick]);
+  }, [rows, loading, error]);
 
   return (
     <div className="space-y-4">
