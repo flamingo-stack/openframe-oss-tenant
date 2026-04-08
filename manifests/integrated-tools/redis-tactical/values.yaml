@@ -9,12 +9,31 @@ registerJob:
     repository: curlimages/curl
     tag: "8.9.1"
 
-
 redis:
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
+  fullnameOverride: redis-tactical
+
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: redis
-    tag: "6.0-alpine"
+    repository: bitnamilegacy/redis
+    tag: 7.4.2-debian-12-r2
+
+  architecture: standalone
+
+  auth:
+    enabled: false
+
+  commonConfiguration: |-
+    save 3600 1
+    save 300 100
+    save 60 10000
+
+  master:
+    revisionHistoryLimit: 2
+    priorityClassName: redis-tactical
 
   metrics:
     enabled: true

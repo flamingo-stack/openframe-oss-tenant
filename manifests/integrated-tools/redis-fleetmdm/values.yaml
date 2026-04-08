@@ -9,12 +9,30 @@ registerJob:
     repository: curlimages/curl
     tag: "8.9.1"
 
-
 redis:
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
+  fullnameOverride: redis-fleetmdm
+
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: redis
-    tag: "7.4-alpine"
+    repository: bitnamilegacy/redis
+    tag: 7.4.2-debian-12-r2
+
+  architecture: standalone
+
+  auth:
+    enabled: false
+
+  master:
+    revisionHistoryLimit: 2
+    priorityClassName: redis-fleetmdm
+    podSecurityContext:
+      runAsUser: 999
+      runAsGroup: 999
+      fsGroup: 999
 
   metrics:
     enabled: true

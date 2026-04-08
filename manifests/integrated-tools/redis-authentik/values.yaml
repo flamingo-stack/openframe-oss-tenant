@@ -10,10 +10,26 @@ registerJob:
     tag: "8.9.1"
 
 redis:
+  global:
+    security:
+      allowInsecureImages: true  # bitnamilegacy
+
+  fullnameOverride: redis-authentik
+
   image:
     registry: ghcr.io/flamingo-stack/registry
-    repository: redis
-    tag: "latest"
+    repository: bitnamilegacy/redis
+    tag: 8.2.1-debian-12-r0
+
+  architecture: standalone
+
+  auth:
+    enabled: false
+
+  master:
+    revisionHistoryLimit: 2
+    priorityClassName: redis-authentik
+
   metrics:
     enabled: true
     image:

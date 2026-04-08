@@ -1,0 +1,19 @@
+
+redis:
+  commonConfiguration: |-
+    save 3600 1
+    save 300 100
+    save 60 10000
+    maxmemory 3gb
+    maxmemory-policy allkeys-lru
+
+  master:
+    resources:
+      requests:
+        cpu: "500m"
+        memory: "1Gi"
+      limits:
+        cpu: 1
+        memory: "2Gi"
+    persistence:
+      size: "5Gi"

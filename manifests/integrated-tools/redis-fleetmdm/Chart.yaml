@@ -1,6 +1,11 @@
 apiVersion: v2
-name: redis-fleetmdm
-description: Chart for FleetMDM Redis
+name: redis-fleetmdm-wrapper
+description: Wrapper chart for FleetMDM Redis
 type: application
 version: 0.0.1
 appVersion: "0.0.1"
+
+dependencies:
+  - name: redis
+    version: "~23.2.6"
+    repository: oci://ghcr.io/flamingo-stack/registry/helm-charts
