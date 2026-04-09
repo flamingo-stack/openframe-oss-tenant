@@ -99,6 +99,7 @@ export const GET_TICKET_QUERY = `
       title
       description
       status
+      creationSource
       owner {
         ... on ClientTicketOwner {
           type
@@ -133,6 +134,7 @@ export const GET_TICKET_QUERY = `
       }
       dialog {
         id
+        currentMode
       }
       attachments {
         id

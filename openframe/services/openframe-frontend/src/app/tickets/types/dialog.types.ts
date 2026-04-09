@@ -38,9 +38,11 @@ export interface Dialog {
   rating?: DialogRating | null;
 
   // V2 ticket-specific fields (only populated when fetched as ticket)
+  currentMode?: string; // 'AI' | 'DIRECT'
   ticketNumber?: number;
   dialogId?: string;
   description?: string;
+  creationSource?: string;
   deviceId?: string;
   deviceHostname?: string;
   organizationId?: string;
@@ -95,7 +97,8 @@ export type MessageDataType =
   | 'EXECUTING_TOOL'
   | 'EXECUTED_TOOL'
   | 'APPROVAL_REQUEST'
-  | 'APPROVAL_RESULT';
+  | 'APPROVAL_RESULT'
+  | 'SYSTEM';
 
 export interface MessageOwner {
   type: MessageOwnerType;
@@ -167,6 +170,11 @@ export interface ApprovalResultData extends MessageData {
   details?: any;
 }
 
+export interface SystemData extends MessageData {
+  type: 'SYSTEM';
+  text: string;
+}
+
 export interface Message {
   id: string;
   dialogId: string;
@@ -181,6 +189,7 @@ export interface Message {
     | ExecutedToolData
     | ApprovalRequestData
     | ApprovalResultData
+    | SystemData
     | MessageData;
 }
 

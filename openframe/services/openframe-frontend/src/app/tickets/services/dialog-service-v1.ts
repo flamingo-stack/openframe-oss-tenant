@@ -212,12 +212,26 @@ export class DialogServiceV1 implements DialogService {
     let message: Message | null = null;
 
     switch (action.action) {
-      case 'message_request':
+      case 'message_request': {
+        const isAdminRequest = action.ownerType === 'ADMIN' || isAdmin;
+        const owner = isAdminRequest
+          ? {
+              type: 'ADMIN' as const,
+              userId: '',
+              user: action.displayName ? { id: '', firstName: action.displayName } : undefined,
+            }
+          : { type: 'CLIENT' as const, machineId: '' };
         message = {
-          ...createBaseMessage(true),
+          id,
+          dialogId,
+          chatType: chatType as any,
+          dialogMode: 'DEFAULT',
+          createdAt: nowIso,
+          owner: owner as any,
           messageData: { type: 'TEXT', text: action.text } as any,
         };
         break;
+      }
 
       case 'text':
         message = {
@@ -264,6 +278,34 @@ export class DialogServiceV1 implements DialogService {
             approved: action.approved,
             approvalType: action.approvalType,
           } as any,
+        };
+        break;
+
+      case 'direct_message': {
+        const isAdminAuthor = action.ownerType === 'ADMIN';
+        const owner = isAdminAuthor
+          ? {
+              type: 'ADMIN' as const,
+              userId: '',
+              user: action.displayName ? { id: '', firstName: action.displayName } : undefined,
+            }
+          : { type: 'CLIENT' as const, machineId: '' };
+        message = {
+          id,
+          dialogId,
+          chatType: chatType as any,
+          dialogMode: 'DIRECT',
+          createdAt: nowIso,
+          owner: owner as any,
+          messageData: { type: 'TEXT', text: action.text } as any,
+        };
+        break;
+      }
+
+      case 'system':
+        message = {
+          ...createBaseMessage(false),
+          messageData: { type: 'SYSTEM', text: action.text } as any,
         };
         break;
 
