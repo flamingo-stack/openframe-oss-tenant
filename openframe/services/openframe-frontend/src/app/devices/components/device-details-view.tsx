@@ -14,6 +14,10 @@ import {
   TabContent,
   TabNavigation,
   Tag,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
   CmdIcon,
@@ -37,20 +41,30 @@ import { DEVICE_TABS } from './tabs/device-tabs';
 
 function DeviceStatusAndTags({ device }: { device: Device }) {
   const statusConfig = getDeviceStatusConfig(device.status);
-  const tagValues = device.tags?.flatMap(tag => tag.values.map(value => ({ id: `${tag.tagId}-${value}`, value })));
+  const tagValues = device.tags?.flatMap(tag =>
+    tag.values.map(value => ({ id: `${tag.tagId}-${value}`, key: tag.key, value })),
+  );
 
   return (
-    <div className="flex gap-2 items-center flex-wrap py-4">
-      <Tag label={statusConfig.label} variant={statusConfig.variant} />
-      {tagValues?.map(tag => (
-        <span
-          key={tag.id}
-          className="bg-ods-card border border-ods-border rounded-[6px] px-2 h-8 flex items-center justify-center font-mono font-medium text-sm text-ods-text-primary uppercase tracking-tight"
-        >
-          {tag.value}
-        </span>
-      ))}
-    </div>
+    <TooltipProvider delayDuration={0}>
+      <div className="flex gap-2 items-center flex-wrap py-4">
+        <Tag label={statusConfig.label} variant={statusConfig.variant} />
+        {tagValues?.map(tag => (
+          <Tooltip key={tag.id}>
+            <TooltipTrigger asChild>
+              <span className="bg-ods-card border border-ods-border rounded-[6px] px-2 h-8 flex items-center justify-center font-mono font-medium text-sm text-ods-text-primary uppercase tracking-tight cursor-default">
+                {tag.value}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-h5">
+                {tag.key}:{tag.value}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 }
 

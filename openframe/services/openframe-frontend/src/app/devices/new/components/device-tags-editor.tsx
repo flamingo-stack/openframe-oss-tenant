@@ -12,8 +12,8 @@ import { TagRow } from './tag-row';
 const SUGGESTIONS_LIMIT = 20;
 
 const deviceTagsEditorRootQuery = graphql`
-  query deviceTagsEditorQuery($organizationId: String!, $limit: Int) {
-    ...deviceTagsEditor_keySuggestions @arguments(organizationId: $organizationId, limit: $limit)
+  query deviceTagsEditorQuery($limit: Int) {
+    ...deviceTagsEditor_keySuggestions @arguments(limit: $limit)
   }
 `;
 
@@ -22,11 +22,10 @@ export const keySuggestionsFragment = graphql`
   fragment deviceTagsEditor_keySuggestions on Query
     @refetchable(queryName: "deviceTagsEditorKeySuggestionsRefetchQuery")
     @argumentDefinitions(
-      organizationId: { type: "String!" }
       search: { type: "String" }
       limit: { type: "Int" }
     ) {
-    tagKeySuggestions(organizationId: $organizationId, search: $search, limit: $limit) {
+    tagKeySuggestions(search: $search, limit: $limit) {
       id
       key
       values
@@ -39,15 +38,14 @@ export interface DeviceTagWithId extends DeviceTag {
 }
 
 interface DeviceTagsEditorProps {
-  organizationId: string;
   tags: DeviceTagWithId[];
   onTagsChange: (tags: DeviceTagWithId[]) => void;
 }
 
-export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceTagsEditorProps) {
+export function DeviceTagsEditor({ tags, onTagsChange }: DeviceTagsEditorProps) {
   const queryData = useLazyLoadQuery<DeviceTagsEditorQueryType>(
     deviceTagsEditorRootQuery,
-    { organizationId, limit: SUGGESTIONS_LIMIT },
+    { limit: SUGGESTIONS_LIMIT },
     { fetchPolicy: 'store-or-network' },
   );
 
@@ -77,7 +75,6 @@ export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceT
         {tags.map((tag, index) => (
           <TagRow
             key={tag.id}
-            organizationId={organizationId}
             tag={tag}
             onChange={updated => updateTag(tag.id, updated)}
             onDelete={() => deleteTag(tag.id)}
@@ -92,7 +89,6 @@ export function DeviceTagsEditor({ organizationId, tags, onTagsChange }: DeviceT
           variant="ghost-subtle"
           className="text-ods-text-primary self-start"
           onClick={addTag}
-          disabled={!organizationId}
           leftIcon={<PlusCircle className="size-6" />}
           noPadding
         >
