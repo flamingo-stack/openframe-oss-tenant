@@ -29,6 +29,8 @@ export function DevicesView() {
     params,
     setParam,
     setParams,
+    localSearch,
+    setLocalSearch,
     debouncedSearch,
     filters,
     tableFilters,
@@ -107,8 +109,8 @@ export function DevicesView() {
         <div className="flex-1 min-w-0">
           <TagSearchInput
             tags={tagOptions}
-            searchValue={params.search}
-            onSearchChange={value => setParam('search', value)}
+            searchValue={localSearch}
+            onSearchChange={setLocalSearch}
             onTagRemove={handleTagRemove}
             onClearAll={handleClearAll}
             onSubmit={handleTagSubmit}

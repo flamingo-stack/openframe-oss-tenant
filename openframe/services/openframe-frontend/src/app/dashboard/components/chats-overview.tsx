@@ -48,8 +48,8 @@ export function ChatsOverviewSection() {
           showProgress
           href="/tickets?status=RESOLVED"
         />
-        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} href="/tickets" />
-        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} href="/tickets" />
+        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} />
+        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} />
       </div>
     </div>
   );

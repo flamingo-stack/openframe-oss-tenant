@@ -21,7 +21,7 @@ import { AntivirusWarning } from '../components/antivirus-warning';
 import { useInstallCommand } from '../hooks/use-install-command';
 import type { DeviceTagWithId } from './components/device-tags-editor';
 import { DeviceTagsEditor } from './components/device-tags-editor';
-import { TAG_REGEX } from './components/tag-row';
+import { isValidTag } from './components/tag-row';
 
 const newDeviceContentQuery = graphql`
   query newDeviceContentQuery($first: Int!) {
@@ -81,11 +81,13 @@ export function NewDeviceContent() {
 
   const validTags = useMemo(() => {
     const seen = new Set<string>();
-    return tags.filter(t => {
-      if (!t.key || t.values.length === 0) return false;
-      if (seen.has(t.key)) return false;
+    return tags.flatMap(t => {
+      if (!t.key || !isValidTag(t.key)) return [];
+      if (seen.has(t.key)) return [];
+      const validValues = t.values.filter(isValidTag);
+      if (validValues.length === 0) return [];
       seen.add(t.key);
-      return true;
+      return [{ ...t, values: validValues }];
     });
   }, [tags]);
 
@@ -106,12 +108,6 @@ export function NewDeviceContent() {
     }
   }, [orgs, organizationId, form]);
 
-  // Reset tags when organization changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: organizationId is intentionally used to trigger tag reset on org change
-  useEffect(() => {
-    setTags([]);
-  }, [organizationId]);
-
   const validateBeforeAction = useCallback(async () => {
     const valid = await form.trigger();
     if (!valid) {
@@ -123,7 +119,7 @@ export function NewDeviceContent() {
       return false;
     }
     const filledTags = tags.filter(t => t.key);
-    const hasInvalidTags = filledTags.some(t => !TAG_REGEX.test(t.key) || t.values.some(v => !TAG_REGEX.test(v)));
+    const hasInvalidTags = filledTags.some(t => !isValidTag(t.key) || t.values.some(v => !isValidTag(v)));
     if (hasInvalidTags) {
       toast({
         title: 'Invalid tags',
@@ -284,7 +280,7 @@ export function NewDeviceContent() {
           />
         </div>
 
-        {organizationId && <DeviceTagsEditor organizationId={organizationId} tags={tags} onTagsChange={setTags} />}
+        <DeviceTagsEditor tags={tags} onTagsChange={setTags} />
 
         <CommandBox
           title="Device Add Command"

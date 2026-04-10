@@ -2,7 +2,7 @@
 
 import type { TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import type { DeviceFilterInput } from '../types/device.types';
 
@@ -16,19 +16,27 @@ export function useDevicesUrlParams() {
     viewMode: { type: 'string', default: 'table' },
   });
 
-  const debouncedSearch = useDebounce(params.search, 300);
+  const [localSearch, setLocalSearch] = useState(params.search);
+  const debouncedSearch = useDebounce(localSearch, 500);
+
+  // Ref to avoid infinite loop — setParam identity changes on every URL update
+  const setParamRef = useRef(setParam);
+  setParamRef.current = setParam;
+
+  // Sync debounced value to URL param
+  useEffect(() => {
+    setParamRef.current('search', debouncedSearch);
+  }, [debouncedSearch]);
 
   // Only "key:value" pairs go to the API
-  const tagValues = useMemo(() => {
-    const values: string[] = [];
-    for (const tag of params.tags) {
-      const colonIdx = tag.indexOf(':');
-      if (colonIdx > 0) {
-        values.push(tag.substring(colonIdx + 1));
-      }
-    }
-    return values;
-  }, [params.tags]);
+  const tagValues = useMemo(
+    () =>
+      params.tags.flatMap(tag => {
+        const i = tag.indexOf(':');
+        return i > 0 ? [tag.substring(i + 1)] : [];
+      }),
+    [params.tags],
+  );
 
   const filters: DeviceFilterInput = useMemo(
     () => ({
@@ -77,6 +85,7 @@ export function useDevicesUrlParams() {
   );
 
   const handleClearAll = useCallback(() => {
+    setLocalSearch('');
     setParams({ tags: [], search: '' });
   }, [setParams]);
 
@@ -85,6 +94,7 @@ export function useDevicesUrlParams() {
       const trimmed = value.trim();
       if (trimmed && !params.tags.includes(trimmed)) {
         setParam('tags', [...params.tags, trimmed]);
+        setLocalSearch('');
         setParam('search', '');
       }
     },
@@ -95,6 +105,8 @@ export function useDevicesUrlParams() {
     params,
     setParam,
     setParams,
+    localSearch,
+    setLocalSearch,
     debouncedSearch,
     filters,
     tableFilters,
