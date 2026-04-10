@@ -552,7 +552,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     <PageLayout
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
-        label: 'Back to Chats',
+        label: 'Back to Tickets',
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
@@ -721,7 +721,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   type="button"
                   onClick={startDirectChat}
                   disabled={isStartingDirectChat}
-                  className="w-full flex items-center justify-center gap-2 bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors mt-2"
+                  className="w-full flex items-center justify-center gap-2 bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors mt-1"
                 >
                   <ChatsIcon size={24} className="text-ods-text-primary shrink-0" />
                   <span className="text-h3 text-ods-text-primary">
@@ -736,7 +736,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   onSend={sendClientMessage}
                   sending={isSendingClientMessage}
                   autoFocus={false}
-                  className="mt-2 bg-ods-card rounded-lg max-w-full"
+                  className="mt-1 bg-ods-card rounded-lg max-w-full"
                 />
               )}
             </div>

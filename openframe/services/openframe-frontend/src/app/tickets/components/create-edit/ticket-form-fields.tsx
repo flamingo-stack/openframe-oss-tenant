@@ -7,7 +7,6 @@ import {
   Input,
   Label,
   MarkdownEditor,
-  TicketDescriptionViewer,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo, useState } from 'react';
