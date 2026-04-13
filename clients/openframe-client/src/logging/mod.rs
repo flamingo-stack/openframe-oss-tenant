@@ -13,6 +13,7 @@
 /// called early in the application lifecycle.
 pub mod log_parser;
 pub mod log_rotation;
+pub mod log_source;
 pub mod metrics;
 pub mod nats_streaming;
 pub mod shipping;

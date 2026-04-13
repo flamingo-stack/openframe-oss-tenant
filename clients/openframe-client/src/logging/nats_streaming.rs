@@ -6,17 +6,17 @@ use tracing::{debug, error, info};
 
 use crate::platform::DirectoryManager;
 use crate::services::device_data_fetcher::DeviceDataFetcher;
-use crate::services::{AgentConfigurationService, InitialConfigurationService};
+use crate::services::{AgentConfigurationService, InitialConfigurationService, InstalledToolsService};
 
-use super::log_parser::{read_new_logs, LogBatchMessage, LogDeduplicator};
+use super::log_parser::LogBatchMessage;
 use super::log_rotation::LogRotationManager;
+use super::log_source::{FileLogSource, LogSourceKind, LogSourceRegistry};
 
 const BATCH_INTERVAL_SECS: u64 = 60;
 const MAX_LOGS_PER_BATCH: usize = 50;
 const RECONNECT_DELAY_SECS: u64 = 5;
 const INITIAL_KEY_CHECK_INTERVAL_SECS: u64 = 10;
 const NATS_SUBJECT: &str = "agents.logs";
-// Hardcoded machine ID for NATS header (used before registration)
 const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
 
 pub struct NatsLogConnection {
@@ -27,11 +27,7 @@ pub struct NatsLogConnection {
 }
 
 impl NatsLogConnection {
-    pub fn new(
-        server_host: String,
-        tenant_domain: String,
-        initial_key: String,
-    ) -> Self {
+    pub fn new(server_host: String, tenant_domain: String, initial_key: String) -> Self {
         Self {
             jetstream: None,
             server_host,
@@ -101,7 +97,10 @@ impl NatsLogConnection {
             .await
             .context("Failed to receive publish acknowledgment")?;
 
-        debug!("Published {} logs to NATS (ack received)", payload.logs.len());
+        info!(
+            "Published {} logs to NATS (ack received)",
+            payload.logs.len()
+        );
         Ok(())
     }
 }
@@ -114,19 +113,24 @@ pub struct LogStreamingRunManager {
     offset_file_path: PathBuf,
     initial_config_service: InitialConfigurationService,
     agent_config_service: AgentConfigurationService,
+    installed_tools_service: InstalledToolsService,
+    directory_manager: DirectoryManager,
 }
 
 impl LogStreamingRunManager {
     pub fn new(
         initial_config_service: &InitialConfigurationService,
         agent_config_service: &AgentConfigurationService,
+        installed_tools_service: &InstalledToolsService,
         directory_manager: &DirectoryManager,
     ) -> Result<Self> {
         let server_host = initial_config_service.get_server_url()?;
         let tenant_domain = extract_tenant_domain(&server_host);
 
         let device_data_fetcher = DeviceDataFetcher::new();
-        let hostname = device_data_fetcher.get_hostname().unwrap_or_else(|| "unknown".to_string());
+        let hostname = device_data_fetcher
+            .get_hostname()
+            .unwrap_or_else(|| "unknown".to_string());
 
         let log_file_path = directory_manager.logs_dir().join("openframe.log");
         let offset_file_path = directory_manager.secured_dir().join("log_stream_offset");
@@ -139,6 +143,8 @@ impl LogStreamingRunManager {
             offset_file_path,
             initial_config_service: initial_config_service.clone(),
             agent_config_service: agent_config_service.clone(),
+            installed_tools_service: installed_tools_service.clone(),
+            directory_manager: directory_manager.clone(),
         })
     }
 
@@ -157,22 +163,69 @@ impl LogStreamingRunManager {
                 return;
             }
 
+            let registry = self.create_source_registry().await;
+
             let rotation_manager = LogRotationManager::new(
                 self.log_file_path.clone(),
                 self.offset_file_path.clone(),
             );
 
-            log_file_reader_task(
-                self.log_file_path,
+            log_streaming_loop(
+                registry,
                 rotation_manager,
                 connection,
                 self.hostname,
                 self.tenant_domain,
                 self.agent_config_service,
-            ).await;
+                self.log_file_path,
+            )
+            .await;
         });
 
         Ok(())
+    }
+
+    async fn create_source_registry(&self) -> LogSourceRegistry {
+        let mut registry = LogSourceRegistry::new();
+
+        let source = FileLogSource::new(
+            LogSourceKind::Openframe,
+            self.log_file_path.clone(),
+            self.offset_file_path.clone(),
+        );
+        registry.register(Box::new(source));
+
+        self.register_meshcentral_source(&mut registry).await;
+
+        registry
+    }
+
+    async fn register_meshcentral_source(&self, registry: &mut LogSourceRegistry) {
+        let meshcentral_id = LogSourceKind::Meshcentral.to_string();
+
+        let tool = match self.installed_tools_service.get_all().await {
+            Ok(tools) => tools.into_iter().find(|t| t.tool_agent_id == meshcentral_id),
+            Err(e) => {
+                error!("Failed to get installed tools: {:#}", e);
+                return;
+            }
+        };
+
+        let Some(tool) = tool else {
+            error!("Meshcentral agent not installed, skipping log source registration");
+            return;
+        };
+        if tool.installation.executable_path().is_none() {
+            error!("Meshcentral agent has no executable path, skipping log source registration");
+            return;
+        }
+
+        let tool_dir = self.directory_manager.app_support_dir().join(&meshcentral_id);
+        let log_path = tool_dir.join(format!("{}.log", meshcentral_id));
+        let offset_path = self.directory_manager.secured_dir().join("meshcentral_log_offset");
+
+        let source = FileLogSource::new(LogSourceKind::Meshcentral, log_path, offset_path);
+        registry.register(Box::new(source));
     }
 
     async fn wait_for_initial_key(&self) -> String {
@@ -191,61 +244,46 @@ impl LogStreamingRunManager {
     }
 }
 
-async fn log_file_reader_task(
-    log_file_path: PathBuf,
+async fn log_streaming_loop(
+    mut registry: LogSourceRegistry,
     rotation_manager: LogRotationManager,
     connection: NatsLogConnection,
     hostname: String,
     tenant_domain: String,
     agent_config_service: AgentConfigurationService,
+    main_log_path: PathBuf,
 ) {
     let mut ticker = interval(Duration::from_secs(BATCH_INTERVAL_SECS));
     let mut file_position: u64 = rotation_manager.load_offset();
-    let mut pending_batch: Option<(LogBatchMessage, u64)> = None;
 
     loop {
         ticker.tick().await;
 
-        // If we have a pending batch from previous failed publish, retry it
-        let (batch, new_position) = if let Some((b, np)) = pending_batch.take() {
-            (b, np)
-        } else {
-            // Read new logs
-            let (logs, new_pos) = match read_new_logs(&log_file_path, file_position, MAX_LOGS_PER_BATCH) {
-                Ok(result) => result,
-                Err(e) => {
-                    error!("Failed to read log file: {:#}", e);
-                    continue;
-                }
-            };
+        let logs = registry.read_all(MAX_LOGS_PER_BATCH);
 
-            if logs.is_empty() {
-                // No new logs - check if rotation is needed
-                rotation_manager.rotate_if_ready(&mut file_position);
-                continue;
-            }
+        if logs.is_empty() {
+            rotation_manager.rotate_if_ready(&mut file_position);
+            continue;
+        }
 
-            // Get machine_id dynamically (None before registration, Some after)
-            let machine_id = agent_config_service.get_machine_id().await.ok();
+        let machine_id = agent_config_service.get_machine_id().await.ok();
 
-            let batch = LogBatchMessage {
-                machine_id,
-                hostname: hostname.clone(),
-                tenant_domain: tenant_domain.clone(),
-                logs: logs.deduplicate(),
-            };
-
-            (batch, new_pos)
+        let batch = LogBatchMessage {
+            machine_id,
+            hostname: hostname.clone(),
+            tenant_domain: tenant_domain.clone(),
+            logs,
         };
 
-        // Publish to NATS with JetStream ack
         if let Err(e) = connection.publish(&batch).await {
             error!("Failed to publish log batch: {:#} - will retry", e);
-            pending_batch = Some((batch, new_position));
+            registry.rollback_all();
         } else {
-            // Success - advance file position and persist
-            file_position = new_position;
-            rotation_manager.save_offset(file_position);
+            registry.commit_all();
+            if let Ok(metadata) = std::fs::metadata(&main_log_path) {
+                file_position = metadata.len();
+                rotation_manager.save_offset(file_position);
+            }
         }
     }
 }
