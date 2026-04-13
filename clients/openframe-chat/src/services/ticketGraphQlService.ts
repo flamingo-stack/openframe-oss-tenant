@@ -13,6 +13,7 @@ export interface TicketNode {
   title: string;
   description?: string;
   status: string;
+  creationSource?: string;
   labels: TicketLabel[];
   dialog: { id: string } | null;
   createdAt: string;
@@ -63,6 +64,7 @@ const GET_TICKETS_QUERY = gql`
           ticketNumber
           title
           status
+          creationSource
           labels {
             name
           }
@@ -143,6 +145,7 @@ const GET_TICKET_QUERY = gql`
       title
       description
       status
+      creationSource
       labels {
         name
       }

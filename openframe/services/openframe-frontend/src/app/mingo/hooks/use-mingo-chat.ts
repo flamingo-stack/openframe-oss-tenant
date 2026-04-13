@@ -1,9 +1,10 @@
 'use client';
 
-import { type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
+import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
   useSendMessageMutation,
@@ -17,6 +18,7 @@ interface ProcessedMessage {
   content: string | MessageSegment[];
   role: 'user' | 'assistant' | 'error';
   name: string;
+  authorType?: AuthorType;
   assistantType?: 'fae' | 'mingo';
   timestamp: Date;
 }
@@ -43,6 +45,7 @@ interface UseMingoChat {
 export function useMingoChat(dialogId: string | null): UseMingoChat {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const user = useAuthStore(selectUser);
 
   const {
     messagesByDialog,
@@ -88,6 +91,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         id: msg.id,
         content: filteredContent,
         role: msg.role,
+        authorType: msg.authorType,
         name: msg.name || 'Unknown',
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
@@ -149,8 +153,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         const optimisticMessage: CoreMessage = {
           id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
+          authorType: 'admin',
           content: content.trim(),
-          name: 'Admin',
+          name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin',
           timestamp: new Date(),
         };
 
@@ -173,7 +178,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         return false;
       }
     },
-    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast],
+    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast, user],
   );
 
   const stopGeneration = useCallback(async () => {

@@ -8,6 +8,7 @@ import {
   ChatSidebar,
   ContentPageContainer,
   MingoIcon,
+  ModelDisplay,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,6 +27,11 @@ export default function Mingo() {
   const searchParams = useSearchParams();
 
   const [isDraftChat, setIsDraftChat] = useState(false);
+  const [currentModel, setCurrentModel] = useState<{
+    modelName: string;
+    provider: string;
+    contextWindow: number;
+  } | null>(null);
 
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
 
@@ -59,6 +65,17 @@ export default function Mingo() {
 
   const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
     useMingoRealtimeSubscription(activeDialogId);
+
+  const handleMetadataUpdate = useCallback(
+    (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
+      setCurrentModel({
+        modelName: metadata.modelName,
+        provider: metadata.providerName,
+        contextWindow: metadata.contextWindow,
+      });
+    },
+    [],
+  );
 
   const draftWelcomeMessages = useMemo(
     () => [
@@ -115,6 +132,7 @@ export default function Mingo() {
       if (dialogId === activeDialogId) return;
 
       setIsDraftChat(false);
+      setCurrentModel(null);
 
       const currentUrl = new URL(window.location.href);
       currentUrl.searchParams.set('dialogId', dialogId);
@@ -151,6 +169,7 @@ export default function Mingo() {
     resetDialog();
     setActiveDialogId(null);
     setIsDraftChat(true);
+    setCurrentModel(null);
 
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.delete('dialogId');
@@ -236,6 +255,7 @@ export default function Mingo() {
             token={token}
             isDevTicketEnabled={isDevTicketEnabled}
             onConnectionChange={onConnectionChange}
+            onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
           />
         ))}
 
@@ -300,11 +320,20 @@ export default function Mingo() {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  onStop={featureFlags.dialogStop.enabled() && isTyping ? stopGeneration : undefined}
+                  onStop={
+                    featureFlags.dialogStop.enabled() && isTyping && pendingApprovals.length === 0
+                      ? stopGeneration
+                      : undefined
+                  }
                   sending={isTyping || isCreatingDialog || isSelectingDialog}
                   autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
+                {featureFlags.tokenBasedMemory.enabled() && currentModel && (
+                  <div className="mt-3">
+                    <ModelDisplay provider={currentModel.provider} modelName={currentModel.modelName} />
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -561,6 +561,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         messages.clearMessages();
         setIsTyping(false);
         setNatsStreaming(false);
+        setIsTicketPreview(false);
         approvals.clearApprovals();
         setIsResumedDialog(true);
 
