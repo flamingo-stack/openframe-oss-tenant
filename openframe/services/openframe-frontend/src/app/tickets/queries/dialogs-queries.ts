@@ -100,10 +100,21 @@ export const GET_DIALOG_MESSAGES_QUERY = `
           createdAt
           owner {
             type
+            ... on AdminOwner {
+              user {
+                id
+                firstName
+                lastName
+              }
+            }
           }
           messageData {
             type
             ... on TextData {
+              text
+            }
+
+            ... on SystemData {
               text
             }
 

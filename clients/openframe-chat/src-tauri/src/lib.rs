@@ -89,7 +89,10 @@ pub fn run() {
     let debug_mode_clone = debug_mode;
     let background_mode_clone = background_mode;
 
-    builder = builder.setup(move |app| {
+    builder = builder
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()

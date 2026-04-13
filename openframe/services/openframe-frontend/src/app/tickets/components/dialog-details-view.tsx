@@ -7,7 +7,6 @@ import {
   ChatApprovalStatus,
   ChatInput,
   ChatMessageList,
-  DetailPageContainer,
   type HistoricalMessage,
   LoadError,
   MessageCircleIcon,
@@ -18,12 +17,14 @@ import {
   TabsList,
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
+import { ChatsIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DetailLoader,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   getTicketStatusTag,
+  PageLayout,
   ProcessedMessage,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -42,6 +43,7 @@ import {
   type ApprovalStatus,
   ASSISTANT_CONFIG,
   CHAT_TYPE,
+  CREATION_SOURCE,
   DIALOG_STATUS,
   MESSAGE_TYPE,
   type NatsMessageType,
@@ -51,6 +53,7 @@ import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
 import { useDialogVersion } from '../hooks/use-dialog-version';
+import { useDirectChat } from '../hooks/use-direct-chat';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
 import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
@@ -98,6 +101,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const deleteNoteMutation = useDeleteTicketNote(refetchDialog);
 
   const { download: downloadAttachment } = useDownloadTicketAttachment();
+
+  const { isDirectMode, isStartingDirectChat, isSendingClientMessage, startDirectChat, sendClientMessage } =
+    useDirectChat({
+      ticketId: dialogId,
+      dialogId: dialog?.dialogId,
+      currentMode: dialog?.currentMode,
+      onDialogCreated: refetchDialog,
+    });
 
   // Transform backend notes to core UI TicketNote format
   const uiNotes = useMemo(() => {
@@ -310,7 +321,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const handleStopGeneration = useCallback(async () => {
     try {
-      const response = await apiClient.post(`/chat/api/v1/dialogs/${dialogId}/stop`, {
+      const response = await apiClient.post(`/chat/api/v1/dialogs/${messageDialogId}/stop`, {
         chatType: CHAT_TYPE.ADMIN,
       });
       if (!response.ok) {
@@ -331,7 +342,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         duration: 5000,
       });
     }
-  }, [dialogId, toast, setTypingIndicator]);
+  }, [messageDialogId, toast, setTypingIndicator]);
 
   const handleSendAdminMessage = useCallback(
     async (message: string) => {
@@ -340,7 +351,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       setIsSendingAdminMessage(true);
       try {
-        await service.sendMessage(dialogId, trimmedMessage, CHAT_TYPE.ADMIN);
+        messageDialogId && (await service.sendMessage(messageDialogId, trimmedMessage, CHAT_TYPE.ADMIN));
       } catch (error) {
         toast({
           title: 'Send Failed',
@@ -352,8 +363,13 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         setIsSendingAdminMessage(false);
       }
     },
-    [dialogId, isSendingAdminMessage, toast, service],
+    [messageDialogId, isSendingAdminMessage, toast, service],
   );
+
+  const clientDisplayName =
+    dialog?.deviceHostname ||
+    (dialog?.owner && isClientOwner(dialog.owner) ? dialog.owner.machine?.hostname : undefined) ||
+    undefined;
 
   const processMessages = useCallback(
     (messages: Message[], expectedChatType?: (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE]) => {
@@ -397,8 +413,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         id: msg.id,
         content: msg.content as string | MessageSegment[],
         role: msg.role as 'user' | 'assistant' | 'error',
-        name: msg.name,
+        name: msg.authorType === 'user' && clientDisplayName ? clientDisplayName : msg.name,
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
+        authorType: msg.authorType,
         timestamp: msg.timestamp,
       }));
 
@@ -409,7 +426,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         assistantName,
       };
     },
-    [approvalStatuses, handleApprove, handleReject],
+    [approvalStatuses, handleApprove, handleReject, clientDisplayName],
   );
 
   const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages]);
@@ -417,6 +434,30 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     () => processMessages(adminMessages, CHAT_TYPE.ADMIN),
     [adminMessages, processMessages],
   );
+
+  const clientChatMessages = useMemo(() => {
+    if (dialog?.creationSource !== CREATION_SOURCE.FAE_FORM || clientChat.hasNextPage) {
+      return chatData.messages;
+    }
+    const faeMessage = {
+      id: `synthetic-fae-form-${dialog.id}`,
+      content: [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        dialog.title || '',
+        '',
+        'Description:',
+        dialog.description || '(No description provided)',
+      ].join('\n'),
+      role: 'assistant' as const,
+      name: ASSISTANT_CONFIG.FAE.name,
+      assistantType: ASSISTANT_CONFIG.FAE.type,
+      authorType: 'fae' as const,
+      timestamp: new Date(dialog.createdAt),
+    };
+    return [faeMessage, ...chatData.messages];
+  }, [chatData.messages, dialog, clientChat.hasNextPage]);
 
   const [actionsOpen, setActionsOpen] = useState(false);
 
@@ -508,14 +549,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const deviceMachineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
-        label: 'Back to Chats',
+        label: 'Back to Tickets',
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
-      className="h-full gap-2"
+      className="h-[calc(100%)] gap-2"
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
@@ -622,17 +663,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 icon: <Monitor className="size-4" />,
                 onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
               }}
-              statusTag={{
-                label: dialog.status.replace('_', ' '),
-                variant:
-                  dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED'
-                    ? 'success'
-                    : dialog.status === 'ACTION_REQUIRED'
-                      ? 'primary'
-                      : dialog.status === 'ON_HOLD'
-                        ? 'error'
-                        : 'outline',
-              }}
+              statusTag={getTicketStatusTag(dialog.status)}
               expanded={true}
               assigned={{ name: dialog.assignedName || 'Unassigned' }}
               createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
@@ -670,7 +701,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               {/* Messages card */}
               <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
                 <ChatMessageList
-                  messages={chatData.messages}
+                  messages={clientChatMessages}
                   dialogId={dialogId}
                   autoScroll={true}
                   showAvatars={false}
@@ -683,6 +714,31 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   onLoadMore={clientChat.fetchNextPage}
                 />
               </div>
+
+              {/* Direct Chat: Start button or ChatInput */}
+              {version === 'v2' && !isDirectMode && (
+                <button
+                  type="button"
+                  onClick={startDirectChat}
+                  disabled={isStartingDirectChat}
+                  className="w-full flex items-center justify-center gap-2 bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors mt-1"
+                >
+                  <ChatsIcon size={24} className="text-ods-text-primary shrink-0" />
+                  <span className="text-h3 text-ods-text-primary">
+                    {isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}
+                  </span>
+                </button>
+              )}
+              {version === 'v2' && isDirectMode && (
+                <ChatInput
+                  reserveAvatarOffset={false}
+                  placeholder="Enter your Message..."
+                  onSend={sendClientMessage}
+                  sending={isSendingClientMessage}
+                  autoFocus={false}
+                  className="mt-1 bg-ods-card rounded-lg max-w-full"
+                />
+              )}
             </div>
           )}
 
@@ -741,6 +797,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           </div>
         </div>
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

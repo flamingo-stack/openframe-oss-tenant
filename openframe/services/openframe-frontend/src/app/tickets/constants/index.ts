@@ -8,6 +8,13 @@ export const DIALOG_STATUS = {
 
 export type DialogStatus = (typeof DIALOG_STATUS)[keyof typeof DIALOG_STATUS];
 
+export const DIALOG_MODE = {
+  AI: 'AI',
+  DIRECT: 'DIRECT',
+} as const;
+
+export type DialogModeValue = (typeof DIALOG_MODE)[keyof typeof DIALOG_MODE];
+
 export const CHAT_TYPE = {
   CLIENT: 'CLIENT_CHAT',
   ADMIN: 'ADMIN_AI_CHAT',
@@ -25,6 +32,7 @@ export const MESSAGE_TYPE = {
   MESSAGE_START: 'MESSAGE_START',
   MESSAGE_END: 'MESSAGE_END',
   MESSAGE_REQUEST: 'MESSAGE_REQUEST',
+  SYSTEM: 'SYSTEM',
 } as const;
 
 export type MessageType = (typeof MESSAGE_TYPE)[keyof typeof MESSAGE_TYPE];
@@ -58,11 +66,18 @@ export const ASSISTANT_CONFIG = {
 
 export type AssistantType = (typeof ASSISTANT_CONFIG)[keyof typeof ASSISTANT_CONFIG]['type'];
 
+export const CREATION_SOURCE = {
+  FAE_FORM: 'FAE_FORM',
+} as const;
+
+export type CreationSource = (typeof CREATION_SOURCE)[keyof typeof CREATION_SOURCE];
+
 export const API_ENDPOINTS = {
   GRAPHQL: '/chat/graphql',
   APPROVAL_REQUEST: '/chat/api/v1/approval-requests',
   SEND_MESSAGE: '/chat/api/v1/messages',
   DIALOG_CHUNKS: '/chat/api/v1/dialogs',
+  DIALOGS: '/chat/api/v1/dialogs',
 } as const;
 
 export const NATS_TOPICS = {

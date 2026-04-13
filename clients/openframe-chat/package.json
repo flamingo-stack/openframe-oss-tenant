@@ -18,9 +18,11 @@
     "format:fix": "biome format --fix ."
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.95",
+    "@flamingo-stack/openframe-frontend-core": "0.0.127",
     "@tanstack/react-query": "^5.90.21",
     "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.0.0",
+    "@tauri-apps/plugin-fs": "^2.0.0",
     "graphql": "^16.12.0",
     "graphql-request": "^7.4.0",
     "postcss": "^8.5.6",

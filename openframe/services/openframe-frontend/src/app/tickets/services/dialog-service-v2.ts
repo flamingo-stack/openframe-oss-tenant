@@ -61,8 +61,9 @@ interface TicketNode {
     uploadedAt: string;
     uploadedBy: string;
   }>;
-  dialog?: { id: string };
+  dialog?: { id: string; currentMode?: string };
   description?: string;
+  creationSource?: string;
   createdAt: string;
   updatedAt?: string;
   resolvedAt?: string;
@@ -130,9 +131,11 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     rating: null,
 
     // V2 ticket-specific fields
+    currentMode: ticket.dialog?.currentMode,
     ticketNumber: ticket.ticketNumber,
     dialogId: ticket.dialog?.id,
     description: ticket.description,
+    creationSource: ticket.creationSource,
     deviceId: ticket.deviceId,
     deviceHostname: ticket.deviceHostname,
     organizationId: ticket.organizationId,

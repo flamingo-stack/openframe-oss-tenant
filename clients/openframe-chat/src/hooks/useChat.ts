@@ -135,6 +135,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
+        messagesRef.current.ensureAssistantMessage();
       },
       onStreamEnd: () => {
         setNatsStreaming(false);
@@ -170,6 +171,37 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         data: { command: string; explanation?: string; approvalType: string },
       ) => {
         approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data);
+      },
+      onDirectMessage: (text: string, metadata?: { ownerType?: string; displayName?: string }) => {
+        if (metadata?.ownerType === 'CLIENT') {
+          // Echo of own message in direct mode — resolve the send flow
+          setNatsStreaming(false);
+          setIsTyping(false);
+          const resolve = natsDoneResolverRef.current;
+          natsDoneResolverRef.current = null;
+          if (resolve) resolve();
+          return;
+        }
+        const directMessage: Message = {
+          id: `direct-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          name: metadata?.displayName || 'Technician',
+          authorType: 'admin',
+          content: text,
+          timestamp: new Date(),
+        };
+        messagesRef.current.addMessage(directMessage);
+      },
+      onSystemMessage: (text: string) => {
+        const systemMessage: Message = {
+          id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          name: text,
+          authorType: 'system',
+          content: '',
+          timestamp: new Date(),
+        };
+        messagesRef.current.addMessage(systemMessage);
       },
     }),
     [onMetadataUpdate],
@@ -398,16 +430,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       setNatsStreaming(true);
       messages.resetCurrentMessageSegments();
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        name: 'Fae',
-        content: [],
-        timestamp: new Date(),
-        avatar: faeAvatar,
-      };
-      messages.addMessage(assistantMessage);
-
       try {
         if (!useNats) {
           throw new Error('NATS is required for incoming messages (SSE removed)');
@@ -539,6 +561,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         messages.clearMessages();
         setIsTyping(false);
         setNatsStreaming(false);
+        setIsTicketPreview(false);
         approvals.clearApprovals();
         setIsResumedDialog(true);
 

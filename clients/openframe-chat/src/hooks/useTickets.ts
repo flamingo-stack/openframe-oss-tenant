@@ -41,6 +41,7 @@ interface UseTicketsOptions {
 
 export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
   const dialogIdMapRef = useRef(new Map<string, string>());
+  const creationSourceMapRef = useRef(new Map<string, string>());
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: ['tickets'],
@@ -56,10 +57,12 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
       }
 
-      // Build ticket ID → dialog ID mapping
       for (const edge of connection.edges) {
         if (edge.node.dialog?.id) {
           dialogIdMapRef.current.set(edge.node.id, edge.node.dialog.id);
+        }
+        if (edge.node.creationSource) {
+          creationSourceMapRef.current.set(edge.node.id, edge.node.creationSource);
         }
       }
 
@@ -93,12 +96,23 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
     return dialogIdMapRef.current.get(ticketId) ?? null;
   }, []);
 
+  const getCreationSource = useCallback((ticketId: string): string | null => {
+    return creationSourceMapRef.current.get(ticketId) ?? null;
+  }, []);
+
   const getTicketDetails = useCallback(
-    async (ticketId: string): Promise<{ title: string; description?: string } | null> => {
+    async (
+      ticketId: string,
+    ): Promise<{ title: string; description?: string; creationSource?: string; createdAt?: string } | null> => {
       try {
         const ticket = await ticketGraphQlService.getTicket(ticketId);
         if (ticket) {
-          return { title: ticket.title, description: ticket.description };
+          return {
+            title: ticket.title,
+            description: ticket.description,
+            creationSource: ticket.creationSource,
+            createdAt: ticket.createdAt,
+          };
         }
         return null;
       } catch (error) {
@@ -116,6 +130,7 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
     isFetchingNextPage,
     fetchNextPage,
     getDialogId,
+    getCreationSource,
     getTicketDetails,
   };
 }
