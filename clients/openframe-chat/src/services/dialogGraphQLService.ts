@@ -6,6 +6,13 @@ import type {
 import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
 import { tokenService } from './tokenService';
 
+export interface DialogTokenUsage {
+  inputTokensSize: number | null;
+  outputTokensSize: number | null;
+  totalTokensSize: number | null;
+  contextSize: number | null;
+}
+
 export interface ResumableDialog {
   id: string;
   title: string;
@@ -19,6 +26,7 @@ export interface ResumableDialog {
     dialogId: string;
     createdAt: string;
   } | null;
+  tokenUsage: DialogTokenUsage | null;
 }
 
 export type DialogOwner = MessageOwner;
@@ -60,6 +68,26 @@ const GET_RESUMABLE_DIALOG_QUERY = gql`
         id
         dialogId
         createdAt
+      }
+      tokenUsage {
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
+      }
+    }
+  }
+`;
+
+const GET_DIALOG_QUERY = gql`
+  query GetDialogById($id: ID!) {
+    dialog(id: $id) {
+      id
+      tokenUsage {
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
       }
     }
   }
@@ -214,6 +242,20 @@ export class DialogGraphQlService {
       return data.messages || null;
     } catch (error) {
       console.error('Failed to fetch dialog messages page:', error);
+      return null;
+    }
+  }
+
+  async getDialogTokenUsage(dialogId: string): Promise<DialogTokenUsage | null> {
+    try {
+      await tokenService.ensureTokenReady();
+      const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsage | null } | null }>(
+        GET_DIALOG_QUERY,
+        { id: dialogId },
+      );
+      return data.dialog?.tokenUsage ?? null;
+    } catch (error) {
+      console.error('Failed to fetch dialog token usage:', error);
       return null;
     }
   }

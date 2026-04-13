@@ -46,6 +46,12 @@ export const GET_MINGO_DIALOG_QUERY = `
       dialogId
       createdAt
     }
+    tokenUsage {
+      inputTokensSize
+      outputTokensSize
+      totalTokensSize
+      contextSize
+    }
     }
   }
 `;

@@ -1,4 +1,4 @@
-import type { MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import type { MessageSegment, TokenUsageData } from '@flamingo-stack/openframe-frontend-core';
 import {
   createMessageSegmentAccumulator,
   type MessageSegmentAccumulator,
@@ -18,8 +18,9 @@ interface MingoMessagesStore {
   // Real-time state management
   typingStates: Map<string, boolean>;
   unreadCounts: Map<string, number>;
-  streamingMessages: Map<string, Message | null>; // Track streaming messages per dialog
-  segmentAccumulators: Map<string, MessageSegmentAccumulator>; // Track segment accumulators per dialog
+  streamingMessages: Map<string, Message | null>;
+  segmentAccumulators: Map<string, MessageSegmentAccumulator>;
+  tokenUsageByDialog: Map<string, TokenUsageData>;
 
   // Loading states
   isLoadingDialog: boolean;
@@ -74,6 +75,10 @@ interface MingoMessagesStore {
   resetAccumulator: (dialogId: string) => void;
   updateAccumulatorApprovalStatus: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
 
+  // Token Usage
+  setTokenUsage: (dialogId: string, data: TokenUsageData) => void;
+  getTokenUsage: (dialogId: string) => TokenUsageData | null;
+
   // Utility Actions
   removeWelcomeMessages: (dialogId: string) => void;
   clearDialog: (dialogId: string) => void;
@@ -103,6 +108,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       unreadCounts: new Map(),
       streamingMessages: new Map(),
       segmentAccumulators: new Map(),
+      tokenUsageByDialog: new Map(),
 
       isLoadingDialog: false,
       isLoadingMessages: false,
@@ -416,6 +422,18 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         }
       },
 
+      setTokenUsage: (dialogId: string, data: TokenUsageData) => {
+        set(state => {
+          const newMap = new Map(state.tokenUsageByDialog);
+          newMap.set(dialogId, data);
+          return { tokenUsageByDialog: newMap };
+        });
+      },
+
+      getTokenUsage: (dialogId: string) => {
+        return get().tokenUsageByDialog.get(dialogId) || null;
+      },
+
       removeWelcomeMessages: (dialogId: string) => {
         set(state => {
           const newMap = new Map(state.messagesByDialog);
@@ -433,12 +451,14 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const newUnreadMap = new Map(state.unreadCounts);
           const newStreamingMap = new Map(state.streamingMessages);
           const newAccumulatorsMap = new Map(state.segmentAccumulators);
+          const newTokenUsageMap = new Map(state.tokenUsageByDialog);
 
           newMessagesMap.delete(dialogId);
           newTypingMap.delete(dialogId);
           newUnreadMap.delete(dialogId);
           newStreamingMap.delete(dialogId);
           newAccumulatorsMap.delete(dialogId);
+          newTokenUsageMap.delete(dialogId);
 
           return {
             messagesByDialog: newMessagesMap,
@@ -446,6 +466,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             unreadCounts: newUnreadMap,
             streamingMessages: newStreamingMap,
             segmentAccumulators: newAccumulatorsMap,
+            tokenUsageByDialog: newTokenUsageMap,
           };
         });
       },
@@ -459,6 +480,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           unreadCounts: new Map(),
           streamingMessages: new Map(),
           segmentAccumulators: new Map(),
+          tokenUsageByDialog: new Map(),
           isLoadingDialog: false,
           isLoadingMessages: false,
           isCreatingDialog: false,

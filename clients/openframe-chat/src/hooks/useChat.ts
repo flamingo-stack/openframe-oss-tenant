@@ -4,6 +4,7 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
+  type TokenUsageData,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -24,9 +25,10 @@ interface UseChatOptions {
   apiBaseUrl?: string;
   useNats?: boolean;
   onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
+  onTokenUsage?: (data: TokenUsageData) => void;
 }
 
-export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
+export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage }: UseChatOptions = {}) {
   // Core state
   const [isTyping, setIsTyping] = useState(false);
   const [natsStreaming, setNatsStreaming] = useState(false);
@@ -143,6 +145,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         if (resolve) resolve();
       },
       onMetadata: onMetadataUpdate,
+      onTokenUsage,
       onSegmentsUpdate: (segments: MessageSegment[]) => {
         messagesRef.current.ensureAssistantMessage();
         setNatsStreaming(true);
@@ -171,7 +174,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data);
       },
     }),
-    [onMetadataUpdate],
+    [onMetadataUpdate, onTokenUsage],
   );
 
   const incompleteState = useMemo(() => {

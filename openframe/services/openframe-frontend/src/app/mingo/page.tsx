@@ -13,6 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { AppLayout } from '../components/app-layout';
+import { TokenTracker } from './components/token-tracker';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
@@ -40,10 +41,14 @@ export default function Mingo() {
     handleApprove,
     handleReject,
     approvalStatuses,
+    dialogData,
     hasNextPage: hasNextMessagePage,
     fetchNextPage: fetchNextMessagePage,
     isFetchingNextPage: isFetchingNextMessagePage,
   } = useMingoDialogSelection();
+
+  const setTokenUsage = useMingoMessagesStore(state => state.setTokenUsage);
+  const tokenUsageByDialog = useMingoMessagesStore(state => state.tokenUsageByDialog);
 
   const {
     messages: processedMessages,
@@ -57,6 +62,20 @@ export default function Mingo() {
 
   const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
     useMingoRealtimeSubscription(activeDialogId);
+
+  useEffect(() => {
+    if (activeDialogId && dialogData?.tokenUsage) {
+      const u = dialogData.tokenUsage;
+      setTokenUsage(activeDialogId, {
+        inputTokensSize: u.inputTokensSize ?? 0,
+        outputTokensSize: u.outputTokensSize ?? 0,
+        totalTokensSize: u.totalTokensSize ?? 0,
+        contextSize: u.contextSize ?? 0,
+      });
+    }
+  }, [activeDialogId, dialogData?.tokenUsage, setTokenUsage]);
+
+  const tokenUsage = activeDialogId ? tokenUsageByDialog.get(activeDialogId) ?? null : null;
 
   const draftWelcomeMessages = useMemo(
     () => [
@@ -302,6 +321,11 @@ export default function Mingo() {
                   autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
+                {tokenUsage && (
+                  <div className="mx-auto w-full max-w-3xl">
+                    <TokenTracker tokenUsage={tokenUsage} className="mt-2 text-right" />
+                  </div>
+                )}
               </div>
             )}
           </div>

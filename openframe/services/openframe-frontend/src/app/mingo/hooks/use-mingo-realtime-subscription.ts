@@ -6,6 +6,7 @@ import {
   extractIncompleteMessageState,
   type MessageSegment,
   type NatsMessageType,
+  type TokenUsageData,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -195,6 +196,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     getStreamingMessage,
     updateStreamingMessageSegments,
     getOrCreateAccumulator,
+    setTokenUsage,
   } = useMingoMessagesStore();
 
   useEffect(() => {
@@ -326,6 +328,11 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         addErrorMessage(error);
       },
 
+      onTokenUsage: (data: TokenUsageData) => {
+        console.log('[Mingo] TOKEN_USAGE received for dialog', dialogId, data);
+        setTokenUsage(dialogId, data);
+      },
+
       onApprove,
       onReject,
     }),
@@ -336,6 +343,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       setStreamingMessage,
       updateStreamingMessageSegments,
       addErrorMessage,
+      setTokenUsage,
       onApprove,
       onReject,
     ],

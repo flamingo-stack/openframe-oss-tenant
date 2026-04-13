@@ -302,6 +302,7 @@ export function useMingoDialogSelection() {
     messagesError: messagesQuery.error?.message || null,
     refetchDialog: dialogQuery.refetch,
     refetchMessages: messagesQuery.refetch,
+    dialogData: dialogQuery.data ?? null,
     // Approval handlers for real-time processing
     handleApprove,
     handleReject,
