@@ -1,5 +1,6 @@
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useMemo } from 'react';
+import type { TagEntry } from '@/app/components/shared/tags';
 import { useRegistrationSecret } from './use-registration-secret';
 import { useReleaseVersion } from './use-release-version';
 
@@ -12,18 +13,13 @@ function buildBinaryUrl(version: string, assetName: string) {
   return `${RELEASES_BASE_URL}/download/${version}/${assetName}`;
 }
 
-export interface DeviceTag {
-  key: string;
-  values: string[];
-}
-
 interface UseInstallCommandOptions {
   organizationId: string;
   platform: OSPlatformId;
-  tags?: DeviceTag[];
+  tags?: TagEntry[];
 }
 
-function buildTagArgs(tags: DeviceTag[], platform: OSPlatformId): string {
+function buildTagArgs(tags: TagEntry[], platform: OSPlatformId): string {
   const quote = platform === 'windows' ? '"' : "'";
   const args = tags.flatMap(tag => tag.values.map(value => ` --tag ${quote}${tag.key}=${value}${quote}`));
   return args.join('');

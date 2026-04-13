@@ -42,7 +42,7 @@ interface TicketNode {
   organizationName?: string;
   assignedTo?: string;
   assignedName?: string;
-  labels?: Array<{ id: string; name: string; color?: string }>;
+  labels?: Array<{ id: string; key: string; color?: string }>;
   notes?: Array<{
     id: string;
     ticketId: string;

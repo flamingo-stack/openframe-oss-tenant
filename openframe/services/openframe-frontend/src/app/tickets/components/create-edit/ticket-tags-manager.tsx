@@ -1,12 +1,9 @@
 'use client';
 
-import { TagsManager } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import {
-  useCreateTicketLabel,
-  useDeleteTicketLabel,
-  useTicketLabels,
-  useUpdateTicketLabel,
-} from '../../hooks/use-ticket-labels';
+import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useCallback, useMemo } from 'react';
+import { useCreateTagMutation } from '@/app/components/shared/tags';
+import { useTicketLabels } from '../../hooks/use-ticket-labels';
 
 interface TicketTagsManagerProps {
   selectedIds: string[];
@@ -15,30 +12,44 @@ interface TicketTagsManagerProps {
 }
 
 export function TicketTagsManager({ selectedIds, onChange, disabled }: TicketTagsManagerProps) {
-  const { data: labels = [] } = useTicketLabels();
-  const createLabel = useCreateTicketLabel();
-  const updateLabel = useUpdateTicketLabel();
-  const deleteLabel = useDeleteTicketLabel();
+  const { data: tags = [], refetch } = useTicketLabels();
+  const { createTag, isInFlight: isCreating } = useCreateTagMutation();
+
+  const options = useMemo(() => tags.map(t => ({ label: t.key, value: t.id })), [tags]);
+
+  const handleChange = useCallback(
+    (values: string[]) => {
+      const existingIds = values.filter(v => tags.some(t => t.id === v));
+      const newKeys = values.filter(v => !tags.some(t => t.id === v));
+
+      if (newKeys.length > 0) {
+        for (const key of newKeys) {
+          createTag({ key, entityType: 'TICKET' }, newId => {
+            refetch().then(() => {
+              if (newId) onChange([...existingIds, newId]);
+            });
+          });
+        }
+      } else {
+        onChange(existingIds);
+      }
+    },
+    [tags, onChange, createTag, refetch],
+  );
 
   return (
-    <TagsManager
-      tags={labels}
-      selectedIds={selectedIds}
-      onChange={onChange}
+    <Autocomplete
+      multiple
+      options={options}
+      value={selectedIds}
+      onChange={handleChange}
+      placeholder={selectedIds.length > 0 ? 'Add more...' : 'Select or create tags...'}
+      label="Tags"
+      loading={isCreating}
       disabled={disabled}
-      onCreateTag={async name => {
-        const result = await createLabel.mutateAsync({ name });
-        return result ?? null;
-      }}
-      onUpdateTag={async (id, name) => {
-        await updateLabel.mutateAsync({ id, name });
-      }}
-      onDeleteTag={async id => {
-        await deleteLabel.mutateAsync(id);
-      }}
-      isCreating={createLabel.isPending}
-      isUpdating={updateLabel.isPending}
-      isDeleting={deleteLabel.isPending}
+      showChevron={false}
+      creatable
+      freeSolo
     />
   );
 }

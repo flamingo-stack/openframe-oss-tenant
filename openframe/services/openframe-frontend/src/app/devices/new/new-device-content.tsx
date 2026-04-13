@@ -16,12 +16,10 @@ import { z } from 'zod';
 import type { newDeviceContentQuery as NewDeviceContentQueryType } from '@/__generated__/newDeviceContentQuery.graphql';
 import { OrgAvatar } from '@/app/components/shared';
 import { OsPlatformSelector } from '@/app/components/shared/os-platform-selector';
+import { isValidTag, type TagEntryWithId, TagsEditor } from '@/app/components/shared/tags';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { AntivirusWarning } from '../components/antivirus-warning';
 import { useInstallCommand } from '../hooks/use-install-command';
-import type { DeviceTagWithId } from './components/device-tags-editor';
-import { DeviceTagsEditor } from './components/device-tags-editor';
-import { isValidTag } from './components/tag-row';
 
 const newDeviceContentQuery = graphql`
   query newDeviceContentQuery($first: Int!) {
@@ -69,7 +67,7 @@ export function NewDeviceContent() {
     }));
   }, [data.organizations?.edges]);
 
-  const [tags, setTags] = useState<DeviceTagWithId[]>([]);
+  const [tags, setTags] = useState<TagEntryWithId[]>([]);
 
   const form = useForm<NewDeviceFormValues>({
     resolver: zodResolver(newDeviceSchema),
@@ -280,7 +278,7 @@ export function NewDeviceContent() {
           />
         </div>
 
-        <DeviceTagsEditor tags={tags} onTagsChange={setTags} />
+        <TagsEditor tags={tags} onTagsChange={setTags} addLabel="Add Device Tag" />
 
         <CommandBox
           title="Device Add Command"

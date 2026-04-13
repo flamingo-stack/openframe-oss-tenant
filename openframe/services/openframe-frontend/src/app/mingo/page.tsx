@@ -330,7 +330,7 @@ export default function Mingo() {
                   className="bg-ods-card rounded-lg"
                 />
                 {featureFlags.tokenBasedMemory.enabled() && currentModel && (
-                  <div className="mt-3">
+                  <div className="mx-auto w-full max-w-3xl mt-3">
                     <ModelDisplay provider={currentModel.provider} modelName={currentModel.modelName} />
                   </div>
                 )}

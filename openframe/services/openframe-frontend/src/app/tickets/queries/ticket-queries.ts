@@ -27,7 +27,7 @@ export const CREATE_TICKET_MUTATION = `
         assignedName
         labels {
           id
-          name
+          key
           color
         }
         attachments {
@@ -129,7 +129,7 @@ export const GET_TICKET_QUERY = `
       assignedName
       labels {
         id
-        name
+        key
         color
       }
       dialog {
@@ -157,12 +157,6 @@ export const GET_TICKET_QUERY = `
         }
         createdAt
         updatedAt
-      }
-      linkedArticles {
-        id
-        title
-        description
-        category
       }
       createdAt
       updatedAt
@@ -210,7 +204,7 @@ export const GET_TICKETS_QUERY = `
           assignedName
           labels {
             id
-            name
+            key
             color
           }
           createdAt
@@ -233,7 +227,7 @@ export const GET_TICKET_LABELS_QUERY = `
   query TicketLabels {
     ticketLabels {
       id
-      name
+      key
       description
       color
       createdAt
@@ -307,38 +301,6 @@ export const DELETE_TICKET_NOTE_MUTATION = `
   }
 `;
 
-export const CREATE_TICKET_LABEL_MUTATION = `
-  mutation CreateTicketLabel($input: CreateTicketLabelInput!) {
-    createTicketLabel(input: $input) {
-      label {
-        id
-        name
-        color
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const UPDATE_TICKET_LABEL_MUTATION = `
-  mutation UpdateTicketLabel($input: UpdateTicketLabelInput!) {
-    updateTicketLabel(input: $input) {
-      label {
-        id
-        name
-        color
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
 export const UPDATE_TICKET_MUTATION = `
   mutation UpdateTicket($input: UpdateTicketInput!) {
     updateTicket(input: $input) {
@@ -366,7 +328,7 @@ export const UPDATE_TICKET_MUTATION = `
         assignedName
         labels {
           id
-          name
+          key
           color
         }
         attachments {
@@ -381,17 +343,6 @@ export const UPDATE_TICKET_MUTATION = `
         createdAt
         updatedAt
       }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const DELETE_TICKET_LABEL_MUTATION = `
-  mutation DeleteTicketLabel($input: DeleteByIdInput!) {
-    deleteTicketLabel(input: $input) {
       userErrors {
         field
         message

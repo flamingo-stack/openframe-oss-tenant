@@ -49,7 +49,7 @@ export interface Dialog {
   organizationName?: string;
   assignedTo?: string;
   assignedName?: string;
-  labels?: Array<{ id: string; name: string; color?: string }>;
+  labels?: Array<{ id: string; key: string; color?: string }>;
   attachments?: Array<{
     id: string;
     ticketId: string;

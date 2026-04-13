@@ -16,6 +16,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { NewTicketModal } from '../components/NewTicketModal';
@@ -31,6 +32,7 @@ import { ticketGraphQlService } from '../services/ticketGraphQlService';
 
 export function ChatView() {
   const { flags } = useFeatureFlags();
+  const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
@@ -86,6 +88,19 @@ export function ChatView() {
 
   const { toast } = useToast();
 
+  const hasPendingApproval = useMemo(
+    () =>
+      messages.some(
+        (msg: { content: unknown }) =>
+          Array.isArray(msg.content) &&
+          msg.content.some(
+            (seg: { type: string; status?: string }) =>
+              seg.type === 'approval_request' && (!seg.status || seg.status === 'pending'),
+          ),
+      ),
+    [messages],
+  );
+
   const fetchResumableDialog = useCallback(() => {
     dialogGraphQlService.getResumableDialog().then(dialog => {
       setResumableDialog(dialog);
@@ -102,10 +117,11 @@ export function ChatView() {
     setFaeFormTicket(null);
     setPreviewTicketId(null);
     clearMessages();
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
     if (!flags.tickets) {
       fetchResumableDialog();
     }
-  }, [clearMessages, flags.tickets, fetchResumableDialog]);
+  }, [clearMessages, queryClient, flags.tickets, fetchResumableDialog]);
 
   const ticketsHook = useTickets({ enabled: flags.tickets });
 
@@ -368,7 +384,7 @@ export function ChatView() {
       <ChatFooter>
         <ChatInput
           onSend={sendMessage}
-          onStop={flags['dialog-stop'] && isStreaming ? stopGeneration : undefined}
+          onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
           sending={isStreaming}
           awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
           placeholder="Enter your request here..."

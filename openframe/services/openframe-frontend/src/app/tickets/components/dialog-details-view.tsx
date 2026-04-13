@@ -642,7 +642,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
           description={dialog.description || dialog.title || ''}
           attachments={uiAttachments}
-          tags={(dialog.labels || []).map(l => l.name)}
+          tags={(dialog.labels || []).map(l => l.key)}
           knowledgeBaseArticles={[]}
           notes={uiNotes}
           isAddingNote={addNoteMutation.isPending}
@@ -723,7 +723,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
-              tags={(dialog.labels || []).map(l => l.name)}
+              tags={(dialog.labels || []).map(l => l.key)}
               knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
@@ -840,7 +840,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 reserveAvatarOffset={false}
                 placeholder="Enter your Request..."
                 onSend={handleSendAdminMessage}
-                onStop={featureFlags.dialogStop.enabled() && isAdminChatTyping ? handleStopGeneration : undefined}
+                onStop={
+                  featureFlags.dialogStop.enabled() && isAdminChatTyping && adminChatData.pendingApprovals.length === 0
+                    ? handleStopGeneration
+                    : undefined
+                }
                 sending={isSendingAdminMessage || isAdminChatTyping}
                 autoFocus={false}
                 className="mt-2 bg-ods-card rounded-lg max-w-full"
