@@ -115,13 +115,6 @@ nats-ws-url: ws://nats.datasources.svc.cluster.local:8080
 # Rate limiting configuration
 openframe:
   tools:
-    meshcentral:
-      api:
-        url: http://meshcentral.integrated-tools.svc.cluster.local
-        port: "8383"
-      websocket:
-        url: ws://meshcentral.integrated-tools.svc.cluster.local
-        port: "8383"
     tactical-rmm:
       backend:
         url: http://tactical-backend.integrated-tools.svc.cluster.local
