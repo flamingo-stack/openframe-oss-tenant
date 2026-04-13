@@ -17,7 +17,15 @@ import {
   TabsList,
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
-import { ChatsIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ChatsIcon,
+  ClipboardListIcon,
+  ComputerMouseIcon,
+  HourglassClockIcon,
+  MonitorIcon,
+  PenEditIcon,
+  TerminalIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DetailLoader,
   DropdownMenu,
@@ -30,7 +38,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { CheckCircle, ChevronDown, Clock, Monitor, PenLine } from 'lucide-react';
+import { CheckCircle, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
@@ -72,9 +80,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const version = useDialogVersion();
   const service = getDialogService(version);
 
-  const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
+  const isClientOwner = useCallback((owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
-  };
+  }, []);
 
   const {
     currentDialog: dialog,
@@ -466,6 +474,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
     const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
+    const machineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
 
     const menuGroups: ActionsMenuGroup[] = [
       {
@@ -475,7 +484,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 {
                   id: 'edit-ticket',
                   label: 'Edit Ticket',
-                  icon: <PenLine className="w-6 h-6" />,
+                  icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
                   onClick: () => {
                     setActionsOpen(false);
                     router.push(`/tickets/new?edit=${dialog.id}`);
@@ -488,7 +497,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 {
                   id: 'put-on-hold',
                   label: 'Put On Hold',
-                  icon: <Clock className="w-6 h-6" />,
+                  icon: <HourglassClockIcon className="w-6 h-6 text-ods-text-secondary" />,
                   disabled: isUpdating,
                   onClick: () => {
                     setActionsOpen(false);
@@ -498,7 +507,52 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               ]
             : []),
         ],
+        separator: true,
       },
+      ...(machineId
+        ? [
+            {
+              items: [
+                {
+                  id: 'device-details',
+                  label: 'Device Details',
+                  icon: <MonitorIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}`);
+                  },
+                },
+                {
+                  id: 'remote-shell',
+                  label: 'Remote Shell',
+                  icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}/remote-shell`);
+                  },
+                },
+                {
+                  id: 'remote-control',
+                  label: 'Remote Control',
+                  icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}/remote-desktop`);
+                  },
+                },
+                {
+                  id: 'device-logs',
+                  label: 'Device Logs',
+                  icon: <ClipboardListIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}?tab=logs`);
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
     ];
 
     return (
@@ -522,7 +576,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           <Button
             variant="ghost"
             className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+            leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-secondary" />}
             onClick={handleResolve}
             disabled={isUpdating}
           >
@@ -531,7 +585,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         )}
       </div>
     );
-  }, [dialog, isUpdating, actionsOpen, handlePutOnHold, handleResolve, router]);
+  }, [dialog, isUpdating, actionsOpen, isClientOwner, handlePutOnHold, handleResolve, router]);
 
   if (isLoading) {
     return <DetailLoader />;
@@ -578,7 +632,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
                 : undefined) ||
               'Unassigned',
-            icon: <Monitor className="size-4" />,
+            icon: <MonitorIcon className="size-4" />,
             onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
           }}
           statusTag={getTicketStatusTag(dialog.status)}
@@ -660,7 +714,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                     ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
                     : undefined) ||
                   'Unassigned',
-                icon: <Monitor className="size-4" />,
+                icon: <MonitorIcon className="size-4" />,
                 onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
               }}
               statusTag={getTicketStatusTag(dialog.status)}
@@ -721,12 +775,10 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   type="button"
                   onClick={startDirectChat}
                   disabled={isStartingDirectChat}
-                  className="w-full flex items-center justify-center gap-2 bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors mt-1"
+                  className="w-full flex items-center justify-center gap-2 rounded-md bg-ods-card border border-ods-border px-3 py-3 transition-colors hover:bg-ods-bg-hover disabled:opacity-50 disabled:cursor-not-allowed mt-1 text-ods-text-primary"
                 >
-                  <ChatsIcon size={24} className="text-ods-text-primary shrink-0" />
-                  <span className="text-h3 text-ods-text-primary">
-                    {isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}
-                  </span>
+                  <ChatsIcon size={24} className="shrink-0 text-ods-text-secondary" />
+                  <span className="text-h4">{isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}</span>
                 </button>
               )}
               {version === 'v2' && isDirectMode && (

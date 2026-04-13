@@ -227,7 +227,7 @@ export function ChatView() {
         serverUrl={serverUrl}
         headerActions={
           <>
-            {flags.tickets && (
+            {flags.tickets && !hasMessages && (
               <Button
                 onClick={() => setIsTicketModalOpen(true)}
                 variant="outline"
