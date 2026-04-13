@@ -58,7 +58,6 @@ export function useCreateTagMutation() {
       commit({
         variables,
         onCompleted: (response: any) => {
-          toast({ title: 'Success', description: 'Tag created', variant: 'success' });
           onCompleted?.(response.createTag?.id);
         },
         onError: (error: Error) => {
@@ -81,7 +80,6 @@ export function useUpdateTagMutation() {
       commit({
         variables,
         onCompleted: () => {
-          toast({ title: 'Success', description: 'Tag updated', variant: 'success' });
           onCompleted?.();
         },
         onError: (error: Error) => {
@@ -104,7 +102,6 @@ export function useDeleteTagMutation() {
       commit({
         variables: { id },
         onCompleted: () => {
-          toast({ title: 'Success', description: 'Tag deleted', variant: 'success' });
           onCompleted?.();
         },
         onError: (error: Error) => {
