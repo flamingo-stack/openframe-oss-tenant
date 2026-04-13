@@ -46,7 +46,7 @@ export function DevicesView() {
     debouncedSearch,
   );
 
-  const { data: deviceFilters } = useDeviceFilters(filters);
+  const { data: deviceFilters, isLoading: isDeviceFiltersLoading } = useDeviceFilters(filters);
 
   const columns = useMemo(() => getDeviceTableColumns(deviceFilters ?? null), [deviceFilters]);
   const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
@@ -147,6 +147,7 @@ export function DevicesView() {
         tagFilterKeys={tagFilterKeys}
         selectedTags={selectedTags}
         onTagsChange={handleModalTagsChange}
+        isLoading={isDeviceFiltersLoading}
         className="max-w-[600px]"
       />
 
@@ -155,7 +156,7 @@ export function DevicesView() {
           data={devices}
           columns={columns}
           rowKey="machineId"
-          loading={isLoading}
+          loading={isLoading || isDeviceFiltersLoading}
           skeletonRows={10}
           emptyMessage="No devices found. Try adjusting your search or filters."
           onRowClick={handleRowClick}
