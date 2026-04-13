@@ -160,6 +160,7 @@ export function SettingsHub() {
             onClose={() => setIsEditModalOpen(false)}
             user={user}
             onSave={updateProfile}
+            onImageChange={image => updateUser({ image })}
             isSaving={isUpdating}
           />
           <EmailVerificationModal

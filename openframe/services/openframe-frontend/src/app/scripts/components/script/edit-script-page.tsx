@@ -30,7 +30,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
   const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || '');
   const { form, isSubmitting, handleSave } = useEditScriptForm({ scriptId, scriptDetails, isEditMode });
-  const { testRuns, handleRunTest, handleStopRun } = useTestRuns(form.getValues);
+  const { testRun, handleRunTest, handleStopRun, clearTestRun } = useTestRuns(form.getValues);
 
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
 
@@ -93,16 +93,18 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       actions={actions}
       padding="none"
     >
-      {testRuns.length > 0 && (
+      {testRun && (
         <div>
-          <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Test Output</Label>
-          <div className="flex flex-col gap-3">
-            {testRuns.map(run => (
-              <TestRunCard key={run.id} run={run} onStop={handleStopRun} />
-            ))}
-          </div>
+          <Label className="text-h5 text-ods-text-primary">Script Testing</Label>
+          <TestRunCard
+            run={testRun}
+            onStop={handleStopRun}
+            onTestAgain={() => setIsTestModalOpen(true)}
+            onClose={clearTestRun}
+          />
         </div>
       )}
+
       <ScriptFormFields form={form} />
 
       <TestScriptModal

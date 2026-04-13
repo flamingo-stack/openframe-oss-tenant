@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::fs;
 use std::path::PathBuf;
 
-use crate::models::InitialConfiguration;
+use crate::models::{DeviceTag, InitialConfiguration};
 use crate::platform::directories::DirectoryManager;
 
 #[derive(Clone)]
@@ -47,6 +47,11 @@ impl InitialConfigurationService {
         Ok(config.local_ca_cert_path.clone())
     }
 
+    pub fn get_tags(&self) -> Result<Vec<DeviceTag>> {
+        let config = self.get()?;
+        Ok(config.tags)
+    }
+
     fn get(&self) -> Result<InitialConfiguration> {
         if !self.config_file_path.exists() {
             return Err(anyhow::anyhow!("Initial configuration file does not exist"));
@@ -66,6 +71,19 @@ impl InitialConfigurationService {
         config.initial_key = String::new();
         self.save(&config)
             .context("Failed to save initial configuration to file")?;
+        Ok(())
+    }
+
+    pub fn is_initial_key_missing(&self) -> Result<bool> {
+        let config = self.get()?;
+        Ok(config.initial_key.is_empty())
+    }
+
+    pub fn update_initial_key(&self, initial_key: String) -> Result<()> {
+        let mut config = self.get()?;
+        config.initial_key = initial_key;
+        self.save(&config)
+            .context("Failed to save initial configuration with new initial key")?;
         Ok(())
     }
 

@@ -1,11 +1,7 @@
-import nextConfig from 'eslint-config-next';
 import relay from 'eslint-plugin-relay';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
-  // Next.js defaults (React, JSX-a11y, import, etc.)
-  ...nextConfig,
-
   // Relay — GraphQL syntax, naming, unused fields, colocated fragments, hooks
   {
     plugins: { relay },
@@ -19,6 +15,15 @@ export default [
 
   // Ignore generated Relay artifacts
   {
-    ignores: ['src/__generated__/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      '.next/**',
+      '.yalc/**',
+      '**/.tsbuildinfo',
+      'next-env.d.ts',
+      '**/__generated__/**',
+      'schema.graphql',
+    ],
   },
 ];

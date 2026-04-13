@@ -16,10 +16,7 @@ export function TokenTracker({ tokenUsage, className }: TokenTrackerProps) {
   const { totalTokensSize, contextSize } = tokenUsage;
 
   return (
-    <div className={cn(
-      'text-xs text-ods-text-secondary',
-      className,
-    )}>
+    <div className={cn('text-xs text-ods-text-secondary', className)}>
       {formatWithCommas(totalTokensSize)} / {formatWithCommas(contextSize)} tokens used
     </div>
   );

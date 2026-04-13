@@ -23,8 +23,8 @@ export const GET_DEVICE_FILTERS_QUERY = `
         count
       }
       tagKeys {
+        key
         value
-        label
         count
       }
       filteredCount

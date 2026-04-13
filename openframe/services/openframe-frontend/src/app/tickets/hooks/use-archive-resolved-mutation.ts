@@ -2,13 +2,16 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { Dialog } from '../types/dialog.types';
+import { getDialogService } from '../services';
+import type { Dialog } from '../types/dialog.types';
 import { dialogsQueryKeys, invalidateAllDialogs } from '../utils/query-keys';
+import { useDialogVersion } from './use-dialog-version';
 
 export function useArchiveResolvedMutation() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const version = useDialogVersion();
+  const service = getDialogService(version);
 
   return useMutation({
     mutationFn: async (dialogs: Dialog[]): Promise<{ successCount: number; failCount: number }> => {
@@ -18,13 +21,10 @@ export function useArchiveResolvedMutation() {
         throw new Error('No resolved dialogs to archive');
       }
 
-      const archivePromises = resolvedDialogs.map(dialog =>
-        apiClient.patch(`/chat/api/v1/dialogs/${dialog.id}/status`, { status: 'ARCHIVED' }),
-      );
-
+      const archivePromises = resolvedDialogs.map(dialog => service.archiveDialog(dialog.id));
       const results = await Promise.allSettled(archivePromises);
 
-      const successCount = results.filter(r => r.status === 'fulfilled' && r.value.ok).length;
+      const successCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
       const failCount = results.length - successCount;
 
       return { successCount, failCount };
@@ -51,11 +51,11 @@ export function useArchiveResolvedMutation() {
       return { previousQueries };
     },
 
-    onError: (error, dialogs, context) => {
+    onError: (error, _dialogs, context) => {
       if (context?.previousQueries) {
-        context.previousQueries.forEach(([queryKey, previousData]) => {
+        for (const [queryKey, previousData] of context.previousQueries) {
           queryClient.setQueryData(queryKey, previousData);
-        });
+        }
       }
 
       const errorMessage = error instanceof Error ? error.message : 'Failed to archive resolved dialogs';

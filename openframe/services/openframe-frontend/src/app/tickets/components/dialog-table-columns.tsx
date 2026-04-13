@@ -2,7 +2,7 @@ import {
   DeviceCardCompact,
   type TableColumn,
   TableTimestampCell,
-  Tag,
+  TicketStatusTag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
@@ -29,9 +29,10 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
       renderCell: dialog => {
         const isClientOwner = 'machine' in (dialog.owner || {});
         const clientOwner = isClientOwner ? (dialog.owner as ClientDialogOwner) : null;
-        const deviceName = clientOwner?.machine?.displayName || clientOwner?.machine?.hostname;
+        const deviceName = clientOwner?.machine?.displayName || clientOwner?.machine?.hostname || dialog.deviceHostname;
         const organizationId = clientOwner?.machine?.organizationId;
-        const organizationName = organizationId ? organizationLookup[organizationId] : undefined;
+        const organizationName =
+          dialog.organizationName || (organizationId ? organizationLookup[organizationId] : undefined);
 
         return <DeviceCardCompact deviceName={deviceName || 'Unknown Device'} organization={organizationName} />;
       },
@@ -58,38 +59,7 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
             { id: 'RESOLVED', value: 'RESOLVED', label: 'Resolved' },
           ]
         : undefined,
-      renderCell: dialog => {
-        const getStatusVariant = (status: string) => {
-          switch (status) {
-            case 'ACTIVE':
-              return 'success' as const;
-            case 'ACTION_REQUIRED':
-              return 'warning' as const;
-            case 'ON_HOLD':
-              return 'error' as const;
-            case 'RESOLVED':
-              return 'success' as const;
-            case 'ARCHIVED':
-              return 'outline' as const;
-            default:
-              return 'outline' as const;
-          }
-        };
-
-        if (dialog.status === 'RESOLVED') {
-          return (
-            <div className="shrink-0">
-              <Tag label="RESOLVED" />
-            </div>
-          );
-        }
-
-        return (
-          <div className="shrink-0">
-            <Tag label={dialog.status.replace('_', ' ')} variant={getStatusVariant(dialog.status)} />
-          </div>
-        );
-      },
+      renderCell: dialog => <TicketStatusTag status={dialog.status} />,
     },
   ];
 }

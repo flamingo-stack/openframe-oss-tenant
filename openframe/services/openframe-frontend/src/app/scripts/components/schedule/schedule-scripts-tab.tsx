@@ -42,8 +42,9 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
     action.script_args.length > 0
       ? {
           items: action.script_args.map(arg => {
-            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-            return { label: key, value: rest.join('=') || 'flag' };
+            const spaceIdx = arg.indexOf(' ');
+            if (spaceIdx === -1) return { label: arg, value: 'flag' };
+            return { label: arg.substring(0, spaceIdx), value: arg.substring(spaceIdx + 1) };
           }),
         }
       : null;

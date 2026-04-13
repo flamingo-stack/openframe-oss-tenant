@@ -5,9 +5,10 @@ import { InfoCard, Label } from '@flamingo-stack/openframe-frontend-core';
 interface ScriptArgumentsCardProps {
   title: string;
   args: string[];
+  separator?: string;
 }
 
-export function ScriptArgumentsCard({ title, args }: ScriptArgumentsCardProps) {
+export function ScriptArgumentsCard({ title, args, separator = '=' }: ScriptArgumentsCardProps) {
   if (!args || args.length === 0) {
     return null;
   }
@@ -18,9 +19,9 @@ export function ScriptArgumentsCard({ title, args }: ScriptArgumentsCardProps) {
       <InfoCard
         data={{
           items: args.map((arg: string) => {
-            const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-            const value = rest.length > 0 ? rest.join('=') : '';
-            return { label: key, value: value || '' };
+            const idx = arg.indexOf(separator);
+            if (idx === -1) return { label: arg, value: '' };
+            return { label: arg.substring(0, idx), value: arg.substring(idx + separator.length) };
           }),
         }}
       />

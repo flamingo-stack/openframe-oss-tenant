@@ -5,6 +5,7 @@ import './globals.css';
 import '@flamingo-stack/openframe-frontend-core/styles';
 import { azeretMono, dmSans } from '@/lib/fonts';
 import { Toaster } from '@/lib/openframe-core-ui';
+import { FeatureFlagsGate } from '../components/feature-flags-gate';
 import { GraphQlIntrospectionInitializer } from '../components/graphql-introspection-initializer';
 import { RouteGuard } from '../components/route-guard';
 import { isAuthEnabled } from '../lib/app-mode';
@@ -98,11 +99,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <GraphQlIntrospectionInitializer />
               </Suspense>
             )}
-            <RouteGuard>
-              <div className="relative flex min-h-screen flex-col">
-                <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
-              </div>
-            </RouteGuard>
+            <FeatureFlagsGate>
+              <RouteGuard>
+                <div className="relative flex min-h-screen flex-col">
+                  <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
+                </div>
+              </RouteGuard>
+            </FeatureFlagsGate>
           </QueryClientProvider>
         </RelayProvider>
         <Toaster />

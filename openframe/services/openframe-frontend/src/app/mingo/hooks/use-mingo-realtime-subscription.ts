@@ -181,10 +181,11 @@ interface UseDialogChunkProcessorOptions {
   onApprove?: (requestId?: string) => void | Promise<void>;
   onReject?: (requestId?: string) => void | Promise<void>;
   approvalStatuses?: Record<string, any>;
+  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
 }
 
 function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProcessorOptions = {}) {
-  const { onApprove, onReject, approvalStatuses } = options;
+  const { onApprove, onReject, approvalStatuses, onMetadata } = options;
   const {
     messagesByDialog,
     getMessages,
@@ -333,6 +334,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTokenUsage(dialogId, data);
       },
 
+      onMetadata,
       onApprove,
       onReject,
     }),
@@ -344,6 +346,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       updateStreamingMessageSegments,
       addErrorMessage,
       setTokenUsage,
+      onMetadata,
       onApprove,
       onReject,
     ],
@@ -369,6 +372,7 @@ interface DialogSubscriptionProps {
   token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange?: (dialogId: string, connected: boolean) => void;
+  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
 }
 
 export function DialogSubscription({
@@ -379,6 +383,7 @@ export function DialogSubscription({
   token,
   isDevTicketEnabled,
   onConnectionChange,
+  onMetadata,
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
@@ -387,6 +392,7 @@ export function DialogSubscription({
     onApprove,
     onReject,
     approvalStatuses,
+    onMetadata,
   });
 
   const processorRef = useRef(processorProcessChunk);

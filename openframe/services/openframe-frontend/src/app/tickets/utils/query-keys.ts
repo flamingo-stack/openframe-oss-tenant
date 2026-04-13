@@ -33,3 +33,12 @@ export const dialogsQueryKeys = {
 export const invalidateAllDialogs = (queryClient: any) => {
   return queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
 };
+
+/**
+ * Query keys for tickets React Query hooks
+ */
+export const ticketsQueryKeys = {
+  all: ['tickets'] as const,
+  labels: () => [...ticketsQueryKeys.all, 'labels'] as const,
+  detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
+} as const;

@@ -112,6 +112,7 @@ export function Queries() {
     () => [
       {
         label: 'Add Query',
+        variant: 'card' as const,
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddQuery,
       },

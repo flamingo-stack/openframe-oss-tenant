@@ -19,7 +19,8 @@ pub fn get_console_user() -> Option<ConsoleUser> {
 
     let username = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-    if username.is_empty() || username == "root" {
+    // Filter out: empty, root, and system users (start with _)
+    if username.is_empty() || username == "root" || username.starts_with('_') {
         warn!("No regular user at console (got: '{}')", username);
         return None;
     }

@@ -15,6 +15,7 @@ pub mod machine_heartbeat_message;
 pub mod download_configuration;
 pub mod installed_agent_message;
 pub mod update_state;
+pub mod device_tag;
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;
@@ -33,3 +34,4 @@ pub use machine_heartbeat_message::MachineHeartbeatMessage;
 pub use download_configuration::{DownloadConfiguration, InstallationType};
 pub use installed_agent_message::InstalledAgentMessage;
 pub use update_state::{UpdateState, UpdatePhase};
+pub use device_tag::DeviceTag;

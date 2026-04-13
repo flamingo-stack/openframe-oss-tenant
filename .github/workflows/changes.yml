@@ -27,8 +27,6 @@ on:
         value: ${{ jobs.changes.outputs.authentik-postgresql }}
       meshcentral: 
         value: ${{ jobs.changes.outputs.meshcentral }}
-      tactical-frontend: 
-        value: ${{ jobs.changes.outputs.tactical-frontend }}
       tactical-nginx: 
         value: ${{ jobs.changes.outputs.tactical-nginx }}
       tactical-base: 
@@ -65,7 +63,6 @@ jobs:
       openframe-frontend: ${{ steps.filter.outputs.openframe-frontend }}
       authentik-postgresql: ${{ steps.filter.outputs.authentik-postgresql }}
       meshcentral: ${{ steps.filter.outputs.meshcentral }}
-      tactical-frontend: ${{ steps.filter.outputs.tactical-frontend }}
       tactical-nginx: ${{ steps.filter.outputs.tactical-nginx }}
       tactical-base: ${{ steps.filter.outputs.tactical-base }}
       openframe-chat: ${{ steps.filter.outputs.openframe-chat }}
@@ -125,9 +122,6 @@ jobs:
               - './integrated-tools/authentik/postgresql/**'
             meshcentral:
               - './integrated-tools/meshcentral/server/**'
-            tactical-frontend:
-              - './integrated-tools/tactical-rmm/tactical-frontend/**'
-              - './integrated-tools/tactical-rmm/shared/**'
             tactical-nginx:
               - './integrated-tools/tactical-rmm/tactical-nginx/**'
               - './integrated-tools/tactical-rmm/shared/**'

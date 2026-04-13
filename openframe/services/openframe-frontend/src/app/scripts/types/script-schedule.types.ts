@@ -242,8 +242,9 @@ export function scheduleDetailToFormData(schedule: ScriptScheduleDetail): Create
     name: a.name,
     timeout: a.timeout,
     script_args: a.script_args.map(arg => {
-      const [key, ...rest] = arg.includes('=') ? arg.split('=') : [arg];
-      return { id: crypto.randomUUID(), key, value: rest.join('=') };
+      const spaceIdx = arg.indexOf(' ');
+      if (spaceIdx === -1) return { id: crypto.randomUUID(), key: arg, value: '' };
+      return { id: crypto.randomUUID(), key: arg.substring(0, spaceIdx), value: arg.substring(spaceIdx + 1) };
     }),
     env_vars: a.env_vars.map(env => {
       const [key, ...rest] = env.includes('=') ? env.split('=') : [env];
@@ -275,7 +276,7 @@ export function buildCreatePayload(formData: CreateScheduleFormData): CreateScri
     timeout: a.timeout,
     script_args: a.script_args
       .filter(arg => arg.key.trim())
-      .map(arg => (arg.value ? `${arg.key}=${arg.value}` : arg.key)),
+      .map(arg => (arg.value ? `${arg.key} ${arg.value}` : arg.key)),
     env_vars: a.env_vars.filter(env => env.key.trim()).map(env => (env.value ? `${env.key}=${env.value}` : env.key)),
   }));
 
