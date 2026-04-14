@@ -233,6 +233,7 @@ export function useMingoDialogSelection() {
       const realtimeMessages = existingMessages.filter(m => {
         if (processedMessageIds.has(m.id)) return false;
         if (rawPageMessageIds.has(m.id)) return false;
+        if (m.id.startsWith('pending-approvals-')) return false;
         if (m.role === 'user' && m.id.startsWith('optimistic-') && typeof m.content === 'string') {
           return !allProcessedMessages.some(pm => pm.role === 'user' && pm.content === m.content);
         }
