@@ -442,6 +442,8 @@ export function ChatView() {
                       provider={displayModel.provider}
                       modelName={displayModel.modelName}
                       displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                      usedTokens={tokenUsage?.totalTokensSize}
+                      contextWindow={tokenUsage?.contextSize}
                     />
                   )}
                 </div>
