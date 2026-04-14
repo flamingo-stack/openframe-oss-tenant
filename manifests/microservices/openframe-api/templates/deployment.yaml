@@ -17,7 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
         prometheus.io/port: "8091"
-        prometheus.io/path: "/management/{{ .Values.global.image.tag }}/prometheus"
+        prometheus.io/path: "/management/{{ default .Values.global.image.tag .Values.image.tag }}/prometheus"
 
     spec:
       initContainers:
@@ -26,7 +26,7 @@ spec:
           command: ["sh", "-c", "until curl -f http://openframe-config.microservices.svc.cluster.local:8888/xml/shared-logback-spring.xml; do sleep 1; done"]
         - name: wait-for-management-server
           image: "{{ .Values.initImage.registry }}/{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
-          command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/{{ .Values.global.image.tag }}/health; do sleep 1; done"]
+          command: ["sh", "-c", "until curl -f http://openframe-management.microservices.svc.cluster.local:8096/management/{{ default .Values.global.image.tag .Values.image.tag }}/health; do sleep 1; done"]
 
       containers:
         - name: openframe-api
@@ -36,7 +36,13 @@ spec:
               name: http
             - containerPort: 8091
               name: management
+
+          envFrom:
+            - configMapRef:
+                name: microservices
           env:
+            - name: RELEASE_VERSION
+              value: "{{ default .Values.global.image.tag .Values.image.tag }}"
             {{- if .Values.deployment.oss.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL
               value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
@@ -44,16 +50,13 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
-          envFrom:
-            - configMapRef:
-                name: microservices
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:
-              path: /management/{{ .Values.global.image.tag }}/health
+              path: /management/{{ default .Values.global.image.tag .Values.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -61,7 +64,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /management/{{ .Values.global.image.tag }}/health
+              path: /management/{{ default .Values.global.image.tag .Values.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
