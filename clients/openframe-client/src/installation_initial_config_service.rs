@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use tracing::info;
 
-use crate::models::InitialConfiguration;
+use crate::models::{DeviceTag, InitialConfiguration};
 use crate::platform::DirectoryManager;
 use crate::services::InitialConfigurationService;
 
@@ -18,6 +18,7 @@ pub struct InstallConfigParams {
     pub initial_key: Option<String>,
     pub org_id: Option<String>,
     pub local_mode: bool,
+    pub tags: Vec<String>,
 }
 
 impl InstallationInitialConfigService {
@@ -48,6 +49,7 @@ impl InstallationInitialConfigService {
         cfg.initial_key = initial_key;
         cfg.org_id = org_id;
         cfg.local_mode = params.local_mode;
+        cfg.tags = DeviceTag::parse_from_cli(params.tags.clone());
 
         // Only resolve local CA path via mkcert if running in local mode
         if params.local_mode {

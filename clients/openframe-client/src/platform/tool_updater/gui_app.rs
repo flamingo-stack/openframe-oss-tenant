@@ -90,9 +90,11 @@ impl ToolUpdater for GuiAppToolUpdater {
             anyhow::bail!("Expected GuiApp installation type");
         };
 
-        let Some(user) = get_console_user() else {
-            warn!(tool_id = %tool_agent_id, "No console user found, cannot restart GUI app");
-            return Ok(());
+        let user = loop {
+            if let Some(u) = get_console_user() {
+                break u;
+            }
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
         };
 
         if let Some(bid) = bundle_id {

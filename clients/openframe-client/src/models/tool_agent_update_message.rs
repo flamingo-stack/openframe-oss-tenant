@@ -7,8 +7,7 @@ pub struct ToolAgentUpdateMessage {
     pub tool_agent_id: String,
     pub version: String,
     pub download_configurations: Vec<DownloadConfiguration>,
-    #[serde(default)]
-    pub assets: Vec<AssetUpdate>,
+    pub assets: Option<Vec<AssetUpdate>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

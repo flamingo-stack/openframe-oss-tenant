@@ -99,28 +99,28 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
     segmentAccumulator.resetSegments();
   }, [segmentAccumulator]);
 
+  const appendSegmentsToLastAssistant = useCallback(
+    (segments: MessageSegment[]) => {
+      setMessages(prev => {
+        const newMessages = [...prev];
+        for (let i = newMessages.length - 1; i >= 0; i--) {
+          if (newMessages[i].role === 'assistant') {
+            const existing = Array.isArray(newMessages[i].content) ? (newMessages[i].content as MessageSegment[]) : [];
+            const merged = segmentAccumulator.replaySegments([...existing, ...segments]);
+            newMessages[i] = { ...newMessages[i], content: merged };
+            return newMessages;
+          }
+        }
+        return prev;
+      });
+    },
+    [segmentAccumulator],
+  );
+
   const updateSegments = useCallback(
     (segments: MessageSegment[]) => {
-      segmentAccumulator.reset();
-      segments.forEach(segment => {
-        if (segment.type === 'text' && segment.text) {
-          segmentAccumulator.appendText(segment.text);
-        } else if (segment.type === 'tool_execution') {
-          segmentAccumulator.addToolExecution(segment);
-        } else if (segment.type === 'approval_request') {
-          const { data, status } = segment;
-          segmentAccumulator.addApprovalRequest(
-            data.requestId || '',
-            data.command,
-            data.explanation,
-            data.approvalType || '',
-            status,
-          );
-        } else if (segment.type === 'error') {
-          segmentAccumulator.addError(segment.title, segment.details);
-        }
-      });
-      updateLastAssistantMessage(segmentAccumulator.getSegments());
+      const processed = segmentAccumulator.replaySegments(segments);
+      updateLastAssistantMessage(processed);
     },
     [segmentAccumulator, updateLastAssistantMessage],
   );
@@ -131,6 +131,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
     addMessage,
     updateLastAssistantMessage,
     ensureAssistantMessage,
+    appendSegmentsToLastAssistant,
     addErrorMessage,
     clearMessages,
     appendTextToCurrentMessage,

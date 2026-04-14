@@ -6,6 +6,7 @@ import {
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { dialogGraphQlService } from '../services/dialogGraphQLService';
 
 interface UseDialogMessagesOptions {
@@ -17,12 +18,15 @@ interface UseDialogMessagesOptions {
 
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
+  const { flags } = useFeatureFlags();
   const { onApprove, onReject, approvalStatuses } = options;
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
-      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam);
+      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
+        includeContextCompaction: flags['token-based-memory'],
+      });
       if (!connection || !connection.edges) {
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
       }

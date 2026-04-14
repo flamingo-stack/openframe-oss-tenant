@@ -25,3 +25,5 @@ export {
   selectSelectedDevice,
   useDevicesStore,
 } from './devices-store';
+export type { FeatureFlag, FeatureFlagsState } from './feature-flags-store';
+export { useFeatureFlagsStore } from './feature-flags-store';

@@ -112,11 +112,13 @@ export function getRelayEnvironment(): IEnvironment {
   }
 
   if (!relayEnvironment) {
+    const store = new Store(new RecordSource(), {
+      gcReleaseBufferSize: 20,
+      queryCacheExpirationTime: 5 * 60 * 1000,
+    });
     relayEnvironment = new Environment({
       network: Network.create(fetchRelay),
-      store: new Store(new RecordSource(), {
-        gcReleaseBufferSize: 10,
-      }),
+      store,
     });
   }
 

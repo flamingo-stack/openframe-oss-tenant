@@ -1,4 +1,4 @@
-import type { AssistantType, MessageContent } from '@flamingo-stack/openframe-frontend-core';
+import type { AssistantType, AuthorType, MessageContent } from '@flamingo-stack/openframe-frontend-core';
 import type { ChatType, OwnerType } from '../../tickets/constants';
 
 export interface GraphQlMessage {
@@ -18,6 +18,7 @@ export interface CoreMessage {
   id: string;
   role: 'user' | 'assistant' | 'error';
   content: MessageContent;
+  authorType?: AuthorType;
   name?: string;
   assistantType?: AssistantType;
   timestamp?: Date;

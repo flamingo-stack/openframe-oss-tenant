@@ -1,10 +1,15 @@
 'use client';
 
-import { type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
-import { useCreateDialogMutation, useSendMessageMutation } from '../services/mingo-api-service';
+import { selectUser, useAuthStore } from '@/stores';
+import {
+  useCreateDialogMutation,
+  useSendMessageMutation,
+  useStopGenerationMutation,
+} from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { CoreMessage } from '../types/message.types';
 
@@ -13,6 +18,7 @@ interface ProcessedMessage {
   content: string | MessageSegment[];
   role: 'user' | 'assistant' | 'error';
   name: string;
+  authorType?: AuthorType;
   assistantType?: 'fae' | 'mingo';
   timestamp: Date;
 }
@@ -25,6 +31,7 @@ interface UseMingoChat {
   // Actions
   createDialog: () => Promise<string | null>;
   sendMessage: (content: string, targetDialogId?: string) => Promise<boolean>;
+  stopGeneration: () => Promise<void>;
 
   // Approval system
   approvals: MessageSegment[];
@@ -32,17 +39,20 @@ interface UseMingoChat {
   // State
   isCreatingDialog: boolean;
   isTyping: boolean;
+  isCompacting: boolean;
   assistantType: 'mingo';
 }
 
 export function useMingoChat(dialogId: string | null): UseMingoChat {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const user = useAuthStore(selectUser);
 
   const {
     messagesByDialog,
     addMessage,
     typingStates,
+    compactingStates,
     setTyping,
     removeWelcomeMessages,
     isCreatingDialog,
@@ -54,8 +64,14 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     return typingStates.get(dialogId) || false;
   }, [dialogId, typingStates]);
 
+  const isCompacting = useMemo(() => {
+    if (!dialogId) return false;
+    return compactingStates.get(dialogId) || false;
+  }, [dialogId, compactingStates]);
+
   const createDialogMutation = useCreateDialogMutation();
   const sendMessageMutation = useSendMessageMutation();
+  const stopGenerationMutation = useStopGenerationMutation();
 
   const messageCacheRef = useRef(new WeakMap<CoreMessage, ProcessedMessage>());
 
@@ -82,6 +98,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         id: msg.id,
         content: filteredContent,
         role: msg.role,
+        authorType: msg.authorType,
         name: msg.name || 'Unknown',
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
@@ -143,8 +160,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         const optimisticMessage: CoreMessage = {
           id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
+          authorType: 'admin',
           content: content.trim(),
-          name: 'Admin',
+          name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin',
           timestamp: new Date(),
         };
 
@@ -167,8 +185,25 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         return false;
       }
     },
-    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast],
+    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast, user],
   );
+
+  const stopGeneration = useCallback(async () => {
+    if (!dialogId) return;
+
+    try {
+      await stopGenerationMutation.mutateAsync(dialogId);
+      setTyping(dialogId, false);
+    } catch (error) {
+      console.error('[MingoChat] Failed to stop generation:', error);
+      toast({
+        title: 'Stop Failed',
+        description: error instanceof Error ? error.message : 'Failed to stop generation',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    }
+  }, [dialogId, stopGenerationMutation, setTyping, toast]);
 
   return {
     // Messages
@@ -178,6 +213,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     // Actions
     createDialog,
     sendMessage,
+    stopGeneration,
 
     // Approval system
     approvals,
@@ -185,6 +221,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     // State
     isCreatingDialog,
     isTyping,
+    isCompacting,
     assistantType: 'mingo' as const,
   };
 }

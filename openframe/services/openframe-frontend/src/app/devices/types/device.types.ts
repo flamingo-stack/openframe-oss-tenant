@@ -274,12 +274,18 @@ export interface DeviceFilterTag {
   count: number;
 }
 
+export interface TagFilterOption {
+  key: string;
+  value: string;
+  count: number;
+}
+
 export interface DeviceFilters {
   statuses: DeviceFilterValue[];
   deviceTypes: DeviceFilterValue[];
   osTypes: DeviceFilterValue[];
   organizationIds: DeviceFilterTag[];
-  tagKeys: DeviceFilterTag[];
+  tagKeys: TagFilterOption[];
   filteredCount: number;
 }
 

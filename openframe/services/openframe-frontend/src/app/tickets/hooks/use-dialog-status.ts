@@ -3,23 +3,17 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
-import { DialogStatus } from '../types/dialog.types';
+import { getDialogService } from '../services';
+import type { DialogStatus } from '../types/dialog.types';
 import { invalidateAllDialogs } from '../utils/query-keys';
-
-interface UpdateStatusResponse {
-  success: boolean;
-  dialog?: {
-    id: string;
-    status: DialogStatus;
-  };
-  error?: string;
-}
+import { useDialogVersion } from './use-dialog-version';
 
 export function useDialogStatus() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isUpdating, setIsUpdating] = useState(false);
+  const version = useDialogVersion();
+  const service = getDialogService(version);
 
   const updateDialogStatus = useCallback(
     async (dialogId: string, status: DialogStatus): Promise<boolean> => {
@@ -28,13 +22,7 @@ export function useDialogStatus() {
       setIsUpdating(true);
 
       try {
-        const response = await apiClient.patch<UpdateStatusResponse>(`/chat/api/v1/dialogs/${dialogId}/status`, {
-          status,
-        });
-
-        if (!response.ok) {
-          throw new Error(response.error || `Failed to update dialog status`);
-        }
+        await service.updateStatus(dialogId, status);
 
         toast({
           title: 'Success',
@@ -62,7 +50,7 @@ export function useDialogStatus() {
         setIsUpdating(false);
       }
     },
-    [isUpdating, toast, queryClient],
+    [isUpdating, toast, service, queryClient],
   );
 
   const putOnHold = useCallback(

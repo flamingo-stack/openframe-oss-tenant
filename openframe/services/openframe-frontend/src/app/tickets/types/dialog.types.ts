@@ -1,6 +1,6 @@
 export type DialogStatus = 'ACTIVE' | 'ACTION_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
-export type DialogOwnerEnum = 'CLIENT';
+export type DialogOwnerEnum = 'CLIENT' | 'ADMIN';
 
 export interface DialogOwner {
   type: DialogOwnerEnum;
@@ -36,6 +36,44 @@ export interface Dialog {
   resolvedAt?: string | null;
   aiResolutionSuggestedAt?: string | null;
   rating?: DialogRating | null;
+
+  // V2 ticket-specific fields (only populated when fetched as ticket)
+  currentMode?: string; // 'AI' | 'DIRECT'
+  ticketNumber?: number;
+  dialogId?: string;
+  description?: string;
+  creationSource?: string;
+  deviceId?: string;
+  deviceHostname?: string;
+  organizationId?: string;
+  organizationName?: string;
+  assignedTo?: string;
+  assignedName?: string;
+  labels?: Array<{ id: string; key: string; color?: string }>;
+  attachments?: Array<{
+    id: string;
+    ticketId: string;
+    fileName: string;
+    contentType: string;
+    fileSize: number;
+    uploadedAt: string;
+    uploadedBy: string;
+  }>;
+  notes?: Array<{
+    id: string;
+    ticketId: string;
+    content: string;
+    authorId: string;
+    authorName?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+  tokenUsage?: {
+    inputTokensSize: number | null;
+    outputTokensSize: number | null;
+    totalTokensSize: number | null;
+    contextSize: number | null;
+  } | null;
 }
 
 export interface CursorPageInfo {
@@ -65,7 +103,8 @@ export type MessageDataType =
   | 'EXECUTING_TOOL'
   | 'EXECUTED_TOOL'
   | 'APPROVAL_REQUEST'
-  | 'APPROVAL_RESULT';
+  | 'APPROVAL_RESULT'
+  | 'SYSTEM';
 
 export interface MessageOwner {
   type: MessageOwnerType;
@@ -137,6 +176,11 @@ export interface ApprovalResultData extends MessageData {
   details?: any;
 }
 
+export interface SystemData extends MessageData {
+  type: 'SYSTEM';
+  text: string;
+}
+
 export interface Message {
   id: string;
   dialogId: string;
@@ -151,6 +195,7 @@ export interface Message {
     | ExecutedToolData
     | ApprovalRequestData
     | ApprovalResultData
+    | SystemData
     | MessageData;
 }
 

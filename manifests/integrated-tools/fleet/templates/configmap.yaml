@@ -5,4 +5,6 @@ metadata:
 data:
   FLEET_SERVER_ADDRESS: "fleet-service.integrated-tools.svc.cluster.local"
   FLEET_SERVER_PORT: "8080"
+  FLEET_SERVER_QUERY_RESULTS_TTL: "720h"
+  FLEET_SERVER_QUERY_RESULTS_CLEANUP_INTERVAL: "1h"
   FLEET_SETUP_ADMIN_EMAIL: {{ .Values.fleet.environments.FLEET_SETUP_ADMIN_EMAIL | quote }}
