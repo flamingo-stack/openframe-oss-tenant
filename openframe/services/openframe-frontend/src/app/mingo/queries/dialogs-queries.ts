@@ -21,7 +21,16 @@ export const GET_MINGO_DIALOGS_QUERY = `
  }
 `;
 
-export const GET_MINGO_DIALOG_QUERY = `
+const TOKEN_USAGE_FRAGMENT = `
+    tokenUsage {
+      inputTokensSize
+      outputTokensSize
+      totalTokensSize
+      contextSize
+    }`;
+
+export function getMingoDialogQuery({ includeTokenUsage = false } = {}) {
+  return `
   query GetDialog($id: ID!) {
     dialog(id: $id) {
     id
@@ -46,17 +55,24 @@ export const GET_MINGO_DIALOG_QUERY = `
       dialogId
       createdAt
     }
-    tokenUsage {
-      inputTokensSize
-      outputTokensSize
-      totalTokensSize
-      contextSize
-    }
+    ${includeTokenUsage ? TOKEN_USAGE_FRAGMENT : ''}
     }
   }
 `;
+}
 
-export const GET_DIALOG_MESSAGES_QUERY = `
+const CONTEXT_COMPACTION_FRAGMENT = `
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }`;
+
+export function getMingoDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+  return `
   query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
@@ -107,7 +123,7 @@ export const GET_DIALOG_MESSAGES_QUERY = `
             }
 
             ... on ApprovalRequestData {
-              type  
+              type
               approvalRequestId
               approvalType
               command
@@ -121,14 +137,7 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approvalType
             }
 
-            ... on ContextCompactionStartData {
-              type
-            }
-
-            ... on ContextCompactionEndData {
-              type
-              summary
-            }
+            ${includeContextCompaction ? CONTEXT_COMPACTION_FRAGMENT : ''}
 
             ... on ErrorData {
               error
@@ -146,3 +155,4 @@ export const GET_DIALOG_MESSAGES_QUERY = `
     }
   }
 `;
+}

@@ -1,8 +1,9 @@
 import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
 import { parseChunkToAction } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS, CHAT_TYPE } from '../constants';
-import { GET_DIALOG_MESSAGES_QUERY, GET_DIALOG_QUERY, GET_DIALOGS_QUERY } from '../queries/dialogs-queries';
+import { GET_DIALOGS_QUERY, getDialogMessagesQuery, getDialogQuery } from '../queries/dialogs-queries';
 import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
@@ -50,8 +51,9 @@ export class DialogServiceV1 implements DialogService {
   }
 
   async fetchDialog(id: string): Promise<Dialog | null> {
+    const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<GraphQlResponse<{ dialog: Dialog }>>('/chat/graphql', {
-      query: GET_DIALOG_QUERY,
+      query: getDialogQuery({ includeTokenUsage }),
       variables: { id },
     });
 
@@ -60,12 +62,13 @@ export class DialogServiceV1 implements DialogService {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
+    const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: GET_DIALOG_MESSAGES_QUERY,
+      query: getDialogMessagesQuery({ includeContextCompaction }),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,

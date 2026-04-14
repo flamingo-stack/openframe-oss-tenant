@@ -5,8 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS } from '../constants';
-import { GET_TICKET_QUERY } from '../queries/ticket-queries';
+import { getTicketQuery } from '../queries/ticket-queries';
 import { type CreateTicketFormData, createTicketSchema } from '../types/create-ticket.types';
 import type { Ticket } from '../types/ticket.types';
 import type { GraphQlResponse } from '../utils/graphql';
@@ -29,8 +30,9 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
   const { data: ticket, isLoading: isLoadingTicket } = useQuery({
     queryKey: ticketsQueryKeys.detail(ticketId || ''),
     queryFn: async () => {
+      const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
       const response = await apiClient.post<GraphQlResponse<{ ticket: Ticket }>>(API_ENDPOINTS.GRAPHQL, {
-        query: GET_TICKET_QUERY,
+        query: getTicketQuery({ includeTokenUsage }),
         variables: { id: ticketId },
       });
       return extractGraphQlData(response).ticket;

@@ -9,6 +9,7 @@ import { useOrganizationLookup } from '../../../organizations/hooks/use-organiza
 import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation';
 import { useDialogVersion } from '../../hooks/use-dialog-version';
 import { useDialogsQuery } from '../../hooks/use-dialogs-query';
+import { useTicketStatistics } from '../../hooks/use-ticket-statistics';
 import type { ClientDialogOwner, Dialog } from '../../types/dialog.types';
 import { getDialogTableColumns } from '../dialog-table-columns';
 
@@ -27,6 +28,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   // Lazy organization lookup - doesn't block initial render
   const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup();
   const archiveResolvedMutation = useArchiveResolvedMutation();
+  const { resolvedCount } = useTicketStatistics({ enabled: !isArchived });
 
   const { dialogs, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useDialogsQuery({
     archived: isArchived,
@@ -70,8 +72,8 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   );
 
   const handleArchiveResolved = useCallback(async () => {
-    await archiveResolvedMutation.mutateAsync(dialogs);
-  }, [archiveResolvedMutation, dialogs]);
+    await archiveResolvedMutation.mutateAsync();
+  }, [archiveResolvedMutation]);
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, string[]>) => {
@@ -89,9 +91,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     [isArchived, onStatusFilterChange],
   );
 
-  const hasResolvedDialogs = useMemo(() => {
-    return !isArchived && dialogs.some((d: Dialog) => d.status === 'RESOLVED');
-  }, [dialogs, isArchived]);
+  const hasResolvedTickets = !isArchived && resolvedCount > 0;
 
   const title = isArchived ? 'Archived Tickets' : 'Tickets';
   const emptyMessage = isArchived
@@ -112,9 +112,9 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
         icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
       });
     }
-    if (hasResolvedDialogs) {
+    if (hasResolvedTickets) {
       items.push({
-        label: 'Archive Resolved',
+        label: `Archive Resolved`,
         variant: 'card' as const,
         icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleArchiveResolved,
@@ -125,7 +125,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   }, [
     dialogVersion,
     handleNewTicket,
-    hasResolvedDialogs,
+    hasResolvedTickets,
     handleArchiveResolved,
     archiveResolvedMutation.isPending,
     isLoading,

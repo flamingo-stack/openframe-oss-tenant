@@ -1,11 +1,12 @@
 import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import { API_ENDPOINTS } from '../constants';
 import {
   ARCHIVE_TICKET_MUTATION,
-  GET_TICKET_QUERY,
   GET_TICKETS_QUERY,
+  getTicketQuery,
   PUT_TICKET_ON_HOLD_MUTATION,
   REOPEN_TICKET_MUTATION,
   RESOLVE_TICKET_MUTATION,
@@ -222,8 +223,9 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async fetchDialog(id: string): Promise<Dialog | null> {
+    const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<GraphQlResponse<TicketResponse>>(API_ENDPOINTS.GRAPHQL, {
-      query: GET_TICKET_QUERY,
+      query: getTicketQuery({ includeTokenUsage }),
       variables: { id },
     });
 

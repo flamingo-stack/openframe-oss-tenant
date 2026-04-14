@@ -91,7 +91,16 @@ export const DELETE_TICKET_ATTACHMENT = `
   }
 `;
 
-export const GET_TICKET_QUERY = `
+const TICKET_TOKEN_USAGE_FRAGMENT = `
+        tokenUsage {
+          inputTokensSize
+          outputTokensSize
+          totalTokensSize
+          contextSize
+        }`;
+
+export function getTicketQuery({ includeTokenUsage = false } = {}) {
+  return `
   query GetTicket($id: ID!) {
     ticket(id: $id) {
       id
@@ -135,12 +144,7 @@ export const GET_TICKET_QUERY = `
       dialog {
         id
         currentMode
-        tokenUsage {
-          inputTokensSize
-          outputTokensSize
-          totalTokensSize
-          contextSize
-        }
+        ${includeTokenUsage ? TICKET_TOKEN_USAGE_FRAGMENT : ''}
       }
       attachments {
         id
@@ -170,6 +174,7 @@ export const GET_TICKET_QUERY = `
     }
   }
 `;
+}
 
 export const GET_TICKETS_QUERY = `
   query GetTickets($filter: TicketFilterInput, $pagination: CursorPaginationInput, $search: String) {
@@ -389,6 +394,29 @@ export const REOPEN_TICKET_MUTATION = `
     reopenTicket(input: $input) {
       ticket { id status }
       userErrors { field message }
+    }
+  }
+`;
+
+export const GET_TICKET_STATISTICS_QUERY = `
+  query GetTicketStatistics {
+    ticketStatistics {
+      statusCounts {
+        status
+        count
+      }
+    }
+  }
+`;
+
+export const ARCHIVE_RESOLVED_TICKETS_MUTATION = `
+  mutation ArchiveResolvedTickets {
+    archiveResolvedTickets {
+      count
+      userErrors {
+        field
+        message
+      }
     }
   }
 `;

@@ -15,7 +15,12 @@ import {
   ModelDisplay,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
-import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ClockHistoryIcon,
+  Ellipsis01Icon,
+  PlusCircleIcon,
+  TagIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,11 +32,7 @@ import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
-import {
-  dialogGraphQlService,
-  type DialogTokenUsage,
-  type ResumableDialog,
-} from '../services/dialogGraphQLService';
+import { type DialogTokenUsage, dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
 
@@ -123,14 +124,16 @@ export function ChatView() {
     [messages],
   );
 
+  const tokenBasedMemory = flags['token-based-memory'];
+
   const fetchResumableDialog = useCallback(() => {
-    dialogGraphQlService.getResumableDialog().then(dialog => {
+    dialogGraphQlService.getResumableDialog({ includeTokenUsage: tokenBasedMemory }).then(dialog => {
       setResumableDialog(dialog);
       if (dialog?.tokenUsage) {
         setTokenUsage(toTokenUsageData(dialog.tokenUsage));
       }
     });
-  }, []);
+  }, [tokenBasedMemory]);
 
   useEffect(() => {
     if (!flags.tickets) {
@@ -198,10 +201,11 @@ export function ChatView() {
   useEffect(() => {
     if (!dialogId) return;
     if (tokenUsage) return;
+    if (!tokenBasedMemory) return;
     dialogGraphQlService.getDialogTokenUsage(dialogId).then(usage => {
       if (usage) setTokenUsage(toTokenUsageData(usage));
     });
-  }, [dialogId]);
+  }, [dialogId, tokenBasedMemory]);
 
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
@@ -340,7 +344,11 @@ export function ChatView() {
 
             {flags.tickets ? (
               <>
-                <ChatTicketList className="w-full max-w-2xl" tickets={displayTickets} onTicketClick={handleTicketClick} />
+                <ChatTicketList
+                  className="w-full max-w-2xl"
+                  tickets={displayTickets}
+                  onTicketClick={handleTicketClick}
+                />
 
                 {displayTickets.length === 0 && quickActions.length > 0 && (
                   <div className="w-full max-w-2xl">
@@ -423,7 +431,7 @@ export function ChatView() {
           reserveAvatarOffset={hasMessages}
           disabled={isDisconnected}
         />
-        {(displayModel && isFullyLoaded || tokenUsage) && (
+        {((displayModel && isFullyLoaded) || tokenUsage) && (
           <div className={hasMessages ? 'mx-auto w-full max-w-3xl px-4' : 'mx-auto w-full max-w-2xl'}>
             {hasMessages ? (
               <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
@@ -436,7 +444,6 @@ export function ChatView() {
                       displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
                     />
                   )}
-                  {tokenUsage && <TokenTracker tokenUsage={tokenUsage} />}
                 </div>
               </div>
             ) : (

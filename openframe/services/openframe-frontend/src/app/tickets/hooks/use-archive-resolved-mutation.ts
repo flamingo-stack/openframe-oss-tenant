@@ -2,104 +2,91 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getDialogService } from '../services';
+import { apiClient } from '@/lib/api-client';
+import { API_ENDPOINTS } from '../constants';
+import { ARCHIVE_RESOLVED_TICKETS_MUTATION } from '../queries/ticket-queries';
 import type { Dialog } from '../types/dialog.types';
-import { dialogsQueryKeys, invalidateAllDialogs } from '../utils/query-keys';
-import { useDialogVersion } from './use-dialog-version';
+import type { GraphQlResponse } from '../utils/graphql';
+import { extractGraphQlData } from '../utils/graphql';
+import { dialogsQueryKeys, invalidateAllDialogs, ticketsQueryKeys } from '../utils/query-keys';
+
+interface ArchiveResolvedPayload {
+  archiveResolvedTickets: {
+    count: number;
+    userErrors: Array<{ field?: string[]; message: string }>;
+  };
+}
 
 export function useArchiveResolvedMutation() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const version = useDialogVersion();
-  const service = getDialogService(version);
 
   return useMutation({
-    mutationFn: async (dialogs: Dialog[]): Promise<{ successCount: number; failCount: number }> => {
-      const resolvedDialogs = dialogs.filter(d => d.status === 'RESOLVED');
+    mutationFn: async (): Promise<{ count: number }> => {
+      const response = await apiClient.post<GraphQlResponse<ArchiveResolvedPayload>>(API_ENDPOINTS.GRAPHQL, {
+        query: ARCHIVE_RESOLVED_TICKETS_MUTATION,
+      });
 
-      if (resolvedDialogs.length === 0) {
-        throw new Error('No resolved dialogs to archive');
+      const data = extractGraphQlData(response);
+      const payload = data.archiveResolvedTickets;
+
+      if (payload.userErrors?.length) {
+        throw new Error(payload.userErrors[0].message);
       }
 
-      const archivePromises = resolvedDialogs.map(dialog => service.archiveDialog(dialog.id));
-      const results = await Promise.allSettled(archivePromises);
-
-      const successCount = results.filter(r => r.status === 'fulfilled' && r.value).length;
-      const failCount = results.length - successCount;
-
-      return { successCount, failCount };
+      return { count: payload.count };
     },
 
-    onMutate: async (dialogs: Dialog[]) => {
-      const resolvedDialogIds = dialogs.filter(d => d.status === 'RESOLVED').map(d => d.id);
-
-      if (resolvedDialogIds.length === 0) return;
-
+    onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: dialogsQueryKeys.lists() });
 
       const previousQueries = queryClient.getQueriesData({ queryKey: dialogsQueryKeys.lists() });
 
       queryClient.setQueriesData({ queryKey: dialogsQueryKeys.lists() }, (oldData: any) => {
-        if (!oldData?.dialogs) return oldData;
+        if (!oldData?.pages) return oldData;
 
         return {
           ...oldData,
-          dialogs: oldData.dialogs.filter((dialog: Dialog) => !resolvedDialogIds.includes(dialog.id)),
+          pages: oldData.pages.map((page: any) => ({
+            ...page,
+            dialogs: page.dialogs.filter((dialog: Dialog) => dialog.status !== 'RESOLVED'),
+          })),
         };
       });
 
       return { previousQueries };
     },
 
-    onError: (error, _dialogs, context) => {
+    onError: (error, _variables, context) => {
       if (context?.previousQueries) {
         for (const [queryKey, previousData] of context.previousQueries) {
           queryClient.setQueryData(queryKey, previousData);
         }
       }
 
-      const errorMessage = error instanceof Error ? error.message : 'Failed to archive resolved dialogs';
-      console.error('Failed to archive resolved dialogs:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to archive resolved tickets';
+      console.error('Failed to archive resolved tickets:', error);
 
-      if (errorMessage === 'No resolved dialogs to archive') {
-        toast({
-          title: 'No Resolved Dialogs',
-          description: 'There are no resolved dialogs to archive',
-          variant: 'info',
-          duration: 3000,
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive',
-          duration: 5000,
-        });
-      }
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+        duration: 5000,
+      });
     },
 
-    onSuccess: ({ successCount, failCount }) => {
-      if (successCount > 0) {
-        toast({
-          title: 'Success',
-          description: `${successCount} dialog${successCount > 1 ? 's' : ''} archived successfully${failCount > 0 ? ` (${failCount} failed)` : ''}`,
-          variant: 'success',
-          duration: 4000,
-        });
-      }
-
-      if (failCount > 0 && successCount === 0) {
-        toast({
-          title: 'Error',
-          description: `Failed to archive ${failCount} dialog${failCount > 1 ? 's' : ''}`,
-          variant: 'destructive',
-          duration: 5000,
-        });
-      }
+    onSuccess: ({ count }) => {
+      toast({
+        title: 'Success',
+        description: `${count} ticket${count !== 1 ? 's' : ''} archived successfully`,
+        variant: 'success',
+        duration: 4000,
+      });
     },
 
     onSettled: () => {
       invalidateAllDialogs(queryClient);
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statistics() });
     },
   });
 }

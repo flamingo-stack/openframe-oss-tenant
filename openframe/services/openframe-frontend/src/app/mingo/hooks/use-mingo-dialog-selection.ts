@@ -5,9 +5,10 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import type { ApprovalStatus } from '../../tickets/constants';
 import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../../tickets/constants';
-import { GET_DIALOG_MESSAGES_QUERY, GET_MINGO_DIALOG_QUERY } from '../queries/dialogs-queries';
+import { getMingoDialogMessagesQuery, getMingoDialogQuery } from '../queries/dialogs-queries';
 import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
@@ -89,8 +90,9 @@ export function useMingoDialogSelection() {
     queryFn: async () => {
       if (!activeDialogId) return null;
 
+      const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
       const response = await apiClient.post<DialogResponse>('/chat/graphql', {
-        query: GET_MINGO_DIALOG_QUERY,
+        query: getMingoDialogQuery({ includeTokenUsage }),
         variables: { id: activeDialogId },
       });
 
@@ -109,8 +111,9 @@ export function useMingoDialogSelection() {
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
       if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
 
+      const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
-        query: GET_DIALOG_MESSAGES_QUERY,
+        query: getMingoDialogMessagesQuery({ includeContextCompaction }),
         variables: {
           dialogId: activeDialogId,
           cursor: pageParam,

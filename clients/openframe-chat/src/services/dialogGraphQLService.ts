@@ -3,7 +3,7 @@ import type {
   HistoricalMessage,
   MessageOwner,
 } from '@flamingo-stack/openframe-frontend-core';
-import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
+import { GraphQLClient, type RequestDocument, type Variables } from 'graphql-request';
 import { tokenService } from './tokenService';
 
 export interface DialogTokenUsage {
@@ -54,7 +54,26 @@ export interface MessagesConnection {
   pageInfo: PageInfo;
 }
 
-const GET_RESUMABLE_DIALOG_QUERY = gql`
+const TOKEN_USAGE_FRAGMENT = `
+      tokenUsage {
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
+      }`;
+
+const CONTEXT_COMPACTION_FRAGMENT = `
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }`;
+
+function getResumableDialogQuery({ includeTokenUsage = false } = {}) {
+  return `
   query GetDialog {
     resumableDialog {
       id
@@ -69,31 +88,25 @@ const GET_RESUMABLE_DIALOG_QUERY = gql`
         dialogId
         createdAt
       }
-      tokenUsage {
-        inputTokensSize
-        outputTokensSize
-        totalTokensSize
-        contextSize
-      }
+      ${includeTokenUsage ? TOKEN_USAGE_FRAGMENT : ''}
     }
   }
 `;
+}
 
-const GET_DIALOG_QUERY = gql`
+function getDialogTokenUsageQuery() {
+  return `
   query GetDialogById($id: ID!) {
     dialog(id: $id) {
       id
-      tokenUsage {
-        inputTokensSize
-        outputTokensSize
-        totalTokensSize
-        contextSize
-      }
+      ${TOKEN_USAGE_FRAGMENT}
     }
   }
 `;
+}
 
-const GET_DIALOG_MESSAGES_QUERY = gql`
+function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+  return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
@@ -149,7 +162,7 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
             }
 
             ... on ApprovalRequestData {
-              type  
+              type
               approvalRequestId
               approvalType
               command
@@ -163,14 +176,7 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               approvalType
             }
 
-            ... on ContextCompactionStartData {
-              type
-            }
-
-            ... on ContextCompactionEndData {
-              type
-              summary
-            }
+            ${includeContextCompaction ? CONTEXT_COMPACTION_FRAGMENT : ''}
 
             ... on ErrorData {
               error
@@ -188,6 +194,7 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
     }
   }
 `;
+}
 
 export class DialogGraphQlService {
   private graphQlClient: GraphQLClient | null = null;
@@ -231,10 +238,12 @@ export class DialogGraphQlService {
     return client.request<T>(document, variables);
   }
 
-  async getResumableDialog(): Promise<ResumableDialog | null> {
+  async getResumableDialog({ includeTokenUsage = false } = {}): Promise<ResumableDialog | null> {
     try {
       await tokenService.ensureTokenReady();
-      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(GET_RESUMABLE_DIALOG_QUERY);
+      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(
+        getResumableDialogQuery({ includeTokenUsage }),
+      );
       return data.resumableDialog;
     } catch (error) {
       console.error('Failed to fetch resumable dialog:', error);
@@ -246,18 +255,22 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
+    { includeContextCompaction = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
-      const data = await this.request<{ messages: MessagesConnection }>(GET_DIALOG_MESSAGES_QUERY, {
-        dialogId,
-        chatType: 'CLIENT_CHAT',
-        cursor,
-        limit,
-        sortField: 'createdAt',
-        sortDirection: 'DESC',
-      });
+      const data = await this.request<{ messages: MessagesConnection }>(
+        getDialogMessagesQuery({ includeContextCompaction }),
+        {
+          dialogId,
+          chatType: 'CLIENT_CHAT',
+          cursor,
+          limit,
+          sortField: 'createdAt',
+          sortDirection: 'DESC',
+        },
+      );
 
       return data.messages || null;
     } catch (error) {
@@ -270,7 +283,7 @@ export class DialogGraphQlService {
     try {
       await tokenService.ensureTokenReady();
       const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsage | null } | null }>(
-        GET_DIALOG_QUERY,
+        getDialogTokenUsageQuery(),
         { id: dialogId },
       );
       return data.dialog?.tokenUsage ?? null;
