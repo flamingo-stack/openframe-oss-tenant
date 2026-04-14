@@ -208,7 +208,7 @@ export function Policies() {
               value={summary.failingPolicies}
               percentage={summary.failingPoliciesPercentage}
               showProgress
-              progressColor="var(--ods-attention-red-error)"
+              progressVariant="error"
             />
             <DashboardInfoCard
               title="Updated"

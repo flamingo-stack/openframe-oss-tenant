@@ -50,6 +50,11 @@ export const featureFlags = {
       return getFlagValue('token-based-memory', () => false);
     },
   },
+  subscription: {
+    enabled(): boolean {
+      return getFlagValue('subscription', () => runtimeEnv.featureSubscription());
+    },
+  },
 } as const;
 
 /**

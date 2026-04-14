@@ -96,8 +96,6 @@ export function DevicesView() {
           onAddDevice={() => router.push('/devices/new')}
         />
       }
-      padding="none"
-      className="gap-4 md:gap-6"
       contentClassName="flex flex-col"
     >
       <div

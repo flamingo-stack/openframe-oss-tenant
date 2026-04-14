@@ -634,7 +634,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
-      className="h-[calc(100%)] gap-2"
+      className="h-[calc(100%)]"
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >

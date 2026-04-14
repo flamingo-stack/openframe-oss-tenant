@@ -1,9 +1,11 @@
 'use client';
 
-import { ListPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import {
+  CreditCardIcon,
   Hierarchy02Icon,
   PasscodeIcon,
+  PiggyBankIcon,
   ShieldCheckIcon,
   ShieldKeyholeIcon,
   UsersGroupIcon,
@@ -13,6 +15,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { apiClient } from '../../../lib/api-client';
 import { authApiClient } from '../../../lib/auth-api-client';
+import { featureFlags } from '../../../lib/feature-flags';
 import { handleApiError } from '../../../lib/handle-api-error';
 import { useAuthStore } from '../../auth/stores';
 import { EditProfileModal } from './edit-profile-modal';
@@ -21,6 +24,12 @@ import { ProfileCard } from './profile-card';
 import { SettingsNavCard } from './settings-nav-card';
 
 const SETTINGS_NAV_ITEMS = [
+  {
+    href: '/settings/billing-usage',
+    icon: PiggyBankIcon,
+    title: 'Billing & Usage',
+    description: 'Subscription details, usage data, and payment settings',
+  },
   {
     href: '/settings/integrated-tools',
     icon: WrenchScrewdiverIcon,
@@ -132,7 +141,7 @@ export function SettingsHub() {
   }, [fetchFullProfile]);
 
   return (
-    <ListPageContainer title="Settings" background="default">
+    <PageLayout title="Settings" background="default">
       {/* Profile Card */}
       <ProfileCard
         onEditProfile={() => setIsEditModalOpen(true)}
@@ -141,7 +150,9 @@ export function SettingsHub() {
 
       {/* Navigation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {SETTINGS_NAV_ITEMS.map(item => (
+        {SETTINGS_NAV_ITEMS.filter(
+          item => item.href !== '/settings/billing-usage' || featureFlags.subscription.enabled(),
+        ).map(item => (
           <SettingsNavCard
             key={item.href}
             href={item.href}
@@ -172,6 +183,6 @@ export function SettingsHub() {
           />
         </>
       )}
-    </ListPageContainer>
+    </PageLayout>
   );
 }
