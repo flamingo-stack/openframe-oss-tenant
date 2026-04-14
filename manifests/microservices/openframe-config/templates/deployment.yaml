@@ -18,7 +18,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
         prometheus.io/port: "8889"
-        prometheus.io/path: "/management/{{ .Values.global.image.tag }}/prometheus"
+        prometheus.io/path: "/management/{{ default .Values.global.image.tag .Values.image.tag }}/prometheus"
     spec:
 
       containers:
@@ -29,11 +29,15 @@ spec:
               name: http
             - containerPort: 8889
               name: management
+
           envFrom:
             - configMapRef:
                 name: microservices
             - configMapRef:
                 name: openframe-config
+          env:
+            - name: RELEASE_VERSION
+              value: "{{ default .Values.global.image.tag .Values.image.tag }}"
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
