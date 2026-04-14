@@ -272,11 +272,6 @@
             </dependency>
             <dependency>
                 <groupId>com.openframe.oss</groupId>
-                <artifactId>openframe-data-mongo</artifactId>
-                <version>${openframe.libs.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.openframe.oss</groupId>
                 <artifactId>openframe-data-mongo-common</artifactId>
                 <version>${openframe.libs.version}</version>
             </dependency>
