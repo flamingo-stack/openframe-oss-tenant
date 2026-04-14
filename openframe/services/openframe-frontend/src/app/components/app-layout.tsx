@@ -22,7 +22,12 @@ function ContentLoading() {
 function AppShell({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const user = useAuthStore(state => state.user);
+
+  const userFirstName = useAuthStore(state => state.user?.firstName);
+  const userLastName = useAuthStore(state => state.user?.lastName);
+  const userEmail = useAuthStore(state => state.user?.email);
+  const userRole = useAuthStore(state => state.user?.role);
+  const userImageUrl = useAuthStore(state => state.user?.image?.imageUrl);
 
   const handleNavigate = useCallback(
     (path: string) => {
@@ -35,6 +40,10 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     performLogout();
   }, []);
 
+  const handleProfile = useCallback(() => {
+    router.push('/settings');
+  }, [router]);
+
   const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -46,31 +55,46 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     [navigationItems, handleNavigate],
   );
 
-  const displayName = `${user?.firstName || ''} ${user?.lastName || ''}`.trim();
+  const displayName = useMemo(
+    () => `${userFirstName || ''} ${userLastName || ''}`.trim(),
+    [userFirstName, userLastName],
+  );
+
+  const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl), [userImageUrl]);
+
+  const headerProps = useMemo(
+    () => ({
+      showNotifications: false,
+      showUser: true,
+      userName: displayName,
+      userEmail,
+      userAvatarUrl: avatarUrl,
+      onProfile: handleProfile,
+      onLogout: handleLogout,
+    }),
+    [displayName, userEmail, avatarUrl, handleProfile, handleLogout],
+  );
+
+  const mobileBurgerMenuProps = useMemo(
+    () => ({
+      user: {
+        userName: displayName,
+        userEmail,
+        userAvatarUrl: avatarUrl || null,
+        userRole,
+      },
+      onLogout: handleLogout,
+    }),
+    [displayName, userEmail, avatarUrl, userRole, handleLogout],
+  );
 
   return (
     <CoreAppLayout
       mainClassName={cn('pb-20 md:pb-20', mainClassName)}
       sidebarConfig={sidebarConfig}
       loadingFallback={<ContentLoading />}
-      mobileBurgerMenuProps={{
-        user: {
-          userName: displayName,
-          userEmail: user?.email,
-          userAvatarUrl: getFullImageUrl(user?.image?.imageUrl) || null,
-          userRole: user?.role,
-        },
-        onLogout: handleLogout,
-      }}
-      headerProps={{
-        showNotifications: false,
-        showUser: true,
-        userName: displayName,
-        userEmail: user?.email,
-        userAvatarUrl: getFullImageUrl(user?.image?.imageUrl),
-        onProfile: () => router.push('/settings'),
-        onLogout: handleLogout,
-      }}
+      mobileBurgerMenuProps={mobileBurgerMenuProps}
+      headerProps={headerProps}
     >
       {children}
     </CoreAppLayout>

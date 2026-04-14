@@ -20,15 +20,6 @@ export interface TicketImage {
   hash?: string;
 }
 
-export interface TicketLabel {
-  id: string;
-  name: string;
-  description?: string;
-  color?: string;
-  createdAt?: string;
-  createdBy?: string;
-}
-
 export interface TicketAttachment {
   id: string;
   ticketId: string;
@@ -88,7 +79,7 @@ export interface Ticket {
   assigneeImage?: TicketImage;
   reporterImage?: TicketImage;
   organizationImage?: TicketImage;
-  labels: TicketLabel[];
+  labels: Array<{ id: string; key: string; color?: string }>;
   attachments: TicketAttachment[];
   notes: TicketNote[];
   linkedArticles?: KnowledgeBaseArticle[];

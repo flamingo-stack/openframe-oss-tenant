@@ -28,7 +28,7 @@ function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
     title: ticket.title || 'Untitled',
     ticketNumber: String(ticket.ticketNumber),
     status: ticket.status,
-    category: ticket.labels?.[0]?.name,
+    category: ticket.labels?.[0]?.key,
     timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
   };
 }

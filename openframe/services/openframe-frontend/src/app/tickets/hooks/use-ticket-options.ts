@@ -1,12 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import type { Tag } from '@/app/components/shared/tags';
 import { GET_DEVICES_QUERY } from '@/app/devices/queries/devices-queries';
 import { GET_ORGANIZATIONS_MIN_QUERY } from '@/app/organizations/queries/organizations-queries';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS } from '../constants';
 import { GET_TICKET_LABELS_QUERY } from '../queries/ticket-queries';
-import type { TicketLabel } from '../types/ticket.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import { ticketsQueryKeys } from '../utils/query-keys';
@@ -93,12 +93,12 @@ export function useAssigneeOptions() {
 // --- Labels (ticket-specific, via /chat/graphql) ---
 
 async function fetchLabelOptions(): Promise<AutocompleteOption[]> {
-  const response = await apiClient.post<GraphQlResponse<{ ticketLabels: TicketLabel[] }>>(API_ENDPOINTS.GRAPHQL, {
+  const response = await apiClient.post<GraphQlResponse<{ ticketLabels: Tag[] }>>(API_ENDPOINTS.GRAPHQL, {
     query: GET_TICKET_LABELS_QUERY,
   });
   const data = extractGraphQlData(response);
   return (data.ticketLabels ?? []).map(label => ({
-    label: label.name,
+    label: label.key,
     value: label.id,
   }));
 }

@@ -3,9 +3,9 @@
 import { Autocomplete, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Trash2 } from 'lucide-react';
 import { Suspense, useCallback, useMemo } from 'react';
-import type { deviceTagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/deviceTagsEditor_keySuggestions.graphql';
-import type { DeviceTag } from '../../hooks/use-install-command';
+import type { tagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/tagsEditor_keySuggestions.graphql';
 import { TagValueAutocomplete } from './tag-value-autocomplete';
+import type { TagEntry } from './types';
 import { useTagKeySuggestions } from './use-tag-key-suggestions';
 
 /** Tag keys/values: alphanumeric, underscores, hyphens. Must start with a letter or digit. */
@@ -32,8 +32,8 @@ export function validateTagValues(values: string[]): string | undefined {
 }
 
 interface TagRowProps {
-  tag: DeviceTag & { id: string };
-  onChange: (tag: DeviceTag) => void;
+  tag: TagEntry & { id: string };
+  onChange: (tag: TagEntry) => void;
   onDelete: () => void;
   existingKeys: string[];
   keySuggestionsRef: KeySuggestionsFragmentKey;
@@ -48,9 +48,6 @@ export function TagRow({ tag, onChange, onDelete, existingKeys, keySuggestionsRe
     resetInput: resetKeyInput,
   } = useTagKeySuggestions(tag.key, keySuggestionsRef);
 
-  // Focus the inner input as soon as the wrapper mounts. Used for:
-  // - the key input when a new row is added (row only mounts on "Add Device Tag")
-  // - the value input when the user first enters a key (value autocomplete only mounts once tag.key is truthy)
   const focusInputOnMount = useCallback((el: HTMLDivElement | null) => {
     el?.querySelector('input')?.focus();
   }, []);
@@ -104,7 +101,7 @@ export function TagRow({ tag, onChange, onDelete, existingKeys, keySuggestionsRe
           onChange={handleKeyChange}
           onInputChange={handleKeyInputChange}
           placeholder="Enter tag key..."
-          label={isFirst ? 'Device Tag Name' : undefined}
+          label={isFirst ? 'Tag Name' : undefined}
           className={labelClassName}
           loading={isKeyRefetching}
           error={keyError}
@@ -120,8 +117,6 @@ export function TagRow({ tag, onChange, onDelete, existingKeys, keySuggestionsRe
         <div className="flex-1 min-w-0">
           {tag.key ? (
             <Suspense fallback={disabledValueAutocomplete}>
-              {/* Wrapper div is mounted only after Suspense resolves, so the ref callback
-                  fires exactly once — on the real autocomplete, not on the fallback. */}
               <div ref={focusInputOnMount}>
                 <TagValueAutocomplete
                   tagKey={tag.key}
