@@ -25,6 +25,7 @@ interface DialogDetailsStore {
   fetchDialog: (dialogId: string, version?: 'v1' | 'v2') => Promise<Dialog | null>;
   clearCurrent: () => void;
   updateDialogStatus: (status: string) => void;
+  updateDialogMode: (mode: string, dialogId?: string) => void;
   addRealtimeMessage: (message: Message, isAdmin: boolean) => void;
   setTypingIndicator: (isAdmin: boolean, typing: boolean) => void;
 }
@@ -98,6 +99,19 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         currentDialog: {
           ...state.currentDialog,
           status: status as any,
+        },
+      });
+    }
+  },
+
+  updateDialogMode: (mode: string, dialogId?: string) => {
+    const state = get();
+    if (state.currentDialog) {
+      set({
+        currentDialog: {
+          ...state.currentDialog,
+          currentMode: mode,
+          ...(dialogId ? { dialogId } : {}),
         },
       });
     }

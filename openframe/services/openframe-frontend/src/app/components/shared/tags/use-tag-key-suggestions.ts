@@ -2,10 +2,10 @@ import type { AutocompleteOption } from '@flamingo-stack/openframe-frontend-core
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useRefetchableFragment } from 'react-relay';
-import type { deviceTagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/deviceTagsEditor_keySuggestions.graphql';
-import type { deviceTagsEditorKeySuggestionsRefetchQuery } from '@/__generated__/deviceTagsEditorKeySuggestionsRefetchQuery.graphql';
+import type { tagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/tagsEditor_keySuggestions.graphql';
+import type { tagsEditorKeySuggestionsRefetchQuery } from '@/__generated__/tagsEditorKeySuggestionsRefetchQuery.graphql';
 import { useDeferredLoading } from '@/app/hooks/use-deferred-loading';
-import { keySuggestionsFragment } from './device-tags-editor';
+import { keySuggestionsFragment } from './tags-editor';
 
 const SUGGESTIONS_LIMIT = 20;
 const DEBOUNCE_MS = 300;
@@ -15,7 +15,7 @@ export function useTagKeySuggestions(currentKey: string, keySuggestionsRef: KeyS
   const showLoading = useDeferredLoading(isRefetching);
 
   const [keyData, refetchKeys] = useRefetchableFragment<
-    deviceTagsEditorKeySuggestionsRefetchQuery,
+    tagsEditorKeySuggestionsRefetchQuery,
     KeySuggestionsFragmentKey
   >(keySuggestionsFragment, keySuggestionsRef);
 

@@ -4,23 +4,23 @@ import { Button } from '@flamingo-stack/openframe-frontend-core';
 import { PlusCircle } from 'lucide-react';
 import { useCallback } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
-import type { deviceTagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/deviceTagsEditor_keySuggestions.graphql';
-import type { deviceTagsEditorQuery as DeviceTagsEditorQueryType } from '@/__generated__/deviceTagsEditorQuery.graphql';
-import type { DeviceTag } from '../../hooks/use-install-command';
+import type { tagsEditor_keySuggestions$key as KeySuggestionsFragmentKey } from '@/__generated__/tagsEditor_keySuggestions.graphql';
+import type { tagsEditorQuery as TagsEditorQueryType } from '@/__generated__/tagsEditorQuery.graphql';
 import { TagRow } from './tag-row';
+import type { TagEntry, TagEntryWithId } from './types';
 
 const SUGGESTIONS_LIMIT = 20;
 
-const deviceTagsEditorRootQuery = graphql`
-  query deviceTagsEditorQuery($limit: Int) {
-    ...deviceTagsEditor_keySuggestions @arguments(limit: $limit)
+const tagsEditorRootQuery = graphql`
+  query tagsEditorQuery($limit: Int) {
+    ...tagsEditor_keySuggestions @arguments(limit: $limit)
   }
 `;
 
-// Exported so TagRow can import the fragment
+// Exported so useTagKeySuggestions can import the fragment
 export const keySuggestionsFragment = graphql`
-  fragment deviceTagsEditor_keySuggestions on Query
-    @refetchable(queryName: "deviceTagsEditorKeySuggestionsRefetchQuery")
+  fragment tagsEditor_keySuggestions on Query
+    @refetchable(queryName: "tagsEditorKeySuggestionsRefetchQuery")
     @argumentDefinitions(
       search: { type: "String" }
       limit: { type: "Int" }
@@ -33,18 +33,15 @@ export const keySuggestionsFragment = graphql`
   }
 `;
 
-export interface DeviceTagWithId extends DeviceTag {
-  id: string;
+interface TagsEditorProps {
+  tags: TagEntryWithId[];
+  onTagsChange: (tags: TagEntryWithId[]) => void;
+  addLabel?: string;
 }
 
-interface DeviceTagsEditorProps {
-  tags: DeviceTagWithId[];
-  onTagsChange: (tags: DeviceTagWithId[]) => void;
-}
-
-export function DeviceTagsEditor({ tags, onTagsChange }: DeviceTagsEditorProps) {
-  const queryData = useLazyLoadQuery<DeviceTagsEditorQueryType>(
-    deviceTagsEditorRootQuery,
+export function TagsEditor({ tags, onTagsChange, addLabel = 'Add Tag' }: TagsEditorProps) {
+  const queryData = useLazyLoadQuery<TagsEditorQueryType>(
+    tagsEditorRootQuery,
     { limit: SUGGESTIONS_LIMIT },
     { fetchPolicy: 'store-or-network' },
   );
@@ -54,7 +51,7 @@ export function DeviceTagsEditor({ tags, onTagsChange }: DeviceTagsEditorProps) 
   }, [tags, onTagsChange]);
 
   const updateTag = useCallback(
-    (id: string, updated: DeviceTag) => {
+    (id: string, updated: TagEntry) => {
       onTagsChange(tags.map(t => (t.id === id ? { ...t, ...updated } : t)));
     },
     [tags, onTagsChange],
@@ -92,7 +89,7 @@ export function DeviceTagsEditor({ tags, onTagsChange }: DeviceTagsEditorProps) 
           leftIcon={<PlusCircle className="size-6" />}
           noPadding
         >
-          Add Device Tag
+          {addLabel}
         </Button>
       </div>
     </div>

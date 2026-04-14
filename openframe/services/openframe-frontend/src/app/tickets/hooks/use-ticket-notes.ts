@@ -9,6 +9,7 @@ import {
   DELETE_TICKET_NOTE_MUTATION,
   UPDATE_TICKET_NOTE_MUTATION,
 } from '../queries/ticket-queries';
+import { useDialogDetailsStore } from '../stores/dialog-details-store';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 
@@ -19,6 +20,23 @@ interface NotePayload {
 
 interface DeletePayload {
   userErrors: Array<{ field?: string[]; message: string }>;
+}
+
+type DialogNotes = NonNullable<
+  NonNullable<ReturnType<typeof useDialogDetailsStore.getState>['currentDialog']>['notes']
+>;
+
+function getDialogState() {
+  return useDialogDetailsStore.getState();
+}
+
+function setDialogNotes(notes: DialogNotes) {
+  const state = getDialogState();
+  if (state.currentDialog) {
+    useDialogDetailsStore.setState({
+      currentDialog: { ...state.currentDialog, notes },
+    });
+  }
 }
 
 export function useAddTicketNote(onSuccess?: () => void) {
@@ -36,11 +54,25 @@ export function useAddTicketNote(onSuccess?: () => void) {
       }
       return data.addTicketNote.note;
     },
+    onMutate: async ({ ticketId, content }) => {
+      const previousNotes = getDialogState().currentDialog?.notes || [];
+      const optimisticNote = {
+        id: `optimistic-${Date.now()}`,
+        ticketId,
+        content,
+        authorId: '',
+        authorName: 'You',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setDialogNotes([...previousNotes, optimisticNote]);
+      return { previousNotes };
+    },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Note added', variant: 'success' });
       onSuccess?.();
     },
-    onError: err => {
+    onError: (err, _vars, context) => {
+      if (context?.previousNotes) setDialogNotes(context.previousNotes);
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to add note',
@@ -65,11 +97,19 @@ export function useUpdateTicketNote(onSuccess?: () => void) {
       }
       return data.updateTicketNote.note;
     },
+    onMutate: async ({ id, content }) => {
+      const previousNotes = getDialogState().currentDialog?.notes || [];
+      const updatedNotes = previousNotes.map(note =>
+        note.id === id ? { ...note, content, updatedAt: new Date().toISOString() } : note,
+      );
+      setDialogNotes(updatedNotes);
+      return { previousNotes };
+    },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Note updated', variant: 'success' });
       onSuccess?.();
     },
-    onError: err => {
+    onError: (err, _vars, context) => {
+      if (context?.previousNotes) setDialogNotes(context.previousNotes);
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to update note',
@@ -96,11 +136,16 @@ export function useDeleteTicketNote(onSuccess?: () => void) {
         throw new Error(data.deleteTicketNote.userErrors[0].message);
       }
     },
+    onMutate: async id => {
+      const previousNotes = getDialogState().currentDialog?.notes || [];
+      setDialogNotes(previousNotes.filter(note => note.id !== id));
+      return { previousNotes };
+    },
     onSuccess: () => {
-      toast({ title: 'Success', description: 'Note deleted', variant: 'success' });
       onSuccess?.();
     },
-    onError: err => {
+    onError: (err, _vars, context) => {
+      if (context?.previousNotes) setDialogNotes(context.previousNotes);
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to delete note',

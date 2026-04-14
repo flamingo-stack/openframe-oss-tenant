@@ -1,14 +1,15 @@
 'use client';
 
+import { SimpleMarkdownRenderer } from '@flamingo-stack/openframe-frontend-core';
 import {
   Autocomplete,
   FileUpload,
   Input,
   Label,
-  RichTextEditor,
+  MarkdownEditor,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
 import { useAssigneeOptions, useDeviceOptions, useOrganizationOptions } from '../../hooks/use-ticket-options';
@@ -32,6 +33,15 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
   const organizationOptions = useOrganizationOptions(debouncedOrgSearch);
   const deviceOptions = useDeviceOptions(selectedOrgId ?? undefined, debouncedDeviceSearch);
   const assigneeOptions = useAssigneeOptions();
+  const renderPreview = useCallback(
+    (source: string) => (
+      <div className="custom-preview-wrapper" style={{ height: '100%', overflow: 'auto' }}>
+        <SimpleMarkdownRenderer content={source} />
+      </div>
+    ),
+    [],
+  );
+
   const handleFilesAdded = (files: File | File[] | undefined) => {
     if (!files) return;
     const fileArray = Array.isArray(files) ? files : [files];
@@ -146,17 +156,17 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
         description="(Click Here or Drag and Drop)"
       />
 
-      {/* Description — Rich Text Editor */}
+      {/* Description — Markdown Editor */}
       <Controller
         name="description"
         control={control}
         render={({ field }) => (
-          <RichTextEditor
-            label="Description"
+          <MarkdownEditor
             value={field.value}
             onChange={field.onChange}
             placeholder="Ticket Description"
-            minHeight={96}
+            height={500}
+            renderPreview={renderPreview}
           />
         )}
       />

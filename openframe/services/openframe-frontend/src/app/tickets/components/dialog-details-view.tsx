@@ -7,7 +7,6 @@ import {
   ChatApprovalStatus,
   ChatInput,
   ChatMessageList,
-  DetailPageContainer,
   type HistoricalMessage,
   LoadError,
   MessageCircleIcon,
@@ -19,17 +18,27 @@ import {
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ChatsIcon,
+  ClipboardListIcon,
+  ComputerMouseIcon,
+  HourglassClockIcon,
+  MonitorIcon,
+  PenEditIcon,
+  TerminalIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
   DetailLoader,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   getTicketStatusTag,
+  PageLayout,
   ProcessedMessage,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { CheckCircle, ChevronDown, Clock, Monitor, PenLine } from 'lucide-react';
+import { CheckCircle, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
@@ -42,6 +51,7 @@ import {
   type ApprovalStatus,
   ASSISTANT_CONFIG,
   CHAT_TYPE,
+  CREATION_SOURCE,
   DIALOG_STATUS,
   MESSAGE_TYPE,
   type NatsMessageType,
@@ -51,6 +61,7 @@ import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
 import { useDialogVersion } from '../hooks/use-dialog-version';
+import { useDirectChat } from '../hooks/use-direct-chat';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
 import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
@@ -69,9 +80,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const version = useDialogVersion();
   const service = getDialogService(version);
 
-  const isClientOwner = (owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
+  const isClientOwner = useCallback((owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
-  };
+  }, []);
 
   const {
     currentDialog: dialog,
@@ -98,6 +109,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const deleteNoteMutation = useDeleteTicketNote(refetchDialog);
 
   const { download: downloadAttachment } = useDownloadTicketAttachment();
+
+  const { isDirectMode, isStartingDirectChat, isSendingClientMessage, startDirectChat, sendClientMessage } =
+    useDirectChat({
+      ticketId: dialogId,
+      dialogId: dialog?.dialogId,
+      currentMode: dialog?.currentMode,
+      onDialogCreated: refetchDialog,
+    });
 
   // Transform backend notes to core UI TicketNote format
   const uiNotes = useMemo(() => {
@@ -310,7 +329,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const handleStopGeneration = useCallback(async () => {
     try {
-      const response = await apiClient.post(`/chat/api/v1/dialogs/${dialogId}/stop`, {
+      const response = await apiClient.post(`/chat/api/v1/dialogs/${messageDialogId}/stop`, {
         chatType: CHAT_TYPE.ADMIN,
       });
       if (!response.ok) {
@@ -331,7 +350,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         duration: 5000,
       });
     }
-  }, [dialogId, toast, setTypingIndicator]);
+  }, [messageDialogId, toast, setTypingIndicator]);
 
   const handleSendAdminMessage = useCallback(
     async (message: string) => {
@@ -340,7 +359,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
       setIsSendingAdminMessage(true);
       try {
-        await service.sendMessage(dialogId, trimmedMessage, CHAT_TYPE.ADMIN);
+        messageDialogId && (await service.sendMessage(messageDialogId, trimmedMessage, CHAT_TYPE.ADMIN));
       } catch (error) {
         toast({
           title: 'Send Failed',
@@ -352,8 +371,13 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         setIsSendingAdminMessage(false);
       }
     },
-    [dialogId, isSendingAdminMessage, toast, service],
+    [messageDialogId, isSendingAdminMessage, toast, service],
   );
+
+  const clientDisplayName =
+    dialog?.deviceHostname ||
+    (dialog?.owner && isClientOwner(dialog.owner) ? dialog.owner.machine?.hostname : undefined) ||
+    undefined;
 
   const processMessages = useCallback(
     (messages: Message[], expectedChatType?: (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE]) => {
@@ -397,8 +421,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         id: msg.id,
         content: msg.content as string | MessageSegment[],
         role: msg.role as 'user' | 'assistant' | 'error',
-        name: msg.name,
+        name: msg.authorType === 'user' && clientDisplayName ? clientDisplayName : msg.name,
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
+        authorType: msg.authorType,
         timestamp: msg.timestamp,
       }));
 
@@ -409,7 +434,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         assistantName,
       };
     },
-    [approvalStatuses, handleApprove, handleReject],
+    [approvalStatuses, handleApprove, handleReject, clientDisplayName],
   );
 
   const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages]);
@@ -418,6 +443,30 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     [adminMessages, processMessages],
   );
 
+  const clientChatMessages = useMemo(() => {
+    if (dialog?.creationSource !== CREATION_SOURCE.FAE_FORM || clientChat.hasNextPage) {
+      return chatData.messages;
+    }
+    const faeMessage = {
+      id: `synthetic-fae-form-${dialog.id}`,
+      content: [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        dialog.title || '',
+        '',
+        'Description:',
+        dialog.description || '(No description provided)',
+      ].join('\n'),
+      role: 'assistant' as const,
+      name: ASSISTANT_CONFIG.FAE.name,
+      assistantType: ASSISTANT_CONFIG.FAE.type,
+      authorType: 'fae' as const,
+      timestamp: new Date(dialog.createdAt),
+    };
+    return [faeMessage, ...chatData.messages];
+  }, [chatData.messages, dialog, clientChat.hasNextPage]);
+
   const [actionsOpen, setActionsOpen] = useState(false);
 
   const headerActions = useMemo(() => {
@@ -425,6 +474,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
     const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
+    const machineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
 
     const menuGroups: ActionsMenuGroup[] = [
       {
@@ -434,7 +484,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 {
                   id: 'edit-ticket',
                   label: 'Edit Ticket',
-                  icon: <PenLine className="w-6 h-6" />,
+                  icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
                   onClick: () => {
                     setActionsOpen(false);
                     router.push(`/tickets/new?edit=${dialog.id}`);
@@ -447,7 +497,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 {
                   id: 'put-on-hold',
                   label: 'Put On Hold',
-                  icon: <Clock className="w-6 h-6" />,
+                  icon: <HourglassClockIcon className="w-6 h-6 text-ods-text-secondary" />,
                   disabled: isUpdating,
                   onClick: () => {
                     setActionsOpen(false);
@@ -457,7 +507,52 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               ]
             : []),
         ],
+        separator: true,
       },
+      ...(machineId
+        ? [
+            {
+              items: [
+                {
+                  id: 'device-details',
+                  label: 'Device Details',
+                  icon: <MonitorIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}`);
+                  },
+                },
+                {
+                  id: 'remote-shell',
+                  label: 'Remote Shell',
+                  icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}/remote-shell`);
+                  },
+                },
+                {
+                  id: 'remote-control',
+                  label: 'Remote Control',
+                  icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}/remote-desktop`);
+                  },
+                },
+                {
+                  id: 'device-logs',
+                  label: 'Device Logs',
+                  icon: <ClipboardListIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => {
+                    setActionsOpen(false);
+                    router.push(`/devices/details/${machineId}?tab=logs`);
+                  },
+                },
+              ],
+            },
+          ]
+        : []),
     ];
 
     return (
@@ -481,7 +576,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           <Button
             variant="ghost"
             className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-primary" />}
+            leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-secondary" />}
             onClick={handleResolve}
             disabled={isUpdating}
           >
@@ -490,7 +585,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         )}
       </div>
     );
-  }, [dialog, isUpdating, actionsOpen, handlePutOnHold, handleResolve, router]);
+  }, [dialog, isUpdating, actionsOpen, isClientOwner, handlePutOnHold, handleResolve, router]);
 
   if (isLoading) {
     return <DetailLoader />;
@@ -508,14 +603,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const deviceMachineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
-        label: 'Back to Chats',
+        label: 'Back to Tickets',
         onClick: () => router.push('/tickets'),
       }}
       padding="none"
-      className="h-full gap-2"
+      className="h-[calc(100%)] gap-2"
       headerActions={headerActions}
       contentClassName="flex flex-col min-h-0"
     >
@@ -537,7 +632,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
                 : undefined) ||
               'Unassigned',
-            icon: <Monitor className="size-4" />,
+            icon: <MonitorIcon className="size-4" />,
             onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
           }}
           statusTag={getTicketStatusTag(dialog.status)}
@@ -547,7 +642,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
           description={dialog.description || dialog.title || ''}
           attachments={uiAttachments}
-          tags={(dialog.labels || []).map(l => l.name)}
+          tags={(dialog.labels || []).map(l => l.key)}
           knowledgeBaseArticles={[]}
           notes={uiNotes}
           isAddingNote={addNoteMutation.isPending}
@@ -619,26 +714,16 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                     ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
                     : undefined) ||
                   'Unassigned',
-                icon: <Monitor className="size-4" />,
+                icon: <MonitorIcon className="size-4" />,
                 onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
               }}
-              statusTag={{
-                label: dialog.status.replace('_', ' '),
-                variant:
-                  dialog.status === 'ACTIVE' || dialog.status === 'RESOLVED'
-                    ? 'success'
-                    : dialog.status === 'ACTION_REQUIRED'
-                      ? 'primary'
-                      : dialog.status === 'ON_HOLD'
-                        ? 'error'
-                        : 'outline',
-              }}
+              statusTag={getTicketStatusTag(dialog.status)}
               expanded={true}
               assigned={{ name: dialog.assignedName || 'Unassigned' }}
               createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
-              tags={(dialog.labels || []).map(l => l.name)}
+              tags={(dialog.labels || []).map(l => l.key)}
               knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
@@ -670,7 +755,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               {/* Messages card */}
               <div className="flex-1 bg-ods-bg border border-ods-border rounded-md flex flex-col relative min-h-0">
                 <ChatMessageList
-                  messages={chatData.messages}
+                  messages={clientChatMessages}
                   dialogId={dialogId}
                   autoScroll={true}
                   showAvatars={false}
@@ -683,6 +768,29 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   onLoadMore={clientChat.fetchNextPage}
                 />
               </div>
+
+              {/* Direct Chat: Start button or ChatInput */}
+              {version === 'v2' && !isDirectMode && (
+                <button
+                  type="button"
+                  onClick={startDirectChat}
+                  disabled={isStartingDirectChat}
+                  className="w-full flex items-center justify-center gap-2 rounded-md bg-ods-card border border-ods-border px-3 py-3 transition-colors hover:bg-ods-bg-hover disabled:opacity-50 disabled:cursor-not-allowed mt-1 text-ods-text-primary"
+                >
+                  <ChatsIcon size={24} className="shrink-0 text-ods-text-secondary" />
+                  <span className="text-h4">{isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}</span>
+                </button>
+              )}
+              {version === 'v2' && isDirectMode && (
+                <ChatInput
+                  reserveAvatarOffset={false}
+                  placeholder="Enter your Message..."
+                  onSend={sendClientMessage}
+                  sending={isSendingClientMessage}
+                  autoFocus={false}
+                  className="mt-1 bg-ods-card rounded-lg max-w-full"
+                />
+              )}
             </div>
           )}
 
@@ -732,7 +840,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 reserveAvatarOffset={false}
                 placeholder="Enter your Request..."
                 onSend={handleSendAdminMessage}
-                onStop={featureFlags.dialogStop.enabled() && isAdminChatTyping ? handleStopGeneration : undefined}
+                onStop={
+                  featureFlags.dialogStop.enabled() && isAdminChatTyping && adminChatData.pendingApprovals.length === 0
+                    ? handleStopGeneration
+                    : undefined
+                }
                 sending={isSendingAdminMessage || isAdminChatTyping}
                 autoFocus={false}
                 className="mt-2 bg-ods-card rounded-lg max-w-full"
@@ -741,6 +853,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           </div>
         </div>
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

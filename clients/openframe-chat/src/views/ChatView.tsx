@@ -16,7 +16,8 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
@@ -27,9 +28,11 @@ import { useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
+import { ticketGraphQlService } from '../services/ticketGraphQlService';
 
 export function ChatView() {
   const { flags } = useFeatureFlags();
+  const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
@@ -38,6 +41,13 @@ export function ChatView() {
   } | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null);
+  const [faeFormTicket, setFaeFormTicket] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    createdAt: string;
+  } | null>(null);
+  const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
 
   const handleMetadataUpdate = useCallback(
@@ -78,6 +88,19 @@ export function ChatView() {
 
   const { toast } = useToast();
 
+  const hasPendingApproval = useMemo(
+    () =>
+      messages.some(
+        (msg: { content: unknown }) =>
+          Array.isArray(msg.content) &&
+          msg.content.some(
+            (seg: { type: string; status?: string }) =>
+              seg.type === 'approval_request' && (!seg.status || seg.status === 'pending'),
+          ),
+      ),
+    [messages],
+  );
+
   const fetchResumableDialog = useCallback(() => {
     dialogGraphQlService.getResumableDialog().then(dialog => {
       setResumableDialog(dialog);
@@ -91,11 +114,14 @@ export function ChatView() {
   }, [flags.tickets, fetchResumableDialog]);
 
   const handleNewChat = useCallback(() => {
+    setFaeFormTicket(null);
+    setPreviewTicketId(null);
     clearMessages();
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
     if (!flags.tickets) {
       fetchResumableDialog();
     }
-  }, [clearMessages, flags.tickets, fetchResumableDialog]);
+  }, [clearMessages, queryClient, flags.tickets, fetchResumableDialog]);
 
   const ticketsHook = useTickets({ enabled: flags.tickets });
 
@@ -103,11 +129,15 @@ export function ChatView() {
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
+      setFaeFormTicket(null);
+      setPreviewTicketId(null);
+
       if (flags.tickets) {
         const dialogId = ticketsHook.getDialogId(ticketId);
         if (!dialogId) {
           const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
           if (ticketDetails) {
+            setPreviewTicketId(ticketId);
             showTicketPreview(ticketDetails);
           } else {
             toast({
@@ -118,6 +148,19 @@ export function ChatView() {
           }
           return;
         }
+
+        if (ticketsHook.getCreationSource(ticketId) === 'FAE_FORM') {
+          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+          if (ticketDetails) {
+            setFaeFormTicket({
+              id: ticketId,
+              title: ticketDetails.title,
+              description: ticketDetails.description,
+              createdAt: ticketDetails.createdAt || new Date().toISOString(),
+            });
+          }
+        }
+
         await resumeDialog(dialogId);
       } else {
         await resumeDialog(ticketId);
@@ -139,6 +182,55 @@ export function ChatView() {
         }
       : null);
 
+  const displayMessages = useMemo(() => {
+    if (!faeFormTicket || hasNextPage) return messages;
+    const faeMessage = {
+      id: `synthetic-fae-form-${faeFormTicket.id}`,
+      role: 'assistant' as const,
+      name: 'Fae',
+      content: [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        faeFormTicket.title || '',
+        '',
+        'Description:',
+        faeFormTicket.description || '(No description provided)',
+      ].join('\n'),
+      timestamp: new Date(faeFormTicket.createdAt),
+      avatar: faeAvatar,
+    };
+    return [faeMessage, ...messages];
+  }, [messages, faeFormTicket, hasNextPage]);
+
+  useEffect(() => {
+    if (!isTicketPreview || !previewTicketId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const ticket = await ticketGraphQlService.getTicket(previewTicketId);
+        if (ticket?.dialog?.id) {
+          setPreviewTicketId(null);
+
+          if (ticket.creationSource === 'FAE_FORM') {
+            setFaeFormTicket({
+              id: previewTicketId,
+              title: ticket.title,
+              description: ticket.description,
+              createdAt: ticket.createdAt,
+            });
+          }
+
+          await resumeDialog(ticket.dialog.id);
+        }
+      } catch {
+        // Silently retry on next interval
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isTicketPreview, previewTicketId, resumeDialog]);
+
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;
   }
@@ -151,7 +243,7 @@ export function ChatView() {
         serverUrl={serverUrl}
         headerActions={
           <>
-            {flags.tickets && (
+            {flags.tickets && !hasMessages && (
               <Button
                 onClick={() => setIsTicketModalOpen(true)}
                 variant="outline"
@@ -194,9 +286,9 @@ export function ChatView() {
       <NewTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
 
       <ChatContent>
-        {hasMessages || (dialogId && isLoadingHistory) ? (
+        {displayMessages.length > 0 || hasMessages || (dialogId && isLoadingHistory) ? (
           <ChatMessageList
-            messages={messages}
+            messages={displayMessages}
             dialogId={dialogId || undefined}
             isTyping={isTyping}
             isLoading={isLoadingHistory}
@@ -292,7 +384,7 @@ export function ChatView() {
       <ChatFooter>
         <ChatInput
           onSend={sendMessage}
-          onStop={flags['dialog-stop'] && isStreaming ? stopGeneration : undefined}
+          onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
           sending={isStreaming}
           awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
           placeholder="Enter your request here..."
