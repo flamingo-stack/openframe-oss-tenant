@@ -27,7 +27,7 @@ function getMeshAgentBlock(info: MeshCentralDeviceInfo | null): Record<string, u
   return block && typeof block === 'object' && !Array.isArray(block) ? block : null;
 }
 
-const DEVICEINFO_PATH = 'tools/meshcentral-server/api/deviceinfo';
+const DEVICEINFO_PATH = 'tools/meshcentral-server/api/deviceStatus';
 
 /**
  * Fetch device info for a MeshCentral node.
