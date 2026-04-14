@@ -21,7 +21,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { NewTicketModal } from '../components/NewTicketModal';
-import { TokenTracker } from '../components/TokenTracker';
 import { WelcomeScreen } from '../components/WelcomeScreen';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useChat } from '../hooks/useChat';
@@ -86,6 +85,7 @@ export function ChatView() {
     messages,
     isTyping,
     isStreaming,
+    isCompacting,
     sendMessage,
     stopGeneration,
     handleQuickAction,
@@ -416,7 +416,7 @@ export function ChatView() {
         <ChatInput
           onSend={sendMessage}
           onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
-          sending={isStreaming}
+          sending={isStreaming || isCompacting}
           awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
           placeholder="Enter your request here..."
           className={hasMessages ? '' : 'max-w-2xl mx-auto'}
@@ -446,9 +446,10 @@ export function ChatView() {
                     provider={displayModel.provider}
                     modelName={displayModel.modelName}
                     displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                    usedTokens={tokenUsage?.totalTokensSize}
+                    contextWindow={tokenUsage?.contextSize}
                   />
                 )}
-                {tokenUsage && <TokenTracker tokenUsage={tokenUsage} />}
               </div>
             )}
           </div>

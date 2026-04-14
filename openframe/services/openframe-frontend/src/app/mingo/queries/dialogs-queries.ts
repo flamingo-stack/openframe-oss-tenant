@@ -121,6 +121,15 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approvalType
             }
 
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }
+
             ... on ErrorData {
               error
               details

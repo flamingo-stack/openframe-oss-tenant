@@ -39,6 +39,7 @@ interface UseMingoChat {
   // State
   isCreatingDialog: boolean;
   isTyping: boolean;
+  isCompacting: boolean;
   assistantType: 'mingo';
 }
 
@@ -51,6 +52,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     messagesByDialog,
     addMessage,
     typingStates,
+    compactingStates,
     setTyping,
     removeWelcomeMessages,
     isCreatingDialog,
@@ -61,6 +63,11 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     if (!dialogId) return false;
     return typingStates.get(dialogId) || false;
   }, [dialogId, typingStates]);
+
+  const isCompacting = useMemo(() => {
+    if (!dialogId) return false;
+    return compactingStates.get(dialogId) || false;
+  }, [dialogId, compactingStates]);
 
   const createDialogMutation = useCreateDialogMutation();
   const sendMessageMutation = useSendMessageMutation();
@@ -214,6 +221,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     // State
     isCreatingDialog,
     isTyping,
+    isCompacting,
     assistantType: 'mingo' as const,
   };
 }

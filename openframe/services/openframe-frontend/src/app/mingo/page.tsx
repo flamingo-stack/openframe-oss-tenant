@@ -12,10 +12,10 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAiModel } from '@/app/hooks/use-ai-model';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { featureFlags } from '@/lib/feature-flags';
 import { AppLayout } from '../components/app-layout';
-import { TokenTracker } from './components/token-tracker';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
@@ -26,12 +26,12 @@ import { useMingoMessagesStore } from './stores/mingo-messages-store';
 export default function Mingo() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialAiModel = useAiModel();
 
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
     provider: string;
-    contextWindow: number;
   } | null>(null);
 
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
@@ -65,6 +65,7 @@ export default function Mingo() {
     approvals: pendingApprovals,
     isCreatingDialog,
     isTyping,
+    isCompacting,
     assistantType,
   } = useMingoChat(activeDialogId);
 
@@ -85,12 +86,17 @@ export default function Mingo() {
 
   const tokenUsage = activeDialogId ? (tokenUsageByDialog.get(activeDialogId) ?? null) : null;
 
+  useEffect(() => {
+    if (initialAiModel && !currentModel) {
+      setCurrentModel(initialAiModel);
+    }
+  }, [initialAiModel, currentModel]);
+
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
       setCurrentModel({
         modelName: metadata.modelName,
         provider: metadata.providerName,
-        contextWindow: metadata.contextWindow,
       });
     },
     [],
@@ -344,18 +350,18 @@ export default function Mingo() {
                       ? stopGeneration
                       : undefined
                   }
-                  sending={isTyping || isCreatingDialog || isSelectingDialog}
+                  sending={isTyping || isCompacting || isCreatingDialog || isSelectingDialog}
                   autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
                 {featureFlags.tokenBasedMemory.enabled() && currentModel && (
                   <div className="mx-auto w-full max-w-3xl mt-3">
-                    <ModelDisplay provider={currentModel.provider} modelName={currentModel.modelName} />
-                  </div>
-                )}
-                {tokenUsage && (
-                  <div className="mx-auto w-full max-w-3xl">
-                    <TokenTracker tokenUsage={tokenUsage} className="mt-2 text-right" />
+                    <ModelDisplay
+                      provider={currentModel.provider}
+                      modelName={currentModel.modelName}
+                      usedTokens={tokenUsage?.totalTokensSize}
+                      contextWindow={tokenUsage?.contextSize}
+                    />
                   </div>
                 )}
               </div>

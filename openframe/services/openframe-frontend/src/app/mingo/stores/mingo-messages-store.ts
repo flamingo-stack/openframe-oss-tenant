@@ -17,6 +17,7 @@ interface MingoMessagesStore {
 
   // Real-time state management
   typingStates: Map<string, boolean>;
+  compactingStates: Map<string, boolean>;
   unreadCounts: Map<string, number>;
   streamingMessages: Map<string, Message | null>;
   segmentAccumulators: Map<string, MessageSegmentAccumulator>;
@@ -58,6 +59,8 @@ interface MingoMessagesStore {
   // Real-time State Management
   setTyping: (dialogId: string, typing: boolean) => void;
   getTyping: (dialogId: string) => boolean;
+  setCompacting: (dialogId: string, compacting: boolean) => void;
+  getCompacting: (dialogId: string) => boolean;
   incrementUnread: (dialogId: string) => void;
   resetUnread: (dialogId: string) => void;
   getUnread: (dialogId: string) => number;
@@ -66,6 +69,8 @@ interface MingoMessagesStore {
   setStreamingMessage: (dialogId: string, message: Message | null) => void;
   getStreamingMessage: (dialogId: string) => Message | null;
   updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[]) => void;
+
+  appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[]) => void;
 
   // Segment Accumulators
   getOrCreateAccumulator: (
@@ -105,6 +110,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       activeDialogId: null,
       dialogs: [],
       typingStates: new Map(),
+      compactingStates: new Map(),
       unreadCounts: new Map(),
       streamingMessages: new Map(),
       segmentAccumulators: new Map(),
@@ -255,6 +261,19 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return state.typingStates.get(dialogId) || false;
       },
 
+      setCompacting: (dialogId: string, compacting: boolean) => {
+        set(state => {
+          const newMap = new Map(state.compactingStates);
+          newMap.set(dialogId, compacting);
+          return { compactingStates: newMap };
+        });
+      },
+
+      getCompacting: (dialogId: string) => {
+        const state = get();
+        return state.compactingStates.get(dialogId) || false;
+      },
+
       incrementUnread: (dialogId: string) => {
         set(state => {
           if (state.activeDialogId === dialogId) return state;
@@ -303,28 +322,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             return state;
           }
 
-          // Process segments through accumulator
-          accumulator.reset();
-          segments.forEach(segment => {
-            if (segment.type === 'text' && segment.text) {
-              accumulator.appendText(segment.text);
-            } else if (segment.type === 'tool_execution') {
-              accumulator.addToolExecution(segment);
-            } else if (segment.type === 'approval_request') {
-              const { data, status } = segment;
-              accumulator.addApprovalRequest(
-                data.requestId || '',
-                data.command,
-                data.explanation,
-                data.approvalType || '',
-                status,
-              );
-            } else if (segment.type === 'error') {
-              accumulator.addError(segment.title, segment.details);
-            }
-          });
-
-          const processedSegments = accumulator.getSegments();
+          const processedSegments = accumulator.replaySegments(segments);
           const updatedMessage = {
             ...currentStreaming,
             content: processedSegments,
@@ -347,6 +345,31 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             streamingMessages: newStreamingMap,
             messagesByDialog: newMessagesMap,
           };
+        });
+      },
+
+      appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[]) => {
+        set(state => {
+          const newMap = new Map(state.messagesByDialog);
+          const currentMessages = newMap.get(dialogId) || [];
+          const accumulator = state.segmentAccumulators.get(dialogId);
+
+          for (let i = currentMessages.length - 1; i >= 0; i--) {
+            if (currentMessages[i].role === 'assistant') {
+              const updatedMessages = [...currentMessages];
+              const existing = Array.isArray(updatedMessages[i].content)
+                ? (updatedMessages[i].content as MessageSegment[])
+                : [];
+              const merged = accumulator
+                ? accumulator.replaySegments([...existing, ...segments])
+                : [...existing, ...segments];
+              updatedMessages[i] = { ...updatedMessages[i], content: merged };
+              newMap.set(dialogId, updatedMessages);
+              return { messagesByDialog: newMap };
+            }
+          }
+
+          return state;
         });
       },
 
@@ -448,6 +471,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         set(state => {
           const newMessagesMap = new Map(state.messagesByDialog);
           const newTypingMap = new Map(state.typingStates);
+          const newCompactingMap = new Map(state.compactingStates);
           const newUnreadMap = new Map(state.unreadCounts);
           const newStreamingMap = new Map(state.streamingMessages);
           const newAccumulatorsMap = new Map(state.segmentAccumulators);
@@ -455,6 +479,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
 
           newMessagesMap.delete(dialogId);
           newTypingMap.delete(dialogId);
+          newCompactingMap.delete(dialogId);
           newUnreadMap.delete(dialogId);
           newStreamingMap.delete(dialogId);
           newAccumulatorsMap.delete(dialogId);
@@ -463,6 +488,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           return {
             messagesByDialog: newMessagesMap,
             typingStates: newTypingMap,
+            compactingStates: newCompactingMap,
             unreadCounts: newUnreadMap,
             streamingMessages: newStreamingMap,
             segmentAccumulators: newAccumulatorsMap,
@@ -477,6 +503,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           activeDialogId: null,
           dialogs: [],
           typingStates: new Map(),
+          compactingStates: new Map(),
           unreadCounts: new Map(),
           streamingMessages: new Map(),
           segmentAccumulators: new Map(),

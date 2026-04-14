@@ -4,6 +4,7 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
+  type SegmentsUpdateMetadata,
   type TokenUsageData,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
@@ -32,6 +33,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   // Core state
   const [isTyping, setIsTyping] = useState(false);
   const [natsStreaming, setNatsStreaming] = useState(false);
+  const [isCompacting, setIsCompacting] = useState(false);
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
@@ -134,6 +136,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
+        setIsCompacting(false);
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
@@ -148,10 +151,21 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       },
       onMetadata: onMetadataUpdate,
       onTokenUsage,
-      onSegmentsUpdate: (segments: MessageSegment[]) => {
-        messagesRef.current.ensureAssistantMessage();
-        setNatsStreaming(true);
-        messagesRef.current.updateSegments(segments);
+      onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
+        if (metadata?.isCompacting) {
+          setIsCompacting(true);
+          setNatsStreaming(false);
+          setIsTyping(false);
+        } else {
+          setIsCompacting(false);
+          setNatsStreaming(true);
+        }
+        if (metadata?.append) {
+          messagesRef.current.appendSegmentsToLastAssistant(segments);
+        } else {
+          messagesRef.current.ensureAssistantMessage();
+          messagesRef.current.updateSegments(segments);
+        }
       },
       onError: (_errorText: string) => {
         setNatsStreaming(false);
@@ -592,6 +606,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     messages: allMessages,
     isTyping,
     isStreaming: natsStreaming,
+    isCompacting,
     error,
     dialogId: natsDialogId,
     sendMessage,

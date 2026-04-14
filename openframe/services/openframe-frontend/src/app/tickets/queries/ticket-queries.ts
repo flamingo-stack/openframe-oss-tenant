@@ -135,6 +135,12 @@ export const GET_TICKET_QUERY = `
       dialog {
         id
         currentMode
+        tokenUsage {
+          inputTokensSize
+          outputTokensSize
+          totalTokensSize
+          contextSize
+        }
       }
       attachments {
         id

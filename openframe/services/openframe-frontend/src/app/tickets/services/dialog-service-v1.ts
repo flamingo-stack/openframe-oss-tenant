@@ -189,6 +189,16 @@ export class DialogServiceV1 implements DialogService {
       return { type: 'error', error: action.error, isAdmin };
     }
 
+    if (action.action === 'metadata') {
+      return {
+        type: 'metadata',
+        modelName: action.modelName,
+        providerName: action.providerName,
+        contextWindow: action.contextWindow,
+        isAdmin,
+      };
+    }
+
     const id = `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const createBaseMessage = (isUserMessage: boolean): Message => {
       let owner: any;
@@ -308,6 +318,26 @@ export class DialogServiceV1 implements DialogService {
           messageData: { type: 'SYSTEM', text: action.text } as any,
         };
         break;
+
+      case 'context_compaction_start':
+        return {
+          type: 'compaction_start',
+          message: {
+            ...createBaseMessage(false),
+            messageData: { type: 'CONTEXT_COMPACTION_START' } as any,
+          },
+          isAdmin,
+        };
+
+      case 'context_compaction_end':
+        return {
+          type: 'compaction_end',
+          message: {
+            ...createBaseMessage(false),
+            messageData: { type: 'CONTEXT_COMPACTION_END', summary: action.summary } as any,
+          },
+          isAdmin,
+        };
 
       default:
         return null;

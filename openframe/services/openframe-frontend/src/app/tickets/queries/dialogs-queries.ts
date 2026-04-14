@@ -59,6 +59,12 @@ export const GET_DIALOG_QUERY = `
     statusUpdatedAt
     resolvedAt
     aiResolutionSuggestedAt
+    tokenUsage {
+      inputTokensSize
+      outputTokensSize
+      totalTokensSize
+      contextSize
+    }
     rating {
       id
       dialogId
@@ -150,6 +156,15 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approvalRequestId
               approved
               approvalType
+            }
+
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
             }
 
             ... on ErrorData {

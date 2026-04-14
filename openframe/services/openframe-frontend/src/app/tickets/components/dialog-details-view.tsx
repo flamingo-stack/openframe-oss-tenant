@@ -11,6 +11,7 @@ import {
   LoadError,
   MessageCircleIcon,
   type MessageSegment,
+  ModelDisplay,
   NotFoundError,
   processHistoricalMessagesWithErrors,
   Tabs,
@@ -41,6 +42,7 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { CheckCircle, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAiModel } from '@/app/hooks/use-ai-model';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { useAuthStore } from '@/stores';
@@ -78,6 +80,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
   const version = useDialogVersion();
+  const initialAiModel = useAiModel();
+  const [currentModel, setCurrentModel] = useState<{ provider: string; modelName: string } | null>(null);
   const service = getDialogService(version);
 
   const isClientOwner = useCallback((owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
@@ -162,6 +166,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
   const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
+  const [isCompacting, setIsCompacting] = useState(false);
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState('client');
   const hasCaughtUp = useRef(false);
@@ -169,6 +174,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
     dialogId: messageDialogId ?? '',
     onStreamStart: isAdmin => {
+      setIsCompacting(false);
       setTypingIndicator(isAdmin, true);
     },
     onStreamEnd: isAdmin => {
@@ -178,6 +184,18 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       addRealtimeMessage(message, isAdmin);
     },
     onError: (error, isAdmin) => {},
+    onCompactionStart: (message, isAdmin) => {
+      setIsCompacting(true);
+      setTypingIndicator(isAdmin, false);
+      addRealtimeMessage(message, isAdmin);
+    },
+    onCompactionEnd: (message, isAdmin) => {
+      setIsCompacting(false);
+      addRealtimeMessage(message, isAdmin);
+    },
+    onMetadata: metadata => {
+      setCurrentModel({ provider: metadata.providerName, modelName: metadata.modelName });
+    },
   });
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
@@ -200,6 +218,12 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       hasCaughtUp.current = false;
     };
   }, [dialogId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering, version]);
+
+  useEffect(() => {
+    if (initialAiModel && !currentModel) {
+      setCurrentModel(initialAiModel);
+    }
+  }, [initialAiModel, currentModel]);
 
   // Default to technician tab when ticket is admin-owned (no client chat)
   useEffect(() => {
@@ -845,13 +869,23 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                     ? handleStopGeneration
                     : undefined
                 }
-                sending={isSendingAdminMessage || isAdminChatTyping}
+                sending={isSendingAdminMessage || isAdminChatTyping || isCompacting}
                 autoFocus={false}
                 className="mt-2 bg-ods-card rounded-lg max-w-full"
               />
             </div>
           </div>
         </div>
+        {(currentModel || dialog.tokenUsage) && (
+          <div className="mx-auto w-full mt-2">
+            <ModelDisplay
+              provider={currentModel?.provider}
+              modelName={currentModel?.modelName}
+              usedTokens={dialog.tokenUsage?.totalTokensSize ?? undefined}
+              contextWindow={dialog.tokenUsage?.contextSize ?? undefined}
+            />
+          </div>
+        )}
       </div>
     </PageLayout>
   );

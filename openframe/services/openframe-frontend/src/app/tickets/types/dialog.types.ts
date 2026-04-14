@@ -68,6 +68,12 @@ export interface Dialog {
     createdAt: string;
     updatedAt: string;
   }>;
+  tokenUsage?: {
+    inputTokensSize: number | null;
+    outputTokensSize: number | null;
+    totalTokensSize: number | null;
+    contextSize: number | null;
+  } | null;
 }
 
 export interface CursorPageInfo {

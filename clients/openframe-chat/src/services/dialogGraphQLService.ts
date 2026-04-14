@@ -163,6 +163,15 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               approvalType
             }
 
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }
+
             ... on ErrorData {
               error
               details

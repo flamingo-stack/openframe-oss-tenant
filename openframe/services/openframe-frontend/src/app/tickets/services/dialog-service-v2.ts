@@ -61,7 +61,16 @@ interface TicketNode {
     uploadedAt: string;
     uploadedBy: string;
   }>;
-  dialog?: { id: string; currentMode?: string };
+  dialog?: {
+    id: string;
+    currentMode?: string;
+    tokenUsage?: {
+      inputTokensSize: number | null;
+      outputTokensSize: number | null;
+      totalTokensSize: number | null;
+      contextSize: number | null;
+    } | null;
+  };
   description?: string;
   creationSource?: string;
   createdAt: string;
@@ -144,6 +153,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     assignedName: ticket.assignedName,
     labels: ticket.labels,
     attachments: ticket.attachments,
+    tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
     notes: ticket.notes?.map(note => ({
       id: note.id,
       ticketId: note.ticketId,
