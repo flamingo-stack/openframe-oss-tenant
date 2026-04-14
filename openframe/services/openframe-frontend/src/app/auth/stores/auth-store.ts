@@ -84,9 +84,17 @@ export const useAuthStore = create<AuthState>()(
         ...initialState,
 
         // Actions
-        login: user =>
+        login: newUser =>
           set(state => {
-            state.user = user;
+            if (state.user && state.user.id === newUser.id) {
+              for (const [key, value] of Object.entries(newUser)) {
+                if (value !== undefined) {
+                  (state.user as Record<string, unknown>)[key] = value;
+                }
+              }
+            } else {
+              state.user = newUser;
+            }
             state.isAuthenticated = true;
             state.error = null;
           }),
@@ -141,7 +149,14 @@ export const useAuthStore = create<AuthState>()(
             if (fullProfile) {
               set(state => {
                 if (state.user) {
-                  Object.assign(state.user, fullProfile);
+                  const { image, ...rest } = fullProfile;
+                  Object.assign(state.user, rest);
+                  if (
+                    image &&
+                    (state.user.image?.imageUrl !== image.imageUrl || state.user.image?.hash !== image.hash)
+                  ) {
+                    state.user.image = image;
+                  }
                 }
                 state.isLoadingProfile = false;
               });

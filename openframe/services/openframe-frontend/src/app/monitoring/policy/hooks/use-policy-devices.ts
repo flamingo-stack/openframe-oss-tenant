@@ -56,6 +56,7 @@ async function fetchAllDevices(): Promise<Device[]> {
           first: DEVICES_PAGE_SIZE,
           after: cursor,
           search: '',
+          sort: { field: 'status', direction: 'DESC' },
         },
       });
 

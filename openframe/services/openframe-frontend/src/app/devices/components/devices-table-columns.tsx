@@ -41,7 +41,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Tab
     {
       key: 'device',
       label: 'DEVICE',
-      width: 'flex-1 md:w-1/3',
+      width: 'flex-1 md:w-1/4',
       renderCell: device => (
         <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
           <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
@@ -61,7 +61,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Tab
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-[100px] md:w-1/6',
+      width: 'w-[80px] md:w-1/5',
       filterable: true,
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || [];
@@ -87,7 +87,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Tab
             <div className="inline-flex">
               <Tag label={statusConfig.label} variant={statusConfig.variant} />
             </div>
-            <span className="font-['DM_Sans'] font-normal text-[12px] leading-[16px] text-ods-text-secondary">
+            <span className="text-h6 text-ods-text-secondary hidden md:flex">
               {device.last_seen
                 ? `${new Date(device.last_seen).toLocaleDateString()} ${new Date(device.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
                 : 'Never'}

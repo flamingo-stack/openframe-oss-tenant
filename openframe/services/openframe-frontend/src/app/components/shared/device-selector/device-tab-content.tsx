@@ -12,30 +12,33 @@ export function DeviceTabContent({
   selectedCount,
   disabled,
   infiniteScroll,
+  singleSelect,
 }: DeviceTabContentProps) {
   return (
     <>
-      <div className="flex justify-end -mb-2">
-        {mode === 'available' ? (
-          <Button
-            variant="link"
-            onClick={onAddAll}
-            disabled={disabled}
-            className="font-medium text-[14px] text-[var(--open-colors-yellow,#ffc008)] hover:text-[var(--open-colors-yellow-hover,#e6ac00)]"
-          >
-            Add All Devices
-          </Button>
-        ) : selectedCount > 0 ? (
-          <Button
-            variant="link"
-            onClick={onRemoveAll}
-            disabled={disabled}
-            className="font-medium text-[14px] text-[var(--ods-attention-red-error,#d32f2f)] hover:text-[var(--ods-attention-red-error-hover,#b71c1c)]"
-          >
-            Remove {selectedCount} Devices
-          </Button>
-        ) : null}
-      </div>
+      {!singleSelect && (
+        <div className="flex justify-end -mb-2">
+          {mode === 'available' ? (
+            <Button
+              variant="link"
+              onClick={onAddAll}
+              disabled={disabled}
+              className="text-heading-4 font-medium text-ods-accent hover:text-ods-accent-hover"
+            >
+              Add All Devices
+            </Button>
+          ) : selectedCount > 0 ? (
+            <Button
+              variant="link"
+              onClick={onRemoveAll}
+              disabled={disabled}
+              className="text-heading-4 font-medium text-ods-error hover:text-ods-error-hover"
+            >
+              Remove {selectedCount} Devices
+            </Button>
+          ) : null}
+        </div>
+      )}
       <Table
         data={devices}
         columns={columns}

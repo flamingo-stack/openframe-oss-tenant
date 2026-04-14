@@ -4,6 +4,8 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
+  type SegmentsUpdateMetadata,
+  type TokenUsageData,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -24,15 +26,18 @@ interface UseChatOptions {
   apiBaseUrl?: string;
   useNats?: boolean;
   onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
+  onTokenUsage?: (data: TokenUsageData) => void;
 }
 
-export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: UseChatOptions = {}) {
+export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage }: UseChatOptions = {}) {
   // Core state
   const [isTyping, setIsTyping] = useState(false);
   const [natsStreaming, setNatsStreaming] = useState(false);
+  const [isCompacting, setIsCompacting] = useState(false);
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
+  const [isTicketPreview, setIsTicketPreview] = useState(false);
   const [token, setToken] = useState(tokenService.getCurrentToken());
   const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
 
@@ -131,9 +136,11 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
+        setIsCompacting(false);
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
+        messagesRef.current.ensureAssistantMessage();
       },
       onStreamEnd: () => {
         setNatsStreaming(false);
@@ -143,10 +150,22 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         if (resolve) resolve();
       },
       onMetadata: onMetadataUpdate,
-      onSegmentsUpdate: (segments: MessageSegment[]) => {
-        messagesRef.current.ensureAssistantMessage();
-        setNatsStreaming(true);
-        messagesRef.current.updateSegments(segments);
+      onTokenUsage,
+      onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
+        if (metadata?.isCompacting) {
+          setIsCompacting(true);
+          setNatsStreaming(false);
+          setIsTyping(false);
+        } else {
+          setIsCompacting(false);
+          setNatsStreaming(true);
+        }
+        if (metadata?.append) {
+          messagesRef.current.appendSegmentsToLastAssistant(segments);
+        } else {
+          messagesRef.current.ensureAssistantMessage();
+          messagesRef.current.updateSegments(segments);
+        }
       },
       onError: (_errorText: string) => {
         setNatsStreaming(false);
@@ -170,8 +189,39 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       ) => {
         approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data);
       },
+      onDirectMessage: (text: string, metadata?: { ownerType?: string; displayName?: string }) => {
+        if (metadata?.ownerType === 'CLIENT') {
+          // Echo of own message in direct mode — resolve the send flow
+          setNatsStreaming(false);
+          setIsTyping(false);
+          const resolve = natsDoneResolverRef.current;
+          natsDoneResolverRef.current = null;
+          if (resolve) resolve();
+          return;
+        }
+        const directMessage: Message = {
+          id: `direct-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          name: metadata?.displayName || 'Technician',
+          authorType: 'admin',
+          content: text,
+          timestamp: new Date(),
+        };
+        messagesRef.current.addMessage(directMessage);
+      },
+      onSystemMessage: (text: string) => {
+        const systemMessage: Message = {
+          id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          name: text,
+          authorType: 'system',
+          content: '',
+          timestamp: new Date(),
+        };
+        messagesRef.current.addMessage(systemMessage);
+      },
     }),
-    [onMetadataUpdate],
+    [onMetadataUpdate, onTokenUsage],
   );
 
   const incompleteState = useMemo(() => {
@@ -397,16 +447,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
       setNatsStreaming(true);
       messages.resetCurrentMessageSegments();
 
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        name: 'Fae',
-        content: [],
-        timestamp: new Date(),
-        avatar: faeAvatar,
-      };
-      messages.addMessage(assistantMessage);
-
       try {
         if (!useNats) {
           throw new Error('NATS is required for incoming messages (SSE removed)');
@@ -444,6 +484,24 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     [messages, useNats, natsDialogId, waitForNatsSubscription],
   );
 
+  const stopGeneration = useCallback(async () => {
+    const api = apiServiceRef.current;
+    const dialogId = natsDialogId;
+    if (!api || !dialogId) return;
+
+    try {
+      await api.stopGeneration({ dialogId, chatType: 'CLIENT_CHAT' });
+    } catch (err) {
+      console.error('[CHAT] Failed to stop generation:', err);
+    } finally {
+      setIsTyping(false);
+      setNatsStreaming(false);
+      const resolve = natsDoneResolverRef.current;
+      natsDoneResolverRef.current = null;
+      if (resolve) resolve();
+    }
+  }, [natsDialogId]);
+
   const handleQuickAction = useCallback(
     (actionText: string) => {
       sendMessage(actionText);
@@ -458,6 +516,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     setError(null);
     setNatsDialogId(null);
     setIsResumedDialog(false);
+    setIsTicketPreview(false);
     hasCaughtUp.current = false;
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
@@ -471,6 +530,47 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     }
   }, [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages]);
 
+  const showTicketPreview = useCallback(
+    (ticket: { title: string; description?: string }) => {
+      messages.clearMessages();
+      setIsTyping(false);
+      setNatsStreaming(false);
+      setError(null);
+      setNatsDialogId(null);
+      setIsResumedDialog(false);
+      setIsTicketPreview(true);
+      hasCaughtUp.current = false;
+      escalatedApprovalsRef.current.clear();
+      approvals.clearApprovals();
+      resetChunkTracking();
+      resetChunkProcessor();
+      resetDialogMessages();
+      apiServiceRef.current?.reset();
+
+      const content = [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        ticket.title,
+        '',
+        'Description:',
+        ticket.description || '(No description provided)',
+      ].join('\n');
+
+      const syntheticMessage: Message = {
+        id: `ticket-preview-${Date.now()}`,
+        role: 'assistant',
+        name: 'Fae',
+        content,
+        timestamp: new Date(),
+        avatar: faeAvatar,
+      };
+
+      messages.addMessage(syntheticMessage);
+    },
+    [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages],
+  );
+
   const resumeDialog = useCallback(
     async (dialogId: string): Promise<boolean> => {
       try {
@@ -478,6 +578,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
         messages.clearMessages();
         setIsTyping(false);
         setNatsStreaming(false);
+        setIsTicketPreview(false);
         approvals.clearApprovals();
         setIsResumedDialog(true);
 
@@ -505,14 +606,18 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate }: Us
     messages: allMessages,
     isTyping,
     isStreaming: natsStreaming,
+    isCompacting,
     error,
     dialogId: natsDialogId,
     sendMessage,
+    stopGeneration,
     handleQuickAction,
     clearMessages,
     resumeDialog,
+    showTicketPreview,
     quickActions,
     hasMessages: allMessages.length > 0,
+    isTicketPreview,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,
     isLoadingHistory: isLoadingHistoricalMessages,
     isResumedDialog,

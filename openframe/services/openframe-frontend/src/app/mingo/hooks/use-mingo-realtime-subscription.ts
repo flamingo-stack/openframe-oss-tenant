@@ -6,6 +6,8 @@ import {
   extractIncompleteMessageState,
   type MessageSegment,
   type NatsMessageType,
+  type SegmentsUpdateMetadata,
+  type TokenUsageData,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -180,10 +182,11 @@ interface UseDialogChunkProcessorOptions {
   onApprove?: (requestId?: string) => void | Promise<void>;
   onReject?: (requestId?: string) => void | Promise<void>;
   approvalStatuses?: Record<string, any>;
+  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
 }
 
 function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProcessorOptions = {}) {
-  const { onApprove, onReject, approvalStatuses } = options;
+  const { onApprove, onReject, approvalStatuses, onMetadata } = options;
   const {
     messagesByDialog,
     getMessages,
@@ -194,7 +197,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     setStreamingMessage,
     getStreamingMessage,
     updateStreamingMessageSegments,
+    appendSegmentsToLastAssistant,
+    setCompacting,
     getOrCreateAccumulator,
+    setTokenUsage,
   } = useMingoMessagesStore();
 
   useEffect(() => {
@@ -304,6 +310,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
+        setCompacting(dialogId, false);
         ensureAssistantMessage();
         setTyping(dialogId, true);
       },
@@ -313,10 +320,20 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setStreamingMessage(dialogId, null);
       },
 
-      onSegmentsUpdate: (segments: MessageSegment[]) => {
-        setTyping(dialogId, true);
-        ensureAssistantMessage();
-        updateStreamingMessageSegments(dialogId, segments);
+      onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
+        if (metadata?.isCompacting) {
+          setCompacting(dialogId, true);
+          setTyping(dialogId, false);
+        } else {
+          setCompacting(dialogId, false);
+          setTyping(dialogId, true);
+        }
+        if (metadata?.append) {
+          appendSegmentsToLastAssistant(dialogId, segments);
+        } else {
+          ensureAssistantMessage();
+          updateStreamingMessageSegments(dialogId, segments);
+        }
       },
 
       onError: (error: string) => {
@@ -326,16 +343,26 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         addErrorMessage(error);
       },
 
+      onTokenUsage: (data: TokenUsageData) => {
+        console.log('[Mingo] TOKEN_USAGE received for dialog', dialogId, data);
+        setTokenUsage(dialogId, data);
+      },
+
+      onMetadata,
       onApprove,
       onReject,
     }),
     [
       dialogId,
       ensureAssistantMessage,
+      appendSegmentsToLastAssistant,
+      setCompacting,
       setTyping,
       setStreamingMessage,
       updateStreamingMessageSegments,
       addErrorMessage,
+      setTokenUsage,
+      onMetadata,
       onApprove,
       onReject,
     ],
@@ -361,6 +388,7 @@ interface DialogSubscriptionProps {
   token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange?: (dialogId: string, connected: boolean) => void;
+  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
 }
 
 export function DialogSubscription({
@@ -371,6 +399,7 @@ export function DialogSubscription({
   token,
   isDevTicketEnabled,
   onConnectionChange,
+  onMetadata,
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
@@ -379,6 +408,7 @@ export function DialogSubscription({
     onApprove,
     onReject,
     approvalStatuses,
+    onMetadata,
   });
 
   const processorRef = useRef(processorProcessChunk);

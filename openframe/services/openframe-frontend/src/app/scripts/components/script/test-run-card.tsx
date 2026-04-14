@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { Monitor, Square } from 'lucide-react';
+import { Monitor, Square, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 
 export interface TestRunData {
@@ -17,7 +17,9 @@ export interface TestRunData {
 
 interface TestRunCardProps {
   run: TestRunData;
-  onStop: (runId: string) => void;
+  onStop: () => void;
+  onTestAgain: () => void;
+  onClose: () => void;
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -32,7 +34,7 @@ function getStatusLabel(status: TestRunData['status']): string {
     case 'running':
       return 'In Progress';
     case 'completed':
-      return 'Completed';
+      return 'Success';
     case 'aborted':
       return 'Aborted';
     case 'error':
@@ -52,91 +54,102 @@ function getStatusColor(status: TestRunData['status']): string {
   }
 }
 
-export function TestRunCard({ run, onStop }: TestRunCardProps) {
+export function TestRunCard({ run, onStop, onTestAgain, onClose }: TestRunCardProps) {
   const logRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when output changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional trigger to auto-scroll on new output
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
-  }, []);
+  }, [run.output.length]);
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-[6px] overflow-clip">
-      {/* Desktop: single row | Tablet: 2 rows | Mobile: 2 rows (different split) */}
-
-      {/* Row 1: Mobile: Device + Started + Duration | Tablet: Device + Started | Desktop: all 4 cells */}
       <div className="flex gap-4 items-center px-4 py-3 border-b border-ods-border">
-        {/* Device */}
-        <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden">
+        <div className="flex-1 flex flex-col justify-center overflow-hidden">
           <div className="flex gap-1 items-center">
-            <Monitor className="h-6 w-6 text-ods-text-secondary flex-shrink-0" />
-            <span className="text-h4 text-ods-text-primary truncate">{run.deviceName}</span>
+            <Monitor className="size-4 text-ods-text-secondary flex-shrink-0" />
+            <span className="text-lg font-medium text-ods-text-primary truncate">{run.deviceName}</span>
           </div>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888] truncate">Device</span>
+          <span className="text-sm font-medium text-ods-text-secondary truncate">Device</span>
         </div>
 
-        {/* Started */}
-        <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden">
-          <span className="text-h4 text-ods-text-primary truncate">{run.startedAt}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Started</span>
+        <div className="flex-1 flex flex-col justify-center overflow-hidden">
+          <span className="text-lg font-medium text-ods-text-primary truncate">{run.startedAt}</span>
+          <span className="text-sm font-medium text-ods-text-secondary">Started</span>
         </div>
 
-        {/* Duration - mobile + desktop, hidden on tablet (moves to row 2) */}
-        <div className="flex-1 flex flex-col justify-center h-[80px] overflow-hidden md:hidden lg:flex">
-          <span className="text-h4 text-ods-text-primary tabular-nums">{formatDuration(run.elapsedSeconds)}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Duration</span>
+        <div className="flex-1 flex flex-col justify-center overflow-hidden md:hidden lg:flex">
+          <span className="text-lg font-medium text-ods-text-primary tabular-nums">
+            {formatDuration(run.elapsedSeconds)}
+          </span>
+          <span className="text-sm font-medium text-ods-text-secondary">Duration</span>
         </div>
 
-        {/* Status + Actions - desktop only in row 1 */}
-        <div className="hidden lg:flex flex-1 items-center gap-2 h-[80px]">
+        <div className="hidden lg:flex flex-1 items-center gap-4">
           <div className="flex-1 flex flex-col justify-center overflow-hidden">
-            <span className={`text-h4 ${getStatusColor(run.status)} truncate`}>{getStatusLabel(run.status)}</span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
+            <span className={`text-lg font-medium ${getStatusColor(run.status)} truncate`}>
+              {getStatusLabel(run.status)}
+            </span>
+            <span className="text-sm font-medium text-ods-text-secondary">Status</span>
           </div>
 
-          {run.status === 'running' && (
+          {run.status === 'running' ? (
             <Button
               variant="outline"
-              onClick={() => onStop(run.id)}
-              leftIcon={<Square className="h-6 w-6" />}
+              onClick={onStop}
+              leftIcon={<Square className="size-6" />}
               className="flex-shrink-0 gap-2"
             >
-              Stop Script
+              Stop Testing
             </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onTestAgain} className="flex-shrink-0">
+                Test Again
+              </Button>
+              <Button variant="outline" size={'iconLg'} onClick={onClose} className="flex-shrink-0 p-3">
+                <X className="size-6" />
+              </Button>
+            </>
           )}
         </div>
       </div>
 
-      {/* Row 2: Mobile: Status + Button | Tablet: Duration + Status + Button | Desktop: hidden */}
       <div className="flex lg:hidden gap-4 items-center px-4 py-3 border-b border-ods-border">
-        {/* Duration - tablet only (on mobile it's in row 1) */}
-        <div className="hidden md:flex flex-1 flex-col justify-center h-[80px] overflow-hidden">
-          <span className="text-h4 text-ods-text-primary tabular-nums">{formatDuration(run.elapsedSeconds)}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Duration</span>
+        <div className="hidden md:flex flex-1 flex-col justify-center overflow-hidden">
+          <span className="text-lg font-medium text-ods-text-primary tabular-nums">
+            {formatDuration(run.elapsedSeconds)}
+          </span>
+          <span className="text-sm font-medium text-ods-text-secondary">Duration</span>
         </div>
 
-        {/* Status + Actions */}
-        <div className="flex-1 flex items-center gap-2 h-[80px]">
+        <div className="flex-1 flex items-center gap-4">
           <div className="flex-1 flex flex-col justify-center">
-            <span className={`text-h4 ${getStatusColor(run.status)}`}>{getStatusLabel(run.status)}</span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888]">Status</span>
+            <span className={`text-lg font-medium ${getStatusColor(run.status)}`}>{getStatusLabel(run.status)}</span>
+            <span className="text-sm font-medium text-ods-text-secondary">Status</span>
           </div>
 
-          {run.status === 'running' && (
-            <div className="flex">
-              <Button variant="outline" onClick={() => onStop(run.id)} leftIcon={<Square className="h-6 w-6" />}>
-                Stop Script
+          {run.status === 'running' ? (
+            <Button variant="outline" onClick={onStop} leftIcon={<Square className="size-6" />}>
+              Stop Testing
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onTestAgain} className="flex-shrink-0">
+                Test Again
               </Button>
-            </div>
+              <Button variant="outline" size={'iconLg'} onClick={onClose} className="flex-shrink-0 p-3">
+                <X className="size-6" />
+              </Button>
+            </>
           )}
         </div>
       </div>
 
-      {/* Log output */}
-      <div ref={logRef} className="h-[400px] overflow-y-auto p-4 border-b border-ods-border items-end">
-        <div className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-[#888] whitespace-pre-wrap">
+      <div ref={logRef} className="h-[240px] overflow-y-auto p-4 border-b border-ods-border">
+        <div className="font-medium text-sm leading-5 text-ods-text-secondary whitespace-pre-wrap">
           {run.output.map((line, i) => {
             const isError = line.toLowerCase().startsWith('error');
             const isSuccess =

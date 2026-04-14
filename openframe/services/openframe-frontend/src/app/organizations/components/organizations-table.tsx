@@ -188,6 +188,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
         label: 'Add Organization',
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddOrganization,
+        variant: 'card' as const,
       },
     ],
     [handleAddOrganization],

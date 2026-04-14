@@ -50,6 +50,9 @@ struct InstallArgs {
 
     #[arg(long = "orgId")]
     org_id: Option<String>,
+
+    #[arg(long = "tag")]
+    tags: Vec<String>,
 }
 
 #[derive(Subcommand)]
@@ -104,6 +107,7 @@ fn main() -> Result<()> {
                 initial_key: args.initial_key.clone(),
                 org_id: args.org_id.clone(),
                 local_mode: args.local_mode.clone(),
+                tags: args.tags.clone(),
             };
 
             rt.block_on(async {

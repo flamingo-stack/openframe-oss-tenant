@@ -71,21 +71,59 @@ impl ToolAgentUpdateService {
             }
         };
 
-        // 1. Tool update (if version changed)
-        if installed_tool.version != *new_version {
-            info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
+        let needs_tool_update = installed_tool.version != *new_version;
+        let assets_to_update: Vec<_> = message.assets.as_ref()
+            .map(|assets| assets.iter().filter(|a| {
+                let existing = installed_tool.assets.iter().find(|ia| ia.id == a.asset_id);
+                existing.map(|e| e.version.as_str()) != Some(a.version.as_str())
+            }).collect())
+            .unwrap_or_default();
 
-            self.tool_run_manager.mark_updating(tool_agent_id).await;
-            let result = self.do_tool_update(new_version, &message, &mut installed_tool).await;
-            self.tool_run_manager.clear_updating(tool_agent_id).await;
-
-            result?;
-        } else {
-            info!("Tool {} is already at version {}, skipping tool update", tool_agent_id, new_version);
+        if !needs_tool_update && assets_to_update.is_empty() {
+            info!("Tool {} and all assets already at target versions, nothing to update", tool_agent_id);
+            return Ok(());
         }
 
-        for asset in &message.assets {
-            self.do_asset_update(tool_agent_id, asset, &mut installed_tool).await?;
+        // Mark as updating once for all updates
+        self.tool_run_manager.mark_updating(tool_agent_id).await;
+
+        let result = self.do_updates(
+            &message,
+            &mut installed_tool,
+            needs_tool_update,
+            &assets_to_update,
+        ).await;
+
+        // Clear updating flag - tool_run_manager will restart the tool
+        self.tool_run_manager.clear_updating(tool_agent_id).await;
+
+        result
+    }
+
+    async fn do_updates(
+        &self,
+        message: &ToolAgentUpdateMessage,
+        installed_tool: &mut crate::models::installed_tool::InstalledTool,
+        needs_tool_update: bool,
+        assets_to_update: &[&AssetUpdate],
+    ) -> Result<()> {
+        let tool_agent_id = &message.tool_agent_id;
+        let new_version = &message.version;
+
+        // 1. Tool update (if version changed)
+        if needs_tool_update {
+            info!("Updating tool {} from version {} to {}", tool_agent_id, installed_tool.version, new_version);
+            self.do_tool_update(new_version, message, installed_tool).await?;
+        } else if !assets_to_update.is_empty() {
+            // Only assets to update - stop tool once before all asset updates
+            info!(tool_id = %tool_agent_id, "Stopping tool for asset updates");
+            self.tool_kill_service.stop_tool(tool_agent_id).await
+                .with_context(|| format!("Failed to stop tool {} for asset updates", tool_agent_id))?;
+        }
+
+        // 2. Asset updates (tool already stopped by tool_update or above)
+        for asset in assets_to_update {
+            self.do_asset_update(tool_agent_id, asset, installed_tool).await?;
         }
 
         Ok(())
@@ -254,14 +292,6 @@ impl ToolAgentUpdateService {
 
         let asset_filename = &config.target_file_name;
 
-        self.tool_run_manager.mark_updating(tool_agent_id).await;
-
-        info!(tool_id = %tool_agent_id, asset_id = %asset_id, "Stopping tool for asset update");
-        if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
-            self.tool_run_manager.clear_updating(tool_agent_id).await;
-            return Err(e).with_context(|| format!("Failed to stop tool {} for asset update", tool_agent_id));
-        }
-
         let bytes = self.github_download_service
             .download_and_extract(config)
             .await
@@ -292,15 +322,13 @@ impl ToolAgentUpdateService {
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save installed tool after asset update: {}", tool_agent_id))?;
 
-        self.tool_run_manager.clear_updating(tool_agent_id).await;
-
         self.publish_installed_agent_message(asset_id, new_version).await;
 
         info!(
             asset_id = %asset_id,
             tool_id = %tool_agent_id,
             version = %new_version,
-            "Asset update completed, tool will be restarted by run manager"
+            "Asset update completed"
         );
 
         Ok(())

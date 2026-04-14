@@ -23,9 +23,6 @@ import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-d
 import { getProviderIcon } from '../../utils/get-provider-icon';
 import { SsoConfigModal } from '../edit-sso-config-modal';
 
-// Feature flag: enabled by default, can disable with env var
-const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
-
 type UiProviderRow = {
   id: string;
   provider: string;
@@ -38,6 +35,7 @@ type UiProviderRow = {
 };
 
 export function SsoConfigurationTab() {
+  const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
   const [searchTerm, setSearchTerm] = useState('');
   const [providers, setProviders] = useState<UiProviderRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -222,7 +220,7 @@ export function SsoConfigurationTab() {
     });
 
     return baseColumns;
-  }, []);
+  }, [isDomainAllowlistEnabled]);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

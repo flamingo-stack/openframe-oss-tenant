@@ -114,6 +114,25 @@ export function useApproveRequestMutation() {
 }
 
 /**
+ * Stop AI response generation for a dialog
+ */
+export function useStopGenerationMutation() {
+  return useMutation({
+    mutationFn: async (dialogId: string) => {
+      const response = await apiClient.post(`/chat/api/v1/dialogs/${dialogId}/stop`, {
+        chatType: 'ADMIN_AI_CHAT',
+      });
+
+      if (!response.ok) {
+        throw new Error(response.error || `Failed to stop generation with status ${response.status}`);
+      }
+
+      return response.data;
+    },
+  });
+}
+
+/**
  * Reject an approval request - returns mutation
  */
 export function useRejectRequestMutation() {

@@ -1,25 +1,15 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { apiClient } from '@/lib/api-client';
 import type { ChatType } from '../constants';
-import { GET_DIALOG_MESSAGES_QUERY } from '../queries/dialogs-queries';
-import type { CursorPageInfo, Message } from '../types/dialog.types';
-
-interface MessagePage {
-  messages: Message[];
-  pageInfo: CursorPageInfo;
-}
-
-interface MessagesResponse {
-  data?: {
-    messages: {
-      edges: Array<{ cursor: string; node: Message }>;
-      pageInfo: CursorPageInfo;
-    };
-  };
-}
+import { getDialogService } from '../services';
+import type { MessagePage } from '../services/dialog-service.types';
+import type { Message } from '../types/dialog.types';
+import { useDialogVersion } from './use-dialog-version';
 
 export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
+  const version = useDialogVersion();
+  const service = getDialogService(version);
+
   const messagesQuery = useInfiniteQuery({
     queryKey: ['ticket-dialog-messages', dialogId, chatType],
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
@@ -27,28 +17,14 @@ export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
         return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
       }
 
-      const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
-        query: GET_DIALOG_MESSAGES_QUERY,
-        variables: {
-          dialogId,
-          chatType,
-          cursor: pageParam,
-          limit: 50,
-          sortField: 'createdAt',
-          sortDirection: 'DESC',
-        },
+      return service.fetchMessages({
+        dialogId,
+        chatType,
+        cursor: pageParam,
+        limit: 50,
+        sortField: 'createdAt',
+        sortDirection: 'DESC',
       });
-
-      if (!response.ok || !response.data?.data?.messages) {
-        throw new Error(response.error || 'Failed to fetch messages');
-      }
-
-      const { edges, pageInfo } = response.data.data.messages;
-
-      return {
-        messages: edges.map(edge => edge.node),
-        pageInfo,
-      };
     },
     getNextPageParam: (lastPage: MessagePage) => {
       return lastPage.pageInfo.hasNextPage ? lastPage.pageInfo.endCursor : undefined;

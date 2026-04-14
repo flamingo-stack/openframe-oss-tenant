@@ -152,6 +152,7 @@ export function ScriptSchedulesTable() {
     () => [
       {
         label: 'Add Schedule',
+        variant: 'card' as const,
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddSchedule,
       },

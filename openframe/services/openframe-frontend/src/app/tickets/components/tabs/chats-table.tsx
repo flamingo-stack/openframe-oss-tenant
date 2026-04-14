@@ -1,13 +1,15 @@
 'use client';
 
-import { BoxArchiveIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup';
 import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation';
+import { useDialogVersion } from '../../hooks/use-dialog-version';
 import { useDialogsQuery } from '../../hooks/use-dialogs-query';
+import { useTicketStatistics } from '../../hooks/use-ticket-statistics';
 import type { ClientDialogOwner, Dialog } from '../../types/dialog.types';
 import { getDialogTableColumns } from '../dialog-table-columns';
 
@@ -19,12 +21,14 @@ interface ChatsTableProps {
 
 export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: ChatsTableProps) {
   const router = useRouter();
+  const dialogVersion = useDialogVersion();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
   // Lazy organization lookup - doesn't block initial render
   const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup();
   const archiveResolvedMutation = useArchiveResolvedMutation();
+  const { resolvedCount } = useTicketStatistics({ enabled: !isArchived });
 
   const { dialogs, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useDialogsQuery({
     archived: isArchived,
@@ -68,8 +72,8 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   );
 
   const handleArchiveResolved = useCallback(async () => {
-    await archiveResolvedMutation.mutateAsync(dialogs);
-  }, [archiveResolvedMutation, dialogs]);
+    await archiveResolvedMutation.mutateAsync();
+  }, [archiveResolvedMutation]);
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, string[]>) => {
@@ -87,26 +91,45 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     [isArchived, onStatusFilterChange],
   );
 
-  const hasResolvedDialogs = useMemo(() => {
-    return !isArchived && dialogs.some((d: Dialog) => d.status === 'RESOLVED');
-  }, [dialogs, isArchived]);
+  const hasResolvedTickets = !isArchived && resolvedCount > 0;
 
-  const title = isArchived ? 'Archived Chats' : 'Current Chats';
+  const title = isArchived ? 'Archived Tickets' : 'Tickets';
   const emptyMessage = isArchived
-    ? 'No archived chats found. Try adjusting your search or filters.'
-    : 'No current chats found. Try adjusting your search or filters.';
+    ? 'No archived tickets found. Try adjusting your search or filters.'
+    : 'No tickets found. Try adjusting your search or filters.';
 
-  const actions = useMemo(
-    () => [
-      {
-        label: 'Archive Resolved',
+  const handleNewTicket = useCallback(() => {
+    router.push('/tickets/new');
+  }, [router]);
+
+  const actions = useMemo(() => {
+    const items = [];
+    if (dialogVersion === 'v2') {
+      items.push({
+        label: 'New Ticket',
+        onClick: handleNewTicket,
+        variant: 'card' as const,
+        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
+      });
+    }
+    if (hasResolvedTickets) {
+      items.push({
+        label: `Archive Resolved`,
+        variant: 'card' as const,
         icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleArchiveResolved,
         disabled: archiveResolvedMutation.isPending || isLoading,
-      },
-    ],
-    [handleArchiveResolved, archiveResolvedMutation.isPending, isLoading],
-  );
+      });
+    }
+    return items;
+  }, [
+    dialogVersion,
+    handleNewTicket,
+    hasResolvedTickets,
+    handleArchiveResolved,
+    archiveResolvedMutation.isPending,
+    isLoading,
+  ]);
 
   const filterGroups = columns
     .filter(column => column.filterable)
@@ -125,7 +148,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       error={error}
       padding="none"
       className="pt-6"
-      actions={hasResolvedDialogs ? actions : undefined}
+      actions={actions.length > 0 ? actions : undefined}
       onMobileFilterChange={handleFilterChange}
       mobileFilterGroups={filterGroups}
       // TODO: This is a hack to get the filters to work, replace in future
