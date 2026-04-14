@@ -109,17 +109,21 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     });
   }, [dialogId, messagesByDialog]);
 
-  // Extract pending approvals from messages
+  // Extract pending approvals from messages, deduplicated by requestId
   const approvals = useMemo(() => {
     if (!dialogId) return [];
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
+    const seenRequestIds = new Set<string>();
     const pendingApprovalSegments: MessageSegment[] = [];
 
     currentMessages.forEach(msg => {
       if (Array.isArray(msg.content)) {
         msg.content.forEach(segment => {
           if (segment.type === 'approval_request' && segment.status === 'pending') {
+            const requestId = segment.data?.requestId;
+            if (requestId && seenRequestIds.has(requestId)) return;
+            if (requestId) seenRequestIds.add(requestId);
             pendingApprovalSegments.push(segment as MessageSegment);
           }
         });
