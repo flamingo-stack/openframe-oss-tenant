@@ -48,6 +48,7 @@ function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsag
 
 export function ChatView() {
   const { flags } = useFeatureFlags();
+  const tokenBasedMemory = flags['token-based-memory'];
   const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
@@ -69,8 +70,8 @@ export function ChatView() {
   const { showWelcome, completeWelcome } = useWelcomeScreen();
 
   const handleTokenUsage = useCallback((data: TokenUsageData) => {
-    setTokenUsage(data);
-  }, []);
+    tokenBasedMemory && setTokenUsage(data);
+  }, [tokenBasedMemory]);
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
@@ -124,8 +125,6 @@ export function ChatView() {
       ),
     [messages],
   );
-
-  const tokenBasedMemory = flags['token-based-memory'];
 
   const fetchResumableDialog = useCallback(() => {
     dialogGraphQlService.getResumableDialog({ includeTokenUsage: tokenBasedMemory }).then(dialog => {

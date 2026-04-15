@@ -41,6 +41,7 @@ interface TicketNode {
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
+  organizationImage?: { imageUrl: string };
   assignedTo?: string;
   assignedName?: string;
   labels?: Array<{ id: string; key: string; color?: string }>;
@@ -50,6 +51,7 @@ interface TicketNode {
     content: string;
     authorId: string;
     author?: { id: string; firstName: string; lastName: string };
+    authorImage?: { imageUrl: string };
     createdAt: string;
     updatedAt: string;
   }>;
@@ -150,6 +152,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     deviceHostname: ticket.deviceHostname,
     organizationId: ticket.organizationId,
     organizationName: ticket.organizationName,
+    organizationImageUrl: ticket.organizationImage?.imageUrl,
     assignedTo: ticket.assignedTo,
     assignedName: ticket.assignedName,
     labels: ticket.labels,
@@ -161,6 +164,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
       content: note.content,
       authorId: note.authorId,
       authorName: note.author ? `${note.author.firstName} ${note.author.lastName}`.trim() : undefined,
+      authorImageUrl: note.authorImage?.imageUrl,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
     })),

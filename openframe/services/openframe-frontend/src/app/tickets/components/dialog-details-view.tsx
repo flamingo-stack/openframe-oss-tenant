@@ -45,6 +45,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
 import { DeviceInfoSection } from '../../components/shared';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
@@ -129,6 +130,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       id: note.id,
       text: note.content,
       authorName: note.authorName || 'Unknown',
+      authorAvatar: getFullImageUrl(note.authorImageUrl),
       createdAt: note.createdAt,
       isOwn: currentUser?.id === note.authorId,
     }));
@@ -647,6 +649,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
               dialog.organizationName ||
               (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
               'Unassigned',
+            imageSrc: getFullImageUrl(dialog.organizationImageUrl),
           }}
           user="Unassigned"
           device={{
@@ -729,6 +732,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   dialog.organizationName ||
                   (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
                   'Unassigned',
+                imageSrc: getFullImageUrl(dialog.organizationImageUrl),
               }}
               user="Unassigned"
               device={{
@@ -876,7 +880,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             </div>
           </div>
         </div>
-        {(currentModel || dialog.tokenUsage) && (
+        {featureFlags.tokenBasedMemory.enabled() && (currentModel || dialog.tokenUsage) && (
           <div className="mx-auto w-full mt-2">
             <ModelDisplay
               provider={currentModel?.provider}

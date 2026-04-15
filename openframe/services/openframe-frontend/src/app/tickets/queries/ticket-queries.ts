@@ -134,6 +134,9 @@ export function getTicketQuery({ includeTokenUsage = false } = {}) {
       deviceHostname
       organizationId
       organizationName
+      organizationImage {
+        imageUrl
+      }
       assignedTo
       assignedName
       labels {
@@ -164,6 +167,9 @@ export function getTicketQuery({ includeTokenUsage = false } = {}) {
           id
           firstName
           lastName
+        }
+        authorImage {
+          imageUrl
         }
         createdAt
         updatedAt
@@ -266,6 +272,9 @@ export const ADD_TICKET_NOTE_MUTATION = `
           firstName
           lastName
         }
+        authorImage {
+          imageUrl
+        }
         createdAt
         updatedAt
       }
@@ -289,6 +298,9 @@ export const UPDATE_TICKET_NOTE_MUTATION = `
           id
           firstName
           lastName
+        }
+        authorImage {
+          imageUrl
         }
         createdAt
         updatedAt

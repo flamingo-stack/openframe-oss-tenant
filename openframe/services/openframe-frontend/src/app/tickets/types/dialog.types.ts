@@ -47,6 +47,7 @@ export interface Dialog {
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
+  organizationImageUrl?: string;
   assignedTo?: string;
   assignedName?: string;
   labels?: Array<{ id: string; key: string; color?: string }>;
@@ -65,6 +66,7 @@ export interface Dialog {
     content: string;
     authorId: string;
     authorName?: string;
+    authorImageUrl?: string;
     createdAt: string;
     updatedAt: string;
   }>;

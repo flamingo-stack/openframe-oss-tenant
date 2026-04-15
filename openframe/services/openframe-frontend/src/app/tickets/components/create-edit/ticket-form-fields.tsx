@@ -7,11 +7,14 @@ import {
   Input,
   Label,
   MarkdownEditor,
+  SquareAvatar,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
+import { getFullImageUrl } from '@/lib/image-url';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
+import type { AssigneeOption } from '../../hooks/use-ticket-options';
 import { useAssigneeOptions, useDeviceOptions, useOrganizationOptions } from '../../hooks/use-ticket-options';
 import type { CreateTicketFormData } from '../../types/create-ticket.types';
 import { TicketTagsManager } from './ticket-tags-manager';
@@ -126,16 +129,49 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
         <Controller
           name="assignedTo"
           control={control}
-          render={({ field }) => (
-            <Autocomplete
-              label="Assigned"
-              options={assigneeOptions.options}
-              value={field.value ?? null}
-              onChange={val => field.onChange(val)}
-              placeholder="Select Assignee"
-              loading={assigneeOptions.isLoading}
-            />
-          )}
+          render={({ field }) => {
+            const selectedAssignee = assigneeOptions.options.find(o => o.value === field.value) as
+              | AssigneeOption
+              | undefined;
+            return (
+              <Autocomplete
+                label="Assigned"
+                options={assigneeOptions.options}
+                value={field.value ?? null}
+                onChange={val => field.onChange(val)}
+                placeholder="Select Assignee"
+                loading={assigneeOptions.isLoading}
+                startAdornment={
+                  selectedAssignee ? (
+                    <SquareAvatar
+                      src={getFullImageUrl(selectedAssignee.imageUrl)}
+                      alt={selectedAssignee.label}
+                      fallback={selectedAssignee.label}
+                      size="sm"
+                      variant="round"
+                      className="h-6 w-6"
+                    />
+                  ) : undefined
+                }
+                renderOption={option => {
+                  const assignee = option as AssigneeOption;
+                  return (
+                    <div className="flex items-center gap-3 w-full min-w-0">
+                      <SquareAvatar
+                        src={getFullImageUrl(assignee.imageUrl)}
+                        alt={assignee.label}
+                        fallback={assignee.label}
+                        size="sm"
+                        variant="round"
+                        className="h-6 w-6 shrink-0"
+                      />
+                      <span className="truncate">{assignee.label}</span>
+                    </div>
+                  );
+                }}
+              />
+            );
+          }}
         />
       </div>
 
