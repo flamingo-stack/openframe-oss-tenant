@@ -9,6 +9,7 @@ import {
   ModalTitle,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { downloadDir } from '@tauri-apps/api/path';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { useCreateTicket } from '../hooks/useCreateTicket';
@@ -45,7 +46,11 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
   };
 
   const handleOpenFilePicker = async (): Promise<File[] | undefined> => {
-    const selected = await open({ multiple: true });
+    let defaultPath: string | undefined;
+    try {
+      defaultPath = await downloadDir();
+    } catch { }
+    const selected = await open({ multiple: true, defaultPath });
     if (!selected) return undefined;
 
     const paths = Array.isArray(selected) ? selected : [selected];

@@ -28,13 +28,12 @@ async function uploadAttachments(files: File[]): Promise<string[]> {
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
         body: file,
       });
-    } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      throw new Error(`Failed to upload "${file.name}": ${reason} (request origin: ${window.location.origin})`);
+    } catch {
+      throw new Error(`Failed to upload "${file.name}". Please check your connection and try again.`);
     }
 
     if (!response.ok) {
-      throw new Error(`Failed to upload "${file.name}": ${response.status} ${response.statusText} (request origin: ${window.location.origin})`);
+      throw new Error(`Failed to upload "${file.name}". Please try again.`);
     }
 
     tempIds.push(temp.id);
