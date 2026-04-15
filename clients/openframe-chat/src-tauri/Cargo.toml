@@ -28,3 +28,6 @@ tauri-plugin-fs = "2"
 aes-gcm = "0.10"
 base64 = "0.21"
 notify = "6.1"
+
+[target.'cfg(windows)'.dependencies]
+dirs = "5"
