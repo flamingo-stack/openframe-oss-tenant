@@ -65,6 +65,7 @@ export function ChatView() {
     createdAt: string;
   } | null>(null);
   const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
+  const [activeTicketStatus, setActiveTicketStatus] = useState<string | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
 
   const handleTokenUsage = useCallback((data: TokenUsageData) => {
@@ -144,6 +145,7 @@ export function ChatView() {
   const handleNewChat = useCallback(() => {
     setFaeFormTicket(null);
     setPreviewTicketId(null);
+    setActiveTicketStatus(null);
     clearMessages();
     queryClient.invalidateQueries({ queryKey: ['tickets'] });
     setTokenUsage(null);
@@ -160,34 +162,35 @@ export function ChatView() {
     async (ticketId: string) => {
       setFaeFormTicket(null);
       setPreviewTicketId(null);
+      setActiveTicketStatus(null);
 
       if (flags.tickets) {
-        const dialogId = ticketsHook.getDialogId(ticketId);
-        if (!dialogId) {
-          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-          if (ticketDetails) {
-            setPreviewTicketId(ticketId);
-            showTicketPreview(ticketDetails);
-          } else {
-            toast({
-              title: 'Error',
-              description: 'Failed to load ticket details',
-              variant: 'destructive',
-            });
-          }
+        const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+        if (!ticketDetails) {
+          toast({
+            title: 'Error',
+            description: 'Failed to load ticket details',
+            variant: 'destructive',
+          });
           return;
         }
 
-        if (ticketsHook.getCreationSource(ticketId) === 'FAE_FORM') {
-          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-          if (ticketDetails) {
-            setFaeFormTicket({
-              id: ticketId,
-              title: ticketDetails.title,
-              description: ticketDetails.description,
-              createdAt: ticketDetails.createdAt || new Date().toISOString(),
-            });
-          }
+        setActiveTicketStatus(ticketDetails.status ?? null);
+
+        const dialogId = ticketsHook.getDialogId(ticketId);
+        if (!dialogId) {
+          setPreviewTicketId(ticketId);
+          showTicketPreview(ticketDetails);
+          return;
+        }
+
+        if (ticketDetails.creationSource === 'FAE_FORM') {
+          setFaeFormTicket({
+            id: ticketId,
+            title: ticketDetails.title,
+            description: ticketDetails.description,
+            createdAt: ticketDetails.createdAt || new Date().toISOString(),
+          });
         }
 
         await resumeDialog(dialogId);
@@ -209,6 +212,8 @@ export function ChatView() {
 
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
+
+  const isActiveTicketResolved = activeTicketStatus === 'RESOLVED';
 
   const displayModel =
     currentModel ||
@@ -421,17 +426,23 @@ export function ChatView() {
       </ChatContent>
 
       <ChatFooter>
-        <ChatInput
-          onSend={sendMessage}
-          onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
-          sending={isStreaming || isCompacting}
-          awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
-          placeholder="Enter your request here..."
-          className={hasMessages ? '' : 'max-w-2xl mx-auto'}
-          reserveAvatarOffset={hasMessages}
-          disabled={isDisconnected}
-        />
-        {((displayModel && isFullyLoaded) || tokenUsage) && (
+        {isActiveTicketResolved ? (
+          <p className="text-body2 text-ods-text-secondary text-center py-4">
+            This chat is closed. If you have a similar problem, please create a new request.
+          </p>
+        ) : (
+          <ChatInput
+            onSend={sendMessage}
+            onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
+            sending={isStreaming || isCompacting}
+            awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
+            placeholder="Enter your request here..."
+            className={hasMessages ? '' : 'max-w-2xl mx-auto'}
+            reserveAvatarOffset={hasMessages}
+            disabled={isDisconnected}
+          />
+        )}
+        {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
           <div className={hasMessages ? 'mx-auto w-full max-w-3xl px-4' : 'mx-auto w-full max-w-2xl'}>
             {hasMessages ? (
               <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
