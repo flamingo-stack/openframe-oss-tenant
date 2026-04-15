@@ -77,7 +77,7 @@ export function useAuthSession() {
         organizationId: userData.organizationId,
         organizationName: userData.organizationName,
         status: userData.status,
-        image: userData.image,
+        ...(userData.image ? { image: userData.image } : {}),
       });
 
       const tenantId = userData.tenantId || userData.organizationId;

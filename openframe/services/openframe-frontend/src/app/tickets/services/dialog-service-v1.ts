@@ -1,8 +1,9 @@
 import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
 import { parseChunkToAction } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS, CHAT_TYPE } from '../constants';
-import { GET_DIALOG_MESSAGES_QUERY, GET_DIALOG_QUERY, GET_DIALOGS_QUERY } from '../queries/dialogs-queries';
+import { GET_DIALOGS_QUERY, getDialogMessagesQuery, getDialogQuery } from '../queries/dialogs-queries';
 import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
@@ -50,8 +51,9 @@ export class DialogServiceV1 implements DialogService {
   }
 
   async fetchDialog(id: string): Promise<Dialog | null> {
+    const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<GraphQlResponse<{ dialog: Dialog }>>('/chat/graphql', {
-      query: GET_DIALOG_QUERY,
+      query: getDialogQuery({ includeTokenUsage }),
       variables: { id },
     });
 
@@ -60,12 +62,13 @@ export class DialogServiceV1 implements DialogService {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
+    const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: GET_DIALOG_MESSAGES_QUERY,
+      query: getDialogMessagesQuery({ includeContextCompaction }),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,
@@ -189,6 +192,16 @@ export class DialogServiceV1 implements DialogService {
       return { type: 'error', error: action.error, isAdmin };
     }
 
+    if (action.action === 'metadata') {
+      return {
+        type: 'metadata',
+        modelName: action.modelName,
+        providerName: action.providerName,
+        contextWindow: action.contextWindow,
+        isAdmin,
+      };
+    }
+
     const id = `nats-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const createBaseMessage = (isUserMessage: boolean): Message => {
       let owner: any;
@@ -212,12 +225,26 @@ export class DialogServiceV1 implements DialogService {
     let message: Message | null = null;
 
     switch (action.action) {
-      case 'message_request':
+      case 'message_request': {
+        const isAdminRequest = action.ownerType === 'ADMIN' || isAdmin;
+        const owner = isAdminRequest
+          ? {
+              type: 'ADMIN' as const,
+              userId: '',
+              user: action.displayName ? { id: '', firstName: action.displayName } : undefined,
+            }
+          : { type: 'CLIENT' as const, machineId: '' };
         message = {
-          ...createBaseMessage(true),
+          id,
+          dialogId,
+          chatType: chatType as any,
+          dialogMode: 'DEFAULT',
+          createdAt: nowIso,
+          owner: owner as any,
           messageData: { type: 'TEXT', text: action.text } as any,
         };
         break;
+      }
 
       case 'text':
         message = {
@@ -266,6 +293,54 @@ export class DialogServiceV1 implements DialogService {
           } as any,
         };
         break;
+
+      case 'direct_message': {
+        const isAdminAuthor = action.ownerType === 'ADMIN';
+        const owner = isAdminAuthor
+          ? {
+              type: 'ADMIN' as const,
+              userId: '',
+              user: action.displayName ? { id: '', firstName: action.displayName } : undefined,
+            }
+          : { type: 'CLIENT' as const, machineId: '' };
+        message = {
+          id,
+          dialogId,
+          chatType: chatType as any,
+          dialogMode: 'DIRECT',
+          createdAt: nowIso,
+          owner: owner as any,
+          messageData: { type: 'TEXT', text: action.text } as any,
+        };
+        break;
+      }
+
+      case 'system':
+        message = {
+          ...createBaseMessage(false),
+          messageData: { type: 'SYSTEM', text: action.text } as any,
+        };
+        break;
+
+      case 'context_compaction_start':
+        return {
+          type: 'compaction_start',
+          message: {
+            ...createBaseMessage(false),
+            messageData: { type: 'CONTEXT_COMPACTION_START' } as any,
+          },
+          isAdmin,
+        };
+
+      case 'context_compaction_end':
+        return {
+          type: 'compaction_end',
+          message: {
+            ...createBaseMessage(false),
+            messageData: { type: 'CONTEXT_COMPACTION_END', summary: action.summary } as any,
+          },
+          isAdmin,
+        };
 
       default:
         return null;

@@ -1,4 +1,11 @@
 // GraphQL response types
+export interface DialogTokenUsage {
+  inputTokensSize: number | null;
+  outputTokensSize: number | null;
+  totalTokensSize: number | null;
+  contextSize: number | null;
+}
+
 export interface DialogNode {
   id: string;
   title: string;
@@ -21,6 +28,7 @@ export interface DialogNode {
     dialogId: string;
     createdAt: string;
   };
+  tokenUsage?: DialogTokenUsage | null;
 }
 
 export interface DialogEdge {

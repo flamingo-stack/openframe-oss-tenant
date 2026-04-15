@@ -1,11 +1,12 @@
 import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import { API_ENDPOINTS } from '../constants';
 import {
   ARCHIVE_TICKET_MUTATION,
-  GET_TICKET_QUERY,
   GET_TICKETS_QUERY,
+  getTicketQuery,
   PUT_TICKET_ON_HOLD_MUTATION,
   REOPEN_TICKET_MUTATION,
   RESOLVE_TICKET_MUTATION,
@@ -42,7 +43,7 @@ interface TicketNode {
   organizationName?: string;
   assignedTo?: string;
   assignedName?: string;
-  labels?: Array<{ id: string; name: string; color?: string }>;
+  labels?: Array<{ id: string; key: string; color?: string }>;
   notes?: Array<{
     id: string;
     ticketId: string;
@@ -61,8 +62,18 @@ interface TicketNode {
     uploadedAt: string;
     uploadedBy: string;
   }>;
-  dialog?: { id: string };
+  dialog?: {
+    id: string;
+    currentMode?: string;
+    tokenUsage?: {
+      inputTokensSize: number | null;
+      outputTokensSize: number | null;
+      totalTokensSize: number | null;
+      contextSize: number | null;
+    } | null;
+  };
   description?: string;
+  creationSource?: string;
   createdAt: string;
   updatedAt?: string;
   resolvedAt?: string;
@@ -130,9 +141,11 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     rating: null,
 
     // V2 ticket-specific fields
+    currentMode: ticket.dialog?.currentMode,
     ticketNumber: ticket.ticketNumber,
     dialogId: ticket.dialog?.id,
     description: ticket.description,
+    creationSource: ticket.creationSource,
     deviceId: ticket.deviceId,
     deviceHostname: ticket.deviceHostname,
     organizationId: ticket.organizationId,
@@ -141,6 +154,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     assignedName: ticket.assignedName,
     labels: ticket.labels,
     attachments: ticket.attachments,
+    tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
     notes: ticket.notes?.map(note => ({
       id: note.id,
       ticketId: note.ticketId,
@@ -209,8 +223,9 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async fetchDialog(id: string): Promise<Dialog | null> {
+    const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<GraphQlResponse<TicketResponse>>(API_ENDPOINTS.GRAPHQL, {
-      query: GET_TICKET_QUERY,
+      query: getTicketQuery({ includeTokenUsage }),
       variables: { id },
     });
 

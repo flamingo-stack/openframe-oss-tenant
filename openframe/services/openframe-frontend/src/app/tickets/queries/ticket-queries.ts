@@ -27,7 +27,7 @@ export const CREATE_TICKET_MUTATION = `
         assignedName
         labels {
           id
-          name
+          key
           color
         }
         attachments {
@@ -91,7 +91,16 @@ export const DELETE_TICKET_ATTACHMENT = `
   }
 `;
 
-export const GET_TICKET_QUERY = `
+const TICKET_TOKEN_USAGE_FRAGMENT = `
+        tokenUsage {
+          inputTokensSize
+          outputTokensSize
+          totalTokensSize
+          contextSize
+        }`;
+
+export function getTicketQuery({ includeTokenUsage = false } = {}) {
+  return `
   query GetTicket($id: ID!) {
     ticket(id: $id) {
       id
@@ -99,6 +108,7 @@ export const GET_TICKET_QUERY = `
       title
       description
       status
+      creationSource
       owner {
         ... on ClientTicketOwner {
           type
@@ -128,11 +138,13 @@ export const GET_TICKET_QUERY = `
       assignedName
       labels {
         id
-        name
+        key
         color
       }
       dialog {
         id
+        currentMode
+        ${includeTokenUsage ? TICKET_TOKEN_USAGE_FRAGMENT : ''}
       }
       attachments {
         id
@@ -156,18 +168,13 @@ export const GET_TICKET_QUERY = `
         createdAt
         updatedAt
       }
-      linkedArticles {
-        id
-        title
-        description
-        category
-      }
       createdAt
       updatedAt
       resolvedAt
     }
   }
 `;
+}
 
 export const GET_TICKETS_QUERY = `
   query GetTickets($filter: TicketFilterInput, $pagination: CursorPaginationInput, $search: String) {
@@ -208,7 +215,7 @@ export const GET_TICKETS_QUERY = `
           assignedName
           labels {
             id
-            name
+            key
             color
           }
           createdAt
@@ -231,7 +238,7 @@ export const GET_TICKET_LABELS_QUERY = `
   query TicketLabels {
     ticketLabels {
       id
-      name
+      key
       description
       color
       createdAt
@@ -305,38 +312,6 @@ export const DELETE_TICKET_NOTE_MUTATION = `
   }
 `;
 
-export const CREATE_TICKET_LABEL_MUTATION = `
-  mutation CreateTicketLabel($input: CreateTicketLabelInput!) {
-    createTicketLabel(input: $input) {
-      label {
-        id
-        name
-        color
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const UPDATE_TICKET_LABEL_MUTATION = `
-  mutation UpdateTicketLabel($input: UpdateTicketLabelInput!) {
-    updateTicketLabel(input: $input) {
-      label {
-        id
-        name
-        color
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
 export const UPDATE_TICKET_MUTATION = `
   mutation UpdateTicket($input: UpdateTicketInput!) {
     updateTicket(input: $input) {
@@ -364,7 +339,7 @@ export const UPDATE_TICKET_MUTATION = `
         assignedName
         labels {
           id
-          name
+          key
           color
         }
         attachments {
@@ -379,17 +354,6 @@ export const UPDATE_TICKET_MUTATION = `
         createdAt
         updatedAt
       }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const DELETE_TICKET_LABEL_MUTATION = `
-  mutation DeleteTicketLabel($input: DeleteByIdInput!) {
-    deleteTicketLabel(input: $input) {
       userErrors {
         field
         message
@@ -430,6 +394,29 @@ export const REOPEN_TICKET_MUTATION = `
     reopenTicket(input: $input) {
       ticket { id status }
       userErrors { field message }
+    }
+  }
+`;
+
+export const GET_TICKET_STATISTICS_QUERY = `
+  query GetTicketStatistics {
+    ticketStatistics {
+      statusCounts {
+        status
+        count
+      }
+    }
+  }
+`;
+
+export const ARCHIVE_RESOLVED_TICKETS_MUTATION = `
+  mutation ArchiveResolvedTickets {
+    archiveResolvedTickets {
+      count
+      userErrors {
+        field
+        message
+      }
     }
   }
 `;

@@ -1,9 +1,10 @@
 'use client';
 
-import { type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
+import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
   useSendMessageMutation,
@@ -17,6 +18,7 @@ interface ProcessedMessage {
   content: string | MessageSegment[];
   role: 'user' | 'assistant' | 'error';
   name: string;
+  authorType?: AuthorType;
   assistantType?: 'fae' | 'mingo';
   timestamp: Date;
 }
@@ -37,17 +39,20 @@ interface UseMingoChat {
   // State
   isCreatingDialog: boolean;
   isTyping: boolean;
+  isCompacting: boolean;
   assistantType: 'mingo';
 }
 
 export function useMingoChat(dialogId: string | null): UseMingoChat {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const user = useAuthStore(selectUser);
 
   const {
     messagesByDialog,
     addMessage,
     typingStates,
+    compactingStates,
     setTyping,
     removeWelcomeMessages,
     isCreatingDialog,
@@ -58,6 +63,11 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     if (!dialogId) return false;
     return typingStates.get(dialogId) || false;
   }, [dialogId, typingStates]);
+
+  const isCompacting = useMemo(() => {
+    if (!dialogId) return false;
+    return compactingStates.get(dialogId) || false;
+  }, [dialogId, compactingStates]);
 
   const createDialogMutation = useCreateDialogMutation();
   const sendMessageMutation = useSendMessageMutation();
@@ -88,6 +98,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         id: msg.id,
         content: filteredContent,
         role: msg.role,
+        authorType: msg.authorType,
         name: msg.name || 'Unknown',
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
@@ -98,17 +109,21 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     });
   }, [dialogId, messagesByDialog]);
 
-  // Extract pending approvals from messages
+  // Extract pending approvals from messages, deduplicated by requestId
   const approvals = useMemo(() => {
     if (!dialogId) return [];
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
+    const seenRequestIds = new Set<string>();
     const pendingApprovalSegments: MessageSegment[] = [];
 
     currentMessages.forEach(msg => {
       if (Array.isArray(msg.content)) {
         msg.content.forEach(segment => {
           if (segment.type === 'approval_request' && segment.status === 'pending') {
+            const requestId = segment.data?.requestId;
+            if (requestId && seenRequestIds.has(requestId)) return;
+            if (requestId) seenRequestIds.add(requestId);
             pendingApprovalSegments.push(segment as MessageSegment);
           }
         });
@@ -149,8 +164,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         const optimisticMessage: CoreMessage = {
           id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
+          authorType: 'admin',
           content: content.trim(),
-          name: 'Admin',
+          name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin',
           timestamp: new Date(),
         };
 
@@ -173,7 +189,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         return false;
       }
     },
-    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast],
+    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast, user],
   );
 
   const stopGeneration = useCallback(async () => {
@@ -209,6 +225,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     // State
     isCreatingDialog,
     isTyping,
+    isCompacting,
     assistantType: 'mingo' as const,
   };
 }

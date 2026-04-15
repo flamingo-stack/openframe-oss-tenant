@@ -9,8 +9,7 @@ import {
   Label,
   ListPageContainer,
   OpenAiIcon,
-  RadioGroup,
-  RadioGroupItem,
+  RadioGroupBlock,
   Select,
   SelectContent,
   SelectItem,
@@ -714,115 +713,74 @@ export function AiSettingsTab() {
               <>
                 {/* Template chooser (shown only in edit mode) */}
                 {isEditMode && (
-                  <div className="bg-ods-card border border-ods-border rounded-md overflow-hidden">
-                    <RadioGroup
-                      value={
-                        customPolicy.enabled && !hasCustomTemplate
-                          ? CUSTOM_CREATION_TEMPLATE_ID
-                          : selectedTemplateId || ''
-                      }
-                      onValueChange={v => {
-                        if (v === CUSTOM_CREATION_TEMPLATE_ID) {
-                          return;
-                        }
+                  <RadioGroupBlock
+                    name="policy-template"
+                    variant="grouped"
+                    value={
+                      customPolicy.enabled && !hasCustomTemplate
+                        ? CUSTOM_CREATION_TEMPLATE_ID
+                        : selectedTemplateId || ''
+                    }
+                    onValueChange={v => {
+                      if (v === CUSTOM_CREATION_TEMPLATE_ID) return;
 
-                        const selectedOpt = templateOptions.find(t => t.id === v);
-                        const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
+                      const selectedOpt = templateOptions.find(t => t.id === v);
+                      const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
 
-                        if (isSelectingCustomType) {
-                          setSelectedTemplateId(v);
-                        } else {
-                          setSelectedTemplateId(v);
-                          resetCustomPolicyState();
-                        }
-                      }}
-                      className="divide-y divide-ods-border gap-0"
-                      disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                    >
-                      {/* All templates */}
-                      {templateOptions.map(opt => {
-                        const id = `policy-template-${opt.id}`;
+                      setSelectedTemplateId(v);
+                      if (!isSelectingCustomType) resetCustomPolicyState();
+                    }}
+                    disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                    options={[
+                      ...templateOptions.map(opt => {
                         const isCustomType = opt.type === CUSTOM_TEMPLATE_TYPE;
 
-                        return (
-                          <div
-                            key={opt.id}
-                            className="flex items-start gap-6 pr-6 hover:bg-ods-bg-hover transition-colors"
-                          >
-                            <div className="flex-1 flex gap-3 p-6">
-                              <RadioGroupItem id={id} value={opt.id} className="mt-0.5" />
-                              <div className="flex-1">
-                                <Label
-                                  htmlFor={id}
-                                  className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
-                                >
-                                  {opt.label}
-                                  {isCustomType &&
-                                    (() => {
-                                      if (customPolicy.enabled && customPolicy.baseTemplateId) {
-                                        const baseTemplate = templateOptions.find(
-                                          t => t.id === customPolicy.baseTemplateId,
-                                        );
-                                        return baseTemplate ? ` (based on ${baseTemplate.label})` : '';
-                                      }
-                                      if (selectedTemplate?.sourceTemplate) {
-                                        const sourceTemplate = templateOptions.find(
-                                          t => t.id === selectedTemplate.sourceTemplate,
-                                        );
-                                        return sourceTemplate ? ` (based on ${sourceTemplate.label})` : '';
-                                      }
-                                      return '';
-                                    })()}
-                                </Label>
-                                {opt.description && (
-                                  <p className="text-sm text-ods-text-secondary leading-relaxed">{opt.description}</p>
-                                )}
-                              </div>
-                            </div>
-                            {/* Show "Use for Custom" on all non-CUSTOM type templates */}
-                            {!isCustomType && (
-                              <div className="flex items-center py-6">
-                                <Button
-                                  variant="outline"
-                                  onClick={e => {
-                                    e.stopPropagation();
-                                    handleUseForCustomPolicy(opt.id);
-                                  }}
-                                  className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
-                                  leftIcon={<SlidersIcon className="w-4 h-4" />}
-                                  disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                                >
-                                  Use for Custom Policy
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                      {/* Show custom creation option only when creating new custom and it doesn't exist yet */}
-                      {customPolicy.enabled && !hasCustomTemplate && (
-                        <div className="flex items-start gap-6 pr-6 hover:bg-ods-system-greys-soft-grey/10 transition-colors">
-                          <div className="flex-1 flex gap-3 p-6">
-                            <RadioGroupItem
-                              id="policy-template-custom-creation"
-                              value={CUSTOM_CREATION_TEMPLATE_ID}
-                              className="mt-0.5"
-                            />
-                            <div className="flex-1">
-                              <Label
-                                htmlFor="policy-template-custom-creation"
-                                className="text-lg font-medium text-ods-text-primary cursor-pointer block mb-1"
-                              >
-                                Custom Policy{' '}
-                                {customPolicy.baseTemplateId &&
-                                  `(based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`}
-                              </Label>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </RadioGroup>
-                  </div>
+                        let labelSuffix = '';
+                        if (isCustomType) {
+                          if (customPolicy.enabled && customPolicy.baseTemplateId) {
+                            const baseTemplate = templateOptions.find(t => t.id === customPolicy.baseTemplateId);
+                            if (baseTemplate) labelSuffix = ` (based on ${baseTemplate.label})`;
+                          } else if (selectedTemplate?.sourceTemplate) {
+                            const sourceTemplate = templateOptions.find(t => t.id === selectedTemplate.sourceTemplate);
+                            if (sourceTemplate) labelSuffix = ` (based on ${sourceTemplate.label})`;
+                          }
+                        }
+
+                        return {
+                          value: opt.id,
+                          label: `${opt.label}${labelSuffix}`,
+                          description: opt.description,
+                          trailing: !isCustomType ? (
+                            <Button
+                              variant="outline"
+                              onClick={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleUseForCustomPolicy(opt.id);
+                              }}
+                              className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
+                              leftIcon={<SlidersIcon className="w-4 h-4" />}
+                              disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                            >
+                              Use for Custom Policy
+                            </Button>
+                          ) : undefined,
+                        };
+                      }),
+                      ...(customPolicy.enabled && !hasCustomTemplate
+                        ? [
+                            {
+                              value: CUSTOM_CREATION_TEMPLATE_ID,
+                              label: `Custom Policy${
+                                customPolicy.baseTemplateId
+                                  ? ` (based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`
+                                  : ''
+                              }`,
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
                 )}
 
                 {isPolicyTemplateLoading ? (

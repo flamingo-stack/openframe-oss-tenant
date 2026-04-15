@@ -38,16 +38,18 @@ export interface Dialog {
   rating?: DialogRating | null;
 
   // V2 ticket-specific fields (only populated when fetched as ticket)
+  currentMode?: string; // 'AI' | 'DIRECT'
   ticketNumber?: number;
   dialogId?: string;
   description?: string;
+  creationSource?: string;
   deviceId?: string;
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
   assignedTo?: string;
   assignedName?: string;
-  labels?: Array<{ id: string; name: string; color?: string }>;
+  labels?: Array<{ id: string; key: string; color?: string }>;
   attachments?: Array<{
     id: string;
     ticketId: string;
@@ -66,6 +68,12 @@ export interface Dialog {
     createdAt: string;
     updatedAt: string;
   }>;
+  tokenUsage?: {
+    inputTokensSize: number | null;
+    outputTokensSize: number | null;
+    totalTokensSize: number | null;
+    contextSize: number | null;
+  } | null;
 }
 
 export interface CursorPageInfo {
@@ -95,7 +103,8 @@ export type MessageDataType =
   | 'EXECUTING_TOOL'
   | 'EXECUTED_TOOL'
   | 'APPROVAL_REQUEST'
-  | 'APPROVAL_RESULT';
+  | 'APPROVAL_RESULT'
+  | 'SYSTEM';
 
 export interface MessageOwner {
   type: MessageOwnerType;
@@ -167,6 +176,11 @@ export interface ApprovalResultData extends MessageData {
   details?: any;
 }
 
+export interface SystemData extends MessageData {
+  type: 'SYSTEM';
+  text: string;
+}
+
 export interface Message {
   id: string;
   dialogId: string;
@@ -181,6 +195,7 @@ export interface Message {
     | ExecutedToolData
     | ApprovalRequestData
     | ApprovalResultData
+    | SystemData
     | MessageData;
 }
 

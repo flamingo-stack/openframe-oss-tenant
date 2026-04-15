@@ -8,9 +8,11 @@ import {
   ChatSidebar,
   ContentPageContainer,
   MingoIcon,
+  ModelDisplay,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAiModel } from '@/app/hooks/use-ai-model';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { featureFlags } from '@/lib/feature-flags';
 import { AppLayout } from '../components/app-layout';
@@ -24,8 +26,13 @@ import { useMingoMessagesStore } from './stores/mingo-messages-store';
 export default function Mingo() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialAiModel = useAiModel();
 
   const [isDraftChat, setIsDraftChat] = useState(false);
+  const [currentModel, setCurrentModel] = useState<{
+    modelName: string;
+    provider: string;
+  } | null>(null);
 
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
 
@@ -41,10 +48,14 @@ export default function Mingo() {
     handleApprove,
     handleReject,
     approvalStatuses,
+    dialogData,
     hasNextPage: hasNextMessagePage,
     fetchNextPage: fetchNextMessagePage,
     isFetchingNextPage: isFetchingNextMessagePage,
   } = useMingoDialogSelection();
+
+  const setTokenUsage = useMingoMessagesStore(state => state.setTokenUsage);
+  const tokenUsageByDialog = useMingoMessagesStore(state => state.tokenUsageByDialog);
 
   const {
     messages: processedMessages,
@@ -54,11 +65,42 @@ export default function Mingo() {
     approvals: pendingApprovals,
     isCreatingDialog,
     isTyping,
+    isCompacting,
     assistantType,
   } = useMingoChat(activeDialogId);
 
   const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
     useMingoRealtimeSubscription(activeDialogId);
+
+  useEffect(() => {
+    if (activeDialogId && dialogData?.tokenUsage) {
+      const u = dialogData.tokenUsage;
+      setTokenUsage(activeDialogId, {
+        inputTokensSize: u.inputTokensSize ?? 0,
+        outputTokensSize: u.outputTokensSize ?? 0,
+        totalTokensSize: u.totalTokensSize ?? 0,
+        contextSize: u.contextSize ?? 0,
+      });
+    }
+  }, [activeDialogId, dialogData?.tokenUsage, setTokenUsage]);
+
+  const tokenUsage = activeDialogId ? (tokenUsageByDialog.get(activeDialogId) ?? null) : null;
+
+  useEffect(() => {
+    if (initialAiModel && !currentModel) {
+      setCurrentModel(initialAiModel);
+    }
+  }, [initialAiModel, currentModel]);
+
+  const handleMetadataUpdate = useCallback(
+    (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
+      setCurrentModel({
+        modelName: metadata.modelName,
+        provider: metadata.providerName,
+      });
+    },
+    [],
+  );
 
   const draftWelcomeMessages = useMemo(
     () => [
@@ -115,6 +157,7 @@ export default function Mingo() {
       if (dialogId === activeDialogId) return;
 
       setIsDraftChat(false);
+      setCurrentModel(null);
 
       const currentUrl = new URL(window.location.href);
       currentUrl.searchParams.set('dialogId', dialogId);
@@ -151,6 +194,7 @@ export default function Mingo() {
     resetDialog();
     setActiveDialogId(null);
     setIsDraftChat(true);
+    setCurrentModel(null);
 
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.delete('dialogId');
@@ -236,6 +280,7 @@ export default function Mingo() {
             token={token}
             isDevTicketEnabled={isDevTicketEnabled}
             onConnectionChange={onConnectionChange}
+            onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
           />
         ))}
 
@@ -300,11 +345,25 @@ export default function Mingo() {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
-                  onStop={featureFlags.dialogStop.enabled() && isTyping ? stopGeneration : undefined}
-                  sending={isTyping || isCreatingDialog || isSelectingDialog}
+                  onStop={
+                    featureFlags.dialogStop.enabled() && isTyping && pendingApprovals.length === 0
+                      ? stopGeneration
+                      : undefined
+                  }
+                  sending={isTyping || isCompacting || isCreatingDialog || isSelectingDialog}
                   autoFocus={isDraftChat}
                   className="bg-ods-card rounded-lg"
                 />
+                {featureFlags.tokenBasedMemory.enabled() && currentModel && (
+                  <div className="mx-auto w-full max-w-3xl mt-3">
+                    <ModelDisplay
+                      provider={currentModel.provider}
+                      modelName={currentModel.modelName}
+                      usedTokens={tokenUsage?.totalTokensSize}
+                      contextWindow={tokenUsage?.contextSize}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -45,4 +45,7 @@ export type RealtimeAction =
   | { type: 'message'; message: Message; isAdmin: boolean }
   | { type: 'stream_start'; isAdmin: boolean }
   | { type: 'stream_end'; isAdmin: boolean }
-  | { type: 'error'; error: string; isAdmin: boolean };
+  | { type: 'error'; error: string; isAdmin: boolean }
+  | { type: 'compaction_start'; message: Message; isAdmin: boolean }
+  | { type: 'compaction_end'; message: Message; isAdmin: boolean }
+  | { type: 'metadata'; modelName: string; providerName: string; contextWindow: number; isAdmin: boolean };

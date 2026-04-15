@@ -107,8 +107,13 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const [displays, setDisplays] = useState<DisplayInfo[]>([]);
   const [currentDisplay, setCurrentDisplay] = useState(0);
+  const currentDisplayRef = useRef(currentDisplay);
   const [firstFrameReceived, setFirstFrameReceived] = useState(false);
   const [clipboardEnabled, setClipboardEnabled] = useState(true);
+
+  useEffect(() => {
+    currentDisplayRef.current = currentDisplay;
+  }, [currentDisplay]);
 
   useEffect(() => {
     remoteSettingsRef.current = remoteSettings;
@@ -135,7 +140,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       setDisplays(newDisplays);
       // Auto-select primary display if available
       const primaryDisplay = newDisplays.find(d => d.primary);
-      if (primaryDisplay && currentDisplay === 0) {
+      if (primaryDisplay && currentDisplayRef.current === 0) {
         setCurrentDisplay(primaryDisplay.id);
       }
     });
@@ -143,12 +148,12 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     const canvas = canvasRef.current;
     if (canvas) {
       desktop.attach(canvas);
-      desktop.setViewOnly(!enableInput);
+      desktop.setViewOnly(false);
       return () => {
         desktop.detach();
       };
     }
-  }, [isPageReady, currentDisplay, enableInput]);
+  }, [isPageReady]);
 
   useEffect(() => {
     if (!isPageReady || !meshcentralAgentId || initializingRef.current) return;

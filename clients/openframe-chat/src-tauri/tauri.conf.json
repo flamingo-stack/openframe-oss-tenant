@@ -21,7 +21,8 @@
         "resizable": true,
         "fullscreen": false,
         "closable": true,
-        "visible": false
+        "visible": false,
+        "dragDropEnabled": false
       },
       {
         "label": "invisible",

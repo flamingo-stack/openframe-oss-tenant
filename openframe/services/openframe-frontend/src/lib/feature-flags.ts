@@ -45,6 +45,16 @@ export const featureFlags = {
       return getFlagValue('tickets', () => false);
     },
   },
+  tokenBasedMemory: {
+    enabled(): boolean {
+      return getFlagValue('token-based-memory', () => false);
+    },
+  },
+  subscription: {
+    enabled(): boolean {
+      return getFlagValue('subscription', () => runtimeEnv.featureSubscription());
+    },
+  },
 } as const;
 
 /**

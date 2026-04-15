@@ -41,4 +41,5 @@ export const ticketsQueryKeys = {
   all: ['tickets'] as const,
   labels: () => [...ticketsQueryKeys.all, 'labels'] as const,
   detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
+  statistics: () => [...ticketsQueryKeys.all, 'statistics'] as const,
 } as const;

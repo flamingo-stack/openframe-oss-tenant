@@ -39,7 +39,16 @@ export const GET_DIALOGS_QUERY = `
  }
 `;
 
-export const GET_DIALOG_QUERY = `
+const TOKEN_USAGE_FRAGMENT = `
+    tokenUsage {
+      inputTokensSize
+      outputTokensSize
+      totalTokensSize
+      contextSize
+    }`;
+
+export function getDialogQuery({ includeTokenUsage = false } = {}) {
+  return `
   query GetDialog($id: ID!) {
     dialog(id: $id) {
     id
@@ -59,6 +68,7 @@ export const GET_DIALOG_QUERY = `
     statusUpdatedAt
     resolvedAt
     aiResolutionSuggestedAt
+    ${includeTokenUsage ? TOKEN_USAGE_FRAGMENT : ''}
     rating {
       id
       dialogId
@@ -67,6 +77,7 @@ export const GET_DIALOG_QUERY = `
     }
   }
 `;
+}
 
 export const GET_DIALOG_STATISTICS_QUERY = `
   query GetDialogStatistics {
@@ -82,7 +93,18 @@ export const GET_DIALOG_STATISTICS_QUERY = `
   }
 `;
 
-export const GET_DIALOG_MESSAGES_QUERY = `
+const CONTEXT_COMPACTION_FRAGMENT = `
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }`;
+
+export function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+  return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
@@ -100,10 +122,21 @@ export const GET_DIALOG_MESSAGES_QUERY = `
           createdAt
           owner {
             type
+            ... on AdminOwner {
+              user {
+                id
+                firstName
+                lastName
+              }
+            }
           }
           messageData {
             type
             ... on TextData {
+              text
+            }
+
+            ... on SystemData {
               text
             }
 
@@ -127,7 +160,7 @@ export const GET_DIALOG_MESSAGES_QUERY = `
             }
 
             ... on ApprovalRequestData {
-              type  
+              type
               approvalRequestId
               approvalType
               command
@@ -140,6 +173,8 @@ export const GET_DIALOG_MESSAGES_QUERY = `
               approved
               approvalType
             }
+
+            ${includeContextCompaction ? CONTEXT_COMPACTION_FRAGMENT : ''}
 
             ... on ErrorData {
               error
@@ -157,3 +192,4 @@ export const GET_DIALOG_MESSAGES_QUERY = `
     }
   }
 `;
+}

@@ -12,10 +12,22 @@ interface UseDialogRealtimeProcessorOptions {
   onStreamEnd: (isAdmin: boolean) => void;
   onMessageAdd: (message: Message, isAdmin: boolean) => void;
   onError: (error: string, isAdmin: boolean) => void;
+  onCompactionStart?: (message: Message, isAdmin: boolean) => void;
+  onCompactionEnd?: (message: Message, isAdmin: boolean) => void;
+  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }, isAdmin: boolean) => void;
 }
 
 export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOptions) {
-  const { dialogId, onStreamStart, onStreamEnd, onMessageAdd, onError } = options;
+  const {
+    dialogId,
+    onStreamStart,
+    onStreamEnd,
+    onMessageAdd,
+    onError,
+    onCompactionStart,
+    onCompactionEnd,
+    onMetadata,
+  } = options;
   const version = useDialogVersion();
   const service = getDialogService(version);
 
@@ -39,9 +51,31 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
         case 'message':
           onMessageAdd(action.message, action.isAdmin);
           break;
+        case 'compaction_start':
+          onCompactionStart?.(action.message, action.isAdmin);
+          break;
+        case 'compaction_end':
+          onCompactionEnd?.(action.message, action.isAdmin);
+          break;
+        case 'metadata':
+          onMetadata?.(
+            { modelName: action.modelName, providerName: action.providerName, contextWindow: action.contextWindow },
+            action.isAdmin,
+          );
+          break;
       }
     },
-    [dialogId, onStreamStart, onStreamEnd, onMessageAdd, onError, service],
+    [
+      dialogId,
+      onStreamStart,
+      onStreamEnd,
+      onMessageAdd,
+      onError,
+      onCompactionStart,
+      onCompactionEnd,
+      onMetadata,
+      service,
+    ],
   );
 
   return {

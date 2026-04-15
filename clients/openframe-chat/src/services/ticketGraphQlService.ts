@@ -4,7 +4,7 @@ import { tokenService } from './tokenService';
 // --- Types ---
 
 export interface TicketLabel {
-  name: string;
+  key: string;
 }
 
 export interface TicketNode {
@@ -13,6 +13,7 @@ export interface TicketNode {
   title: string;
   description?: string;
   status: string;
+  creationSource?: string;
   labels: TicketLabel[];
   dialog: { id: string } | null;
   createdAt: string;
@@ -63,8 +64,9 @@ const GET_TICKETS_QUERY = gql`
           ticketNumber
           title
           status
+          creationSource
           labels {
-            name
+            key
           }
           dialog {
             id
@@ -92,7 +94,7 @@ const CREATE_TICKET_MUTATION = gql`
         status
         labels {
           id
-          name
+          key
           color
         }
         dialog {
@@ -143,8 +145,9 @@ const GET_TICKET_QUERY = gql`
       title
       description
       status
+      creationSource
       labels {
-        name
+        key
       }
       dialog {
         id

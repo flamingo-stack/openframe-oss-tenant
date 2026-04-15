@@ -14,13 +14,27 @@ async function uploadAttachments(files: File[]): Promise<string[]> {
   const tempIds: string[] = [];
 
   for (const file of files) {
-    const temp = await ticketGraphQlService.createTempAttachmentUploadUrl(file.name, file.type || undefined);
+    let temp;
+    try {
+      temp = await ticketGraphQlService.createTempAttachmentUploadUrl(file.name, file.type || undefined);
+    } catch {
+      throw new Error(`Failed to prepare upload for "${file.name}". Please try again.`);
+    }
 
-    await fetch(temp.uploadUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
-    });
+    let response;
+    try {
+      response = await fetch(temp.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
+    } catch {
+      throw new Error(`Failed to upload "${file.name}". Please check your connection and try again.`);
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload "${file.name}". Please try again.`);
+    }
 
     tempIds.push(temp.id);
   }

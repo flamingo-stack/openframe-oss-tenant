@@ -77,6 +77,26 @@ pub fn run() {
     let server_url = config.server_url;
     let debug_mode = config.debug_mode;
     
+    // When launched from the SYSTEM service via CreateProcessAsUserW, the process
+    // inherits SYSTEM's USERPROFILE env var (C:\WINDOWS\system32\config\systemprofile)
+    // even though it has the actual user's token. The Windows shell dialog reads
+    // USERPROFILE to resolve the Desktop folder, causing "Location is not available".
+    // Fix: detect this and override USERPROFILE with the real user's profile path.
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(current) = std::env::var("USERPROFILE") {
+            if current.to_lowercase().contains("systemprofile") {
+                if let Some(real_home) = dirs::home_dir() {
+                    let real_str = real_home.to_string_lossy();
+                    if !real_str.to_lowercase().contains("systemprofile") {
+                        println!("[INFO] Correcting USERPROFILE: {} -> {}", current, real_str);
+                        unsafe { std::env::set_var("USERPROFILE", real_home.as_os_str()) };
+                    }
+                }
+            }
+        }
+    }
+
     let mut builder = tauri::Builder::default();
     
     // Prepare token watcher parameters if both are available
@@ -89,7 +109,10 @@ pub fn run() {
     let debug_mode_clone = debug_mode;
     let background_mode_clone = background_mode;
 
-    builder = builder.setup(move |app| {
+    builder = builder
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()

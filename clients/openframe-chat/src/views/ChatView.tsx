@@ -13,10 +13,17 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   ModelDisplay,
+  type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
-import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ClockHistoryIcon,
+  Ellipsis01Icon,
+  PlusCircleIcon,
+  TagIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
@@ -25,11 +32,23 @@ import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
-import { dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
+import { type DialogTokenUsage, dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
+import { ticketGraphQlService } from '../services/ticketGraphQlService';
+
+function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsageData | null {
+  if (!usage) return null;
+  return {
+    inputTokensSize: usage.inputTokensSize ?? 0,
+    outputTokensSize: usage.outputTokensSize ?? 0,
+    totalTokensSize: usage.totalTokensSize ?? 0,
+    contextSize: usage.contextSize ?? 0,
+  };
+}
 
 export function ChatView() {
   const { flags } = useFeatureFlags();
+  const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
     modelName: string;
@@ -38,7 +57,20 @@ export function ChatView() {
   } | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageData | null>(null);
+  const [faeFormTicket, setFaeFormTicket] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    createdAt: string;
+  } | null>(null);
+  const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
+  const [activeTicketStatus, setActiveTicketStatus] = useState<string | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
+
+  const handleTokenUsage = useCallback((data: TokenUsageData) => {
+    setTokenUsage(data);
+  }, []);
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
@@ -55,6 +87,7 @@ export function ChatView() {
     messages,
     isTyping,
     isStreaming,
+    isCompacting,
     sendMessage,
     stopGeneration,
     handleQuickAction,
@@ -74,15 +107,34 @@ export function ChatView() {
     useApi: true,
     useNats: true,
     onMetadataUpdate: handleMetadataUpdate,
+    onTokenUsage: handleTokenUsage,
   });
 
   const { toast } = useToast();
 
+  const hasPendingApproval = useMemo(
+    () =>
+      messages.some(
+        (msg: { content: unknown }) =>
+          Array.isArray(msg.content) &&
+          msg.content.some(
+            (seg: { type: string; status?: string }) =>
+              seg.type === 'approval_request' && (!seg.status || seg.status === 'pending'),
+          ),
+      ),
+    [messages],
+  );
+
+  const tokenBasedMemory = flags['token-based-memory'];
+
   const fetchResumableDialog = useCallback(() => {
-    dialogGraphQlService.getResumableDialog().then(dialog => {
+    dialogGraphQlService.getResumableDialog({ includeTokenUsage: tokenBasedMemory }).then(dialog => {
       setResumableDialog(dialog);
+      if (dialog?.tokenUsage) {
+        setTokenUsage(toTokenUsageData(dialog.tokenUsage));
+      }
     });
-  }, []);
+  }, [tokenBasedMemory]);
 
   useEffect(() => {
     if (!flags.tickets) {
@@ -91,11 +143,16 @@ export function ChatView() {
   }, [flags.tickets, fetchResumableDialog]);
 
   const handleNewChat = useCallback(() => {
+    setFaeFormTicket(null);
+    setPreviewTicketId(null);
+    setActiveTicketStatus(null);
     clearMessages();
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    setTokenUsage(null);
     if (!flags.tickets) {
       fetchResumableDialog();
     }
-  }, [clearMessages, flags.tickets, fetchResumableDialog]);
+  }, [clearMessages, queryClient, flags.tickets, fetchResumableDialog]);
 
   const ticketsHook = useTickets({ enabled: flags.tickets });
 
@@ -103,21 +160,39 @@ export function ChatView() {
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
+      setFaeFormTicket(null);
+      setPreviewTicketId(null);
+      setActiveTicketStatus(null);
+
       if (flags.tickets) {
-        const dialogId = ticketsHook.getDialogId(ticketId);
-        if (!dialogId) {
-          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-          if (ticketDetails) {
-            showTicketPreview(ticketDetails);
-          } else {
-            toast({
-              title: 'Error',
-              description: 'Failed to load ticket details',
-              variant: 'destructive',
-            });
-          }
+        const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+        if (!ticketDetails) {
+          toast({
+            title: 'Error',
+            description: 'Failed to load ticket details',
+            variant: 'destructive',
+          });
           return;
         }
+
+        setActiveTicketStatus(ticketDetails.status ?? null);
+
+        const dialogId = ticketsHook.getDialogId(ticketId);
+        if (!dialogId) {
+          setPreviewTicketId(ticketId);
+          showTicketPreview(ticketDetails);
+          return;
+        }
+
+        if (ticketDetails.creationSource === 'FAE_FORM') {
+          setFaeFormTicket({
+            id: ticketId,
+            title: ticketDetails.title,
+            description: ticketDetails.description,
+            createdAt: ticketDetails.createdAt || new Date().toISOString(),
+          });
+        }
+
         await resumeDialog(dialogId);
       } else {
         await resumeDialog(ticketId);
@@ -126,8 +201,19 @@ export function ChatView() {
     [ticketsHook, resumeDialog, showTicketPreview, toast, flags],
   );
 
+  useEffect(() => {
+    if (!dialogId) return;
+    if (tokenUsage) return;
+    if (!tokenBasedMemory) return;
+    dialogGraphQlService.getDialogTokenUsage(dialogId).then(usage => {
+      if (usage) setTokenUsage(toTokenUsageData(usage));
+    });
+  }, [dialogId, tokenBasedMemory]);
+
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
+
+  const isActiveTicketResolved = activeTicketStatus === 'RESOLVED';
 
   const displayModel =
     currentModel ||
@@ -138,6 +224,55 @@ export function ChatView() {
           contextWindow: 0,
         }
       : null);
+
+  const displayMessages = useMemo(() => {
+    if (!faeFormTicket || hasNextPage) return messages;
+    const faeMessage = {
+      id: `synthetic-fae-form-${faeFormTicket.id}`,
+      role: 'assistant' as const,
+      name: 'Fae',
+      content: [
+        'Your request has been received. We will contact you shortly.',
+        '',
+        'Subject:',
+        faeFormTicket.title || '',
+        '',
+        'Description:',
+        faeFormTicket.description || '(No description provided)',
+      ].join('\n'),
+      timestamp: new Date(faeFormTicket.createdAt),
+      avatar: faeAvatar,
+    };
+    return [faeMessage, ...messages];
+  }, [messages, faeFormTicket, hasNextPage]);
+
+  useEffect(() => {
+    if (!isTicketPreview || !previewTicketId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const ticket = await ticketGraphQlService.getTicket(previewTicketId);
+        if (ticket?.dialog?.id) {
+          setPreviewTicketId(null);
+
+          if (ticket.creationSource === 'FAE_FORM') {
+            setFaeFormTicket({
+              id: previewTicketId,
+              title: ticket.title,
+              description: ticket.description,
+              createdAt: ticket.createdAt,
+            });
+          }
+
+          await resumeDialog(ticket.dialog.id);
+        }
+      } catch {
+        // Silently retry on next interval
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isTicketPreview, previewTicketId, resumeDialog]);
 
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;
@@ -151,7 +286,7 @@ export function ChatView() {
         serverUrl={serverUrl}
         headerActions={
           <>
-            {flags.tickets && (
+            {flags.tickets && !hasMessages && (
               <Button
                 onClick={() => setIsTicketModalOpen(true)}
                 variant="outline"
@@ -194,9 +329,9 @@ export function ChatView() {
       <NewTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
 
       <ChatContent>
-        {hasMessages || (dialogId && isLoadingHistory) ? (
+        {displayMessages.length > 0 || hasMessages || (dialogId && isLoadingHistory) ? (
           <ChatMessageList
-            messages={messages}
+            messages={displayMessages}
             dialogId={dialogId || undefined}
             isTyping={isTyping}
             isLoading={isLoadingHistory}
@@ -214,10 +349,12 @@ export function ChatView() {
 
             {flags.tickets ? (
               <>
-                {/* Tickets List */}
-                <ChatTicketList className="w-full max-w-2xl" tickets={displayTickets} onTicketClick={handleTicketClick} />
+                <ChatTicketList
+                  className="w-full max-w-2xl"
+                  tickets={displayTickets}
+                  onTicketClick={handleTicketClick}
+                />
 
-                {/* Quick Actions — shown only when no tickets */}
                 {displayTickets.length === 0 && quickActions.length > 0 && (
                   <div className="w-full max-w-2xl">
                     <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
@@ -237,7 +374,6 @@ export function ChatView() {
               </>
             ) : (
               <>
-                {/* Resumable Dialog */}
                 {resumableDialog && (
                   <div className="w-full max-w-2xl mb-6">
                     <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
@@ -248,6 +384,7 @@ export function ChatView() {
                       onClick={async () => {
                         const success = await resumeDialog(resumableDialog.id);
                         if (success) {
+                          setTokenUsage(toTokenUsageData(resumableDialog.tokenUsage));
                           setResumableDialog(null);
                         }
                       }}
@@ -266,7 +403,6 @@ export function ChatView() {
                   </div>
                 )}
 
-                {/* Quick Actions */}
                 {quickActions.length > 0 && (
                   <div className="w-full max-w-2xl">
                     <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
@@ -290,34 +426,50 @@ export function ChatView() {
       </ChatContent>
 
       <ChatFooter>
-        <ChatInput
-          onSend={sendMessage}
-          onStop={flags['dialog-stop'] && isStreaming ? stopGeneration : undefined}
-          sending={isStreaming}
-          awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
-          placeholder="Enter your request here..."
-          className={hasMessages ? '' : 'max-w-2xl mx-auto'}
-          reserveAvatarOffset={hasMessages}
-          disabled={isDisconnected}
-        />
-        {displayModel && isFullyLoaded && (
+        {isActiveTicketResolved ? (
+          <p className="text-body2 text-ods-text-secondary text-center py-4">
+            This chat is closed. If you have a similar problem, please create a new request.
+          </p>
+        ) : (
+          <ChatInput
+            onSend={sendMessage}
+            onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
+            sending={isStreaming || isCompacting}
+            awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
+            placeholder="Enter your request here..."
+            className={hasMessages ? '' : 'max-w-2xl mx-auto'}
+            reserveAvatarOffset={hasMessages}
+            disabled={isDisconnected}
+          />
+        )}
+        {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
           <div className={hasMessages ? 'mx-auto w-full max-w-3xl px-4' : 'mx-auto w-full max-w-2xl'}>
             {hasMessages ? (
               <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
                 <div className="invisible h-8 w-8" aria-hidden />
-                <ModelDisplay
-                  provider={displayModel.provider}
-                  modelName={displayModel.modelName}
-                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                />
+                <div>
+                  {displayModel && isFullyLoaded && (
+                    <ModelDisplay
+                      provider={displayModel.provider}
+                      modelName={displayModel.modelName}
+                      displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                      usedTokens={tokenUsage?.totalTokensSize}
+                      contextWindow={tokenUsage?.contextSize}
+                    />
+                  )}
+                </div>
               </div>
             ) : (
               <div className="mt-3">
-                <ModelDisplay
-                  provider={displayModel.provider}
-                  modelName={displayModel.modelName}
-                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                />
+                {displayModel && isFullyLoaded && (
+                  <ModelDisplay
+                    provider={displayModel.provider}
+                    modelName={displayModel.modelName}
+                    displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                    usedTokens={tokenUsage?.totalTokensSize}
+                    contextWindow={tokenUsage?.contextSize}
+                  />
+                )}
               </div>
             )}
           </div>
