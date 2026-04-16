@@ -197,6 +197,7 @@ jobs:
       - name: Run Tests
         id: tests
         env:
+          TEST_ENV_MODE: OSS
           TEST_BASE_URL: localhost
           TEST_USER_DOMAIN: localhost
           MONGODB_URI: mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017
