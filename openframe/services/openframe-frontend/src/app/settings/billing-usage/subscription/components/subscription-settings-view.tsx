@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionSettingsViewQuery as SubscriptionSettingsViewQueryType } from '@/__generated__/subscriptionSettingsViewQuery.graphql';
+import { useSubscriptionLock } from '@/app/components/subscription-lock/subscription-lock-context';
+import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useUpdateSubscription } from '../hooks/use-update-subscription';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
 import { ProductSubscriptionCard } from './product-subscription-card';
@@ -69,6 +71,7 @@ export function SubscriptionSettingsView() {
 
 function SubscriptionSettingsContent() {
   const router = useRouter();
+  const { isLocked, copy } = useSubscriptionLock();
   const data = useLazyLoadQuery<SubscriptionSettingsViewQueryType>(
     subscriptionSettingsViewQuery,
     {},
@@ -105,12 +108,21 @@ function SubscriptionSettingsContent() {
     updateSubscription.mutate({ packageUpdates, paygUpdates });
   };
 
+  const submitLabel = isLocked && copy ? copy.ctaLabel : 'Update Subscription';
+
   return (
     <PageLayout
-      title="Subscription Settings"
+      title={isLocked ? undefined : 'Subscription Settings'}
       background="default"
-      backButton={{ label: 'Back to Billing & Usage', onClick: () => router.push('/settings/billing-usage') }}
+      showHeader={!isLocked}
+      backButton={
+        isLocked
+          ? undefined
+          : { label: 'Back to Billing & Usage', onClick: () => router.push('/settings/billing-usage') }
+      }
     >
+      {isLocked && copy && <TrialEndedBanner copy={copy} />}
+
       <CheckboxBlock
         checked={aiEnabled}
         onCheckedChange={setAiEnabled}
@@ -148,7 +160,7 @@ function SubscriptionSettingsContent() {
             loading={updateSubscription.isPending}
             disabled={updateSubscription.isPending}
           >
-            Update Subscription
+            {submitLabel}
           </Button>
         </div>
       </div>
