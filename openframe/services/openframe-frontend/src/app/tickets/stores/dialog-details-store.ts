@@ -124,13 +124,49 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
 
     const TEXT_TYPE = MESSAGE_TYPE.TEXT;
     const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT;
+    const COMPACTION_START_TYPE = 'CONTEXT_COMPACTION_START';
+    const COMPACTION_END_TYPE = 'CONTEXT_COMPACTION_END';
 
-    const isTextMessage = message.messageData?.type === TEXT_TYPE;
+    const incomingType = message.messageData?.type;
+    const isTextMessage = incomingType === TEXT_TYPE;
     const isAssistantOwner = message.owner?.type === ASSISTANT_TYPE;
+    const isCompactionStart = incomingType === COMPACTION_START_TYPE;
+    const isCompactionEnd = incomingType === COMPACTION_END_TYPE;
 
     const updateMessages = (messages: Message[], isTextMsg: boolean, isAssistant: boolean): Message[] => {
       const existingIds = new Set(messages.map(m => m.id));
       if (existingIds.has(message.id)) return messages;
+
+      if (isCompactionStart) {
+        const hasExistingCompaction = messages.some(
+          m => m.messageData?.type === COMPACTION_START_TYPE || m.messageData?.type === COMPACTION_END_TYPE,
+        );
+        if (hasExistingCompaction) return messages;
+        return [...messages, message];
+      }
+
+      if (isCompactionEnd) {
+        const lastEndIdx = (() => {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].messageData?.type === COMPACTION_END_TYPE) return i;
+          }
+          return -1;
+        })();
+        if (lastEndIdx !== -1) return messages;
+
+        const lastStartIdx = (() => {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].messageData?.type === COMPACTION_START_TYPE) return i;
+          }
+          return -1;
+        })();
+        if (lastStartIdx !== -1) {
+          const updated = [...messages];
+          updated[lastStartIdx] = message;
+          return updated;
+        }
+        return [...messages, message];
+      }
 
       if (isTextMsg && messages.length > 0 && isAssistant) {
         const lastMessage = messages[messages.length - 1];

@@ -86,7 +86,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { toast } = useToast();
   const version = useDialogVersion();
   const initialAiModel = useAiModel();
-  const [currentModel, setCurrentModel] = useState<{ provider: string; displayName: string } | null>(null);
+  const [currentClientModel, setCurrentClientModel] = useState<{ provider: string; displayName: string } | null>(null);
+  const [currentAdminModel, setCurrentAdminModel] = useState<{ provider: string; displayName: string } | null>(null);
   const isClientOwner = useCallback((owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
   }, []);
@@ -199,8 +200,13 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       setIsCompacting(false);
       addRealtimeMessage(message, isAdmin);
     },
-    onMetadata: metadata => {
-      setCurrentModel({ provider: metadata.providerName, displayName: metadata.modelDisplayName });
+    onMetadata: (metadata, isAdmin) => {
+      const next = { provider: metadata.providerName, displayName: metadata.modelDisplayName };
+      if (isAdmin) {
+        setCurrentAdminModel(next);
+      } else {
+        setCurrentClientModel(next);
+      }
     },
   });
 
@@ -239,10 +245,10 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   }, [dialogId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering, version]);
 
   useEffect(() => {
-    if (initialAiModel && !currentModel) {
-      setCurrentModel(initialAiModel);
-    }
-  }, [initialAiModel, currentModel]);
+    if (!initialAiModel) return;
+    setCurrentClientModel(prev => prev ?? initialAiModel);
+    setCurrentAdminModel(prev => prev ?? initialAiModel);
+  }, [initialAiModel]);
 
   // Default to technician tab when ticket is admin-owned (no client chat)
   useEffect(() => {
@@ -654,6 +660,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
   const isClosed = isResolved || isArchived;
   const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+  const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
+  const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
+  const showTokenMemory = !isClosed && featureFlags.tokenBasedMemory.enabled();
 
   return (
     <PageLayout
@@ -877,6 +886,16 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   className="mt-1 bg-ods-card rounded-lg max-w-full"
                 />
               )}
+              {showTokenMemory && (currentClientModel || clientTokenUsage) && (
+                <div className="mt-2">
+                  <ModelDisplay
+                    provider={currentClientModel?.provider}
+                    modelName={currentClientModel?.displayName}
+                    usedTokens={clientTokenUsage?.totalTokensSize ?? undefined}
+                    contextWindow={clientTokenUsage?.contextSize ?? undefined}
+                  />
+                </div>
+              )}
             </div>
           )}
 
@@ -940,19 +959,19 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   className="mt-2 bg-ods-card rounded-lg max-w-full"
                 />
               )}
+              {showTokenMemory && (currentAdminModel || adminTokenUsage) && (
+                <div className="mt-2">
+                  <ModelDisplay
+                    provider={currentAdminModel?.provider}
+                    modelName={currentAdminModel?.displayName}
+                    usedTokens={adminTokenUsage?.totalTokensSize ?? undefined}
+                    contextWindow={adminTokenUsage?.contextSize ?? undefined}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
-        {!isClosed && featureFlags.tokenBasedMemory.enabled() && (currentModel || dialog.tokenUsage) && (
-          <div className="mx-auto w-full mt-2">
-            <ModelDisplay
-              provider={currentModel?.provider}
-              modelName={currentModel?.displayName}
-              usedTokens={dialog.tokenUsage?.totalTokensSize ?? undefined}
-              contextWindow={dialog.tokenUsage?.contextSize ?? undefined}
-            />
-          </div>
-        )}
       </div>
     </PageLayout>
   );

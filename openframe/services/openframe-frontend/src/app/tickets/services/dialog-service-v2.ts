@@ -68,12 +68,13 @@ interface TicketNode {
   dialog?: {
     id: string;
     currentMode?: string;
-    tokenUsage?: {
+    tokenUsage?: Array<{
+      chatType: string;
       inputTokensSize: number | null;
       outputTokensSize: number | null;
       totalTokensSize: number | null;
       contextSize: number | null;
-    } | null;
+    }> | null;
   };
   description?: string;
   creationSource?: string;

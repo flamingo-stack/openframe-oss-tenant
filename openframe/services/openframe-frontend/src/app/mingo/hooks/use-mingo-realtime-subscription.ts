@@ -37,7 +37,6 @@ interface UseMingoRealtimeSubscription {
   getSubscriptionState: (dialogId: string) => DialogSubscriptionState;
   subscribedDialogs: Set<string>;
   connectionState: 'connected' | 'disconnected' | 'connecting';
-  token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange: (dialogId: string, connected: boolean) => void;
 }
@@ -76,25 +75,12 @@ export function useMingoRealtimeSubscription(
   const catchupRefs = useRef<Map<string, any>>(new Map());
 
   const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-  const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
   const { resetUnread } = useMingoMessagesStore();
 
   useEffect(() => {
     onChunkReceivedRef.current = onChunkReceived;
   }, [onChunkReceived]);
-
-  useEffect(() => {
-    if (!isDevTicketEnabled) return;
-
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.ACCESS_TOKEN) {
-        setToken(getAccessToken());
-      }
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, [isDevTicketEnabled]);
 
   const onConnectionChange = useCallback((dialogId: string, connected: boolean) => {
     setConnectionState(connected ? 'connected' : 'disconnected');
@@ -171,7 +157,6 @@ export function useMingoRealtimeSubscription(
     getSubscriptionState,
     subscribedDialogs,
     connectionState,
-    token,
     isDevTicketEnabled,
     onConnectionChange,
   };
@@ -327,7 +312,11 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         if (metadata?.isCompacting) {
-          setCompacting(dialogId, true);
+          const lastCompaction = [...segments]
+            .reverse()
+            .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
+          const stillCompacting = lastCompaction?.status === 'started';
+          setCompacting(dialogId, stillCompacting);
           setTyping(dialogId, false);
         } else {
           setCompacting(dialogId, false);
@@ -390,7 +379,6 @@ interface DialogSubscriptionProps {
   onApprove?: (requestId?: string) => void;
   onReject?: (requestId?: string) => void;
   approvalStatuses?: Record<string, any>;
-  token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange?: (dialogId: string, connected: boolean) => void;
   onMetadata?: (metadata: {
@@ -406,13 +394,24 @@ export function DialogSubscription({
   onApprove,
   onReject,
   approvalStatuses,
-  token,
   isDevTicketEnabled,
   onConnectionChange,
   onMetadata,
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
+  const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
+
+  useEffect(() => {
+    if (!isDevTicketEnabled) return;
+    const handler = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.ACCESS_TOKEN) {
+        setToken(getAccessToken());
+      }
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, [isDevTicketEnabled]);
 
   const { processChunk: processorProcessChunk } = useDialogChunkProcessor(dialogId, {
     onApprove,
@@ -498,8 +497,12 @@ export function DialogSubscription({
       await apiClient.get('/api/me');
     } catch {
       // If refresh fails, apiClient will force-logout
+    } finally {
+      if (isDevTicketEnabled) {
+        setToken(getAccessToken());
+      }
     }
-  }, []);
+  }, [isDevTicketEnabled]);
 
   const { reconnectionCount } = useNatsDialogSubscription({
     enabled: true,

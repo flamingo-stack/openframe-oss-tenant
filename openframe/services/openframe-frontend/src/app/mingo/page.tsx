@@ -69,18 +69,20 @@ export default function Mingo() {
     assistantType,
   } = useMingoChat(activeDialogId);
 
-  const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
+  const { subscribeToDialog, subscribedDialogs, isDevTicketEnabled, onConnectionChange } =
     useMingoRealtimeSubscription(activeDialogId);
 
   useEffect(() => {
     if (activeDialogId && dialogData?.tokenUsage) {
-      const u = dialogData.tokenUsage;
-      setTokenUsage(activeDialogId, {
-        inputTokensSize: u.inputTokensSize ?? 0,
-        outputTokensSize: u.outputTokensSize ?? 0,
-        totalTokensSize: u.totalTokensSize ?? 0,
-        contextSize: u.contextSize ?? 0,
-      });
+      const u = dialogData.tokenUsage.find(t => t.chatType === 'ADMIN_AI_CHAT');
+      if (u) {
+        setTokenUsage(activeDialogId, {
+          inputTokensSize: u.inputTokensSize ?? 0,
+          outputTokensSize: u.outputTokensSize ?? 0,
+          totalTokensSize: u.totalTokensSize ?? 0,
+          contextSize: u.contextSize ?? 0,
+        });
+      }
     }
   }, [activeDialogId, dialogData?.tokenUsage, setTokenUsage]);
 
@@ -277,7 +279,6 @@ export default function Mingo() {
             onApprove={handleApprove}
             onReject={handleReject}
             approvalStatuses={approvalStatuses}
-            token={token}
             isDevTicketEnabled={isDevTicketEnabled}
             onConnectionChange={onConnectionChange}
             onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
@@ -346,7 +347,7 @@ export default function Mingo() {
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
                   onStop={
-                    featureFlags.dialogStop.enabled() && isTyping && pendingApprovals.length === 0
+                    featureFlags.dialogStop.enabled() && isTyping && !isCompacting && pendingApprovals.length === 0
                       ? stopGeneration
                       : undefined
                   }

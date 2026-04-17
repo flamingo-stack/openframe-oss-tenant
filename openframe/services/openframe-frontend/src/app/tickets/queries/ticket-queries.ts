@@ -93,6 +93,7 @@ export const DELETE_TICKET_ATTACHMENT = `
 
 const TICKET_TOKEN_USAGE_FRAGMENT = `
         tokenUsage {
+          chatType
           inputTokensSize
           outputTokensSize
           totalTokensSize

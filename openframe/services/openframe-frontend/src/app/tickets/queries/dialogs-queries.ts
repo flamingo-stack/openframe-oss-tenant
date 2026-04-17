@@ -41,6 +41,7 @@ export const GET_DIALOGS_QUERY = `
 
 const TOKEN_USAGE_FRAGMENT = `
     tokenUsage {
+      chatType
       inputTokensSize
       outputTokensSize
       totalTokensSize
