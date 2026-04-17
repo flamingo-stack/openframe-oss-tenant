@@ -1,4 +1,4 @@
-export type DialogStatus = 'ACTIVE' | 'ACTION_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
+export type DialogStatus = 'ACTIVE' | 'TECH_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
 export type DialogOwnerEnum = 'CLIENT' | 'ADMIN';
 
@@ -50,6 +50,7 @@ export interface Dialog {
   organizationImageUrl?: string;
   assignedTo?: string;
   assignedName?: string;
+  assigneeImageUrl?: string;
   labels?: Array<{ id: string; key: string; color?: string }>;
   attachments?: Array<{
     id: string;
@@ -124,6 +125,8 @@ export interface AdminOwner extends MessageOwner {
   userId: string;
   user?: {
     id: string;
+    firstName?: string;
+    lastName?: string;
   };
 }
 

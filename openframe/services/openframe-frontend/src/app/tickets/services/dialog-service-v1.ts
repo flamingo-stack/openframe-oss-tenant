@@ -195,6 +195,7 @@ export class DialogServiceV1 implements DialogService {
     if (action.action === 'metadata') {
       return {
         type: 'metadata',
+        modelDisplayName: action.modelDisplayName,
         modelName: action.modelName,
         providerName: action.providerName,
         contextWindow: action.contextWindow,

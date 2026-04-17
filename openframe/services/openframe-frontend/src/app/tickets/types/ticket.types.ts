@@ -66,6 +66,7 @@ export interface Ticket {
   title: string;
   description?: string;
   status: TicketStatus;
+  creationSource?: string;
   owner: TicketOwner;
   deviceId?: string;
   deviceHostname?: string;
@@ -130,9 +131,18 @@ export interface UpdateTicketInput {
   id: string;
   title?: string;
   description?: string;
-  deviceId?: string;
-  organizationId?: string;
-  assigneeId?: string;
+  deviceId?: string | null;
+  organizationId?: string | null;
+  assigneeId?: string | null;
   labelIds?: string[];
   tempAttachmentIds?: string[];
+}
+
+export interface AssignTicketInput {
+  id: string;
+  assigneeId: string;
+}
+
+export interface TicketIdInput {
+  id: string;
 }

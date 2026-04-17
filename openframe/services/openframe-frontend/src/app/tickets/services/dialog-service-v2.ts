@@ -44,6 +44,7 @@ interface TicketNode {
   organizationImage?: { imageUrl: string };
   assignedTo?: string;
   assignedName?: string;
+  assigneeImage?: { imageUrl: string };
   labels?: Array<{ id: string; key: string; color?: string }>;
   notes?: Array<{
     id: string;
@@ -96,7 +97,7 @@ interface TicketsResponse {
 // TicketStatus -> DialogStatus mapping
 const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
   ACTIVE: 'ACTIVE',
-  TECH_REQUIRED: 'ACTION_REQUIRED',
+  TECH_REQUIRED: 'TECH_REQUIRED',
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ARCHIVED: 'ARCHIVED',
@@ -105,7 +106,7 @@ const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
 // DialogStatus -> TicketStatus mapping (for filters)
 const DIALOG_TO_TICKET_STATUS: Record<string, string> = {
   ACTIVE: 'ACTIVE',
-  ACTION_REQUIRED: 'TECH_REQUIRED',
+  TECH_REQUIRED: 'TECH_REQUIRED',
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ARCHIVED: 'ARCHIVED',
@@ -155,6 +156,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     organizationImageUrl: ticket.organizationImage?.imageUrl,
     assignedTo: ticket.assignedTo,
     assignedName: ticket.assignedName,
+    assigneeImageUrl: ticket.assigneeImage?.imageUrl,
     labels: ticket.labels,
     attachments: ticket.attachments,
     tokenUsage: ticket.dialog?.tokenUsage ?? undefined,

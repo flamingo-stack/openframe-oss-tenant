@@ -182,7 +182,12 @@ interface UseDialogChunkProcessorOptions {
   onApprove?: (requestId?: string) => void | Promise<void>;
   onReject?: (requestId?: string) => void | Promise<void>;
   approvalStatuses?: Record<string, any>;
-  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
+  onMetadata?: (metadata: {
+    modelDisplayName: string;
+    modelName: string;
+    providerName: string;
+    contextWindow: number;
+  }) => void;
 }
 
 function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProcessorOptions = {}) {
@@ -388,7 +393,12 @@ interface DialogSubscriptionProps {
   token: string | null;
   isDevTicketEnabled: boolean;
   onConnectionChange?: (dialogId: string, connected: boolean) => void;
-  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
+  onMetadata?: (metadata: {
+    modelDisplayName: string;
+    modelName: string;
+    providerName: string;
+    contextWindow: number;
+  }) => void;
 }
 
 export function DialogSubscription({

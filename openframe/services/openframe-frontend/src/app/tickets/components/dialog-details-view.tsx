@@ -19,7 +19,10 @@ import {
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
+  BoxArchiveIcon,
   ChatsIcon,
+  CheckCircleIcon,
+  Chevron02DownIcon,
   ClipboardListIcon,
   ComputerMouseIcon,
   HourglassClockIcon,
@@ -32,14 +35,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-  getTicketStatusTag,
   PageLayout,
   ProcessedMessage,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { CheckCircle, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
@@ -60,16 +61,19 @@ import {
   type NatsMessageType,
 } from '../constants';
 import { useApprovalRequests } from '../hooks/use-approval-requests';
+import { useAssignTicket } from '../hooks/use-assign-ticket';
 import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
 import { useDialogVersion } from '../hooks/use-dialog-version';
 import { useDirectChat } from '../hooks/use-direct-chat';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
+import { useSendAdminMessage } from '../hooks/use-send-admin-message';
+import { useStopGeneration } from '../hooks/use-stop-generation';
 import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
 import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../hooks/use-ticket-notes';
-import { getDialogService } from '../services';
+import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { useDialogDetailsStore } from '../stores/dialog-details-store';
 import type { ClientDialogOwner, DialogOwner, Message } from '../types/dialog.types';
 
@@ -82,9 +86,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const { toast } = useToast();
   const version = useDialogVersion();
   const initialAiModel = useAiModel();
-  const [currentModel, setCurrentModel] = useState<{ provider: string; modelName: string } | null>(null);
-  const service = getDialogService(version);
-
+  const [currentModel, setCurrentModel] = useState<{ provider: string; displayName: string } | null>(null);
   const isClientOwner = useCallback((owner: ClientDialogOwner | DialogOwner): owner is ClientDialogOwner => {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
   }, []);
@@ -114,6 +116,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const deleteNoteMutation = useDeleteTicketNote(refetchDialog);
 
   const { download: downloadAttachment } = useDownloadTicketAttachment();
+  const assignTicketMutation = useAssignTicket(refetchDialog);
+  const assigneeOptions = useAssigneeOptions();
 
   const { isDirectMode, isStartingDirectChat, isSendingClientMessage, startDirectChat, sendClientMessage } =
     useDirectChat({
@@ -164,10 +168,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     const realtimeOnly = realtimeAdminMessages.filter(m => !pageIds.has(m.id));
     return [...adminChat.messages, ...realtimeOnly];
   }, [adminChat.messages, realtimeAdminMessages]);
-  const { putOnHold, resolve, isUpdating } = useDialogStatus();
+  const { putOnHold, resolve, activate, archive, isUpdating } = useDialogStatus();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
-  const [isSendingAdminMessage, setIsSendingAdminMessage] = useState(false);
   const [isCompacting, setIsCompacting] = useState(false);
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState('client');
@@ -183,6 +186,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       setTypingIndicator(isAdmin, false);
     },
     onMessageAdd: (message, isAdmin) => {
+      if (isAdmin && message.owner?.type === 'ADMIN') return;
       addRealtimeMessage(message, isAdmin);
     },
     onError: (error, isAdmin) => {},
@@ -196,13 +200,26 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       addRealtimeMessage(message, isAdmin);
     },
     onMetadata: metadata => {
-      setCurrentModel({ provider: metadata.providerName, modelName: metadata.modelName });
+      setCurrentModel({ provider: metadata.providerName, displayName: metadata.modelDisplayName });
     },
   });
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
     dialogId: messageDialogId ?? '',
     onChunkReceived: processRealtimeChunk,
+  });
+
+  const { stopGeneration: handleStopGeneration } = useStopGeneration(messageDialogId);
+
+  const { sendAdminMessage: handleSendAdminMessage, isSendingAdminMessage } = useSendAdminMessage({
+    ticketId: dialogId,
+    messageDialogId,
+    version,
+    onBeforeDialogCreated: () => {
+      resetChunkTracking();
+      startInitialBuffering();
+      hasCaughtUp.current = false;
+    },
   });
 
   useEffect(() => {
@@ -309,6 +326,24 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog, isUpdating, resolve, dialogId, updateDialogStatus]);
 
+  const handleArchive = useCallback(async () => {
+    if (!dialog || isUpdating) return;
+
+    const success = await archive(dialogId);
+    if (success) {
+      updateDialogStatus(DIALOG_STATUS.ARCHIVED);
+    }
+  }, [dialog, isUpdating, archive, dialogId, updateDialogStatus]);
+
+  const handleUnarchive = useCallback(async () => {
+    if (!dialog || isUpdating) return;
+
+    const success = await activate(dialogId);
+    if (success) {
+      updateDialogStatus(DIALOG_STATUS.ACTIVE);
+    }
+  }, [dialog, isUpdating, activate, dialogId, updateDialogStatus]);
+
   const handleApprove = useCallback(
     async (requestId?: string) => {
       if (!requestId) return;
@@ -351,53 +386,6 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       }
     },
     [handleRejectRequest, toast],
-  );
-
-  const handleStopGeneration = useCallback(async () => {
-    try {
-      const response = await apiClient.post(`/chat/api/v1/dialogs/${messageDialogId}/stop`, {
-        chatType: CHAT_TYPE.ADMIN,
-      });
-      if (!response.ok) {
-        toast({
-          title: 'Stop Failed',
-          description: response.error || 'Unable to stop generation',
-          variant: 'destructive',
-          duration: 5000,
-        });
-      } else {
-        setTypingIndicator(true, false);
-      }
-    } catch (error) {
-      toast({
-        title: 'Stop Failed',
-        description: error instanceof Error ? error.message : 'Unable to stop generation',
-        variant: 'destructive',
-        duration: 5000,
-      });
-    }
-  }, [messageDialogId, toast, setTypingIndicator]);
-
-  const handleSendAdminMessage = useCallback(
-    async (message: string) => {
-      const trimmedMessage = message.trim();
-      if (!trimmedMessage || isSendingAdminMessage) return;
-
-      setIsSendingAdminMessage(true);
-      try {
-        messageDialogId && (await service.sendMessage(messageDialogId, trimmedMessage, CHAT_TYPE.ADMIN));
-      } catch (error) {
-        toast({
-          title: 'Send Failed',
-          description: error instanceof Error ? error.message : 'Unable to send message',
-          variant: 'destructive',
-          duration: 5000,
-        });
-      } finally {
-        setIsSendingAdminMessage(false);
-      }
-    },
-    [messageDialogId, isSendingAdminMessage, toast, service],
   );
 
   const clientDisplayName =
@@ -499,13 +487,15 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     if (!dialog) return null;
 
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
+    const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
     const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
-    const machineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
+    const isClosed = isResolved || isArchived;
+    const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
 
     const menuGroups: ActionsMenuGroup[] = [
       {
         items: [
-          ...(featureFlags.tickets.enabled()
+          ...(featureFlags.tickets.enabled() && !isArchived
             ? [
                 {
                   id: 'edit-ticket',
@@ -518,7 +508,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 },
               ]
             : []),
-          ...(!isOnHold && !isResolved
+          ...(!isOnHold && !isClosed
             ? [
                 {
                   id: 'put-on-hold',
@@ -587,7 +577,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              rightIcon={<ChevronDown className="h-5 w-5 text-ods-text-primary ml-2" />}
+              rightIcon={<Chevron02DownIcon className="h-5 w-5 text-ods-text-primary ml-2" />}
               className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
             >
               <span className="text-h3 text-ods-text-primary">Actions</span>
@@ -598,20 +588,54 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {!isResolved && (
+        {!isClosed && (
           <Button
             variant="ghost"
             className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<CheckCircle className="h-6 w-6 text-ods-text-secondary" />}
+            leftIcon={<CheckCircleIcon className="h-6 w-6 text-ods-text-secondary" />}
             onClick={handleResolve}
             disabled={isUpdating}
           >
             <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Resolve'}</span>
           </Button>
         )}
+
+        {isResolved && (
+          <Button
+            variant="ghost"
+            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+            leftIcon={<BoxArchiveIcon className="h-6 w-6 text-ods-text-secondary" />}
+            onClick={handleArchive}
+            disabled={isUpdating}
+          >
+            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Archive Ticket'}</span>
+          </Button>
+        )}
+
+        {isArchived && (
+          <Button
+            variant="ghost"
+            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
+            leftIcon={<BoxArchiveIcon className="h-6 w-6 text-ods-text-secondary" />}
+            onClick={handleUnarchive}
+            disabled={isUpdating}
+          >
+            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Unarchive Ticket'}</span>
+          </Button>
+        )}
       </div>
     );
-  }, [dialog, isUpdating, actionsOpen, isClientOwner, handlePutOnHold, handleResolve, router]);
+  }, [
+    dialog,
+    isUpdating,
+    actionsOpen,
+    isClientOwner,
+    handlePutOnHold,
+    handleResolve,
+    handleArchive,
+    handleUnarchive,
+    router,
+  ]);
 
   if (isLoading) {
     return <DetailLoader />;
@@ -626,7 +650,10 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   }
 
   const isAdminOwner = dialog.owner?.type === 'ADMIN';
-  const deviceMachineId = (isClientOwner(dialog.owner) && dialog.owner.machineId) || dialog.deviceId;
+  const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
+  const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
+  const isClosed = isResolved || isArchived;
+  const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
 
   return (
     <PageLayout
@@ -662,10 +689,25 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             icon: <MonitorIcon className="size-4" />,
             onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
           }}
-          statusTag={getTicketStatusTag(dialog.status)}
+          status={dialog.status}
           onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
           expanded={isTicketInfoExpanded}
-          assigned={{ name: dialog.assignedName || 'Unassigned' }}
+          assigned={{
+            currentAssignee: dialog.assignedName
+              ? {
+                  id: dialog.assignedTo!,
+                  name: dialog.assignedName,
+                  avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
+                }
+              : undefined,
+            options: assigneeOptions.options.map(o => ({
+              ...o,
+              imageUrl: getFullImageUrl(o.imageUrl),
+            })),
+            isLoading: assigneeOptions.isLoading,
+            isPending: assignTicketMutation.isPending,
+            onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
+          }}
           createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
           description={dialog.description || dialog.title || ''}
           attachments={uiAttachments}
@@ -745,9 +787,24 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 icon: <MonitorIcon className="size-4" />,
                 onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
               }}
-              statusTag={getTicketStatusTag(dialog.status)}
+              status={dialog.status}
               expanded={true}
-              assigned={{ name: dialog.assignedName || 'Unassigned' }}
+              assigned={{
+                currentAssignee: dialog.assignedName
+                  ? {
+                      id: dialog.assignedTo!,
+                      name: dialog.assignedName,
+                      avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
+                    }
+                  : undefined,
+                options: assigneeOptions.options.map(o => ({
+                  ...o,
+                  imageUrl: getFullImageUrl(o.imageUrl),
+                })),
+                isLoading: assigneeOptions.isLoading,
+                isPending: assignTicketMutation.isPending,
+                onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
+              }}
               createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
@@ -794,11 +851,12 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   hasNextPage={clientChat.hasNextPage}
                   isFetchingNextPage={clientChat.isFetchingNextPage}
                   onLoadMore={clientChat.fetchNextPage}
+                  contentClassName="px-4 max-w-full"
                 />
               </div>
 
               {/* Direct Chat: Start button or ChatInput */}
-              {version === 'v2' && !isDirectMode && (
+              {!isClosed && version === 'v2' && !isDirectMode && (
                 <button
                   type="button"
                   onClick={startDirectChat}
@@ -809,7 +867,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   <span className="text-h4">{isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}</span>
                 </button>
               )}
-              {version === 'v2' && isDirectMode && (
+              {!isClosed && version === 'v2' && isDirectMode && (
                 <ChatInput
                   reserveAvatarOffset={false}
                   placeholder="Enter your Message..."
@@ -860,31 +918,36 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   hasNextPage={adminChat.hasNextPage}
                   isFetchingNextPage={adminChat.isFetchingNextPage}
                   onLoadMore={adminChat.fetchNextPage}
+                  contentClassName="px-4 max-w-full"
                 />
               )}
 
               {/* Message Input */}
-              <ChatInput
-                reserveAvatarOffset={false}
-                placeholder="Enter your Request..."
-                onSend={handleSendAdminMessage}
-                onStop={
-                  featureFlags.dialogStop.enabled() && isAdminChatTyping && adminChatData.pendingApprovals.length === 0
-                    ? handleStopGeneration
-                    : undefined
-                }
-                sending={isSendingAdminMessage || isAdminChatTyping || isCompacting}
-                autoFocus={false}
-                className="mt-2 bg-ods-card rounded-lg max-w-full"
-              />
+              {!isClosed && (
+                <ChatInput
+                  reserveAvatarOffset={false}
+                  placeholder="Enter your Request..."
+                  onSend={handleSendAdminMessage}
+                  onStop={
+                    featureFlags.dialogStop.enabled() &&
+                    isAdminChatTyping &&
+                    adminChatData.pendingApprovals.length === 0
+                      ? handleStopGeneration
+                      : undefined
+                  }
+                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting}
+                  autoFocus={false}
+                  className="mt-2 bg-ods-card rounded-lg max-w-full"
+                />
+              )}
             </div>
           </div>
         </div>
-        {featureFlags.tokenBasedMemory.enabled() && (currentModel || dialog.tokenUsage) && (
+        {!isClosed && featureFlags.tokenBasedMemory.enabled() && (currentModel || dialog.tokenUsage) && (
           <div className="mx-auto w-full mt-2">
             <ModelDisplay
               provider={currentModel?.provider}
-              modelName={currentModel?.modelName}
+              modelName={currentModel?.displayName}
               usedTokens={dialog.tokenUsage?.totalTokensSize ?? undefined}
               contextWindow={dialog.tokenUsage?.contextSize ?? undefined}
             />

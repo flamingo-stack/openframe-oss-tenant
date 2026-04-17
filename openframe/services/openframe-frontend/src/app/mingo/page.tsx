@@ -30,7 +30,7 @@ export default function Mingo() {
 
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [currentModel, setCurrentModel] = useState<{
-    modelName: string;
+    displayName: string;
     provider: string;
   } | null>(null);
 
@@ -93,9 +93,9 @@ export default function Mingo() {
   }, [initialAiModel, currentModel]);
 
   const handleMetadataUpdate = useCallback(
-    (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
+    (metadata: { modelDisplayName: string; modelName: string; providerName: string; contextWindow: number }) => {
       setCurrentModel({
-        modelName: metadata.modelName,
+        displayName: metadata.modelDisplayName,
         provider: metadata.providerName,
       });
     },
@@ -358,7 +358,7 @@ export default function Mingo() {
                   <div className="mx-auto w-full max-w-3xl mt-3">
                     <ModelDisplay
                       provider={currentModel.provider}
-                      modelName={currentModel.modelName}
+                      modelName={currentModel.displayName}
                       usedTokens={tokenUsage?.totalTokensSize}
                       contextWindow={tokenUsage?.contextSize}
                     />

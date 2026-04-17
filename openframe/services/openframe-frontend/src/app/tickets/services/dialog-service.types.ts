@@ -48,4 +48,11 @@ export type RealtimeAction =
   | { type: 'error'; error: string; isAdmin: boolean }
   | { type: 'compaction_start'; message: Message; isAdmin: boolean }
   | { type: 'compaction_end'; message: Message; isAdmin: boolean }
-  | { type: 'metadata'; modelName: string; providerName: string; contextWindow: number; isAdmin: boolean };
+  | {
+      type: 'metadata';
+      modelDisplayName: string;
+      modelName: string;
+      providerName: string;
+      contextWindow: number;
+      isAdmin: boolean;
+    };

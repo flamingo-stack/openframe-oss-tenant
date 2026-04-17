@@ -14,7 +14,10 @@ interface UseDialogRealtimeProcessorOptions {
   onError: (error: string, isAdmin: boolean) => void;
   onCompactionStart?: (message: Message, isAdmin: boolean) => void;
   onCompactionEnd?: (message: Message, isAdmin: boolean) => void;
-  onMetadata?: (metadata: { modelName: string; providerName: string; contextWindow: number }, isAdmin: boolean) => void;
+  onMetadata?: (
+    metadata: { modelDisplayName: string; modelName: string; providerName: string; contextWindow: number },
+    isAdmin: boolean,
+  ) => void;
 }
 
 export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOptions) {
@@ -59,7 +62,12 @@ export function useDialogRealtimeProcessor(options: UseDialogRealtimeProcessorOp
           break;
         case 'metadata':
           onMetadata?.(
-            { modelName: action.modelName, providerName: action.providerName, contextWindow: action.contextWindow },
+            {
+              modelDisplayName: action.modelDisplayName,
+              modelName: action.modelName,
+              providerName: action.providerName,
+              contextWindow: action.contextWindow,
+            },
             action.isAdmin,
           );
           break;

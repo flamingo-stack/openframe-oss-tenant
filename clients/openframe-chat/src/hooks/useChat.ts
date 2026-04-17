@@ -27,9 +27,10 @@ interface UseChatOptions {
   useNats?: boolean;
   onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
   onTokenUsage?: (data: TokenUsageData) => void;
+  onDialogClosed?: () => void;
 }
 
-export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage }: UseChatOptions = {}) {
+export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage, onDialogClosed }: UseChatOptions = {}) {
   // Core state
   const [isTyping, setIsTyping] = useState(false);
   const [natsStreaming, setNatsStreaming] = useState(false);
@@ -209,6 +210,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
         };
         messagesRef.current.addMessage(directMessage);
       },
+      onDialogClosed: () => {
+        onDialogClosed?.();
+      },
       onSystemMessage: (text: string) => {
         const systemMessage: Message = {
           id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -221,7 +225,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
         messagesRef.current.addMessage(systemMessage);
       },
     }),
-    [onMetadataUpdate, onTokenUsage],
+    [onMetadataUpdate, onTokenUsage, onDialogClosed],
   );
 
   const incompleteState = useMemo(() => {

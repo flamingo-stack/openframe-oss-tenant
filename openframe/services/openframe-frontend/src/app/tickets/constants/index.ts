@@ -4,6 +4,7 @@ export const DIALOG_STATUS = {
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED',
 } as const;
 
 export type DialogStatus = (typeof DIALOG_STATUS)[keyof typeof DIALOG_STATUS];
