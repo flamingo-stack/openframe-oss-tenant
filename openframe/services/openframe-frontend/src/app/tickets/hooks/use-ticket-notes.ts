@@ -3,6 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { useAuthStore } from '@/stores';
 import { API_ENDPOINTS } from '../constants';
 import {
   ADD_TICKET_NOTE_MUTATION,
@@ -56,12 +57,16 @@ export function useAddTicketNote(onSuccess?: () => void) {
     },
     onMutate: async ({ ticketId, content }) => {
       const previousNotes = getDialogState().currentDialog?.notes || [];
+      const currentUser = useAuthStore.getState().user;
       const optimisticNote = {
         id: `optimistic-${Date.now()}`,
         ticketId,
         content,
-        authorId: '',
-        authorName: 'You',
+        authorId: currentUser?.id || '',
+        authorName: currentUser
+          ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'You'
+          : 'You',
+        authorImageUrl: currentUser?.image?.imageUrl,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

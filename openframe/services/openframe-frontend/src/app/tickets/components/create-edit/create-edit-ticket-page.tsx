@@ -1,6 +1,6 @@
 'use client';
 
-import { FormPageContainer } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { useCreateTicketForm } from '../../hooks/use-create-ticket-form';
@@ -11,9 +11,10 @@ export function CreateEditTicketPage() {
   const searchParams = useSearchParams();
   const ticketId = searchParams.get('edit');
 
-  const { form, isEditMode, isLoadingTicket, isSubmitting, handleSave, tempAttachments } = useCreateTicketForm({
-    ticketId,
-  });
+  const { form, isEditMode, isLoadingTicket, isSubmitting, handleSave, tempAttachments, isFaeForm } =
+    useCreateTicketForm({
+      ticketId,
+    });
 
   const backButton = useMemo(() => ({ label: 'Back to Tickets', onClick: () => router.push('/tickets') }), [router]);
 
@@ -31,13 +32,13 @@ export function CreateEditTicketPage() {
   );
 
   return (
-    <FormPageContainer
+    <PageLayout
       title={isEditMode ? 'Edit Ticket' : 'New Ticket'}
       backButton={backButton}
       actions={actions}
       padding="none"
     >
-      <TicketFormFields form={form} tempAttachments={tempAttachments} />
-    </FormPageContainer>
+      <TicketFormFields form={form} tempAttachments={tempAttachments} isFaeForm={isFaeForm} />
+    </PageLayout>
   );
 }

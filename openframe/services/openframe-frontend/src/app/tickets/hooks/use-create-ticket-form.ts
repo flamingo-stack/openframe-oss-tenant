@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
-import { API_ENDPOINTS } from '../constants';
+import { API_ENDPOINTS, CREATION_SOURCE } from '../constants';
 import { getTicketQuery } from '../queries/ticket-queries';
 import { type CreateTicketFormData, createTicketSchema } from '../types/create-ticket.types';
 import type { Ticket } from '../types/ticket.types';
@@ -89,9 +89,9 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
         id: ticketId,
         title: data.title,
         description: data.description || undefined,
-        organizationId: data.organizationId || undefined,
-        deviceId: data.deviceId || undefined,
-        assigneeId: data.assignedTo || undefined,
+        organizationId: data.organizationId ?? null,
+        deviceId: data.deviceId ?? null,
+        assigneeId: data.assignedTo ?? null,
         labelIds: data.labelIds,
         tempAttachmentIds: tempAttachmentIds.length ? tempAttachmentIds : undefined,
       });
@@ -110,6 +110,8 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
     }
   });
 
+  const isFaeForm = ticket?.creationSource === CREATION_SOURCE.FAE_FORM;
+
   return {
     form,
     isEditMode,
@@ -117,5 +119,6 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
     isSubmitting: createTicketMutation.isPending || updateTicketMutation.isPending,
     handleSave,
     tempAttachments,
+    isFaeForm,
   };
 }

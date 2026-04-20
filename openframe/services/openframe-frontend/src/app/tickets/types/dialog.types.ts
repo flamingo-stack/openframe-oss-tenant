@@ -1,4 +1,4 @@
-export type DialogStatus = 'ACTIVE' | 'ACTION_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
+export type DialogStatus = 'ACTIVE' | 'TECH_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
 export type DialogOwnerEnum = 'CLIENT' | 'ADMIN';
 
@@ -47,8 +47,10 @@ export interface Dialog {
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
+  organizationImageUrl?: string;
   assignedTo?: string;
   assignedName?: string;
+  assigneeImageUrl?: string;
   labels?: Array<{ id: string; key: string; color?: string }>;
   attachments?: Array<{
     id: string;
@@ -65,15 +67,19 @@ export interface Dialog {
     content: string;
     authorId: string;
     authorName?: string;
+    authorImageUrl?: string;
     createdAt: string;
     updatedAt: string;
   }>;
-  tokenUsage?: {
-    inputTokensSize: number | null;
-    outputTokensSize: number | null;
-    totalTokensSize: number | null;
-    contextSize: number | null;
-  } | null;
+  tokenUsage?: ChatTypeTokenUsage[] | null;
+}
+
+export interface ChatTypeTokenUsage {
+  chatType: string;
+  inputTokensSize: number | null;
+  outputTokensSize: number | null;
+  totalTokensSize: number | null;
+  contextSize: number | null;
 }
 
 export interface CursorPageInfo {
@@ -104,7 +110,9 @@ export type MessageDataType =
   | 'EXECUTED_TOOL'
   | 'APPROVAL_REQUEST'
   | 'APPROVAL_RESULT'
-  | 'SYSTEM';
+  | 'SYSTEM'
+  | 'CONTEXT_COMPACTION_START'
+  | 'CONTEXT_COMPACTION_END';
 
 export interface MessageOwner {
   type: MessageOwnerType;
@@ -122,6 +130,8 @@ export interface AdminOwner extends MessageOwner {
   userId: string;
   user?: {
     id: string;
+    firstName?: string;
+    lastName?: string;
   };
 }
 

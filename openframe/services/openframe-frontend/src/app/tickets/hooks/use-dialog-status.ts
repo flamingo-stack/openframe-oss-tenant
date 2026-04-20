@@ -24,13 +24,6 @@ export function useDialogStatus() {
       try {
         await service.updateStatus(dialogId, status);
 
-        toast({
-          title: 'Success',
-          description: `Dialog ${status === 'ON_HOLD' ? 'put on hold' : status === 'RESOLVED' ? 'resolved' : 'status updated'} successfully`,
-          variant: 'success',
-          duration: 3000,
-        });
-
         invalidateAllDialogs(queryClient);
 
         return true;
@@ -74,11 +67,19 @@ export function useDialogStatus() {
     [updateDialogStatus],
   );
 
+  const archive = useCallback(
+    async (dialogId: string) => {
+      return updateDialogStatus(dialogId, 'ARCHIVED');
+    },
+    [updateDialogStatus],
+  );
+
   return {
     updateDialogStatus,
     putOnHold,
     resolve,
     activate,
+    archive,
     isUpdating,
   };
 }

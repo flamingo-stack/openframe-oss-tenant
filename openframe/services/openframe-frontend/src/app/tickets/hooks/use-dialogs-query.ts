@@ -25,7 +25,8 @@ export function useDialogsQuery({ archived, search, statusFilters }: DialogsQuer
       } else if (archived) {
         statuses = ['ARCHIVED'];
       } else {
-        statuses = ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED'];
+        const openStatus = version === 'v2' ? 'TECH_REQUIRED' : 'ACTION_REQUIRED';
+        statuses = ['ACTIVE', openStatus, 'ON_HOLD', 'RESOLVED'];
       }
 
       return service.fetchDialogs({

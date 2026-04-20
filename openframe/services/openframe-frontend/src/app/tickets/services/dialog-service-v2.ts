@@ -1,4 +1,4 @@
-import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
+import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
@@ -20,7 +20,6 @@ import type {
   FetchDialogsParams,
   FetchMessagesParams,
   MessagePage,
-  RealtimeAction,
 } from './dialog-service.types';
 import { DialogServiceV1 } from './dialog-service-v1';
 
@@ -41,8 +40,10 @@ interface TicketNode {
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
+  organizationImage?: { imageUrl: string };
   assignedTo?: string;
   assignedName?: string;
+  assigneeImage?: { imageUrl: string };
   labels?: Array<{ id: string; key: string; color?: string }>;
   notes?: Array<{
     id: string;
@@ -50,6 +51,7 @@ interface TicketNode {
     content: string;
     authorId: string;
     author?: { id: string; firstName: string; lastName: string };
+    authorImage?: { imageUrl: string };
     createdAt: string;
     updatedAt: string;
   }>;
@@ -65,12 +67,13 @@ interface TicketNode {
   dialog?: {
     id: string;
     currentMode?: string;
-    tokenUsage?: {
+    tokenUsage?: Array<{
+      chatType: string;
       inputTokensSize: number | null;
       outputTokensSize: number | null;
       totalTokensSize: number | null;
       contextSize: number | null;
-    } | null;
+    }> | null;
   };
   description?: string;
   creationSource?: string;
@@ -94,7 +97,7 @@ interface TicketsResponse {
 // TicketStatus -> DialogStatus mapping
 const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
   ACTIVE: 'ACTIVE',
-  TECH_REQUIRED: 'ACTION_REQUIRED',
+  TECH_REQUIRED: 'TECH_REQUIRED',
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ARCHIVED: 'ARCHIVED',
@@ -103,7 +106,7 @@ const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
 // DialogStatus -> TicketStatus mapping (for filters)
 const DIALOG_TO_TICKET_STATUS: Record<string, string> = {
   ACTIVE: 'ACTIVE',
-  ACTION_REQUIRED: 'TECH_REQUIRED',
+  TECH_REQUIRED: 'TECH_REQUIRED',
   ON_HOLD: 'ON_HOLD',
   RESOLVED: 'RESOLVED',
   ARCHIVED: 'ARCHIVED',
@@ -150,8 +153,10 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     deviceHostname: ticket.deviceHostname,
     organizationId: ticket.organizationId,
     organizationName: ticket.organizationName,
+    organizationImageUrl: ticket.organizationImage?.imageUrl,
     assignedTo: ticket.assignedTo,
     assignedName: ticket.assignedName,
+    assigneeImageUrl: ticket.assigneeImage?.imageUrl,
     labels: ticket.labels,
     attachments: ticket.attachments,
     tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
@@ -161,6 +166,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
       content: note.content,
       authorId: note.authorId,
       authorName: note.author ? `${note.author.firstName} ${note.author.lastName}`.trim() : undefined,
+      authorImageUrl: note.authorImage?.imageUrl,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
     })),
@@ -265,9 +271,5 @@ export class DialogServiceV2 implements DialogService {
 
   async fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]> {
     return this.v1.fetchChunks(dialogId, chatType, fromSequenceId);
-  }
-
-  parseRealtimePayload(payload: unknown, messageType: NatsMessageType, dialogId: string): RealtimeAction | null {
-    return this.v1.parseRealtimePayload(payload, messageType, dialogId);
   }
 }

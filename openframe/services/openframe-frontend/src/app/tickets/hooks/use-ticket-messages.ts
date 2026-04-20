@@ -41,7 +41,9 @@ export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
 
   return {
     messages,
+    rawPages: messagesQuery.data?.pages,
     isLoading: messagesQuery.isLoading,
+    isFetched: messagesQuery.isFetched,
     hasNextPage: messagesQuery.hasNextPage ?? false,
     isFetchingNextPage: messagesQuery.isFetchingNextPage,
     fetchNextPage: messagesQuery.fetchNextPage,

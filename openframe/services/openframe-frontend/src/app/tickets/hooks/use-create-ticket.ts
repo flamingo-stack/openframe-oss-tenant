@@ -34,11 +34,15 @@ export function useCreateTicket() {
 
   return useMutation({
     mutationFn: createTicketApi,
-    onSuccess: () => {
+    onSuccess: ticket => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket created successfully', variant: 'success' });
-      router.push('/tickets');
+      if (ticket?.id) {
+        router.push(`/tickets/dialog?id=${ticket.id}`);
+      } else {
+        router.push('/tickets');
+      }
     },
     onError: err => {
       toast({

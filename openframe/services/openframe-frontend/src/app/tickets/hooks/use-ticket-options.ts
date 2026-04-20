@@ -16,6 +16,10 @@ export interface AutocompleteOption {
   value: string;
 }
 
+export interface AssigneeOption extends AutocompleteOption {
+  imageUrl?: string;
+}
+
 // --- Organizations (reuse existing query via /api/graphql) ---
 
 async function fetchOrganizationOptions(search: string): Promise<AutocompleteOption[]> {
@@ -70,7 +74,7 @@ export function useDeviceOptions(organizationId?: string, search = '') {
 
 // --- Users / Assignees (REST via /api/users) ---
 
-async function fetchAssigneeOptions(): Promise<AutocompleteOption[]> {
+async function fetchAssigneeOptions(): Promise<AssigneeOption[]> {
   const response = await apiClient.get<any>('/api/users?page=0&size=100');
   if (!response.ok) throw new Error(response.error || 'Failed to fetch users');
 
@@ -78,6 +82,7 @@ async function fetchAssigneeOptions(): Promise<AutocompleteOption[]> {
   return items.map((user: any) => ({
     label: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
     value: user.id,
+    imageUrl: user.image?.imageUrl,
   }));
 }
 

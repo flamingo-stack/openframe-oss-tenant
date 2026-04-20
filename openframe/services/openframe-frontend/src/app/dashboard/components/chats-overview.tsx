@@ -1,10 +1,13 @@
 'use client';
 
 import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { useDialogVersion } from '@/app/tickets/hooks/use-dialog-version';
 import { useChatsOverview } from '../hooks/use-dashboard-stats';
 
 export function ChatsOverviewSection() {
   const chats = useChatsOverview();
+  const version = useDialogVersion();
+  const openStatus = version === 'v2' ? 'TECH_REQUIRED' : 'ACTION_REQUIRED';
 
   if (chats.isLoading) {
     return (
@@ -39,7 +42,7 @@ export function ChatsOverviewSection() {
           value={chats.active}
           percentage={chats.activePercentage}
           showProgress
-          href="/tickets?status=ACTIVE&status=ACTION_REQUIRED&status=ON_HOLD"
+          href={`/tickets?status=ACTIVE&status=${openStatus}&status=ON_HOLD`}
         />
         <DashboardInfoCard
           title="Resolved Chats"
