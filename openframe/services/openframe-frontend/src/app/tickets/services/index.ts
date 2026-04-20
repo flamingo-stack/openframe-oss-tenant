@@ -27,5 +27,4 @@ export type {
   FetchDialogsParams,
   FetchMessagesParams,
   MessagePage,
-  RealtimeAction,
 } from './dialog-service.types';

@@ -71,12 +71,15 @@ export interface Dialog {
     createdAt: string;
     updatedAt: string;
   }>;
-  tokenUsage?: {
-    inputTokensSize: number | null;
-    outputTokensSize: number | null;
-    totalTokensSize: number | null;
-    contextSize: number | null;
-  } | null;
+  tokenUsage?: ChatTypeTokenUsage[] | null;
+}
+
+export interface ChatTypeTokenUsage {
+  chatType: string;
+  inputTokensSize: number | null;
+  outputTokensSize: number | null;
+  totalTokensSize: number | null;
+  contextSize: number | null;
 }
 
 export interface CursorPageInfo {
@@ -107,7 +110,9 @@ export type MessageDataType =
   | 'EXECUTED_TOOL'
   | 'APPROVAL_REQUEST'
   | 'APPROVAL_RESULT'
-  | 'SYSTEM';
+  | 'SYSTEM'
+  | 'CONTEXT_COMPACTION_START'
+  | 'CONTEXT_COMPACTION_END';
 
 export interface MessageOwner {
   type: MessageOwnerType;

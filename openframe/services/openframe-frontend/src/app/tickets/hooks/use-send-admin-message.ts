@@ -1,5 +1,6 @@
 'use client';
 
+import type { Message as ChatMessage } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
@@ -27,7 +28,7 @@ export function useSendAdminMessage({
   const service = getDialogService(version);
   const currentUser = useAuthStore(state => state.user);
   const fetchDialog = useDialogDetailsStore(state => state.fetchDialog);
-  const addRealtimeMessage = useDialogDetailsStore(state => state.addRealtimeMessage);
+  const addMessage = useDialogDetailsStore(state => state.addMessage);
 
   const mutation = useMutation({
     mutationFn: async (message: string) => {
@@ -54,24 +55,16 @@ export function useSendAdminMessage({
         await fetchDialog(ticketId, version);
       }
 
-      addRealtimeMessage(
-        {
-          id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          dialogId: activeDialogId,
-          chatType: CHAT_TYPE.ADMIN,
-          dialogMode: DIALOG_MODE.AI,
-          createdAt: new Date().toISOString(),
-          owner: {
-            type: 'ADMIN' as const,
-            userId: currentUser?.id ?? '',
-            user: currentUser
-              ? { id: currentUser.id, firstName: currentUser.firstName, lastName: currentUser.lastName }
-              : undefined,
-          },
-          messageData: { type: 'TEXT' as const, text: trimmedMessage },
-        },
-        true,
-      );
+      const displayName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Admin';
+      const optimistic: ChatMessage = {
+        id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        role: 'user',
+        content: trimmedMessage,
+        name: displayName,
+        authorType: 'admin',
+        timestamp: new Date(),
+      };
+      addMessage('admin', optimistic);
 
       await service.sendMessage(activeDialogId, trimmedMessage, CHAT_TYPE.ADMIN);
     },

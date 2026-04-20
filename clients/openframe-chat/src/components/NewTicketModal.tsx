@@ -9,31 +9,11 @@ import {
   ModalTitle,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { open } from '@tauri-apps/plugin-dialog';
-import { readFile } from '@tauri-apps/plugin-fs';
 import { useCreateTicket } from '../hooks/useCreateTicket';
 
 interface NewTicketModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-function getMimeType(ext: string): string {
-  const map: Record<string, string> = {
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-    gif: 'image/gif',
-    webp: 'image/webp',
-    svg: 'image/svg+xml',
-    pdf: 'application/pdf',
-    doc: 'application/msword',
-    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    txt: 'text/plain',
-    csv: 'text/csv',
-    zip: 'application/zip',
-  };
-  return map[ext.toLowerCase()] || 'application/octet-stream';
 }
 
 export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
@@ -42,24 +22,6 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
   const handleClose = () => {
     resetForm();
     onClose();
-  };
-
-  const handleOpenFilePicker = async (): Promise<File[] | undefined> => {
-    const selected = await open({ multiple: true });
-    if (!selected) return undefined;
-
-    const paths = Array.isArray(selected) ? selected : [selected];
-    if (paths.length === 0) return undefined;
-
-    const files = await Promise.all(
-      paths.map(async (filePath) => {
-        const bytes = await readFile(filePath);
-        const name = filePath.split(/[\\/]/).pop() || 'file';
-        const ext = name.split('.').pop() || '';
-        return new File([bytes], name, { type: getMimeType(ext) });
-      }),
-    );
-    return files;
   };
 
   return (
@@ -87,7 +49,7 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
             maxFiles={10}
             disabled={isSubmitting}
             maxListHeight={200}
-            onOpenFilePicker={handleOpenFilePicker}
+            acceptWindowDrops
           />
 
           <Textarea

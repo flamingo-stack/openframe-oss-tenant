@@ -1,4 +1,4 @@
-import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
+import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import type { ChatType } from '../constants';
 import type { CursorPageInfo, Dialog, DialogStatus, Message } from '../types/dialog.types';
 
@@ -38,21 +38,4 @@ export interface DialogService {
   rejectRequest(requestId: string): Promise<void>;
   archiveDialog(dialogId: string): Promise<boolean>;
   fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]>;
-  parseRealtimePayload(payload: unknown, messageType: NatsMessageType, dialogId: string): RealtimeAction | null;
 }
-
-export type RealtimeAction =
-  | { type: 'message'; message: Message; isAdmin: boolean }
-  | { type: 'stream_start'; isAdmin: boolean }
-  | { type: 'stream_end'; isAdmin: boolean }
-  | { type: 'error'; error: string; isAdmin: boolean }
-  | { type: 'compaction_start'; message: Message; isAdmin: boolean }
-  | { type: 'compaction_end'; message: Message; isAdmin: boolean }
-  | {
-      type: 'metadata';
-      modelDisplayName: string;
-      modelName: string;
-      providerName: string;
-      contextWindow: number;
-      isAdmin: boolean;
-    };

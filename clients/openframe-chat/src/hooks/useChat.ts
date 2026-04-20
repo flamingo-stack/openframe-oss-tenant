@@ -154,7 +154,11 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       onTokenUsage,
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         if (metadata?.isCompacting) {
-          setIsCompacting(true);
+          const lastCompaction = [...segments]
+            .reverse()
+            .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
+          const stillCompacting = lastCompaction?.status === 'started';
+          setIsCompacting(stillCompacting);
           setNatsStreaming(false);
           setIsTyping(false);
         } else {

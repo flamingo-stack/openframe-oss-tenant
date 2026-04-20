@@ -24,7 +24,7 @@ export function useStopGeneration(messageDialogId: string | null) {
       }
     },
     onSuccess: () => {
-      setTypingIndicator(true, false);
+      setTypingIndicator('admin', false);
     },
     onError: (error: Error) => {
       toast({
