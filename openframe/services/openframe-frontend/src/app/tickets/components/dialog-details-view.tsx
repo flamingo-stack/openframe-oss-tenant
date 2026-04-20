@@ -4,16 +4,13 @@ import {
   ActionsMenu,
   type ActionsMenuGroup,
   Button,
-  ChatApprovalStatus,
   ChatInput,
+  type Message as ChatMessage,
   ChatMessageList,
-  type HistoricalMessage,
   LoadError,
   MessageCircleIcon,
-  type MessageSegment,
   ModelDisplay,
   NotFoundError,
-  processHistoricalMessagesWithErrors,
   Tabs,
   TabsList,
   TabsTrigger,
@@ -36,7 +33,6 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
   PageLayout,
-  ProcessedMessage,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -52,30 +48,30 @@ import { DeviceInfoSection } from '../../components/shared';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
   APPROVAL_STATUS,
-  type ApprovalStatus,
   ASSISTANT_CONFIG,
   CHAT_TYPE,
   CREATION_SOURCE,
   DIALOG_STATUS,
-  MESSAGE_TYPE,
   type NatsMessageType,
 } from '../constants';
 import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useAssignTicket } from '../hooks/use-assign-ticket';
 import { useChunkCatchup } from '../hooks/use-chunk-catchup';
-import { useDialogRealtimeProcessor } from '../hooks/use-dialog-realtime-processor';
 import { useDialogStatus } from '../hooks/use-dialog-status';
 import { useDialogVersion } from '../hooks/use-dialog-version';
 import { useDirectChat } from '../hooks/use-direct-chat';
+import { useHistoricalMessages } from '../hooks/use-historical-messages';
 import { useNatsDialogSubscription } from '../hooks/use-nats-dialog-subscription';
 import { useSendAdminMessage } from '../hooks/use-send-admin-message';
+import { useSideChunkProcessor } from '../hooks/use-side-chunk-processor';
 import { useStopGeneration } from '../hooks/use-stop-generation';
 import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
 import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../hooks/use-ticket-notes';
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { useDialogDetailsStore } from '../stores/dialog-details-store';
-import type { ClientDialogOwner, DialogOwner, Message } from '../types/dialog.types';
+import type { ClientDialogOwner, DialogOwner } from '../types/dialog.types';
+import { extractPendingApprovals, stripPendingApprovals } from '../utils/pending-approvals';
 
 interface DialogDetailsViewProps {
   dialogId: string;
@@ -94,18 +90,20 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const {
     currentDialog: dialog,
-    currentMessages: realtimeClientMessages,
-    adminMessages: realtimeAdminMessages,
     isLoadingDialog: isLoading,
     dialogError,
-    isClientChatTyping,
-    isAdminChatTyping,
+    client,
+    admin,
     fetchDialog,
     clearCurrent,
     updateDialogStatus,
-    addRealtimeMessage,
-    setTypingIndicator,
+    setAccumulatorCallbacks,
+    updateApprovalStatusInMessages,
   } = useDialogDetailsStore();
+
+  const { messages: clientMessages, isTyping: isClientChatTyping } = client;
+  const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
+  const isCompacting = client.isCompacting || admin.isCompacting;
 
   const currentUser = useAuthStore(state => state.user);
 
@@ -158,61 +156,45 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const clientChat = useTicketMessages(messageDialogId, CHAT_TYPE.CLIENT);
   const adminChat = useTicketMessages(messageDialogId, CHAT_TYPE.ADMIN);
 
-  const messages = useMemo(() => {
-    const pageIds = new Set(clientChat.messages.map(m => m.id));
-    const realtimeOnly = realtimeClientMessages.filter(m => !pageIds.has(m.id));
-    return [...clientChat.messages, ...realtimeOnly];
-  }, [clientChat.messages, realtimeClientMessages]);
-
-  const adminMessages = useMemo(() => {
-    const pageIds = new Set(adminChat.messages.map(m => m.id));
-    const realtimeOnly = realtimeAdminMessages.filter(m => !pageIds.has(m.id));
-    return [...adminChat.messages, ...realtimeOnly];
-  }, [adminChat.messages, realtimeAdminMessages]);
   const { putOnHold, resolve, activate, archive, isUpdating } = useDialogStatus();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
-  const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
-  const [isCompacting, setIsCompacting] = useState(false);
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
   const [activeChatTab, setActiveChatTab] = useState('client');
   const hasCaughtUp = useRef(false);
 
-  const { processChunk: processRealtimeChunk } = useDialogRealtimeProcessor({
-    dialogId: messageDialogId ?? '',
-    onStreamStart: isAdmin => {
-      setIsCompacting(false);
-      setTypingIndicator(isAdmin, true);
-    },
-    onStreamEnd: isAdmin => {
-      setTypingIndicator(isAdmin, false);
-    },
-    onMessageAdd: (message, isAdmin) => {
-      if (isAdmin && message.owner?.type === 'ADMIN') return;
-      addRealtimeMessage(message, isAdmin);
-    },
-    onError: (error, isAdmin) => {},
-    onCompactionStart: (message, isAdmin) => {
-      setIsCompacting(true);
-      setTypingIndicator(isAdmin, false);
-      addRealtimeMessage(message, isAdmin);
-    },
-    onCompactionEnd: (message, isAdmin) => {
-      setIsCompacting(false);
-      addRealtimeMessage(message, isAdmin);
-    },
-    onMetadata: (metadata, isAdmin) => {
-      const next = { provider: metadata.providerName, displayName: metadata.modelDisplayName };
-      if (isAdmin) {
-        setCurrentAdminModel(next);
-      } else {
-        setCurrentClientModel(next);
-      }
-    },
+  const clientDisplayName =
+    dialog?.deviceHostname ||
+    (dialog?.owner && isClientOwner(dialog.owner) ? dialog.owner.machine?.hostname : undefined) ||
+    undefined;
+
+  const processClientChunk = useSideChunkProcessor('client', {
+    assistantName: ASSISTANT_CONFIG.FAE.name,
+    assistantType: ASSISTANT_CONFIG.FAE.type,
+    userDisplayName: clientDisplayName,
+    onMetadata: useCallback((metadata: { modelDisplayName: string; providerName: string }) => {
+      setCurrentClientModel({ provider: metadata.providerName, displayName: metadata.modelDisplayName });
+    }, []),
   });
+
+  const processAdminChunk = useSideChunkProcessor('admin', {
+    assistantName: ASSISTANT_CONFIG.MINGO.name,
+    assistantType: ASSISTANT_CONFIG.MINGO.type,
+    onMetadata: useCallback((metadata: { modelDisplayName: string; providerName: string }) => {
+      setCurrentAdminModel({ provider: metadata.providerName, displayName: metadata.modelDisplayName });
+    }, []),
+  });
+
+  const dispatchChunk = useCallback(
+    (chunk: unknown, messageType: NatsMessageType) => {
+      if (messageType === 'admin-message') processAdminChunk(chunk);
+      else processClientChunk(chunk);
+    },
+    [processClientChunk, processAdminChunk],
+  );
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
     dialogId: messageDialogId ?? '',
-    onChunkReceived: processRealtimeChunk,
+    onChunkReceived: dispatchChunk,
   });
 
   const { stopGeneration: handleStopGeneration } = useStopGeneration(messageDialogId);
@@ -257,30 +239,10 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog?.owner?.type, activeChatTab]);
 
-  // Extract approval statuses from messages
-  useEffect(() => {
-    const extractedStatuses = messages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
-      const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData];
-
-      messageDataArray.forEach((data: any) => {
-        if (data?.type === MESSAGE_TYPE.APPROVAL_RESULT && data.approvalRequestId) {
-          acc[data.approvalRequestId] = data.approved ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED;
-        }
-      });
-
-      return acc;
-    }, {});
-
-    if (Object.keys(extractedStatuses).length > 0) {
-      setApprovalStatuses(prev => ({ ...prev, ...extractedStatuses }));
-    }
-  }, [messages]);
-
   // NATS subscription
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
-      const processed = processChunk(payload as any, messageType as 'message' | 'admin-message');
-      if (!processed) return;
+      processChunk(payload as any, messageType as 'message' | 'admin-message');
     },
     [processChunk],
   );
@@ -350,124 +312,82 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
   }, [dialog, isUpdating, activate, dialogId, updateDialogStatus]);
 
+  const handleApprovalAction = useCallback(
+    async (requestId: string | undefined, approving: boolean) => {
+      if (!requestId) return;
+      const mutate = approving ? handleApproveRequest : handleRejectRequest;
+      const status = approving ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED;
+      try {
+        await mutate(requestId);
+        updateApprovalStatusInMessages('client', requestId, status);
+        updateApprovalStatusInMessages('admin', requestId, status);
+      } catch (error) {
+        toast({
+          title: approving ? 'Approval Failed' : 'Rejection Failed',
+          description:
+            error instanceof Error
+              ? error.message
+              : approving
+                ? 'Unable to approve request'
+                : 'Unable to reject request',
+          variant: 'destructive',
+          duration: 5000,
+        });
+      }
+    },
+    [handleApproveRequest, handleRejectRequest, toast, updateApprovalStatusInMessages],
+  );
+
   const handleApprove = useCallback(
-    async (requestId?: string) => {
-      if (!requestId) return;
-
-      try {
-        await handleApproveRequest(requestId);
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.APPROVED,
-        }));
-      } catch (error) {
-        toast({
-          title: 'Approval Failed',
-          description: error instanceof Error ? error.message : 'Unable to approve request',
-          variant: 'destructive',
-          duration: 5000,
-        });
-      }
-    },
-    [handleApproveRequest, toast],
+    (requestId?: string) => handleApprovalAction(requestId, true),
+    [handleApprovalAction],
   );
-
   const handleReject = useCallback(
-    async (requestId?: string) => {
-      if (!requestId) return;
-
-      try {
-        await handleRejectRequest(requestId);
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.REJECTED,
-        }));
-      } catch (error) {
-        toast({
-          title: 'Rejection Failed',
-          description: error instanceof Error ? error.message : 'Unable to reject request',
-          variant: 'destructive',
-          duration: 5000,
-        });
-      }
-    },
-    [handleRejectRequest, toast],
+    (requestId?: string) => handleApprovalAction(requestId, false),
+    [handleApprovalAction],
   );
 
-  const clientDisplayName =
-    dialog?.deviceHostname ||
-    (dialog?.owner && isClientOwner(dialog.owner) ? dialog.owner.machine?.hostname : undefined) ||
-    undefined;
+  useEffect(() => {
+    setAccumulatorCallbacks('client', { onApprove: handleApprove, onReject: handleReject });
+    setAccumulatorCallbacks('admin', { onApprove: handleApprove, onReject: handleReject });
+  }, [handleApprove, handleReject, setAccumulatorCallbacks]);
 
-  const processMessages = useCallback(
-    (messages: Message[], expectedChatType?: (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE]) => {
-      const assistantConfig = expectedChatType === CHAT_TYPE.ADMIN ? ASSISTANT_CONFIG.MINGO : ASSISTANT_CONFIG.FAE;
-      const { type: assistantType, name: assistantName } = assistantConfig;
+  useHistoricalMessages({
+    side: 'client',
+    messageDialogId,
+    chatType: CHAT_TYPE.CLIENT,
+    assistantConfig: ASSISTANT_CONFIG.FAE,
+    pages: clientChat.rawPages,
+    isFetched: clientChat.isFetched,
+    onApprove: handleApprove,
+    onReject: handleReject,
+  });
+  useHistoricalMessages({
+    side: 'admin',
+    messageDialogId,
+    chatType: CHAT_TYPE.ADMIN,
+    assistantConfig: ASSISTANT_CONFIG.MINGO,
+    pages: adminChat.rawPages,
+    isFetched: adminChat.isFetched,
+    onApprove: handleApprove,
+    onReject: handleReject,
+  });
 
-      const historicalMessages: HistoricalMessage[] = messages.map(msg => ({
-        id: msg.id,
-        dialogId: msg.dialogId,
-        chatType: msg.chatType,
-        createdAt: msg.createdAt,
-        owner: msg.owner,
-        messageData: msg.messageData,
-      }));
+  const clientPendingApprovals = useMemo(() => extractPendingApprovals(clientMessages), [clientMessages]);
+  const adminPendingApprovals = useMemo(() => extractPendingApprovals(adminMessages), [adminMessages]);
 
-      const { messages: processed } = processHistoricalMessagesWithErrors(historicalMessages, {
-        assistantName,
-        assistantType,
-        chatTypeFilter: expectedChatType,
-        onApprove: handleApprove,
-        onReject: handleReject,
-        approvalStatuses: Object.fromEntries(
-          Object.entries(approvalStatuses).map(([k, v]) => [k, v as ChatApprovalStatus]),
-        ),
-      });
-
-      const pendingApprovalSegments: MessageSegment[] = [];
-      const filteredMessages = processed.filter((msg: ProcessedMessage) => {
-        if (msg.id.startsWith('pending-approvals-') && Array.isArray(msg.content)) {
-          msg.content.forEach((segment: MessageSegment) => {
-            if (segment.type === 'approval_request' && segment.status === 'pending') {
-              pendingApprovalSegments.push(segment as MessageSegment);
-            }
-          });
-          return false;
-        }
-        return true;
-      });
-
-      const processedMessages = filteredMessages.map((msg: ProcessedMessage) => ({
-        id: msg.id,
-        content: msg.content as string | MessageSegment[],
-        role: msg.role as 'user' | 'assistant' | 'error',
-        name: msg.authorType === 'user' && clientDisplayName ? clientDisplayName : msg.name,
-        assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
-        authorType: msg.authorType,
-        timestamp: msg.timestamp,
-      }));
-
-      return {
-        messages: processedMessages,
-        pendingApprovals: pendingApprovalSegments,
-        assistantType,
-        assistantName,
-      };
-    },
-    [approvalStatuses, handleApprove, handleReject, clientDisplayName],
-  );
-
-  const chatData = useMemo(() => processMessages(messages, CHAT_TYPE.CLIENT), [messages, processMessages]);
-  const adminChatData = useMemo(
-    () => processMessages(adminMessages, CHAT_TYPE.ADMIN),
-    [adminMessages, processMessages],
+  const remapClientUserName = useCallback(
+    (msg: ChatMessage): ChatMessage =>
+      msg.authorType === 'user' && clientDisplayName ? { ...msg, name: clientDisplayName } : msg,
+    [clientDisplayName],
   );
 
   const clientChatMessages = useMemo(() => {
+    const visible = stripPendingApprovals(clientMessages).map(remapClientUserName);
     if (dialog?.creationSource !== CREATION_SOURCE.FAE_FORM || clientChat.hasNextPage) {
-      return chatData.messages;
+      return visible;
     }
-    const faeMessage = {
+    const faeMessage: ChatMessage = {
       id: `synthetic-fae-form-${dialog.id}`,
       content: [
         'Your request has been received. We will contact you shortly.',
@@ -478,14 +398,16 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         'Description:',
         dialog.description || '(No description provided)',
       ].join('\n'),
-      role: 'assistant' as const,
+      role: 'assistant',
       name: ASSISTANT_CONFIG.FAE.name,
       assistantType: ASSISTANT_CONFIG.FAE.type,
-      authorType: 'fae' as const,
+      authorType: 'fae',
       timestamp: new Date(dialog.createdAt),
     };
-    return [faeMessage, ...chatData.messages];
-  }, [chatData.messages, dialog, clientChat.hasNextPage]);
+    return [faeMessage, ...visible];
+  }, [clientMessages, remapClientUserName, dialog, clientChat.hasNextPage]);
+
+  const adminChatDisplayMessages = useMemo(() => stripPendingApprovals(adminMessages), [adminMessages]);
 
   const [actionsOpen, setActionsOpen] = useState(false);
 
@@ -855,8 +777,8 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   showAvatars={false}
                   isLoading={clientChat.isLoading}
                   isTyping={isClientChatTyping}
-                  pendingApprovals={chatData.pendingApprovals}
-                  assistantType={chatData.assistantType}
+                  pendingApprovals={clientPendingApprovals}
+                  assistantType={ASSISTANT_CONFIG.FAE.type}
                   hasNextPage={clientChat.hasNextPage}
                   isFetchingNextPage={clientChat.isFetchingNextPage}
                   onLoadMore={clientChat.fetchNextPage}
@@ -926,14 +848,14 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 /* Messages */
                 <ChatMessageList
                   className="flex-1 bg-ods-card border border-ods-border rounded-lg"
-                  messages={adminChatData.messages}
+                  messages={adminChatDisplayMessages}
                   dialogId={dialogId}
                   autoScroll={true}
                   showAvatars={false}
                   isLoading={adminChat.isLoading}
                   isTyping={isAdminChatTyping}
-                  pendingApprovals={adminChatData.pendingApprovals}
-                  assistantType={adminChatData.assistantType}
+                  pendingApprovals={adminPendingApprovals}
+                  assistantType={ASSISTANT_CONFIG.MINGO.type}
                   hasNextPage={adminChat.hasNextPage}
                   isFetchingNextPage={adminChat.isFetchingNextPage}
                   onLoadMore={adminChat.fetchNextPage}
@@ -948,13 +870,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   placeholder="Enter your Request..."
                   onSend={handleSendAdminMessage}
                   onStop={
-                    featureFlags.dialogStop.enabled() &&
-                    isAdminChatTyping &&
-                    adminChatData.pendingApprovals.length === 0
+                    featureFlags.dialogStop.enabled() && isAdminChatTyping && adminPendingApprovals.length === 0
                       ? handleStopGeneration
                       : undefined
                   }
-                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting}
+                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting || isClientChatTyping}
                   autoFocus={false}
                   className="mt-2 bg-ods-card rounded-lg max-w-full"
                 />

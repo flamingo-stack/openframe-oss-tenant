@@ -1,48 +1,125 @@
+import {
+  type Message as ChatMessage,
+  createMessageSegmentAccumulator,
+  type MessageSegment,
+  type MessageSegmentAccumulator,
+  type TokenUsageData,
+} from '@flamingo-stack/openframe-frontend-core';
 import { create } from 'zustand';
-import { MESSAGE_TYPE, OWNER_TYPE } from '../constants';
 import { getDialogService } from '../services';
-import type { Dialog, Message } from '../types/dialog.types';
+import type { Dialog } from '../types/dialog.types';
+
+export type ChatSide = 'client' | 'admin';
+
+interface SideState {
+  messages: ChatMessage[];
+  streaming: ChatMessage | null;
+  accumulator: MessageSegmentAccumulator;
+  tokenUsage: TokenUsageData | null;
+  isTyping: boolean;
+  isCompacting: boolean;
+}
+
+function createSideState(): SideState {
+  return {
+    messages: [],
+    streaming: null,
+    accumulator: createMessageSegmentAccumulator(),
+    tokenUsage: null,
+    isTyping: false,
+    isCompacting: false,
+  };
+}
+
+export type ApprovalStatus = 'approved' | 'rejected';
+export type ApprovalStatusMap = Record<string, ApprovalStatus>;
 
 interface DialogDetailsStore {
-  // Current dialog state
+  // Dialog
   currentDialogId: string | null;
   currentDialog: Dialog | null;
-  currentMessages: Message[];
-  adminMessages: Message[];
-
-  // Loading states
   isLoadingDialog: boolean;
   loadingDialogId: string | null;
-
-  // Error states
   dialogError: string | null;
 
-  // Typing indicators
-  isClientChatTyping: boolean;
-  isAdminChatTyping: boolean;
+  // Per-side state
+  client: SideState;
+  admin: SideState;
 
-  // Actions
+  approvalStatuses: ApprovalStatusMap;
+
+  // Dialog actions
   fetchDialog: (dialogId: string, version?: 'v1' | 'v2') => Promise<Dialog | null>;
   clearCurrent: () => void;
   updateDialogStatus: (status: string) => void;
   updateDialogMode: (mode: string, dialogId?: string) => void;
-  addRealtimeMessage: (message: Message, isAdmin: boolean) => void;
-  setTypingIndicator: (isAdmin: boolean, typing: boolean) => void;
+
+  // Per-side message actions
+  setMessages: (side: ChatSide, messages: ChatMessage[]) => void;
+  prependMessages: (side: ChatSide, messages: ChatMessage[]) => void;
+  prependWithBoundaryMerge: (
+    side: ChatSide,
+    newMessages: ChatMessage[],
+    boundaryMessageId?: string,
+    boundaryUpdates?: Partial<ChatMessage>,
+  ) => void;
+  addMessage: (side: ChatSide, message: ChatMessage) => void;
+  updateMessage: (side: ChatSide, messageId: string, updates: Partial<ChatMessage>) => void;
+  removeMessage: (side: ChatSide, messageId: string) => void;
+  getMessages: (side: ChatSide) => ChatMessage[];
+
+  // Streaming
+  setStreamingMessage: (side: ChatSide, message: ChatMessage | null) => void;
+  getStreamingMessage: (side: ChatSide) => ChatMessage | null;
+  updateStreamingMessageSegments: (side: ChatSide, segments: MessageSegment[]) => void;
+  appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[]) => void;
+
+  // Approvals
+  updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
+  setApprovalStatus: (requestId: string, status: ApprovalStatus) => void;
+  mergeApprovalStatuses: (entries: ApprovalStatusMap) => void;
+
+  // Accumulator
+  setAccumulatorCallbacks: (
+    side: ChatSide,
+    callbacks: {
+      onApprove?: (requestId?: string) => void | Promise<void>;
+      onReject?: (requestId?: string) => void | Promise<void>;
+    },
+  ) => void;
+  resetAccumulator: (side: ChatSide) => void;
+
+  // Token usage
+  setTokenUsage: (side: ChatSide, data: TokenUsageData | null) => void;
+  getTokenUsage: (side: ChatSide) => TokenUsageData | null;
+
+  // Typing / compacting
+  setTypingIndicator: (side: ChatSide, typing: boolean) => void;
+  setCompactingIndicator: (side: ChatSide, compacting: boolean) => void;
+
+  // Reset one side (e.g. on dialog switch)
+  clearSide: (side: ChatSide) => void;
+}
+
+function produceSide(
+  state: DialogDetailsStore,
+  side: ChatSide,
+  updater: (s: SideState) => SideState,
+): Pick<DialogDetailsStore, 'client' | 'admin'> {
+  const next = updater(state[side]);
+  return side === 'client' ? { client: next, admin: state.admin } : { client: state.client, admin: next };
 }
 
 export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
   currentDialogId: null,
   currentDialog: null,
-  currentMessages: [],
-  adminMessages: [],
-
   isLoadingDialog: false,
   loadingDialogId: null,
-
   dialogError: null,
 
-  isClientChatTyping: false,
-  isAdminChatTyping: false,
+  client: createSideState(),
+  admin: createSideState(),
+  approvalStatuses: {},
 
   fetchDialog: async (dialogId: string, version: 'v1' | 'v2' = 'v1') => {
     const state = get();
@@ -84,12 +161,11 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     set({
       currentDialogId: null,
       currentDialog: null,
-      currentMessages: [],
-      adminMessages: [],
       dialogError: null,
       loadingDialogId: null,
-      isClientChatTyping: false,
-      isAdminChatTyping: false,
+      client: createSideState(),
+      admin: createSideState(),
+      approvalStatuses: {},
     }),
 
   updateDialogStatus: (status: string) => {
@@ -98,7 +174,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
       set({
         currentDialog: {
           ...state.currentDialog,
-          status: status as any,
+          status: status as Dialog['status'],
         },
       });
     }
@@ -117,88 +193,185 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
   },
 
-  addRealtimeMessage: (message: Message, isAdmin: boolean) => {
-    const state = get();
-    const matchId = state.currentDialog?.dialogId ?? state.currentDialogId;
-    if (!matchId || message.dialogId !== matchId) return;
+  setMessages: (side, messages) => set(state => produceSide(state, side, s => ({ ...s, messages }))),
 
-    const TEXT_TYPE = MESSAGE_TYPE.TEXT;
-    const ASSISTANT_TYPE = OWNER_TYPE.ASSISTANT;
-    const COMPACTION_START_TYPE = 'CONTEXT_COMPACTION_START';
-    const COMPACTION_END_TYPE = 'CONTEXT_COMPACTION_END';
+  prependMessages: (side, messages) =>
+    set(state =>
+      produceSide(state, side, s => ({
+        ...s,
+        messages: [...messages, ...s.messages],
+      })),
+    ),
 
-    const incomingType = message.messageData?.type;
-    const isTextMessage = incomingType === TEXT_TYPE;
-    const isAssistantOwner = message.owner?.type === ASSISTANT_TYPE;
-    const isCompactionStart = incomingType === COMPACTION_START_TYPE;
-    const isCompactionEnd = incomingType === COMPACTION_END_TYPE;
-
-    const updateMessages = (messages: Message[], isTextMsg: boolean, isAssistant: boolean): Message[] => {
-      const existingIds = new Set(messages.map(m => m.id));
-      if (existingIds.has(message.id)) return messages;
-
-      if (isCompactionStart) {
-        const hasExistingCompaction = messages.some(
-          m => m.messageData?.type === COMPACTION_START_TYPE || m.messageData?.type === COMPACTION_END_TYPE,
-        );
-        if (hasExistingCompaction) return messages;
-        return [...messages, message];
-      }
-
-      if (isCompactionEnd) {
-        const lastEndIdx = (() => {
-          for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i].messageData?.type === COMPACTION_END_TYPE) return i;
+  prependWithBoundaryMerge: (side, newMessages, boundaryMessageId, boundaryUpdates) =>
+    set(state =>
+      produceSide(state, side, s => {
+        let current = s.messages;
+        if (boundaryMessageId && boundaryUpdates) {
+          const idx = current.findIndex(m => m.id === boundaryMessageId);
+          if (idx !== -1) {
+            current = [...current];
+            current[idx] = { ...current[idx], ...boundaryUpdates };
           }
-          return -1;
-        })();
-        if (lastEndIdx !== -1) return messages;
+        }
+        const next = newMessages.length > 0 ? [...newMessages, ...current] : current;
+        return { ...s, messages: next };
+      }),
+    ),
 
-        const lastStartIdx = (() => {
-          for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i].messageData?.type === COMPACTION_START_TYPE) return i;
+  addMessage: (side, message) =>
+    set(state =>
+      produceSide(state, side, s => {
+        const existingIndex = s.messages.findIndex(m => m.id === message.id);
+        if (existingIndex !== -1) {
+          const updated = [...s.messages];
+          updated[existingIndex] = message;
+          return { ...s, messages: updated };
+        }
+        return { ...s, messages: [...s.messages, message] };
+      }),
+    ),
+
+  updateMessage: (side, messageId, updates) =>
+    set(state =>
+      produceSide(state, side, s => {
+        const idx = s.messages.findIndex(m => m.id === messageId);
+        if (idx === -1) return s;
+        const updated = [...s.messages];
+        updated[idx] = { ...updated[idx], ...updates };
+        return { ...s, messages: updated };
+      }),
+    ),
+
+  removeMessage: (side, messageId) =>
+    set(state =>
+      produceSide(state, side, s => ({
+        ...s,
+        messages: s.messages.filter(m => m.id !== messageId),
+      })),
+    ),
+
+  getMessages: side => get()[side].messages,
+
+  setStreamingMessage: (side, message) => set(state => produceSide(state, side, s => ({ ...s, streaming: message }))),
+
+  getStreamingMessage: side => get()[side].streaming,
+
+  updateStreamingMessageSegments: (side, segments) =>
+    set(state =>
+      produceSide(state, side, s => {
+        if (!s.streaming) return s;
+        const processed = s.accumulator.replaySegments(segments);
+        const updatedMessage: ChatMessage = { ...s.streaming, content: processed };
+        const idx = s.messages.findIndex(m => m.id === updatedMessage.id);
+        const nextMessages = idx !== -1 ? s.messages.map((m, i) => (i === idx ? updatedMessage : m)) : s.messages;
+        return { ...s, streaming: updatedMessage, messages: nextMessages };
+      }),
+    ),
+
+  appendSegmentsToLastAssistant: (side, segments) => {
+    const incomingCompaction = [...segments]
+      .reverse()
+      .find((seg): seg is Extract<MessageSegment, { type: 'context_compaction' }> => seg.type === 'context_compaction');
+
+    set(state =>
+      produceSide(state, side, s => {
+        for (let i = s.messages.length - 1; i >= 0; i--) {
+          if (s.messages[i].role !== 'assistant') continue;
+          const existing = Array.isArray(s.messages[i].content) ? (s.messages[i].content as MessageSegment[]) : [];
+
+          let nextContent: MessageSegment[];
+          if (incomingCompaction) {
+            const startedIdx = existing.findIndex(seg => seg.type === 'context_compaction' && seg.status === 'started');
+            const hasAnyCompaction = existing.some(seg => seg.type === 'context_compaction');
+            if (incomingCompaction.status === 'completed' && startedIdx !== -1) {
+              nextContent = [...existing];
+              nextContent[startedIdx] = incomingCompaction;
+            } else if (!hasAnyCompaction) {
+              nextContent = [...existing, incomingCompaction];
+            } else {
+              nextContent = existing;
+            }
+          } else {
+            nextContent = s.accumulator.replaySegments([...existing, ...segments]);
           }
-          return -1;
-        })();
-        if (lastStartIdx !== -1) {
-          const updated = [...messages];
-          updated[lastStartIdx] = message;
-          return updated;
+
+          const updated = [...s.messages];
+          updated[i] = { ...updated[i], content: nextContent };
+          return { ...s, messages: updated };
         }
-        return [...messages, message];
-      }
-
-      if (isTextMsg && messages.length > 0 && isAssistant) {
-        const lastMessage = messages[messages.length - 1];
-        const lastIsText = lastMessage.messageData?.type === TEXT_TYPE;
-        const lastIsAssistant = lastMessage.owner?.type === ASSISTANT_TYPE;
-
-        if (lastIsText && lastIsAssistant) {
-          const updatedMessages = [...messages];
-          const lastMessageData = lastMessage.messageData as any;
-          const messageData = message.messageData as any;
-          updatedMessages[updatedMessages.length - 1] = {
-            ...lastMessage,
-            messageData: {
-              ...lastMessage.messageData,
-              text: (lastMessageData.text || '') + (messageData.text || ''),
-            },
-          };
-          return updatedMessages;
-        }
-      }
-
-      return [...messages, message];
-    };
-
-    if (isAdmin) {
-      set(s => ({ adminMessages: updateMessages(s.adminMessages, isTextMessage, isAssistantOwner) }));
-    } else {
-      set(s => ({ currentMessages: updateMessages(s.currentMessages, isTextMessage, isAssistantOwner) }));
-    }
+        return s;
+      }),
+    );
   },
 
-  setTypingIndicator: (isAdmin: boolean, typing: boolean) => {
-    set(isAdmin ? { isAdminChatTyping: typing } : { isClientChatTyping: typing });
+  updateApprovalStatusInMessages: (side, requestId, status) =>
+    set(state => {
+      const nextSides = produceSide(state, side, s => {
+        const updatedMessages = s.messages.map(message => {
+          if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+          const updatedContent = message.content.map(segment => {
+            if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
+              return { ...segment, status };
+            }
+            return segment;
+          });
+          return { ...message, content: updatedContent };
+        });
+
+        const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status);
+        const updatedStreaming =
+          s.streaming && Array.isArray(s.streaming.content)
+            ? { ...s.streaming, content: updatedSegments }
+            : s.streaming;
+
+        return { ...s, messages: updatedMessages, streaming: updatedStreaming };
+      });
+      return {
+        ...nextSides,
+        approvalStatuses:
+          state.approvalStatuses[requestId] === status
+            ? state.approvalStatuses
+            : { ...state.approvalStatuses, [requestId]: status },
+      };
+    }),
+
+  setApprovalStatus: (requestId, status) =>
+    set(state =>
+      state.approvalStatuses[requestId] === status
+        ? state
+        : { approvalStatuses: { ...state.approvalStatuses, [requestId]: status } },
+    ),
+
+  mergeApprovalStatuses: entries =>
+    set(state => {
+      let changed = false;
+      const next: ApprovalStatusMap = { ...state.approvalStatuses };
+      for (const [id, status] of Object.entries(entries)) {
+        if (next[id] !== status) {
+          next[id] = status;
+          changed = true;
+        }
+      }
+      return changed ? { approvalStatuses: next } : state;
+    }),
+
+  setAccumulatorCallbacks: (side, callbacks) => {
+    get()[side].accumulator.setCallbacks(callbacks);
   },
+
+  resetAccumulator: side => {
+    get()[side].accumulator.reset();
+  },
+
+  setTokenUsage: (side, data) => set(state => produceSide(state, side, s => ({ ...s, tokenUsage: data }))),
+
+  getTokenUsage: side => get()[side].tokenUsage,
+
+  setTypingIndicator: (side, typing) => set(state => produceSide(state, side, s => ({ ...s, isTyping: typing }))),
+
+  setCompactingIndicator: (side, compacting) =>
+    set(state => produceSide(state, side, s => ({ ...s, isCompacting: compacting }))),
+
+  clearSide: side => set(state => produceSide(state, side, _s => createSideState())),
 }));

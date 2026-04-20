@@ -1,4 +1,4 @@
-import type { ChunkData, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
+import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
@@ -20,7 +20,6 @@ import type {
   FetchDialogsParams,
   FetchMessagesParams,
   MessagePage,
-  RealtimeAction,
 } from './dialog-service.types';
 import { DialogServiceV1 } from './dialog-service-v1';
 
@@ -272,9 +271,5 @@ export class DialogServiceV2 implements DialogService {
 
   async fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]> {
     return this.v1.fetchChunks(dialogId, chatType, fromSequenceId);
-  }
-
-  parseRealtimePayload(payload: unknown, messageType: NatsMessageType, dialogId: string): RealtimeAction | null {
-    return this.v1.parseRealtimePayload(payload, messageType, dialogId);
   }
 }
