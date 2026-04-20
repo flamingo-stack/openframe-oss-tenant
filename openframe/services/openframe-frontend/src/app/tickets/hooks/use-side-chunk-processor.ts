@@ -154,6 +154,29 @@ export function useSideChunkProcessor(
           timestamp: new Date(),
         });
       },
+      onDirectMessage: (text: string, meta?: { ownerType?: string; displayName?: string }) => {
+        const isAdminAuthor = meta?.ownerType === 'ADMIN';
+        const name = isAdminAuthor ? meta?.displayName : (userDisplayName ?? meta?.displayName);
+
+        addMessage(side, {
+          id: `direct-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          content: text,
+          name,
+          authorType: isAdminAuthor ? 'admin' : 'user',
+          timestamp: new Date(),
+        });
+      },
+      onSystemMessage: (text: string) => {
+        addMessage(side, {
+          id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          content: '',
+          name: text,
+          authorType: 'system',
+          timestamp: new Date(),
+        });
+      },
       onMetadata,
       onApprove,
       onReject,
