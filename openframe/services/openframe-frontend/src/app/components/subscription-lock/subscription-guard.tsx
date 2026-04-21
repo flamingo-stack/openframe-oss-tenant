@@ -4,7 +4,6 @@ import { type ReactNode, Suspense } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionGuardQuery as SubscriptionGuardQueryType } from '@/__generated__/subscriptionGuardQuery.graphql';
 import { featureFlags } from '@/lib/feature-flags';
-import { runtimeEnv } from '@/lib/runtime-config';
 import { SubscriptionLockProvider } from './subscription-lock-context';
 import { resolveSubscriptionStatus } from './subscription-status';
 
@@ -31,12 +30,6 @@ interface SubscriptionGuardProps {
 export function SubscriptionGuard({ children, fallback = null }: SubscriptionGuardProps) {
   if (!featureFlags.subscription.enabled()) {
     return <>{children}</>;
-  }
-
-  // Local QA bypass: if NEXT_PUBLIC_MOCK_SUBSCRIPTION_STATUS is set, skip the
-  // network query entirely and drive the lock state from the mock.
-  if (runtimeEnv.mockSubscriptionStatus()) {
-    return <SubscriptionLockProvider status={resolveSubscriptionStatus(null)}>{children}</SubscriptionLockProvider>;
   }
 
   return (

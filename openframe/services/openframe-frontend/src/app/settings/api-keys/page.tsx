@@ -7,7 +7,7 @@ import { ApiKeysTab } from '../components/tabs/api-keys';
 
 export default function ApiKeysPage() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <ApiKeysTab />
     </AppLayout>
   );

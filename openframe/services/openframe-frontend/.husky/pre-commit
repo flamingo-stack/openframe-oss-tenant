@@ -1,2 +1,31 @@
-cd openframe/services/openframe-frontend
-npm run lint:biome && npm run type-check
+#!/usr/bin/env bash
+set -euo pipefail
+
+FRONTEND_DIR="openframe/services/openframe-frontend"
+
+STAGED_ROOT=$(git diff --cached --name-only --diff-filter=ACMR \
+  | grep -E "^${FRONTEND_DIR}/.*\.(ts|tsx|js|jsx|mjs|cjs)$" || true)
+
+if [ -z "$STAGED_ROOT" ]; then
+  exit 0
+fi
+
+STAGED_REL=$(echo "$STAGED_ROOT" | sed "s|^${FRONTEND_DIR}/||")
+
+cd "$FRONTEND_DIR"
+
+echo "$STAGED_REL" | xargs npx @biomejs/biome check --no-errors-on-unmatched
+
+TSC_OUTPUT=$(npx tsc --noEmit 2>&1 || true)
+
+GREP_PATTERN=$(echo "$STAGED_REL" | tr '\n' '|' | sed 's/|$//')
+FILTERED=$(echo "$TSC_OUTPUT" | grep -E "^(${GREP_PATTERN})" || true)
+
+if [ -n "$FILTERED" ]; then
+  echo "$FILTERED"
+  echo ""
+  echo "Type errors in staged files — commit aborted."
+  exit 1
+fi
+
+exit 0

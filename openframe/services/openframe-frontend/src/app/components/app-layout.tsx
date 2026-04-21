@@ -48,7 +48,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   }, [router]);
 
   const { isLocked } = useSubscriptionLock();
-  const navigationItems = useMemo(() => getNavigationItems(pathname, isLocked), [pathname, isLocked]);
+  const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
     () => ({
@@ -99,6 +99,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={mobileBurgerMenuProps}
       headerProps={headerProps}
+      disabled={isLocked}
     >
       {isLocked ? <SubscriptionLockContent /> : children}
     </CoreAppLayout>

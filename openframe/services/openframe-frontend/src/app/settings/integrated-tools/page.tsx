@@ -7,7 +7,7 @@ import { ArchitectureTab } from '../components/tabs/architecture';
 
 export default function IntegratedToolsPage() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <ArchitectureTab title="Integrated Tools" />
     </AppLayout>
   );

@@ -1,16 +1,24 @@
 'use client';
 
 import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { CircularProgress, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, CircularProgress, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { format, parseISO } from 'date-fns';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useMemo } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__generated__/billingUsageViewQuery.graphql';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
-import { BILLING_USAGE_MOCKS, type BillingUsageMock, isBillingUsageMockKey } from '../mocks/billing-usage-mocks';
+import {
+  BILLING_USAGE_MOCKS,
+  type BillingUsageMock,
+  type BillingUsageMockKey,
+  isBillingUsageMockKey,
+} from '../mocks/billing-usage-mocks';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
+import { CancelOfferModal } from './cancel-offer-modal';
+import { type CancelReason, CancelSubscriptionModal } from './cancel-subscription-modal';
+import { SubscriptionCancelledModal } from './subscription-cancelled-modal';
 
 const WARNING_THRESHOLD = 90;
 const OVER_THRESHOLD = 100;
@@ -71,6 +79,19 @@ function BillingUsageContent() {
     { fetchPolicy: 'store-or-network' },
   );
   const cancelSubscription = useCancelSubscription();
+  const [cancelStep, setCancelStep] = useState<'idle' | 'reason' | 'offer' | 'cancelled'>('idle');
+  const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
+
+  const setMock = useCallback(
+    (key: BillingUsageMockKey | null) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (key) params.set('mock', key);
+      else params.delete('mock');
+      const qs = params.toString();
+      router.replace(qs ? `/settings/billing-usage?${qs}` : '/settings/billing-usage');
+    },
+    [router, searchParams],
+  );
 
   const source: BillingUsageMock = isBillingUsageMockKey(mockKey)
     ? BILLING_USAGE_MOCKS[mockKey]
@@ -154,13 +175,18 @@ function BillingUsageContent() {
       : [
           {
             label: 'Cancel Subscription',
-            onClick: cancelSubscription.mutate,
+            onClick: () => {
+              setCancelReason(null);
+              setCancelStep('reason');
+            },
             danger: true,
             disabled: cancelSubscription.isPending,
           },
         ];
 
   const allPayg = deviceIsPayg && (aiIsPayg || !aiProduct);
+  const isNearLimits =
+    !allPayg && (deviceState === 'warning' || deviceState === 'over' || aiState === 'warning' || aiState === 'over');
 
   const primaryAction = isCancelled
     ? {
@@ -177,7 +203,7 @@ function BillingUsageContent() {
       : {
           label: 'Update Subscription',
           onClick: () => router.push('/settings/billing-usage/subscription'),
-          variant: (allPayg ? 'secondary' : 'primary') as 'primary' | 'secondary',
+          variant: (isNearLimits ? 'primary' : 'card') as 'primary' | 'card',
         };
 
   return (
@@ -189,6 +215,8 @@ function BillingUsageContent() {
       actions={[primaryAction]}
       menuActions={menuActions}
     >
+      <MockPreviewToolbar currentKey={isBillingUsageMockKey(mockKey) ? mockKey : null} onChange={setMock} />
+
       <div className={cn('grid gap-4', hasAi ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}>
         <UsageMetricCard
           title="Device Usage"
@@ -267,7 +295,78 @@ function BillingUsageContent() {
           {hasAi && <BillingRow label="AI conversations" value={formatCount(usage.aiConversations)} />}
         </SectionBlock>
       </div>
+
+      <CancelSubscriptionModal
+        isOpen={cancelStep === 'reason'}
+        endDate={nextBilling}
+        onClose={() => setCancelStep('idle')}
+        onConfirm={reason => {
+          setCancelReason(reason);
+          setCancelStep('offer');
+        }}
+      />
+
+      <CancelOfferModal
+        isOpen={cancelStep === 'offer'}
+        reason={cancelReason}
+        isPending={cancelSubscription.isPending}
+        onClose={() => setCancelStep('idle')}
+        onConfirm={() => {
+          cancelSubscription.mutate({
+            onSuccess: () => setCancelStep('cancelled'),
+          });
+        }}
+      />
+
+      <SubscriptionCancelledModal
+        isOpen={cancelStep === 'cancelled'}
+        endDate={nextBilling}
+        onClose={() => setCancelStep('idle')}
+      />
     </PageLayout>
+  );
+}
+
+const MOCK_PRESETS: ReadonlyArray<{ key: BillingUsageMockKey | null; label: string }> = [
+  { key: null, label: 'Live (empty)' },
+  { key: 'full', label: 'Full' },
+  { key: 'device-only', label: 'Device only' },
+  { key: 'warning-full', label: 'Warning' },
+  { key: 'warning-device-only', label: 'Warning (dev only)' },
+  { key: 'over-full', label: 'Overage' },
+  { key: 'over-device-only', label: 'Overage (dev only)' },
+  { key: 'over-ai-only', label: 'Overage (AI only)' },
+  { key: 'over-device-only-full', label: 'Overage (dev full)' },
+  { key: 'payg-full', label: 'Pay-as-you-go' },
+  { key: 'cancelled-full', label: 'Cancelled' },
+  { key: 'overdue-full', label: 'Overdue' },
+  { key: 'overdue-device-only', label: 'Overdue (dev only)' },
+];
+
+function MockPreviewToolbar({
+  currentKey,
+  onChange,
+}: {
+  currentKey: BillingUsageMockKey | null;
+  onChange: (key: BillingUsageMockKey | null) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 p-2 rounded-md border border-dashed border-ods-border bg-ods-card">
+      <span className="text-h6 text-ods-text-secondary px-2">Preview state:</span>
+      {MOCK_PRESETS.map(({ key, label }) => {
+        const isActive = currentKey === key;
+        return (
+          <Button
+            key={key ?? 'live'}
+            size="sm"
+            variant={isActive ? 'primary' : 'outline'}
+            onClick={() => onChange(key)}
+          >
+            {label}
+          </Button>
+        );
+      })}
+    </div>
   );
 }
 

@@ -7,7 +7,7 @@ import { AiSettingsTab } from '../components/tabs/ai-settings';
 
 export default function AiSettingsPage() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <AiSettingsTab />
     </AppLayout>
   );

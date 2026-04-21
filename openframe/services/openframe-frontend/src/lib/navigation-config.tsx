@@ -12,22 +12,9 @@ import {
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
 
-export const getNavigationItems = (pathname: string, isLocked = false): NavigationSidebarItem[] => {
+export const getNavigationItems = (pathname: string): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
     return [];
-  }
-
-  if (isLocked) {
-    return [
-      {
-        id: 'settings',
-        label: 'Settings',
-        icon: <Settings02Icon size={24} />,
-        path: '/settings/billing-usage/subscription',
-        section: 'secondary',
-        isActive: true,
-      },
-    ];
   }
 
   const baseItems: NavigationSidebarItem[] = [

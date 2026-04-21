@@ -7,7 +7,7 @@ import { ArchitectureTab } from '../components/tabs/architecture';
 
 export default function ArchitecturePage() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <ArchitectureTab />
     </AppLayout>
   );

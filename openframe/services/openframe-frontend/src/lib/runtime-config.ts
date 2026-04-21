@@ -58,10 +58,4 @@ export const runtimeEnv = {
   featureSsoAllowDomain(): boolean {
     return (getEnvVar('NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST') || 'true') === 'true';
   },
-  featureSubscription(): boolean {
-    return (getEnvVar('NEXT_PUBLIC_FEATURE_SUBSCRIPTION') || 'false') === 'true';
-  },
-  mockSubscriptionStatus(): string | undefined {
-    return getEnvVar('NEXT_PUBLIC_MOCK_SUBSCRIPTION_STATUS');
-  },
 };
