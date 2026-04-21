@@ -77,6 +77,7 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
     },
     staleTime: 60_000,
     retry: 2,
+    refetchInterval: 10_000,
   });
 
   const tickets = useMemo<ChatTicketItemData[]>(() => {
