@@ -15,25 +15,24 @@ export function useCancelSubscription() {
   const { toast } = useToast();
   const [commit, isInFlight] = useMutation<UseCancelSubscriptionMutationType>(cancelSubscriptionMutation);
 
-  const mutate = useCallback(() => {
-    commit({
-      variables: {},
-      onCompleted: () => {
-        toast({
-          title: 'Subscription Cancelled',
-          description: 'Your subscription has been cancelled.',
-          variant: 'success',
-        });
-      },
-      onError: err => {
-        toast({
-          title: 'Cancel Failed',
-          description: err instanceof Error ? err.message : 'Failed to cancel subscription',
-          variant: 'destructive',
-        });
-      },
-    });
-  }, [commit, toast]);
+  const mutate = useCallback(
+    (options?: { onSuccess?: () => void }) => {
+      commit({
+        variables: {},
+        onCompleted: () => {
+          options?.onSuccess?.();
+        },
+        onError: err => {
+          toast({
+            title: 'Cancel Failed',
+            description: err instanceof Error ? err.message : 'Failed to cancel subscription',
+            variant: 'destructive',
+          });
+        },
+      });
+    },
+    [commit, toast],
+  );
 
   return { mutate, isPending: isInFlight };
 }

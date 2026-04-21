@@ -90,6 +90,17 @@ export function useNatsDialogSubscription({
     [],
   );
 
+  const reconnectionBackoff = useMemo(
+    () => ({
+      fastRetries: 3,
+      fastRetryDelayMs: 200,
+      initialDelayMs: 1000,
+      multiplier: 2,
+      maxDelayMs: 30_000,
+    }),
+    [],
+  );
+
   const wrappedOnBeforeReconnect = useCallback(async () => {
     try {
       await onBeforeReconnect?.();
@@ -111,5 +122,6 @@ export function useNatsDialogSubscription({
     onBeforeReconnect: wrappedOnBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
+    reconnectionBackoff,
   });
 }

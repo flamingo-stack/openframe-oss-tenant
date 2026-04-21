@@ -44,6 +44,7 @@ export function useSideChunkProcessor(
     setTokenUsage,
     updateStreamingMessageSegments,
     appendSegmentsToLastAssistant,
+    dropIncompleteAssistantTail,
     setAccumulatorCallbacks,
     updateApprovalStatusInMessages,
   } = useDialogDetailsStore();
@@ -59,6 +60,8 @@ export function useSideChunkProcessor(
   const ensureAssistantMessage = useCallback(() => {
     if (getStreamingMessage(side)) return;
 
+    dropIncompleteAssistantTail(side);
+
     const assistantMessage: ChatMessage = {
       id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       role: 'assistant',
@@ -70,7 +73,15 @@ export function useSideChunkProcessor(
 
     setStreamingMessage(side, assistantMessage);
     addMessage(side, assistantMessage);
-  }, [side, assistantName, assistantType, getStreamingMessage, setStreamingMessage, addMessage]);
+  }, [
+    side,
+    assistantName,
+    assistantType,
+    getStreamingMessage,
+    setStreamingMessage,
+    addMessage,
+    dropIncompleteAssistantTail,
+  ]);
 
   const incompleteState = useMemo(() => {
     const tail: MessageSegment[] = [];

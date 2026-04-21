@@ -370,6 +370,17 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     [],
   );
 
+  const reconnectionBackoff = useMemo(
+    () => ({
+      fastRetries: 3,
+      fastRetryDelayMs: 200,
+      initialDelayMs: 1000,
+      multiplier: 2,
+      maxDelayMs: 30_000,
+    }),
+    [],
+  );
+
   const handleBeforeReconnect = useCallback(async () => {
     console.log('[CHAT] NATS disconnected, refreshing token before reconnect...');
     await tokenService.refreshToken();
@@ -384,6 +395,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     onBeforeReconnect: handleBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
+    reconnectionBackoff,
   });
 
   useEffect(() => {

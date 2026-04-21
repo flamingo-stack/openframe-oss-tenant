@@ -52,7 +52,7 @@ export const featureFlags = {
   },
   subscription: {
     enabled(): boolean {
-      return getFlagValue('subscription', () => runtimeEnv.featureSubscription());
+      return getFlagValue('billings', () => false);
     },
   },
 } as const;

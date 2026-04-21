@@ -13,6 +13,9 @@ import { useAuthSession } from '../auth/hooks/use-auth-session';
 import { useAuthStore } from '../auth/stores/auth-store';
 import { performLogout } from '../auth/utils/auth-actions';
 import { AppShellSkeleton } from './app-shell-skeleton';
+import { SubscriptionGuard } from './subscription-lock/subscription-guard';
+import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';
+import { useSubscriptionLock } from './subscription-lock/subscription-lock-context';
 import { UnauthorizedOverlay } from './unauthorized-overlay';
 
 function ContentLoading() {
@@ -44,6 +47,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     router.push('/settings');
   }, [router]);
 
+  const { isLocked } = useSubscriptionLock();
   const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -95,8 +99,9 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={mobileBurgerMenuProps}
       headerProps={headerProps}
+      disabled={isLocked}
     >
-      {children}
+      {isLocked ? <SubscriptionLockContent /> : children}
     </CoreAppLayout>
   );
 }
@@ -132,7 +137,11 @@ function AppLayoutInner({ children, mainClassName }: { children: React.ReactNode
     return <AppShellSkeleton />;
   }
 
-  return <AppShell mainClassName={mainClassName}>{children}</AppShell>;
+  return (
+    <SubscriptionGuard fallback={<AppShellSkeleton />}>
+      <AppShell mainClassName={mainClassName}>{children}</AppShell>
+    </SubscriptionGuard>
+  );
 }
 
 export function AppLayout({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {

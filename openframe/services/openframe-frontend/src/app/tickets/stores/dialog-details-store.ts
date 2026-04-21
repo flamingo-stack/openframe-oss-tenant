@@ -73,6 +73,7 @@ interface DialogDetailsStore {
   getStreamingMessage: (side: ChatSide) => ChatMessage | null;
   updateStreamingMessageSegments: (side: ChatSide, segments: MessageSegment[]) => void;
   appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[]) => void;
+  dropIncompleteAssistantTail: (side: ChatSide) => void;
 
   // Approvals
   updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
@@ -266,6 +267,28 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         const idx = s.messages.findIndex(m => m.id === updatedMessage.id);
         const nextMessages = idx !== -1 ? s.messages.map((m, i) => (i === idx ? updatedMessage : m)) : s.messages;
         return { ...s, streaming: updatedMessage, messages: nextMessages };
+      }),
+    ),
+
+  dropIncompleteAssistantTail: side =>
+    set(state =>
+      produceSide(state, side, s => {
+        let dropFromIndex = s.messages.length;
+        for (let i = s.messages.length - 1; i >= 0; i--) {
+          const msg = s.messages[i];
+          if (msg.role !== 'assistant') break;
+          const isSynthetic = typeof msg.id === 'string' && msg.id.startsWith('pending-approvals-');
+          const hasExecutingTool =
+            Array.isArray(msg.content) &&
+            msg.content.some(seg => seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL');
+          if (isSynthetic || hasExecutingTool) {
+            dropFromIndex = i;
+          } else {
+            break;
+          }
+        }
+        if (dropFromIndex === s.messages.length) return s;
+        return { ...s, messages: s.messages.slice(0, dropFromIndex) };
       }),
     ),
 
