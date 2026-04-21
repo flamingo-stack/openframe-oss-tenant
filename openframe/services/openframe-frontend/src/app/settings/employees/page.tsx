@@ -7,7 +7,7 @@ import { CompanyAndUsersTab } from '../components/tabs/company-and-users';
 
 export default function EmployeesPage() {
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <CompanyAndUsersTab />
     </AppLayout>
   );

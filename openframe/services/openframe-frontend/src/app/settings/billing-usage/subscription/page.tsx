@@ -15,7 +15,7 @@ export default function SubscriptionSettingsPage() {
   }
 
   return (
-    <AppLayout mainClassName="pt-0 sm:pt-0">
+    <AppLayout>
       <Suspense fallback={<SubscriptionSettingsSkeleton />}>
         <SubscriptionSettingsView />
       </Suspense>
