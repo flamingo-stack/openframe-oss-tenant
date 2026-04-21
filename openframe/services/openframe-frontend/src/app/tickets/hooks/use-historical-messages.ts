@@ -62,8 +62,6 @@ export function useHistoricalMessages({
       prevDialogIdRef.current = messageDialogId;
     }
 
-    if (pages.length === processedPageCountRef.current) return;
-
     const flatMessages = [...pages].reverse().flatMap(page => [...page.messages].reverse());
 
     const historical: HistoricalMessage[] = flatMessages
@@ -111,7 +109,9 @@ export function useHistoricalMessages({
       avatar: msg.avatar,
     }));
 
-    if (processedPageCountRef.current === 0) {
+    const isPagination = processedPageCountRef.current > 0 && pages.length > processedPageCountRef.current;
+
+    if (!isPagination) {
       const existing = getMessages(side);
       const processedIds = new Set(storeMessages.map(m => m.id));
       const realtimeOnly = existing.filter(m => {
