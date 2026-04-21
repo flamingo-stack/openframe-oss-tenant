@@ -460,6 +460,17 @@ export function DialogSubscription({
     [dialogId],
   );
 
+  const reconnectionBackoff = useMemo(
+    () => ({
+      fastRetries: 3,
+      fastRetryDelayMs: 200,
+      initialDelayMs: 1000,
+      multiplier: 2,
+      maxDelayMs: 30_000,
+    }),
+    [],
+  );
+
   useEffect(() => {
     resetChunkTracking();
     startInitialBuffering();
@@ -515,6 +526,7 @@ export function DialogSubscription({
     onSubscribed: handleSubscribed,
     getNatsWsUrl,
     clientConfig,
+    reconnectionBackoff,
   });
 
   useEffect(() => {
