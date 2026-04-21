@@ -23,10 +23,16 @@ interface TicketFormFieldsProps {
   form: UseFormReturn<CreateTicketFormData>;
   tempAttachments: ReturnType<typeof useTempAttachments>;
   isFaeForm?: boolean;
+  isEditMode?: boolean;
 }
 
-export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: TicketFormFieldsProps) {
-  const { control, watch, setValue } = form;
+export function TicketFormFields({
+  form,
+  tempAttachments,
+  isFaeForm = false,
+  isEditMode = false,
+}: TicketFormFieldsProps) {
+  const { control, watch, resetField } = form;
 
   const [orgSearch, setOrgSearch] = useState('');
   const [deviceSearch, setDeviceSearch] = useState('');
@@ -34,6 +40,8 @@ export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: T
   const debouncedDeviceSearch = useDebounce(deviceSearch, 300);
 
   const selectedOrgId = watch('organizationId');
+  const selectedDeviceId = watch('deviceId');
+  const lockOrgAndDevice = isEditMode && !!selectedDeviceId;
   const organizationOptions = useOrganizationOptions(debouncedOrgSearch);
   const deviceOptions = useDeviceOptions(selectedOrgId ?? undefined, debouncedDeviceSearch);
   const assigneeOptions = useAssigneeOptions();
@@ -94,21 +102,23 @@ export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: T
         <Controller
           name="organizationId"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <Autocomplete
               label="Organization"
               options={organizationOptions.options}
               value={field.value ?? null}
               onChange={val => {
                 field.onChange(val);
-                setValue('deviceId', null);
+                resetField('deviceId');
                 setDeviceSearch('');
               }}
               onInputChange={setOrgSearch}
               placeholder="Select Organization"
               loading={organizationOptions.isLoading}
-              disabled={isFaeForm}
+              disabled={isFaeForm || lockOrgAndDevice}
               disableClientFilter
+              error={fieldState.error?.message}
+              invalid={!!fieldState.error}
             />
           )}
         />
@@ -116,7 +126,7 @@ export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: T
         <Controller
           name="deviceId"
           control={control}
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <Autocomplete
               label="Device"
               options={deviceOptions.options}
@@ -125,8 +135,10 @@ export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: T
               onInputChange={setDeviceSearch}
               placeholder={selectedOrgId ? 'Select Device' : 'Select Organization first'}
               loading={deviceOptions.isLoading}
-              disabled={isFaeForm || !selectedOrgId}
+              disabled={isFaeForm || !selectedOrgId || lockOrgAndDevice}
               disableClientFilter
+              error={fieldState.error?.message}
+              invalid={!!fieldState.error}
             />
           )}
         />

@@ -38,7 +38,7 @@ export function CreateEditTicketPage() {
       actions={actions}
       padding="none"
     >
-      <TicketFormFields form={form} tempAttachments={tempAttachments} isFaeForm={isFaeForm} />
+      <TicketFormFields form={form} tempAttachments={tempAttachments} isFaeForm={isFaeForm} isEditMode={isEditMode} />
     </PageLayout>
   );
 }
