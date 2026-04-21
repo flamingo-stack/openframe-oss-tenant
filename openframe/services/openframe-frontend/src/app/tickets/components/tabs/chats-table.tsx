@@ -60,8 +60,8 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   }, [dialogs, fetchOrganizationNames]);
 
   const columns = useMemo(
-    () => getDialogTableColumns({ organizationLookup, isArchived }),
-    [organizationLookup, isArchived],
+    () => getDialogTableColumns({ organizationLookup, isArchived, dialogVersion }),
+    [organizationLookup, isArchived, dialogVersion],
   );
 
   const handleRowClick = useCallback(
@@ -104,21 +104,21 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
 
   const actions = useMemo(() => {
     const items = [];
-    if (dialogVersion === 'v2') {
+    if (hasResolvedTickets) {
+      items.push({
+        label: 'Archive Resolved',
+        variant: 'card' as const,
+        icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
+        onClick: handleArchiveResolved,
+        disabled: archiveResolvedMutation.isPending || isLoading,
+      });
+    }
+    if (dialogVersion === 'v2' && !isArchived) {
       items.push({
         label: 'New Ticket',
         onClick: handleNewTicket,
         variant: 'card' as const,
         icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
-      });
-    }
-    if (hasResolvedTickets) {
-      items.push({
-        label: `Archive Resolved`,
-        variant: 'card' as const,
-        icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
-        onClick: handleArchiveResolved,
-        disabled: archiveResolvedMutation.isPending || isLoading,
       });
     }
     return items;
@@ -129,6 +129,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     handleArchiveResolved,
     archiveResolvedMutation.isPending,
     isLoading,
+    isArchived,
   ]);
 
   const filterGroups = columns

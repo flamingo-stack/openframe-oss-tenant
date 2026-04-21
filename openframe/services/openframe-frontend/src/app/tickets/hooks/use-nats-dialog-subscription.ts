@@ -6,7 +6,7 @@ import {
   type UseNatsDialogSubscriptionReturn,
   useNatsDialogSubscription as useNatsDialogSubscriptionCore,
 } from '@flamingo-stack/openframe-frontend-core';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../constants';
 
@@ -72,9 +72,7 @@ export function useNatsDialogSubscription({
   const getNatsWsUrl = useMemo(() => {
     return (): string | null => {
       if (!apiBaseUrl) return null;
-
       if (isDevTicketEnabled && !token) return null;
-
       return buildNatsWsUrl(apiBaseUrl, {
         token: token || undefined,
         includeAuthParam: isDevTicketEnabled,
@@ -92,6 +90,27 @@ export function useNatsDialogSubscription({
     [],
   );
 
+  const reconnectionBackoff = useMemo(
+    () => ({
+      fastRetries: 3,
+      fastRetryDelayMs: 200,
+      initialDelayMs: 1000,
+      multiplier: 2,
+      maxDelayMs: 30_000,
+    }),
+    [],
+  );
+
+  const wrappedOnBeforeReconnect = useCallback(async () => {
+    try {
+      await onBeforeReconnect?.();
+    } finally {
+      if (isDevTicketEnabled) {
+        setToken(getAccessToken());
+      }
+    }
+  }, [onBeforeReconnect, isDevTicketEnabled]);
+
   return useNatsDialogSubscriptionCore({
     enabled,
     dialogId,
@@ -100,8 +119,9 @@ export function useNatsDialogSubscription({
     onConnect,
     onDisconnect,
     onSubscribed,
-    onBeforeReconnect,
+    onBeforeReconnect: wrappedOnBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
+    reconnectionBackoff,
   });
 }

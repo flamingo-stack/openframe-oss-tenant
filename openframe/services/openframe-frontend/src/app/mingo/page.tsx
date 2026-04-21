@@ -30,7 +30,7 @@ export default function Mingo() {
 
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [currentModel, setCurrentModel] = useState<{
-    modelName: string;
+    displayName: string;
     provider: string;
   } | null>(null);
 
@@ -69,18 +69,20 @@ export default function Mingo() {
     assistantType,
   } = useMingoChat(activeDialogId);
 
-  const { subscribeToDialog, subscribedDialogs, token, isDevTicketEnabled, onConnectionChange } =
+  const { subscribeToDialog, subscribedDialogs, isDevTicketEnabled, onConnectionChange } =
     useMingoRealtimeSubscription(activeDialogId);
 
   useEffect(() => {
     if (activeDialogId && dialogData?.tokenUsage) {
-      const u = dialogData.tokenUsage;
-      setTokenUsage(activeDialogId, {
-        inputTokensSize: u.inputTokensSize ?? 0,
-        outputTokensSize: u.outputTokensSize ?? 0,
-        totalTokensSize: u.totalTokensSize ?? 0,
-        contextSize: u.contextSize ?? 0,
-      });
+      const u = dialogData.tokenUsage.find(t => t.chatType === 'ADMIN_AI_CHAT');
+      if (u) {
+        setTokenUsage(activeDialogId, {
+          inputTokensSize: u.inputTokensSize ?? 0,
+          outputTokensSize: u.outputTokensSize ?? 0,
+          totalTokensSize: u.totalTokensSize ?? 0,
+          contextSize: u.contextSize ?? 0,
+        });
+      }
     }
   }, [activeDialogId, dialogData?.tokenUsage, setTokenUsage]);
 
@@ -93,9 +95,9 @@ export default function Mingo() {
   }, [initialAiModel, currentModel]);
 
   const handleMetadataUpdate = useCallback(
-    (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
+    (metadata: { modelDisplayName: string; modelName: string; providerName: string; contextWindow: number }) => {
       setCurrentModel({
-        modelName: metadata.modelName,
+        displayName: metadata.modelDisplayName,
         provider: metadata.providerName,
       });
     },
@@ -277,7 +279,6 @@ export default function Mingo() {
             onApprove={handleApprove}
             onReject={handleReject}
             approvalStatuses={approvalStatuses}
-            token={token}
             isDevTicketEnabled={isDevTicketEnabled}
             onConnectionChange={onConnectionChange}
             onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
@@ -346,7 +347,7 @@ export default function Mingo() {
                   placeholder="Enter your Request..."
                   onSend={handleSendMessage}
                   onStop={
-                    featureFlags.dialogStop.enabled() && isTyping && pendingApprovals.length === 0
+                    featureFlags.dialogStop.enabled() && isTyping && !isCompacting && pendingApprovals.length === 0
                       ? stopGeneration
                       : undefined
                   }
@@ -358,7 +359,7 @@ export default function Mingo() {
                   <div className="mx-auto w-full max-w-3xl mt-3">
                     <ModelDisplay
                       provider={currentModel.provider}
-                      modelName={currentModel.modelName}
+                      modelName={currentModel.displayName}
                       usedTokens={tokenUsage?.totalTokensSize}
                       contextWindow={tokenUsage?.contextSize}
                     />

@@ -93,6 +93,7 @@ export const DELETE_TICKET_ATTACHMENT = `
 
 const TICKET_TOKEN_USAGE_FRAGMENT = `
         tokenUsage {
+          chatType
           inputTokensSize
           outputTokensSize
           totalTokensSize
@@ -139,6 +140,9 @@ export function getTicketQuery({ includeTokenUsage = false } = {}) {
       }
       assignedTo
       assignedName
+      assigneeImage {
+        imageUrl
+      }
       labels {
         id
         key
@@ -219,6 +223,9 @@ export const GET_TICKETS_QUERY = `
           organizationName
           assignedTo
           assignedName
+          assigneeImage {
+            imageUrl
+          }
           labels {
             id
             key
@@ -405,6 +412,42 @@ export const REOPEN_TICKET_MUTATION = `
   mutation ReopenTicket($input: TicketIdInput!) {
     reopenTicket(input: $input) {
       ticket { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const ASSIGN_TICKET_MUTATION = `
+  mutation AssignTicket($input: AssignTicketInput!) {
+    assignTicket(input: $input) {
+      ticket { id assignedTo assignedName }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const UNASSIGN_TICKET_MUTATION = `
+  mutation UnassignTicket($input: TicketIdInput!) {
+    unassignTicket(input: $input) {
+      ticket { id }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const UNLINK_DEVICE_FROM_TICKET_MUTATION = `
+  mutation UnlinkDeviceFromTicket($input: TicketIdInput!) {
+    unlinkDeviceFromTicket(input: $input) {
+      ticket { id deviceId deviceHostname }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const UNLINK_ORGANIZATION_FROM_TICKET_MUTATION = `
+  mutation UnlinkOrganizationFromTicket($input: TicketIdInput!) {
+    unlinkOrganizationFromTicket(input: $input) {
+      ticket { id organizationId organizationName }
       userErrors { field message }
     }
   }

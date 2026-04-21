@@ -73,6 +73,10 @@ export function ChatView() {
     tokenBasedMemory && setTokenUsage(data);
   }, [tokenBasedMemory]);
 
+  const handleDialogClosed = useCallback(() => {
+    setActiveTicketStatus('RESOLVED');
+  }, []);
+
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
       setCurrentModel({
@@ -109,6 +113,7 @@ export function ChatView() {
     useNats: true,
     onMetadataUpdate: handleMetadataUpdate,
     onTokenUsage: handleTokenUsage,
+    onDialogClosed: handleDialogClosed,
   });
 
   const { toast } = useToast();

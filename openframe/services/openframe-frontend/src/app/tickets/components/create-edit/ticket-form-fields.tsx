@@ -22,9 +22,10 @@ import { TicketTagsManager } from './ticket-tags-manager';
 interface TicketFormFieldsProps {
   form: UseFormReturn<CreateTicketFormData>;
   tempAttachments: ReturnType<typeof useTempAttachments>;
+  isFaeForm?: boolean;
 }
 
-export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProps) {
+export function TicketFormFields({ form, tempAttachments, isFaeForm = false }: TicketFormFieldsProps) {
   const { control, watch, setValue } = form;
 
   const [orgSearch, setOrgSearch] = useState('');
@@ -100,11 +101,14 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
               value={field.value ?? null}
               onChange={val => {
                 field.onChange(val);
-                setValue('deviceId', '');
+                setValue('deviceId', null);
+                setDeviceSearch('');
               }}
               onInputChange={setOrgSearch}
               placeholder="Select Organization"
               loading={organizationOptions.isLoading}
+              disabled={isFaeForm}
+              disableClientFilter
             />
           )}
         />
@@ -121,7 +125,8 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
               onInputChange={setDeviceSearch}
               placeholder={selectedOrgId ? 'Select Device' : 'Select Organization first'}
               loading={deviceOptions.isLoading}
-              disabled={!selectedOrgId}
+              disabled={isFaeForm || !selectedOrgId}
+              disableClientFilter
             />
           )}
         />
@@ -203,6 +208,7 @@ export function TicketFormFields({ form, tempAttachments }: TicketFormFieldsProp
             placeholder="Ticket Description"
             height={500}
             renderPreview={renderPreview}
+            disabled={isFaeForm}
           />
         )}
       />

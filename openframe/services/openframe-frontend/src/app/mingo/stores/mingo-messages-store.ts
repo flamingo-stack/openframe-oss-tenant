@@ -349,10 +349,13 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       },
 
       appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[]) => {
+        const incomingCompaction = [...segments]
+          .reverse()
+          .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
+
         set(state => {
           const newMap = new Map(state.messagesByDialog);
           const currentMessages = newMap.get(dialogId) || [];
-          const accumulator = state.segmentAccumulators.get(dialogId);
 
           for (let i = currentMessages.length - 1; i >= 0; i--) {
             if (currentMessages[i].role === 'assistant') {
@@ -360,10 +363,29 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
               const existing = Array.isArray(updatedMessages[i].content)
                 ? (updatedMessages[i].content as MessageSegment[])
                 : [];
-              const merged = accumulator
-                ? accumulator.replaySegments([...existing, ...segments])
-                : [...existing, ...segments];
-              updatedMessages[i] = { ...updatedMessages[i], content: merged };
+
+              let nextContent: MessageSegment[];
+
+              if (incomingCompaction) {
+                const startedIdx = existing.findIndex(s => s.type === 'context_compaction' && s.status === 'started');
+                const hasAnyCompaction = existing.some(s => s.type === 'context_compaction');
+
+                if (incomingCompaction.status === 'completed' && startedIdx !== -1) {
+                  nextContent = [...existing];
+                  nextContent[startedIdx] = incomingCompaction;
+                } else if (!hasAnyCompaction) {
+                  nextContent = [...existing, incomingCompaction];
+                } else {
+                  nextContent = existing;
+                }
+              } else {
+                const accumulator = state.segmentAccumulators.get(dialogId);
+                nextContent = accumulator
+                  ? accumulator.replaySegments([...existing, ...segments])
+                  : [...existing, ...segments];
+              }
+
+              updatedMessages[i] = { ...updatedMessages[i], content: nextContent };
               newMap.set(dialogId, updatedMessages);
               return { messagesByDialog: newMap };
             }
