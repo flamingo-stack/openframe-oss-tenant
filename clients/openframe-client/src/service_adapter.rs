@@ -201,15 +201,7 @@ impl CrossPlatformServiceManager {
                 let service_name = format!("com.openframe.{}", self.config.name.to_lowercase());
                 apply_windows_recovery(&service_name, recovery)
                     .context("Failed to configure Windows recovery actions")?;
-                info!(
-                    "Configured Windows recovery for '{}': restart after {}s/{}s/{}s, reset counter after {} day(s), non-crash-failures={}",
-                    service_name,
-                    recovery.first_restart_secs,
-                    recovery.second_restart_secs,
-                    recovery.subsequent_restart_secs,
-                    recovery.reset_period_days,
-                    recovery.enable_on_non_crash_failures,
-                );
+                info!("Configured Windows recovery for '{}'", service_name);
             }
         }
 

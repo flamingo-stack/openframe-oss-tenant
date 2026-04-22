@@ -25,7 +25,9 @@ const DESCRIPTION: &str = "OpenFrame client service for remote management and mo
 
 // Windows SCM recovery policy: restart on every failure after a 5-minute delay,
 // reset the failure counter after a full day of clean operation.
-const RESTART_SERVICE_SECS: u64 = 300;
+const FIRST_RESTART_SERVICE_SECS: u64 = 10;
+const SECOND_RESTART_SERVICE_SECS: u64 = 60;
+const SUBSEQUENT_RESTART_SERVICE_SECS: u64 = 300;
 const RECOVERY_RESET_PERIOD_DAYS: u32 = 1;
 
 // Full service identifier used by all platforms
@@ -319,9 +321,9 @@ impl Service {
             exit_timeout_seconds: Some(10),
             is_interactive: true,
             recovery: Some(RecoveryConfig {
-                first_restart_secs: RESTART_SERVICE_SECS,
-                second_restart_secs: RESTART_SERVICE_SECS,
-                subsequent_restart_secs: RESTART_SERVICE_SECS,
+                first_restart_secs: FIRST_RESTART_SERVICE_SECS,
+                second_restart_secs: SECOND_RESTART_SERVICE_SECS,
+                subsequent_restart_secs: SUBSEQUENT_RESTART_SERVICE_SECS,
                 reset_period_days: RECOVERY_RESET_PERIOD_DAYS,
                 enable_on_non_crash_failures: true,
             }),
