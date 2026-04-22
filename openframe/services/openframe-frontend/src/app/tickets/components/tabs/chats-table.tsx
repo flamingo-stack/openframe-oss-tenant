@@ -64,13 +64,6 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     [organizationLookup, isArchived, dialogVersion],
   );
 
-  const handleRowClick = useCallback(
-    (dialog: Dialog) => {
-      router.push(`/tickets/dialog?id=${dialog.id}`);
-    },
-    [router],
-  );
-
   const handleArchiveResolved = useCallback(async () => {
     await archiveResolvedMutation.mutateAsync();
   }, [archiveResolvedMutation]);
@@ -163,7 +156,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
         loading={isLoading}
         skeletonRows={10}
         emptyMessage={emptyMessage}
-        onRowClick={handleRowClick}
+        rowHref={dialog => `/tickets/dialog?id=${dialog.id}`}
         // TODO: This is a hack to get the filters to work, replace in future
         filters={{ status: statusFilters || [] }}
         onFilterChange={handleFilterChange}

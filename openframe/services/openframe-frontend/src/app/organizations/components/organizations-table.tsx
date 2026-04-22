@@ -218,7 +218,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
         onFilterChange={handleFilterChange}
         showFilters={false}
         rowClassName="mb-1"
-        onRowClick={row => router.push(`/organizations/details/${row.organizationId}`)}
+        rowHref={row => `/organizations/details/${row.organizationId}`}
         infiniteScroll={{
           hasNextPage,
           isFetchingNextPage,

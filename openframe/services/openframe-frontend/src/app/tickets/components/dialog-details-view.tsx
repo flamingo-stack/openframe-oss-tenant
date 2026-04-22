@@ -1,9 +1,6 @@
 'use client';
 
 import {
-  ActionsMenu,
-  type ActionsMenuGroup,
-  Button,
   ChatInput,
   type Message as ChatMessage,
   ChatMessageList,
@@ -19,7 +16,6 @@ import {
   BoxArchiveIcon,
   ChatsIcon,
   CheckCircleIcon,
-  Chevron02DownIcon,
   ClipboardListIcon,
   ComputerMouseIcon,
   HourglassClockIcon,
@@ -28,10 +24,10 @@ import {
   TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  type ActionsMenuGroup,
+  type ActionsMenuItem,
   DetailLoader,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
+  type PageActionButton,
   PageLayout,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -409,161 +405,107 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const adminChatDisplayMessages = useMemo(() => stripPendingApprovals(adminMessages), [adminMessages]);
 
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const menuActions = useMemo<ActionsMenuGroup[]>(() => {
+    if (!dialog) return [];
 
-  const headerActions = useMemo(() => {
-    if (!dialog) return null;
+    const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
+    const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+
+    const items: ActionsMenuItem[] = [];
+
+    if (featureFlags.tickets.enabled() && !isArchived) {
+      items.push({
+        id: 'edit-ticket',
+        label: 'Edit Ticket',
+        icon: <PenEditIcon className="text-ods-text-secondary" />,
+        onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
+      });
+    }
+
+    if (machineId) {
+      items.push(
+        {
+          id: 'device-details',
+          label: 'Device Details',
+          icon: <MonitorIcon className="text-ods-text-secondary" />,
+          href: `/devices/details/${machineId}`,
+        },
+        {
+          id: 'remote-shell',
+          label: 'Remote Shell',
+          icon: <TerminalIcon className="text-ods-text-secondary" />,
+          href: `/devices/details/${machineId}/remote-shell`,
+        },
+        {
+          id: 'remote-control',
+          label: 'Remote Control',
+          icon: <ComputerMouseIcon className="text-ods-text-secondary" />,
+          href: `/devices/details/${machineId}/remote-desktop`,
+        },
+        {
+          id: 'device-logs',
+          label: 'Device Logs',
+          icon: <ClipboardListIcon className="text-ods-text-secondary" />,
+          href: `/devices/details/${machineId}?tab=logs`,
+        },
+      );
+    }
+
+    if (items.length === 0) return [];
+    return [{ items }];
+  }, [dialog, isClientOwner, router]);
+
+  const pageActions = useMemo<PageActionButton[]>(() => {
+    if (!dialog) return [];
 
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
     const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
     const isClosed = isResolved || isArchived;
-    const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+    const actions: PageActionButton[] = [];
 
-    const menuGroups: ActionsMenuGroup[] = [
-      {
-        items: [
-          ...(featureFlags.tickets.enabled() && !isArchived
-            ? [
-                {
-                  id: 'edit-ticket',
-                  label: 'Edit Ticket',
-                  icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    router.push(`/tickets/new?edit=${dialog.id}`);
-                  },
-                },
-              ]
-            : []),
-          ...(!isOnHold && !isClosed
-            ? [
-                {
-                  id: 'put-on-hold',
-                  label: 'Put On Hold',
-                  icon: <HourglassClockIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  disabled: isUpdating,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    handlePutOnHold();
-                  },
-                },
-              ]
-            : []),
-        ],
-        separator: true,
-      },
-      ...(machineId
-        ? [
-            {
-              items: [
-                {
-                  id: 'device-details',
-                  label: 'Device Details',
-                  icon: <MonitorIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    router.push(`/devices/details/${machineId}`);
-                  },
-                },
-                {
-                  id: 'remote-shell',
-                  label: 'Remote Shell',
-                  icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    router.push(`/devices/details/${machineId}/remote-shell`);
-                  },
-                },
-                {
-                  id: 'remote-control',
-                  label: 'Remote Control',
-                  icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    router.push(`/devices/details/${machineId}/remote-desktop`);
-                  },
-                },
-                {
-                  id: 'device-logs',
-                  label: 'Device Logs',
-                  icon: <ClipboardListIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: () => {
-                    setActionsOpen(false);
-                    router.push(`/devices/details/${machineId}?tab=logs`);
-                  },
-                },
-              ],
-            },
-          ]
-        : []),
-    ];
+    if (!isOnHold && !isClosed) {
+      actions.push({
+        label: isUpdating ? 'Updating...' : 'Put On Hold',
+        variant: 'card',
+        icon: <HourglassClockIcon className="text-ods-text-secondary" />,
+        onClick: handlePutOnHold,
+        disabled: isUpdating,
+      });
+    }
 
-    return (
-      <div className="flex gap-4 items-center">
-        <DropdownMenu modal={false} open={actionsOpen} onOpenChange={setActionsOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              rightIcon={<Chevron02DownIcon className="h-5 w-5 text-ods-text-primary ml-2" />}
-              className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            >
-              <span className="text-h3 text-ods-text-primary">Actions</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="p-0 border-none">
-            <ActionsMenu groups={menuGroups} onItemClick={() => setActionsOpen(false)} />
-          </DropdownMenuContent>
-        </DropdownMenu>
+    if (!isClosed) {
+      actions.push({
+        label: isUpdating ? 'Updating...' : 'Resolve',
+        variant: 'card',
+        icon: <CheckCircleIcon className="text-ods-text-secondary" />,
+        onClick: handleResolve,
+        disabled: isUpdating,
+      });
+    }
 
-        {!isClosed && (
-          <Button
-            variant="ghost"
-            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<CheckCircleIcon className="h-6 w-6 text-ods-text-secondary" />}
-            onClick={handleResolve}
-            disabled={isUpdating}
-          >
-            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Resolve'}</span>
-          </Button>
-        )}
+    if (isResolved) {
+      actions.push({
+        label: isUpdating ? 'Updating...' : 'Archive Ticket',
+        variant: 'card',
+        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
+        onClick: handleArchive,
+        disabled: isUpdating,
+      });
+    }
 
-        {isResolved && (
-          <Button
-            variant="ghost"
-            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<BoxArchiveIcon className="h-6 w-6 text-ods-text-secondary" />}
-            onClick={handleArchive}
-            disabled={isUpdating}
-          >
-            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Archive Ticket'}</span>
-          </Button>
-        )}
+    if (isArchived) {
+      actions.push({
+        label: isUpdating ? 'Updating...' : 'Unarchive Ticket',
+        variant: 'card',
+        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
+        onClick: handleUnarchive,
+        disabled: isUpdating,
+      });
+    }
 
-        {isArchived && (
-          <Button
-            variant="ghost"
-            className="bg-ods-card border border-ods-border rounded-md px-4 py-3 hover:bg-ods-bg-hover transition-colors"
-            leftIcon={<BoxArchiveIcon className="h-6 w-6 text-ods-text-secondary" />}
-            onClick={handleUnarchive}
-            disabled={isUpdating}
-          >
-            <span className="text-h3 text-ods-text-primary">{isUpdating ? 'Updating...' : 'Unarchive Ticket'}</span>
-          </Button>
-        )}
-      </div>
-    );
-  }, [
-    dialog,
-    isUpdating,
-    actionsOpen,
-    isClientOwner,
-    handlePutOnHold,
-    handleResolve,
-    handleArchive,
-    handleUnarchive,
-    router,
-  ]);
+    return actions;
+  }, [dialog, isUpdating, handlePutOnHold, handleResolve, handleArchive, handleUnarchive]);
 
   if (isLoading) {
     return <DetailLoader />;
@@ -595,7 +537,9 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       }}
       padding="none"
       className="h-[calc(100%)]"
-      headerActions={headerActions}
+      actions={pageActions}
+      actionsVariant="menu-primary"
+      menuActions={menuActions}
       contentClassName="flex flex-col min-h-0"
     >
       {/* Ticket / Device Info Section — hidden on mobile (shown via tab instead) */}

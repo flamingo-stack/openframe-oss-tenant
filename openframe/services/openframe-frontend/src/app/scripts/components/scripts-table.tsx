@@ -272,10 +272,6 @@ export function ScriptsTable() {
     prevFilterKeyRef.current = filterKey;
   }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms]);
 
-  const handleRowClick = (script: UiScriptEntry) => {
-    router.push(`/scripts/details/${script.id}`);
-  };
-
   const handleNewScript = useCallback(() => {
     router.push('/scripts/create');
   }, [router]);
@@ -356,7 +352,7 @@ export function ScriptsTable() {
         onFilterChange={handleFilterChange}
         showFilters={true}
         rowClassName="mb-1"
-        onRowClick={handleRowClick}
+        rowHref={script => `/scripts/details/${script.id}`}
         infiniteScroll={{
           hasNextPage: visibleCount < filteredScripts.length,
           isFetchingNextPage: false,

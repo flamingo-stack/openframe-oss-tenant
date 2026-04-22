@@ -16,7 +16,13 @@ export function CreateEditTicketPage() {
       ticketId,
     });
 
-  const backButton = useMemo(() => ({ label: 'Back to Tickets', onClick: () => router.push('/tickets') }), [router]);
+  const backButton = useMemo(
+    () =>
+      isEditMode && ticketId
+        ? { label: 'Back to Ticket', onClick: () => router.push(`/tickets/dialog?id=${ticketId}`) }
+        : { label: 'Back to Tickets', onClick: () => router.push('/tickets') },
+    [router, isEditMode, ticketId],
+  );
 
   const actions = useMemo(
     () => [

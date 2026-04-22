@@ -121,13 +121,6 @@ export function ScriptSchedulesTable() {
     [],
   );
 
-  const handleRowClick = useCallback(
-    (schedule: ScriptScheduleListItem) => {
-      router.push(`/scripts/schedules/${schedule.id}`);
-    },
-    [router],
-  );
-
   const handleAddSchedule = useCallback(() => {
     router.push('/scripts/schedules/create');
   }, [router]);
@@ -185,7 +178,7 @@ export function ScriptSchedulesTable() {
             : 'No schedules found. Create a new schedule to get started.'
         }
         rowClassName="mb-1"
-        onRowClick={handleRowClick}
+        rowHref={schedule => `/scripts/schedules/${schedule.id}`}
         infiniteScroll={{
           hasNextPage: visibleCount < filteredSchedules.length,
           isFetchingNextPage: false,

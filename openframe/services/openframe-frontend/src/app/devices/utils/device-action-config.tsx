@@ -9,6 +9,11 @@ import {
   RemoteControlIcon,
   ShellIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  ComputerMouseIcon,
+  FolderIcon,
+  TerminalIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Folder } from 'lucide-react';
 import React from 'react';
 import type { Device } from '../types/device.types';
@@ -32,7 +37,6 @@ export interface DeviceActionButtonConfig {
   icon: React.ReactNode;
   disabled: boolean;
   href: string;
-  showExternalLinkOnHover: boolean;
   // For Windows Remote Shell - has submenu
   type: 'button' | 'submenu';
   submenu?: ShellSubmenuItem[];
@@ -84,10 +88,9 @@ export function getDeviceActionButtons(device: Device, deviceId: string, isWindo
     remoteControl: {
       id: 'remote-control',
       label: 'Remote Control',
-      icon: <RemoteControlIcon className="w-6 h-6" />,
+      icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
       disabled: !availability.remoteControlEnabled,
       href: `/devices/details/${deviceId}/remote-desktop`,
-      showExternalLinkOnHover: true,
       type: 'button',
     },
 
@@ -95,30 +98,27 @@ export function getDeviceActionButtons(device: Device, deviceId: string, isWindo
       ? {
           id: 'remote-shell',
           label: 'Remote Shell',
-          icon: <ShellIcon className="w-6 h-6" />,
+          icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
           disabled: !availability.remoteShellEnabled,
           href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
-          showExternalLinkOnHover: true,
           type: 'submenu',
           submenu: getWindowsShellSubmenu(),
         }
       : {
           id: 'remote-shell',
           label: 'Remote Shell',
-          icon: <ShellIcon className="w-6 h-6" />,
+          icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
           disabled: !availability.remoteShellEnabled,
           href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
-          showExternalLinkOnHover: true,
           type: 'button',
         },
 
     manageFiles: {
       id: 'manage-files',
       label: 'Manage Files',
-      icon: <Folder className="w-6 h-6" />,
+      icon: <FolderIcon className="w-6 h-6 text-ods-text-secondary" />,
       disabled: !availability.manageFilesEnabled,
       href: `/devices/details/${deviceId}/file-manager`,
-      showExternalLinkOnHover: true,
       type: 'button',
     },
 
@@ -150,7 +150,6 @@ export function toActionsMenuItem(
         label: item.label,
         icon: item.icon,
         href: `/devices/details/${deviceId}/remote-shell?shellType=${item.id}`,
-        showExternalLinkOnHover: true,
         onClick: () => handlers?.onShellSelect?.(item.id),
       })),
     };
@@ -162,7 +161,6 @@ export function toActionsMenuItem(
     icon: config.icon,
     disabled: config.disabled,
     href: config.href,
-    showExternalLinkOnHover: config.showExternalLinkOnHover,
     onClick: handlers?.onClick,
   };
 }

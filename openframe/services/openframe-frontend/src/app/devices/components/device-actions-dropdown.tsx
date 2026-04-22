@@ -1,42 +1,18 @@
 'use client';
 
 import type { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core';
+import { ActionsMenuDropdown, normalizeOSType } from '@flamingo-stack/openframe-frontend-core';
 import {
-  ActionsMenu,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  normalizeOSType,
-} from '@flamingo-stack/openframe-frontend-core';
-import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
-import {
-  ArchiveIcon,
-  CmdIcon,
-  PowerShellIcon,
-  RemoteControlIcon,
-  ScriptIcon,
-  ShellIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { MoreVertical, Trash2 } from 'lucide-react';
+  BoxArchiveIcon,
+  BracketCurlyIcon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useMemo, useState } from 'react';
-import { useDeviceActions } from '../hooks/use-device-actions';
-import { useReleaseVersion } from '../hooks/use-release-version';
+import { useCallback, useMemo } from 'react';
+import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
 import type { Device } from '../types/device.types';
 import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils';
 
 interface DeviceActionsDropdownProps {
   device: Device;
@@ -48,44 +24,18 @@ interface DeviceActionsDropdownProps {
 
 export function DeviceActionsDropdown({ device, context, onActionComplete, onRunScript }: DeviceActionsDropdownProps) {
   const router = useRouter();
-  const { toast } = useToast();
-  const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions();
 
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { releaseVersion } = useReleaseVersion({ enabled: dropdownOpen || showDeleteConfirm });
-
-  const deviceName = device.displayName || device.hostname || 'this device';
   const deviceId = device.machineId || device.id;
 
-  // Get device platform for uninstall command
-  const devicePlatform = useMemo(
-    () => normalizeDevicePlatform(device.platform, device.osType, device.operating_system),
-    [device.platform, device.osType, device.operating_system],
-  );
-
-  const uninstallCommand = useMemo(() => {
-    if (!dropdownOpen && !showDeleteConfirm) return '';
-    return buildUninstallCommand({ platform: devicePlatform, releaseVersion });
-  }, [devicePlatform, releaseVersion, dropdownOpen, showDeleteConfirm]);
-
-  // Copy uninstall command to clipboard
-  const copyUninstallCommand = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(uninstallCommand);
-      toast({
-        title: 'Command copied',
-        description: 'Uninstall command copied to clipboard',
-      });
-    } catch {
-      toast({
-        title: 'Copy failed',
-        description: 'Could not copy command to clipboard',
-        variant: 'destructive',
-      });
-    }
-  }, [uninstallCommand, toast]);
+  // Archive/Delete confirmation dialogs (state + JSX) are encapsulated in the hook.
+  const {
+    openArchive,
+    openDelete,
+    dialogs: confirmationDialogs,
+  } = useDeviceConfirmationDialogs(device, {
+    onArchived: context === 'detail' ? () => router.push('/devices') : onActionComplete,
+    onDeleted: context === 'detail' ? () => router.push('/devices') : onActionComplete,
+  });
 
   // Get unified action availability
   const actionAvailability = useMemo(() => getDeviceActionAvailability(device), [device]);
@@ -96,17 +46,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     return normalizeOSType(osType) === 'WINDOWS';
   }, [device.platform, device.osType, device.operating_system]);
 
-  // Action handlers - always use machineId for URL routing
-  const handleRemoteControl = useCallback(() => {
-    setDropdownOpen(false);
-    if (actionAvailability.meshcentralAgentId) {
-      // Simple URL with just the OpenFrame machineId - remote desktop page fetches the rest
-      router.push(`/devices/details/${deviceId}/remote-desktop`);
-    }
-  }, [actionAvailability.meshcentralAgentId, deviceId, router]);
-
   const handleRunScript = useCallback(() => {
-    setDropdownOpen(false);
     if (onRunScript) {
       onRunScript();
     } else {
@@ -114,51 +54,6 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
       router.push(`/devices/details/${deviceId}?action=runScript`);
     }
   }, [deviceId, onRunScript, router]);
-
-  const handleRemoteShell = useCallback(
-    (type: 'cmd' | 'powershell' | 'bash') => {
-      setDropdownOpen(false);
-      if (actionAvailability.meshcentralAgentId) {
-        router.push(`/devices/details/${deviceId}/remote-shell?shellType=${type}`);
-      }
-    },
-    [actionAvailability.meshcentralAgentId, deviceId, router],
-  );
-
-  const handleManageFiles = useCallback(() => {
-    setDropdownOpen(false);
-    if (actionAvailability.meshcentralAgentId) {
-      router.push(`/devices/details/${deviceId}/file-manager`);
-    }
-  }, [actionAvailability.meshcentralAgentId, deviceId, router]);
-
-  const handleArchive = async () => {
-    const success = await archiveDevice(deviceId, deviceName);
-    setShowArchiveConfirm(false);
-    if (success) {
-      if (context === 'detail') {
-        // From device detail page - navigate back to devices list
-        router.push('/devices');
-      } else {
-        // From table - just refresh the list, no navigation
-        onActionComplete?.();
-      }
-    }
-  };
-
-  const handleDelete = async () => {
-    const success = await deleteDevice(deviceId, deviceName);
-    setShowDeleteConfirm(false);
-    if (success) {
-      if (context === 'detail') {
-        // From device detail page - navigate back to devices list
-        router.push('/devices');
-      } else {
-        // From table - just refresh the list, no navigation
-        onActionComplete?.();
-      }
-    }
-  };
 
   // Get unified action button configs
   const actionButtons = useMemo(
@@ -174,32 +69,16 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     // In table context, include all remote actions
     // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
     if (context === 'table') {
-      // Use unified config for action buttons
-      actionItems.push(
-        toActionsMenuItem(actionButtons.remoteShell, deviceId, {
-          onShellSelect: handleRemoteShell,
-          onClick: () => handleRemoteShell('bash'),
-        }),
-      );
-
-      actionItems.push(
-        toActionsMenuItem(actionButtons.remoteControl, deviceId, {
-          onClick: handleRemoteControl,
-        }),
-      );
-
-      actionItems.push(
-        toActionsMenuItem(actionButtons.manageFiles, deviceId, {
-          onClick: handleManageFiles,
-        }),
-      );
+      actionItems.push(toActionsMenuItem(actionButtons.remoteShell, deviceId));
+      actionItems.push(toActionsMenuItem(actionButtons.remoteControl, deviceId));
+      actionItems.push(toActionsMenuItem(actionButtons.manageFiles, deviceId));
     }
 
     // Run Script is always in the dropdown
     actionItems.push({
       id: 'run-script',
       label: 'Run Script',
-      icon: <ScriptIcon className="w-6 h-6" />,
+      icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
       disabled: !actionAvailability.runScriptEnabled,
       onClick: handleRunScript,
     });
@@ -218,11 +97,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
       destructiveItems.push({
         id: 'archive',
         label: 'Archive Device',
-        icon: <ArchiveIcon className="w-6 h-6" />,
-        onClick: () => {
-          setDropdownOpen(false);
-          setShowArchiveConfirm(true);
-        },
+        icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+        onClick: openArchive,
       });
     }
 
@@ -230,11 +106,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
       destructiveItems.push({
         id: 'delete',
         label: 'Delete Device',
-        icon: <Trash2 className="w-6 h-6 text-ods-attention-red-error" />,
-        onClick: () => {
-          setDropdownOpen(false);
-          setShowDeleteConfirm(true);
-        },
+        icon: <TrashIcon className="w-6 h-6 text-ods-error" />,
+        onClick: openDelete,
       });
     }
 
@@ -252,26 +125,10 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     actionButtons.remoteControl,
     actionButtons.remoteShell,
     deviceId,
-    handleManageFiles,
-    handleRemoteControl,
-    handleRemoteShell,
     handleRunScript,
+    openArchive,
+    openDelete,
   ]);
-
-  // Render trigger based on context - both use 3 dots icon
-  // Stop propagation to prevent row click from triggering in table context
-  const handleTriggerClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-  }, []);
-
-  const renderTrigger = () => {
-    if (context === 'table') {
-      return <Button variant="card" centerIcon={<MoreVertical />} onClick={handleTriggerClick}></Button>;
-    }
-
-    // Detail context: same 3 dots button style
-    return <Button variant="device-action" centerIcon={<MoreVertical />}></Button>;
-  };
 
   // Don't render if no actions available
   if (menuGroups.length === 0 || menuGroups.every(g => g.items.length === 0)) {
@@ -280,73 +137,8 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
 
   return (
     <div data-no-row-click onClick={e => e.stopPropagation()}>
-      <DropdownMenu modal={false} open={dropdownOpen} onOpenChange={setDropdownOpen}>
-        <DropdownMenuTrigger asChild>{renderTrigger()}</DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="p-0 border-none">
-          <ActionsMenu groups={menuGroups} onItemClick={() => setDropdownOpen(false)} />
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Archive Confirmation Dialog */}
-      <AlertDialog open={showArchiveConfirm} onOpenChange={setShowArchiveConfirm}>
-        <AlertDialogContent className="bg-ods-card border border-ods-border p-8 max-w-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.5px] text-ods-text-primary">
-              Archive Device
-            </AlertDialogTitle>
-            <AlertDialogDescription className="font-['DM_Sans'] text-[16px] leading-[24px] text-ods-text-secondary mt-2">
-              Are you sure you want to archive <span className="text-ods-accent font-medium">{deviceName}</span>? This
-              device will be hidden from the default view but can be restored later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="mt-6 gap-4 flex-col md:flex-row">
-            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleArchive}
-              disabled={isArchiving}
-              className="flex-1 bg-ods-accent text-black hover:bg-ods-accent/90 font-['DM_Sans'] font-bold text-[16px] h-12 rounded-[6px]"
-            >
-              {isArchiving ? 'Archiving...' : 'Archive Device'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent className="bg-ods-card border border-ods-border p-10 max-w-2xl gap-6">
-          <AlertDialogHeader className="gap-0">
-            <AlertDialogTitle className="text-h2 text-ods-text-primary">Confirm Deletion</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription className="text-h4 text-ods-text-primary">
-            To uninstall OpenFrame from a <span className="font-medium">{deviceName}</span> device, run the command
-            below.
-          </AlertDialogDescription>
-          <CommandBox
-            command={uninstallCommand}
-            secondaryAction={{
-              label: 'Copy Command',
-              onClick: copyUninstallCommand,
-              icon: <Copy02Icon className="w-5 h-5" />,
-              variant: 'outline',
-            }}
-          />
-          <AlertDialogFooter className="gap-4">
-            <AlertDialogCancel className="flex-1 bg-ods-card border border-ods-border text-ods-text-primary text-h3 px-4 py-3 rounded-[6px] hover:bg-ods-bg-surface">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex-1 bg-ods-error text-ods-bg text-h3 px-4 py-3 rounded-[6px] hover:bg-ods-error/90"
-            >
-              {isDeleting ? 'Deleting...' : 'Delete Device'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ActionsMenuDropdown groups={menuGroups} />
+      {confirmationDialogs}
     </div>
   );
 }

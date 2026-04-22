@@ -1,11 +1,12 @@
 'use client';
 
+import type { ActionsMenuGroup, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
 import {
-  DetailPageContainer,
   getTabComponent,
   LoadError,
   NotFoundError,
   normalizeOSType,
+  PageLayout,
   TabContent,
   TabNavigation,
   Tag,
@@ -23,18 +24,14 @@ import {
   TerminalIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import type { MoreActionsItem, PageActionButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { useDeviceActions } from '../hooks/use-device-actions';
+import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
 import { normalizeDevicePlatform } from '../utils/device-command-utils';
 import { getDeviceStatusConfig } from '../utils/device-status';
-import { ArchiveDeviceDialog } from './archive-device-dialog';
-import { DeleteDeviceDialog } from './delete-device-dialog';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
@@ -77,12 +74,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const { deviceDetails, isLoading, error, lastUpdated } = useDeviceDetails(deviceId);
-  const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions();
+  const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId);
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false);
-  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [, forceUpdate] = useState({});
 
   // Force re-render every second to update relative time display
@@ -128,9 +122,53 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     router.push('/devices');
   };
 
-  const handleRunScript = () => {
-    setIsScriptsModalOpen(true);
-  };
+  const {
+    openArchive,
+    openDelete,
+    dialogs: confirmationDialogs,
+  } = useDeviceConfirmationDialogs(normalizedDevice, {
+    onArchived: () => router.push('/devices'),
+    onDeleted: () => router.push('/devices'),
+  });
+
+  const menuActions = useMemo<ActionsMenuGroup[]>(() => {
+    const groups: ActionsMenuGroup[] = [];
+    const primaryItems: ActionsMenuGroup['items'] = [];
+    const destructiveItems: ActionsMenuGroup['items'] = [];
+
+    if (actionAvailability?.runScriptEnabled) {
+      primaryItems.push({
+        id: 'run-script',
+        label: 'Run Script',
+        icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
+        onClick: () => setIsScriptsModalOpen(true),
+      });
+    }
+    if (actionAvailability?.archiveEnabled) {
+      destructiveItems.push({
+        id: 'archive',
+        label: 'Archive Device',
+        icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+        onClick: openArchive,
+      });
+    }
+    if (actionAvailability?.deleteEnabled) {
+      destructiveItems.push({
+        id: 'delete',
+        label: 'Delete Device',
+        icon: <TrashIcon className="w-6 h-6 text-ods-error" />,
+        onClick: openDelete,
+      });
+    }
+
+    if (primaryItems.length > 0) {
+      groups.push({ items: primaryItems, separator: destructiveItems.length > 0 });
+    }
+    if (destructiveItems.length > 0) {
+      groups.push({ items: destructiveItems });
+    }
+    return groups;
+  }, [actionAvailability, openArchive, openDelete]);
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId);
@@ -174,78 +212,58 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return normalizeOSType(osType) === 'WINDOWS';
   })();
 
-  // Primary action — Remote Shell. Windows gets a split button with CMD + PowerShell;
-  // other platforms navigate directly to the bash shell.
-  const pageActions: PageActionButton[] = [
-    {
-      label: 'Remote Shell',
-      variant: 'card',
-      icon: <TerminalIcon />,
-      disabled: !actionAvailability?.remoteShellEnabled,
-      ...(isWindows
-        ? {
-            dropdownItems: [
-              {
-                label: 'CMD',
-                icon: <TerminalIcon />,
-                href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
-              },
-              {
-                label: 'PowerShell',
-                icon: <PowershellLogoGreyIcon />,
-                href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
-              },
-            ],
-          }
-        : {
-            href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
-          }),
-    },
-  ];
+  const remoteShellAction: PageActionButton = isWindows
+    ? {
+        label: 'Remote Shell',
+        variant: 'device-action',
+        icon: <TerminalIcon className="h-5 w-5 text-ods-text-secondary" />,
+        disabled: !actionAvailability?.remoteShellEnabled,
+        submenu: [
+          {
+            id: 'cmd',
+            label: 'CMD',
+            icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
+          },
+          {
+            id: 'powershell',
+            label: 'PowerShell',
+            icon: <PowershellLogoGreyIcon className="w-6 h-6" />,
+            href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
+          },
+        ],
+      }
+    : {
+        label: 'Remote Shell',
+        variant: 'device-action',
+        icon: <TerminalIcon className="h-5 w-5 text-ods-text-secondary" />,
+        href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
+        prefetch: false,
+        disabled: !actionAvailability?.remoteShellEnabled,
+      };
 
-  // Secondary actions — rendered inside the "..." menu.
-  const pageMenuActions: MoreActionsItem[] = [
+  const actions: PageActionButton[] = [
     {
       label: 'Remote Control',
-      icon: <ComputerMouseIcon />,
+      variant: 'device-action',
+      icon: <ComputerMouseIcon className="h-5 w-5 text-ods-text-secondary" />,
       href: `/devices/details/${deviceId}/remote-desktop`,
+      prefetch: false,
       disabled: !actionAvailability?.remoteControlEnabled,
     },
+    remoteShellAction,
     {
       label: 'Manage Files',
-      icon: <FolderIcon />,
+      variant: 'device-action',
+      icon: <FolderIcon className="h-5 w-5 text-ods-text-secondary" />,
       href: `/devices/details/${deviceId}/file-manager`,
+      prefetch: false,
       disabled: !actionAvailability?.manageFilesEnabled,
     },
-    {
-      label: 'Run Script',
-      icon: <BracketCurlyIcon />,
-      onClick: handleRunScript,
-      disabled: !actionAvailability?.runScriptEnabled,
-    },
-    ...(actionAvailability?.archiveEnabled
-      ? [
-          {
-            label: 'Archive Device',
-            icon: <BoxArchiveIcon />,
-            onClick: () => setShowArchiveConfirm(true),
-          },
-        ]
-      : []),
-    ...(actionAvailability?.deleteEnabled
-      ? [
-          {
-            label: 'Delete Device',
-            icon: <TrashIcon />,
-            onClick: () => setShowDeleteConfirm(true),
-            danger: true,
-          },
-        ]
-      : []),
   ];
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={
         normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'
       }
@@ -253,15 +271,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         label: 'Back to Devices',
         onClick: handleBack,
       }}
-      subtitle={
-        lastUpdated ? (
-          <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>
-        ) : undefined
-      }
-      actions={pageActions}
       actionsVariant="menu-primary"
-      menuActions={pageMenuActions}
-      padding="none"
+      actions={actions}
+      menuActions={menuActions}
     >
       <DeviceStatusAndTags device={normalizedDevice} />
 
@@ -293,22 +305,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         onDeviceLogs={handleDeviceLogs}
       />
 
-      <ArchiveDeviceDialog
-        open={showArchiveConfirm}
-        onOpenChange={setShowArchiveConfirm}
-        deviceName={deviceName}
-        onConfirm={handleArchive}
-        isArchiving={isArchiving}
-      />
-
-      <DeleteDeviceDialog
-        open={showDeleteConfirm}
-        onOpenChange={setShowDeleteConfirm}
-        deviceName={deviceName}
-        devicePlatform={devicePlatform}
-        onConfirm={handleDelete}
-        isDeleting={isDeleting}
-      />
-    </DetailPageContainer>
+      {confirmationDialogs}
+    </PageLayout>
   );
 }

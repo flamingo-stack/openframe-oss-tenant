@@ -3,7 +3,6 @@
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { Table, type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -16,7 +15,6 @@ interface PolicyDevicesTableProps {
 }
 
 export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesTableProps) {
-  const router = useRouter();
   const { rows, isLoading } = usePolicyDevicesTable(policyId, assignedHostIds);
 
   const columns: TableColumn<PolicyDeviceRow>[] = useMemo(
@@ -95,12 +93,6 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
     [],
   );
 
-  const handleRowClick = (row: PolicyDeviceRow) => {
-    if (row.machineId) {
-      router.push(`/devices/details/${row.machineId}`);
-    }
-  };
-
   return (
     <Table
       data={rows}
@@ -110,7 +102,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
       skeletonRows={5}
       emptyMessage="No devices found for this policy"
       showFilters={false}
-      onRowClick={handleRowClick}
+      rowHref={row => (row.machineId ? `/devices/details/${row.machineId}` : undefined)}
     />
   );
 }

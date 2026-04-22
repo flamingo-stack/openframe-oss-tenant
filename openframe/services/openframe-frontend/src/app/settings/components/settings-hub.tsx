@@ -31,12 +31,6 @@ const SETTINGS_NAV_ITEMS = [
     description: 'Subscription details, usage data, and payment settings',
   },
   {
-    href: '/settings/integrated-tools',
-    icon: WrenchScrewdiverIcon,
-    title: 'Integrated Tools',
-    description: 'Configure and manage third-party tool integrations',
-  },
-  {
     href: '/settings/ai-settings',
     icon: ShieldCheckIcon,
     title: 'AI Settings & Guardrails',

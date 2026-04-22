@@ -97,13 +97,6 @@ export function Queries() {
     return (query: Query) => <MoreActionsMenu items={rowActions(query)} />;
   }, [rowActions]);
 
-  const handleRowClick = useCallback(
-    (query: Query) => {
-      router.push(`/monitoring/query/${query.id}`);
-    },
-    [router],
-  );
-
   const handleAddQuery = useCallback(() => {
     router.push('/monitoring/query/edit/new');
   }, [router]);
@@ -146,7 +139,7 @@ export function Queries() {
         }
         showFilters={false}
         rowClassName="mb-1"
-        onRowClick={handleRowClick}
+        rowHref={query => `/monitoring/query/${query.id}`}
         infiniteScroll={{
           hasNextPage: visibleCount < filteredQueries.length,
           isFetchingNextPage: false,

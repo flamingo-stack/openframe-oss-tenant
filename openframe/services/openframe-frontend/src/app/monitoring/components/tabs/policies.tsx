@@ -149,13 +149,6 @@ export function Policies() {
     return (policy: Policy) => <MoreActionsMenu items={rowActions(policy)} />;
   }, [rowActions]);
 
-  const handleRowClick = useCallback(
-    (policy: Policy) => {
-      router.push(`/monitoring/policy/${policy.id}`);
-    },
-    [router],
-  );
-
   const handleAddPolicy = useCallback(() => {
     router.push('/monitoring/policy/edit/new');
   }, [router]);
@@ -238,7 +231,7 @@ export function Policies() {
         }
         showFilters={false}
         rowClassName="mb-1"
-        onRowClick={handleRowClick}
+        rowHref={policy => `/monitoring/policy/${policy.id}`}
         infiniteScroll={{
           hasNextPage: visibleCount < filteredPolicies.length,
           isFetchingNextPage: false,

@@ -75,13 +75,6 @@ export function DevicesView() {
     fetchNextPage,
   });
 
-  const handleRowClick = useCallback(
-    (device: Device) => {
-      router.push(`/devices/details/${device.machineId || device.id}`);
-    },
-    [router],
-  );
-
   if (error) {
     return <PageError message={error} />;
   }
@@ -157,7 +150,7 @@ export function DevicesView() {
           loading={isLoading || isDeviceFiltersLoading}
           skeletonRows={10}
           emptyMessage="No devices found. Try adjusting your search or filters."
-          onRowClick={handleRowClick}
+          rowHref={device => `/devices/details/${device.machineId || device.id}`}
           renderRowActions={renderRowActions}
           filters={tableFilters}
           onFilterChange={handleFilterChange}

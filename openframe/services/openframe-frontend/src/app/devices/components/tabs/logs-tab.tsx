@@ -1,8 +1,8 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useRef } from 'react';
-import { LogsTable, type LogsTableRef } from '../../../logs-page/components/logs-table';
+import { useEffect, useRef } from 'react';
+import { LogsTable, type LogsTableRef } from '@/app/logs-page/components/logs-table';
 
 interface LogsTabProps {
   device: any;
