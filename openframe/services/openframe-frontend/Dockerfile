@@ -48,16 +48,12 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-# Copy production dependencies (pruned from full install)
-COPY package.json package-lock.json ./
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm prune --omit=dev
-
-# Copy build output and public assets
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/dist/standalone ./
+COPY --from=builder /app/dist/static ./dist/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
-# Default command uses package.json start script (next start -p 3000)
-CMD ["npm", "start"]
+EXPOSE 3000
+CMD ["node", "server.js"]

@@ -1,9 +1,14 @@
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const projectRoot = dirname(fileURLToPath(import.meta.url));
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Pure frontend configuration - no server-side features
-  // output: 'export',
+  output: 'standalone',
+  outputFileTracingRoot: projectRoot,
   trailingSlash: true,
-  distDir: 'dist', // Output directory for static export
+  distDir: 'dist',
   images: {
     unoptimized: true, // No server-side image optimization
   },
