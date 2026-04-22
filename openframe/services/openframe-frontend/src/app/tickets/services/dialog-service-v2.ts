@@ -180,7 +180,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
 export class DialogServiceV2 implements DialogService {
   private v1 = new DialogServiceV1();
 
-  private async mutateTicketStatus(ticketId: string, mutation: string, responseKey: string): Promise<boolean> {
+  private async mutateTicketStatus(ticketId: string, mutation: string, responseKey: string): Promise<DialogStatus> {
     const response = await apiClient.post<GraphQlResponse<Record<string, StatusMutationPayload>>>(
       API_ENDPOINTS.GRAPHQL,
       { query: mutation, variables: { input: { id: ticketId } } },
@@ -193,7 +193,11 @@ export class DialogServiceV2 implements DialogService {
       throw new Error(payload.userErrors[0].message);
     }
 
-    return true;
+    if (!payload.ticket) {
+      throw new Error('Ticket status mutation returned no ticket');
+    }
+
+    return TICKET_TO_DIALOG_STATUS[payload.ticket.status] || (payload.ticket.status as DialogStatus);
   }
 
   async fetchDialogs(params: FetchDialogsParams): Promise<DialogsPage> {
@@ -246,6 +250,11 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async updateStatus(ticketId: string, status: DialogStatus): Promise<boolean> {
+    await this.mutateStatus(ticketId, status);
+    return true;
+  }
+
+  async mutateStatus(ticketId: string, status: DialogStatus): Promise<DialogStatus> {
     const mapped = STATUS_TO_MUTATION[status];
     if (!mapped) {
       throw new Error(`Unsupported status transition: ${status}`);
@@ -266,7 +275,8 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async archiveDialog(ticketId: string): Promise<boolean> {
-    return this.mutateTicketStatus(ticketId, ARCHIVE_TICKET_MUTATION, 'archiveTicket');
+    await this.mutateTicketStatus(ticketId, ARCHIVE_TICKET_MUTATION, 'archiveTicket');
+    return true;
   }
 
   async fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]> {

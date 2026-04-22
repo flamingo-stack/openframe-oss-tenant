@@ -4,6 +4,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { getDialogService } from '../services';
+import { DialogServiceV2 } from '../services/dialog-service-v2';
 import type { DialogStatus } from '../types/dialog.types';
 import { invalidateAllDialogs } from '../utils/query-keys';
 import { useDialogVersion } from './use-dialog-version';
@@ -16,17 +17,24 @@ export function useDialogStatus() {
   const service = getDialogService(version);
 
   const updateDialogStatus = useCallback(
-    async (dialogId: string, status: DialogStatus): Promise<boolean> => {
-      if (isUpdating) return false;
+    async (dialogId: string, status: DialogStatus): Promise<DialogStatus | null> => {
+      if (isUpdating) return null;
 
       setIsUpdating(true);
 
       try {
-        await service.updateStatus(dialogId, status);
+        const nextStatus =
+          service instanceof DialogServiceV2
+            ? await service.mutateStatus(dialogId, status)
+            : (await service.updateStatus(dialogId, status))
+              ? status
+              : null;
 
-        invalidateAllDialogs(queryClient);
+        if (nextStatus) {
+          invalidateAllDialogs(queryClient);
+        }
 
-        return true;
+        return nextStatus;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to update dialog status';
         console.error('Failed to update dialog status:', error);
@@ -38,7 +46,7 @@ export function useDialogStatus() {
           duration: 5000,
         });
 
-        return false;
+        return null;
       } finally {
         setIsUpdating(false);
       }

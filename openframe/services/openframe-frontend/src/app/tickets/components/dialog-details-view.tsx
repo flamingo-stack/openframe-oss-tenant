@@ -279,36 +279,36 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
-    const success = await putOnHold(dialogId);
-    if (success) {
-      updateDialogStatus(DIALOG_STATUS.ON_HOLD);
+    const nextStatus = await putOnHold(dialogId);
+    if (nextStatus) {
+      updateDialogStatus(nextStatus);
     }
   }, [dialog, isUpdating, putOnHold, dialogId, updateDialogStatus]);
 
   const handleResolve = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
-    const success = await resolve(dialogId);
-    if (success) {
-      updateDialogStatus(DIALOG_STATUS.RESOLVED);
+    const nextStatus = await resolve(dialogId);
+    if (nextStatus) {
+      updateDialogStatus(nextStatus);
     }
   }, [dialog, isUpdating, resolve, dialogId, updateDialogStatus]);
 
   const handleArchive = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
-    const success = await archive(dialogId);
-    if (success) {
-      updateDialogStatus(DIALOG_STATUS.ARCHIVED);
+    const nextStatus = await archive(dialogId);
+    if (nextStatus) {
+      updateDialogStatus(nextStatus);
     }
   }, [dialog, isUpdating, archive, dialogId, updateDialogStatus]);
 
   const handleUnarchive = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
-    const success = await activate(dialogId);
-    if (success) {
-      updateDialogStatus(DIALOG_STATUS.ACTIVE);
+    const nextStatus = await activate(dialogId);
+    if (nextStatus) {
+      updateDialogStatus(nextStatus);
     }
   }, [dialog, isUpdating, activate, dialogId, updateDialogStatus]);
 
