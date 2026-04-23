@@ -195,6 +195,13 @@ impl ToolInstallationService {
                     .find(|c| c.matches_current_os())
                     .with_context(|| format!("No local filename configuration for current OS for asset: {}", asset.id))?;
                 let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename_config.filename, is_executable);
+
+                let asset_original_version = asset.version.as_deref().unwrap_or("").to_string();
+                let asset_effective_version = tool_installation_message.tool_version_overrides
+                    .as_ref()
+                    .and_then(|o| o.lookup(&asset.id))
+                    .unwrap_or(&asset_original_version)
+                    .to_string();
                 
                 // Download and save asset if it doesn't already exist
                 if !asset_path.exists() {
@@ -227,10 +234,12 @@ impl ToolInstallationService {
                                 .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
                             let config = self.github_download_service.find_config_for_current_os(download_configs)
                                 .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
-                            info!("Downloading Github asset: {} from {}", asset.id, config.link);
+
+                            let resolved_config = config.with_version_override(&asset_original_version, &asset_effective_version);
+                            info!("Downloading Github asset: {} from {}", asset.id, resolved_config.link);
 
                             self.github_download_service
-                                .download_and_extract(config)
+                                .download_and_extract(&resolved_config)
                                 .await
                                 .with_context(|| format!("Failed to download and extract Github asset: {}", asset.id))?
                         }
@@ -252,12 +261,12 @@ impl ToolInstallationService {
 
                 // Publish installed asset message only for executable assets with version (always, even if already downloaded)
                 if is_executable {
-                    if let Some(ref version) = asset.version {
-                        info!("Publishing installed asset message for: {} v{}", asset.id, version);
+                    if asset.version.is_some() {
+                        info!("Publishing installed asset message for: {} v{}", asset.id, asset_effective_version);
                         let machine_id = self.config_service.get_machine_id().await
                             .with_context(|| format!("Failed to get machine_id for asset publish: {}", asset.id))?;
                         self.installed_agent_publisher
-                            .publish(machine_id, asset.id.clone(), version.clone())
+                            .publish(machine_id, asset.id.clone(), asset_effective_version.clone())
                             .await
                             .with_context(|| format!("Failed to publish installed asset message for {}", asset.id))?;
                     }

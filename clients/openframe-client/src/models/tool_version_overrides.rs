@@ -18,6 +18,10 @@ pub struct ToolVersionOverrides {
     #[cfg(feature = "tacticalrmm-agent-version")]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tacticalrmm_agent: Option<String>,
+
+    #[cfg(feature = "osquery-version")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub osquery: Option<String>,
 }
 
 impl ToolVersionOverrides {
@@ -34,6 +38,9 @@ impl ToolVersionOverrides {
 
             #[cfg(feature = "tacticalrmm-agent-version")]
             "tacticalrmm-agent" => self.tacticalrmm_agent.as_deref(),
+
+            #[cfg(feature = "osquery-version")]
+            "osqueryd" => self.osquery.as_deref(),
 
             _ => None,
         }
