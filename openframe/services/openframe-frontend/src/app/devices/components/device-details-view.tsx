@@ -119,7 +119,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const devicePlatform = useMemo(
     () =>
       normalizeDevicePlatform(normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system),
-    [normalizedDevice],
+    [normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system],
   );
 
   const deviceName = normalizedDevice?.displayName || normalizedDevice?.hostname || 'this device';
