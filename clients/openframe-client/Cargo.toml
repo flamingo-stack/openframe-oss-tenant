@@ -19,6 +19,21 @@ path = "src/main.rs"
 name = "openframe"
 path = "src/lib.rs"
 
+[features]
+default = []
+
+openframe-chat-version     = []
+meshcentral-agent-version  = []
+fleetmdm-agent-version     = []
+tacticalrmm-agent-version  = []
+
+all-tool-versions = [
+    "openframe-chat-version",
+    "meshcentral-agent-version",
+    "fleetmdm-agent-version",
+    "tacticalrmm-agent-version",
+]
+
 [dependencies]
 tokio = { version = "1.0", features = ["full", "macros", "rt-multi-thread", "sync"] }
 serde = { version = "1.0", features = ["derive"] }

@@ -86,7 +86,8 @@ impl ToolInstallationService {
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
-        let version_clone = tool_installation_message.version.clone();
+        let original_version = tool_installation_message.version.clone();
+        let version_clone = tool_installation_message.effective_version().to_string();
         let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
@@ -150,14 +151,16 @@ impl ToolInstallationService {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
 
+                let resolved_config = config.with_version_override(&original_version, &version_clone);
+
                 let exec_path = self.install_from_download_config(
-                    config,
+                    &resolved_config,
                     tool_agent_id,
                     &tool_folder_path,
                     &default_agent_path,
                 ).await?;
 
-                (exec_path, config.installation_type, config.bundle_id.clone(), config.service_name.clone())
+                (exec_path, resolved_config.installation_type, resolved_config.bundle_id.clone(), resolved_config.service_name.clone())
             }
             None => {
                 self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;

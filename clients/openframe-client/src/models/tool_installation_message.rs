@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use super::download_configuration::DownloadConfiguration;
+use super::tool_version_overrides::ToolVersionOverrides;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -22,6 +23,17 @@ pub struct ToolInstallationMessage {
     pub assets: Option<Vec<Asset>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub service_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_version_overrides: Option<ToolVersionOverrides>,
+}
+
+impl ToolInstallationMessage {
+    pub fn effective_version(&self) -> &str {
+        self.tool_version_overrides
+            .as_ref()
+            .and_then(|o| o.lookup(&self.tool_id))
+            .unwrap_or(&self.version)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

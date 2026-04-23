@@ -32,6 +32,21 @@ impl DownloadConfiguration {
         Path::new(&self.target_file_name).components().count() > 1
     }
 
+    pub fn with_version_override(&self, original: &str, override_version: &str) -> Self {
+        let mut resolved = self.clone();
+        if !original.is_empty() && original != override_version {
+            let new_link = resolved.link.replace(original, override_version);
+            if new_link == resolved.link {
+                tracing::warn!(
+                    "Version override requested ({} -> {}) but link did not contain the original version: {}",
+                    original, override_version, resolved.link
+                );
+            }
+            resolved.link = new_link;
+        }
+        resolved
+    }
+
     /// Checks if this configuration matches the current OS
     pub fn matches_current_os(&self) -> bool {
         let current_os = if cfg!(target_os = "windows") {
