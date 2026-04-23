@@ -1,9 +1,41 @@
 use tauri::{
     image::Image,
-    menu::{Menu, MenuItem},
+    menu::MenuItem,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Manager, RunEvent, WindowEvent,
 };
+
+#[cfg(target_os = "macos")]
+use tauri::menu::{Menu, PredefinedMenuItem, Submenu};
+
+#[cfg(not(target_os = "macos"))]
+use tauri::menu::Menu;
+
+#[cfg(target_os = "macos")]
+use tauri::ActivationPolicy;
+
+#[cfg(target_os = "macos")]
+fn restore_dock_icon() {
+    use objc2::AnyThread;
+    use objc2_app_kit::{NSApplication, NSImage};
+    use objc2_foundation::{MainThreadMarker, NSData};
+    if let Some(mtm) = MainThreadMarker::new() {
+        let bytes = include_bytes!("../icons/icon.icns");
+        let data = unsafe {
+            NSData::initWithBytes_length(
+                NSData::alloc(),
+                bytes.as_ptr().cast(),
+                bytes.len(),
+            )
+        };
+        unsafe {
+            if let Some(image) = NSImage::initWithData(NSImage::alloc(), &data) {
+                NSApplication::sharedApplication(mtm)
+                    .setApplicationIconImage(Some(&image));
+            }
+        }
+    }
+}
 
 mod config_reader;
 mod token_watcher;
@@ -157,21 +189,31 @@ pub fn run() {
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
             
-            // Get the path to the icon relative to the resources directory
-            let icon_path = app.path().resource_dir()
+            let icons_dir = app.path().resource_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from(""))
-                .join("icons")
-                .join("32x32.png");
-            
-            let tray_icon = if icon_path.exists() {
-                Image::from_path(&icon_path)?
+                .join("icons");
+
+            #[cfg(target_os = "macos")]
+            let primary_tray_path = icons_dir.join("tray-macos44x44.png");
+            #[cfg(target_os = "macos")]
+            let secondary_tray_path = icons_dir.join("tray-macos22x22.png");
+
+            #[cfg(not(target_os = "macos"))]
+            let primary_tray_path = icons_dir.join("tray-windows32x32.png");
+            #[cfg(not(target_os = "macos"))]
+            let secondary_tray_path = icons_dir.join("tray-windows16x16.png");
+
+            let tray_icon = if primary_tray_path.exists() {
+                Image::from_path(&primary_tray_path)?
+            } else if secondary_tray_path.exists() {
+                Image::from_path(&secondary_tray_path)?
             } else {
-                // Fallback to embedded icon
                 Image::from_bytes(include_bytes!("../icons/32x32.png"))?
             };
 
             let _tray = TrayIconBuilder::new()
                 .icon(tray_icon)
+                .icon_as_template(cfg!(target_os = "macos"))
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .tooltip("OpenFrame Chat")
@@ -182,20 +224,35 @@ pub fn run() {
                         ..
                     } = event
                     {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
+                        let app = tray.app_handle().clone();
+                        let inner = app.clone();
+                        let _ = app.run_on_main_thread(move || {
+                            #[cfg(target_os = "macos")]
+                            let _ = inner.set_activation_policy(ActivationPolicy::Regular);
+                            #[cfg(target_os = "macos")]
+                            restore_dock_icon();
+                            if let Some(window) = inner.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                        });
                     }
                 })
                 .on_menu_event(move |app, event| {
                     match event.id.as_ref() {
                         "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.set_focus();
-                            }
+                            let handle = app.clone();
+                            let inner = app.clone();
+                            let _ = handle.run_on_main_thread(move || {
+                                #[cfg(target_os = "macos")]
+                                let _ = inner.set_activation_policy(ActivationPolicy::Regular);
+                                #[cfg(target_os = "macos")]
+                                restore_dock_icon();
+                                if let Some(window) = inner.get_webview_window("main") {
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                }
+                            });
                         }
                         "quit" => {
                             // Force quit using std::process::exit to bypass ExitRequested event
@@ -206,6 +263,39 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            // On macOS, replace the system Quit menu item (which calls terminate:
+            // and bypasses Tauri's event loop entirely) with a custom "Quit to Tray"
+            // action bound to Cmd+Q. The only way to fully exit is via the tray menu.
+            #[cfg(target_os = "macos")]
+            {
+                let quit_to_tray_i = MenuItem::with_id(
+                    app,
+                    "macos_quit_to_tray",
+                    "Quit to Tray",
+                    true,
+                    Some("CmdOrCtrl+Q"),
+                )?;
+                let app_submenu = Submenu::with_items(app, "Fae Chat", true, &[
+                    &PredefinedMenuItem::about(app, None, None)?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &quit_to_tray_i,
+                ])?;
+                let app_menu = Menu::with_items(app, &[&app_submenu])?;
+                app.set_menu(app_menu)?;
+
+                app.on_menu_event(|app, event| {
+                    if event.id().as_ref() == "macos_quit_to_tray" {
+                        for (_, window) in app.webview_windows() {
+                            let _ = window.hide();
+                        }
+                        let handle = app.clone();
+                        let _ = app.run_on_main_thread(move || {
+                            let _ = handle.set_activation_policy(ActivationPolicy::Accessory);
+                        });
+                    }
+                });
+            }
 
             // Show window on startup unless --background flag is passed
             if !background_mode_clone {
@@ -219,6 +309,9 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.hide();
                 }
+                // On macOS, switch to Accessory so no Dock icon appears on background launch
+                #[cfg(target_os = "macos")]
+                let _ = app.handle().set_activation_policy(ActivationPolicy::Accessory);
                 println!("[INFO] Starting in background mode (tray only)");
             }
 
@@ -227,10 +320,7 @@ pub fn run() {
         .on_window_event(|window, event| {
             match event {
                 WindowEvent::CloseRequested { api, .. } => {
-                    // Prevent the default close behavior
                     api.prevent_close();
-                    
-                    // Hide the window instead
                     let _ = window.hide();
                 }
                 _ => {}
@@ -247,21 +337,32 @@ pub fn run() {
                 }
                 #[cfg(target_os = "macos")]
                 RunEvent::Reopen { .. } => {
-                    // User clicked the app icon in Dock or launched from Spotlight
-                    // while the app is already running (hidden in tray)
-                    if let Some(window) = app_handle.get_webview_window("main") {
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
                     println!("[INFO] App reopen requested - showing main window");
+                    let handle = app_handle.clone();
+                    let _ = app_handle.run_on_main_thread(move || {
+                        let _ = handle.set_activation_policy(ActivationPolicy::Regular);
+                        restore_dock_icon();
+                        if let Some(window) = handle.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    });
                 }
                 RunEvent::ExitRequested { api, .. } => {
-                    // Prevent the app from exiting via system shortcuts
                     api.prevent_exit();
-                    
-                    // Hide all windows instead of closing
                     for (_, window) in app_handle.webview_windows() {
                         let _ = window.hide();
+                    }
+                    // Defer the policy switch to the next event loop iteration.
+                    // Calling set_activation_policy synchronously from within the event
+                    // handler deadlocks because Tauri routes it through the same event
+                    // loop queue we are currently blocking.
+                    #[cfg(target_os = "macos")]
+                    {
+                        let handle = app_handle.clone();
+                        let _ = app_handle.run_on_main_thread(move || {
+                            let _ = handle.set_activation_policy(ActivationPolicy::Accessory);
+                        });
                     }
                 }
                 _ => {}
