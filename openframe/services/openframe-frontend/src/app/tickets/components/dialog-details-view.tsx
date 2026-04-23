@@ -411,10 +411,11 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
     const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
 
-    const items: ActionsMenuItem[] = [];
+    const ticketItems: ActionsMenuItem[] = [];
+    const deviceItems: ActionsMenuItem[] = [];
 
     if (featureFlags.tickets.enabled() && !isArchived) {
-      items.push({
+      ticketItems.push({
         id: 'edit-ticket',
         label: 'Edit Ticket',
         icon: <PenEditIcon className="text-ods-text-secondary" />,
@@ -423,7 +424,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     }
 
     if (machineId) {
-      items.push(
+      deviceItems.push(
         {
           id: 'device-details',
           label: 'Device Details',
@@ -451,8 +452,10 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
       );
     }
 
-    if (items.length === 0) return [];
-    return [{ items }];
+    const groups: ActionsMenuGroup[] = [];
+    if (ticketItems.length > 0) groups.push({ items: ticketItems, separator: deviceItems.length > 0 });
+    if (deviceItems.length > 0) groups.push({ items: deviceItems });
+    return groups;
   }, [dialog, isClientOwner, router]);
 
   const pageActions = useMemo<PageActionButton[]>(() => {

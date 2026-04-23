@@ -216,7 +216,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     ? {
         label: 'Remote Shell',
         variant: 'device-action',
-        icon: <TerminalIcon className="h-5 w-5 text-ods-text-secondary" />,
         disabled: !actionAvailability?.remoteShellEnabled,
         submenu: [
           {
@@ -236,7 +235,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     : {
         label: 'Remote Shell',
         variant: 'device-action',
-        icon: <TerminalIcon className="h-5 w-5 text-ods-text-secondary" />,
+        icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
         href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
         prefetch: false,
         disabled: !actionAvailability?.remoteShellEnabled,
@@ -244,22 +243,24 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const actions: PageActionButton[] = [
     {
+      label: 'Manage Files',
+      variant: 'device-action',
+      icon: <FolderIcon className="h-6 w-6 text-ods-text-secondary" />,
+      iconOnlyOnDesktop: true,
+      href: `/devices/details/${deviceId}/file-manager`,
+      prefetch: false,
+      disabled: !actionAvailability?.manageFilesEnabled,
+    },
+    {
       label: 'Remote Control',
       variant: 'device-action',
-      icon: <ComputerMouseIcon className="h-5 w-5 text-ods-text-secondary" />,
+      icon: <ComputerMouseIcon className="h-6 w-6 text-ods-text-secondary" />,
+      iconOnlyOnDesktop: true,
       href: `/devices/details/${deviceId}/remote-desktop`,
       prefetch: false,
       disabled: !actionAvailability?.remoteControlEnabled,
     },
     remoteShellAction,
-    {
-      label: 'Manage Files',
-      variant: 'device-action',
-      icon: <FolderIcon className="h-5 w-5 text-ods-text-secondary" />,
-      href: `/devices/details/${deviceId}/file-manager`,
-      prefetch: false,
-      disabled: !actionAvailability?.manageFilesEnabled,
-    },
   ];
 
   return (
