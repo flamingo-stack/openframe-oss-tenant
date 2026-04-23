@@ -53,6 +53,7 @@ export function OrganizationsTabNavigation({ activeTab, onTabChange }: Organizat
       activeTab={activeTab || 'active'}
       tabs={ORGANIZATIONS_TABS}
       onTabChange={handleTabChange}
+      showRightGradient
     />
   );
 }

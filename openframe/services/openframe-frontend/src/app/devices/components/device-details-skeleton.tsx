@@ -103,21 +103,17 @@ function DeviceInfoSectionSkeleton() {
   return (
     <div className="bg-ods-card border border-ods-border rounded-lg p-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-    <div className="bg-ods-card border border-ods-border rounded-lg p-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <InfoFieldSkeleton valueWidth="w-24" />
         <InfoFieldSkeleton valueWidth="w-40" />
         <InfoFieldSkeleton valueWidth="w-28" />
         <InfoFieldSkeleton valueWidth="w-48" />
       </div>
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <InfoFieldSkeleton valueWidth="w-24" />
         <InfoFieldSkeleton valueWidth="w-20" />
         <InfoFieldSkeleton valueWidth="w-44" />
         <InfoFieldSkeleton valueWidth="w-44" />
       </div>
-      <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
       <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-6">
         <InfoFieldSkeleton valueWidth="w-52" />
         <InfoFieldSkeleton valueWidth="w-10" />
@@ -309,7 +305,6 @@ function ComplianceTabSkeleton() {
  * wrapping an InfoCard with pt-16 to make room. */
 function AgentsTabSkeleton() {
   return (
-    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="relative flex flex-col">

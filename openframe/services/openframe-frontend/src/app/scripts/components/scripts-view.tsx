@@ -42,7 +42,13 @@ export function ScriptsView() {
 
   return (
     <div className="flex flex-col w-full -mt-4">
-      <TabNavigation tabs={SCRIPTS_TABS} activeTab={params.tab} urlSync={false} onTabChange={handleTabChange} />
+      <TabNavigation
+        tabs={SCRIPTS_TABS}
+        activeTab={params.tab}
+        urlSync={false}
+        onTabChange={handleTabChange}
+        showRightGradient
+      />
       <div className="min-h-[400px]">{TabComponent ? <TabComponent /> : null}</div>
     </div>
   );

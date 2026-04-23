@@ -6,11 +6,16 @@ import {
   ShellTypeBadge,
   ToolBadge,
 } from '@flamingo-stack/openframe-frontend-core/components';
-import { PlayIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  Button,
+  ClipboardListIcon,
+  PenEditIcon,
+  PlusCircleIcon,
+  TerminalIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ActionsMenuDropdown,
+  type ActionsMenuGroup,
   ListPageLayout,
-  MoreActionsMenu,
   Table,
   type TableColumn,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -217,35 +222,34 @@ export function ScriptsTable() {
     [uniqueShellTypes, uniqueAddedBy, uniqueCategories, uniquePlatforms],
   );
 
-  const rowActions = useCallback(
-    (script: UiScriptEntry) => [
+  const renderRowActions = useCallback((script: UiScriptEntry) => {
+    const groups: ActionsMenuGroup[] = [
       {
-        label: 'Edit Script',
-        onClick: () => router.push(`/scripts/edit/${script.id}`),
+        items: [
+          {
+            id: 'run-script',
+            label: 'Run Script',
+            icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: `/scripts/details/${script.id}/run`,
+          },
+          {
+            id: 'edit-script',
+            label: 'Edit Script',
+            icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: `/scripts/edit/${script.id}`,
+          },
+          {
+            id: 'script-details',
+            label: 'Script Details',
+            icon: <ClipboardListIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: `/scripts/details/${script.id}`,
+          },
+        ],
       },
-      {
-        label: 'Script Details',
-        onClick: () => router.push(`/scripts/details/${script.id}`),
-      },
-    ],
-    [router],
-  );
+    ];
 
-  const renderRowActions = useMemo(() => {
-    return (script: UiScriptEntry) => (
-      <div className="flex items-center gap-1">
-        <MoreActionsMenu items={rowActions(script)} />
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => router.push(`/scripts/details/${script.id}/run`)}
-          className="bg-ods-card"
-        >
-          <PlayIcon size={20} className="text-ods-text-primary" />
-        </Button>
-      </div>
-    );
-  }, [router.push, rowActions]);
+    return <ActionsMenuDropdown groups={groups} />;
+  }, []);
 
   // Reset visible count when search changes
   const lastSearchRef = React.useRef(params.search);

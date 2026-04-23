@@ -174,23 +174,23 @@ function BillingUsageContent() {
   const nextBilling = managedDevicesActive?.endDate ?? aiActive?.endDate ?? subscription?.endDate ?? null;
 
   const menuActions: ActionsMenuGroup[] = isCancelled
-      ? []
-      : [
-          {
-            items: [
-              {
-                id: 'cancel-subscription',
-                label: 'Cancel Subscription',
-                icon: <AlertTriangleIcon className="w-6 h-6 text-ods-error" />,
-                onClick: () => {
-                  setCancelReason(null);
-                  setCancelStep('reason');
-                },
-                disabled: cancelSubscription.isPending,
+    ? []
+    : [
+        {
+          items: [
+            {
+              id: 'cancel-subscription',
+              label: 'Cancel Subscription',
+              icon: <AlertTriangleIcon className="w-6 h-6 text-ods-error" />,
+              onClick: () => {
+                setCancelReason(null);
+                setCancelStep('reason');
               },
-            ],
-          },
-        ];
+              disabled: cancelSubscription.isPending,
+            },
+          ],
+        },
+      ];
 
   const allPayg = deviceIsPayg && (aiIsPayg || !aiProduct);
   const isNearLimits =

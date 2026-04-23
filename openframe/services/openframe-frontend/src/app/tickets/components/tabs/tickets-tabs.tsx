@@ -54,6 +54,7 @@ export function TicketsTabNavigation({ activeTab, onTabChange }: TicketsTabNavig
       activeTab={activeTab || 'current'}
       tabs={TICKETS_TABS}
       onTabChange={handleTabChange}
+      showRightGradient
     />
   );
 }

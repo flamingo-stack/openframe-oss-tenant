@@ -30,7 +30,6 @@ import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-d
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { normalizeDevicePlatform } from '../utils/device-command-utils';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
@@ -110,14 +109,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     [normalizedDevice],
   );
 
-  const devicePlatform = useMemo(
-    () =>
-      normalizeDevicePlatform(normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system),
-    [normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system],
-  );
-
-  const deviceName = normalizedDevice?.displayName || normalizedDevice?.hostname || 'this device';
-
   const handleBack = () => {
     router.push('/devices');
   };
@@ -180,18 +171,6 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     // Add timestamp to force logs refresh
     params.set('refresh', Date.now().toString());
     router.push(`${window.location.pathname}?${params.toString()}`);
-  };
-
-  const handleArchive = async () => {
-    const success = await archiveDevice(deviceId, deviceName);
-    setShowArchiveConfirm(false);
-    if (success) router.push('/devices');
-  };
-
-  const handleDelete = async () => {
-    const success = await deleteDevice(deviceId, deviceName);
-    setShowDeleteConfirm(false);
-    if (success) router.push('/devices');
   };
 
   if (isLoading) {
