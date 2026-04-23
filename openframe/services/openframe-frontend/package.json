@@ -7,6 +7,7 @@
     "build": "relay-compiler && next build",
     "build:local": "next build --webpack",
     "start": "next start -p ${PORT:-3000}",
+    "start:standalone": "cp -R public dist/standalone/ && mkdir -p dist/standalone/dist && cp -R dist/static dist/standalone/dist/ && PORT=${PORT:-3000} HOSTNAME=0.0.0.0 NODE_ENV=production node dist/standalone/server.js",
     "lint": "eslint 'src/**/*.{ts,tsx}'",
     "lint:biome": "biome check .",
     "lint:biome:fix": "biome check --fix .",
@@ -21,7 +22,7 @@
     "core:unlink": "yalc remove @flamingo-stack/openframe-frontend-core"
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.145",
+    "@flamingo-stack/openframe-frontend-core": "0.0.147",
     "@hookform/resolvers": "^5.2.2",
     "@monaco-editor/react": "^4.7.0",
     "@tanstack/react-query": "^5.90.16",
