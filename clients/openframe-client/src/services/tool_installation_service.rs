@@ -86,8 +86,8 @@ impl ToolInstallationService {
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
-        let original_version = tool_installation_message.version.clone();
-        let version_clone = tool_installation_message.effective_version().to_string();
+        let version_clone = tool_installation_message.version.clone();
+        let effective_version = tool_installation_message.effective_version().to_string();
         let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
@@ -151,7 +151,7 @@ impl ToolInstallationService {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
 
-                let resolved_config = config.with_version_override(&original_version, &version_clone);
+                let resolved_config = config.with_version_override(&version_clone, &effective_version);
 
                 let exec_path = self.install_from_download_config(
                     &resolved_config,
@@ -261,12 +261,12 @@ impl ToolInstallationService {
 
                 // Publish installed asset message only for executable assets with version (always, even if already downloaded)
                 if is_executable {
-                    if asset.version.is_some() {
-                        info!("Publishing installed asset message for: {} v{}", asset.id, asset_effective_version);
+                    if let Some(ref version) = asset.version {
+                        info!("Publishing installed asset message for: {} v{}", asset.id, version);
                         let machine_id = self.config_service.get_machine_id().await
                             .with_context(|| format!("Failed to get machine_id for asset publish: {}", asset.id))?;
                         self.installed_agent_publisher
-                            .publish(machine_id, asset.id.clone(), asset_effective_version.clone())
+                            .publish(machine_id, asset.id.clone(), version.clone())
                             .await
                             .with_context(|| format!("Failed to publish installed asset message for {}", asset.id))?;
                     }
