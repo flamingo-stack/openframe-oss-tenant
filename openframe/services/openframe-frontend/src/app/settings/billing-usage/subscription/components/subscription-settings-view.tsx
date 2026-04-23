@@ -2,13 +2,14 @@
 
 import { Button, CheckboxBlock, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, Suspense, useCallback, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionSettingsViewQuery as SubscriptionSettingsViewQueryType } from '@/__generated__/subscriptionSettingsViewQuery.graphql';
 import { useSubscriptionLock } from '@/app/components/subscription-lock/subscription-lock-context';
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useUpdateSubscription } from '../hooks/use-update-subscription';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
+import { ModelTokenRates } from './model-token-rates';
 import { ProductSubscriptionCard } from './product-subscription-card';
 import { SubscriptionSettingsSkeleton } from './subscription-settings-skeleton';
 
@@ -18,7 +19,7 @@ interface ProductDisplay {
   packageUnitLabel: string;
   customLabel: string;
   customSubtitle: string;
-  helpText?: string;
+  helpText?: ReactNode;
 }
 
 const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
@@ -35,8 +36,7 @@ const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
     packageUnitLabel: 'OpenFrame tokens',
     customLabel: 'Custom Amount',
     customSubtitle: 'Choose your number of tokens',
-    helpText:
-      'OpenFrame tokens are consumed across all supported AI models. Unused tokens roll over within the billing period.',
+    helpText: <ModelTokenRates />,
   },
 };
 
@@ -82,11 +82,7 @@ function SubscriptionSettingsContent() {
   const products = data.billingPlan?.products ?? [];
   const subscriptionProducts = data.subscription?.products ?? [];
 
-  const initialAiEnabled = useMemo(
-    () => subscriptionProducts.some(p => p.name === 'AI_ASSISTANCE'),
-    [subscriptionProducts],
-  );
-  const [aiEnabled, setAiEnabled] = useState(initialAiEnabled);
+  const [aiEnabled, setAiEnabled] = useState(true);
 
   const [updatesMap, setUpdatesMap] = useState<Partial<Record<OpenframeProduct, ProductUpdates>>>({});
 
@@ -127,7 +123,7 @@ function SubscriptionSettingsContent() {
         checked={aiEnabled}
         onCheckedChange={setAiEnabled}
         label="Enable AI Assistants"
-        description="Enhance your workflow with Fae and Mingo AI assistants."
+        description="Enhance your workflow with AI assistants."
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -148,12 +144,12 @@ function SubscriptionSettingsContent() {
         })}
       </div>
 
-      <div className="flex flex-col-reverse lg:flex-row gap-6 lg:items-center">
-        <p className="text-h6 text-ods-text-secondary flex-1">
+      <div className="flex flex-row gap-6 items-center">
+        <p className="hidden lg:block text-h6 text-ods-text-secondary flex-1 max-w-[500px]">
           You can add more devices anytime. Additional devices beyond your package are charged at $5/device and added to
           your next invoice.
         </p>
-        <div className="flex lg:justify-end">
+        <div className="flex flex-1 justify-end">
           <Button
             variant="primary"
             onClick={handleSubmit}

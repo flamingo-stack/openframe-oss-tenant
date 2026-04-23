@@ -63,7 +63,13 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
     baselineUnitPrice,
     months: isYearly ? 12 : 1,
     periodSuffix: isYearly ? '/year' : '/month',
-    setPayAsYouGo: (payAsYouGoEnabled: boolean) => setSelection(prev => ({ ...prev, payAsYouGoEnabled })),
+    setPayAsYouGo: (payAsYouGoEnabled: boolean) =>
+      setSelection(prev => ({
+        ...prev,
+        payAsYouGoEnabled,
+        selectedPackageId: payAsYouGoEnabled ? null : prev.selectedPackageId,
+        customQuantity: payAsYouGoEnabled ? null : prev.customQuantity,
+      })),
     setBillingPeriod: (period: string) =>
       setSelection(prev => ({ ...prev, billingPeriod: period as BillingPeriod, selectedPackageId: null })),
     setSelectedPackage: (packageId: string) =>

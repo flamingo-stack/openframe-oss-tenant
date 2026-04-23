@@ -99,7 +99,6 @@ function BillingUsageContent() {
 
   const subscription = source.subscription;
   const usage = source.usage;
-  const isMock = isBillingUsageMockKey(mockKey);
 
   const subscriptionProducts = subscription?.products ?? [];
   const managedDevicesProduct = subscriptionProducts.find(p => p.name === 'MANAGED_DEVICES') ?? null;
@@ -169,20 +168,19 @@ function BillingUsageContent() {
 
   const nextBilling = managedDevicesActive?.endDate ?? aiActive?.endDate ?? subscription?.endDate ?? null;
 
-  const menuActions =
-    isMock || isOverdue || isCancelled
-      ? []
-      : [
-          {
-            label: 'Cancel Subscription',
-            onClick: () => {
-              setCancelReason(null);
-              setCancelStep('reason');
-            },
-            danger: true,
-            disabled: cancelSubscription.isPending,
+  const menuActions = isCancelled
+    ? []
+    : [
+        {
+          label: 'Cancel Subscription',
+          onClick: () => {
+            setCancelReason(null);
+            setCancelStep('reason');
           },
-        ];
+          danger: true,
+          disabled: cancelSubscription.isPending,
+        },
+      ];
 
   const allPayg = deviceIsPayg && (aiIsPayg || !aiProduct);
   const isNearLimits =
@@ -239,7 +237,7 @@ function BillingUsageContent() {
       </div>
 
       {(warnings.length > 0 || showOverageBlock) && (
-        <div className={cn('flex flex-col rounded-md border overflow-hidden', accentBorderClass)}>
+        <div className={cn('flex flex-col rounded-md border overflow-hidden bg-ods-card', accentBorderClass)}>
           {warnings.map((w, idx) => (
             <div
               key={w.title}
@@ -412,7 +410,6 @@ function UsageMetricCard({
   const progressVariant: 'success' | 'warning' | 'error' =
     state === 'success' ? 'success' : overdue ? 'error' : 'warning';
   const pillClass = overdue ? 'bg-ods-error/20 text-ods-error' : 'bg-ods-warning/20 text-ods-warning';
-  const cappedPercentage = Math.min(100, percentage);
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-sm p-[var(--spacing-system-m)] flex gap-[var(--spacing-system-s)] items-center transition-all">
@@ -429,7 +426,9 @@ function UsageMetricCard({
           )}
         </div>
       </div>
-      {!payg && <CircularProgress percentage={cappedPercentage} variant={progressVariant} showLabel={false} />}
+      {!payg && (
+        <CircularProgress percentage={percentage} variant={progressVariant} overflow="wrap" showLabel={false} />
+      )}
     </div>
   );
 }

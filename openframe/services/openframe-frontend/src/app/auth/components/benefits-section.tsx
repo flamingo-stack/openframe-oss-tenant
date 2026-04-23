@@ -6,14 +6,13 @@ import {
   CutVendorCostsIcon,
   OpenFrameLogo,
   OpenFrameText,
-  OpenmspLogo,
   ReclaimProfitsIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons';
-import { BenefitCard, Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { BenefitCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { getSlackCommunityJoinUrl } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useState } from 'react';
 
+import { clearStoredRedditClickId, getStoredRedditClickId } from '@/lib/reddit-click-id';
 import { runtimeEnv } from '@/lib/runtime-config';
 
 export function AuthBenefitsSection() {
@@ -26,14 +25,21 @@ export function AuthBenefitsSection() {
     async (email: string, phone?: string) => {
       setIsSubmitting(true);
       try {
+        const rdtCid = getStoredRedditClickId();
         const response = await fetch('https://content-api.openframe.ai/api/waitlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, phone: phone || undefined, platform: 'openframe' }),
+          body: JSON.stringify({
+            email,
+            phone: phone || undefined,
+            platform: 'openframe',
+            ...(rdtCid && { rdt_cid: rdtCid }),
+          }),
         });
 
         if (response.ok) {
           setIsSuccess(true);
+          clearStoredRedditClickId();
           toast({
             title: 'Success!',
             description: "You've been added to the waitlist.",
@@ -47,6 +53,7 @@ export function AuthBenefitsSection() {
 
         if (errorData.code === 'DUPLICATE_EMAIL') {
           setIsSuccess(true);
+          clearStoredRedditClickId();
           toast({
             title: 'Already Registered',
             description: 'This email is already on the waitlist',

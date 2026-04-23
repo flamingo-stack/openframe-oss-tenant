@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
-import { clearStoredTokens } from '@/lib/force-logout';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { useAuthStore } from '../stores/auth-store';
 import { authSessionQueryKey } from './use-auth-session';
