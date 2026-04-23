@@ -13,6 +13,7 @@ import {
   TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+import type { ReactNode } from 'react';
 import { graphql, useFragment } from 'react-relay';
 import type { productSubscriptionCardProductFragment$key } from '@/__generated__/productSubscriptionCardProductFragment.graphql';
 import type { productSubscriptionCardSubscriptionFragment$key } from '@/__generated__/productSubscriptionCardSubscriptionFragment.graphql';
@@ -65,12 +66,13 @@ interface ProductSubscriptionCardProps {
   packageUnitLabel: string;
   customLabel: string;
   customSubtitle: string;
-  helpText?: string;
+  helpText?: ReactNode;
   disabled?: boolean;
   onUpdatesChange: (updates: ProductUpdates) => void;
 }
 
-function HelpTooltip({ text }: { text: string }) {
+function HelpTooltip({ content }: { content: ReactNode }) {
+  const isText = typeof content === 'string';
   return (
     <TooltipProvider>
       <Tooltip>
@@ -83,7 +85,9 @@ function HelpTooltip({ text }: { text: string }) {
             <QuestionCircleIcon className="size-6" />
           </button>
         </TooltipTrigger>
-        <TooltipContent className="max-w-xs">{text}</TooltipContent>
+        <TooltipContent align="end" sideOffset={8} className={isText ? 'max-w-xs' : 'p-0 bg-transparent border-0'}>
+          {content}
+        </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
@@ -144,7 +148,7 @@ export function ProductSubscriptionCard({
     >
       <div className="flex items-start justify-between gap-4">
         <h2 className="text-h2 text-ods-text-primary">{title}</h2>
-        {helpText && <HelpTooltip text={helpText} />}
+        {helpText && <HelpTooltip content={helpText} />}
       </div>
 
       <p className="text-h4 text-ods-text-primary">{description}</p>

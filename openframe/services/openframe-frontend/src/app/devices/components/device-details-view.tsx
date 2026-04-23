@@ -1,12 +1,7 @@
 'use client';
 
 import {
-  ActionsMenu,
-  Button,
   DetailPageContainer,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
   getTabComponent,
   LoadError,
   NotFoundError,
@@ -20,20 +15,26 @@ import {
   TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
-  CmdIcon,
-  PowerShellIcon,
-  RemoteControlIcon,
-  ShellIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons';
+  BoxArchiveIcon,
+  BracketCurlyIcon,
+  ComputerMouseIcon,
+  FolderIcon,
+  PowershellLogoGreyIcon,
+  TerminalIcon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type { MoreActionsItem, PageActionButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { ChevronDown, Folder } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useDeviceActions } from '../hooks/use-device-actions';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
+import { normalizeDevicePlatform } from '../utils/device-command-utils';
 import { getDeviceStatusConfig } from '../utils/device-status';
-import { DeviceActionsDropdown } from './device-actions-dropdown';
+import { ArchiveDeviceDialog } from './archive-device-dialog';
+import { DeleteDeviceDialog } from './delete-device-dialog';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
@@ -77,9 +78,11 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const searchParams = useSearchParams();
 
   const { deviceDetails, isLoading, error, lastUpdated } = useDeviceDetails(deviceId);
+  const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions();
 
   const [isScriptsModalOpen, setIsScriptsModalOpen] = useState(false);
-  const [shellDropdownOpen, setShellDropdownOpen] = useState(false);
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [, forceUpdate] = useState({});
 
   // Force re-render every second to update relative time display
@@ -113,6 +116,14 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     [normalizedDevice],
   );
 
+  const devicePlatform = useMemo(
+    () =>
+      normalizeDevicePlatform(normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system),
+    [normalizedDevice?.platform, normalizedDevice?.osType, normalizedDevice?.operating_system],
+  );
+
+  const deviceName = normalizedDevice?.displayName || normalizedDevice?.hostname || 'this device';
+
   const handleBack = () => {
     router.push('/devices');
   };
@@ -133,6 +144,18 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     router.push(`${window.location.pathname}?${params.toString()}`);
   };
 
+  const handleArchive = async () => {
+    const success = await archiveDevice(deviceId, deviceName);
+    setShowArchiveConfirm(false);
+    if (success) router.push('/devices');
+  };
+
+  const handleDelete = async () => {
+    const success = await deleteDevice(deviceId, deviceName);
+    setShowDeleteConfirm(false);
+    if (success) router.push('/devices');
+  };
+
   if (isLoading) {
     return <DeviceDetailsSkeleton activeTab={searchParams.get('tab') || 'hardware'} />;
   }
@@ -151,94 +174,75 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return normalizeOSType(osType) === 'WINDOWS';
   })();
 
-  // Header actions - separate buttons for Remote Control and Remote Shell, plus dropdown for more
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      {/* Remote Control Button */}
-      <Button
-        variant="device-action"
-        leftIcon={<RemoteControlIcon className="h-5 w-5" />}
-        navigateUrl={`/devices/details/${deviceId}/remote-desktop`}
-        showExternalLinkOnHover
-        disabled={!actionAvailability?.remoteControlEnabled}
-      >
-        Remote Control
-      </Button>
+  // Primary action — Remote Shell. Windows gets a split button with CMD + PowerShell;
+  // other platforms navigate directly to the bash shell.
+  const pageActions: PageActionButton[] = [
+    {
+      label: 'Remote Shell',
+      variant: 'card',
+      icon: <TerminalIcon />,
+      disabled: !actionAvailability?.remoteShellEnabled,
+      ...(isWindows
+        ? {
+            dropdownItems: [
+              {
+                label: 'CMD',
+                icon: <TerminalIcon />,
+                href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
+              },
+              {
+                label: 'PowerShell',
+                icon: <PowershellLogoGreyIcon />,
+                href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
+              },
+            ],
+          }
+        : {
+            href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
+          }),
+    },
+  ];
 
-      {/* Remote Shell Button - with dropdown for Windows */}
-      {isWindows ? (
-        <DropdownMenu open={shellDropdownOpen} onOpenChange={setShellDropdownOpen}>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="device-action"
-              leftIcon={<ShellIcon className="h-5 w-5" />}
-              rightIcon={<ChevronDown className="h-4 w-4" />}
-              disabled={!actionAvailability?.remoteShellEnabled}
-            >
-              Remote Shell
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="p-0 border-none">
-            <ActionsMenu
-              groups={[
-                {
-                  items: [
-                    {
-                      id: 'cmd',
-                      label: 'CMD',
-                      icon: <CmdIcon className="w-6 h-6" />,
-                      href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
-                      showExternalLinkOnHover: true,
-                      onClick: () => {
-                        setShellDropdownOpen(false);
-                        router.push(`/devices/details/${deviceId}/remote-shell?shellType=cmd`);
-                      },
-                    },
-                    {
-                      id: 'powershell',
-                      label: 'PowerShell',
-                      icon: <PowerShellIcon className="w-6 h-6" />,
-                      href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
-                      showExternalLinkOnHover: true,
-                      onClick: () => {
-                        setShellDropdownOpen(false);
-                        router.push(`/devices/details/${deviceId}/remote-shell?shellType=powershell`);
-                      },
-                    },
-                  ],
-                },
-              ]}
-              onItemClick={() => setShellDropdownOpen(false)}
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <Button
-          variant="device-action"
-          leftIcon={<ShellIcon className="h-5 w-5" />}
-          navigateUrl={`/devices/details/${deviceId}/remote-shell?shellType=bash`}
-          showExternalLinkOnHover
-          disabled={!actionAvailability?.remoteShellEnabled}
-        >
-          Remote Shell
-        </Button>
-      )}
-
-      {/* Manage Files Button */}
-      <Button
-        variant="device-action"
-        leftIcon={<Folder className="h-5 w-5" />}
-        navigateUrl={`/devices/details/${deviceId}/file-manager`}
-        showExternalLinkOnHover
-        disabled={!actionAvailability?.manageFilesEnabled}
-      >
-        Manage Files
-      </Button>
-
-      {/* More Actions Dropdown (3 dots) */}
-      <DeviceActionsDropdown device={normalizedDevice} context="detail" onRunScript={handleRunScript} />
-    </div>
-  );
+  // Secondary actions — rendered inside the "..." menu.
+  const pageMenuActions: MoreActionsItem[] = [
+    {
+      label: 'Remote Control',
+      icon: <ComputerMouseIcon />,
+      href: `/devices/details/${deviceId}/remote-desktop`,
+      disabled: !actionAvailability?.remoteControlEnabled,
+    },
+    {
+      label: 'Manage Files',
+      icon: <FolderIcon />,
+      href: `/devices/details/${deviceId}/file-manager`,
+      disabled: !actionAvailability?.manageFilesEnabled,
+    },
+    {
+      label: 'Run Script',
+      icon: <BracketCurlyIcon />,
+      onClick: handleRunScript,
+      disabled: !actionAvailability?.runScriptEnabled,
+    },
+    ...(actionAvailability?.archiveEnabled
+      ? [
+          {
+            label: 'Archive Device',
+            icon: <BoxArchiveIcon />,
+            onClick: () => setShowArchiveConfirm(true),
+          },
+        ]
+      : []),
+    ...(actionAvailability?.deleteEnabled
+      ? [
+          {
+            label: 'Delete Device',
+            icon: <TrashIcon />,
+            onClick: () => setShowDeleteConfirm(true),
+            danger: true,
+          },
+        ]
+      : []),
+  ];
 
   return (
     <DetailPageContainer
@@ -254,7 +258,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
           <span className="text-ods-text-secondary text-xs">Updated {formatRelativeTime(lastUpdated)}</span>
         ) : undefined
       }
-      headerActions={headerActions}
+      actions={pageActions}
+      actionsVariant="menu-primary"
+      menuActions={pageMenuActions}
       padding="none"
     >
       <DeviceStatusAndTags device={normalizedDevice} />
@@ -285,6 +291,23 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         device={normalizedDevice}
         onRunScripts={handleRunScripts}
         onDeviceLogs={handleDeviceLogs}
+      />
+
+      <ArchiveDeviceDialog
+        open={showArchiveConfirm}
+        onOpenChange={setShowArchiveConfirm}
+        deviceName={deviceName}
+        onConfirm={handleArchive}
+        isArchiving={isArchiving}
+      />
+
+      <DeleteDeviceDialog
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        deviceName={deviceName}
+        devicePlatform={devicePlatform}
+        onConfirm={handleDelete}
+        isDeleting={isDeleting}
       />
     </DetailPageContainer>
   );
