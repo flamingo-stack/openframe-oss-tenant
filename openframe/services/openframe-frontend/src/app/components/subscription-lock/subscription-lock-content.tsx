@@ -1,8 +1,8 @@
 'use client';
 
 import { Suspense } from 'react';
-import { SubscriptionSettingsSkeleton } from '@/app/settings/billing-usage/subscription/components/subscription-settings-skeleton';
-import { SubscriptionSettingsView } from '@/app/settings/billing-usage/subscription/components/subscription-settings-view';
+import { SubscriptionSettingsSkeleton } from '@/app/(app)/settings/billing-usage/subscription/components/subscription-settings-skeleton';
+import { SubscriptionSettingsView } from '@/app/(app)/settings/billing-usage/subscription/components/subscription-settings-view';
 
 /**
  * Content rendered in place of the normal page content when the tenant is

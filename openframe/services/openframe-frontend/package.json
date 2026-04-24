@@ -34,7 +34,7 @@
     "highlight.js": "^11.11.1",
     "immer": "^10.1.1",
     "lucide-react": "^0.454.0",
-    "next": "^16.0.10",
+    "next": "^16.2.4",
     "next-runtime-env": "^3.2.2",
     "react": "^19.2.0",
     "react-datepicker": "^8.4.0",
@@ -48,6 +48,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
+    "@next/bundle-analyzer": "^16.2.4",
     "@types/node": "^22.15.21",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
@@ -63,7 +64,7 @@
     "typescript": "^5.8.3"
   },
   "optionalDependencies": {
-    "@next/swc-linux-x64-gnu": "^16.0.7",
-    "@next/swc-linux-x64-musl": "^16.0.7"
+    "@next/swc-linux-x64-gnu": "^16.2.4",
+    "@next/swc-linux-x64-musl": "^16.2.4"
   }
 }

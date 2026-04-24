@@ -6,12 +6,12 @@ import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
+import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
+import { performLogout } from '@/app/(auth)/auth/utils/auth-actions';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
-import { useAuthSession } from '../auth/hooks/use-auth-session';
-import { useAuthStore } from '../auth/stores/auth-store';
-import { performLogout } from '../auth/utils/auth-actions';
 import { AppShellSkeleton } from './app-shell-skeleton';
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
 import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';

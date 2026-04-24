@@ -1,4 +1,4 @@
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { getDefaultRedirectPath, isSaasTenantMode } from './app-mode';
 
 export interface ForceLogoutOptions {
@@ -25,7 +25,7 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
   }
 
   try {
-    const { useAuthStore } = await import('../app/auth/stores/auth-store');
+    const { useAuthStore } = await import('@/app/(auth)/auth/stores/auth-store');
     const { logout } = useAuthStore.getState();
     logout();
   } catch (error) {

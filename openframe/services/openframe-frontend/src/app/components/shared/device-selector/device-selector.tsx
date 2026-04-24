@@ -21,10 +21,10 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useMemo } from 'react';
+import type { Device } from '@/app/(app)/devices/types/device.types';
+import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
-import type { Device } from '../../../devices/types/device.types';
-import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import type { DeviceSelectorProps } from './device-selector.types';
 import { DeviceTabContent } from './device-tab-content';
 import { useDeviceSelector } from './use-device-selector';
