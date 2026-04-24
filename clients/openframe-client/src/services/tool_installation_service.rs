@@ -196,12 +196,8 @@ impl ToolInstallationService {
                     .with_context(|| format!("No local filename configuration for current OS for asset: {}", asset.id))?;
                 let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename_config.filename, is_executable);
 
-                let asset_original_version = asset.version.as_deref().unwrap_or("").to_string();
-                let asset_effective_version = tool_installation_message.tool_version_overrides
-                    .as_ref()
-                    .and_then(|o| o.lookup(&asset.id))
-                    .unwrap_or(&asset_original_version)
-                    .to_string();
+                let asset_original_version = asset.original_version();
+                let asset_effective_version = asset.effective_version();
                 
                 // Download and save asset if it doesn't already exist
                 if !asset_path.exists() {
@@ -235,7 +231,7 @@ impl ToolInstallationService {
                             let config = self.github_download_service.find_config_for_current_os(download_configs)
                                 .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
 
-                            let resolved_config = config.with_version_override(&asset_original_version, &asset_effective_version);
+                            let resolved_config = config.with_version_override(asset_original_version, asset_effective_version);
                             info!("Downloading Github asset: {} from {}", asset.id, resolved_config.link);
 
                             self.github_download_service
