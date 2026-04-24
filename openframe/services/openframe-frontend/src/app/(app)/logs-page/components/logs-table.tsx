@@ -1,9 +1,8 @@
 'use client';
 
-import { Input, ToolBadge } from '@flamingo-stack/openframe-frontend-core';
+import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
 import { Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  Button,
   DeviceCardCompact,
   ListPageLayout,
   Table,
@@ -124,7 +123,6 @@ interface UiLogEntry {
 
 interface LogsTableProps {
   deviceId?: string;
-  embedded?: boolean;
 }
 
 export interface LogsTableRef {
@@ -133,7 +131,6 @@ export interface LogsTableRef {
 
 interface LogsTableContentProps {
   deviceId?: string;
-  embedded: boolean;
   backendFilters: LogFilterInput;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
@@ -145,15 +142,14 @@ interface LogsTableContentProps {
 // Columns (static, without filter options — used for loading skeleton)
 // ----------------------------------------------------------------
 
-function getBaseColumns(embedded: boolean): TableColumn<UiLogEntry>[] {
-  const allColumns: TableColumn<UiLogEntry>[] = [
+function getBaseColumns(): TableColumn<UiLogEntry>[] {
+  return [
     { key: 'logId', label: 'Log ID', width: 'w-[200px]' },
     { key: 'status', label: 'Status', width: 'w-[120px]', filterable: true },
     { key: 'tool', label: 'Tool', width: 'w-[150px]', hideAt: 'md', filterable: true },
     { key: 'source', label: 'SOURCE', width: 'w-[120px]', hideAt: 'md', filterable: true },
     { key: 'description', label: 'Log Details', width: 'flex-1', hideAt: 'lg' },
   ];
-  return embedded ? allColumns.filter(col => col.key !== 'source') : allColumns;
 }
 
 // ----------------------------------------------------------------
@@ -162,7 +158,6 @@ function getBaseColumns(embedded: boolean): TableColumn<UiLogEntry>[] {
 
 function LogsTableContent({
   deviceId,
-  embedded,
   backendFilters,
   debouncedSearch,
   tableFilters,
@@ -354,12 +349,8 @@ function LogsTableContent({
       },
     ];
 
-    if (embedded) {
-      return allColumns.filter(col => col.key !== 'source');
-    }
-
     return allColumns;
-  }, [embedded, logFilters]);
+  }, [logFilters]);
 
   const getLogDetailsUrl = useCallback((log: UiLogEntry): string => {
     const original = log.originalLogEntry || log;
@@ -389,7 +380,7 @@ function LogsTableContent({
             : 'No logs found. Try adjusting your search or filters.'
         }
         onRowClick={handleRowClick}
-        rowHref={!embedded ? getLogDetailsUrl : undefined}
+        rowHref={getLogDetailsUrl}
         filters={tableFilters}
         onFilterChange={onFilterChange}
         showFilters={true}
@@ -432,8 +423,8 @@ function LogsTableContent({
 // Loading fallback — Table skeleton with base columns
 // ----------------------------------------------------------------
 
-function LogsTableSkeleton({ embedded }: { embedded: boolean }) {
-  const columns = useMemo(() => getBaseColumns(embedded), [embedded]);
+function LogsTableSkeleton() {
+  const columns = useMemo(() => getBaseColumns(), []);
   return (
     <Table
       data={[]}
@@ -453,7 +444,7 @@ function LogsTableSkeleton({ embedded }: { embedded: boolean }) {
 // ----------------------------------------------------------------
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable(
-  { deviceId, embedded = false }: LogsTableProps,
+  { deviceId }: LogsTableProps,
   ref,
 ) {
   const { params, setParam, setParams } = useApiParams({
@@ -523,7 +514,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     [handleRefresh],
   );
 
-  const baseColumns = useMemo(() => getBaseColumns(embedded), [embedded]);
+  const baseColumns = useMemo(() => getBaseColumns(), []);
   const filterGroups = baseColumns
     .filter(column => column.filterable)
     .map(column => ({
@@ -533,10 +524,9 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     }));
 
   const content = (
-    <Suspense fallback={<LogsTableSkeleton embedded={embedded} />}>
+    <Suspense fallback={<LogsTableSkeleton />}>
       <LogsTableContent
         deviceId={deviceId}
-        embedded={embedded}
         backendFilters={backendFilters}
         debouncedSearch={debouncedSearch}
         tableFilters={tableFilters}
@@ -545,42 +535,6 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
       />
     </Suspense>
   );
-
-  if (embedded) {
-    return (
-      <div className="space-y-4 mt-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-h5 text-ods-text-secondary">Logs</h3>
-        </div>
-
-        <div className="flex gap-4 items-stretch h-[48px]">
-          <div className="flex-1">
-            <Input
-              type="text"
-              placeholder="Search logs..."
-              value={params.search}
-              onChange={e => setParam('search', e.target.value)}
-              className="h-[48px] min-h-[48px] bg-ods-card border border-ods-border"
-              style={{ height: 48 }}
-            />
-          </div>
-          <div className="flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              leftIcon={<Refresh02HrIcon size={20} />}
-              className="h-[48px] min-h-[48px] whitespace-nowrap py-0 flex items-center"
-              style={{ height: 48 }}
-            >
-              Refresh
-            </Button>
-          </div>
-        </div>
-
-        {content}
-      </div>
-    );
-  }
 
   return (
     <ListPageLayout
