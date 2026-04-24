@@ -1,6 +1,6 @@
 import type { TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
-import type { Device } from '../../../devices/types/device.types';
+import type { Device } from '@/app/(app)/devices/types/device.types';
 
 export type SubTab = 'available' | 'selected';
 

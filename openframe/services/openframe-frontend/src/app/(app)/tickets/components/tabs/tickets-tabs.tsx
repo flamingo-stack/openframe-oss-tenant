@@ -1,0 +1,60 @@
+'use client';
+
+import { TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
+import { BoxArchiveIcon, TagsIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useCallback } from 'react';
+import { ArchivedChats, CurrentChats } from './chats-table';
+
+export const TICKETS_TABS: TabItem[] = [
+  {
+    id: 'current',
+    label: 'Current Tickets',
+    icon: TagsIcon,
+    component: CurrentChats,
+  },
+  {
+    id: 'archived',
+    label: 'Archive',
+    icon: BoxArchiveIcon,
+    component: ArchivedChats,
+  },
+];
+
+export const getTicketsTab = (tabId: string): TabItem | undefined => TICKETS_TABS.find(tab => tab.id === tabId);
+
+export const getTabComponent = (tabId: string): React.ComponentType | null => {
+  const tab = getTicketsTab(tabId);
+  return tab?.component || null;
+};
+
+interface TicketsTabNavigationProps {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export function TicketsTabNavigation({ activeTab, onTabChange }: TicketsTabNavigationProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Clear all tab-specific params when switching tabs (clean slate for each tab)
+  const defaultHandleTabChange = useCallback(
+    (tabId: string) => {
+      // Navigate to clean URL with only the tab param
+      router.replace(`${pathname}?tab=${tabId}`);
+    },
+    [router, pathname],
+  );
+
+  const handleTabChange = onTabChange || defaultHandleTabChange;
+
+  return (
+    <TabNavigation
+      urlSync={false}
+      activeTab={activeTab || 'current'}
+      tabs={TICKETS_TABS}
+      onTabChange={handleTabChange}
+      showRightGradient
+    />
+  );
+}

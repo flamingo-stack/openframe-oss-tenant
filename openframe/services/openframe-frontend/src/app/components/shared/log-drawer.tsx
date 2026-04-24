@@ -12,9 +12,9 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
-import { DeviceDetailsButton } from '../../devices/components/device-details-button';
-import { useDeviceDetails } from '../../devices/hooks/use-device-details';
-import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../../devices/utils/device-status';
+import { DeviceDetailsButton } from '@/app/(app)/devices/components/device-details-button';
+import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
+import { getDeviceOperatingSystem, getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 
 export interface LogDrawerInfoField {
   label: string;

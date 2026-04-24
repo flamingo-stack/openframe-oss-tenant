@@ -104,7 +104,16 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
   const getTicketDetails = useCallback(
     async (
       ticketId: string,
-    ): Promise<{ title: string; description?: string; creationSource?: string; createdAt?: string; status?: string } | null> => {
+    ): Promise<{
+      title: string;
+      description?: string;
+      creationSource?: string;
+      createdAt?: string;
+      status?: string;
+      ticketNumber?: string;
+      category?: string;
+      timeAgo?: string;
+    } | null> => {
       try {
         const ticket = await ticketGraphQlService.getTicket(ticketId);
         if (ticket) {
@@ -114,6 +123,9 @@ export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
             creationSource: ticket.creationSource,
             createdAt: ticket.createdAt,
             status: ticket.status,
+            ticketNumber: String(ticket.ticketNumber),
+            category: ticket.labels?.[0]?.key,
+            timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
           };
         }
         return null;

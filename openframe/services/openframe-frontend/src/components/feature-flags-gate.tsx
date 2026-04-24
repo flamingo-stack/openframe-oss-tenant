@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { AppShellSkeleton } from '@/app/components/app-shell-skeleton';
 import { useFeatureFlagsQuery } from '@/app/hooks/use-feature-flags-query';
 import { isSaasSharedMode } from '@/lib/app-mode';
