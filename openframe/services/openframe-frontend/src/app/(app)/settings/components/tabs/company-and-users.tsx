@@ -12,7 +12,7 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { InvitationStatus } from '../../hooks/use-invitations';
 import { UserStatus } from '../../hooks/use-users';
@@ -68,15 +68,15 @@ export function CompanyAndUsersTab() {
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [isResendOpen, setIsResendOpen] = useState(false);
 
-  const handleDeleteRequest = (record: UnifiedUserRecord) => {
+  const handleDeleteRequest = useCallback((record: UnifiedUserRecord) => {
     if (record.type === RecordType.Invitation) {
       return;
     }
     setSelectedUser(record);
     setIsConfirmOpen(true);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!selectedUser || selectedUser.type !== RecordType.User) return;
     deleteUser(selectedUser.id, {
       onSuccess: () => {
@@ -84,17 +84,17 @@ export function CompanyAndUsersTab() {
         setSelectedUser(null);
       },
     });
-  };
+  }, [selectedUser, deleteUser]);
 
-  const handleRevokeRequest = (record: UnifiedUserRecord) => {
+  const handleRevokeRequest = useCallback((record: UnifiedUserRecord) => {
     if (record.type !== RecordType.Invitation) {
       return;
     }
     setSelectedInvitation(record);
     setIsRevokeOpen(true);
-  };
+  }, []);
 
-  const handleConfirmRevoke = async () => {
+  const handleConfirmRevoke = useCallback(async () => {
     if (!selectedInvitation || selectedInvitation.type !== RecordType.Invitation) return;
     revokeInvitation(selectedInvitation.id, {
       onSuccess: () => {
@@ -102,15 +102,15 @@ export function CompanyAndUsersTab() {
         setSelectedInvitation(null);
       },
     });
-  };
+  }, [selectedInvitation, revokeInvitation]);
 
-  const handleRemoveRequest = (record: UnifiedUserRecord) => {
+  const handleRemoveRequest = useCallback((record: UnifiedUserRecord) => {
     if (record.type !== RecordType.Invitation) return;
     setSelectedInvitation(record);
     setIsRemoveOpen(true);
-  };
+  }, []);
 
-  const handleConfirmRemove = async () => {
+  const handleConfirmRemove = useCallback(async () => {
     if (!selectedInvitation || selectedInvitation.type !== RecordType.Invitation) return;
     revokeInvitation(selectedInvitation.id, {
       onSuccess: () => {
@@ -118,15 +118,15 @@ export function CompanyAndUsersTab() {
         setSelectedInvitation(null);
       },
     });
-  };
+  }, [selectedInvitation, revokeInvitation]);
 
-  const handleResendRequest = (record: UnifiedUserRecord) => {
+  const handleResendRequest = useCallback((record: UnifiedUserRecord) => {
     if (record.type !== RecordType.Invitation) return;
     setSelectedInvitation(record);
     setIsResendOpen(true);
-  };
+  }, []);
 
-  const handleConfirmResend = async () => {
+  const handleConfirmResend = useCallback(async () => {
     if (!selectedInvitation || selectedInvitation.type !== RecordType.Invitation) return;
     resendInvitation(selectedInvitation.id, {
       onSuccess: () => {
@@ -134,7 +134,7 @@ export function CompanyAndUsersTab() {
         setSelectedInvitation(null);
       },
     });
-  };
+  }, [selectedInvitation, resendInvitation]);
 
   const handleInviteUsers = async (rows: { email: string }[]) => {
     await inviteUsers(rows.map(r => r.email));
@@ -254,7 +254,7 @@ export function CompanyAndUsersTab() {
         meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
       },
     ],
-    [currentUser],
+    [currentUser, handleDeleteRequest, handleRevokeRequest, handleRemoveRequest, handleResendRequest],
   );
 
   const table = useDataTable<UnifiedUserRecord>({

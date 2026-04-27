@@ -140,10 +140,7 @@ export function DevicesView() {
     setParams,
   });
 
-  const deviceRowHref = useCallback(
-    (device: Device) => `/devices/details/${device.machineId || device.id}`,
-    [],
-  );
+  const deviceRowHref = useCallback((device: Device) => `/devices/details/${device.machineId || device.id}`, []);
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 

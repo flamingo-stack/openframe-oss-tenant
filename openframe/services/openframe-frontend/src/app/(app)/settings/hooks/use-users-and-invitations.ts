@@ -73,10 +73,7 @@ export function useUsersAndInvitations(page: number = 0, size: number = 20) {
   const invitationsHook = useInvitations(page, size);
 
   const records = useMemo<UnifiedUserRecord[]>(
-    () => [
-      ...usersHook.users.map(userToUnified),
-      ...invitationsHook.invitations.map(invitationToUnified),
-    ],
+    () => [...usersHook.users.map(userToUnified), ...invitationsHook.invitations.map(invitationToUnified)],
     [usersHook.users, invitationsHook.invitations],
   );
 

@@ -171,10 +171,7 @@ export function ScriptSchedulesTable() {
     enableSorting: false,
   });
 
-  const scheduleRowHref = useCallback(
-    (schedule: ScriptScheduleListItem) => `/scripts/schedules/${schedule.id}`,
-    [],
-  );
+  const scheduleRowHref = useCallback((schedule: ScriptScheduleListItem) => `/scripts/schedules/${schedule.id}`, []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 
