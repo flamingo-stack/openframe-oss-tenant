@@ -3,16 +3,18 @@
 import { EditProfileIcon, GoogleLogo, MicrosoftIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
   Card,
   CheckboxWithDescription,
+  type ColumnDef,
+  DataTable,
   Input,
   ListPageContainer,
   PageError,
-  type RowAction,
+  type Row,
   Skeleton,
-  Table,
-  type TableColumn,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
@@ -162,61 +164,90 @@ export function SsoConfigurationTab() {
     loadDomainData();
   }, [loadData, loadDomainData]);
 
-  const columns: TableColumn<UiProviderRow>[] = useMemo(() => {
-    const baseColumns: TableColumn<UiProviderRow>[] = [
+  const columns = useMemo<ColumnDef<UiProviderRow>[]>(() => {
+    const baseColumns: ColumnDef<UiProviderRow>[] = [
       {
-        key: 'provider',
-        label: 'OAUTH PROVIDER',
-        width: 'flex-[2] min-w-0',
-        renderCell: row => (
+        accessorKey: 'provider',
+        header: 'OAUTH PROVIDER',
+        cell: ({ row }: { row: Row<UiProviderRow> }) => (
           <div className="flex items-center gap-3">
-            {getProviderIcon(row.provider)}
+            {getProviderIcon(row.original.provider)}
             <div className="flex flex-col justify-center min-w-0">
               <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-                {row.displayName}
+                {row.original.displayName}
               </span>
               <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">
-                {row.provider}
+                {row.original.provider}
               </span>
             </div>
           </div>
         ),
+        meta: { width: 'flex-[2] min-w-0' },
       },
       {
-        key: 'status',
-        label: 'STATUS',
-        width: 'flex-1 min-w-0',
-        renderCell: row => (
+        accessorKey: 'status',
+        header: 'STATUS',
+        cell: ({ row }: { row: Row<UiProviderRow> }) => (
           <div className="w-fit">
-            <Tag label={row.status.label} variant={row.status.variant} />
+            <Tag label={row.original.status.label} variant={row.original.status.variant} />
           </div>
         ),
+        meta: { width: 'flex-1 min-w-0' },
       },
     ];
 
     // Only add allowed domains column if feature is enabled
     if (isDomainAllowlistEnabled) {
       baseColumns.push({
-        key: 'allowedDomains',
-        label: 'ALLOWED DOMAINS',
-        width: 'flex-[1.5] min-w-0',
-        renderCell: row => (
+        accessorKey: 'allowedDomains',
+        header: 'ALLOWED DOMAINS',
+        cell: ({ row }: { row: Row<UiProviderRow> }) => (
           <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
-            {row.allowedDomains.length > 0 ? row.allowedDomains.join(', ') : 'None'}
+            {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
           </span>
         ),
+        meta: { width: 'flex-[1.5] min-w-0' },
       });
     }
 
     baseColumns.push({
-      key: 'hasConfig',
-      label: 'CONFIGURATION',
-      width: 'flex-1 min-w-0',
-      renderCell: row => (
+      accessorKey: 'hasConfig',
+      header: 'CONFIGURATION',
+      cell: ({ row }: { row: Row<UiProviderRow> }) => (
         <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary">
-          {row.hasConfig ? 'Configured' : 'Not configured'}
+          {row.original.hasConfig ? 'Configured' : 'Not configured'}
         </span>
       ),
+      meta: { width: 'flex-1 min-w-0' },
+    });
+
+    baseColumns.push({
+      id: 'actions',
+      cell: ({ row }: { row: Row<UiProviderRow> }) => (
+        <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+          <Button
+            variant="outline"
+            leftIcon={<EditProfileIcon className="h-6 w-6 text-ods-text-primary" />}
+            onClick={() => {
+              setModalState({
+                open: true,
+                providerKey: row.original.provider,
+                displayName: row.original.displayName,
+                isEnabled: row.original.status.label === 'ACTIVE',
+                clientId: row.original.original?.config?.clientId,
+                clientSecret: row.original.original?.config?.clientSecret,
+                msTenantId: row.original.original?.config?.msTenantId,
+                autoProvisionUsers: row.original.autoProvisionUsers,
+                allowedDomains: row.original.allowedDomains,
+              });
+            }}
+          >
+            Edit
+          </Button>
+        </div>
+      ),
+      enableSorting: false,
+      meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
     });
 
     return baseColumns;
@@ -228,29 +259,12 @@ export function SsoConfigurationTab() {
     return providers.filter(p => p.displayName.toLowerCase().includes(term) || p.provider.toLowerCase().includes(term));
   }, [providers, searchTerm]);
 
-  const rowActions: RowAction<UiProviderRow>[] = useMemo(
-    () => [
-      {
-        label: 'Edit',
-        icon: <EditProfileIcon className="h-6 w-6 text-ods-text-primary" />,
-        onClick: row => {
-          setModalState({
-            open: true,
-            providerKey: row.provider,
-            displayName: row.displayName,
-            isEnabled: row.status.label === 'ACTIVE',
-            clientId: row.original?.config?.clientId,
-            clientSecret: row.original?.config?.clientSecret,
-            msTenantId: row.original?.config?.msTenantId,
-            autoProvisionUsers: row.autoProvisionUsers,
-            allowedDomains: row.allowedDomains,
-          });
-        },
-        variant: 'outline',
-      },
-    ],
-    [],
-  );
+  const table = useDataTable<UiProviderRow>({
+    data: filtered,
+    columns,
+    getRowId: (row: UiProviderRow) => row.id,
+    enableSorting: false,
+  });
 
   if (error) {
     return <PageError message={error} />;
@@ -326,16 +340,10 @@ export function SsoConfigurationTab() {
         )
       )}
 
-      <Table
-        data={filtered}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        emptyMessage="No SSO providers found."
-        rowActions={rowActions}
-        showFilters={false}
-        rowClassName="mb-1"
-      />
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body loading={isLoading} emptyMessage="No SSO providers found." rowClassName="mb-1" />
+      </DataTable>
       <SsoConfigModal
         isOpen={Boolean(modalState?.open)}
         onClose={() => setModalState(null)}

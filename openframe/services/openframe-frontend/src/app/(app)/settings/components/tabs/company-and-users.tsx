@@ -3,14 +3,16 @@
 import { Button } from '@flamingo-stack/openframe-frontend-core';
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
+  type ColumnDef,
+  DataTable,
   ListPageContainer,
   MoreActionsMenu,
-  Table,
-  type TableColumn,
+  type Row,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { InvitationStatus } from '../../hooks/use-invitations';
 import { UserStatus } from '../../hooks/use-users';
@@ -65,48 +67,6 @@ export function CompanyAndUsersTab() {
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [isResendOpen, setIsResendOpen] = useState(false);
-
-  const columns: TableColumn<UnifiedUserRecord>[] = [
-    {
-      key: 'user',
-      label: 'USER',
-      width: 'w-1/3',
-      renderCell: row => (
-        <div className="flex flex-col min-w-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-            {row.firstName || row.lastName ? `${row.firstName || ''} ${row.lastName || ''}`.trim() : row.email}
-          </span>
-          <span className="font-['Azeret_Mono'] text-[12px] text-ods-text-secondary truncate">{row.email}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'roles',
-      label: 'ROLE',
-      width: 'w-1/3',
-      renderCell: row => (
-        <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
-          {(row.roles || []).join(', ') || '—'}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'STATUS',
-      width: 'w-1/3',
-      renderCell: row => {
-        const statusLabel = row.status;
-        const variant = statusToVariant[statusLabel];
-        const label = statusToLabel[statusLabel];
-
-        return (
-          <div className="">
-            <Tag label={label} variant={variant} />
-          </div>
-        );
-      },
-    },
-  ];
 
   const handleDeleteRequest = (record: UnifiedUserRecord) => {
     if (record.type === RecordType.Invitation) {
@@ -180,6 +140,130 @@ export function CompanyAndUsersTab() {
     await inviteUsers(rows.map(r => r.email));
   };
 
+  const columns = useMemo<ColumnDef<UnifiedUserRecord>[]>(
+    () => [
+      {
+        accessorKey: 'user',
+        header: 'USER',
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
+          <div className="flex flex-col min-w-0">
+            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
+              {row.original.firstName || row.original.lastName
+                ? `${row.original.firstName || ''} ${row.original.lastName || ''}`.trim()
+                : row.original.email}
+            </span>
+            <span className="font-['Azeret_Mono'] text-[12px] text-ods-text-secondary truncate">
+              {row.original.email}
+            </span>
+          </div>
+        ),
+        meta: { width: 'w-1/3' },
+      },
+      {
+        accessorKey: 'roles',
+        header: 'ROLE',
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
+          <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
+            {(row.original.roles || []).join(', ') || '—'}
+          </div>
+        ),
+        meta: { width: 'w-1/3' },
+      },
+      {
+        accessorKey: 'status',
+        header: 'STATUS',
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => {
+          const statusLabel = row.original.status;
+          const variant = statusToVariant[statusLabel as keyof typeof statusToVariant];
+          const label = statusToLabel[statusLabel as keyof typeof statusToLabel];
+
+          return (
+            <div className="">
+              <Tag label={label} variant={variant} />
+            </div>
+          );
+        },
+        meta: { width: 'w-1/3' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => {
+          const record = row.original;
+          if (record.type === RecordType.Invitation) {
+            const isExpired = record.status === InvitationStatus.Expired;
+
+            if (isExpired) {
+              return (
+                <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+                  <MoreActionsMenu
+                    className="px-4"
+                    items={[
+                      {
+                        label: 'Resend',
+                        onClick: () => handleResendRequest(record),
+                      },
+                      {
+                        label: 'Remove',
+                        onClick: () => handleRemoveRequest(record),
+                        danger: true,
+                      },
+                    ]}
+                  />
+                </div>
+              );
+            }
+
+            return (
+              <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+                <MoreActionsMenu
+                  className="px-4"
+                  items={[
+                    {
+                      label: 'Revoke',
+                      onClick: () => handleRevokeRequest(record),
+                      danger: true,
+                    },
+                  ]}
+                />
+              </div>
+            );
+          }
+
+          const isDeleted = record.status === UserStatus.Deleted;
+          const isOwner = (record.roles || []).some((r: string) => r?.toLowerCase?.() === 'owner');
+          const isSelf = currentUser ? record.id === currentUser.id : false;
+          const disableDelete = isOwner || isSelf || isDeleted;
+
+          return (
+            <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+              <MoreActionsMenu
+                className="px-4"
+                items={[
+                  {
+                    label: 'Delete',
+                    onClick: () => handleDeleteRequest(record),
+                    danger: true,
+                    disabled: disableDelete,
+                  },
+                ]}
+              />
+            </div>
+          );
+        },
+        enableSorting: false,
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [currentUser],
+  );
+
+  const table = useDataTable<UnifiedUserRecord>({
+    data: records,
+    columns,
+    getRowId: (row: UnifiedUserRecord) => row.id,
+    enableSorting: false,
+  });
+
   const headerActions = (
     <Button
       onClick={() => setIsAddOpen(true)}
@@ -201,70 +285,10 @@ export function CompanyAndUsersTab() {
       padding="none"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
-      <Table
-        data={records}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading || isMutating}
-        emptyMessage={error || 'No users or invitations found.'}
-        showFilters={false}
-        renderRowActions={(row: UnifiedUserRecord) => {
-          if (row.type === RecordType.Invitation) {
-            const isExpired = row.status === InvitationStatus.Expired;
-
-            if (isExpired) {
-              return (
-                <MoreActionsMenu
-                  className="px-4"
-                  items={[
-                    {
-                      label: 'Resend',
-                      onClick: () => handleResendRequest(row),
-                    },
-                    {
-                      label: 'Remove',
-                      onClick: () => handleRemoveRequest(row),
-                      danger: true,
-                    },
-                  ]}
-                />
-              );
-            }
-
-            return (
-              <MoreActionsMenu
-                className="px-4"
-                items={[
-                  {
-                    label: 'Revoke',
-                    onClick: () => handleRevokeRequest(row),
-                    danger: true,
-                  },
-                ]}
-              />
-            );
-          }
-
-          const isDeleted = row.status === UserStatus.Deleted;
-          const isOwner = (row.roles || []).some(r => r?.toLowerCase?.() === 'owner');
-          const isSelf = currentUser ? row.id === currentUser.id : false;
-          const disableDelete = isOwner || isSelf || isDeleted;
-
-          return (
-            <MoreActionsMenu
-              className="px-4"
-              items={[
-                {
-                  label: 'Delete',
-                  onClick: () => handleDeleteRequest(row),
-                  danger: true,
-                  disabled: disableDelete,
-                },
-              ]}
-            />
-          );
-        }}
-      />
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body loading={isLoading || isMutating} emptyMessage={error || 'No users or invitations found.'} />
+      </DataTable>
       <ConfirmDeleteUserModal
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}

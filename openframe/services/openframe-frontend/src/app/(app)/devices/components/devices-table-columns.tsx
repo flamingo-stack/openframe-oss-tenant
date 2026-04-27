@@ -1,6 +1,6 @@
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { type TableColumn, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type ColumnDef, type Row, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
@@ -36,32 +36,25 @@ function OrganizationCell({ device }: { device: Device }) {
   );
 }
 
-export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): TableColumn<Device>[] {
+export interface DeviceFilterColumn {
+  key: string;
+  label: string;
+  filterable?: boolean;
+  filterOptions?: Array<{ id: string; label: string; value: string }>;
+}
+
+// Filter column metadata used by the external filter modal (useTagFilterModal).
+// Kept separate from the table ColumnDef because DataTable doesn't carry the
+// filter metadata that the external mobile filter modal needs.
+export function getDeviceFilterColumns(deviceFilters?: DeviceFilters | null): DeviceFilterColumn[] {
   return [
     {
       key: 'device',
       label: 'DEVICE',
-      width: 'flex-1 md:w-1/4',
-      renderCell: device => (
-        <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
-          <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
-            {device.type &&
-              getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
-                className: 'w-5 h-5 text-ods-text-secondary',
-              })}
-          </div>
-          <div className="text-h4 text-ods-text-primary truncate">
-            <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
-              {device.displayName || device.hostname}
-            </p>
-          </div>
-        </div>
-      ),
     },
     {
       key: 'status',
       label: 'STATUS',
-      width: 'w-[80px] md:w-1/5',
       filterable: true,
       filterOptions: (() => {
         const statuses = deviceFilters?.statuses || [];
@@ -80,7 +73,83 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Tab
             return 0;
           });
       })(),
-      renderCell: device => {
+    },
+    {
+      key: 'os',
+      label: 'OS',
+      filterable: true,
+      filterOptions:
+        deviceFilters?.osTypes?.map(os => ({
+          id: os.value,
+          label: os.value,
+          value: os.value,
+        })) || [],
+    },
+    {
+      key: 'organization',
+      label: 'ORGANIZATION',
+      filterable: true,
+      filterOptions: deduplicateFilterOptions(
+        deviceFilters?.organizationIds?.map(org => ({
+          id: org.value,
+          label: org.label,
+          value: org.value,
+        })) || [],
+      ),
+    },
+  ];
+}
+
+export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): ColumnDef<Device>[] {
+  const statusFilterOptions = (() => {
+    const statuses = deviceFilters?.statuses || [];
+    return statuses
+      .filter(s => (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(s.value))
+      .map(s => ({ id: s.value, label: getDeviceStatusConfig(s.value).label, value: s.value }))
+      .sort((a, b) => {
+        if (a.value === DEVICE_STATUS.ARCHIVED) return 1;
+        if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
+        return 0;
+      });
+  })();
+
+  const osFilterOptions = deviceFilters?.osTypes?.map(os => ({ id: os.value, label: os.value, value: os.value })) ?? [];
+
+  const orgFilterOptions = deduplicateFilterOptions(
+    deviceFilters?.organizationIds?.map(org => ({ id: org.value, label: org.label, value: org.value })) ?? [],
+  );
+
+  return [
+    {
+      accessorKey: 'device',
+      id: 'device',
+      header: 'DEVICE',
+      cell: ({ row }: { row: Row<Device> }) => {
+        const device = row.original;
+        return (
+          <div className="box-border content-stretch flex gap-4 h-20 items-center justify-start py-0 relative shrink-0 w-full">
+            <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
+              {device.type &&
+                getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
+                  className: 'w-5 h-5 text-ods-text-secondary',
+                })}
+            </div>
+            <div className="text-h4 text-ods-text-primary truncate">
+              <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
+                {device.displayName || device.hostname}
+              </p>
+            </div>
+          </div>
+        );
+      },
+      meta: { width: 'flex-1 md:w-1/4' },
+    },
+    {
+      accessorKey: 'status',
+      id: 'status',
+      header: 'STATUS',
+      cell: ({ row }: { row: Row<Device> }) => {
+        const device = row.original;
         const statusConfig = getDeviceStatusConfig(device.status);
         return (
           <div className="flex flex-col items-start gap-1 shrink-0">
@@ -95,39 +164,34 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Tab
           </div>
         );
       },
+      meta: {
+        width: 'w-[80px] md:w-1/5',
+        filter: statusFilterOptions.length > 0 ? { options: statusFilterOptions } : undefined,
+      },
     },
     {
-      key: 'os',
-      label: 'OS',
-      width: 'w-[120px] md:w-1/6',
-      filterable: true,
-      hideAt: 'md',
-      filterOptions:
-        deviceFilters?.osTypes?.map(os => ({
-          id: os.value,
-          label: os.value,
-          value: os.value,
-        })) || [],
-      renderCell: device => (
-        <div className="flex items-start gap-2 shrink-0">
-          <OSTypeBadge osType={device.osType} />
-        </div>
+      accessorKey: 'os',
+      id: 'os',
+      header: 'OS',
+      cell: ({ row }: { row: Row<Device> }) => (
+        <OSTypeBadge osType={row.original.osType} iconSize="w-4 h-4 md:w-6 md:h-6" />
       ),
+      meta: {
+        width: 'w-[200px] md:w-1/6',
+        hideAt: 'md',
+        filter: osFilterOptions.length > 0 ? { options: osFilterOptions } : undefined,
+      },
     },
     {
-      key: 'organization',
-      label: 'ORGANIZATION',
-      width: 'w-1/6',
-      hideAt: 'lg',
-      filterable: true,
-      filterOptions: deduplicateFilterOptions(
-        deviceFilters?.organizationIds?.map(org => ({
-          id: org.value,
-          label: org.label,
-          value: org.value,
-        })) || [],
-      ),
-      renderCell: device => <OrganizationCell device={device} />,
+      accessorKey: 'organization',
+      id: 'organization',
+      header: 'ORGANIZATION',
+      cell: ({ row }: { row: Row<Device> }) => <OrganizationCell device={row.original} />,
+      meta: {
+        width: 'w-1/6',
+        hideAt: 'lg',
+        filter: orgFilterOptions.length > 0 ? { options: orgFilterOptions, placement: 'bottom-end' } : undefined,
+      },
     },
   ];
 }

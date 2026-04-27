@@ -1,8 +1,19 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
-import { PenEditIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  Chevron02RightIcon,
+  PenEditIcon,
+  PlusCircleIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  type ColumnDef,
+  DataTable,
+  ListPageLayout,
+  type Row,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -64,81 +75,111 @@ export function ScriptSchedulesTable() {
     }
   }, [params.search]);
 
-  const columns: TableColumn<ScriptScheduleListItem>[] = useMemo(
+  const columns = useMemo<ColumnDef<ScriptScheduleListItem>[]>(
     () => [
       {
-        key: 'name',
-        label: 'Script',
-        renderCell: schedule => (
-          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
-            {schedule.name}
+        accessorKey: 'name',
+        header: 'Script',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <span className="text-h4 text-ods-text-primary whitespace-nowrap text-ellipsis truncate">
+            {row.original.name}
           </span>
         ),
+        meta: { width: 'flex-1 min-w-0' },
       },
       {
-        key: 'run_time_date',
-        label: 'Date & Time',
-        width: 'w-[160px]',
-        hideAt: 'md',
-        renderCell: schedule => {
-          const { date, time } = formatScheduleDate(schedule.run_time_date);
+        accessorKey: 'os',
+        header: 'OS',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <OSTypeBadgeGroup osTypes={row.original.task_supported_platforms} iconSize="w-4 h-4 md:w-6 md:h-6" />
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[90px]', hideAt: 'lg' },
+      },
+      {
+        accessorKey: 'run_time_date',
+        header: 'Date & Time',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => {
+          const { date, time } = formatScheduleDate(row.original.run_time_date);
           return (
             <div className="flex flex-col">
-              <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">{date}</span>
-              <span className="text-[12px] leading-[16px] text-ods-text-secondary">{time}</span>
+              <span className="text-h4 text-ods-text-primary">{date}</span>
+              <span className="text-h6 text-ods-text-secondary">{time}</span>
             </div>
           );
         },
+        meta: { width: 'w-[100px] md:w-[160px]' },
       },
       {
-        key: 'task_type',
-        label: 'Repeat',
-        width: 'w-[120px]',
-        hideAt: 'md',
-        renderCell: schedule => (
-          <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">
-            {getRepeatLabelFromTaskType(schedule.task_type)}
-          </span>
+        accessorKey: 'task_frequency',
+        header: 'Repeat',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <span className="text-h4 text-ods-text-primary">{getRepeatLabelFromTaskType(row.original.task_type)}</span>
         ),
+        meta: { width: 'w-[160px]', hideAt: 'md' },
       },
       {
-        key: 'task_supported_platforms',
-        label: 'Platforms',
-        width: 'w-[100px]',
-        hideAt: 'lg',
-        renderCell: schedule => <OSTypeBadgeGroup osTypes={schedule.task_supported_platforms} iconSize="w-4 h-4" />,
-      },
-      {
-        key: 'agents_count',
-        label: 'Devices',
-        width: 'w-[100px]',
-        hideAt: 'lg',
-        renderCell: schedule => (
-          <span className="font-medium text-[14px] leading-[20px] text-ods-text-primary">{schedule.agents_count}</span>
+        accessorKey: 'agents_count',
+        header: 'Devices',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <span className="text-h4 text-ods-text-primary">{row.original.agents_count}</span>
         ),
+        meta: { width: 'w-[160px]', hideAt: 'lg' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={e => {
+              e.stopPropagation();
+              router.push(`/scripts/schedules/${row.original.id}/edit`);
+            }}
+            className="bg-ods-card"
+          >
+            <PenEditIcon size={20} className="text-ods-text-primary" />
+          </Button>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
+          <Button
+            href={`/scripts/schedules/${row.original.id}`}
+            prefetch={false}
+            variant="outline"
+            size="icon"
+            centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+            aria-label="View details"
+            className="bg-ods-card"
+          />
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
+    [router],
+  );
+
+  const table = useDataTable<ScriptScheduleListItem>({
+    data: visibleSchedules,
+    columns,
+    getRowId: (row: ScriptScheduleListItem) => String(row.id),
+    enableSorting: false,
+  });
+
+  const scheduleRowHref = useCallback(
+    (schedule: ScriptScheduleListItem) => `/scripts/schedules/${schedule.id}`,
     [],
   );
 
+  const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
+
   const handleAddSchedule = useCallback(() => {
     router.push('/scripts/schedules/create');
-  }, [router]);
-
-  const renderRowActions = useMemo(() => {
-    return (schedule: ScriptScheduleListItem) => (
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={e => {
-          e.stopPropagation();
-          router.push(`/scripts/schedules/${schedule.id}/edit`);
-        }}
-        className="bg-ods-card"
-      >
-        <PenEditIcon size={20} className="text-ods-text-primary" />
-      </Button>
-    );
   }, [router]);
 
   const actions = useMemo(
@@ -166,29 +207,28 @@ export function ScriptSchedulesTable() {
       className="pt-6"
       stickyHeader
     >
-      <Table
-        data={visibleSchedules}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={pageSize}
-        emptyMessage={
-          params.search
-            ? `No schedules found matching "${params.search}". Try adjusting your search.`
-            : 'No schedules found. Create a new schedule to get started.'
-        }
-        rowClassName="mb-1"
-        rowHref={schedule => `/scripts/schedules/${schedule.id}`}
-        infiniteScroll={{
-          hasNextPage: visibleCount < filteredSchedules.length,
-          isFetchingNextPage: false,
-          onLoadMore: () => setVisibleCount(prev => prev + pageSize),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-        renderRowActions={renderRowActions}
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={pageSize}
+          emptyMessage={
+            params.search
+              ? `No schedules found matching "${params.search}". Try adjusting your search.`
+              : 'No schedules found. Create a new schedule to get started.'
+          }
+          rowClassName="mb-1"
+          rowHref={scheduleRowHref}
+        />
+        {visibleCount < filteredSchedules.length && (
+          <DataTable.InfiniteFooter
+            hasNextPage
+            isFetchingNextPage={false}
+            onLoadMore={handleLoadMore}
+            skeletonRows={2}
+          />
+        )}
+      </DataTable>
     </ListPageLayout>
   );
 }

@@ -3,14 +3,16 @@
 import { DocumentIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   Button,
+  type ColumnDef,
+  DataTable,
   ListPageContainer,
   MoreActionsMenu,
-  Table,
-  type TableColumn,
+  type Row,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
 import { CreateApiKeyModal } from '../../components/create-api-key-modal';
@@ -35,79 +37,143 @@ export function ApiKeysTab() {
     fetchApiKeys();
   }, [fetchApiKeys]);
 
-  const columns: TableColumn<ApiKeyRecord>[] = [
-    {
-      key: 'name',
-      label: 'NAME',
-      width: 'w-1/3',
-      renderCell: row => (
-        <div className="flex flex-col min-w-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">{row.name}</span>
-          <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
-            {row.description || '—'}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'STATUS',
-      width: 'w-40',
-      renderCell: row => (
-        <div className="w-40 shrink-0">
-          <Tag label={row.enabled ? 'ACTIVE' : 'INACTIVE'} variant={row.enabled ? 'success' : 'grey'} />
-        </div>
-      ),
-    },
-    {
-      key: 'keyId',
-      label: 'KEY ID',
-      width: 'w-1/3',
-      renderCell: row => (
-        <div className="truncate font-['Azeret_Mono'] text-[16px] text-ods-text-primary">{row.id}</div>
-      ),
-    },
-    {
-      key: 'usage',
-      label: 'USAGE',
-      width: 'w-28',
-      renderCell: row => (
-        <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
-          {row.totalRequests.toLocaleString()}
-        </div>
-      ),
-    },
-    {
-      key: 'createdAt',
-      label: 'CREATED',
-      width: 'w-40',
-      renderCell: row => (
-        <div className="flex flex-col min-w-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-            {new Date(row.createdAt).toLocaleDateString()}
-          </span>
-          <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
-            {new Date(row.createdAt).toLocaleTimeString()}
-          </span>
-        </div>
-      ),
-    },
-    {
-      key: 'expiresAt',
-      label: 'EXPIRES',
-      width: 'w-40',
-      renderCell: row => (
-        <div className="flex flex-col min-w-0">
-          <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-            {row.expiresAt ? new Date(row.expiresAt).toLocaleDateString() : '—'}
-          </span>
-          <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
-            {row.expiresAt ? new Date(row.expiresAt).toLocaleTimeString() : '—'}
-          </span>
-        </div>
-      ),
-    },
-  ];
+  const columns = useMemo<ColumnDef<ApiKeyRecord>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'NAME',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="flex flex-col min-w-0">
+            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
+              {row.original.name}
+            </span>
+            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+              {row.original.description || '—'}
+            </span>
+          </div>
+        ),
+        meta: { width: 'w-1/3' },
+      },
+      {
+        accessorKey: 'status',
+        header: 'STATUS',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="w-40 shrink-0">
+            <Tag
+              label={row.original.enabled ? 'ACTIVE' : 'INACTIVE'}
+              variant={row.original.enabled ? 'success' : 'grey'}
+            />
+          </div>
+        ),
+        meta: { width: 'w-40' },
+      },
+      {
+        accessorKey: 'id',
+        header: 'KEY ID',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="truncate font-['Azeret_Mono'] text-[16px] text-ods-text-primary">{row.original.id}</div>
+        ),
+        meta: { width: 'w-1/3' },
+      },
+      {
+        accessorKey: 'totalRequests',
+        header: 'USAGE',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
+            {row.original.totalRequests.toLocaleString()}
+          </div>
+        ),
+        meta: { width: 'w-28' },
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'CREATED',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="flex flex-col min-w-0">
+            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
+              {new Date(row.original.createdAt).toLocaleDateString()}
+            </span>
+            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+              {new Date(row.original.createdAt).toLocaleTimeString()}
+            </span>
+          </div>
+        ),
+        meta: { width: 'w-40' },
+      },
+      {
+        accessorKey: 'expiresAt',
+        header: 'EXPIRES',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div className="flex flex-col min-w-0">
+            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
+              {row.original.expiresAt ? new Date(row.original.expiresAt).toLocaleDateString() : '—'}
+            </span>
+            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+              {row.original.expiresAt ? new Date(row.original.expiresAt).toLocaleTimeString() : '—'}
+            </span>
+          </div>
+        ),
+        meta: { width: 'w-40' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
+          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+            <MoreActionsMenu
+              items={[
+                {
+                  label: 'Edit',
+                  onClick: () => {
+                    setSelectedKey(row.original);
+                    setIsEditOpen(true);
+                  },
+                },
+                {
+                  label: 'Regenerate',
+                  onClick: () => {
+                    setSelectedKey(row.original);
+                    setIsRegenOpen(true);
+                  },
+                },
+                {
+                  label: row.original.enabled ? 'Disable' : 'Enable',
+                  onClick: () => {
+                    if (row.original.enabled) {
+                      setSelectedKey(row.original);
+                      setIsDisableOpen(true);
+                    } else {
+                      // Enable without confirmation
+                      setApiKeyEnabled(row.original.id, true).then(() => fetchApiKeys());
+                    }
+                  },
+                  danger: row.original.enabled,
+                },
+              ]}
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedKey(row.original);
+                setDetailsOpen(true);
+              }}
+            >
+              Details
+            </Button>
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [fetchApiKeys, setApiKeyEnabled],
+  );
+
+  const table = useDataTable<ApiKeyRecord>({
+    data: items,
+    columns,
+    getRowId: (row: ApiKeyRecord) => row.id,
+    enableSorting: false,
+  });
 
   const headerActions = (
     <div className="flex items-center gap-3">
@@ -136,58 +202,10 @@ export function ApiKeysTab() {
       padding="none"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
-      <Table
-        data={items}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        emptyMessage={error || 'No API keys found.'}
-        showFilters={false}
-        renderRowActions={row => (
-          <div className="flex items-center gap-3">
-            <MoreActionsMenu
-              items={[
-                {
-                  label: 'Edit',
-                  onClick: () => {
-                    setSelectedKey(row);
-                    setIsEditOpen(true);
-                  },
-                },
-                {
-                  label: 'Regenerate',
-                  onClick: () => {
-                    setSelectedKey(row);
-                    setIsRegenOpen(true);
-                  },
-                },
-                {
-                  label: row.enabled ? 'Disable' : 'Enable',
-                  onClick: () => {
-                    if (row.enabled) {
-                      setSelectedKey(row);
-                      setIsDisableOpen(true);
-                    } else {
-                      // Enable without confirmation
-                      setApiKeyEnabled(row.id, true).then(() => fetchApiKeys());
-                    }
-                  },
-                  danger: row.enabled,
-                },
-              ]}
-            />
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedKey(row);
-                setDetailsOpen(true);
-              }}
-            >
-              Details
-            </Button>
-          </div>
-        )}
-      />
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body loading={isLoading} emptyMessage={error || 'No API keys found.'} />
+      </DataTable>
       <CreateApiKeyModal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}

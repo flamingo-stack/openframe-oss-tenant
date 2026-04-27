@@ -7,6 +7,7 @@ import {
   ToolBadge,
 } from '@flamingo-stack/openframe-frontend-core/components';
 import {
+  Chevron02RightIcon,
   ClipboardListIcon,
   PenEditIcon,
   PlusCircleIcon,
@@ -15,14 +16,19 @@ import {
 import {
   ActionsMenuDropdown,
   type ActionsMenuGroup,
+  Button,
+  type ColumnDef,
+  type ColumnFiltersState,
+  DataTable,
   ListPageLayout,
-  Table,
-  type TableColumn,
+  multiSelectFilterFn,
+  type Row,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { getOSLabel, normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
+import { getOSLabel, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useScripts } from '../hooks/use-scripts';
 
 interface UiScriptEntry {
@@ -46,7 +52,6 @@ export function ScriptsTable() {
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
     shellType: { type: 'array', default: [] },
-    addedBy: { type: 'array', default: [] },
     category: { type: 'array', default: [] },
     supportedPlatforms: { type: 'array', default: [] },
   });
@@ -90,17 +95,6 @@ export function ScriptsTable() {
       }));
   }, [transformedScripts]);
 
-  const uniqueAddedBy = useMemo(() => {
-    const addedBySet = new Set(transformedScripts.map(script => script.addedBy));
-    return Array.from(addedBySet)
-      .sort()
-      .map(toolType => ({
-        id: toolType,
-        label: toToolLabel(toolType.toUpperCase()),
-        value: toolType,
-      }));
-  }, [transformedScripts]);
-
   const uniqueCategories = useMemo(() => {
     const categoriesSet = new Set(transformedScripts.map(script => script.category));
     return Array.from(categoriesSet)
@@ -138,10 +132,6 @@ export function ScriptsTable() {
       filtered = filtered.filter(script => params.shellType.includes(script.shellType));
     }
 
-    if (params.addedBy && params.addedBy.length > 0) {
-      filtered = filtered.filter(script => params.addedBy.includes(script.addedBy));
-    }
-
     if (params.category && params.category.length > 0) {
       filtered = filtered.filter(script => params.category.includes(script.category));
     }
@@ -153,74 +143,9 @@ export function ScriptsTable() {
     }
 
     return filtered;
-  }, [transformedScripts, params.search, params.shellType, params.addedBy, params.category, params.supportedPlatforms]);
+  }, [transformedScripts, params.search, params.shellType, params.category, params.supportedPlatforms]);
 
   const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleCount), [filteredScripts, visibleCount]);
-
-  const columns: TableColumn<UiScriptEntry>[] = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: 'Name',
-        renderCell: script => (
-          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
-            {script.name}
-          </span>
-        ),
-      },
-      {
-        key: 'shellType',
-        label: 'Shell Type',
-        width: 'w-[160px]',
-        hideAt: 'md',
-        filterable: true,
-        filterOptions: uniqueShellTypes,
-        renderCell: script => <ShellTypeBadge shellType={script.shellType as ShellType} />,
-      },
-      {
-        key: 'supportedPlatforms',
-        label: 'OS',
-        width: 'w-[80px]',
-        hideAt: 'lg',
-        filterable: true,
-        filterOptions: uniquePlatforms,
-        renderCell: script => <OSTypeBadgeGroup osTypes={script.supportedPlatforms} iconSize="w-4 h-4" />,
-      },
-      {
-        key: 'addedBy',
-        label: 'Added By',
-        width: 'w-[120px]',
-        filterable: true,
-        filterOptions: uniqueAddedBy,
-        hideAt: 'lg',
-        renderCell: script => <ToolBadge toolType={normalizeToolTypeWithFallback(script.addedBy)} />,
-      },
-      {
-        key: 'category',
-        label: 'Category',
-        width: 'w-[160px]',
-        filterable: true,
-        filterOptions: uniqueCategories,
-        hideAt: 'lg',
-        renderCell: script => (
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-primary line-clamp-2">
-            {script.category}
-          </span>
-        ),
-      },
-      {
-        key: 'description',
-        label: 'Description',
-        hideAt: 'md',
-        renderCell: script => (
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary line-clamp-2">
-            {script.description || 'No description'}
-          </span>
-        ),
-      },
-    ],
-    [uniqueShellTypes, uniqueAddedBy, uniqueCategories, uniquePlatforms],
-  );
 
   const renderRowActions = useCallback((script: UiScriptEntry) => {
     const groups: ActionsMenuGroup[] = [
@@ -251,6 +176,155 @@ export function ScriptsTable() {
     return <ActionsMenuDropdown groups={groups} />;
   }, []);
 
+  const columns = useMemo<ColumnDef<UiScriptEntry>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
+            {row.original.name}
+          </span>
+        ),
+        enableSorting: false,
+        meta: { width: 'flex-1 min-w-0' },
+      },
+      {
+        accessorKey: 'shellType',
+        header: 'Shell Type',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <ShellTypeBadge shellType={row.original.shellType as ShellType} iconClassName="w-4 h-4 md:w-6 md:h-6" />
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[100px] md:w-[160px]',
+          filter: { options: uniqueShellTypes },
+        },
+      },
+      {
+        accessorKey: 'supportedPlatforms',
+        header: 'OS',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <OSTypeBadgeGroup osTypes={row.original.supportedPlatforms} iconSize="w-4 h-4 md:w-6 md:h-6" />
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[90px]',
+          hideAt: 'lg',
+          filter: { options: uniquePlatforms },
+        },
+      },
+      {
+        accessorKey: 'addedBy',
+        header: 'Added By',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <ToolBadge
+            toolType={normalizeToolTypeWithFallback(row.original.addedBy)}
+            iconClassName="w-4 h-4 md:w-6 md:h-6"
+          />
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[120px]', hideAt: 'lg' },
+      },
+      {
+        accessorKey: 'category',
+        header: 'Category',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <span className="text-h4 text-ods-text-primary line-clamp-2">{row.original.category}</span>
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[160px]',
+          hideAt: 'md',
+          filter: { options: uniqueCategories },
+        },
+      },
+      {
+        accessorKey: 'description',
+        header: 'Description',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <span className="text-h4 text-ods-text-secondary line-clamp-2">{row.original.description || '—'}</span>
+        ),
+        enableSorting: false,
+        meta: { width: 'flex-1', hideAt: 'lg' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+            {renderRowActions(row.original)}
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/scripts/details/${row.original.id}`}
+              prefetch={false}
+              variant="outline"
+              size="icon"
+              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              aria-label="View details"
+              className="bg-ods-card"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [renderRowActions, uniqueShellTypes, uniquePlatforms, uniqueCategories],
+  );
+
+  // Column-filter state mirrors URL params. `useApiParams` keeps each array
+  // reference-stable when its content is unchanged, so listing the raw arrays
+  // as deps is safe — no content-key gymnastics needed.
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
+    const state: ColumnFiltersState = [];
+    if (params.shellType?.length) state.push({ id: 'shellType', value: params.shellType });
+    if (params.supportedPlatforms?.length) state.push({ id: 'supportedPlatforms', value: params.supportedPlatforms });
+    if (params.category?.length) state.push({ id: 'category', value: params.category });
+    return state;
+  }, [params.shellType, params.supportedPlatforms, params.category]);
+
+  // Ref to the latest columnFilters so the change handler can remain stable.
+  const columnFiltersRef = useRef<ColumnFiltersState>(columnFilters);
+  columnFiltersRef.current = columnFilters;
+
+  const handleColumnFiltersChange = useCallback(
+    (updater: ColumnFiltersState | ((prev: ColumnFiltersState) => ColumnFiltersState)) => {
+      const next = typeof updater === 'function' ? updater(columnFiltersRef.current) : updater;
+      const get = (id: string) => (next.find(f => f.id === id)?.value as string[]) ?? [];
+      setParams({
+        shellType: get('shellType'),
+        supportedPlatforms: get('supportedPlatforms'),
+        category: get('category'),
+      });
+      setVisibleCount(pageSize);
+    },
+    [setParams],
+  );
+
+  const table = useDataTable<UiScriptEntry>({
+    data: visibleScripts,
+    columns,
+    getRowId: (row: UiScriptEntry) => String(row.id),
+    enableSorting: false,
+    state: { columnFilters },
+    onColumnFiltersChange: handleColumnFiltersChange,
+  });
+
+  const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts/details/${script.id}`, []);
+
+  const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
+
   // Reset visible count when search changes
   const lastSearchRef = React.useRef(params.search);
   useEffect(() => {
@@ -260,48 +334,29 @@ export function ScriptsTable() {
     }
   }, [params.search]);
 
-  // Reset visible count when filters change
-  const prevFilterKeyRef = React.useRef<string | null>(null);
-  useEffect(() => {
-    const filterKey = JSON.stringify({
-      shellType: params.shellType?.sort() || [],
-      addedBy: params.addedBy?.sort() || [],
-      category: params.category?.sort() || [],
-      supportedPlatforms: params.supportedPlatforms?.sort() || [],
-    });
-
-    if (prevFilterKeyRef.current !== null && prevFilterKeyRef.current !== filterKey) {
-      setVisibleCount(pageSize);
-    }
-    prevFilterKeyRef.current = filterKey;
-  }, [params.shellType, params.addedBy, params.category, params.supportedPlatforms]);
-
   const handleNewScript = useCallback(() => {
     router.push('/scripts/create');
   }, [router]);
 
-  const handleFilterChange = useCallback(
-    (columnFilters: Record<string, any[]>) => {
+  const handleMobileFilterChange = useCallback(
+    (next: Record<string, any[]>) => {
       setParams({
-        shellType: columnFilters.shellType || [],
-        addedBy: columnFilters.addedBy || [],
-        category: columnFilters.category || [],
-        supportedPlatforms: columnFilters.supportedPlatforms || [],
+        shellType: next.shellType || [],
+        category: next.category || [],
+        supportedPlatforms: next.supportedPlatforms || [],
       });
       setVisibleCount(pageSize);
     },
     [setParams],
   );
 
-  // Convert URL params to table filters format
-  const tableFilters = useMemo(
+  const mobileFilters = useMemo(
     () => ({
       shellType: params.shellType,
-      addedBy: params.addedBy,
       category: params.category,
       supportedPlatforms: params.supportedPlatforms,
     }),
-    [params.shellType, params.addedBy, params.category, params.supportedPlatforms],
+    [params.shellType, params.category, params.supportedPlatforms],
   );
 
   const actions = useMemo(
@@ -316,13 +371,14 @@ export function ScriptsTable() {
     [handleNewScript],
   );
 
-  const filterGroups = columns
-    .filter(column => column.filterable)
-    .map(column => ({
-      id: column.key,
-      title: column.label,
-      options: column.filterOptions || [],
-    }));
+  const filterGroups = useMemo(
+    () => [
+      { id: 'shellType', title: 'Shell Type', options: uniqueShellTypes },
+      { id: 'supportedPlatforms', title: 'OS', options: uniquePlatforms },
+      { id: 'category', title: 'Category', options: uniqueCategories },
+    ],
+    [uniqueShellTypes, uniquePlatforms, uniqueCategories],
+  );
 
   return (
     <ListPageLayout
@@ -335,38 +391,33 @@ export function ScriptsTable() {
       background="default"
       padding="none"
       className="pt-6"
-      onMobileFilterChange={handleFilterChange}
+      onMobileFilterChange={handleMobileFilterChange}
       mobileFilterGroups={filterGroups}
-      currentMobileFilters={tableFilters}
+      currentMobileFilters={mobileFilters}
       stickyHeader
     >
-      {/* Table */}
-      <Table
-        data={visibleScripts}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={pageSize}
-        emptyMessage={
-          params.search
-            ? `No scripts found matching "${params.search}". Try adjusting your search.`
-            : 'No scripts found. Try adjusting your filters or add a new script.'
-        }
-        filters={tableFilters}
-        onFilterChange={handleFilterChange}
-        showFilters={true}
-        rowClassName="mb-1"
-        rowHref={script => `/scripts/details/${script.id}`}
-        infiniteScroll={{
-          hasNextPage: visibleCount < filteredScripts.length,
-          isFetchingNextPage: false,
-          onLoadMore: () => setVisibleCount(prev => prev + pageSize),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-        renderRowActions={renderRowActions}
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={pageSize}
+          emptyMessage={
+            params.search
+              ? `No scripts found matching "${params.search}". Try adjusting your search.`
+              : 'No scripts found. Try adjusting your filters or add a new script.'
+          }
+          rowClassName="mb-1"
+          rowHref={scriptRowHref}
+        />
+        {visibleCount < filteredScripts.length && (
+          <DataTable.InfiniteFooter
+            hasNextPage
+            isFetchingNextPage={false}
+            onLoadMore={handleLoadMore}
+            skeletonRows={2}
+          />
+        )}
+      </DataTable>
     </ListPageLayout>
   );
 }

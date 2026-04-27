@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import type { InvitationRecord, InvitationStatus } from './use-invitations';
 import { invitationsQueryKeys, useInvitations } from './use-invitations';
 import type { UserRecord, UserStatus } from './use-users';
@@ -71,10 +72,13 @@ export function useUsersAndInvitations(page: number = 0, size: number = 20) {
   const usersHook = useUsers(page, size);
   const invitationsHook = useInvitations(page, size);
 
-  const records: UnifiedUserRecord[] = [
-    ...usersHook.users.map(userToUnified),
-    ...invitationsHook.invitations.map(invitationToUnified),
-  ];
+  const records = useMemo<UnifiedUserRecord[]>(
+    () => [
+      ...usersHook.users.map(userToUnified),
+      ...invitationsHook.invitations.map(invitationToUnified),
+    ],
+    [usersHook.users, invitationsHook.invitations],
+  );
 
   const isLoading = usersHook.isLoading || invitationsHook.isLoading;
   const error = usersHook.error || invitationsHook.error;

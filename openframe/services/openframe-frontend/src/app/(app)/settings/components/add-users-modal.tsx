@@ -1,9 +1,15 @@
 'use client';
 
-import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
-import { IconsXIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { PlusCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
   Input,
+  Label,
+  ModalV2,
+  ModalV2Content,
+  ModalV2Footer,
+  ModalV2Header,
+  ModalV2Title,
   Select,
   SelectContent,
   SelectItem,
@@ -23,17 +29,23 @@ interface AddUsersModalProps {
 }
 
 export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersModalProps) {
-  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Admin' }]);
+  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Viewer' }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
   const canSubmit = useMemo(() => rows.some(r => emailRegex.test(r.email.trim())), [rows, emailRegex]);
-  const roleOptions = useMemo(() => [{ value: 'Admin', label: 'Admin' }], []);
+  const roleOptions = useMemo(
+    () => [
+      { value: 'Admin', label: 'Admin' },
+      { value: 'Viewer', label: 'Viewer' },
+    ],
+    [],
+  );
 
   useEffect(() => {
     if (!isOpen) {
-      setRows([{ email: '', role: 'Admin' }]);
+      setRows([{ email: '', role: 'Viewer' }]);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -42,7 +54,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
     setRows(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
-  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Admin' }]);
+  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Viewer' }]);
   const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async () => {
@@ -67,36 +79,33 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
-      <ModalHeader>
-        <ModalTitle>Add Users</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
+    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+      <ModalV2Header>
+        <ModalV2Title>Add Employees</ModalV2Title>
+      </ModalV2Header>
+
+      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
+        <p className="text-h4 text-ods-text-primary">
           Enter the emails of the users you want to add to the system, we will send them invitations to register.
         </p>
-      </ModalHeader>
 
-      <div className="px-6 py-4 space-y-4">
-        {/* Column Labels */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_12rem_auto] gap-4 items-end">
-          <Label>User Email</Label>
-          <Label className="w-48">Role</Label>
-          <div />
-        </div>
+        <div className="flex flex-col gap-[var(--spacing-system-xs)]">
+          <div className="grid grid-cols-2 gap-2">
+            <Label>User Email</Label>
+            <Label>Role</Label>
+          </div>
 
-        {/* Rows */}
-        <div className="space-y-3">
           {rows.map((row, idx) => (
-            <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_12rem_auto] gap-4 items-center">
+            <div key={idx} className="grid grid-cols-2 gap-2 items-center">
               <Input
                 placeholder="Enter Email Here"
                 value={row.email}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRow(idx, { email: e.target.value })}
-                className="bg-ods-card"
                 invalid={row.email.length > 0 && !emailRegex.test(row.email)}
               />
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Select value={row.role} onValueChange={v => setRow(idx, { role: v })}>
-                  <SelectTrigger className="bg-ods-card w-48">
+                  <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -108,28 +117,34 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
                   </SelectContent>
                 </Select>
                 {rows.length > 1 && (
-                  <Button onClick={() => removeRow(idx)} variant="ghost" size="icon">
-                    <IconsXIcon width={16} height={16} />
+                  <Button variant="card" size="icon" onClick={() => removeRow(idx)} className="shrink-0">
+                    <TrashIcon className="size-5 text-[var(--ods-attention-red-error-action)]" />
                   </Button>
                 )}
               </div>
             </div>
           ))}
+
+          <Button
+            variant="ghost-subtle"
+            className="self-start"
+            onClick={addRow}
+            noPadding
+            leftIcon={<PlusCircleIcon size={24} className="text-ods-text-primary" />}
+          >
+            Add More Users
+          </Button>
         </div>
+      </ModalV2Content>
 
-        <Button onClick={addRow} variant="ghost" leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}>
-          Add More Users
-        </Button>
-      </div>
-
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose}>
+      <ModalV2Footer>
+        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
+        <Button className="flex-1" onClick={handleSubmit} disabled={!canSubmit || isSubmitting} loading={isSubmitting}>
           {isSubmitting ? 'Sending...' : 'Send Invites'}
         </Button>
-      </ModalFooter>
-    </Modal>
+      </ModalV2Footer>
+    </ModalV2>
   );
 }

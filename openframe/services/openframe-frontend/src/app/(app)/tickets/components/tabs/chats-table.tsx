@@ -1,7 +1,18 @@
 'use client';
 
-import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { ListPageLayout, Table } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  BoxArchiveIcon,
+  Chevron02RightIcon,
+  PlusCircleIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  type ColumnDef,
+  DataTable,
+  ListPageLayout,
+  type Row,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -59,10 +70,39 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     }
   }, [dialogs, fetchOrganizationNames]);
 
-  const columns = useMemo(
-    () => getDialogTableColumns({ organizationLookup, isArchived, dialogVersion }),
-    [organizationLookup, isArchived, dialogVersion],
-  );
+  const columns = useMemo<ColumnDef<Dialog>[]>(() => {
+    const baseColumns = getDialogTableColumns({ organizationLookup, isArchived, dialogVersion });
+    const chevronColumn: ColumnDef<Dialog> = {
+      id: 'open',
+      cell: ({ row }: { row: Row<Dialog> }) => (
+        <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+          <Button
+            href={`/tickets/dialog?id=${row.original.id}`}
+            prefetch={false}
+            variant="outline"
+            size="icon"
+            centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+            aria-label="View details"
+            className="bg-ods-card"
+          />
+        </div>
+      ),
+      enableSorting: false,
+      meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+    };
+    return [...baseColumns, chevronColumn];
+  }, [organizationLookup, isArchived, dialogVersion]);
+
+  const table = useDataTable<Dialog>({
+    data: dialogs,
+    columns,
+    getRowId: (row: Dialog) => String(row.id),
+    enableSorting: false,
+  });
+
+  const dialogRowHref = useCallback((dialog: Dialog) => `/tickets/dialog?id=${dialog.id}`, []);
+
+  const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const handleArchiveResolved = useCallback(async () => {
     await archiveResolvedMutation.mutateAsync();
@@ -126,11 +166,11 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   ]);
 
   const filterGroups = columns
-    .filter(column => column.filterable)
+    .filter(column => column.meta?.filter?.options)
     .map(column => ({
-      id: column.key,
-      title: column.label,
-      options: column.filterOptions || [],
+      id: String(column.id ?? (column as { accessorKey?: string }).accessorKey ?? ''),
+      title: typeof column.header === 'string' ? column.header : '',
+      options: column.meta?.filter?.options || [],
     }));
 
   return (
@@ -149,28 +189,22 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       currentMobileFilters={{ status: statusFilters || [] }}
       stickyHeader
     >
-      <Table
-        data={dialogs}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={10}
-        emptyMessage={emptyMessage}
-        rowHref={dialog => `/tickets/dialog?id=${dialog.id}`}
-        // TODO: This is a hack to get the filters to work, replace in future
-        filters={{ status: statusFilters || [] }}
-        onFilterChange={handleFilterChange}
-        showFilters={!isArchived}
-        rowClassName="mb-1"
-        infiniteScroll={{
-          hasNextPage,
-          isFetchingNextPage,
-          onLoadMore: () => fetchNextPage(),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={10}
+          emptyMessage={emptyMessage}
+          rowClassName="mb-1"
+          rowHref={dialogRowHref}
+        />
+        <DataTable.InfiniteFooter
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          onLoadMore={handleFetchNextPage}
+          skeletonRows={2}
+        />
+      </DataTable>
     </ListPageLayout>
   );
 }

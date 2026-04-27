@@ -1,8 +1,15 @@
 'use client';
 
 import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { ListPageLayout, Table, type TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  type ColumnDef,
+  DataTable,
+  ListPageLayout,
+  type Row,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
@@ -62,23 +69,18 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     status,
   );
 
-  const prevFiltersKeyRef = useRef<string | null>(null);
-  const filtersKey = useMemo(
-    () =>
-      JSON.stringify({
-        tiers: [...(params.tier || [])].sort(),
-        industries: [...(params.industry || [])].sort(),
-      }),
-    [params.tier, params.industry],
-  );
-
-  // Scroll to top when filters change
+  // Scroll to top when filters change. `params.tier` / `params.industry` are
+  // reference-stable across renders thanks to `useApiParams`, so we can list
+  // them as effect deps directly. Skip the very first run so we don't scroll
+  // on mount.
+  const isInitialMountRef = useRef(true);
   useEffect(() => {
-    if (prevFiltersKeyRef.current !== null && prevFiltersKeyRef.current !== filtersKey) {
-      document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
     }
-    prevFiltersKeyRef.current = filtersKey;
-  }, [filtersKey]);
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
   const transformed: UiOrganizationEntry[] = useMemo(() => {
     const toMoney = (n: number) => `$${n.toLocaleString()}`;
@@ -97,7 +99,9 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     }));
   }, [organizations]);
 
-  // Client-side filtering for tier/industry (backend doesn't support these filters)
+  // Client-side filtering for tier/industry (backend doesn't support these
+  // filters). `useApiParams` keeps each array reference-stable across renders
+  // when content is unchanged, so listing them as deps directly is safe.
   const filteredOrganizations = useMemo(() => {
     let filtered = transformed;
 
@@ -112,40 +116,40 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     return filtered;
   }, [transformed, params.tier, params.industry]);
 
-  const columns: TableColumn<UiOrganizationEntry>[] = useMemo(
+  const columns = useMemo<ColumnDef<UiOrganizationEntry>[]>(
     () => [
       {
-        key: 'name',
-        label: 'Name',
-        width: 'w-2/5',
-        renderCell: org => <OrganizationNameCell org={org} />,
+        accessorKey: 'name',
+        header: 'Name',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => <OrganizationNameCell org={row.original} />,
+        meta: { width: 'w-2/5' },
       },
       {
-        key: 'tier',
-        label: 'Tier',
-        width: 'w-1/6',
-        renderCell: org => (
+        accessorKey: 'tier',
+        header: 'Tier',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
           <div className="flex flex-col justify-center shrink-0">
-            <span className="text-h4 text-ods-text-primary truncate">{org.tier}</span>
+            <span className="text-h4 text-ods-text-primary truncate">{row.original.tier}</span>
             <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-              {org.industry}
+              {row.original.industry}
             </span>
           </div>
         ),
+        meta: { width: 'w-1/6' },
       },
       {
-        key: 'mrrDisplay',
-        label: 'MRR',
-        width: 'w-1/6',
-        renderCell: org => <span className="text-h4 text-ods-text-primary">{org.mrrDisplay}</span>,
+        accessorKey: 'mrrDisplay',
+        header: 'MRR',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
+          <span className="text-h4 text-ods-text-primary">{row.original.mrrDisplay}</span>
+        ),
+        meta: { width: 'w-1/6' },
       },
       {
-        key: 'lastActivityDisplay',
-        label: 'Last Activity',
-        width: 'w-[200px]',
-        hideAt: 'md',
-        renderCell: org => {
-          const [first, second] = org.lastActivityDisplay.split('\n');
+        accessorKey: 'lastActivityDisplay',
+        header: 'Last Activity',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => {
+          const [first, second] = row.original.lastActivityDisplay.split('\n');
           return (
             <div className="flex flex-col justify-center shrink-0">
               <span className="text-h4 text-ods-text-primary truncate">{first}</span>
@@ -155,10 +159,41 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
             </div>
           );
         },
+        meta: { width: 'w-[200px]', hideAt: 'md' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
+          <Button
+            href={`/organizations/details/${row.original.organizationId}`}
+            prefetch={false}
+            variant="outline"
+            size="icon"
+            centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+            aria-label="View details"
+            className="bg-ods-card"
+          />
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
       },
     ],
     [],
   );
+
+  const table = useDataTable<UiOrganizationEntry>({
+    data: filteredOrganizations,
+    columns,
+    getRowId: (row: UiOrganizationEntry) => row.id,
+    enableSorting: false,
+  });
+
+  const organizationRowHref = useCallback(
+    (row: UiOrganizationEntry) => `/organizations/details/${row.organizationId}`,
+    [],
+  );
+
+  const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, any[]>) => {
@@ -194,6 +229,10 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     [handleAddOrganization],
   );
 
+  // Keep handleFilterChange/tableFilters referenced for mobile filter wiring (if re-enabled).
+  void handleFilterChange;
+  void tableFilters;
+
   return (
     <ListPageLayout
       title="Organizations"
@@ -207,27 +246,24 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
       padding="none"
       stickyHeader
     >
-      <Table
-        data={filteredOrganizations}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={10}
-        emptyMessage="No organizations found. Try adjusting your search or filters."
-        filters={tableFilters}
-        onFilterChange={handleFilterChange}
-        showFilters={false}
-        rowClassName="mb-1"
-        rowHref={row => `/organizations/details/${row.organizationId}`}
-        infiniteScroll={{
-          hasNextPage,
-          isFetchingNextPage,
-          onLoadMore: () => fetchNextPage(),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={10}
+          emptyMessage="No organizations found. Try adjusting your search or filters."
+          rowClassName="mb-1"
+          rowHref={organizationRowHref}
+        />
+        {hasNextPage && (
+          <DataTable.InfiniteFooter
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={handleLoadMore}
+            skeletonRows={2}
+          />
+        )}
+      </DataTable>
     </ListPageLayout>
   );
 }

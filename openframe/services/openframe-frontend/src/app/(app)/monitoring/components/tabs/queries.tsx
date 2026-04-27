@@ -1,12 +1,15 @@
 'use client';
 
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
+  type ColumnDef,
+  DataTable,
   DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
-  Table,
-  type TableColumn,
+  type Row,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
@@ -59,26 +62,6 @@ export function Queries() {
 
   const visibleQueries = useMemo(() => filteredQueries.slice(0, visibleCount), [filteredQueries, visibleCount]);
 
-  const columns: TableColumn<Query>[] = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: 'Name',
-        renderCell: query => <DeviceCardCompact deviceName={query.name} organization={query.description} />,
-      },
-      {
-        key: 'frequency',
-        label: 'Frequency',
-        width: 'w-[120px]',
-        hideAt: 'md',
-        renderCell: query => (
-          <span className="font-medium leading-[20px] text-ods-text-primary">{formatInterval(query.interval)}</span>
-        ),
-      },
-    ],
-    [],
-  );
-
   const rowActions = useCallback(
     (query: Query) => [
       {
@@ -93,9 +76,67 @@ export function Queries() {
     [router],
   );
 
-  const renderRowActions = useMemo(() => {
-    return (query: Query) => <MoreActionsMenu items={rowActions(query)} />;
-  }, [rowActions]);
+  const columns = useMemo<ColumnDef<Query>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        cell: ({ row }: { row: Row<Query> }) => (
+          <DeviceCardCompact deviceName={row.original.name} organization={row.original.description} />
+        ),
+      },
+      {
+        accessorKey: 'frequency',
+        header: 'Frequency',
+        cell: ({ row }: { row: Row<Query> }) => (
+          <span className="font-medium leading-[20px] text-ods-text-primary">
+            {formatInterval(row.original.interval)}
+          </span>
+        ),
+        meta: { width: 'w-[120px]', hideAt: 'md' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<Query> }) => (
+          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+            <MoreActionsMenu items={rowActions(row.original)} />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<Query> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/monitoring/query/${row.original.id}`}
+              prefetch={false}
+              variant="outline"
+              size="icon"
+              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              aria-label="View details"
+              className="bg-ods-card"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [rowActions],
+  );
+
+  const table = useDataTable<Query>({
+    data: visibleQueries,
+    columns,
+    getRowId: (row: Query) => String(row.id),
+    enableSorting: false,
+  });
+
+  const queryRowHref = useCallback((query: Query) => `/monitoring/query/${query.id}`, []);
+
+  const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddQuery = useCallback(() => {
     router.push('/monitoring/query/edit/new');
@@ -126,30 +167,28 @@ export function Queries() {
       className="pt-6"
       stickyHeader
     >
-      <Table
-        data={visibleQueries}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={PAGE_SIZE}
-        emptyMessage={
-          params.search
-            ? `No queries found matching "${params.search}". Try adjusting your search.`
-            : 'No queries found.'
-        }
-        showFilters={false}
-        rowClassName="mb-1"
-        rowHref={query => `/monitoring/query/${query.id}`}
-        infiniteScroll={{
-          hasNextPage: visibleCount < filteredQueries.length,
-          isFetchingNextPage: false,
-          onLoadMore: () => setVisibleCount(prev => prev + PAGE_SIZE),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-        renderRowActions={renderRowActions}
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={PAGE_SIZE}
+          emptyMessage={
+            params.search
+              ? `No queries found matching "${params.search}". Try adjusting your search.`
+              : 'No queries found.'
+          }
+          rowClassName="mb-1"
+          rowHref={queryRowHref}
+        />
+        {visibleCount < filteredQueries.length && (
+          <DataTable.InfiniteFooter
+            hasNextPage
+            isFetchingNextPage={false}
+            onLoadMore={handleLoadMore}
+            skeletonRows={2}
+          />
+        )}
+      </DataTable>
       <ConfirmDeleteMonitoringModal
         open={!!queryToDelete}
         onOpenChange={open => {

@@ -1,16 +1,19 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
+  type ColumnDef,
   DashboardInfoCard,
+  DataTable,
   DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
+  type Row,
   Skeleton,
-  Table,
-  type TableColumn,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatDistanceToNow } from 'date-fns';
@@ -88,49 +91,6 @@ export function Policies() {
 
   const visiblePolicies = useMemo(() => filteredPolicies.slice(0, visibleCount), [filteredPolicies, visibleCount]);
 
-  const columns: TableColumn<Policy>[] = useMemo(
-    () => [
-      {
-        key: 'name',
-        label: 'Name',
-        renderCell: policy => <DeviceCardCompact deviceName={policy.name} organization={policy.description} />,
-      },
-      {
-        key: 'severity',
-        label: 'Severity',
-        width: 'w-[100px]',
-        hideAt: 'md',
-        renderCell: policy => (
-          <span className="font-medium leading-[20px] text-ods-text-primary">
-            {policy.critical ? 'Critical ' : 'Low'}
-          </span>
-        ),
-      },
-      {
-        key: 'platform',
-        label: 'Platform',
-        width: 'w-[140px]',
-        hideAt: 'lg',
-        renderCell: policy => {
-          const platforms = parsePlatforms(policy.platform);
-          return platforms.length > 0 ? (
-            <OSTypeBadgeGroup osTypes={platforms} iconSize="w-4 h-4" />
-          ) : (
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">All</span>
-          );
-        },
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        width: 'w-[140px]',
-        hideAt: 'md',
-        renderCell: policy => <PolicyStatusCell policy={policy} />,
-      },
-    ],
-    [],
-  );
-
   const rowActions = useCallback(
     (policy: Policy) => [
       {
@@ -145,9 +105,86 @@ export function Policies() {
     [router],
   );
 
-  const renderRowActions = useMemo(() => {
-    return (policy: Policy) => <MoreActionsMenu items={rowActions(policy)} />;
-  }, [rowActions]);
+  const columns = useMemo<ColumnDef<Policy>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Name',
+        cell: ({ row }: { row: Row<Policy> }) => (
+          <DeviceCardCompact deviceName={row.original.name} organization={row.original.description} />
+        ),
+      },
+      {
+        accessorKey: 'severity',
+        header: 'Severity',
+        cell: ({ row }: { row: Row<Policy> }) => (
+          <span className="font-medium leading-[20px] text-ods-text-primary">
+            {row.original.critical ? 'Critical ' : 'Low'}
+          </span>
+        ),
+        meta: { width: 'w-[100px]', hideAt: 'md' },
+      },
+      {
+        accessorKey: 'platform',
+        header: 'Platform',
+        cell: ({ row }: { row: Row<Policy> }) => {
+          const platforms = parsePlatforms(row.original.platform);
+          return platforms.length > 0 ? (
+            <OSTypeBadgeGroup osTypes={platforms} iconSize="w-4 h-4" />
+          ) : (
+            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">All</span>
+          );
+        },
+        meta: { width: 'w-[140px]', hideAt: 'lg' },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: Row<Policy> }) => <PolicyStatusCell policy={row.original} />,
+        meta: { width: 'w-[140px]', hideAt: 'md' },
+      },
+      {
+        id: 'actions',
+        cell: ({ row }: { row: Row<Policy> }) => (
+          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+            <MoreActionsMenu items={rowActions(row.original)} />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<Policy> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/monitoring/policy/${row.original.id}`}
+              prefetch={false}
+              variant="outline"
+              size="icon"
+              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              aria-label="View details"
+              className="bg-ods-card"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [rowActions],
+  );
+
+  const table = useDataTable<Policy>({
+    data: visiblePolicies,
+    columns,
+    getRowId: (row: Policy) => String(row.id),
+    enableSorting: false,
+  });
+
+  const policyRowHref = useCallback((policy: Policy) => `/monitoring/policy/${policy.id}`, []);
+
+  const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddPolicy = useCallback(() => {
     router.push('/monitoring/policy/edit/new');
@@ -218,30 +255,28 @@ export function Policies() {
       </div>
 
       {/* Table */}
-      <Table
-        data={visiblePolicies}
-        columns={columns}
-        rowKey="id"
-        loading={isLoading}
-        skeletonRows={PAGE_SIZE}
-        emptyMessage={
-          params.search
-            ? `No policies found matching "${params.search}". Try adjusting your search.`
-            : 'No policies found.'
-        }
-        showFilters={false}
-        rowClassName="mb-1"
-        rowHref={policy => `/monitoring/policy/${policy.id}`}
-        infiniteScroll={{
-          hasNextPage: visibleCount < filteredPolicies.length,
-          isFetchingNextPage: false,
-          onLoadMore: () => setVisibleCount(prev => prev + PAGE_SIZE),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-        renderRowActions={renderRowActions}
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isLoading}
+          skeletonRows={PAGE_SIZE}
+          emptyMessage={
+            params.search
+              ? `No policies found matching "${params.search}". Try adjusting your search.`
+              : 'No policies found.'
+          }
+          rowClassName="mb-1"
+          rowHref={policyRowHref}
+        />
+        {visibleCount < filteredPolicies.length && (
+          <DataTable.InfiniteFooter
+            hasNextPage
+            isFetchingNextPage={false}
+            onLoadMore={handleLoadMore}
+            skeletonRows={2}
+          />
+        )}
+      </DataTable>
       <ConfirmDeleteMonitoringModal
         open={!!policyToDelete}
         onOpenChange={open => {

@@ -1,15 +1,19 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
-import { Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Chevron02RightIcon, Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
+  type ColumnDef,
+  DataTable,
   DeviceCardCompact,
   ListPageLayout,
-  Table,
-  type TableColumn,
+  multiSelectFilterFn,
+  type Row,
   TableDescriptionCell,
   TableTimestampCell,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
@@ -136,20 +140,6 @@ interface LogsTableContentProps {
   tableFilters: Record<string, string[]>;
   onFilterChange: (filters: Record<string, any[]>) => void;
   onRefreshRef: React.RefObject<(() => void) | null>;
-}
-
-// ----------------------------------------------------------------
-// Columns (static, without filter options — used for loading skeleton)
-// ----------------------------------------------------------------
-
-function getBaseColumns(): TableColumn<UiLogEntry>[] {
-  return [
-    { key: 'logId', label: 'Log ID', width: 'w-[200px]' },
-    { key: 'status', label: 'Status', width: 'w-[120px]', filterable: true },
-    { key: 'tool', label: 'Tool', width: 'w-[150px]', hideAt: 'md', filterable: true },
-    { key: 'source', label: 'SOURCE', width: 'w-[120px]', hideAt: 'md', filterable: true },
-    { key: 'description', label: 'Log Details', width: 'flex-1', hideAt: 'lg' },
-  ];
 }
 
 // ----------------------------------------------------------------
@@ -287,76 +277,145 @@ function LogsTableContent({
     }));
   }, [logs]);
 
-  const columns: TableColumn<UiLogEntry>[] = useMemo(() => {
-    const allColumns: TableColumn<UiLogEntry>[] = [
-      {
-        key: 'logId',
-        label: 'Log ID',
-        width: 'w-[200px]',
-        renderCell: log => <TableTimestampCell timestamp={log.timestamp} id={log.logId} formatTimestamp={false} />,
-      },
-      {
-        key: 'status',
-        label: 'Status',
-        width: 'w-[120px]',
-        filterable: true,
-        filterOptions:
-          logFilters?.severities?.map((severity: string) => ({
-            id: severity,
-            label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
-            value: severity,
-          })) || [],
-        renderCell: log => (
-          <div className="shrink-0">
-            <Tag label={log.status.label} variant={log.status.variant} />
-          </div>
-        ),
-      },
-      {
-        key: 'tool',
-        label: 'Tool',
-        width: 'w-[150px]',
-        hideAt: 'md',
-        filterable: true,
-        filterOptions:
-          logFilters?.toolTypes?.map((toolType: string) => ({
-            id: toolType,
-            label: toToolLabel(toolType),
-            value: toolType,
-          })) || [],
-        renderCell: log => <ToolBadge toolType={normalizeToolTypeWithFallback(log.source.toolType)} />,
-      },
-      {
-        key: 'source',
-        label: 'SOURCE',
-        width: 'w-[120px]',
-        hideAt: 'md',
-        filterable: true,
-        filterOptions: transformOrganizationFilters(logFilters?.organizations),
-        renderCell: log => (
-          <DeviceCardCompact
-            deviceName={log.device.name === 'null' ? 'System' : log.device.name}
-            organization={log.device.organization}
-          />
-        ),
-      },
-      {
-        key: 'description',
-        label: 'Log Details',
-        width: 'flex-1',
-        hideAt: 'lg',
-        renderCell: log => <TableDescriptionCell text={log.description.title} />,
-      },
-    ];
-
-    return allColumns;
-  }, [logFilters]);
-
   const getLogDetailsUrl = useCallback((log: UiLogEntry): string => {
     const original = log.originalLogEntry || log;
     const id = log.id || log.logId;
     return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`;
   }, []);
+
+  const columns = useMemo<ColumnDef<UiLogEntry>[]>(
+    () => [
+      {
+        accessorKey: 'logId',
+        header: 'Log ID',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <TableTimestampCell timestamp={row.original.timestamp} id={row.original.logId} formatTimestamp={false} />
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[200px]' },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <div className="shrink-0">
+            <Tag label={row.original.status.label} variant={row.original.status.variant} />
+          </div>
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[120px]',
+          filter: {
+            options:
+              logFilters?.severities?.map((severity: string) => ({
+                id: severity,
+                label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
+                value: severity,
+              })) || [],
+          },
+        },
+      },
+      {
+        accessorKey: 'tool',
+        header: 'Tool',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <ToolBadge
+            toolType={normalizeToolTypeWithFallback(row.original.source.toolType)}
+            iconClassName="w-4 h-4 md:w-6 md:h-6"
+          />
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[150px]',
+          hideAt: 'md',
+          filter: {
+            options:
+              logFilters?.toolTypes?.map((toolType: string) => ({
+                id: toolType,
+                label: toToolLabel(toolType),
+                value: toolType,
+              })) || [],
+          },
+        },
+      },
+      {
+        accessorKey: 'source',
+        header: 'SOURCE',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <DeviceCardCompact
+            deviceName={row.original.device.name === 'null' ? 'System' : row.original.device.name}
+            organization={row.original.device.organization}
+          />
+        ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: {
+          width: 'w-[120px]',
+          hideAt: 'md',
+          filter: {
+            options: transformOrganizationFilters(logFilters?.organizations),
+          },
+        },
+      },
+      {
+        accessorKey: 'description',
+        header: 'Log Details',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => <TableDescriptionCell text={row.original.description.title} />,
+        enableSorting: false,
+        meta: { width: 'flex-1', hideAt: 'lg' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={getLogDetailsUrl(row.original)}
+              prefetch={false}
+              variant="outline"
+              size="icon"
+              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              aria-label="View log details"
+              className="bg-ods-card"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [logFilters, getLogDetailsUrl],
+  );
+
+  const columnFilters = useMemo(
+    () =>
+      Object.entries(tableFilters)
+        .filter(([, value]) => value && value.length > 0)
+        .map(([id, value]) => ({ id, value })),
+    [tableFilters],
+  );
+
+  const handleColumnFiltersChange = useCallback(
+    (updater: any) => {
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const nextFilters: Record<string, any[]> = {};
+      for (const f of next) {
+        nextFilters[f.id] = Array.isArray(f.value) ? f.value : [f.value];
+      }
+      onFilterChange(nextFilters);
+    },
+    [columnFilters, onFilterChange],
+  );
+
+  const table = useDataTable<UiLogEntry>({
+    data: transformedLogs,
+    columns,
+    getRowId: (row: UiLogEntry) => row.id,
+    enableSorting: false,
+    state: { columnFilters },
+    onColumnFiltersChange: handleColumnFiltersChange,
+  });
 
   const handleRowClick = useCallback((log: UiLogEntry) => {
     setSelectedLog(log);
@@ -368,32 +427,27 @@ function LogsTableContent({
 
   return (
     <>
-      <Table
-        data={transformedLogs}
-        columns={columns}
-        rowKey="id"
-        loading={isPending}
-        skeletonRows={10}
-        emptyMessage={
-          deviceId
-            ? 'No logs found for this device. Try adjusting your search or filters.'
-            : 'No logs found. Try adjusting your search or filters.'
-        }
-        onRowClick={handleRowClick}
-        rowHref={getLogDetailsUrl}
-        filters={tableFilters}
-        onFilterChange={onFilterChange}
-        showFilters={true}
-        rowClassName="mb-1"
-        infiniteScroll={{
-          hasNextPage: hasNext,
-          isFetchingNextPage: isLoadingNext,
-          onLoadMore: () => fetchNextPage(),
-          skeletonRows: 2,
-        }}
-        stickyHeader
-        stickyHeaderOffset="top-[56px]"
-      />
+      <DataTable table={table}>
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body
+          loading={isPending}
+          skeletonRows={10}
+          emptyMessage={
+            deviceId
+              ? 'No logs found for this device. Try adjusting your search or filters.'
+              : 'No logs found. Try adjusting your search or filters.'
+          }
+          onRowClick={handleRowClick}
+          rowHref={getLogDetailsUrl}
+          rowClassName="mb-1"
+        />
+        <DataTable.InfiniteFooter
+          hasNextPage={hasNext}
+          isFetchingNextPage={isLoadingNext}
+          onLoadMore={fetchNextPage}
+          skeletonRows={2}
+        />
+      </DataTable>
 
       <LogDrawer
         isOpen={Boolean(selectedLog)}
@@ -420,22 +474,66 @@ function LogsTableContent({
 }
 
 // ----------------------------------------------------------------
-// Loading fallback — Table skeleton with base columns
+// Loading fallback — DataTable skeleton with base columns
 // ----------------------------------------------------------------
 
 function LogsTableSkeleton() {
-  const columns = useMemo(() => getBaseColumns(), []);
+  const columns = useMemo<ColumnDef<UiLogEntry>[]>(
+    () => [
+      {
+        accessorKey: 'logId',
+        header: 'Log ID',
+        enableSorting: false,
+        meta: { width: 'w-[200px]' },
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { width: 'w-[120px]', filter: { options: [] } },
+      },
+      {
+        accessorKey: 'tool',
+        header: 'Tool',
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { width: 'w-[150px]', hideAt: 'md', filter: { options: [] } },
+      },
+      {
+        accessorKey: 'source',
+        header: 'SOURCE',
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { width: 'w-[120px]', hideAt: 'md', filter: { options: [] } },
+      },
+      {
+        accessorKey: 'description',
+        header: 'Log Details',
+        enableSorting: false,
+        meta: { width: 'flex-1', hideAt: 'lg' },
+      },
+      {
+        id: 'open',
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+      },
+    ],
+    [],
+  );
+
+  const table = useDataTable<UiLogEntry>({
+    data: [],
+    columns,
+    getRowId: (row: UiLogEntry) => row.id,
+    enableSorting: false,
+  });
+
   return (
-    <Table
-      data={[]}
-      columns={columns}
-      rowKey="id"
-      loading={true}
-      skeletonRows={10}
-      emptyMessage=""
-      showFilters={true}
-      rowClassName="mb-1"
-    />
+    <DataTable table={table}>
+      <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" />
+      <DataTable.Body loading={true} skeletonRows={10} emptyMessage="" rowClassName="mb-1" />
+    </DataTable>
   );
 }
 
@@ -514,14 +612,14 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     [handleRefresh],
   );
 
-  const baseColumns = useMemo(() => getBaseColumns(), []);
-  const filterGroups = baseColumns
-    .filter(column => column.filterable)
-    .map(column => ({
-      id: column.key,
-      title: column.label,
-      options: [],
-    }));
+  const filterGroups = useMemo(
+    () => [
+      { id: 'status', title: 'Status', options: [] },
+      { id: 'tool', title: 'Tool', options: [] },
+      { id: 'source', title: 'SOURCE', options: [] },
+    ],
+    [],
+  );
 
   const content = (
     <Suspense fallback={<LogsTableSkeleton />}>

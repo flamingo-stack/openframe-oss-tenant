@@ -1,8 +1,15 @@
 'use client';
 
-import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
-import { SoftwareInfo, SoftwareSourceBadge, Table, Tag } from '@flamingo-stack/openframe-frontend-core';
-import React, { useCallback, useMemo } from 'react';
+import type { SoftwareSource } from '@flamingo-stack/openframe-frontend-core';
+import { SoftwareInfo, SoftwareSourceBadge, Tag } from '@flamingo-stack/openframe-frontend-core';
+import {
+  type ColumnDef,
+  DataTable,
+  type Row,
+  type SortingState,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { Device, Software } from '../../types/device.types';
 
 interface SoftwareTabProps {
@@ -11,6 +18,7 @@ interface SoftwareTabProps {
 
 export function SoftwareTab({ device }: SoftwareTabProps) {
   const software = device?.software || [];
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   // Format date for display - matches device-info-section.tsx format
   const formatDate = useCallback((dateString?: string): string => {
@@ -20,48 +28,69 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
   }, []);
 
   // Define table columns
-  const columns: TableColumn<Software>[] = useMemo(
+  const columns = useMemo<ColumnDef<Software>[]>(
     () => [
       {
-        key: 'name',
-        label: 'SOFTWARE',
-        width: 'w-[40%]',
-        sortable: true,
-        renderCell: (item: Software) => <SoftwareInfo name={item.name} vendor={item.vendor} version={item.version} />,
+        accessorKey: 'name',
+        header: 'SOFTWARE',
+        cell: ({ row }: { row: Row<Software> }) => (
+          <SoftwareInfo name={row.original.name} vendor={row.original.vendor} version={row.original.version} />
+        ),
+        enableSorting: true,
+        meta: { width: 'w-[40%]' },
       },
       {
-        key: 'source',
-        label: 'SOURCE',
-        width: 'w-[20%]',
-        sortable: true,
-        renderCell: (item: Software) => <SoftwareSourceBadge source={item.source as SoftwareSource} />,
+        accessorKey: 'source',
+        header: 'SOURCE',
+        cell: ({ row }: { row: Row<Software> }) => (
+          <SoftwareSourceBadge source={row.original.source as SoftwareSource} />
+        ),
+        enableSorting: true,
+        meta: { width: 'w-[20%]' },
       },
       {
-        key: 'vulnerabilities',
-        label: 'SECURITY',
-        width: 'w-[15%]',
-        sortable: true,
-        sortValue: (item: Software) => item.vulnerabilities.length,
-        renderCell: (item: Software) => {
-          const vulnCount = item.vulnerabilities.length;
+        id: 'vulnerabilities',
+        header: 'SECURITY',
+        accessorFn: (row: Software) => row.vulnerabilities.length,
+        cell: ({ row }: { row: Row<Software> }) => {
+          const vulnCount = row.original.vulnerabilities.length;
           if (vulnCount === 0) {
             return <Tag label="NO ISSUES" variant="success" className="px-2 py-1 text-[12px] leading-[16px]" />;
           }
           return <Tag label={`${vulnCount} ${vulnCount === 1 ? 'ISSUE' : 'ISSUES'}`} variant="error" />;
         },
+        enableSorting: true,
+        sortingFn: (rowA: Row<Software>, rowB: Row<Software>) => {
+          const a = rowA.original.vulnerabilities.length;
+          const b = rowB.original.vulnerabilities.length;
+          if (a === b) return 0;
+          return a > b ? 1 : -1;
+        },
+        meta: { width: 'w-[15%]' },
       },
       {
-        key: 'last_opened_at',
-        label: 'LAST OPENED',
-        width: 'w-[25%]',
-        sortable: true,
-        renderCell: (item: Software) => (
-          <div className="font-['DM_Sans'] font-medium text-ods-text-primary">{formatDate(item.last_opened_at)}</div>
+        accessorKey: 'last_opened_at',
+        header: 'LAST OPENED',
+        cell: ({ row }: { row: Row<Software> }) => (
+          <div className="font-['DM_Sans'] font-medium text-ods-text-primary">
+            {formatDate(row.original.last_opened_at)}
+          </div>
         ),
+        enableSorting: true,
+        meta: { width: 'w-[25%]' },
       },
     ],
     [formatDate],
   );
+
+  const table = useDataTable<Software>({
+    data: software,
+    columns,
+    getRowId: (row: Software) => String(row.id),
+    clientSideSorting: true,
+    state: { sorting, columnFilters: [] },
+    onSortingChange: setSorting,
+  });
 
   if (!device) {
     return (
@@ -85,7 +114,10 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
         <h3 className="text-h5 text-ods-text-secondary">Installed Software ({software.length})</h3>
       </div>
 
-      <Table data={software} columns={columns} rowKey="id" rowClassName="mb-1" />
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body rowClassName="mb-1" />
+      </DataTable>
     </div>
   );
 }

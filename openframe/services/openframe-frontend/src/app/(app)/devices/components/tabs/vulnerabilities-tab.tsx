@@ -1,8 +1,15 @@
 'use client';
 
-import type { SoftwareSource, TableColumn } from '@flamingo-stack/openframe-frontend-core';
-import { Badge, CveLink, SoftwareInfo, SoftwareSourceBadge, Table, Tag } from '@flamingo-stack/openframe-frontend-core';
-import React, { useCallback, useMemo } from 'react';
+import type { SoftwareSource } from '@flamingo-stack/openframe-frontend-core';
+import { Badge, CveLink, SoftwareInfo, SoftwareSourceBadge, Tag } from '@flamingo-stack/openframe-frontend-core';
+import {
+  type ColumnDef,
+  DataTable,
+  type Row,
+  type SortingState,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { Device, Software, Vulnerability } from '../../types/device.types';
 
 interface VulnerabilitiesTabProps {
@@ -18,6 +25,8 @@ interface VulnerabilityWithSoftware extends Vulnerability {
 }
 
 export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   // Flatten all vulnerabilities from all software with context
   const vulnerabilities = useMemo(() => {
     if (!device?.software) return [];
@@ -63,44 +72,46 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
   }, []);
 
   // Define table columns
-  const columns: TableColumn<VulnerabilityWithSoftware>[] = useMemo(
+  const columns = useMemo<ColumnDef<VulnerabilityWithSoftware>[]>(
     () => [
       {
-        key: 'cve',
-        label: 'CVE ID',
-        width: 'w-[15%]',
-        sortable: true,
-        renderCell: (item: VulnerabilityWithSoftware) => <CveLink cveId={item.cve} />,
+        accessorKey: 'cve',
+        header: 'CVE ID',
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => <CveLink cveId={row.original.cve} />,
+        enableSorting: true,
+        meta: { width: 'w-[15%]' },
       },
       {
-        key: 'software_name',
-        label: 'SOFTWARE',
-        width: 'w-[30%]',
-        sortable: true,
-        renderCell: (item: VulnerabilityWithSoftware) => (
-          <SoftwareInfo name={item.software_name} vendor={item.software_vendor} version={item.software_version} />
+        accessorKey: 'software_name',
+        header: 'SOFTWARE',
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
+          <SoftwareInfo
+            name={row.original.software_name}
+            vendor={row.original.software_vendor}
+            version={row.original.software_version}
+          />
         ),
+        enableSorting: true,
+        meta: { width: 'w-[30%]' },
       },
       {
-        key: 'software_source',
-        label: 'SOURCE',
-        width: 'w-[15%]',
-        sortable: true,
-        renderCell: (item: VulnerabilityWithSoftware) => (
-          <SoftwareSourceBadge source={item.software_source as SoftwareSource} />
+        accessorKey: 'software_source',
+        header: 'SOURCE',
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
+          <SoftwareSourceBadge source={row.original.software_source as SoftwareSource} />
         ),
+        enableSorting: true,
+        meta: { width: 'w-[15%]' },
       },
       {
-        key: 'severity',
-        label: 'SEVERITY',
-        width: 'w-[15%]',
-        sortable: true,
-        sortValue: (item: VulnerabilityWithSoftware) => {
-          const severity = getSeverity(item.cve);
+        id: 'severity',
+        header: 'SEVERITY',
+        accessorFn: (row: VulnerabilityWithSoftware) => {
+          const severity = getSeverity(row.cve);
           return severity === 'critical' ? 4 : severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
         },
-        renderCell: (item: VulnerabilityWithSoftware) => {
-          const severity = getSeverity(item.cve);
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => {
+          const severity = getSeverity(row.original.cve);
           const variantMap = {
             critical: 'critical' as const,
             high: 'error' as const,
@@ -109,19 +120,42 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
           };
           return <Tag label={severity.toUpperCase()} variant={variantMap[severity]} />;
         },
+        enableSorting: true,
+        sortingFn: (rowA: Row<VulnerabilityWithSoftware>, rowB: Row<VulnerabilityWithSoftware>) => {
+          const rank = (item: VulnerabilityWithSoftware) => {
+            const severity = getSeverity(item.cve);
+            return severity === 'critical' ? 4 : severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
+          };
+          const a = rank(rowA.original);
+          const b = rank(rowB.original);
+          if (a === b) return 0;
+          return a > b ? 1 : -1;
+        },
+        meta: { width: 'w-[15%]' },
       },
       {
-        key: 'created_at',
-        label: 'DISCOVERED',
-        width: 'w-[25%]',
-        sortable: true,
-        renderCell: (item: VulnerabilityWithSoftware) => (
-          <div className="font-['DM_Sans'] font-medium text-ods-text-primary">{formatDate(item.created_at)}</div>
+        accessorKey: 'created_at',
+        header: 'DISCOVERED',
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
+          <div className="font-['DM_Sans'] font-medium text-ods-text-primary">
+            {formatDate(row.original.created_at)}
+          </div>
         ),
+        enableSorting: true,
+        meta: { width: 'w-[25%]' },
       },
     ],
     [formatDate, getSeverity],
   );
+
+  const table = useDataTable<VulnerabilityWithSoftware>({
+    data: vulnerabilities,
+    columns,
+    getRowId: (row: VulnerabilityWithSoftware) => row.unique_key,
+    clientSideSorting: true,
+    state: { sorting, columnFilters: [] },
+    onSortingChange: setSorting,
+  });
 
   // Count by severity - must be called before early returns
   const severityCounts = useMemo(() => {
@@ -208,7 +242,10 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
         )}
       </div>
 
-      <Table data={vulnerabilities} columns={columns} rowKey="unique_key" rowClassName="mb-1" />
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount />} />
+        <DataTable.Body rowClassName="mb-1" />
+      </DataTable>
     </div>
   );
 }
