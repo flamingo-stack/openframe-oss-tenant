@@ -99,7 +99,22 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
   const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
-  const isCompacting = client.isCompacting || admin.isCompacting;
+
+  const isClientCompacting = useMemo(() => {
+    const lastMsg = clientMessages.at(-1);
+    if (lastMsg?.role !== 'assistant' || !Array.isArray(lastMsg.content)) return false;
+    const tail = lastMsg.content.at(-1);
+    return tail?.type === 'context_compaction' && tail.status === 'started';
+  }, [clientMessages]);
+
+  const isAdminCompacting = useMemo(() => {
+    const lastMsg = adminMessages.at(-1);
+    if (lastMsg?.role !== 'assistant' || !Array.isArray(lastMsg.content)) return false;
+    const tail = lastMsg.content.at(-1);
+    return tail?.type === 'context_compaction' && tail.status === 'started';
+  }, [adminMessages]);
+
+  const isCompacting = isClientCompacting || isAdminCompacting;
 
   const currentUser = useAuthStore(state => state.user);
 
@@ -750,7 +765,12 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Message..."
                   onSend={sendClientMessage}
-                  sending={isSendingClientMessage}
+                  sending={
+                    isSendingClientMessage ||
+                    isClientChatTyping ||
+                    isClientCompacting ||
+                    clientPendingApprovals.length > 0
+                  }
                   autoFocus={false}
                   className="mt-1 bg-ods-card rounded-lg max-w-full"
                 />
@@ -821,7 +841,13 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                       ? handleStopGeneration
                       : undefined
                   }
-                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting || isClientChatTyping}
+                  sending={
+                    isSendingAdminMessage ||
+                    isAdminChatTyping ||
+                    isCompacting ||
+                    isClientChatTyping ||
+                    adminPendingApprovals.length > 0
+                  }
                   autoFocus={false}
                   className="mt-2 bg-ods-card rounded-lg max-w-full"
                 />

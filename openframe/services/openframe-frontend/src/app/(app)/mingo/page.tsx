@@ -344,7 +344,9 @@ export default function Mingo() {
                     ? stopGeneration
                     : undefined
                 }
-                sending={isTyping || isCompacting || isCreatingDialog || isSelectingDialog}
+                sending={
+                  isTyping || isCompacting || isCreatingDialog || isSelectingDialog || pendingApprovals.length > 0
+                }
                 autoFocus={isDraftChat}
                 className="bg-ods-card rounded-lg"
               />

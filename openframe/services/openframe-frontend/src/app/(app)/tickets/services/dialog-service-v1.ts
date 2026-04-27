@@ -61,12 +61,13 @@ export class DialogServiceV1 implements DialogService {
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
     const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
+    const includeThinking = featureFlags.thinking.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: getDialogMessagesQuery({ includeContextCompaction }),
+      query: getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,

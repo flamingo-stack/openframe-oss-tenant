@@ -72,7 +72,12 @@ const CONTEXT_COMPACTION_FRAGMENT = `
               summary
             }`;
 
-export function getMingoDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
+            }`;
+
+export function getMingoDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -103,6 +108,8 @@ export function getMingoDialogMessagesQuery({ includeContextCompaction = false }
             ... on TextData {
               text
             }
+
+            ${includeThinking ? THINKING_FRAGMENT : ''}
 
             ... on ExecutingToolData {
               type

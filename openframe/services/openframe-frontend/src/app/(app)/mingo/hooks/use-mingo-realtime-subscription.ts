@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
@@ -183,12 +184,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     addMessage,
     updateMessage,
     setTyping,
-    getTyping,
     setStreamingMessage,
     getStreamingMessage,
     updateStreamingMessageSegments,
     appendSegmentsToLastAssistant,
-    setCompacting,
     getOrCreateAccumulator,
     setTokenUsage,
   } = useMingoMessagesStore();
@@ -284,23 +283,9 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     return undefined;
   }, [dialogId, messagesByDialog]);
 
-  useEffect(() => {
-    if (!incompleteState) return;
-
-    const hasIncompleteContent =
-      (incompleteState.existingSegments && incompleteState.existingSegments.length > 0) ||
-      (incompleteState.pendingApprovals && incompleteState.pendingApprovals.size > 0) ||
-      (incompleteState.executingTools && incompleteState.executingTools.size > 0);
-
-    if (hasIncompleteContent && !getTyping(dialogId)) {
-      setTyping(dialogId, true);
-    }
-  }, [dialogId, incompleteState, getTyping, setTyping]);
-
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
-        setCompacting(dialogId, false);
         ensureAssistantMessage();
         setTyping(dialogId, true);
       },
@@ -311,17 +296,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       },
 
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
-        if (metadata?.isCompacting) {
-          const lastCompaction = [...segments]
-            .reverse()
-            .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
-          const stillCompacting = lastCompaction?.status === 'started';
-          setCompacting(dialogId, stillCompacting);
-          setTyping(dialogId, false);
-        } else {
-          setCompacting(dialogId, false);
-          setTyping(dialogId, true);
-        }
+        setTyping(dialogId, !metadata?.isCompacting);
         if (metadata?.append) {
           appendSegmentsToLastAssistant(dialogId, segments);
         } else {
@@ -338,7 +313,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       },
 
       onTokenUsage: (data: TokenUsageData) => {
-        console.log('[Mingo] TOKEN_USAGE received for dialog', dialogId, data);
         setTokenUsage(dialogId, data);
       },
 
@@ -350,7 +324,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       dialogId,
       ensureAssistantMessage,
       appendSegmentsToLastAssistant,
-      setCompacting,
       setTyping,
       setStreamingMessage,
       updateStreamingMessageSegments,
@@ -367,6 +340,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
+    enableThinking: featureFlags.thinking.enabled(),
   });
 
   return { processChunk: processorProcessChunk };

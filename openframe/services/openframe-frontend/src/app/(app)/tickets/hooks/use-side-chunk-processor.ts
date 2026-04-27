@@ -11,6 +11,7 @@ import {
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
 import { type ApprovalStatus, type ChatSide, useDialogDetailsStore } from '../stores/dialog-details-store';
 
 interface UseSideChunkProcessorOptions {
@@ -40,7 +41,6 @@ export function useSideChunkProcessor(
     getStreamingMessage,
     setStreamingMessage,
     setTypingIndicator,
-    setCompactingIndicator,
     setTokenUsage,
     updateStreamingMessageSegments,
     appendSegmentsToLastAssistant,
@@ -117,7 +117,6 @@ export function useSideChunkProcessor(
   const callbacks = useMemo(
     () => ({
       onStreamStart: () => {
-        setCompactingIndicator(side, false);
         ensureAssistantMessage();
         setTypingIndicator(side, true);
       },
@@ -126,17 +125,7 @@ export function useSideChunkProcessor(
         setStreamingMessage(side, null);
       },
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
-        if (metadata?.isCompacting) {
-          const lastCompaction = [...segments]
-            .reverse()
-            .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
-          setCompactingIndicator(side, lastCompaction?.status === 'started');
-          setTypingIndicator(side, false);
-        } else {
-          setCompactingIndicator(side, false);
-          setTypingIndicator(side, true);
-        }
-
+        setTypingIndicator(side, !metadata?.isCompacting);
         if (metadata?.append) {
           appendSegmentsToLastAssistant(side, segments);
         } else {
@@ -195,7 +184,6 @@ export function useSideChunkProcessor(
     [
       side,
       ensureAssistantMessage,
-      setCompactingIndicator,
       setTypingIndicator,
       setStreamingMessage,
       updateStreamingMessageSegments,
@@ -216,6 +204,7 @@ export function useSideChunkProcessor(
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     initialState: incompleteState,
     approvalStatuses,
+    enableThinking: featureFlags.thinking.enabled(),
   });
 
   return useCallback(

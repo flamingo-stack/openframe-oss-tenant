@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { useDebugMode } from '../contexts/DebugModeContext';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
 import { tokenService } from '../services/tokenService';
 import { useChatApprovals } from './useChatApprovals';
@@ -31,10 +32,11 @@ interface UseChatOptions {
 }
 
 export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage, onDialogClosed }: UseChatOptions = {}) {
+  const { flags } = useFeatureFlags();
+
   // Core state
   const [isTyping, setIsTyping] = useState(false);
   const [natsStreaming, setNatsStreaming] = useState(false);
-  const [isCompacting, setIsCompacting] = useState(false);
   const [natsDialogId, setNatsDialogId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
@@ -137,7 +139,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
-        setIsCompacting(false);
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
@@ -154,15 +155,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       onTokenUsage,
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         if (metadata?.isCompacting) {
-          const lastCompaction = [...segments]
-            .reverse()
-            .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
-          const stillCompacting = lastCompaction?.status === 'started';
-          setIsCompacting(stillCompacting);
           setNatsStreaming(false);
           setIsTyping(false);
         } else {
-          setIsCompacting(false);
           setNatsStreaming(true);
         }
         if (metadata?.append) {
@@ -277,18 +272,12 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     return undefined;
   }, [allMessages, isResumedDialog]);
 
-  useEffect(() => {
-    if (!isResumedDialog || !incompleteState) return;
-
-    const hasIncompleteContent =
-      (incompleteState.existingSegments && incompleteState.existingSegments.length > 0) ||
-      (incompleteState.pendingApprovals && incompleteState.pendingApprovals.size > 0) ||
-      (incompleteState.executingTools && incompleteState.executingTools.size > 0);
-
-    if (hasIncompleteContent && !isTyping) {
-      setIsTyping(true);
-    }
-  }, [isResumedDialog, incompleteState, isTyping]);
+  const isCompacting = useMemo(() => {
+    const lastMsg = allMessages[allMessages.length - 1];
+    if (lastMsg?.role !== 'assistant' || !Array.isArray(lastMsg.content)) return false;
+    const tail = lastMsg.content[lastMsg.content.length - 1];
+    return tail?.type === 'context_compaction' && tail.status === 'started';
+  }, [allMessages]);
 
   const enhancedInitialState = useMemo(() => {
     if (!incompleteState && escalatedApprovalsRef.current.size === 0) return undefined;
@@ -304,6 +293,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     displayApprovalTypes: ['CLIENT'],
     approvalStatuses: approvals.approvalStatuses,
     initialState: enhancedInitialState,
+    enableThinking: flags.thinking,
   });
 
   const handleRealtimeEvent = useCallback(

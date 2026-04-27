@@ -55,6 +55,11 @@ export const featureFlags = {
       return getFlagValue('billings', () => false);
     },
   },
+  thinking: {
+    enabled(): boolean {
+      return getFlagValue('thinking', () => false);
+    },
+  },
 } as const;
 
 /**

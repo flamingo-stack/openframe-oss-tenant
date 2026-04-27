@@ -26,6 +26,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     queryFn: async ({ pageParam }) => {
       const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
         includeContextCompaction: flags['token-based-memory'],
+        includeThinking: flags.thinking,
       });
       if (!connection || !connection.edges) {
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };

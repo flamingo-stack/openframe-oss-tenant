@@ -104,7 +104,12 @@ const CONTEXT_COMPACTION_FRAGMENT = `
               summary
             }`;
 
-export function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
+            }`;
+
+export function getDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -136,6 +141,8 @@ export function getDialogMessagesQuery({ includeContextCompaction = false } = {}
             ... on TextData {
               text
             }
+
+            ${includeThinking ? THINKING_FRAGMENT : ''}
 
             ... on SystemData {
               text

@@ -52,7 +52,6 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     messagesByDialog,
     addMessage,
     typingStates,
-    compactingStates,
     setTyping,
     removeWelcomeMessages,
     isCreatingDialog,
@@ -63,11 +62,6 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     if (!dialogId) return false;
     return typingStates.get(dialogId) || false;
   }, [dialogId, typingStates]);
-
-  const isCompacting = useMemo(() => {
-    if (!dialogId) return false;
-    return compactingStates.get(dialogId) || false;
-  }, [dialogId, compactingStates]);
 
   const createDialogMutation = useCreateDialogMutation();
   const sendMessageMutation = useSendMessageMutation();
@@ -131,6 +125,14 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     });
 
     return pendingApprovalSegments;
+  }, [dialogId, messagesByDialog]);
+
+  const isCompacting = useMemo(() => {
+    if (!dialogId) return false;
+    const lastMsg = messagesByDialog.get(dialogId)?.at(-1);
+    if (lastMsg?.role !== 'assistant' || !Array.isArray(lastMsg.content)) return false;
+    const tail = lastMsg.content.at(-1);
+    return tail?.type === 'context_compaction' && tail.status === 'started';
   }, [dialogId, messagesByDialog]);
 
   const createDialog = useCallback(async (): Promise<string | null> => {

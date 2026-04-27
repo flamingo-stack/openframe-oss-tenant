@@ -17,7 +17,6 @@ interface SideState {
   accumulator: MessageSegmentAccumulator;
   tokenUsage: TokenUsageData | null;
   isTyping: boolean;
-  isCompacting: boolean;
 }
 
 function createSideState(): SideState {
@@ -27,7 +26,6 @@ function createSideState(): SideState {
     accumulator: createMessageSegmentAccumulator(),
     tokenUsage: null,
     isTyping: false,
-    isCompacting: false,
   };
 }
 
@@ -94,9 +92,8 @@ interface DialogDetailsStore {
   setTokenUsage: (side: ChatSide, data: TokenUsageData | null) => void;
   getTokenUsage: (side: ChatSide) => TokenUsageData | null;
 
-  // Typing / compacting
+  // Typing
   setTypingIndicator: (side: ChatSide, typing: boolean) => void;
-  setCompactingIndicator: (side: ChatSide, compacting: boolean) => void;
 
   // Reset one side (e.g. on dialog switch)
   clearSide: (side: ChatSide) => void;
@@ -392,9 +389,6 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
   getTokenUsage: side => get()[side].tokenUsage,
 
   setTypingIndicator: (side, typing) => set(state => produceSide(state, side, s => ({ ...s, isTyping: typing }))),
-
-  setCompactingIndicator: (side, compacting) =>
-    set(state => produceSide(state, side, s => ({ ...s, isCompacting: compacting }))),
 
   clearSide: side => set(state => produceSide(state, side, _s => createSideState())),
 }));

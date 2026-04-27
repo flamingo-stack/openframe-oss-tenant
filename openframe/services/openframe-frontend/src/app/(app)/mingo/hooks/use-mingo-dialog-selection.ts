@@ -112,8 +112,9 @@ export function useMingoDialogSelection() {
       if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
 
       const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
+      const includeThinking = featureFlags.thinking.enabled();
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
-        query: getMingoDialogMessagesQuery({ includeContextCompaction }),
+        query: getMingoDialogMessagesQuery({ includeContextCompaction, includeThinking }),
         variables: {
           dialogId: activeDialogId,
           cursor: pageParam,
