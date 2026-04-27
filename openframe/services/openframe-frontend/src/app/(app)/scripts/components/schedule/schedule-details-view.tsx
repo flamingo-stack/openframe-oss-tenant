@@ -111,7 +111,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={SCHEDULE_TABS} defaultTab="schedule-scripts" urlSync={true}>
+          <TabNavigation tabs={SCHEDULE_TABS} defaultTab="schedule-scripts" urlSync={true} showRightGradient>
             {activeTab => (
               <div className="pt-6">
                 <TabContent

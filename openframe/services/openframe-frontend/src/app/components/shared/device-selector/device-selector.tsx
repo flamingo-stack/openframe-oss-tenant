@@ -275,7 +275,9 @@ export function DeviceSelector({
         </div>
       )}
 
-      {!singleSelect && <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} />}
+      {!singleSelect && (
+        <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} showRightGradient />
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex-1">

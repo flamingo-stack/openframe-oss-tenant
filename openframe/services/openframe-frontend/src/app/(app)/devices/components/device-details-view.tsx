@@ -263,7 +263,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={DEVICE_TABS} defaultTab="hardware" urlSync={true}>
+          <TabNavigation tabs={DEVICE_TABS} defaultTab="hardware" urlSync={true} showRightGradient>
             {activeTab => (
               <TabContent
                 activeTab={activeTab}

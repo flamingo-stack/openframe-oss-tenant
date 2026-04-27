@@ -244,7 +244,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       }
     >
       <div className="flex flex-col w-full">
-        <TabNavigation tabs={tabs} defaultTab="general" urlSync={true}>
+        <TabNavigation tabs={tabs} defaultTab="general" urlSync={true} showRightGradient>
           {activeTab => (
             <>
               {activeTab === 'general' && (
