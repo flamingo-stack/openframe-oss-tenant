@@ -1,5 +1,6 @@
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
+  BookBookmarkIcon,
   BracketCurlyIcon,
   ChartDonutIcon,
   ClipboardListIcon,
@@ -81,14 +82,24 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
     );
   }
 
-  baseItems.push({
-    id: 'settings',
-    label: 'Settings',
-    icon: <Settings02Icon size={24} />,
-    path: '/settings',
-    section: 'secondary',
-    isActive: pathname.startsWith('/settings'),
-  });
+  baseItems.push(
+    {
+      id: 'knowledge-base',
+      label: 'Knowledge Base',
+      icon: <BookBookmarkIcon size={24} />,
+      path: '/knowledge-base',
+      section: 'secondary',
+      isActive: pathname.startsWith('/knowledge-base'),
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: <Settings02Icon size={24} />,
+      path: '/settings',
+      section: 'secondary',
+      isActive: pathname.startsWith('/settings'),
+    },
+  );
 
   return baseItems;
 };
