@@ -3,9 +3,9 @@
  * Extends the base API client with Fleet-specific functionality
  */
 
-import { FleetHost, FleetHostResponse } from '../app/devices/types/fleet.types';
-import { Policy } from '../app/monitoring/types/policies.types';
-import { Query, QueryReportParams, QueryReportResponse } from '../app/monitoring/types/queries.types';
+import { FleetHost, FleetHostResponse } from '@/app/(app)/devices/types/fleet.types';
+import { Policy } from '@/app/(app)/monitoring/types/policies.types';
+import { Query, QueryReportParams, QueryReportResponse } from '@/app/(app)/monitoring/types/queries.types';
 import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
 import { runtimeEnv } from './runtime-config';
 

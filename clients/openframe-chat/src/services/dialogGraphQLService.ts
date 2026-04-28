@@ -91,6 +91,11 @@ const CONTEXT_COMPACTION_FRAGMENT = `
               summary
             }`;
 
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
+            }`;
+
 function getResumableDialogQuery({ includeTokenUsage = false } = {}) {
   return `
   query GetDialog {
@@ -124,7 +129,7 @@ function getDialogTokenUsageQuery() {
 `;
 }
 
-function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+function getDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -156,6 +161,8 @@ function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
             ... on TextData {
               text
             }
+
+            ${includeThinking ? THINKING_FRAGMENT : ''}
 
             ... on SystemData {
               text
@@ -276,13 +283,13 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
-    { includeContextCompaction = false } = {},
+    { includeContextCompaction = false, includeThinking = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
       const data = await this.request<{ messages: MessagesConnection }>(
-        getDialogMessagesQuery({ includeContextCompaction }),
+        getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
         {
           dialogId,
           chatType: 'CLIENT_CHAT',

@@ -401,7 +401,7 @@ export function ChatView() {
           <ChatInput
             onSend={sendMessage}
             onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
-            sending={isStreaming || isCompacting}
+            sending={isStreaming || isCompacting || hasPendingApproval}
             awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
             placeholder="Enter your request here..."
             className={hasMessages ? '' : 'max-w-2xl mx-auto'}
