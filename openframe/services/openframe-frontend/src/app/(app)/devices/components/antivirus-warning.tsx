@@ -1,17 +1,22 @@
 'use client';
 
 import { OPENFRAME_PATHS, PathsDisplay } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 
 interface AntivirusWarningProps {
   platform: OSPlatformId;
 }
 
 export function AntivirusWarning({ platform }: AntivirusWarningProps) {
-  const { toast } = useToast();
+  const { copy } = useCopyToClipboard({
+    successTitle: 'Path copied',
+    successDescription: 'Folder path copied to clipboard',
+    errorTitle: 'Copy failed',
+    errorDescription: 'Could not copy path',
+  });
 
   const paths = useMemo(() => {
     if (platform === 'windows') return OPENFRAME_PATHS.windows;
@@ -19,17 +24,7 @@ export function AntivirusWarning({ platform }: AntivirusWarningProps) {
     return [];
   }, [platform]);
 
-  const copyPath = useCallback(
-    async (path: string) => {
-      try {
-        await navigator.clipboard.writeText(path);
-        toast({ title: 'Path copied', description: 'Folder path copied to clipboard', variant: 'default' });
-      } catch (_e) {
-        toast({ title: 'Copy failed', description: 'Could not copy path', variant: 'destructive' });
-      }
-    },
-    [toast],
-  );
+  const copyPath = useCallback((path: string) => copy(path), [copy]);
 
   if (paths.length === 0) return null;
 

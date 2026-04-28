@@ -2,9 +2,10 @@
 
 import { Button, Label, Modal, ModalFooter, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
 import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Alert, AlertDescription } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 
 interface ApiKeyCreatedModalProps {
   isOpen: boolean;
@@ -13,7 +14,10 @@ interface ApiKeyCreatedModalProps {
 }
 
 export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedModalProps) {
-  const { toast } = useToast();
+  const { copy, copied } = useCopyToClipboard({
+    successDescription: 'API key copied to clipboard',
+    errorDescription: 'Unable to copy API key',
+  });
   const [localKey, setLocalKey] = useState('');
 
   useEffect(() => {
@@ -23,15 +27,6 @@ export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedMo
       setLocalKey(fullKey);
     }
   }, [isOpen, fullKey]);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(localKey);
-      toast({ title: 'Copied', description: 'API key copied to clipboard', variant: 'success' });
-    } catch {
-      toast({ title: 'Copy failed', description: 'Unable to copy API key', variant: 'destructive' });
-    }
-  };
 
   if (!localKey) return null;
 
@@ -61,7 +56,17 @@ export function ApiKeyCreatedModal({ isOpen, fullKey, onClose }: ApiKeyCreatedMo
       </div>
 
       <ModalFooter>
-        <Button variant="outline" onClick={handleCopy}>
+        <Button
+          variant="outline"
+          onClick={() => copy(localKey)}
+          leftIcon={
+            copied ? (
+              <CheckIcon className="h-4 w-4 text-[var(--ods-attention-green-success)]" />
+            ) : (
+              <Copy02Icon className="h-4 w-4" />
+            )
+          }
+        >
           Copy API Key
         </Button>
         <Button onClick={onClose}>Continue</Button>

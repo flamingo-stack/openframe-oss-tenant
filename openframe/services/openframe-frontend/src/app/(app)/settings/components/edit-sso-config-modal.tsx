@@ -10,11 +10,13 @@ import {
   ModalHeader,
   ModalTitle,
 } from '@flamingo-stack/openframe-frontend-core';
+import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { validateEmailDomain } from '@flamingo-stack/openframe-frontend-core/utils';
-import { Copy, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { getProviderIcon } from '../utils/get-provider-icon';
@@ -55,6 +57,10 @@ export function SsoConfigModal({
   onDisable,
 }: SsoConfigModalProps) {
   const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
+  const { copy: copyToClipboard, copied } = useCopyToClipboard({
+    successDescription: 'Redirect URL copied to clipboard',
+    errorDescription: 'Unable to copy redirect URL',
+  });
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [isSingleTenant, setIsSingleTenant] = useState(false);
@@ -73,24 +79,7 @@ export function SsoConfigModal({
     return `${sharedHost}/sas/login/oauth2/code/${providerKey.toLowerCase()}`;
   }, [providerKey]);
 
-  const handleCopyRedirectUrl = async () => {
-    try {
-      await navigator.clipboard.writeText(redirectUrl);
-      toast({
-        title: 'Copied',
-        description: 'Redirect URL copied to clipboard',
-        variant: 'success',
-        duration: 2000,
-      });
-    } catch (_error) {
-      toast({
-        title: 'Copy Failed',
-        description: 'Unable to copy redirect URL',
-        variant: 'destructive',
-        duration: 3000,
-      });
-    }
-  };
+  const handleCopyRedirectUrl = () => copyToClipboard(redirectUrl);
 
   useEffect(() => {
     if (isOpen) {
@@ -222,7 +211,13 @@ export function SsoConfigModal({
                 <Button
                   variant="ghost"
                   size="sm"
-                  centerIcon={<Copy className="h-4 w-4" />}
+                  centerIcon={
+                    copied ? (
+                      <CheckIcon className="h-4 w-4 text-[var(--ods-attention-green-success)]" />
+                    ) : (
+                      <Copy02Icon className="h-4 w-4" />
+                    )
+                  }
                   onClick={handleCopyRedirectUrl}
                 />
               </div>

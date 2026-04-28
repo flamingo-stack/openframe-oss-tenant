@@ -1,13 +1,14 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
-import { CopyIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, DetailLoader, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DeviceInfoSection } from '@/app/components/shared';
+import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
 import { FullInformationSection } from './full-information-section';
@@ -39,6 +40,10 @@ const getSeverityVariant = (severity: string): 'success' | 'warning' | 'error' |
 export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestamp }: LogDetailsViewProps) {
   const router = useRouter();
   const { logDetails, isLoading, error, fetchLogDetailsById } = useLogDetails();
+  const { copy, copied } = useCopyToClipboard({
+    successDescription: 'Log details copied to clipboard',
+    errorDescription: 'Unable to copy log details',
+  });
 
   useEffect(() => {
     if (logId && ingestDay && toolType && eventType && timestamp) {
@@ -54,10 +59,8 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
   const handleCopyLogDetails = () => {
     if (logDetails) {
-      // Copy log details to clipboard
       const details = `Log ID: ${logDetails.toolEventId}\nStatus: ${logDetails.severity}\nTimestamp: ${logDetails.timestamp}\nTool Type: ${logDetails.toolType}\nEvent Type: ${logDetails.eventType}\nMessage: ${logDetails.message || 'No message available'}\nDetails: ${logDetails.details || 'No details available'}`;
-      navigator.clipboard.writeText(details);
-      console.log('Log details copied to clipboard');
+      copy(details);
     }
   };
 
@@ -99,7 +102,11 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           label: 'Copy Log Details',
           onClick: handleCopyLogDetails,
           variant: 'card' as const,
-          icon: <CopyIcon size={24} />,
+          icon: copied ? (
+            <CheckIcon className="w-6 h-6 text-[var(--ods-attention-green-success)]" />
+          ) : (
+            <Copy02Icon className="w-6 h-6" />
+          ),
         },
       ]}
       padding="none"

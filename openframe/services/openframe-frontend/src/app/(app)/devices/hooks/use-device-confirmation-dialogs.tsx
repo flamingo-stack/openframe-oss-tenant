@@ -11,9 +11,9 @@ import {
   AlertDialogTitle,
 } from '@flamingo-stack/openframe-frontend-core';
 import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import type { Device } from '../types/device.types';
 import { buildUninstallCommand, normalizeDevicePlatform } from '../utils/device-command-utils';
 import { useDeviceActions } from './use-device-actions';
@@ -36,7 +36,10 @@ export function useDeviceConfirmationDialogs(
   device: Device | null | undefined,
   { onArchived, onDeleted }: UseDeviceConfirmationDialogsOptions = {},
 ): UseDeviceConfirmationDialogsResult {
-  const { toast } = useToast();
+  const { copy: copyCommand, copied: commandCopied } = useCopyToClipboard({
+    successDescription: 'Uninstall command copied to clipboard',
+    errorDescription: 'Could not copy command to clipboard',
+  });
   const { archiveDevice, deleteDevice, isArchiving, isDeleting } = useDeviceActions();
   const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -55,21 +58,7 @@ export function useDeviceConfirmationDialogs(
     return buildUninstallCommand({ platform: devicePlatform, releaseVersion });
   }, [devicePlatform, releaseVersion, showDeleteConfirm, device]);
 
-  const copyUninstallCommand = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(uninstallCommand);
-      toast({
-        title: 'Command copied',
-        description: 'Uninstall command copied to clipboard',
-      });
-    } catch {
-      toast({
-        title: 'Copy failed',
-        description: 'Could not copy command to clipboard',
-        variant: 'destructive',
-      });
-    }
-  }, [uninstallCommand, toast]);
+  const copyUninstallCommand = useCallback(() => copyCommand(uninstallCommand), [copyCommand, uninstallCommand]);
 
   const openArchive = useCallback(() => setShowArchiveConfirm(true), []);
   const openDelete = useCallback(() => setShowDeleteConfirm(true), []);
@@ -128,7 +117,11 @@ export function useDeviceConfirmationDialogs(
             secondaryAction={{
               label: 'Copy Command',
               onClick: copyUninstallCommand,
-              icon: <Copy02Icon className="w-5 h-5" />,
+              icon: commandCopied ? (
+                <CheckIcon className="w-5 h-5 text-[var(--ods-attention-green-success)]" />
+              ) : (
+                <Copy02Icon className="w-5 h-5" />
+              ),
               variant: 'outline',
             }}
           />
