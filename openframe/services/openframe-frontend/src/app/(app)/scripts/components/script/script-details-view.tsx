@@ -74,6 +74,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         onClick: handleBack,
       }}
       actions={actions}
+      className="p-[var(--spacing-system-l)]"
     >
       {/* Main Content */}
       <div className="flex flex-col overflow-auto gap-6">

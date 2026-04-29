@@ -9,7 +9,7 @@ export function BillingUsageSkeleton() {
   return (
     <PageLayout
       title="Billing & Usage"
-      background="default"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -225,7 +225,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   // Loading skeleton
   if (isDeviceLoading) {
     return (
-      <div className="h-full flex flex-col overflow-hidden animate-pulse">
+      <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden animate-pulse">
         <div className="bg-ods-system-greys-background py-2 flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-ods-border rounded" />
@@ -261,7 +261,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   // Error state
   if (deviceError) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4">
+      <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
         <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
       </div>
@@ -271,7 +271,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   // Missing MeshCentral agent
   if (!meshcentralAgentId) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4">
+      <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">
           Error: MeshCentral Agent ID not available for this device
         </div>
@@ -284,7 +284,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   return (
     <DetailPageContainer
       title="Remote Shell"
-      className="h-full"
+      className="p-4 md:p-6 h-full"
       contentClassName="flex flex-col"
       backButton={{
         label: 'Back to Device',

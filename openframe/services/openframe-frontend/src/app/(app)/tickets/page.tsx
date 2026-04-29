@@ -24,7 +24,7 @@ export default function Tickets() {
   }
 
   return (
-    <ContentPageContainer padding="none" showHeader={false}>
+    <ContentPageContainer className="p-[var(--spacing-system-l)]" padding="none" showHeader={false}>
       <TicketsView />
     </ContentPageContainer>
   );

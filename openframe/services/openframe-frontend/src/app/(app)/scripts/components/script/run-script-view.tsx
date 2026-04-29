@@ -188,6 +188,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
       title="Run Script"
       backButton={{ label: 'Back to Script Details', onClick: handleBack }}
       actions={actions}
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex-1 overflow-auto">
         <ScriptInfoSection

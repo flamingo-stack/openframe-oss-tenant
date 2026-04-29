@@ -68,7 +68,7 @@ function ActionCardSkeleton() {
 export function ScheduleCreateSkeleton() {
   return (
     <div className="min-h-screen bg-ods-bg">
-      <div className="mx-auto p-6 space-y-6">
+      <div className="mx-auto p-[var(--spacing-system-l)] space-y-6">
         {/* Back link */}
         <Skeleton className="h-5 w-48" />
 

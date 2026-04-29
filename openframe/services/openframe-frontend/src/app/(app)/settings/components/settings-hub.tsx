@@ -135,7 +135,7 @@ export function SettingsHub() {
   }, [fetchFullProfile]);
 
   return (
-    <PageLayout title="Settings" background="default">
+    <PageLayout title="Settings" className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       {/* Profile Card */}
       <ProfileCard
         onEditProfile={() => setIsEditModalOpen(true)}

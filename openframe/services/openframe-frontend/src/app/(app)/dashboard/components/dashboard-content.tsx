@@ -14,7 +14,7 @@ export default function DashboardContent() {
   const showChats = isSaasTenantMode();
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 p-[var(--spacing-system-l)]">
       <OnboardingSection />
       <DevicesOverviewSection />
       {showChats && <ChatsOverviewSection />}

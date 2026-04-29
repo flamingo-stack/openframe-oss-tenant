@@ -24,8 +24,8 @@ import {
   TerminalIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
@@ -69,9 +69,38 @@ interface DeviceDetailsViewProps {
   deviceId: string;
 }
 
+const DEVICE_TAB_IDS = [
+  'hardware',
+  'network',
+  'security',
+  'compliance',
+  'agents',
+  'users',
+  'software',
+  'vulnerabilities',
+  'logs',
+] as const;
+const DEFAULT_DEVICE_TAB = 'hardware';
+
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const requestedTab = searchParams.get('tab') ?? DEFAULT_DEVICE_TAB;
+  const activeTab = (DEVICE_TAB_IDS as readonly string[]).includes(requestedTab) ? requestedTab : DEFAULT_DEVICE_TAB;
+
+  // Controlled mode for TabNavigation: URL is the single source of truth.
+  // Avoids a flicker bug in `urlSync` mode where the internal sync effect
+  // briefly resets the active tab to the URL's previous value during navigation.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
 
   const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId);
 
@@ -174,7 +203,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   };
 
   if (isLoading) {
-    return <DeviceDetailsSkeleton activeTab={searchParams.get('tab') || 'hardware'} />;
+    return <DeviceDetailsSkeleton activeTab={activeTab} />;
   }
 
   if (error) {
@@ -254,25 +283,23 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       actionsVariant="menu-primary"
       actions={actions}
       menuActions={menuActions}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <DeviceStatusAndTags device={normalizedDevice} />
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <DeviceInfoSection device={normalizedDevice} />
+      <DeviceInfoSection device={normalizedDevice} />
 
-        {/* Tab Navigation */}
-        <div className="mt-6">
-          <TabNavigation tabs={DEVICE_TABS} defaultTab="hardware" urlSync={true} showRightGradient>
-            {activeTab => (
-              <TabContent
-                activeTab={activeTab}
-                TabComponent={getTabComponent(DEVICE_TABS, activeTab)}
-                componentProps={{ device: normalizedDevice }}
-              />
-            )}
-          </TabNavigation>
-        </div>
+      {/* Tab Navigation */}
+      <div className="mt-6">
+        <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          {tabId => (
+            <TabContent
+              activeTab={tabId}
+              TabComponent={getTabComponent(DEVICE_TABS, tabId)}
+              componentProps={{ device: normalizedDevice }}
+            />
+          )}
+        </TabNavigation>
       </div>
 
       {/* Scripts Modal */}

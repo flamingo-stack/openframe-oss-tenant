@@ -14,10 +14,8 @@ export default function SubscriptionSettingsPage() {
   }
 
   return (
-    <>
-      <Suspense fallback={<SubscriptionSettingsSkeleton />}>
-        <SubscriptionSettingsView />
-      </Suspense>
-    </>
+    <Suspense fallback={<SubscriptionSettingsSkeleton />}>
+      <SubscriptionSettingsView />
+    </Suspense>
   );
 }

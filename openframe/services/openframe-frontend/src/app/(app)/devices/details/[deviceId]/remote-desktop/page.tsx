@@ -473,7 +473,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   // Loading skeleton that matches the actual remote desktop layout
   if (!legacyDeviceData && isDeviceLoading) {
     return (
-      <div className="h-full flex flex-col overflow-hidden animate-pulse">
+      <div className="p-4 md:p-6 h-full flex flex-col overflow-hidden animate-pulse">
         {/* Back Button Skeleton */}
         <div className="bg-ods-system-greys-background py-2 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   // Error state - device not found
   if (!legacyDeviceData && deviceError) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4">
+      <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
         <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
       </div>
@@ -531,7 +531,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   // Error state - MeshCentral agent not available
   if (!meshcentralAgentId) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-4">
+      <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">
           Error: MeshCentral Agent ID not available for this device
         </div>
@@ -542,37 +542,58 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   }
 
   return (
-    <>
-      <DetailPageContainer
-        className="h-full"
-        contentClassName="flex flex-col"
-        backButton={{
-          label: 'Back to Device',
-          onClick: handleBack,
-        }}
-      >
-        <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
-          {/* Device info */}
-          <div className="flex items-center gap-4">
-            {/* Device Icon */}
-            <div className="bg-ods-card border border-ods-border rounded-md p-2">
-              <Monitor className="w-4 h-4 text-ods-text-primary" />
-            </div>
-
-            {/* Device Info */}
-            <div className="flex flex-col">
-              <h1 className="text-ods-text-primary text-lg font-medium">{hostname || `Device ${deviceId}`}</h1>
-              <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Organization'}</p>
-            </div>
+    <DetailPageContainer
+      className="p-4 md:p-6 h-full"
+      contentClassName="flex flex-col"
+      backButton={{
+        label: 'Back to Device',
+        onClick: handleBack,
+      }}
+    >
+      <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between py-2 px-4 mb-2 flex-shrink-0">
+        {/* Device info */}
+        <div className="flex items-center gap-4">
+          {/* Device Icon */}
+          <div className="bg-ods-card border border-ods-border rounded-md p-2">
+            <Monitor className="w-4 h-4 text-ods-text-primary" />
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-4">
-            {/* Actions Dropdown */}
+          {/* Device Info */}
+          <div className="flex flex-col">
+            <h1 className="text-ods-text-primary text-lg font-medium">{hostname || `Device ${deviceId}`}</h1>
+            <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Organization'}</p>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-4">
+          {/* Actions Dropdown */}
+          <DropdownMenu modal={false}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="device-action" leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}>
+                Actions
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="p-0 border-none"
+              onInteractOutside={e => {
+                const target = e.target as HTMLElement;
+                if (target.closest('.fixed.z-\\[9999\\]')) {
+                  e.preventDefault();
+                }
+              }}
+            >
+              <ActionsMenu groups={actionsMenuGroups} />
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Display Selector */}
+          {displays.length > 1 && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="device-action" leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}>
-                  Actions
+                <Button variant="device-action" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
+                  Display {currentDisplay === 0 ? 'All' : currentDisplay}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -585,87 +606,64 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
                   }
                 }}
               >
-                <ActionsMenu groups={actionsMenuGroups} />
+                <ActionsMenu groups={displayMenuGroups} />
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
 
-            {/* Display Selector */}
-            {displays.length > 1 && (
-              <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="device-action" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
-                    Display {currentDisplay === 0 ? 'All' : currentDisplay}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="p-0 border-none"
-                  onInteractOutside={e => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest('.fixed.z-\\[9999\\]')) {
-                      e.preventDefault();
-                    }
-                  }}
-                >
-                  <ActionsMenu groups={displayMenuGroups} />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+          {/* Settings Button */}
+          <Button
+            variant="device-action"
+            leftIcon={<Settings className="w-6 h-6 mr-2" />}
+            onClick={() => setSettingsOpen(true)}
+          >
+            Settings
+          </Button>
+        </div>
+      </div>
 
-            {/* Settings Button */}
-            <Button
-              variant="device-action"
-              leftIcon={<Settings className="w-6 h-6 mr-2" />}
-              onClick={() => setSettingsOpen(true)}
-            >
-              Settings
-            </Button>
+      {/* Status indicator */}
+      {connecting && (
+        <div className="bg-ods-card mb-2 py-2 px-4 rounded-md border border-ods-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <span className={`text-sm ${statusColor}`}>{statusText}</span>
+            <span className="text-ods-text-secondary text-sm">…</span>
           </div>
         </div>
+      )}
 
-        {/* Status indicator */}
-        {connecting && (
-          <div className="bg-ods-card mb-2 py-2 px-4 rounded-md border border-ods-border flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <span className={`text-sm ${statusColor}`}>{statusText}</span>
-              <span className="text-ods-text-secondary text-sm">…</span>
+      {/* Remote Desktop Canvas */}
+      <div className="flex-1 min-h-0 pb-4">
+        <div className="h-full bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
+          <canvas
+            ref={canvasRef}
+            tabIndex={0}
+            className="block max-w-full max-h-full outline-none"
+            onContextMenu={e => {
+              e.preventDefault();
+            }}
+          />
+          {!firstFrameReceived && state >= 1 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
+              <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
+              <span className="text-ods-text-secondary text-sm">
+                {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
+              </span>
             </div>
-          </div>
-        )}
-
-        {/* Remote Desktop Canvas */}
-        <div className="flex-1 min-h-0 pb-4">
-          <div className="h-full bg-black rounded-lg overflow-hidden flex items-center justify-center relative">
-            <canvas
-              ref={canvasRef}
-              tabIndex={0}
-              className="block max-w-full max-h-full outline-none"
-              onContextMenu={e => {
-                e.preventDefault();
-              }}
-            />
-            {!firstFrameReceived && state >= 1 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/80">
-                <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
-                <span className="text-ods-text-secondary text-sm">
-                  {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
-                </span>
-              </div>
-            )}
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Settings Modal */}
-        <RemoteSettingsModal
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          currentSettings={remoteSettings}
-          desktopRef={desktopRef}
-          tunnelRef={tunnelRef}
-          connectionState={state}
-          onSettingsChange={setRemoteSettings}
-        />
-      </DetailPageContainer>
-    </>
+      {/* Settings Modal */}
+      <RemoteSettingsModal
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        currentSettings={remoteSettings}
+        desktopRef={desktopRef}
+        tunnelRef={tunnelRef}
+        connectionState={state}
+        onSettingsChange={setRemoteSettings}
+      />
+    </DetailPageContainer>
   );
 }

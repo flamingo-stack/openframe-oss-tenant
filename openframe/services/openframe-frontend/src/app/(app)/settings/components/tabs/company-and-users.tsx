@@ -283,6 +283,7 @@ export function CompanyAndUsersTab() {
       headerActions={headerActions}
       background="default"
       padding="none"
+      className="p-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <DataTable table={table}>

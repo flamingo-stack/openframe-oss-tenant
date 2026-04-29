@@ -8,9 +8,11 @@ import {
   DashboardInfoCard,
   DataTable,
   DeviceCardCompact,
-  ListPageLayout,
   MoreActionsMenu,
+  PageError,
+  PageLayout,
   type Row,
+  SearchInput,
   Skeleton,
   Tag,
   useDataTable,
@@ -202,19 +204,12 @@ export function Policies() {
     [handleAddPolicy],
   );
 
+  if (error) {
+    return <PageError message={error} />;
+  }
+
   return (
-    <ListPageLayout
-      title="Policies"
-      actions={actions}
-      searchPlaceholder="Search for Policies"
-      searchValue={params.search}
-      onSearch={handleSearch}
-      background="default"
-      padding="none"
-      className="pt-6"
-      error={error}
-      stickyHeader
-    >
+    <PageLayout title="Policies" actions={actions}>
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
@@ -254,9 +249,14 @@ export function Policies() {
         )}
       </div>
 
+      {/* Sticky Search Bar */}
+      <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+        <SearchInput value={params.search} onChange={handleSearch} placeholder="Search for Policies" debounceMs={500} />
+      </div>
+
       {/* Table */}
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
         <DataTable.Body
           loading={isLoading}
           skeletonRows={PAGE_SIZE}
@@ -292,6 +292,6 @@ export function Policies() {
           }
         }}
       />
-    </ListPageLayout>
+    </PageLayout>
   );
 }

@@ -54,6 +54,7 @@ export function ArchitectureTab({ title = 'Architecture Overview' }: Architectur
       title={title}
       background="default"
       padding="none"
+      className="p-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <div>

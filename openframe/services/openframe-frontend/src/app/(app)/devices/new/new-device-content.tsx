@@ -229,6 +229,7 @@ export function NewDeviceContent() {
       title="New Device"
       backButton={{ label: 'Back to Devices', onClick: () => router.push('/devices') }}
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

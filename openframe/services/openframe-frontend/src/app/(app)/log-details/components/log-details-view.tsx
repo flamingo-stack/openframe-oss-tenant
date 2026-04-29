@@ -110,6 +110,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         },
       ]}
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}

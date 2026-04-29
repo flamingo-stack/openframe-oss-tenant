@@ -553,8 +553,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
         label: 'Back to Tickets',
         onClick: () => router.push('/tickets'),
       }}
-      padding="none"
-      className="h-[calc(100%)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] h-[calc(100%)]"
       actions={pageActions}
       actionsVariant="menu-primary"
       menuActions={menuActions}

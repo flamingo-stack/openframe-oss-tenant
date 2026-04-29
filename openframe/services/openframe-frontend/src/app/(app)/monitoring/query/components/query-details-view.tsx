@@ -75,6 +75,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         label: 'Back to Queries',
         onClick: handleBack,
       }}
+      className="p-[var(--spacing-system-l)]"
       headerActions={
         <div className="flex items-center gap-2">
           <Button

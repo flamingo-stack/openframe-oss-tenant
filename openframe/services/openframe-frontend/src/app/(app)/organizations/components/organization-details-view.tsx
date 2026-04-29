@@ -1,14 +1,13 @@
 'use client';
 
 import {
-  Button,
-  CardLoader,
-  DetailPageContainer,
-  InfoCard,
   LoadError,
   NotFoundError,
+  type PageActionButton,
+  PageLayout,
+  TabContent,
+  TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   BoxArchiveIcon,
   Loading01Icon,
@@ -17,22 +16,45 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useMemo, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useOrganizationArchive } from '../hooks/use-organization-archive';
 import { organizationDetailsQueryKeys, useOrganizationDetails } from '../hooks/use-organization-details';
 import { organizationsQueryKeys } from '../hooks/use-organizations';
 import { ArchiveOrganizationModal } from './archive-organization-modal';
+import { getOrganizationTabComponent, ORGANIZATION_TABS } from './details-tabs/organization-tabs';
+import { OrganizationDetailsSkeleton } from './organization-details-skeleton';
 import { RestoreOrganizationModal } from './restore-organization-modal';
 
 interface OrganizationDetailsViewProps {
   id: string;
 }
 
+const TAB_IDS = ['devices', 'tickets', 'logs', 'details'] as const;
+
 export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams?.get('tab') ?? 'devices';
+  const activeTab = (TAB_IDS as readonly string[]).includes(requestedTab) ? requestedTab : 'devices';
+
+  // Controlled mode for TabNavigation: derive activeTab from URL directly.
+  // This avoids a flicker bug in TabNavigation's `urlSync` mode where its
+  // internal URL-sync effect fires after an urgent state update but before
+  // `router.replace` has propagated, briefly resetting the active tab to the
+  // URL's previous value.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
   const { organization, isLoading, error } = useOrganizationDetails(id);
   const { checkCanArchive, archiveOrganization, restoreOrganization } = useOrganizationArchive();
   const queryClient = useQueryClient();
@@ -46,10 +68,13 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
   const isArchived = organization?.status === 'ARCHIVED';
 
-  const handleBack = () => router.push(isArchived ? '/organizations?tab=archived' : '/organizations');
-  const handleEdit = () => router.push(`/organizations/edit/${id}`);
+  const handleBack = useCallback(
+    () => router.push(isArchived ? '/organizations?tab=archived' : '/organizations'),
+    [router, isArchived],
+  );
+  const handleEdit = useCallback(() => router.push(`/organizations/edit/${id}`), [router, id]);
 
-  const handleArchiveClick = async () => {
+  const handleArchiveClick = useCallback(async () => {
     if (!organization) return;
     setIsChecking(true);
     try {
@@ -62,9 +87,9 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [organization, checkCanArchive]);
 
-  const handleArchiveConfirm = async () => {
+  const handleArchiveConfirm = useCallback(async () => {
     if (!organization) return;
     setIsPending(true);
     try {
@@ -79,9 +104,9 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     } finally {
       setIsPending(false);
     }
-  };
+  }, [organization, archiveOrganization, queryClient, id, toast, router]);
 
-  const handleRestoreConfirm = async () => {
+  const handleRestoreConfirm = useCallback(async () => {
     if (!organization) return;
     setIsPending(true);
     try {
@@ -96,44 +121,43 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     } finally {
       setIsPending(false);
     }
-  };
+  }, [organization, restoreOrganization, queryClient, id, toast, router]);
 
-  const headerActions = (
-    <div className="flex items-center gap-2">
-      <Button
-        onClick={handleEdit}
-        variant="outline"
-        leftIcon={<PenEditIcon size={20} />}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3"
-      >
-        Edit Organization
-      </Button>
-      {isArchived ? (
-        <Button
-          onClick={() => setRestoreModalOpen(true)}
-          variant="outline"
-          leftIcon={<Refresh01RightIcon size={20} />}
-          disabled={organization?.isDefault}
-          className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3"
-        >
-          Restore
-        </Button>
-      ) : (
-        <Button
-          onClick={handleArchiveClick}
-          variant="outline"
-          leftIcon={isChecking ? <Loading01Icon size={20} className="animate-spin" /> : <BoxArchiveIcon size={20} />}
-          disabled={organization?.isDefault || isChecking}
-          className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] text-h3"
-        >
-          Archive
-        </Button>
-      )}
-    </div>
-  );
+  const actions = useMemo<PageActionButton[]>(() => {
+    if (!organization) return [];
+    const archiveAction: PageActionButton = isArchived
+      ? {
+          label: 'Restore Organization',
+          variant: 'card',
+          icon: <Refresh01RightIcon className="w-5 h-5 text-ods-text-secondary" />,
+          onClick: () => setRestoreModalOpen(true),
+          disabled: organization.isDefault,
+        }
+      : {
+          label: 'Archive Organization',
+          variant: 'card',
+          icon: isChecking ? (
+            <Loading01Icon className="w-5 h-5 animate-spin" />
+          ) : (
+            <BoxArchiveIcon className="w-5 h-5 text-ods-text-secondary" />
+          ),
+          onClick: handleArchiveClick,
+          disabled: organization.isDefault || isChecking,
+          loading: isChecking,
+        };
+
+    const editAction: PageActionButton = {
+      label: 'Edit Organization',
+      variant: 'card',
+      icon: <PenEditIcon className="w-5 h-5 text-ods-text-secondary" />,
+      onClick: handleEdit,
+    };
+
+    return [archiveAction, editAction];
+  }, [organization, isArchived, isChecking, handleArchiveClick, handleEdit]);
 
   if (isLoading) {
-    return <CardLoader items={4} />;
+    return <OrganizationDetailsSkeleton activeTab={activeTab} />;
   }
 
   if (error) {
@@ -144,142 +168,36 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     return <NotFoundError message="Organization not found" />;
   }
 
+  const subtitleParts = [organization.website, organization.industry].filter(p => p && p !== '-');
+  const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' • ') : undefined;
+
+  const logoSrc = featureFlags.organizationImages.displayEnabled() ? getFullImageUrl(organization.imageUrl) : undefined;
+
   return (
     <>
-      <DetailPageContainer
-        title={organization?.name || 'Organization'}
+      <PageLayout
+        title={organization.name || 'Organization'}
+        subtitle={subtitle}
+        image={{ src: logoSrc || '', alt: organization.name || 'Organization' }}
+        className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
         backButton={{
           label: isArchived ? 'Back to Archived Organizations' : 'Back to Organizations',
           onClick: handleBack,
         }}
-        headerActions={headerActions}
-        padding="none"
+        actions={actions}
+        contentClassName="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] md:px-0 md:pb-0"
+        headerVariant="card"
       >
-        {/* Top summary row */}
-        <div className="bg-ods-card border border-ods-border rounded-lg p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon
-                  imageUrl={getFullImageUrl(organization?.imageUrl)}
-                  organizationName={organization?.name || 'Organization'}
-                  size="lg"
-                />
-              )}
-              <div>
-                <div className="text-ods-text-primary text-[18px]">{organization?.industry || '-'}</div>
-                <div className="text-ods-text-secondary text-sm">Category</div>
-              </div>
-            </div>
-            <div>
-              <div className="text-ods-text-primary text-[18px]">{organization?.website || '-'}</div>
-              <div className="text-ods-text-secondary text-sm">Website</div>
-            </div>
-            <div>
-              <div className="text-ods-text-primary text-[18px]">{organization?.employees ?? '-'}</div>
-              <div className="text-ods-text-secondary text-sm">Employees</div>
-            </div>
-            <div>
-              <div className="text-ods-text-primary text-[18px]">
-                {organization ? new Date(organization.updatedAt).toLocaleString() : '-'}
-              </div>
-              <div className="text-ods-text-secondary text-sm">Updated</div>
-            </div>
-          </div>
-
-          <div className="border-t border-ods-border pt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-ods-text-primary text-[18px]">{organization?.physicalAddress || '-'}</div>
-              <div className="text-ods-text-secondary text-sm mb-2">Physical Address</div>
-            </div>
-            <div>
-              <div className="text-ods-text-primary text-[18px]">{organization?.mailingAddress || '-'}</div>
-              <div className="text-ods-text-secondary text-sm mb-2">Mailing Address</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contacts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-          <div>
-            <h3 className="text-h5 text-ods-text-secondary">PRIMARY CONTACT</h3>
-            <InfoCard
-              data={{
-                items: [
-                  { label: 'Name', value: organization.primary.name || '-' },
-                  { label: 'Position', value: organization.primary.title || '-' },
-                  { label: 'Email', value: organization.primary.email || '-' },
-                  { label: 'Phone', value: organization.primary.phone || '-' },
-                ],
-              }}
+        <TabNavigation tabs={ORGANIZATION_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          {activeTab => (
+            <TabContent
+              activeTab={activeTab}
+              TabComponent={getOrganizationTabComponent(activeTab)}
+              componentProps={{ organization }}
             />
-          </div>
-
-          <div>
-            <h3 className="text-h5 text-ods-text-secondary">BILLING CONTACT</h3>
-            <InfoCard
-              data={{
-                items: [
-                  { label: 'Name', value: organization.billing.name || '-' },
-                  { label: 'Position', value: organization.billing.title || '-' },
-                  { label: 'Email', value: organization.billing.email || '-' },
-                  { label: 'Phone', value: organization.billing.phone || '-' },
-                ],
-              }}
-            />
-          </div>
-
-          <div>
-            <h3 className="text-h5 text-ods-text-secondary">TECHNICAL CONTACT</h3>
-            <InfoCard
-              data={{
-                items: [
-                  { label: 'Name', value: organization.technical.name || '-' },
-                  { label: 'Position', value: organization.technical.title || '-' },
-                  { label: 'Email', value: organization.technical.email || '-' },
-                  { label: 'Phone', value: organization.technical.phone || '-' },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Service Configuration */}
-        <div className="mt-6">
-          <h3 className="text-h5 text-ods-text-secondary">SERVICE CONFIGURATION</h3>
-          <InfoCard
-            data={{
-              items: [
-                {
-                  label: 'Monthly Recurring Revenue',
-                  value: organization.mrrUsd != null ? `$${organization.mrrUsd.toLocaleString()}` : '-',
-                },
-                {
-                  label: 'Contract',
-                  value:
-                    organization.contractStart && organization.contractEnd
-                      ? `${new Date(organization.contractStart).toLocaleDateString()} - ${new Date(organization.contractEnd).toLocaleDateString()}`
-                      : '-',
-                },
-              ],
-            }}
-          />
-        </div>
-
-        <div className="mt-6">
-          <h3 className="text-h5 text-ods-text-secondary">NOTES</h3>
-          <div className="flex flex-col gap-3">
-            {(organization.notes || []).map((n, i) => (
-              <div
-                key={i}
-                className="text-ods-text-primary text-[18px] bg-ods-bg-hover rounded px-3 py-2 border border-ods-border"
-              >
-                {n}
-              </div>
-            ))}
-          </div>
-        </div>
-      </DetailPageContainer>
+          )}
+        </TabNavigation>
+      </PageLayout>
 
       <ArchiveOrganizationModal
         open={archiveModalOpen}

@@ -20,6 +20,7 @@ export interface Organization {
   tier: 'Basic' | 'Premium' | 'Enterprise';
   industry: string;
   mrrUsd: number;
+  numberOfEmployees: number;
   contractDue: string;
   lastActivity: string;
   imageUrl?: string | null;
@@ -88,21 +89,26 @@ export function useOrganizations(search = '', status?: string) {
       }
 
       const nodes = graphqlResponse.data.organizations.edges.map(e => e.node);
-      const organizations: Organization[] = nodes.map(
-        (o: any): Organization => ({
+      const organizations: Organization[] = nodes.map((o: any): Organization => {
+        const primaryContact = o.contactInformation?.contacts?.[0];
+        return {
           id: o.id,
           organizationId: o.organizationId,
           name: o.name ?? '-',
-          websiteUrl: o.websiteUrl ?? '-',
-          contact: { name: '', email: '' },
+          websiteUrl: o.websiteUrl ?? '',
+          contact: {
+            name: primaryContact?.contactName ?? '',
+            email: primaryContact?.email ?? '',
+          },
           tier: 'Basic',
           industry: o.category ?? '-',
           mrrUsd: o.monthlyRevenue ?? 0,
+          numberOfEmployees: o.numberOfEmployees ?? 0,
           contractDue: o.contractEndDate ?? '',
           lastActivity: o.updatedAt || o.createdAt || new Date().toISOString(),
           imageUrl: o.image?.imageUrl || null,
-        }),
-      );
+        };
+      });
 
       return {
         organizations,

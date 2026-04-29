@@ -7,7 +7,7 @@ import { MonitoringView } from './components/monitoring-view';
 
 export default function Monitoring() {
   return (
-    <ContentPageContainer padding="none" showHeader={false}>
+    <ContentPageContainer className="p-[var(--spacing-system-l)]" padding="none" showHeader={false}>
       <MonitoringView />
     </ContentPageContainer>
   );

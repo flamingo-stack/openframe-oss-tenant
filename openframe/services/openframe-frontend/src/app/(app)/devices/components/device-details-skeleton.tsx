@@ -462,7 +462,7 @@ interface DeviceDetailsSkeletonProps {
  * main content area (DeviceInfoSection + tab navigation + active tab panel). */
 export function DeviceDetailsSkeleton({ activeTab = 'hardware' }: DeviceDetailsSkeletonProps) {
   return (
-    <div className="flex flex-col w-full">
+    <div className="flex flex-col w-full p-[var(--spacing-system-l)]">
       {/* Header — matches PageLayout's internal header */}
       <div className="flex items-end justify-between md:flex-col md:items-start md:justify-start lg:flex-row lg:items-end lg:justify-between gap-[var(--spacing-system-m)] mb-[var(--spacing-system-l)]">
         <div className="flex flex-col gap-2 flex-1 min-w-0">
@@ -484,13 +484,11 @@ export function DeviceDetailsSkeleton({ activeTab = 'hardware' }: DeviceDetailsS
       <div className="flex flex-col flex-1 gap-[var(--spacing-system-l)]">
         <DeviceStatusAndTagsSkeleton />
 
-        <div className="flex-1 overflow-auto">
-          <DeviceInfoSectionSkeleton />
+        <DeviceInfoSectionSkeleton />
 
-          <div className="mt-6">
-            <TabNavigationSkeleton />
-            {getTabSkeleton(activeTab)}
-          </div>
+        <div className="mt-6">
+          <TabNavigationSkeleton />
+          {getTabSkeleton(activeTab)}
         </div>
       </div>
     </div>

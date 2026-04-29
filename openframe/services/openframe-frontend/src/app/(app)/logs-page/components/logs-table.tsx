@@ -127,6 +127,8 @@ interface UiLogEntry {
 
 interface LogsTableProps {
   deviceId?: string;
+  /** Lock the table to a single organization. When set, the source/organization column filter is hidden. */
+  organizationId?: string;
 }
 
 export interface LogsTableRef {
@@ -135,6 +137,7 @@ export interface LogsTableRef {
 
 interface LogsTableContentProps {
   deviceId?: string;
+  organizationLocked?: boolean;
   backendFilters: LogFilterInput;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
@@ -148,6 +151,7 @@ interface LogsTableContentProps {
 
 function LogsTableContent({
   deviceId,
+  organizationLocked,
   backendFilters,
   debouncedSearch,
   tableFilters,
@@ -354,9 +358,11 @@ function LogsTableContent({
         meta: {
           width: 'w-[120px]',
           hideAt: 'md',
-          filter: {
-            options: transformOrganizationFilters(logFilters?.organizations),
-          },
+          filter: organizationLocked
+            ? undefined
+            : {
+                options: transformOrganizationFilters(logFilters?.organizations),
+              },
         },
       },
       {
@@ -385,7 +391,7 @@ function LogsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [logFilters, getLogDetailsUrl],
+    [logFilters, getLogDetailsUrl, organizationLocked],
   );
 
   const columnFilters = useMemo(
@@ -428,7 +434,7 @@ function LogsTableContent({
   return (
     <>
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
         <DataTable.Body
           loading={isPending}
           skeletonRows={10}
@@ -531,7 +537,7 @@ function LogsTableSkeleton() {
 
   return (
     <DataTable table={table}>
-      <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" />
+      <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" />
       <DataTable.Body loading={true} skeletonRows={10} emptyMessage="" rowClassName="mb-1" />
     </DataTable>
   );
@@ -542,7 +548,7 @@ function LogsTableSkeleton() {
 // ----------------------------------------------------------------
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable(
-  { deviceId }: LogsTableProps,
+  { deviceId, organizationId }: LogsTableProps,
   ref,
 ) {
   const { params, setParam, setParams } = useApiParams({
@@ -554,23 +560,25 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   const debouncedSearch = useDebounce(params.search, 300);
 
+  const lockedOrgIds = useMemo(() => (organizationId ? [organizationId] : undefined), [organizationId]);
+
   const backendFilters: LogFilterInput = useMemo(
     () => ({
       severities: params.severities,
       toolTypes: params.toolTypes,
-      organizationIds: params.organizationIds,
+      organizationIds: lockedOrgIds ?? params.organizationIds,
       deviceId,
     }),
-    [params.severities, params.toolTypes, params.organizationIds, deviceId],
+    [params.severities, params.toolTypes, params.organizationIds, deviceId, lockedOrgIds],
   );
 
   const tableFilters = useMemo(
     () => ({
       status: params.severities,
       tool: params.toolTypes,
-      source: params.organizationIds,
+      source: lockedOrgIds ? [] : params.organizationIds,
     }),
-    [params.severities, params.toolTypes, params.organizationIds],
+    [params.severities, params.toolTypes, params.organizationIds, lockedOrgIds],
   );
 
   const handleFilterChange = useCallback(
@@ -625,6 +633,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     <Suspense fallback={<LogsTableSkeleton />}>
       <LogsTableContent
         deviceId={deviceId}
+        organizationLocked={Boolean(organizationId)}
         backendFilters={backendFilters}
         debouncedSearch={debouncedSearch}
         tableFilters={tableFilters}

@@ -3,7 +3,7 @@ import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui'
 
 export function NewDeviceSkeleton() {
   return (
-    <DetailPageContainer padding="none">
+    <DetailPageContainer padding="none" className="p-[var(--spacing-system-l)]">
       <div className="flex flex-col gap-6">
         <Skeleton className="h-5 w-40" />
 

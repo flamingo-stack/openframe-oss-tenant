@@ -217,7 +217,7 @@ function BillingUsageContent() {
   return (
     <PageLayout
       title="Billing & Usage"
-      background="default"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
       actionsVariant={menuActions.length > 0 ? 'menu-primary' : 'primary-buttons'}
       actions={[primaryAction]}

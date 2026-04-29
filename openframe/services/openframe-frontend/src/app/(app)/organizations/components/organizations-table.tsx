@@ -1,6 +1,5 @@
 'use client';
 
-import { OrganizationIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
@@ -13,37 +12,74 @@ import {
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { useOrganizationDeviceCounts } from '../hooks/use-organization-device-counts';
 import { useOrganizations } from '../hooks/use-organizations';
 
 interface UiOrganizationEntry {
   id: string;
   organizationId: string;
   name: string;
-  contact: string;
-  websiteUrl: string;
+  email: string;
   tier: string;
-  industry: string;
-  mrrDisplay: string;
-  lastActivityDisplay: string;
+  deviceCount: number | null;
+  numberOfEmployees: number;
+  lastActivityDate: string;
+  lastActivityRelative: string;
   imageUrl?: string | null;
+}
+
+function AvatarInitials({ initials }: { initials: string }) {
+  return (
+    <span className="flex size-full items-center justify-center text-xs font-medium uppercase text-ods-text-secondary">
+      {initials}
+    </span>
+  );
+}
+
+function AvatarImage({ src, initials }: { src: string; initials: string }) {
+  const [errored, setErrored] = useState(false);
+
+  if (errored) {
+    return <AvatarInitials initials={initials} />;
+  }
+
+  return (
+    <img src={src} alt="" onError={() => setErrored(true)} className="block size-full rounded-none object-cover" />
+  );
+}
+
+function OrganizationAvatar({ imageUrl, name }: { imageUrl?: string; name: string }) {
+  const initials = (name?.substring(0, 2) || '??').toUpperCase();
+
+  return (
+    <div className="size-12 shrink-0 overflow-hidden rounded-sm border border-ods-border bg-ods-bg">
+      {imageUrl ? (
+        <AvatarImage key={imageUrl} src={imageUrl} initials={initials} />
+      ) : (
+        <AvatarInitials initials={initials} />
+      )}
+    </div>
+  );
 }
 
 function OrganizationNameCell({ org }: { org: UiOrganizationEntry }) {
   const fullImageUrl = getFullImageUrl(org.imageUrl);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-4 min-w-0">
       {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={org.name} size="md" />
+        <OrganizationAvatar imageUrl={fullImageUrl} name={org.name} />
       )}
-      <div className="flex flex-col justify-center shrink-0 min-w-0">
+      <div className="flex flex-col justify-center min-w-0">
         <span className="text-h4 text-ods-text-primary truncate">{org.name}</span>
-        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-          {org.websiteUrl}
-        </span>
+        {org.email && (
+          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
+            {org.email}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -56,10 +92,8 @@ interface OrganizationsTableProps {
 export function OrganizationsTable({ status }: OrganizationsTableProps) {
   const router = useRouter();
 
-  const { params, setParam, setParams } = useApiParams({
+  const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
-    tier: { type: 'array', default: [] },
-    industry: { type: 'array', default: [] },
   });
 
   const debouncedSearch = useDebounce(params.search, 300);
@@ -69,10 +103,6 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     status,
   );
 
-  // Scroll to top when filters change. `params.tier` / `params.industry` are
-  // reference-stable across renders thanks to `useApiParams`, so we can list
-  // them as effect deps directly. Skip the very first run so we don't scroll
-  // on mount.
   const isInitialMountRef = useRef(true);
   useEffect(() => {
     if (isInitialMountRef.current) {
@@ -82,39 +112,23 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  const transformed: UiOrganizationEntry[] = useMemo(() => {
-    const toMoney = (n: number) => `$${n.toLocaleString()}`;
+  const loadedOrgIds = useMemo(() => organizations.map(o => o.organizationId), [organizations]);
+  const { deviceCounts } = useOrganizationDeviceCounts(loadedOrgIds);
 
+  const transformed: UiOrganizationEntry[] = useMemo(() => {
     return organizations.map(org => ({
       id: org.id,
       organizationId: org.organizationId,
       name: org.name,
-      contact: `${org.contact.email}`,
-      websiteUrl: org.websiteUrl,
+      email: org.contact.email,
       tier: org.tier,
-      industry: org.industry,
-      mrrDisplay: toMoney(org.mrrUsd),
-      lastActivityDisplay: `${new Date(org.lastActivity).toLocaleString()}\n${formatRelativeTime(org.lastActivity)}`,
+      deviceCount: deviceCounts.has(org.organizationId) ? (deviceCounts.get(org.organizationId) ?? 0) : null,
+      numberOfEmployees: org.numberOfEmployees,
+      lastActivityDate: new Date(org.lastActivity).toLocaleString(),
+      lastActivityRelative: formatRelativeTime(org.lastActivity),
       imageUrl: org.imageUrl,
     }));
-  }, [organizations]);
-
-  // Client-side filtering for tier/industry (backend doesn't support these
-  // filters). `useApiParams` keeps each array reference-stable across renders
-  // when content is unchanged, so listing them as deps directly is safe.
-  const filteredOrganizations = useMemo(() => {
-    let filtered = transformed;
-
-    if (params.tier && params.tier.length > 0) {
-      filtered = filtered.filter(org => params.tier.includes(org.tier));
-    }
-
-    if (params.industry && params.industry.length > 0) {
-      filtered = filtered.filter(org => params.industry.includes(org.industry));
-    }
-
-    return filtered;
-  }, [transformed, params.tier, params.industry]);
+  }, [organizations, deviceCounts]);
 
   const columns = useMemo<ColumnDef<UiOrganizationEntry>[]>(
     () => [
@@ -122,44 +136,47 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
         accessorKey: 'name',
         header: 'Name',
         cell: ({ row }: { row: Row<UiOrganizationEntry> }) => <OrganizationNameCell org={row.original} />,
-        meta: { width: 'w-2/5' },
+        meta: { width: 'flex-1 min-w-0' },
       },
       {
         accessorKey: 'tier',
         header: 'Tier',
         cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
-          <div className="flex flex-col justify-center shrink-0">
-            <span className="text-h4 text-ods-text-primary truncate">{row.original.tier}</span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-              {row.original.industry}
-            </span>
-          </div>
+          <span className="text-h4 text-ods-text-primary truncate">{row.original.tier}</span>
         ),
-        meta: { width: 'w-1/6' },
+        meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
       },
       {
-        accessorKey: 'mrrDisplay',
-        header: 'MRR',
-        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
-          <span className="text-h4 text-ods-text-primary">{row.original.mrrDisplay}</span>
-        ),
-        meta: { width: 'w-1/6' },
-      },
-      {
-        accessorKey: 'lastActivityDisplay',
-        header: 'Last Activity',
+        accessorKey: 'deviceCount',
+        header: 'Devices',
         cell: ({ row }: { row: Row<UiOrganizationEntry> }) => {
-          const [first, second] = row.original.lastActivityDisplay.split('\n');
+          const { deviceCount, numberOfEmployees } = row.original;
+          const devicesLabel =
+            deviceCount === null ? '—' : `${deviceCount.toLocaleString()} ${deviceCount === 1 ? 'device' : 'devices'}`;
+          const usersLabel = `${numberOfEmployees.toLocaleString()} ${numberOfEmployees === 1 ? 'user' : 'users'}`;
           return (
-            <div className="flex flex-col justify-center shrink-0">
-              <span className="text-h4 text-ods-text-primary truncate">{first}</span>
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="text-h4 text-ods-text-primary truncate">{devicesLabel}</span>
               <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-                {second}
+                {usersLabel}
               </span>
             </div>
           );
         },
-        meta: { width: 'w-[200px]', hideAt: 'md' },
+        meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
+      },
+      {
+        accessorKey: 'lastActivityDate',
+        header: 'Last Activity',
+        cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-h4 text-ods-text-primary truncate">{row.original.lastActivityDate}</span>
+            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
+              {row.original.lastActivityRelative}
+            </span>
+          </div>
+        ),
+        meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
       },
       {
         id: 'open',
@@ -169,7 +186,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
             prefetch={false}
             variant="outline"
             size="icon"
-            centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+            centerIcon={<Chevron02RightIcon className="w-6 h-6" />}
             aria-label="View details"
             className="bg-ods-card"
           />
@@ -182,7 +199,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
   );
 
   const table = useDataTable<UiOrganizationEntry>({
-    data: filteredOrganizations,
+    data: transformed,
     columns,
     getRowId: (row: UiOrganizationEntry) => row.id,
     enableSorting: false,
@@ -195,27 +212,9 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
-  const handleFilterChange = useCallback(
-    (columnFilters: Record<string, any[]>) => {
-      setParams({
-        tier: columnFilters.tier || [],
-        industry: columnFilters.industry || [],
-      });
-    },
-    [setParams],
-  );
-
   const handleAddOrganization = useCallback(() => {
     router.push('/organizations/edit/new');
   }, [router]);
-
-  const tableFilters = useMemo(
-    () => ({
-      tier: params.tier,
-      industry: params.industry,
-    }),
-    [params.tier, params.industry],
-  );
 
   const actions = useMemo(
     () => [
@@ -228,10 +227,6 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     ],
     [handleAddOrganization],
   );
-
-  // Keep handleFilterChange/tableFilters referenced for mobile filter wiring (if re-enabled).
-  void handleFilterChange;
-  void tableFilters;
 
   return (
     <ListPageLayout
@@ -247,11 +242,11 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
       stickyHeader
     >
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
         <DataTable.Body
           loading={isLoading}
           skeletonRows={10}
-          emptyMessage="No organizations found. Try adjusting your search or filters."
+          emptyMessage="No organizations found. Try adjusting your search."
           rowClassName="mb-1"
           rowHref={organizationRowHref}
         />

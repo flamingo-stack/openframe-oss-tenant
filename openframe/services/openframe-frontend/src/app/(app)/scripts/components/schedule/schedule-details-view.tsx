@@ -15,7 +15,7 @@ import {
   MonitorIcon,
   PenEditIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { ScheduleDetailSkeleton } from './schedule-details-skeleton';
@@ -27,6 +27,9 @@ import { ScheduleScriptsTab } from './schedule-scripts-tab';
 interface ScheduleDetailViewProps {
   scheduleId: string;
 }
+
+const SCHEDULE_TAB_IDS = ['schedule-scripts', 'schedule-devices', 'schedule-history'] as const;
+const DEFAULT_SCHEDULE_TAB = 'schedule-scripts';
 
 const SCHEDULE_TABS: TabItem[] = [
   {
@@ -51,7 +54,26 @@ const SCHEDULE_TABS: TabItem[] = [
 
 export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { schedule, isLoading, error } = useScriptSchedule(scheduleId);
+
+  const requestedTab = searchParams?.get('tab') ?? DEFAULT_SCHEDULE_TAB;
+  const activeTab = (SCHEDULE_TAB_IDS as readonly string[]).includes(requestedTab)
+    ? requestedTab
+    : DEFAULT_SCHEDULE_TAB;
+
+  // Controlled mode for TabNavigation: URL is the single source of truth.
+  // Avoids a flicker bug in `urlSync` mode where the internal sync effect
+  // briefly resets the active tab to the URL's previous value during navigation.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
 
   const handleBack = useCallback(() => {
     router.push('/scripts/?tab=schedules');
@@ -102,6 +124,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
       actions={actions}
       actionsVariant="icon-buttons"
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex-1 overflow-auto">
         {/* Schedule info bar */}
@@ -111,12 +134,12 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={SCHEDULE_TABS} defaultTab="schedule-scripts" urlSync={true} showRightGradient>
-            {activeTab => (
+          <TabNavigation tabs={SCHEDULE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+            {tabId => (
               <div className="pt-6">
                 <TabContent
-                  activeTab={activeTab}
-                  TabComponent={getTabComponent(SCHEDULE_TABS, activeTab)}
+                  activeTab={tabId}
+                  TabComponent={getTabComponent(SCHEDULE_TABS, tabId)}
                   componentProps={{ schedule, scheduleId }}
                 />
               </div>

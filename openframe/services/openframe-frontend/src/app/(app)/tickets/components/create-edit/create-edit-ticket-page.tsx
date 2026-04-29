@@ -40,9 +40,9 @@ export function CreateEditTicketPage() {
   return (
     <PageLayout
       title={isEditMode ? 'Edit Ticket' : 'New Ticket'}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={backButton}
       actions={actions}
-      padding="none"
     >
       <TicketFormFields form={form} tempAttachments={tempAttachments} isFaeForm={isFaeForm} isEditMode={isEditMode} />
     </PageLayout>

@@ -480,7 +480,7 @@ export function AiSettingsTab() {
 
   if (isLoading) {
     return (
-      <div className="pt-6 space-y-6">
+      <div className="p-[var(--spacing-system-l)] space-y-6">
         <div className="space-y-4">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-10 w-full" />
@@ -501,6 +501,7 @@ export function AiSettingsTab() {
       title="AI Settings & Guardrails"
       background="default"
       padding="none"
+      className="p-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
     >
       <div className="space-y-8">

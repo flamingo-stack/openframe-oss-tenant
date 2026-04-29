@@ -71,6 +71,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         label: 'Back to Policies',
         onClick: handleBack,
       }}
+      className="p-[var(--spacing-system-l)]"
       headerActions={
         <div className="flex items-center gap-2">
           <Button

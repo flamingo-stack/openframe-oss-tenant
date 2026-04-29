@@ -9,7 +9,7 @@ export function SubscriptionSettingsSkeleton() {
   return (
     <PageLayout
       title="Subscription Settings"
-      background="default"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={{ label: 'Back to Billing & Usage', onClick: () => router.push('/settings/billing-usage') }}
     >
       <Skeleton className="h-16 w-full rounded-md" />

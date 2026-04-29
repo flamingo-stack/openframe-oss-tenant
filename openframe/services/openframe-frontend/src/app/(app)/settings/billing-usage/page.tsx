@@ -14,10 +14,8 @@ export default function BillingUsagePage() {
   }
 
   return (
-    <>
-      <Suspense fallback={<BillingUsageSkeleton />}>
-        <BillingUsageView />
-      </Suspense>
-    </>
+    <Suspense fallback={<BillingUsageSkeleton />}>
+      <BillingUsageView />
+    </Suspense>
   );
 }

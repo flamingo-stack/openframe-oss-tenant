@@ -12,5 +12,7 @@ function getMainClassNameOverride(pathname: string | null): string | undefined {
 
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return <AppLayout mainClassName={getMainClassNameOverride(pathname)}>{children}</AppLayout>;
+  const mainClassNameOverride = getMainClassNameOverride(pathname);
+  // Additional padding for widgets with absolute positioning at the bottom of the page, to prevent overlap with the app layout's fixed bottom bar
+  return <AppLayout mainClassName={mainClassNameOverride || 'pb-14'}>{children}</AppLayout>;
 }

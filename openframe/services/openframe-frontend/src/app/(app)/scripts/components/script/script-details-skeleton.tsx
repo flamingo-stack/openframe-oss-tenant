@@ -74,6 +74,7 @@ export function ScriptDetailsSkeleton() {
         </div>
       }
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col overflow-auto gap-6">
         <ScriptInfoSectionSkeleton />

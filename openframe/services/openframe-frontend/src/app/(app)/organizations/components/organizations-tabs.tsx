@@ -1,7 +1,7 @@
 'use client';
 
 import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { BoxArchiveIcon, TagsIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { BoxArchiveIcon, IdCardIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { OrganizationsTable } from './organizations-table';
@@ -17,13 +17,13 @@ function ArchivedOrganizations() {
 export const ORGANIZATIONS_TABS: TabItem[] = [
   {
     id: 'active',
-    label: 'Active',
-    icon: TagsIcon,
+    label: 'Active Organizations',
+    icon: IdCardIcon,
     component: ActiveOrganizations,
   },
   {
     id: 'archived',
-    label: 'Archived',
+    label: 'Archived Organizations',
     icon: BoxArchiveIcon,
     component: ArchivedOrganizations,
   },

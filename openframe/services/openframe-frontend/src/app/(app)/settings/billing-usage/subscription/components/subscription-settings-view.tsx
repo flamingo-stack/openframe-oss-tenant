@@ -108,8 +108,8 @@ function SubscriptionSettingsContent() {
 
   return (
     <PageLayout
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       title={isLocked ? undefined : 'Subscription Settings'}
-      background="default"
       showHeader={!isLocked}
       backButton={
         isLocked

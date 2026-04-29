@@ -5,8 +5,8 @@ import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { Info as InfoIcon, UsersRound as UsersGroupIcon } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import React, { useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React, { useCallback, useMemo, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useCreateOrganization } from '../hooks/use-create-organization';
 import { useOrganizationDetails } from '../hooks/use-organization-details';
@@ -32,9 +32,30 @@ const DEFAULT_GENERAL: GeneralInfoState = {
   notes: '',
 };
 
+const NEW_ORG_TAB_IDS = ['general', 'contact'] as const;
+const DEFAULT_NEW_ORG_TAB = 'general';
+
 export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const requestedTab = searchParams?.get('tab') ?? DEFAULT_NEW_ORG_TAB;
+  const activeTab = (NEW_ORG_TAB_IDS as readonly string[]).includes(requestedTab) ? requestedTab : DEFAULT_NEW_ORG_TAB;
+
+  // Controlled mode for TabNavigation: URL is the single source of truth.
+  // Avoids a flicker bug in `urlSync` mode where the internal sync effect
+  // briefly resets the active tab to the URL's previous value during navigation.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
   const { createOrganization } = useCreateOrganization();
   const { organization } = useOrganizationDetails(organizationId);
   const { updateOrganization } = useUpdateOrganization();
@@ -230,8 +251,12 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   return (
     <DetailPageContainer
       title={organizationId ? 'Edit Organization' : 'New Organization'}
-      backButton={{ label: 'Back to Organizations', onClick: () => router.push('/organizations') }}
+      backButton={{
+        label: organizationId ? 'Back to Organization' : 'Back to Organizations',
+        onClick: () => router.push(organizationId ? `/organizations/details/${organizationId}` : '/organizations'),
+      }}
       padding="none"
+      className="p-[var(--spacing-system-l)]"
       headerActions={
         <Button
           variant="primary"
@@ -244,10 +269,10 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       }
     >
       <div className="flex flex-col w-full">
-        <TabNavigation tabs={tabs} defaultTab="general" urlSync={true} showRightGradient>
-          {activeTab => (
+        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          {tabId => (
             <>
-              {activeTab === 'general' && (
+              {tabId === 'general' && (
                 <GeneralInformationTab
                   value={general}
                   onChange={setGeneral}
@@ -255,7 +280,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
                 />
               )}
 
-              {activeTab === 'contact' && <ContactInformationTab value={contact} onChange={setContact} />}
+              {tabId === 'contact' && <ContactInformationTab value={contact} onChange={setContact} />}
             </>
           )}
         </TabNavigation>

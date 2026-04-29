@@ -274,6 +274,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
       }}
       actions={actions}
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="space-y-6 md:space-y-8">
         {/* Test Query Panel */}

@@ -9,10 +9,8 @@ export const dynamic = 'force-dynamic';
 
 export default function NewDevicePage() {
   return (
-    <>
-      <Suspense fallback={<NewDeviceSkeleton />}>
-        <NewDeviceContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<NewDeviceSkeleton />}>
+      <NewDeviceContent />
+    </Suspense>
   );
 }

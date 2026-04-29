@@ -1,10 +1,11 @@
 'use client';
 
-import { ViewToggle } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   Chevron02RightIcon,
   Filter02Icon,
+  GridIcon,
   PlusCircleIcon,
+  TableCellIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
@@ -16,6 +17,7 @@ import {
   PageError,
   PageLayout,
   type Row,
+  TabSelector,
   TagSearchInput,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -156,54 +158,99 @@ export function DevicesView() {
   }
 
   return (
-    <PageLayout
-      title="Devices"
-      headerActions={
-        <HeaderActions
-          viewMode={params.viewMode}
-          onViewModeChange={v => setParam('viewMode', v)}
-          onAddDevice={() => router.push('/devices/new')}
-        />
-      }
-      contentClassName="flex flex-col"
-    >
-      <div
-        className={cn(
-          'flex gap-[var(--spacing-system-m)] items-center',
-          'sticky -top-4 md:-top-6 z-20 bg-ods-bg -mx-4 md:-mx-6 px-4 md:px-6 -mt-4 md:-mt-6 pt-4 md:pt-6 pb-2',
-        )}
+    <>
+      <PageLayout
+        title="Devices"
+        actionsVariant="icon-buttons"
+        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+        selector={
+          <TabSelector
+            value={params.viewMode}
+            onValueChange={v => setParam('viewMode', v as 'table' | 'grid')}
+            items={[
+              { id: 'table', icon: <TableCellIcon className="w-6 h-6" /> },
+              { id: 'grid', icon: <GridIcon className="w-6 h-6" /> },
+            ]}
+          />
+        }
+        actions={[
+          {
+            label: 'Add Device',
+            onClick: () => router.push('/devices/new'),
+            icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
+            variant: 'card',
+          },
+        ]}
+        contentClassName="flex flex-col"
       >
-        <div className="flex-1 min-w-0">
-          <TagSearchInput
-            tags={tagOptions}
-            searchValue={localSearch}
-            onSearchChange={setLocalSearch}
-            onTagRemove={handleTagRemove}
-            onClearAll={handleClearAll}
-            onSubmit={handleTagSubmit}
-            placeholder="Search for Devices"
-            addMorePlaceholder="Add More..."
-          />
-        </div>
-        {isMdUp ? (
-          <Button
-            variant="card"
-            onClick={openFilterModal}
-            leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
-            className="shrink-0"
+        <div>
+          <div
+            className={cn(
+              'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
+              'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
+            )}
           >
-            Filter Tags
-          </Button>
-        ) : (
-          <Button
-            variant="card"
-            size="icon"
-            onClick={openFilterModal}
-            centerIcon={<Filter02Icon className="text-ods-text-secondary" />}
-            className="shrink-0"
-          />
-        )}
-      </div>
+            <div className="flex-1 min-w-0">
+              <TagSearchInput
+                tags={tagOptions}
+                searchValue={localSearch}
+                onSearchChange={setLocalSearch}
+                onTagRemove={handleTagRemove}
+                onClearAll={handleClearAll}
+                onSubmit={handleTagSubmit}
+                placeholder="Search for Devices"
+                addMorePlaceholder="Add More..."
+              />
+            </div>
+            {isMdUp ? (
+              <Button
+                variant="card"
+                onClick={openFilterModal}
+                leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+                className="shrink-0"
+              >
+                Filter Tags
+              </Button>
+            ) : (
+              <Button
+                variant="card"
+                size="icon"
+                onClick={openFilterModal}
+                centerIcon={<Filter02Icon className="text-ods-text-secondary" />}
+                className="shrink-0"
+              />
+            )}
+          </div>
+
+          {params.viewMode === 'table' ? (
+            <DataTable table={table}>
+              <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+              <DataTable.Body
+                loading={isLoading || isDeviceFiltersLoading}
+                skeletonRows={10}
+                emptyMessage="No devices found. Try adjusting your search or filters."
+                rowHref={deviceRowHref}
+                rowClassName="mb-1"
+              />
+              <DataTable.InfiniteFooter
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            </DataTable>
+          ) : (
+            <DevicesGrid
+              devices={devices}
+              isLoading={isLoading}
+              filters={filters}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              sentinelRef={gridSentinelRef}
+            />
+          )}
+        </div>
+      </PageLayout>
 
       <FilterModal
         isOpen={filterModalOpen}
@@ -217,61 +264,6 @@ export function DevicesView() {
         isLoading={isDeviceFiltersLoading}
         className="max-w-[600px]"
       />
-
-      {params.viewMode === 'table' ? (
-        <DataTable table={table}>
-          <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
-          <DataTable.Body
-            loading={isLoading || isDeviceFiltersLoading}
-            skeletonRows={10}
-            emptyMessage="No devices found. Try adjusting your search or filters."
-            rowHref={deviceRowHref}
-            rowClassName="mb-1"
-          />
-          <DataTable.InfiniteFooter
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
-        </DataTable>
-      ) : (
-        <DevicesGrid
-          devices={devices}
-          isLoading={isLoading}
-          filters={filters}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          sentinelRef={gridSentinelRef}
-        />
-      )}
-    </PageLayout>
-  );
-}
-
-function HeaderActions({
-  viewMode,
-  onViewModeChange,
-  onAddDevice,
-}: {
-  viewMode: string;
-  onViewModeChange: (value: 'table' | 'grid') => void;
-  onAddDevice: () => void;
-}) {
-  return (
-    <>
-      <ViewToggle
-        value={viewMode as 'table' | 'grid'}
-        onValueChange={onViewModeChange}
-        className="bg-ods-card border border-ods-border h-12"
-      />
-      <Button
-        variant={'card'}
-        onClick={onAddDevice}
-        leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-      >
-        Add Device
-      </Button>
     </>
   );
 }

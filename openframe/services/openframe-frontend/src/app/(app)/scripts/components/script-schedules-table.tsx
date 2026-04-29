@@ -205,7 +205,7 @@ export function ScriptSchedulesTable() {
       stickyHeader
     >
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[56px]" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
         <DataTable.Body
           loading={isLoading}
           skeletonRows={pageSize}

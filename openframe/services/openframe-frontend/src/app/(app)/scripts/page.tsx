@@ -7,7 +7,7 @@ import { ScriptsView } from './components/scripts-view';
 
 export default function Scripts() {
   return (
-    <ContentPageContainer padding="none" showHeader={false}>
+    <ContentPageContainer className="p-[var(--spacing-system-l)]" padding="none" showHeader={false}>
       <ScriptsView />
     </ContentPageContainer>
   );

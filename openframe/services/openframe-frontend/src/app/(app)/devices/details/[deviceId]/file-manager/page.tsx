@@ -8,6 +8,8 @@ import { FileManagerContainer } from '@/app/(app)/devices/details/[deviceId]/fil
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-utils';
 
+const PAGE_PADDING = 'pt-4 px-4 md:pt-6 md:px-6';
+
 interface FileManagerPageProps {
   params: Promise<{
     deviceId: string;
@@ -31,7 +33,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
     return (
       <DetailPageContainer
         title="File Manager"
-        className="h-full"
+        className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
         backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
         padding="none"
@@ -50,7 +52,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
     return (
       <DetailPageContainer
         title="File Manager"
-        className="h-full"
+        className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
         backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
         padding="none"
@@ -70,7 +72,14 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
 
   const hostname = deviceDetails?.hostname || deviceDetails?.displayName;
 
-  return <FileManagerContainer deviceId={deviceId} meshcentralAgentId={meshcentralAgentId} hostname={hostname} />;
+  return (
+    <FileManagerContainer
+      deviceId={deviceId}
+      meshcentralAgentId={meshcentralAgentId}
+      hostname={hostname}
+      className={PAGE_PADDING}
+    />
+  );
 }
 
 interface FileManagerPageSkeletonProps {
@@ -81,7 +90,7 @@ function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
     <DetailPageContainer
       title="File Manager"
-      className="h-full"
+      className={`${PAGE_PADDING} h-full`}
       contentClassName="flex flex-col min-h-0 overflow-hidden"
       backButton={{
         label: 'Back to Device',

@@ -15,9 +15,10 @@ interface FileManagerContainerProps {
   meshcentralAgentId: string;
   hostname?: string;
   organizationName?: string;
+  className?: string;
 }
 
-export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }: FileManagerContainerProps) {
+export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, className }: FileManagerContainerProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,7 +278,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname }:
     <DetailPageContainer
       title={'File Manager'}
       subtitle={hostname || `Device ${deviceId}`}
-      className="h-full"
+      className={className ? `${className} h-full` : 'h-full'}
       contentClassName="flex flex-col min-h-0 overflow-hidden"
       backButton={{
         label: 'Back to Device',

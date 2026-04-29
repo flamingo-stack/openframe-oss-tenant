@@ -186,6 +186,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       title="Schedule Devices"
       backButton={{ label: 'Back to Schedule', onClick: handleBack }}
       actions={actions}
+      className="p-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 overflow-auto">
         <DeviceSelector

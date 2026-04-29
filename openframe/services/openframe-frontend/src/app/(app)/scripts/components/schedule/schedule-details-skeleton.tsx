@@ -86,6 +86,7 @@ function ScriptCardSkeleton() {
 export function ScheduleDetailSkeleton() {
   return (
     <DetailPageContainer
+      className="p-[var(--spacing-system-l)]"
       headerContent={
         <div className="flex items-end justify-between md:flex-col md:items-start md:justify-start lg:flex-row lg:items-end lg:justify-between gap-4 w-full pt-8">
           <div className="flex flex-col gap-2 flex-1 min-w-0">

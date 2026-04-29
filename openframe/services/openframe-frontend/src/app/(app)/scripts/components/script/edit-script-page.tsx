@@ -92,6 +92,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       backButton={backButton}
       actions={actions}
       padding="none"
+      className="p-[var(--spacing-system-l)]"
     >
       {testRun && (
         <div>
