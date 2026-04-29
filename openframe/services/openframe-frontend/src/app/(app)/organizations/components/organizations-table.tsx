@@ -1,16 +1,21 @@
 'use client';
 
-import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Chevron02RightIcon,
+  PlusCircleIcon,
+  SearchIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageLayout,
+  Input,
+  PageLayout,
   type Row,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
+import { cn, formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
@@ -96,7 +101,15 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
     search: { type: 'string', default: '' },
   });
 
-  const debouncedSearch = useDebounce(params.search, 300);
+  const [localSearch, setLocalSearch] = useState(params.search);
+  const debouncedSearch = useDebounce(localSearch, 500);
+
+  const setParamRef = useRef(setParam);
+  setParamRef.current = setParam;
+
+  useEffect(() => {
+    setParamRef.current('search', debouncedSearch);
+  }, [debouncedSearch]);
 
   const { organizations, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useOrganizations(
     debouncedSearch,
@@ -229,36 +242,53 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
   );
 
   return (
-    <ListPageLayout
+    <PageLayout
       title="Organizations"
       actions={actions}
-      searchPlaceholder="Search for Organization"
-      searchValue={params.search}
-      onSearch={value => setParam('search', value)}
-      error={error}
-      background="default"
-      className="pt-6"
-      padding="none"
-      stickyHeader
+      actionsVariant="icon-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+      contentClassName="flex flex-col"
     >
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={10}
-          emptyMessage="No organizations found. Try adjusting your search."
-          rowClassName="mb-1"
-          rowHref={organizationRowHref}
-        />
-        {hasNextPage && (
-          <DataTable.InfiniteFooter
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
+      <div>
+        <div
+          className={cn(
+            'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
+            'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
+          )}
+        >
+          <div className="flex-1 min-w-0">
+            <Input
+              placeholder="Search for Organization"
+              value={localSearch}
+              onChange={e => setLocalSearch(e.target.value)}
+              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+            />
+          </div>
+        </div>
+
+        {error ? (
+          <div className="text-ods-attention-red-error">{error}</div>
+        ) : (
+          <DataTable table={table}>
+            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Body
+              loading={isLoading}
+              skeletonRows={10}
+              emptyMessage="No organizations found. Try adjusting your search."
+              rowClassName="mb-1"
+              rowHref={organizationRowHref}
+            />
+            {hasNextPage && (
+              <DataTable.InfiniteFooter
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            )}
+          </DataTable>
         )}
-      </DataTable>
-    </ListPageLayout>
+      </div>
+    </PageLayout>
   );
 }

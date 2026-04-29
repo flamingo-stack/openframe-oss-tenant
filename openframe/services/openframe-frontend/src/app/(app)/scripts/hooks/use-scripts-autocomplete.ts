@@ -2,7 +2,7 @@
 
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import type { ScriptEntry } from '../stores/scripts-store';
 
@@ -72,23 +72,29 @@ export function useScriptsAutocomplete(supportedPlatforms: string[], selectedScr
   // The pre-selected script is prepended only when the search is empty so it is
   // always visible on open. During an active search the server results are the
   // single source of truth — we do not force-inject a non-matching script.
-  const results = searchQuery.data ?? [];
+  const results = searchQuery.data;
   const preSelected = selectedScriptQuery.data;
 
-  const scripts: ScriptEntry[] = [];
-  const seen = new Set<number>();
+  const scripts = useMemo<ScriptEntry[]>(() => {
+    const out: ScriptEntry[] = [];
+    const seen = new Set<number>();
 
-  if (preSelected && !debouncedSearch) {
-    scripts.push(preSelected);
-    seen.add(preSelected.id);
-  }
-
-  for (const s of results) {
-    if (!seen.has(s.id)) {
-      scripts.push(s);
-      seen.add(s.id);
+    if (preSelected && !debouncedSearch) {
+      out.push(preSelected);
+      seen.add(preSelected.id);
     }
-  }
+
+    if (results) {
+      for (const s of results) {
+        if (!seen.has(s.id)) {
+          out.push(s);
+          seen.add(s.id);
+        }
+      }
+    }
+
+    return out;
+  }, [results, preSelected, debouncedSearch]);
 
   const onOpen = () => setIsActive(true);
 

@@ -205,6 +205,8 @@ async function fetchOrganizationsOverview(_limit: number): Promise<{
   }
 }
 
+const EMPTY_OVERVIEW_ROWS: OrganizationOverviewRow[] = [];
+
 export function useOrganizationsOverview(limit: number = 10) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
 
@@ -221,7 +223,7 @@ export function useOrganizationsOverview(limit: number = 10) {
   });
 
   return {
-    rows: query.data?.rows ?? [],
+    rows: query.data?.rows ?? EMPTY_OVERVIEW_ROWS,
     loading: query.isLoading,
     error: query.error?.message ?? null,
     totalOrganizations: query.data?.totalOrganizations ?? 0,

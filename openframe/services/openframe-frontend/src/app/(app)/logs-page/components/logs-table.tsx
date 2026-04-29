@@ -388,7 +388,7 @@ function LogsTableContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
       },
     ],
     [logFilters, getLogDetailsUrl, organizationLocked],
@@ -483,6 +483,8 @@ function LogsTableContent({
 // Loading fallback — DataTable skeleton with base columns
 // ----------------------------------------------------------------
 
+const EMPTY_LOG_ENTRIES: UiLogEntry[] = [];
+
 function LogsTableSkeleton() {
   const columns = useMemo<ColumnDef<UiLogEntry>[]>(
     () => [
@@ -529,7 +531,7 @@ function LogsTableSkeleton() {
   );
 
   const table = useDataTable<UiLogEntry>({
-    data: [],
+    data: EMPTY_LOG_ENTRIES,
     columns,
     getRowId: (row: UiLogEntry) => row.id,
     enableSorting: false,

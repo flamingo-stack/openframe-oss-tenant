@@ -20,6 +20,9 @@ export interface AssigneeOption extends AutocompleteOption {
   imageUrl?: string;
 }
 
+const EMPTY_AUTOCOMPLETE_OPTIONS: AutocompleteOption[] = [];
+const EMPTY_ASSIGNEE_OPTIONS: AssigneeOption[] = [];
+
 // --- Organizations (reuse existing query via /api/graphql) ---
 
 async function fetchOrganizationOptions(search: string): Promise<AutocompleteOption[]> {
@@ -42,7 +45,7 @@ export function useOrganizationOptions(search = '') {
     queryFn: () => fetchOrganizationOptions(search),
   });
 
-  return { options: query.data ?? [], isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };
 }
 
 // --- Devices (reuse existing query via /api/graphql) ---
@@ -69,7 +72,7 @@ export function useDeviceOptions(organizationId?: string, search = '') {
     enabled: !!organizationId,
   });
 
-  return { options: query.data ?? [], isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };
 }
 
 // --- Users / Assignees (REST via /api/users) ---
@@ -92,7 +95,7 @@ export function useAssigneeOptions() {
     queryFn: fetchAssigneeOptions,
   });
 
-  return { options: query.data ?? [], isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_ASSIGNEE_OPTIONS, isLoading: query.isLoading };
 }
 
 // --- Labels (ticket-specific, via /chat/graphql) ---
@@ -114,5 +117,5 @@ export function useTicketLabelOptions() {
     queryFn: fetchLabelOptions,
   });
 
-  return { options: query.data ?? [], isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };
 }

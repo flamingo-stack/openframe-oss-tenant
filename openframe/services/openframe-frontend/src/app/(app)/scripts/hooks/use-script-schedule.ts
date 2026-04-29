@@ -5,6 +5,7 @@ import { tacticalApiClient } from '@/lib/tactical-api-client';
 import type {
   ScriptScheduleAgent,
   ScriptScheduleDetail,
+  ScriptScheduleHistoryEntry,
   ScriptScheduleHistoryResponse,
   ScriptScheduleListItem,
 } from '../types/script-schedule.types';
@@ -58,6 +59,10 @@ async function fetchScriptScheduleHistory(
   return res.data;
 }
 
+const EMPTY_SCHEDULES: ScriptScheduleListItem[] = [];
+const EMPTY_AGENTS: ScriptScheduleAgent[] = [];
+const EMPTY_HISTORY: ScriptScheduleHistoryEntry[] = [];
+
 // ============ Hooks ============
 
 export function useScriptSchedules() {
@@ -67,7 +72,7 @@ export function useScriptSchedules() {
   });
 
   return {
-    schedules: query.data ?? [],
+    schedules: query.data ?? EMPTY_SCHEDULES,
     isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
@@ -97,7 +102,7 @@ export function useScriptScheduleAgents(id: string) {
   });
 
   return {
-    agents: query.data ?? [],
+    agents: query.data ?? EMPTY_AGENTS,
     isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,
@@ -115,7 +120,7 @@ export function useScriptScheduleHistory(
   });
 
   return {
-    history: query.data?.results ?? [],
+    history: query.data?.results ?? EMPTY_HISTORY,
     total: query.data?.total ?? 0,
     isLoading: query.isFetching,
     error: query.error?.message ?? null,

@@ -124,7 +124,7 @@ export function ScriptsTable() {
       const searchLower = params.search.toLowerCase().trim();
       filtered = filtered.filter(
         script =>
-          script.name.toLowerCase().includes(searchLower) || script.description.toLowerCase().includes(searchLower),
+          script.name?.toLowerCase().includes(searchLower) || script.description?.toLowerCase().includes(searchLower),
       );
     }
 

@@ -37,6 +37,8 @@ export interface ScheduledTask {
   assigned_check: any;
 }
 
+const EMPTY_SCHEDULED_TASKS: ScheduledTask[] = [];
+
 // ============ Query Keys ============
 
 export const scheduledTasksQueryKeys = {
@@ -107,7 +109,7 @@ export function useScheduledTasks(scriptId: string) {
 
   return {
     // Data
-    scheduledTasks: scheduledTasksQuery.data ?? [],
+    scheduledTasks: scheduledTasksQuery.data ?? EMPTY_SCHEDULED_TASKS,
 
     // Loading & error states
     isLoading: scheduledTasksQuery.isFetching,

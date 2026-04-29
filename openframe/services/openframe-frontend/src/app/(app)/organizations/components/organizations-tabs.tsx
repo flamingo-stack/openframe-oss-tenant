@@ -48,12 +48,14 @@ export function OrganizationsTabNavigation({ activeTab, onTabChange }: Organizat
   const handleTabChange = onTabChange || defaultHandleTabChange;
 
   return (
-    <TabNavigation
-      urlSync={false}
-      activeTab={activeTab || 'active'}
-      tabs={ORGANIZATIONS_TABS}
-      onTabChange={handleTabChange}
-      showRightGradient
-    />
+    <div className="px-[var(--spacing-system-l)]">
+      <TabNavigation
+        urlSync={false}
+        activeTab={activeTab || 'active'}
+        tabs={ORGANIZATIONS_TABS}
+        onTabChange={handleTabChange}
+        showRightGradient
+      />
+    </div>
   );
 }

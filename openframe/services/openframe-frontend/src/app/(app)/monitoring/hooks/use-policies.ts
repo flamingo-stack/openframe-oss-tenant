@@ -29,6 +29,8 @@ interface UpdatePolicyData {
   data: Partial<CreatePolicyData>;
 }
 
+const EMPTY_POLICIES: Policy[] = [];
+
 // ============ Query Keys ============
 
 export const policiesQueryKeys = {
@@ -189,7 +191,7 @@ export function usePolicies(params?: ListPoliciesParams) {
 
   return {
     // Data
-    policies: policiesQuery.data ?? [],
+    policies: policiesQuery.data ?? EMPTY_POLICIES,
 
     // Loading & error states
     isLoading: policiesQuery.isLoading,

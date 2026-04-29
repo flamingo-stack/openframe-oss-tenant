@@ -33,6 +33,8 @@ export type PagedUsersResponse = {
   hasPrevious: boolean;
 };
 
+const EMPTY_USERS: UserRecord[] = [];
+
 // ============ Query Keys ============
 
 export const usersQueryKeys = {
@@ -93,7 +95,7 @@ export function useUsers(page: number = 0, size: number = 20) {
 
   return {
     // Data
-    users: usersQuery.data?.items ?? [],
+    users: usersQuery.data?.items ?? EMPTY_USERS,
 
     // Loading & error states
     isLoading: usersQuery.isLoading,

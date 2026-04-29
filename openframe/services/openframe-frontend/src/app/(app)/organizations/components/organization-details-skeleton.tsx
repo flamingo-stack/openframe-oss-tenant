@@ -109,6 +109,8 @@ export function OrganizationDetailsTabSkeleton() {
   );
 }
 
+const EMPTY_SKELETON_ROWS: unknown[] = [];
+
 /**
  * Skeleton matching a generic data-table tab (Devices / Tickets / Logs).
  * Renders an empty `DataTable` with `loading=true` so the skeleton matches the
@@ -128,7 +130,7 @@ function makeTableTabSkeleton(columns: Array<{ id: string; header: string; width
       [],
     );
     const table = useDataTable<unknown>({
-      data: [],
+      data: EMPTY_SKELETON_ROWS,
       columns: colDefs,
       getRowId: () => '',
       enableSorting: false,

@@ -6,6 +6,8 @@ import { fleetApiClient, type PolicyHost } from '@/lib/fleet-api-client';
 import { handleApiError } from '@/lib/handle-api-error';
 import { policiesQueryKeys } from '../../hooks/use-policies';
 
+const EMPTY_POLICY_HOSTS: PolicyHost[] = [];
+
 // ============ Query Keys ============
 
 export const policyHostsQueryKeys = {
@@ -51,7 +53,7 @@ export function usePolicyHosts(policyId: number | null) {
   });
 
   return {
-    hosts: query.data ?? [],
+    hosts: query.data ?? EMPTY_POLICY_HOSTS,
     isLoading: query.isLoading,
     error: query.error?.message ?? null,
     refetch: query.refetch,

@@ -22,6 +22,8 @@ async function fetchAllScripts(): Promise<ScriptEntry[]> {
   return response.data ?? [];
 }
 
+const EMPTY_SCRIPTS: ScriptEntry[] = [];
+
 // ============ Hook ============
 
 export function useScripts() {
@@ -33,7 +35,7 @@ export function useScripts() {
   });
 
   return {
-    scripts: query.data ?? [],
+    scripts: query.data ?? EMPTY_SCRIPTS,
     isLoading: query.isFetching,
     error: query.error?.message ?? null,
     refetch: query.refetch,

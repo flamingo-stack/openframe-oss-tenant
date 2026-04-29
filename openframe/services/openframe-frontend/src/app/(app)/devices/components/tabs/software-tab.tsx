@@ -16,8 +16,11 @@ interface SoftwareTabProps {
   device: Device | null;
 }
 
+const EMPTY_SOFTWARE: Software[] = [];
+const EMPTY_COLUMN_FILTERS: never[] = [];
+
 export function SoftwareTab({ device }: SoftwareTabProps) {
-  const software = device?.software || [];
+  const software = device?.software || EMPTY_SOFTWARE;
   const [sorting, setSorting] = useState<SortingState>([]);
 
   // Format date for display - matches device-info-section.tsx format
@@ -88,7 +91,7 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
     columns,
     getRowId: (row: Software) => String(row.id),
     clientSideSorting: true,
-    state: { sorting, columnFilters: [] },
+    state: { sorting, columnFilters: EMPTY_COLUMN_FILTERS },
     onSortingChange: setSorting,
   });
 

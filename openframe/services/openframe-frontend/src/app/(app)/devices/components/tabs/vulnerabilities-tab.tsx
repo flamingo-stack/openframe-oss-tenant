@@ -24,6 +24,8 @@ interface VulnerabilityWithSoftware extends Vulnerability {
   unique_key: string; // Unique identifier for React keys
 }
 
+const EMPTY_COLUMN_FILTERS: never[] = [];
+
 export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -153,7 +155,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
     columns,
     getRowId: (row: VulnerabilityWithSoftware) => row.unique_key,
     clientSideSorting: true,
-    state: { sorting, columnFilters: [] },
+    state: { sorting, columnFilters: EMPTY_COLUMN_FILTERS },
     onSortingChange: setSorting,
   });
 

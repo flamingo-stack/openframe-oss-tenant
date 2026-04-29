@@ -3,6 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { fleetApiClient, type Host } from '@/lib/fleet-api-client';
 
+const EMPTY_HOSTS: Host[] = [];
+
 export const policyResponseHostsQueryKeys = {
   all: ['policy-response-hosts'] as const,
   list: (policyId: number, response: 'passing' | 'failing') =>
@@ -30,7 +32,7 @@ export function usePolicyResponseHosts(policyId: number | null, policyResponse: 
   });
 
   return {
-    hosts: query.data ?? [],
+    hosts: query.data ?? EMPTY_HOSTS,
     isLoading: query.isLoading,
     error: query.error?.message ?? null,
   };

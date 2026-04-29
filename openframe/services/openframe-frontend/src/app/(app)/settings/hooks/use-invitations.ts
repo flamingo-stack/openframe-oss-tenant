@@ -31,6 +31,8 @@ export type PagedInvitationsResponse = {
   hasPrevious: boolean;
 };
 
+const EMPTY_INVITATIONS: InvitationRecord[] = [];
+
 // ============ Query Keys ============
 
 export const invitationsQueryKeys = {
@@ -142,7 +144,7 @@ export function useInvitations(page: number = 0, size: number = 20) {
 
   return {
     // Data
-    invitations: invitationsQuery.data?.items ?? [],
+    invitations: invitationsQuery.data?.items ?? EMPTY_INVITATIONS,
 
     // Loading & error states
     isLoading: invitationsQuery.isLoading,

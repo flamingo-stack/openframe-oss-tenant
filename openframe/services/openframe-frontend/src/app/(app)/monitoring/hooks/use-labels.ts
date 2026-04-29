@@ -6,6 +6,8 @@ import type { FleetLabel } from '@/lib/fleet-api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
 import { handleApiError } from '@/lib/handle-api-error';
 
+const EMPTY_LABELS: FleetLabel[] = [];
+
 // ============ Query Keys ============
 
 export const labelsQueryKeys = {
@@ -114,7 +116,7 @@ export function useLabels() {
 
   return {
     // Data
-    labels: labelsQuery.data ?? [],
+    labels: labelsQuery.data ?? EMPTY_LABELS,
 
     // Loading & error states
     isLoading: labelsQuery.isLoading,

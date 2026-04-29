@@ -32,6 +32,8 @@ interface UpdateQueryData {
   data: Partial<CreateQueryData>;
 }
 
+const EMPTY_QUERIES: Query[] = [];
+
 // ============ Query Keys ============
 
 export const queriesQueryKeys = {
@@ -185,7 +187,7 @@ export function useQueries(params?: ListQueriesParams) {
 
   return {
     // Data
-    queries: queriesQuery.data ?? [],
+    queries: queriesQuery.data ?? EMPTY_QUERIES,
 
     // Loading & error states
     isLoading: queriesQuery.isLoading,

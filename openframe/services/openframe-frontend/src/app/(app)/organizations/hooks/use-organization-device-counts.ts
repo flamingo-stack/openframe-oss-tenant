@@ -26,12 +26,17 @@ interface DeviceFiltersResponse {
   };
 }
 
+const EMPTY_DEVICE_COUNTS: ReadonlyMap<string, number> = new Map();
+
 export const organizationDeviceCountsKeys = {
   all: ['organization-device-counts'] as const,
   list: (organizationIds: string[]) => ['organization-device-counts', 'list', [...organizationIds].sort()] as const,
 };
 
-export function useOrganizationDeviceCounts(organizationIds: string[]) {
+export function useOrganizationDeviceCounts(organizationIds: string[]): {
+  deviceCounts: ReadonlyMap<string, number>;
+  isLoading: boolean;
+} {
   const stableIds = useMemo(() => [...organizationIds].sort(), [organizationIds]);
 
   const query = useQuery<Map<string, number>, Error>({
@@ -63,7 +68,7 @@ export function useOrganizationDeviceCounts(organizationIds: string[]) {
   });
 
   return {
-    deviceCounts: query.data ?? new Map<string, number>(),
+    deviceCounts: query.data ?? EMPTY_DEVICE_COUNTS,
     isLoading: query.isLoading,
   };
 }
