@@ -12,6 +12,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
+import { featureFlags } from './feature-flags';
 
 export const getNavigationItems = (pathname: string): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
@@ -82,24 +83,25 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
     );
   }
 
-  baseItems.push(
-    {
+  if (featureFlags.knowledgeBase.enabled()) {
+    baseItems.push({
       id: 'knowledge-base',
       label: 'Knowledge Base',
       icon: <BookBookmarkIcon size={24} />,
       path: '/knowledge-base',
       section: 'secondary',
       isActive: pathname.startsWith('/knowledge-base'),
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: <Settings02Icon size={24} />,
-      path: '/settings',
-      section: 'secondary',
-      isActive: pathname.startsWith('/settings'),
-    },
-  );
+    });
+  }
+
+  baseItems.push({
+    id: 'settings',
+    label: 'Settings',
+    icon: <Settings02Icon size={24} />,
+    path: '/settings',
+    section: 'secondary',
+    isActive: pathname.startsWith('/settings'),
+  });
 
   return baseItems;
 };

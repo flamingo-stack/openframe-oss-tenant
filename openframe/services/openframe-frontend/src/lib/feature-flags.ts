@@ -60,6 +60,11 @@ export const featureFlags = {
       return getFlagValue('thinking', () => false);
     },
   },
+  knowledgeBase: {
+    enabled(): boolean {
+      return getFlagValue('knowledge-base', () => true);
+    },
+  },
 } as const;
 
 /**

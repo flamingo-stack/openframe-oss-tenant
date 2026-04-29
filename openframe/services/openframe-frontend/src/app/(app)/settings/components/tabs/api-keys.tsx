@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { formatDate, formatTime } from '@/lib/format-date';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
 import { CreateApiKeyModal } from '../../components/create-api-key-modal';
@@ -91,10 +92,10 @@ export function ApiKeysTab() {
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
           <div className="flex flex-col min-w-0">
             <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-              {new Date(row.original.createdAt).toLocaleDateString()}
+              {formatDate(row.original.createdAt)}
             </span>
             <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
-              {new Date(row.original.createdAt).toLocaleTimeString()}
+              {formatTime(row.original.createdAt)}
             </span>
           </div>
         ),
@@ -106,10 +107,10 @@ export function ApiKeysTab() {
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
           <div className="flex flex-col min-w-0">
             <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-              {row.original.expiresAt ? new Date(row.original.expiresAt).toLocaleDateString() : '—'}
+              {row.original.expiresAt ? formatDate(row.original.expiresAt) : '—'}
             </span>
             <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
-              {row.original.expiresAt ? new Date(row.original.expiresAt).toLocaleTimeString() : '—'}
+              {row.original.expiresAt ? formatTime(row.original.expiresAt) : '—'}
             </span>
           </div>
         ),

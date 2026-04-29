@@ -2,6 +2,7 @@
 
 import { OSTypeLabel } from '@flamingo-stack/openframe-frontend-core/components/features';
 import React from 'react';
+import { formatDateTime } from '@/lib/format-date';
 import { Device } from '../types/device.types';
 
 interface DeviceInfoSectionProps {
@@ -51,17 +52,13 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.lastSeen
-              ? `${new Date(device.lastSeen).toLocaleDateString()} ${new Date(device.lastSeen).toLocaleTimeString()}`
-              : 'Unknown'}
+            {device.lastSeen ? formatDateTime(device.lastSeen) : 'Unknown'}
           </p>
           <p className="text-ods-text-secondary text-h6">Last Seen</p>
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">
-            {device.boot_time
-              ? `${new Date(device.boot_time * 1000).toLocaleDateString()} ${new Date(device.boot_time * 1000).toLocaleTimeString()}`
-              : 'Unknown'}
+            {device.boot_time ? formatDateTime(device.boot_time * 1000) : 'Unknown'}
           </p>
           <p className="text-ods-text-secondary text-h6">Last Boot</p>
         </div>

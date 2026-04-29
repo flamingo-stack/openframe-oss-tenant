@@ -39,6 +39,7 @@ import { DeviceInfoSection } from '@/app/components/shared';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
+import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
@@ -600,7 +601,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
             isPending: assignTicketMutation.isPending,
             onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
           }}
-          createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
+          createdAt={dialog.createdAt ? formatDateTime(dialog.createdAt) : undefined}
           description={dialog.description || dialog.title || ''}
           attachments={uiAttachments}
           tags={(dialog.labels || []).map(l => l.key)}
@@ -697,7 +698,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
                 isPending: assignTicketMutation.isPending,
                 onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
               }}
-              createdAt={dialog.createdAt ? new Date(dialog.createdAt).toLocaleString() : undefined}
+              createdAt={dialog.createdAt ? formatDateTime(dialog.createdAt) : undefined}
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
               tags={(dialog.labels || []).map(l => l.key)}

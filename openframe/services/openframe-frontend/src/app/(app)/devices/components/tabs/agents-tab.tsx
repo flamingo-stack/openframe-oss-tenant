@@ -11,6 +11,7 @@ import {
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { Info as InfoIcon } from 'lucide-react';
+import { formatDateTime } from '@/lib/format-date';
 import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
 import { getDeviceStatusConfig } from '../../utils/device-status';
 
@@ -132,10 +133,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
               }
               if (agent.lastSeen) {
                 const d = new Date(agent.lastSeen);
-                const formatted =
-                  d.getTime() > 0
-                    ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : '—';
+                const formatted = d.getTime() > 0 ? formatDateTime(d) : '—';
                 items.push({ label: 'Last seen', value: formatted });
               }
             }
@@ -150,10 +148,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
             if (AGENT_TYPES_WITH_STATUS.has(agent.toolType) && agent.lastFetched != null) {
               const d = new Date(agent.lastFetched);
-              const formatted =
-                d.getTime() > 0
-                  ? `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                  : '—';
+              const formatted = d.getTime() > 0 ? formatDateTime(d) : '—';
               items.push({ label: 'Last fetched', value: formatted });
             }
 

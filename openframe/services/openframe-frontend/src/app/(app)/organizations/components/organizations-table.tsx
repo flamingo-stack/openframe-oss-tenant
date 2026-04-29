@@ -19,6 +19,7 @@ import { cn, formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
+import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useOrganizationDeviceCounts } from '../hooks/use-organization-device-counts';
 import { useOrganizations } from '../hooks/use-organizations';

@@ -10,6 +10,7 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React, { useCallback, useMemo, useState } from 'react';
+import { formatDateTime } from '@/lib/format-date';
 import type { Device, Software } from '../../types/device.types';
 
 interface SoftwareTabProps {
@@ -23,11 +24,9 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
   const software = device?.software || EMPTY_SOFTWARE;
   const [sorting, setSorting] = useState<SortingState>([]);
 
-  // Format date for display - matches device-info-section.tsx format
   const formatDate = useCallback((dateString?: string): string => {
     if (!dateString) return 'Never';
-    const date = new Date(dateString);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    return formatDateTime(dateString);
   }, []);
 
   // Define table columns

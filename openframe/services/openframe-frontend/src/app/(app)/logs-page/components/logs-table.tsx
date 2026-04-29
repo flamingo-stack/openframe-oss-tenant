@@ -33,6 +33,7 @@ import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
 import { LogDrawer } from '@/app/components/shared';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
+import { formatDateTime } from '@/lib/format-date';
 import type { LogFilterInput } from '../types/log.types';
 
 // ----------------------------------------------------------------
@@ -252,7 +253,7 @@ function LogsTableContent({
     return logs.map(log => ({
       id: log.toolEventId,
       logId: log.toolEventId,
-      timestamp: new Date(log.timestamp).toLocaleString(),
+      timestamp: formatDateTime(log.timestamp),
       status: {
         label: log.severity,
         variant:

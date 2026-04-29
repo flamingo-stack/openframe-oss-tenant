@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { Info as InfoIcon } from 'lucide-react';
 import React from 'react';
+import { formatDate } from '@/lib/format-date';
 
 interface ComplianceTabProps {
   device: any;
@@ -63,9 +64,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
                 items: [
                   {
                     label: 'Last Installed',
-                    value: device.patches_last_installed
-                      ? new Date(device.patches_last_installed).toLocaleDateString()
-                      : 'Never',
+                    value: device.patches_last_installed ? formatDate(device.patches_last_installed) : 'Never',
                   },
                   {
                     label: 'Pending Patches',

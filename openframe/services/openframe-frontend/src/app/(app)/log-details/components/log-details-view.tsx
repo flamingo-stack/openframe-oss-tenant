@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DeviceInfoSection } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
+import { formatDateTime } from '@/lib/format-date';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
 import { FullInformationSection } from './full-information-section';
@@ -117,7 +118,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-start md:items-center">
           <Tag label={logDetails.severity} variant={getSeverityVariant(logDetails.severity)} />
           <span className="font-['DM_Sans'] font-medium text-[16px] md:text-[18px] leading-[22px] md:leading-[24px] text-ods-text-primary">
-            {new Date(logDetails.timestamp).toLocaleString()}
+            {formatDateTime(logDetails.timestamp)}
           </span>
         </div>
 

@@ -7,6 +7,7 @@ import {
   TableTimestampCell,
   TicketStatusTag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
@@ -19,7 +20,7 @@ interface DialogTableColumnsOptions {
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return timestamp;
-  return date.toLocaleString();
+  return formatDateTime(date);
 }
 
 export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): ColumnDef<Dialog>[] {

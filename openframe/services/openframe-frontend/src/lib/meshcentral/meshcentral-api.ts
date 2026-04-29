@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../api-client';
+import { formatDateTime } from '../format-date';
 
 /**
  * MeshCentral deviceStatus response.
@@ -49,5 +50,5 @@ export function parseMeshCentralLastSeen(info: MeshCentralDeviceInfo | null): st
   if (info == null || typeof info !== 'object') return null;
   if (info.online) return null;
   if (!info.lastConnectTime) return null;
-  return new Date(info.lastConnectTime).toLocaleString();
+  return formatDateTime(info.lastConnectTime);
 }

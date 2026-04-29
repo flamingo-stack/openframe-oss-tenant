@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { Info as InfoIcon } from 'lucide-react';
 import React from 'react';
+import { formatDateTime } from '@/lib/format-date';
 
 interface SecurityTabProps {
   device: any;
@@ -206,7 +207,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
                   },
                   {
                     label: 'Last Seen',
-                    value: device.last_seen ? new Date(device.last_seen).toLocaleString() : 'Unknown',
+                    value: device.last_seen ? formatDateTime(device.last_seen) : 'Unknown',
                   },
                 ],
               }}
@@ -412,11 +413,11 @@ export function SecurityTab({ device }: SecurityTabProps) {
                 items: [
                   {
                     label: 'Boot Time',
-                    value: device.boot_time ? new Date(device.boot_time * 1000).toLocaleString() : 'Unknown',
+                    value: device.boot_time ? formatDateTime(device.boot_time * 1000) : 'Unknown',
                   },
                   {
                     label: 'Last Restarted',
-                    value: device.last_restarted_at ? new Date(device.last_restarted_at).toLocaleString() : 'Unknown',
+                    value: device.last_restarted_at ? formatDateTime(device.last_restarted_at) : 'Unknown',
                   },
                   {
                     label: 'Uptime',

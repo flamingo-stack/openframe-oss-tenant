@@ -4,6 +4,7 @@ import { type ColumnDef, type Row, Tag } from '@flamingo-stack/openframe-fronten
 import type React from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
+import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../constants/device-statuses';
 import type { Device, DeviceFilters } from '../types/device.types';
@@ -157,9 +158,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
               <Tag label={statusConfig.label} variant={statusConfig.variant} />
             </div>
             <span className="text-h6 text-ods-text-secondary hidden md:flex">
-              {device.last_seen
-                ? `${new Date(device.last_seen).toLocaleDateString()} ${new Date(device.last_seen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                : 'Never'}
+              {device.last_seen ? formatDateTime(device.last_seen) : 'Never'}
             </span>
           </div>
         );

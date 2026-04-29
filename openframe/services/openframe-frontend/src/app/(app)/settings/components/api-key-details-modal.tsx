@@ -11,6 +11,7 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React from 'react';
+import { formatDateTime } from '@/lib/format-date';
 import type { ApiKeyRecord } from '../hooks/use-api-keys';
 
 interface ApiKeyDetailsModalProps {
@@ -22,10 +23,7 @@ interface ApiKeyDetailsModalProps {
 export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsModalProps) {
   if (!apiKey) return null;
 
-  const createdDate = new Date(apiKey.createdAt);
-  const expiresDate = apiKey.expiresAt ? new Date(apiKey.expiresAt) : null;
-  const lastUsed = apiKey.lastUsed ? new Date(apiKey.lastUsed) : null;
-  const formatDateTime = (d: Date | null) => (d ? `${d.toLocaleDateString()} ${d.toLocaleTimeString()}` : '—');
+  const fmt = (d: string | null | undefined) => (d ? formatDateTime(d) : '—');
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
@@ -53,12 +51,12 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
 
           <div className="space-y-2">
             <Label>Created</Label>
-            <Input value={formatDateTime(createdDate)} disabled className="bg-ods-card" />
+            <Input value={fmt(apiKey.createdAt)} disabled className="bg-ods-card" />
           </div>
 
           <div className="space-y-2">
             <Label>Expires</Label>
-            <Input value={formatDateTime(expiresDate)} disabled className="bg-ods-card" />
+            <Input value={fmt(apiKey.expiresAt)} disabled className="bg-ods-card" />
           </div>
 
           <div className="space-y-2">
@@ -78,7 +76,7 @@ export function ApiKeyDetailsModal({ isOpen, onClose, apiKey }: ApiKeyDetailsMod
 
           <div className="space-y-2 col-span-2">
             <Label>Last Used</Label>
-            <Input value={formatDateTime(lastUsed)} disabled className="bg-ods-card" />
+            <Input value={fmt(apiKey.lastUsed)} disabled className="bg-ods-card" />
           </div>
         </div>
       </div>
