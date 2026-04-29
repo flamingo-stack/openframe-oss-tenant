@@ -304,7 +304,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     return () => {
       desktop.setClipboardInterceptor?.(null);
     };
-  }, [clipboardEnabled, meshcentralAgentId, isPageReady]);
+  }, [clipboardEnabled, meshcentralAgentId]);
 
   const handleBack = () => {
     tunnelRef.current?.stop();

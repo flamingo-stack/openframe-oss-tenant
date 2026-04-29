@@ -112,7 +112,7 @@ export function useSideChunkProcessor(
       assistantType,
       timestamp: lastAssistantTimestamp,
     });
-  }, [messages, assistantName, assistantType]);
+  }, [assistantName, assistantType]);
 
   const callbacks = useMemo(
     () => ({
