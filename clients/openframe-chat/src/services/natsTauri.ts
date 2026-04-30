@@ -7,8 +7,8 @@
 // Tauri event.
 
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { listen, type Event as TauriEvent } from '@tauri-apps/api/event';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
+import { useEffect, useId, useRef, useState } from 'react';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
@@ -26,29 +26,15 @@ type EventListener = (event: NatsEvent) => void;
 type StatusListener = (status: NatsStatus) => void;
 
 class NatsBridgeClient {
-  // Held to keep the Channel reachable (its onmessage handler is invoked
-  // by Tauri's IPC layer) and to allow future cleanup via the channel id.
-  private channel: Channel<NatsEvent> | null = null;
-  private channelId: string | null = null;
-  private initPromise: Promise<void> | null = null;
-
-  /** Diagnostic — exposed for debugging from the console. */
-  getRegisteredChannelId(): string | null {
-    return this.channelId;
-  }
-  /** Diagnostic — exposed for debugging from the console. */
-  hasChannel(): boolean {
-    return this.channel !== null;
-  }
-
   private status: NatsStatus = { state: 'disconnected', reconnect_count: 0 };
   private statusListeners = new Set<StatusListener>();
   private eventListeners = new Set<EventListener>();
+  private initPromise: Promise<void> | null = null;
 
-  // Multiple call sites can drive the tracked-dialog set independently
-  // (useTickets contributes its known dialogs; useChat may push the
-  // freshly-created dialog id before tickets refresh). We merge by source
-  // id and re-send to Rust whenever any source changes.
+  // Multiple call sites can drive the tracked-dialog set independently:
+  // useTickets contributes the user's known dialogs; useChat may push the
+  // freshly-created dialog id before the ticket list refresh sees it. We
+  // merge by source id and re-send to Rust whenever any source changes.
   private dialogSources = new Map<string, Set<string>>();
   private currentTrackedKey = '';
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -56,7 +42,6 @@ class NatsBridgeClient {
   init(): Promise<void> {
     if (!this.initPromise) {
       this.initPromise = this.doInit().catch(err => {
-        // Allow subsequent retries
         this.initPromise = null;
         throw err;
       });
@@ -65,8 +50,7 @@ class NatsBridgeClient {
   }
 
   private async doInit(): Promise<void> {
-    // Subscribe to status events first so we don't miss any during init.
-    await listen<NatsStatus>('nats:status', (e: TauriEvent<NatsStatus>) => {
+    await listen<NatsStatus>('nats:status', e => {
       this.status = e.payload;
       this.statusListeners.forEach(l => {
         try {
@@ -84,7 +68,7 @@ class NatsBridgeClient {
     }
 
     const channel = new Channel<NatsEvent>();
-    channel.onmessage = (event: NatsEvent) => {
+    channel.onmessage = event => {
       this.eventListeners.forEach(l => {
         try {
           l(event);
@@ -93,8 +77,10 @@ class NatsBridgeClient {
         }
       });
     };
-    this.channel = channel;
-    this.channelId = await invoke<string>('nats_register_event_channel', { channel });
+    // Channel reference must outlive doInit so its onmessage stays
+    // reachable for the IPC layer; the module-scope retainer prevents GC.
+    retainedChannels.add(channel);
+    await invoke('nats_register_event_channel', { channel });
   }
 
   getStatus(): NatsStatus {
@@ -129,6 +115,8 @@ class NatsBridgeClient {
 
   private scheduleFlush(): void {
     if (this.flushTimer !== null) return;
+    // Coalesce updates from multiple sources within the same render tick
+    // so we don't make redundant `nats_set_tracked_dialogs` IPC calls.
     this.flushTimer = setTimeout(() => {
       this.flushTimer = null;
       void this.flush();
@@ -148,6 +136,10 @@ class NatsBridgeClient {
     }
   }
 }
+
+// Module-scope retainer keeps registered Channels reachable so their
+// onmessage callbacks stay alive for Tauri's IPC layer.
+const retainedChannels = new Set<Channel<NatsEvent>>();
 
 export const natsBridge = new NatsBridgeClient();
 
@@ -185,18 +177,14 @@ export function useNatsBridgeEvents(onEvent: (event: NatsEvent) => void): void {
 }
 
 export function useNatsBridgeTrackDialogs(dialogIds: string[]): void {
-  const sourceId = useMemo(() => `src-${Math.random().toString(36).slice(2)}-${Date.now()}`, []);
-  const idsRef = useRef(dialogIds);
-  idsRef.current = dialogIds;
-  const key = useMemo(() => [...dialogIds].sort().join('|'), [dialogIds]);
+  const sourceId = useId();
 
+  // Callers (useChat, useTickets) memoize `dialogIds`, so re-runs only
+  // happen on real changes. Even if the reference churned, the bridge
+  // dedupes redundant updates via `currentTrackedKey`.
   useEffect(() => {
     void natsBridge.init();
-    // key changes whenever dialogIds content changes; idsRef holds the
-    // current snapshot so we read the latest array without depending on
-    // its identity.
-    void key;
-    natsBridge.updateDialogSource(sourceId, idsRef.current);
+    natsBridge.updateDialogSource(sourceId, dialogIds);
     return () => natsBridge.removeDialogSource(sourceId);
-  }, [sourceId, key]);
+  }, [sourceId, dialogIds]);
 }

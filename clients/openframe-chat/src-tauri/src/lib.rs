@@ -153,13 +153,7 @@ fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
         if let Some(state) = app.try_state::<TokenState>() {
             let mut started = state.started.lock().unwrap();
             if !*started
-                && TokenWatcher::start(
-                    path,
-                    secret,
-                    app.clone(),
-                    state.current_token.clone(),
-                    state.token_changed.clone(),
-                )
+                && TokenWatcher::start(path, secret, app.clone(), state.current_token.clone())
             {
                 *started = true;
                 log::info!("token watcher initialized");
@@ -306,7 +300,6 @@ pub fn run() {
             let token_state = TokenState {
                 current_token: Arc::new(Mutex::new(None)),
                 started: Arc::new(Mutex::new(false)),
-                token_changed: Arc::new(tokio::sync::Notify::new()),
             };
             let bridge_token_state = token_state.clone();
             app.manage(token_state);
@@ -337,9 +330,7 @@ pub fn run() {
                 bridge_token_state,
             );
             app.manage(bridge.clone());
-            tauri::async_runtime::spawn(async move {
-                bridge.start().await;
-            });
+            bridge.start();
             println!("[INFO] NATS bridge initialized");
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;

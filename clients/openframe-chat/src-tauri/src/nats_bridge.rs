@@ -4,7 +4,8 @@
 //   - user-scoped path (`/ws/nats-api`) instead of machine-scoped (`/ws/nats`)
 //   - no `X-MACHINE-ID` header
 //   - no in-process OAuth refresh: token rotation is delegated to the
-//     openframe-client daemon; we wait on `TokenState.token_changed`.
+//     openframe-client daemon; reconnects pick up the latest token from
+//     `TokenState` whenever async-nats invokes the auth-url callback.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -18,7 +19,7 @@ use tauri::async_runtime::JoinHandle;
 use tauri::ipc::Channel;
 use tauri::{async_runtime, AppHandle, Emitter, Manager};
 use tauri_plugin_notification::NotificationExt;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use crate::token_watcher::TokenState;
@@ -35,8 +36,15 @@ const NATS_PASS: &str = "";
 /// Path on the gateway that proxies user-scoped NATS over WebSocket.
 const NATS_WS_PATH: &str = "/ws/nats-api";
 
-/// Reconnect delay used by the underlying async-nats client.
-const RECONNECT_DELAY: Duration = Duration::from_secs(5);
+/// Exponential-backoff schedule for reconnect attempts. Mirrors the JS
+/// hook the WebView used to use:
+///   - first `FAST_RETRIES` attempts: `FAST_DELAY_MS`
+///   - then `BASE_MS * 2^n`, capped at `MAX_MS`
+///   - jittered to 50–100% of the computed delay
+const FAST_RETRIES: usize = 3;
+const FAST_DELAY_MS: u64 = 200;
+const BASE_DELAY_MS: u64 = 1_000;
+const MAX_DELAY_MS: u64 = 30_000;
 
 /// How often async-nats sends WS pings.
 const PING_INTERVAL: Duration = Duration::from_secs(10);
@@ -78,11 +86,11 @@ struct Inner {
     /// Set the first time we hit `Connected`; subsequent transitions to
     /// `Connected` then bump `reconnect_count`.
     had_connection: AtomicBool,
+    /// Guards `start()` so the connect task is only spawned once.
+    started: AtomicBool,
     server_url: ServerUrlState,
     token_state: TokenState,
     app: AppHandle,
-    /// Guards `start()` so the connect task is only spawned once.
-    started: Mutex<bool>,
 
     /// Dialog ids the WebView currently wants subscribed. Updated by
     /// `set_tracked_dialogs`; `reconcile_subscriptions` enforces it.
@@ -113,10 +121,10 @@ impl NatsBridge {
                 state: RwLock::new(ConnectionState::Disconnected),
                 reconnect_count: AtomicU32::new(0),
                 had_connection: AtomicBool::new(false),
+                started: AtomicBool::new(false),
                 server_url,
                 token_state,
                 app,
-                started: Mutex::new(false),
                 desired: RwLock::new(HashSet::new()),
                 active: RwLock::new(HashMap::new()),
                 event_channels: RwLock::new(HashMap::new()),
@@ -126,13 +134,15 @@ impl NatsBridge {
     }
 
     /// Spawn the connect task. Idempotent: subsequent calls are no-ops.
-    pub async fn start(&self) {
-        let mut started = self.inner.started.lock().await;
-        if *started {
+    pub fn start(&self) {
+        if self
+            .inner
+            .started
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Relaxed)
+            .is_err()
+        {
             return;
         }
-        *started = true;
-
         let bridge = self.clone();
         async_runtime::spawn(async move {
             bridge.run().await;
@@ -210,57 +220,65 @@ impl NatsBridge {
     }
 
     async fn run(&self) {
-        // Wait for server URL + token to both be available. The token
-        // arrives asynchronously from the daemon-driven watcher.
+        let inner = &self.inner;
+
+        // Wait for server URL + token to both be available. Both arrive
+        // asynchronously from the openframe-client daemon, polled at 5 s
+        // by `TokenWatcher`; matching that cadence here is good enough.
         loop {
-            let server = self.read_server_url();
-            let token = self.read_token();
-            if server.is_some() && token.is_some() {
+            if read_server_url(inner).is_some() && read_token(inner).is_some() {
                 break;
             }
-            self.set_state(ConnectionState::Connecting).await;
-            // Park until the next token update or 5s, whichever comes first.
-            let notified = self.inner.token_state.token_changed.notified();
-            tokio::select! {
-                _ = notified => {}
-                _ = tokio::time::sleep(Duration::from_secs(5)) => {}
-            }
+            set_state(inner, ConnectionState::Connecting).await;
+            tokio::time::sleep(Duration::from_secs(5)).await;
         }
 
-        self.set_state(ConnectionState::Connecting).await;
+        set_state(inner, ConnectionState::Connecting).await;
 
-        let server_url = self.read_server_url().expect("server url present");
-        let connect_url = build_connect_url(&server_url, &self.read_token().unwrap_or_default());
+        let server_url = read_server_url(inner).expect("server url present");
+        let connect_url = build_connect_url(&server_url, &read_token(inner).unwrap_or_default());
 
-        let app_for_event = self.inner.app.clone();
-        let state_for_event = self.inner.clone();
-        let token_state = self.inner.token_state.clone();
-        let server_for_auth = server_url.clone();
+        let event_inner = inner.clone();
+        let auth_token_state = inner.token_state.clone();
+        let auth_server_url = server_url.clone();
 
         let connect_options = async_nats::ConnectOptions::new()
             .name("openframe-chat")
             .user_and_password(NATS_USER.to_string(), NATS_PASS.to_string())
             .retry_on_initial_connect()
-            .reconnect_delay_callback(|_attempt| RECONNECT_DELAY)
+            .reconnect_delay_callback(reconnect_delay)
             .ping_interval(PING_INTERVAL)
             .event_callback(move |event| {
-                let app = app_for_event.clone();
-                let state = state_for_event.clone();
+                let inner = event_inner.clone();
                 async move {
-                    handle_nats_event(event, &app, &state).await;
+                    handle_nats_event(event, &inner).await;
                 }
             })
             .auth_url_callback(move |()| {
-                let token_state = token_state.clone();
-                let server_url = server_for_auth.clone();
+                // async-nats invokes this on every (re)connect. We don't
+                // refresh tokens ourselves; the daemon polls + rotates the
+                // file every ~5 s, our `TokenWatcher` re-decrypts on the
+                // next tick, and async-nats' reconnect delay gives a fresh
+                // token a chance to arrive between attempts.
+                let token = auth_token_state
+                    .current_token
+                    .lock()
+                    .ok()
+                    .and_then(|g| g.clone());
+                let server_url = auth_server_url.clone();
                 async move {
-                    wait_for_fresh_url(server_url, token_state).await
+                    match token {
+                        Some(t) => Ok(build_connect_url(&server_url, &t)),
+                        None => Err(async_nats::AuthError::new(
+                            "no token available for NATS reconnect",
+                        )),
+                    }
                 }
             });
 
         match connect_options.connect(&connect_url).await {
             Ok(client) => {
-                *self.inner.client.write().await = Some(client);
+                *inner.client.write().await = Some(client);
                 // event_callback will fire `Connected` shortly; don't
                 // pre-emptively flip state here.
                 tracing::info!("[NATS] connect() returned Ok");
@@ -271,40 +289,41 @@ impl NatsBridge {
                 // and stay in `Connecting` — the run-loop is single-shot,
                 // so caller must restart the app to retry from scratch.
                 tracing::error!("[NATS] connect() failed unrecoverably: {err}");
-                self.set_state(ConnectionState::Disconnected).await;
+                set_state(inner, ConnectionState::Disconnected).await;
             }
         }
     }
-
-    fn read_server_url(&self) -> Option<String> {
-        self.inner.server_url.url.lock().ok().and_then(|g| g.clone())
-    }
-
-    fn read_token(&self) -> Option<String> {
-        self.inner
-            .token_state
-            .current_token
-            .lock()
-            .ok()
-            .and_then(|g| g.clone())
-    }
-
-    async fn set_state(&self, new_state: ConnectionState) {
-        let mut state = self.inner.state.write().await;
-        if *state == new_state {
-            return;
-        }
-        *state = new_state;
-        let count = self.inner.reconnect_count.load(Ordering::Relaxed);
-        let payload = NatsStatus {
-            state: new_state,
-            reconnect_count: count,
-        };
-        let _ = self.inner.app.emit("nats:status", payload);
-    }
 }
 
-async fn handle_nats_event(event: Event, app: &AppHandle, inner: &Arc<Inner>) {
+fn read_server_url(inner: &Inner) -> Option<String> {
+    inner.server_url.url.lock().ok().and_then(|g| g.clone())
+}
+
+fn read_token(inner: &Inner) -> Option<String> {
+    inner
+        .token_state
+        .current_token
+        .lock()
+        .ok()
+        .and_then(|g| g.clone())
+}
+
+/// Set connection state and emit `nats:status` if the state actually
+/// changed. Only place that emits the event — keeps emit/state in sync.
+async fn set_state(inner: &Inner, new_state: ConnectionState) {
+    let mut state = inner.state.write().await;
+    if *state == new_state {
+        return;
+    }
+    *state = new_state;
+    let payload = NatsStatus {
+        state: new_state,
+        reconnect_count: inner.reconnect_count.load(Ordering::Relaxed),
+    };
+    let _ = inner.app.emit("nats:status", payload);
+}
+
+async fn handle_nats_event(event: Event, inner: &Arc<Inner>) {
     tracing::info!("[NATS] event: {:?}", event);
     match event {
         Event::Connected => {
@@ -314,27 +333,23 @@ async fn handle_nats_event(event: Event, app: &AppHandle, inner: &Arc<Inner>) {
             if was_connected_before {
                 inner.reconnect_count.fetch_add(1, Ordering::Relaxed);
             }
-            *inner.state.write().await = ConnectionState::Connected;
-            emit_status(app, inner).await;
+            set_state(inner, ConnectionState::Connected).await;
             if was_connected_before {
-                let _ = app.emit("nats:reconnected", ());
+                let _ = inner.app.emit("nats:reconnected", ());
             }
-            // Apply any subscription requests that arrived while we were
-            // disconnected. On a clean reconnect async-nats keeps existing
-            // subscribers alive, but a tracked set added in the meantime
-            // wouldn't have been subscribed yet.
+            // async-nats re-issues SUB frames for every existing
+            // subscription after a reconnect (see its handle_reconnect),
+            // so we don't need to re-subscribe known dialogs. Reconcile
+            // here only catches the case where the WebView added new
+            // tracked dialogs while we were disconnected and they
+            // weren't subscribed yet.
             let inner = inner.clone();
             async_runtime::spawn(async move {
                 reconcile_subscriptions(&inner).await;
             });
         }
         Event::Disconnected => {
-            *inner.state.write().await = ConnectionState::Disconnected;
-            emit_status(app, inner).await;
-        }
-        Event::ClientError(_) | Event::ServerError(_) => {
-            // Leave state as-is — async-nats will follow up with
-            // Disconnected if it actually drops the connection.
+            set_state(inner, ConnectionState::Disconnected).await;
         }
         _ => {}
     }
@@ -529,12 +544,20 @@ fn truncate_for_notification(text: &str, max: usize) -> String {
     out
 }
 
-async fn emit_status(app: &AppHandle, inner: &Inner) {
-    let payload = NatsStatus {
-        state: *inner.state.read().await,
-        reconnect_count: inner.reconnect_count.load(Ordering::Relaxed),
+/// Exponential-backoff-with-jitter for the async-nats reconnect callback.
+/// `attempt` is 0-based: 0 = first reconnect attempt after a drop.
+fn reconnect_delay(attempt: usize) -> Duration {
+    let base_ms = if attempt < FAST_RETRIES {
+        FAST_DELAY_MS
+    } else {
+        let n = (attempt - FAST_RETRIES).min(20) as u32; // cap shift
+        BASE_DELAY_MS
+            .saturating_mul(2u64.saturating_pow(n))
+            .min(MAX_DELAY_MS)
     };
-    let _ = app.emit("nats:status", payload);
+    // Jitter to 50–100% of base so concurrent reconnects don't synchronize.
+    let jitter = 0.5 + rand::random::<f64>() * 0.5;
+    Duration::from_millis((base_ms as f64 * jitter) as u64)
 }
 
 fn build_connect_url(server_url: &str, token: &str) -> String {
@@ -544,28 +567,4 @@ fn build_connect_url(server_url: &str, token: &str) -> String {
         .trim_start_matches("http://")
         .trim_end_matches('/');
     format!("wss://{host}{NATS_WS_PATH}?authorization={token}")
-}
-
-/// Called by async-nats whenever it needs a connection URL — both on
-/// initial connect and on every reconnect attempt. We don't run our own
-/// OAuth refresh; the openframe-client daemon polls + rotates the token
-/// file every ~5s, our `TokenWatcher` re-decrypts on the next tick, and
-/// async-nats' own 5s reconnect delay gives a fresh token a chance to
-/// arrive between attempts. Worst-case recovery window is ~10s.
-async fn wait_for_fresh_url(
-    server_url: String,
-    token_state: TokenState,
-) -> Result<String, async_nats::AuthError> {
-    let token = token_state
-        .current_token
-        .lock()
-        .ok()
-        .and_then(|g| g.clone());
-
-    match token {
-        Some(t) => Ok(build_connect_url(&server_url, &t)),
-        None => Err(async_nats::AuthError::new(
-            "no token available for NATS reconnect",
-        )),
-    }
 }
