@@ -5,13 +5,13 @@ pub fn lookup(tool_key: &str) -> Option<&'static str> {
         "openframe-chat" => Some(env!("OPENFRAME_CHAT_VERSION")),
 
         #[cfg(feature = "meshcentral-agent-version")]
-        "meshcentral-agent" => Some(env!("MESHCENTRAL_AGENT_VERSION")),
+        "meshcentral-server" => Some(env!("MESHCENTRAL_AGENT_VERSION")),
 
         #[cfg(feature = "fleetmdm-agent-version")]
-        "fleetmdm-agent" => Some(env!("FLEETMDM_AGENT_VERSION")),
+        "fleetmdm-server" => Some(env!("FLEETMDM_AGENT_VERSION")),
 
         #[cfg(feature = "tacticalrmm-agent-version")]
-        "tacticalrmm-agent" => Some(env!("TACTICALRMM_AGENT_VERSION")),
+        "tactical-rmm" => Some(env!("TACTICALRMM_AGENT_VERSION")),
 
         #[cfg(feature = "osquery-version")]
         "osqueryd" => Some(env!("OSQUERY_VERSION")),
