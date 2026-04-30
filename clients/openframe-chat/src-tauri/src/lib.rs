@@ -54,12 +54,15 @@ fn restore_dock_icon() {
 }
 
 mod config_reader;
+mod nats_bridge;
 mod token_watcher;
 mod token_decryption_service;
+use nats_bridge::{NatsBridge, NatsEvent, NatsStatus};
 use token_watcher::{TokenWatcher, TokenState};
 use tauri::State;
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone)]
 pub struct ServerUrlState {
     pub url: Arc<Mutex<Option<String>>>,
 }
@@ -150,13 +153,50 @@ fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
         if let Some(state) = app.try_state::<TokenState>() {
             let mut started = state.started.lock().unwrap();
             if !*started
-                && TokenWatcher::start(path, secret, app.clone(), state.current_token.clone())
+                && TokenWatcher::start(
+                    path,
+                    secret,
+                    app.clone(),
+                    state.current_token.clone(),
+                    state.token_changed.clone(),
+                )
             {
                 *started = true;
                 log::info!("token watcher initialized");
             }
         }
     }
+}
+
+#[tauri::command]
+async fn nats_status(bridge: State<'_, NatsBridge>) -> Result<NatsStatus, String> {
+    Ok(bridge.status().await)
+}
+
+#[tauri::command]
+async fn nats_set_tracked_dialogs(
+    bridge: State<'_, NatsBridge>,
+    dialog_ids: Vec<String>,
+) -> Result<(), String> {
+    bridge.set_tracked_dialogs(dialog_ids).await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn nats_register_event_channel(
+    bridge: State<'_, NatsBridge>,
+    channel: tauri::ipc::Channel<NatsEvent>,
+) -> Result<String, String> {
+    Ok(bridge.register_event_channel(channel).await)
+}
+
+#[tauri::command]
+async fn nats_unregister_event_channel(
+    bridge: State<'_, NatsBridge>,
+    id: String,
+) -> Result<(), String> {
+    bridge.unregister_event_channel(&id).await;
+    Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -224,6 +264,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(move |app| {
             if std::env::var("OPENFRAME_DISABLE_LOG").is_err() {
                 use tauri_plugin_log::{
@@ -256,12 +297,19 @@ pub fn run() {
                 }
             }
 
-            app.manage(ServerUrlState { url: Arc::new(Mutex::new(None)) });
+            let url_state = ServerUrlState { url: Arc::new(Mutex::new(None)) };
+            let bridge_url_state = url_state.clone();
+            app.manage(url_state);
+
             app.manage(DebugModeState { enabled: Arc::new(Mutex::new(false)) });
-            app.manage(TokenState {
+
+            let token_state = TokenState {
                 current_token: Arc::new(Mutex::new(None)),
                 started: Arc::new(Mutex::new(false)),
-            });
+                token_changed: Arc::new(tokio::sync::Notify::new()),
+            };
+            let bridge_token_state = token_state.clone();
+            app.manage(token_state);
 
             let startup_valid = config.is_valid();
             apply_config(app.handle(), config);
@@ -279,6 +327,20 @@ pub fn run() {
                     }
                 });
             }
+
+            // Construct and start the NATS bridge. Runs an async connect
+            // loop in the background; the WebView interacts via commands
+            // and `nats:status` events.
+            let bridge = NatsBridge::new(
+                app.handle().clone(),
+                bridge_url_state,
+                bridge_token_state,
+            );
+            app.manage(bridge.clone());
+            tauri::async_runtime::spawn(async move {
+                bridge.start().await;
+            });
+            println!("[INFO] NATS bridge initialized");
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
 
@@ -467,12 +529,35 @@ pub fn run() {
             match event {
                 WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
+
+                    // Hide the window instead
                     let _ = window.hide();
+                }
+                WindowEvent::Focused(true) => {
+                    // Click-on-notification heuristic: when the main window
+                    // gains focus shortly after a NATS-driven notification
+                    // fired, ask the bridge to emit notification:click so
+                    // the WebView can navigate to the source dialog.
+                    if window.label() == "main" {
+                        if let Some(bridge) = window.app_handle().try_state::<NatsBridge>() {
+                            bridge.on_main_window_focused();
+                        }
+                    }
                 }
                 _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url, get_debug_mode, log_from_js]);
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            get_token,
+            get_server_url,
+            get_debug_mode,
+            log_from_js,
+            nats_status,
+            nats_set_tracked_dialogs,
+            nats_register_event_channel,
+            nats_unregister_event_channel,
+        ]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")

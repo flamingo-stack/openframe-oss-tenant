@@ -2,6 +2,7 @@ import type { ChatTicketItemData } from '@flamingo-stack/openframe-frontend-core
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useNatsBridgeTrackDialogs } from '../services/natsTauri';
 import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQlService';
 import { log } from '../utils/log';
 
@@ -115,6 +116,20 @@ export function useTickets() {
     }
     return items;
   }, [data?.pages]);
+
+  // Dialog ids the bridge should keep subscribed so we get notifications
+  // even when the user is on a different ticket / has the window hidden.
+  const trackedDialogIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!data?.pages) return [];
+    for (const page of data.pages) {
+      for (const edge of page.edges) {
+        if (edge.node.dialog?.id) ids.add(edge.node.dialog.id);
+      }
+    }
+    return [...ids];
+  }, [data?.pages]);
+  useNatsBridgeTrackDialogs(trackedDialogIds);
 
   const getDialogId = useCallback((ticketId: string): string | null => {
     return dialogIdMapRef.current.get(ticketId) ?? null;

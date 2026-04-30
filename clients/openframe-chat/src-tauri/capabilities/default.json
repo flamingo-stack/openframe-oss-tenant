@@ -8,7 +8,8 @@
     "core:event:allow-listen",
     "core:event:allow-emit",
     "dialog:default",
-    "fs:default"
+    "fs:default",
+    "notification:default"
   ]
 }
 

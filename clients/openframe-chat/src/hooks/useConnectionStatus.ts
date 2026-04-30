@@ -110,12 +110,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
       setStatus('connecting');
       return;
     }
-
-    if (isConnected) {
-      setStatus('connected');
-    } else {
-      setStatus('disconnected');
-    }
+    setStatus(isConnected ? 'connected' : 'disconnected');
   }, [isConnected, apiBaseUrl, token]);
 
   const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null;
