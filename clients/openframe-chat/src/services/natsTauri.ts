@@ -176,6 +176,45 @@ export function useNatsBridgeEvents(onEvent: (event: NatsEvent) => void): void {
   }, []);
 }
 
+/**
+ * Subscribes to the bridge's unread counter. Initial value is read via
+ * `nats_unread_count` (in case the app loaded with the counter > 0),
+ * subsequent updates arrive via the `unread:count` Tauri event. Reset to 0
+ * happens automatically Rust-side when the main window gains focus.
+ */
+export function useUnreadCount(): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const initial = await invoke<number>('nats_unread_count');
+        if (!cancelled) setCount(initial);
+      } catch (err) {
+        console.warn('[NATS] nats_unread_count invoke failed:', err);
+      }
+      const handle = await listen<number>('unread:count', e => {
+        setCount(e.payload);
+      });
+      if (cancelled) {
+        handle();
+      } else {
+        unlisten = handle;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  return count;
+}
+
 export function useNatsBridgeTrackDialogs(dialogIds: string[]): void {
   const sourceId = useId();
 

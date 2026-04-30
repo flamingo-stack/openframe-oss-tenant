@@ -88,6 +88,9 @@ struct Inner {
     had_connection: AtomicBool,
     /// Guards `start()` so the connect task is only spawned once.
     started: AtomicBool,
+    /// Unread OS notifications since the user last focused the main window.
+    /// Bumped in `maybe_notify`, cleared by `on_main_window_focused`.
+    unread_count: AtomicU32,
     server_url: ServerUrlState,
     token_state: TokenState,
     app: AppHandle,
@@ -122,6 +125,7 @@ impl NatsBridge {
                 reconnect_count: AtomicU32::new(0),
                 had_connection: AtomicBool::new(false),
                 started: AtomicBool::new(false),
+                unread_count: AtomicU32::new(0),
                 server_url,
                 token_state,
                 app,
@@ -156,6 +160,10 @@ impl NatsBridge {
         }
     }
 
+    pub fn unread_count(&self) -> u32 {
+        self.inner.unread_count.load(Ordering::Relaxed)
+    }
+
     /// Replace the set of dialog ids the bridge keeps subscribed. Adds
     /// missing subscriptions, removes ones no longer wanted. No-ops on the
     /// network side until the connection is established; the desired set
@@ -186,11 +194,16 @@ impl NatsBridge {
         self.inner.event_channels.write().await.remove(id);
     }
 
-    /// Called from the main-window focus handler. If a notification was
-    /// fired in the last `MAX_PENDING_AGE` seconds, consume it and emit
-    /// `notification:click` so the WebView can navigate. Otherwise no-op.
+    /// Called from the main-window focus handler. Clears unread state and,
+    /// if a notification was fired in the last `MAX_PENDING_AGE` seconds,
+    /// emits `notification:click` so the WebView can navigate.
     pub fn on_main_window_focused(&self) {
         const MAX_PENDING_AGE: Duration = Duration::from_secs(30);
+
+        // The user is looking at the app — anything unread is now seen.
+        if self.inner.unread_count.swap(0, Ordering::Relaxed) > 0 {
+            set_unread_surfaces(&self.inner, 0);
+        }
 
         let pending = {
             let mut guard = match self.inner.pending_notification.lock() {
@@ -501,6 +514,9 @@ fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value
         });
     }
 
+    let n = inner.unread_count.fetch_add(1, Ordering::Relaxed) + 1;
+    set_unread_surfaces(inner, n);
+
     let app = app.clone();
     let dialog_id = dialog_id.to_string();
     // Notification.show() blocks; punt to a worker thread so the router
@@ -533,6 +549,19 @@ fn should_notify(app: &AppHandle) -> bool {
     let visible = main.is_visible().unwrap_or(false);
     let focused = main.is_focused().unwrap_or(false);
     !(visible && focused)
+}
+
+/// Reflect the current unread count on every surface that displays it:
+/// the OS dock/taskbar badge, plus an `unread:count` event for the
+/// WebView (so React can render an in-app indicator).
+fn set_unread_surfaces(inner: &Inner, count: u32) {
+    if let Some(window) = inner.app.get_webview_window("main") {
+        let badge = if count == 0 { None } else { Some(count as i64) };
+        if let Err(err) = window.set_badge_count(badge) {
+            tracing::debug!("[NATS] set_badge_count failed: {err}");
+        }
+    }
+    let _ = inner.app.emit("unread:count", count);
 }
 
 fn truncate_for_notification(text: &str, max: usize) -> String {
