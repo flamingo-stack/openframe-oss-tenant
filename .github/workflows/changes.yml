@@ -21,10 +21,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-stream }}
       openframe-test:
         value: ${{ jobs.changes.outputs.openframe-test }}
-      openframe-frontend: 
+      openframe-frontend:
         value: ${{ jobs.changes.outputs.openframe-frontend }}
-      tactical-base: 
-        value: ${{ jobs.changes.outputs.tactical-base }}
       client:
         value: ${{ jobs.changes.outputs.client }}
       openframe-chat:
@@ -55,7 +53,6 @@ jobs:
       openframe-stream: ${{ steps.filter.outputs.openframe-stream }}
       openframe-test: ${{ steps.filter.outputs.openframe-test }}
       openframe-frontend: ${{ steps.filter.outputs.openframe-frontend }}
-      tactical-base: ${{ steps.filter.outputs.tactical-base }}
       openframe-chat: ${{ steps.filter.outputs.openframe-chat }}
       client: ${{ steps.filter.outputs.client }}
       helm: ${{ steps.filter.outputs.helm }}
@@ -109,9 +106,6 @@ jobs:
               - './openframe/services/openframe-test/**'
             openframe-frontend:
               - './openframe/services/openframe-frontend/**'
-            tactical-base:
-              - './integrated-tools/tactical-rmm/tactical-base/**'
-              - './integrated-tools/tactical-rmm/shared/**'
             openframe-chat:
               - './clients/openframe-chat/**'
             client:
