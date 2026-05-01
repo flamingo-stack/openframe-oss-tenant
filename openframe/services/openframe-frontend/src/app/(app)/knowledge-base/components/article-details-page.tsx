@@ -3,14 +3,10 @@
 import type { ActionsMenuGroup, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
 import {
   BoxArchiveIcon,
-  Download01Icon,
-  FileIcon,
   FolderEditIcon,
   PenEditIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  Badge,
-  Button,
   Card,
   PageLayout,
   SquareAvatar,
@@ -19,16 +15,22 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound, useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { formatFileSize } from '@/app/(app)/devices/utils/file-manager-utils';
 import { formatDate } from '@/lib/format-date';
-import type { ArticleStatus } from '../mock-data';
-import { mockKnowledgeBaseItems } from '../mock-data';
+import { getKnowledgeBaseItemsConnectionId } from '../hooks/use-knowledge-base-items';
+import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
+import { usePublishArticle } from '../hooks/use-publish-article';
+import { useUnpublishArticle } from '../hooks/use-unpublish-article';
+import { ArchiveArticleModal } from './archive-article-modal';
 import { SimpleMarkdownRenderer } from './lazy-markdown';
+import { MoveToFolderModal } from './move-to-folder-modal';
 
 interface ArticleDetailsPageProps {
   articleId: string;
 }
+
+type ArticleStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 const STATUS_VARIANT: Record<ArticleStatus, 'success' | 'grey' | 'outline'> = {
   PUBLISHED: 'success',
@@ -36,54 +38,86 @@ const STATUS_VARIANT: Record<ArticleStatus, 'success' | 'grey' | 'outline'> = {
   ARCHIVED: 'outline',
 };
 
-export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
+function ArticleDetailsContent({ articleId }: { articleId: string }) {
   const router = useRouter();
   const { toast } = useToast();
+  const article = useKnowledgeBaseItem(articleId);
+  const { publishArticle, isPending: isPublishing } = usePublishArticle();
+  const { unpublishArticle, isPending: isUnpublishing } = useUnpublishArticle();
 
-  const article = useMemo(() => {
-    const item = mockKnowledgeBaseItems.find(i => i.id === articleId);
-    return item && item.type === 'article' ? item : null;
-  }, [articleId]);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
+
+  if (!article || article.type !== 'ARTICLE') {
+    notFound();
+  }
+
+  const status = (article.status ?? 'DRAFT') as ArticleStatus;
+  const updatedAt = article.updatedAt ?? article.createdAt;
+  const sourceConnectionId = getKnowledgeBaseItemsConnectionId({
+    parentId: article.parentId ?? null,
+    search: null,
+  });
+
+  const authorName = useMemo(() => {
+    if (!article.author) return null;
+    const parts = [article.author.firstName, article.author.lastName].filter(Boolean);
+    return parts.length ? parts.join(' ') : (article.author.email ?? null);
+  }, [article.author]);
 
   const uiAttachments = useMemo(() => {
-    if (!article?.attachments) return [];
+    if (!article.attachments) return [];
     return article.attachments.map(att => ({
       id: att.id,
       fileName: att.fileName,
       fileSize: att.fileSize ? formatFileSize(att.fileSize) : '',
       onDownload: () => {},
     }));
-  }, [article?.attachments]);
+  }, [article.attachments]);
+
+  const handlePublish = async () => {
+    try {
+      await publishArticle(article.id);
+      toast({ title: 'Published', description: article.name, variant: 'success' });
+    } catch {
+      // hook already toasted
+    }
+  };
+
+  const handleUnpublish = async () => {
+    try {
+      await unpublishArticle(article.id);
+      toast({ title: 'Moved to draft', description: article.name, variant: 'success' });
+    } catch {
+      // hook already toasted
+    }
+  };
 
   const menuActions = useMemo<ActionsMenuGroup[]>(
     () => [
       {
         items: [
-          {
-            id: 'archive',
-            label: 'Archive',
-            icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
-            onClick: () => toast({ title: 'Archived', description: 'Article archived', variant: 'success' }),
-          },
+          ...(status !== 'ARCHIVED'
+            ? [
+                {
+                  id: 'archive',
+                  label: 'Archive',
+                  icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: () => setArchiveOpen(true),
+                },
+              ]
+            : []),
           {
             id: 'move-to-folder',
             label: 'Move to Folder',
             icon: <FolderEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-            onClick: () =>
-              toast({ title: 'Move to Folder', description: 'Folder selection coming soon', variant: 'default' }),
+            onClick: () => setMoveOpen(true),
           },
         ],
       },
     ],
-    [toast],
+    [status],
   );
-
-  if (!article) {
-    notFound();
-  }
-
-  const status = article.status ?? 'PUBLISHED';
-  const updatedAt = article.updatedAt ?? article.createdAt;
 
   const actions: PageActionButton[] = [
     {
@@ -92,6 +126,26 @@ export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
       icon: <PenEditIcon size={24} className="text-ods-text-secondary" />,
       variant: 'card',
     },
+    ...(status === 'DRAFT'
+      ? [
+          {
+            label: isPublishing ? 'Publishing...' : 'Publish',
+            onClick: handlePublish,
+            disabled: isPublishing,
+            variant: 'primary' as const,
+          },
+        ]
+      : []),
+    ...(status === 'PUBLISHED'
+      ? [
+          {
+            label: isUnpublishing ? 'Saving...' : 'Move to Draft',
+            onClick: handleUnpublish,
+            disabled: isUnpublishing,
+            variant: 'card' as const,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -105,7 +159,7 @@ export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
       {article.tags && article.tags.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {article.tags.map(tag => (
-            <Tag key={tag} label={tag} variant="outline" className="max-w-full" />
+            <Tag key={tag.id} label={tag.key} variant="outline" className="max-w-full" />
           ))}
         </div>
       )}
@@ -113,21 +167,15 @@ export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
       <Card className="px-4 py-0 border-ods-border">
         <div className="grid grid-cols-2 gap-x-4 lg:grid-cols-3">
           <div className="flex min-w-0 items-center gap-2 h-20">
-            <SquareAvatar
-              src={article.author?.avatarUrl}
-              fallback={article.author?.name ?? 'A'}
-              alt={article.author?.name ?? 'Author'}
-              size="md"
-              variant="round"
-            />
+            <SquareAvatar fallback={authorName ?? 'A'} alt={authorName ?? 'Author'} size="md" variant="round" />
             <div className="flex flex-col min-w-0 flex-1">
-              <p className="text-h4 text-ods-text-primary truncate">{article.author?.name ?? 'Unknown'}</p>
+              <p className="text-h4 text-ods-text-primary truncate">{authorName ?? 'Unknown'}</p>
               <p className="text-heading-5 text-ods-text-secondary truncate">Author</p>
             </div>
           </div>
 
           <div className="flex flex-col min-w-0 h-20 justify-center">
-            <p className="text-h4 text-ods-text-primary truncate">{formatDate(updatedAt)}</p>
+            <p className="text-h4 text-ods-text-primary truncate">{updatedAt ? formatDate(updatedAt) : '-'}</p>
             <p className="text-heading-5 text-ods-text-secondary truncate">Updated</p>
           </div>
 
@@ -140,9 +188,43 @@ export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
         </div>
       </Card>
 
-      <SimpleMarkdownRenderer content={article.body ?? ''} textSize="compact" />
+      <SimpleMarkdownRenderer content={article.content ?? ''} textSize="compact" />
 
       {article.attachments && article.attachments.length > 0 && <TicketAttachmentsList attachments={uiAttachments} />}
+
+      <ArchiveArticleModal
+        isOpen={archiveOpen}
+        onClose={() => setArchiveOpen(false)}
+        article={archiveOpen ? { id: article.id, name: article.name } : null}
+        sourceConnectionId={sourceConnectionId}
+      />
+      <MoveToFolderModal
+        isOpen={moveOpen}
+        onClose={() => setMoveOpen(false)}
+        item={moveOpen ? { id: article.id, name: article.name, type: 'article' } : null}
+        sourceConnectionId={sourceConnectionId}
+      />
     </PageLayout>
   );
 }
+
+function ArticleDetailsSkeleton() {
+  return (
+    <div className="flex flex-col gap-4 p-6">
+      <div className="h-8 w-1/2 rounded bg-ods-card animate-pulse" />
+      <div className="h-32 w-full rounded bg-ods-card animate-pulse" />
+      <div className="h-64 w-full rounded bg-ods-card animate-pulse" />
+    </div>
+  );
+}
+
+export function ArticleDetailsPage({ articleId }: ArticleDetailsPageProps) {
+  return (
+    <Suspense fallback={<ArticleDetailsSkeleton />}>
+      <ArticleDetailsContent articleId={articleId} />
+    </Suspense>
+  );
+}
+
+// Required for the prop name to be referenced by the wrapper above when imported.
+export type { ArticleDetailsPageProps };

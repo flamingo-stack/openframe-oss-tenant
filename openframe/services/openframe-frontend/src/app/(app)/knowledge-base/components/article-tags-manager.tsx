@@ -2,19 +2,22 @@
 
 import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useMemo } from 'react';
-import { mockKnowledgeBaseTags } from '../mock-data';
+import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 
 interface ArticleTagsManagerProps {
   selected: string[];
   onChange: (tags: string[]) => void;
+  /** Existing tags fetched at the form level so they can be reused for save-time ID resolution. */
+  availableTags: ReadonlyArray<KnowledgeBaseTag>;
   disabled?: boolean;
 }
 
-export function ArticleTagsManager({ selected, onChange, disabled }: ArticleTagsManagerProps) {
+export function ArticleTagsManager({ selected, onChange, availableTags, disabled }: ArticleTagsManagerProps) {
   const options = useMemo(() => {
-    const merged = Array.from(new Set([...mockKnowledgeBaseTags, ...selected]));
-    return merged.map(tag => ({ label: tag, value: tag }));
-  }, [selected]);
+    const keys = new Set<string>(availableTags.map(t => t.key));
+    for (const key of selected) keys.add(key);
+    return Array.from(keys).map(key => ({ label: key, value: key }));
+  }, [availableTags, selected]);
 
   return (
     <Autocomplete

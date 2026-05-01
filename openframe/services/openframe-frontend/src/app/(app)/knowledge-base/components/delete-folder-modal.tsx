@@ -14,7 +14,9 @@ import {
   SelectValue,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { type FolderChildrenAction, useDeleteFolder } from '../hooks/use-delete-folder';
+import { useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
 
 const ARCHIVE_VALUE = '__archive__';
 
@@ -23,75 +25,57 @@ export interface DeleteFolderTarget {
   name: string;
 }
 
-export interface DeleteFolderResult {
-  folderId: string;
-  /** Target folder id to move articles into. `null` means "Don't Move and Archive". */
-  moveToFolderId: string | null;
-}
-
 interface DeleteFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   folder: DeleteFolderTarget | null;
-  /** Available folders to move articles into. The folder being deleted is excluded automatically. */
-  availableFolders: DeleteFolderTarget[];
-  onConfirm?: (result: DeleteFolderResult) => void | Promise<void>;
+  /** Connection ID of the parent folder's items list — the deleted folder is removed from here. */
+  sourceConnectionId: string;
 }
 
-export function DeleteFolderModal({ isOpen, onClose, folder, availableFolders, onConfirm }: DeleteFolderModalProps) {
+interface DeleteFolderContentProps {
+  onClose: () => void;
+  folder: DeleteFolderTarget;
+  sourceConnectionId: string;
+}
+
+function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFolderContentProps) {
   const { toast } = useToast();
+  const { deleteFolder, isPending } = useDeleteFolder();
+  const folders = useKnowledgeBaseFolders();
   const [moveTarget, setMoveTarget] = useState<string>(ARCHIVE_VALUE);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isOpen) {
-      setMoveTarget(ARCHIVE_VALUE);
-      setIsSubmitting(false);
-    }
-  }, [isOpen]);
+    setMoveTarget(ARCHIVE_VALUE);
+  }, []);
 
-  const moveOptions = useMemo(() => availableFolders.filter(f => f.id !== folder?.id), [availableFolders, folder?.id]);
+  const moveOptions = useMemo(() => folders.filter(f => f.id !== folder.id), [folders, folder.id]);
 
-  const handleConfirm = async () => {
-    if (!folder || isSubmitting) return;
-    setIsSubmitting(true);
-    try {
-      await onConfirm?.({
-        folderId: folder.id,
-        moveToFolderId: moveTarget === ARCHIVE_VALUE ? null : moveTarget,
-      });
-      toast({
-        title: 'Folder deleted',
-        description: folder.name,
-        variant: 'success',
-      });
-      onClose();
-    } catch (err) {
-      toast({
-        title: 'Delete failed',
-        description: err instanceof Error ? err.message : 'Unable to delete folder',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleConfirm = () => {
+    const childrenAction: FolderChildrenAction = moveTarget === ARCHIVE_VALUE ? 'ARCHIVE' : 'MOVE';
+    deleteFolder({
+      id: folder.id,
+      childrenAction,
+      moveTargetFolderId: childrenAction === 'MOVE' ? moveTarget : null,
+      connections: [sourceConnectionId],
+      onCompleted: () => {
+        toast({ title: 'Folder deleted', description: folder.name, variant: 'success' });
+        onClose();
+      },
+    });
   };
 
   return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>Delete Folder</ModalV2Title>
-      </ModalV2Header>
-
+    <>
       <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
         <p className="text-h4 text-ods-text-primary">
-          Are you sure you want to delete <span className="text-ods-error">{folder?.name ?? 'this'}</span> folder? All
-          articles inside will be archived.
+          Are you sure you want to delete <span className="text-ods-error">{folder.name}</span> folder? All articles
+          inside will be archived or moved.
         </p>
 
         <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
           <p className="text-h4 text-ods-text-primary">Move Articles to</p>
-          <Select value={moveTarget} onValueChange={setMoveTarget} disabled={isSubmitting}>
+          <Select value={moveTarget} onValueChange={setMoveTarget} disabled={isPending}>
             <SelectTrigger className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -108,19 +92,55 @@ export function DeleteFolderModal({ isOpen, onClose, folder, availableFolders, o
       </ModalV2Content>
 
       <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isSubmitting}>
+        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
           Cancel
         </Button>
         <Button
           variant="destructive"
           className="flex-1"
           onClick={handleConfirm}
-          disabled={!folder || isSubmitting}
-          loading={isSubmitting}
+          disabled={isPending}
+          loading={isPending}
         >
-          {isSubmitting ? 'Deleting...' : 'Delete Folder'}
+          {isPending ? 'Deleting...' : 'Delete Folder'}
         </Button>
       </ModalV2Footer>
+    </>
+  );
+}
+
+function DeleteFolderContentSkeleton({ onClose }: { onClose: () => void }) {
+  return (
+    <>
+      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
+        <div className="h-6 w-3/4 rounded bg-ods-card animate-pulse" />
+        <div className="h-12 w-full rounded-[6px] bg-ods-card animate-pulse" />
+      </ModalV2Content>
+      <ModalV2Footer>
+        <Button variant="outline" className="flex-1" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button variant="destructive" className="flex-1" disabled>
+          Delete Folder
+        </Button>
+      </ModalV2Footer>
+    </>
+  );
+}
+
+export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId }: DeleteFolderModalProps) {
+  return (
+    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
+      <ModalV2Header>
+        <ModalV2Title>Delete Folder</ModalV2Title>
+      </ModalV2Header>
+      {isOpen && folder ? (
+        <Suspense fallback={<DeleteFolderContentSkeleton onClose={onClose} />}>
+          <DeleteFolderContent onClose={onClose} folder={folder} sourceConnectionId={sourceConnectionId} />
+        </Suspense>
+      ) : (
+        <DeleteFolderContentSkeleton onClose={onClose} />
+      )}
     </ModalV2>
   );
 }

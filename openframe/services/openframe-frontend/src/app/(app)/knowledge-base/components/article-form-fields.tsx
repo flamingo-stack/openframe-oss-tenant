@@ -1,10 +1,11 @@
 'use client';
 
-import { Autocomplete, FileUpload, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Autocomplete, FileUpload, Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import type { ManagedFile } from '../hooks/use-edit-article-form';
-import { mockKnowledgeBaseItems } from '../mock-data';
+import { useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
+import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 import type { ArticleFormData } from '../types/article.types';
 import { ArticleTagsManager } from './article-tags-manager';
 import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
@@ -14,17 +15,23 @@ interface ArticleFormFieldsProps {
   managedFiles: ManagedFile[];
   onAddFiles: (files: File | File[] | undefined) => void;
   onRemoveFile: (id: string) => void;
+  /** Existing tags fetched at the form level (passed through to ArticleTagsManager). */
+  availableTags: ReadonlyArray<KnowledgeBaseTag>;
 }
 
-export function ArticleFormFields({ form, managedFiles, onAddFiles, onRemoveFile }: ArticleFormFieldsProps) {
+export function ArticleFormFields({
+  form,
+  managedFiles,
+  onAddFiles,
+  onRemoveFile,
+  availableTags,
+}: ArticleFormFieldsProps) {
   const { control } = form;
+  const folders = useKnowledgeBaseFolders();
 
   const folderOptions = useMemo(
-    () =>
-      mockKnowledgeBaseItems
-        .filter(item => item.type === 'folder')
-        .map(folder => ({ label: folder.name, value: folder.id })),
-    [],
+    () => folders.map(folder => ({ label: folder.name, value: folder.id })),
+    [folders],
   );
 
   const renderPreview = useCallback(
@@ -79,7 +86,9 @@ export function ArticleFormFields({ form, managedFiles, onAddFiles, onRemoveFile
       <Controller
         name="tags"
         control={control}
-        render={({ field }) => <ArticleTagsManager selected={field.value} onChange={field.onChange} />}
+        render={({ field }) => (
+          <ArticleTagsManager selected={field.value} onChange={field.onChange} availableTags={availableTags} />
+        )}
       />
 
       {/* Body — Markdown Editor */}

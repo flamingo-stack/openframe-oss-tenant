@@ -2,66 +2,69 @@
 
 import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { PageLayout, SearchInput } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound, useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { mockKnowledgeBaseItems } from '../mock-data';
+import { Suspense, useState } from 'react';
+import { getKnowledgeBaseItemsConnectionId } from '../hooks/use-knowledge-base-items';
+import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import { KnowledgeBaseTable } from './knowledge-base-table';
-import { NewFolderModal, type NewFolderResult } from './new-folder-modal';
+import { NewFolderModal } from './new-folder-modal';
 
 interface KnowledgeBaseViewProps {
   /** Current folder id. `null` = root level. */
   folderId: string | null;
 }
 
-function parentHrefFor(parentFolderId: string | undefined): string {
+function parentHrefFor(parentFolderId: string | null | undefined): string {
   return parentFolderId ? `/knowledge-base/folders/${parentFolderId}` : '/knowledge-base';
+}
+
+interface FolderHeaderProps {
+  folderId: string;
+  onResolved: (header: { name: string; parentId: string | null }) => void;
+}
+
+/**
+ * Suspense boundary that fetches the folder header. Lifts the resolved name and
+ * parentId up via callback so the outer view can render the page title and back
+ * button without nested Suspense flicker.
+ */
+function FolderHeaderResolver({ folderId, onResolved }: FolderHeaderProps) {
+  const folder = useKnowledgeBaseItem(folderId);
+  if (!folder || folder.type !== 'FOLDER') {
+    notFound();
+  }
+  onResolved({ name: folder.name, parentId: folder.parentId ?? null });
+  return null;
 }
 
 export function KnowledgeBaseView({ folderId }: KnowledgeBaseViewProps) {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [folderHeader, setFolderHeader] = useState<{ name: string; parentId: string | null } | null>(null);
 
-  const folder = useMemo(() => {
-    if (!folderId) return null;
-    const item = mockKnowledgeBaseItems.find(i => i.id === folderId);
-    return item && item.type === 'folder' ? item : null;
-  }, [folderId]);
+  const connectionId = getKnowledgeBaseItemsConnectionId({
+    parentId: folderId,
+    search: debouncedSearch || null,
+  });
 
-  const items = useMemo(
-    () =>
-      mockKnowledgeBaseItems.filter(item => {
-        if (item.type === 'article' && item.status === 'ARCHIVED') return false;
-        const parent = item.type === 'folder' ? (item.parentFolderId ?? null) : (item.folderId ?? null);
-        return parent === (folder?.id ?? null);
-      }),
-    [folder?.id],
-  );
+  const newArticleHref = folderId ? `/knowledge-base/new?folderId=${folderId}` : '/knowledge-base/new';
 
-  if (folderId !== null && !folder) {
-    notFound();
-  }
-
-  const handleFolderCreated = (created: NewFolderResult) => {
-    mockKnowledgeBaseItems.push({
-      id: created.id,
-      type: 'folder',
-      name: created.name,
-      ...(folder ? { parentFolderId: folder.id } : {}),
-    });
-    setRefreshKey(k => k + 1);
-  };
-
-  const newArticleHref = folder ? `/knowledge-base/new?folderId=${folder.id}` : '/knowledge-base/new';
+  const title = folderId ? (folderHeader?.name ?? 'Folder') : 'Knowledge Base';
+  const backButton = folderId
+    ? {
+        label: 'Back',
+        onClick: () => router.push(parentHrefFor(folderHeader?.parentId)),
+      }
+    : undefined;
 
   return (
     <PageLayout
-      title={folder ? folder.name : 'Knowledge Base'}
+      title={title}
       background="default"
-      backButton={
-        folder ? { label: 'Back', onClick: () => router.push(parentHrefFor(folder.parentFolderId)) } : undefined
-      }
+      backButton={backButton}
       actionsVariant="primary-buttons"
       actions={[
         {
@@ -84,13 +87,21 @@ export function KnowledgeBaseView({ folderId }: KnowledgeBaseViewProps) {
         },
       ]}
     >
+      {folderId ? (
+        <Suspense fallback={null}>
+          <FolderHeaderResolver folderId={folderId} onResolved={setFolderHeader} />
+        </Suspense>
+      ) : null}
+
       <SearchInput placeholder="Search for Articles" value={search} onChange={setSearch} />
-      <KnowledgeBaseTable key={refreshKey} items={items} />
+
+      <KnowledgeBaseTable parentId={folderId} search={debouncedSearch} />
+
       <NewFolderModal
         isOpen={isNewFolderOpen}
         onClose={() => setIsNewFolderOpen(false)}
-        parentFolderId={folder?.id ?? null}
-        onCreated={handleFolderCreated}
+        parentFolderId={folderId}
+        parentConnectionId={connectionId}
       />
     </PageLayout>
   );

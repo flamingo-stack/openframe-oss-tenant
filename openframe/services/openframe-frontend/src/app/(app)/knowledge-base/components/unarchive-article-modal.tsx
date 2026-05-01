@@ -20,19 +20,18 @@ import {
   getKnowledgeBaseItemsConnectionId,
   useKnowledgeBaseFolders,
 } from '../hooks/use-knowledge-base-items';
-import { useMoveToFolder } from '../hooks/use-move-to-folder';
+import { useUnarchiveArticle } from '../hooks/use-unarchive-article';
 
-export interface MoveToFolderItem {
+export interface UnarchiveArticleTarget {
   id: string;
   name: string;
-  type: 'folder' | 'article';
 }
 
-interface MoveToFolderModalProps {
+interface UnarchiveArticleModalProps {
   isOpen: boolean;
   onClose: () => void;
-  item: MoveToFolderItem | null;
-  /** Connection ID of the source folder's items list — the moved item is removed from here. */
+  article: UnarchiveArticleTarget | null;
+  /** Connection ID of the archive list — the article is removed from here on success. */
   sourceConnectionId: string;
 }
 
@@ -59,76 +58,78 @@ const DropdownTrigger = forwardRef<HTMLButtonElement, DropdownTriggerProps>(
           selectedName ? 'text-ods-text-primary' : 'text-ods-text-secondary',
         )}
       >
-        {selectedName ?? 'Select Folder'}
+        {selectedName ?? 'Root (no folder)'}
       </span>
       <Chevron02DownIcon className="size-6 shrink-0 text-ods-text-secondary transition-transform data-[state=open]:rotate-180" />
     </button>
   ),
 );
-DropdownTrigger.displayName = 'MoveToFolderDropdownTrigger';
+DropdownTrigger.displayName = 'UnarchiveDropdownTrigger';
 
 function buildMenuItems(
   nodes: FolderTreeNode[],
-  excludeFolderId: string | null | undefined,
-  onSelect: (folder: { id: string; name: string }) => void,
+  onSelect: (folder: { id: string | null; name: string }) => void,
 ): ActionsMenuItem[] {
-  return nodes
-    .filter(node => node.id !== excludeFolderId)
-    .map(node => {
-      const childItems = node.children?.length ? buildMenuItems(node.children, excludeFolderId, onSelect) : [];
-
-      if (childItems.length > 0) {
-        return {
-          id: node.id,
-          label: node.name,
-          type: 'submenu',
-          submenu: childItems,
-        } satisfies ActionsMenuItem;
-      }
-
+  return nodes.map(node => {
+    const childItems = node.children?.length ? buildMenuItems(node.children, onSelect) : [];
+    if (childItems.length > 0) {
       return {
         id: node.id,
         label: node.name,
-        onClick: () => onSelect({ id: node.id, name: node.name }),
+        type: 'submenu',
+        submenu: childItems,
       } satisfies ActionsMenuItem;
-    });
+    }
+    return {
+      id: node.id,
+      label: node.name,
+      onClick: () => onSelect({ id: node.id, name: node.name }),
+    } satisfies ActionsMenuItem;
+  });
 }
 
-interface MoveToFolderContentProps {
+interface UnarchiveContentProps {
   onClose: () => void;
-  itemNonNull: MoveToFolderItem;
+  article: UnarchiveArticleTarget;
   sourceConnectionId: string;
 }
 
-function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveToFolderContentProps) {
+function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveContentProps) {
   const { toast } = useToast();
-  const { moveToFolder, isPending } = useMoveToFolder();
+  const { unarchiveArticle, isPending } = useUnarchiveArticle();
   const folders = useKnowledgeBaseFolders();
-  const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
+  const [selected, setSelected] = useState<{ id: string | null; name: string } | null>(null);
 
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
-  // Folders can be moved into any folder *except themselves*. Articles have no
-  // such restriction (you can't move an article into itself anyway).
-  const excludeFolderId = itemNonNull.type === 'folder' ? itemNonNull.id : null;
-
-  const groups = useMemo(() => [{ items: buildMenuItems(tree, excludeFolderId, setSelected) }], [tree, excludeFolderId]);
+  const groups = useMemo(
+    () => [
+      {
+        items: [
+          {
+            id: '__root__',
+            label: 'Root (no folder)',
+            onClick: () => setSelected({ id: null, name: 'Root (no folder)' }),
+          } satisfies ActionsMenuItem,
+          ...buildMenuItems(tree, setSelected),
+        ],
+      },
+    ],
+    [tree],
+  );
 
   const handleConfirm = async () => {
     if (!selected || isPending) return;
-    const targetConnectionId = getKnowledgeBaseItemsConnectionId({ parentId: selected.id, search: null });
+    const targetConnectionId =
+      selected.id === null ? null : getKnowledgeBaseItemsConnectionId({ parentId: selected.id, search: null });
     try {
-      await moveToFolder({
-        id: itemNonNull.id,
+      await unarchiveArticle({
+        id: article.id,
         parentId: selected.id,
         removeFromConnections: [sourceConnectionId],
-        appendToConnections: [targetConnectionId],
+        appendToConnections: targetConnectionId ? [targetConnectionId] : [],
       });
-      toast({
-        title: 'Moved',
-        description: `${itemNonNull.name} moved to ${selected.name}`,
-        variant: 'success',
-      });
+      toast({ title: 'Unarchived', description: `${article.name} restored`, variant: 'success' });
       onClose();
     } catch {
       // hook already toasted
@@ -138,7 +139,7 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
   return (
     <>
       <ModalV2Content className="flex flex-col gap-[var(--spacing-system-xxs)] overflow-visible">
-        <p className="text-h4 text-ods-text-primary">Folder Name</p>
+        <p className="text-h4 text-ods-text-primary">Restore To</p>
         <ActionsMenuDropdown
           groups={groups}
           align="start"
@@ -159,18 +160,18 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
           disabled={!selected || isPending}
           loading={isPending}
         >
-          {isPending ? 'Moving...' : 'Move'}
+          {isPending ? 'Restoring...' : 'Unarchive'}
         </Button>
       </ModalV2Footer>
     </>
   );
 }
 
-function MoveToFolderContentSkeleton({ onClose }: { onClose: () => void }) {
+function UnarchiveContentSkeleton({ onClose }: { onClose: () => void }) {
   return (
     <>
       <ModalV2Content className="flex flex-col gap-[var(--spacing-system-xxs)]">
-        <p className="text-h4 text-ods-text-primary">Folder Name</p>
+        <p className="text-h4 text-ods-text-primary">Restore To</p>
         <div className="h-12 w-full rounded-[6px] bg-ods-card animate-pulse" />
       </ModalV2Content>
       <ModalV2Footer>
@@ -178,25 +179,25 @@ function MoveToFolderContentSkeleton({ onClose }: { onClose: () => void }) {
           Cancel
         </Button>
         <Button variant="primary" className="flex-1" disabled>
-          Move
+          Unarchive
         </Button>
       </ModalV2Footer>
     </>
   );
 }
 
-export function MoveToFolderModal({ isOpen, onClose, item, sourceConnectionId }: MoveToFolderModalProps) {
+export function UnarchiveArticleModal({ isOpen, onClose, article, sourceConnectionId }: UnarchiveArticleModalProps) {
   return (
     <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
       <ModalV2Header>
-        <ModalV2Title>Move to Folder</ModalV2Title>
+        <ModalV2Title>Unarchive Article</ModalV2Title>
       </ModalV2Header>
-      {isOpen && item ? (
-        <Suspense fallback={<MoveToFolderContentSkeleton onClose={onClose} />}>
-          <MoveToFolderContent onClose={onClose} itemNonNull={item} sourceConnectionId={sourceConnectionId} />
+      {isOpen && article ? (
+        <Suspense fallback={<UnarchiveContentSkeleton onClose={onClose} />}>
+          <UnarchiveContent onClose={onClose} article={article} sourceConnectionId={sourceConnectionId} />
         </Suspense>
       ) : (
-        <MoveToFolderContentSkeleton onClose={onClose} />
+        <UnarchiveContentSkeleton onClose={onClose} />
       )}
     </ModalV2>
   );

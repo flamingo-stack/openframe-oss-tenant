@@ -9,7 +9,8 @@ import {
   ModalV2Title,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useEffect, useState } from 'react';
+import { useArchiveArticle } from '../hooks/use-archive-article';
+import { ARCHIVED_ARTICLES_CONNECTION_KEY, getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 
 export interface ArchiveArticleTarget {
   id: string;
@@ -20,38 +21,28 @@ interface ArchiveArticleModalProps {
   isOpen: boolean;
   onClose: () => void;
   article: ArchiveArticleTarget | null;
-  onConfirm?: (articleId: string) => void | Promise<void>;
+  /** Connection ID of the items list the article currently lives in. */
+  sourceConnectionId: string;
 }
 
-export function ArchiveArticleModal({ isOpen, onClose, article, onConfirm }: ArchiveArticleModalProps) {
+export function ArchiveArticleModal({ isOpen, onClose, article, sourceConnectionId }: ArchiveArticleModalProps) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setIsSubmitting(false);
-    }
-  }, [isOpen]);
+  const { archiveArticle, isPending } = useArchiveArticle();
 
   const handleConfirm = async () => {
-    if (!article || isSubmitting) return;
-    setIsSubmitting(true);
+    if (!article || isPending) return;
+    // Append to the archive page's default-search connection if it's mounted; harmless otherwise.
+    const archiveConnectionId = getArchivedArticlesConnectionId({ search: null, tagIds: null });
     try {
-      await onConfirm?.(article.id);
-      toast({
-        title: 'Article archived',
-        description: article.name,
-        variant: 'success',
+      await archiveArticle({
+        id: article.id,
+        removeFromConnections: [sourceConnectionId],
+        appendToConnections: [archiveConnectionId],
       });
+      toast({ title: 'Article archived', description: article.name, variant: 'success' });
       onClose();
-    } catch (err) {
-      toast({
-        title: 'Archive failed',
-        description: err instanceof Error ? err.message : 'Unable to archive article',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
+    } catch {
+      // hook already toasted
     }
   };
 
@@ -68,19 +59,22 @@ export function ArchiveArticleModal({ isOpen, onClose, article, onConfirm }: Arc
       </ModalV2Content>
 
       <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isSubmitting}>
+        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
           Cancel
         </Button>
         <Button
           variant="destructive"
           className="flex-1"
           onClick={handleConfirm}
-          disabled={!article || isSubmitting}
-          loading={isSubmitting}
+          disabled={!article || isPending}
+          loading={isPending}
         >
-          {isSubmitting ? 'Archiving...' : 'Archive Article'}
+          {isPending ? 'Archiving...' : 'Archive Article'}
         </Button>
       </ModalV2Footer>
     </ModalV2>
   );
 }
+
+// Re-export for callers that need to invalidate / append directly.
+export { ARCHIVED_ARTICLES_CONNECTION_KEY };
