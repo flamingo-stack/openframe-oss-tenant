@@ -15,9 +15,23 @@ export type { PackageUpdateInput, PaygUpdateInput, UpdateSubscriptionInput };
 const updateSubscriptionMutation = graphql`
   mutation useUpdateSubscriptionMutation($input: UpdateSubscriptionInput!) {
     updateSubscription(input: $input) {
-      subscription { id status startDate endDate }
-      paymentUrl
-      updatedProducts
+      subscription {
+        id
+        status
+        startDate
+        currentPeriodEnd
+        cancellationEffectiveAt
+        pendingInvoices {
+          id
+          hostedInvoiceUrl
+          createdAt
+        }
+      }
+      errors {
+        code
+        message
+        field
+      }
     }
   }
 `;
@@ -33,13 +47,26 @@ export function useUpdateSubscription() {
         onCompleted: response => {
           const result = response.updateSubscription;
 
-          if (result.paymentUrl) {
+          if (result.errors.length > 0) {
+            toast({
+              title: 'Update Failed',
+              description: result.errors.map(e => e.message).join('. '),
+              variant: 'destructive',
+            });
+            return;
+          }
+
+          const latestPending = [...result.subscription.pendingInvoices].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          )[0];
+
+          if (latestPending) {
             toast({
               title: 'Redirecting to Payment',
               description: 'Complete your payment to activate changes.',
               variant: 'success',
             });
-            window.location.href = result.paymentUrl;
+            window.location.href = latestPending.hostedInvoiceUrl;
             return;
           }
 

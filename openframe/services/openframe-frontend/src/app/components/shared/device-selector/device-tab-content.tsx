@@ -21,6 +21,7 @@ export function DeviceTabContent({
   disabled,
   infiniteScroll,
   singleSelect,
+  rowClassName,
 }: DeviceTabContentProps) {
   // Convert legacy TableColumn<Device>[] to ColumnDef<Device>[] so this component
   // can keep its external contract (DeviceSelector still passes TableColumn[]).
@@ -90,6 +91,7 @@ export function DeviceTabContent({
           loading={loading}
           skeletonRows={8}
           emptyMessage={mode === 'selected' ? 'No devices selected' : 'No devices found'}
+          rowClassName={rowClassName}
         />
         {infiniteScroll && (
           <DataTable.InfiniteFooter

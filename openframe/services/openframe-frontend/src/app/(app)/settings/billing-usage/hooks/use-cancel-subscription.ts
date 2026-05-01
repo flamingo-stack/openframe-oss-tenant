@@ -6,21 +6,29 @@ import { graphql, useMutation } from 'react-relay';
 import type { useCancelSubscriptionMutation as UseCancelSubscriptionMutationType } from '@/__generated__/useCancelSubscriptionMutation.graphql';
 
 const cancelSubscriptionMutation = graphql`
-  mutation useCancelSubscriptionMutation {
-    cancelSubscription
+  mutation useCancelSubscriptionMutation($input: CancelSubscriptionInput) {
+    cancelSubscription(input: $input)
   }
 `;
+
+interface CancelSubscriptionOptions {
+  reason?: string;
+  description?: string;
+  onSuccess?: () => void;
+}
 
 export function useCancelSubscription() {
   const { toast } = useToast();
   const [commit, isInFlight] = useMutation<UseCancelSubscriptionMutationType>(cancelSubscriptionMutation);
 
   const mutate = useCallback(
-    (options?: { onSuccess?: () => void }) => {
+    (options?: CancelSubscriptionOptions) => {
+      const { reason, description, onSuccess } = options ?? {};
+      const input = reason || description ? { reason: reason ?? null, description: description ?? null } : null;
       commit({
-        variables: {},
+        variables: { input },
         onCompleted: () => {
-          options?.onSuccess?.();
+          onSuccess?.();
         },
         onError: err => {
           toast({

@@ -3,23 +3,16 @@
 import { AlertTriangleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type ActionsMenuGroup,
-  Button,
   CircularProgress,
   PageLayout,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { format, parseISO } from 'date-fns';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Suspense, useMemo, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__generated__/billingUsageViewQuery.graphql';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
-import {
-  BILLING_USAGE_MOCKS,
-  type BillingUsageMock,
-  type BillingUsageMockKey,
-  isBillingUsageMockKey,
-} from '../mocks/billing-usage-mocks';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
 import { CancelOfferModal } from './cancel-offer-modal';
 import { type CancelReason, CancelSubscriptionModal } from './cancel-subscription-modal';
@@ -29,14 +22,6 @@ const WARNING_THRESHOLD = 90;
 const OVER_THRESHOLD = 100;
 
 type UsageState = 'success' | 'warning' | 'over';
-
-const EMPTY_USAGE = {
-  devicesUsed: 0,
-  activeDevices: 0,
-  inactiveDevices: 0,
-  aiUsed: 0,
-  aiConversations: 0,
-} as const;
 
 function formatCount(value: number): string {
   return value.toLocaleString('en-US');
@@ -76,8 +61,6 @@ export function BillingUsageView() {
 
 function BillingUsageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const mockKey = searchParams.get('mock');
   const data = useLazyLoadQuery<BillingUsageViewQueryType>(
     billingUsageViewQuery,
     {},
@@ -86,30 +69,37 @@ function BillingUsageContent() {
   const cancelSubscription = useCancelSubscription();
   const [cancelStep, setCancelStep] = useState<'idle' | 'reason' | 'offer' | 'cancelled'>('idle');
   const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
+  const [cancelComment, setCancelComment] = useState<string>('');
 
-  const setMock = useCallback(
-    (key: BillingUsageMockKey | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (key) params.set('mock', key);
-      else params.delete('mock');
-      const qs = params.toString();
-      router.replace(qs ? `/settings/billing-usage?${qs}` : '/settings/billing-usage');
-    },
-    [router, searchParams],
-  );
-
-  const source: BillingUsageMock = isBillingUsageMockKey(mockKey)
-    ? BILLING_USAGE_MOCKS[mockKey]
-    : { subscription: data.subscription ?? null, usage: EMPTY_USAGE };
-
-  const subscription = source.subscription;
-  const usage = source.usage;
-
+  const subscription = data.subscription;
   const subscriptionProducts = subscription?.products ?? [];
+  const status = subscription?.status ?? 'ACTIVE';
+  const pendingInvoices = subscription?.pendingInvoices ?? [];
+  const latestPendingInvoice =
+    [...pendingInvoices].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] ?? null;
+
+  const devicesUsed = subscription?.usage?.devicesUsed ?? 0;
+  const activeDevices = subscription?.usage?.activeDevices ?? 0;
+  const inactiveDevices = subscription?.usage?.inactiveDevices ?? 0;
+  const aiTokensUsed = subscription?.usage?.aiTokensUsed ?? 0;
+  const estimatedOverageCost =
+    subscription?.currentInvoice?.estimatedOverage != null ? subscription.currentInvoice.estimatedOverage / 100 : 0;
+
   const managedDevicesProduct = subscriptionProducts.find(p => p.name === 'MANAGED_DEVICES') ?? null;
   const aiProduct = subscriptionProducts.find(p => p.name === 'AI_ASSISTANCE') ?? null;
   const managedDevicesActive = managedDevicesProduct?.packageOptions.find(o => o.status === 'ACTIVE') ?? null;
   const aiActive = aiProduct?.packageOptions.find(o => o.status === 'ACTIVE') ?? null;
+
+  const trialExpirationDate = subscription?.trialExpirationDate ?? null;
+  // Trial = no paid period has ever been billed AND no package/PAYG commitment yet.
+  // We deliberately ignore `status` because the backend uses several combinations for trial-like
+  // states (NOT_ACTIVATED, PENDING_CANCELLATION, etc.) — `currentPeriodEnd == null` plus the
+  // absence of any committed product is the authoritative "nothing has been paid for, nothing
+  // is even queued for activation" signal.
+  const hasAnyCommitment = subscriptionProducts.some(p => p.packageOptions.length > 0 || p.payAsYouGoOption != null);
+  const isTrial = trialExpirationDate != null && subscription?.currentPeriodEnd == null && !hasAnyCommitment;
+  const isCancelled = !isTrial && (status === 'CANCELED' || status === 'PENDING_CANCELLATION');
+  const isOverdue = !isTrial && status === 'PAST_DUE' && pendingInvoices.length > 0;
 
   const deviceIsPayg = managedDevicesProduct?.payAsYouGoOption != null && managedDevicesActive == null;
   const aiIsPayg = aiProduct?.payAsYouGoOption != null && aiActive == null;
@@ -119,14 +109,14 @@ function BillingUsageContent() {
   const deviceAllocation = managedDevicesActive?.quantity ?? 0;
   const aiAllocation = aiActive?.quantity ?? 0;
 
-  const devicePct = deviceAllocation > 0 ? Math.round((usage.devicesUsed / deviceAllocation) * 100) : 0;
-  const aiPct = aiAllocation > 0 ? Math.round((usage.aiUsed / aiAllocation) * 100) : 0;
+  const devicePct = deviceAllocation > 0 ? Math.round((devicesUsed / deviceAllocation) * 100) : 0;
+  const aiPct = aiAllocation > 0 ? Math.round((aiTokensUsed / aiAllocation) * 100) : 0;
 
   const deviceState: UsageState = deviceIsPayg ? 'success' : getUsageState(devicePct);
   const aiState: UsageState = aiIsPayg ? 'success' : hasAi ? getUsageState(aiPct) : 'success';
 
-  const deviceOverage = Math.max(0, usage.devicesUsed - deviceAllocation);
-  const aiOverage = Math.max(0, usage.aiUsed - aiAllocation);
+  const deviceOverage = Math.max(0, devicesUsed - deviceAllocation);
+  const aiOverage = Math.max(0, aiTokensUsed - aiAllocation);
 
   const warnings: Array<{ title: string; description: string }> = [];
   if (deviceState === 'warning') {
@@ -155,8 +145,6 @@ function BillingUsageContent() {
   }
 
   const showOverageBlock = deviceState === 'over' || aiState === 'over';
-  const isOverdue = showOverageBlock && usage.overdue === true;
-  const isCancelled = usage.cancelled === true;
   const accentClass = isOverdue ? 'text-ods-error' : 'text-ods-warning';
   const accentBorderClass = isOverdue ? 'border-ods-error' : 'border-ods-warning';
 
@@ -171,7 +159,9 @@ function BillingUsageContent() {
     return total;
   }, [subscriptionProducts]);
 
-  const nextBilling = managedDevicesActive?.endDate ?? aiActive?.endDate ?? subscription?.endDate ?? null;
+  const nextBilling = isCancelled
+    ? (subscription?.cancellationEffectiveAt ?? managedDevicesActive?.endDate ?? aiActive?.endDate ?? null)
+    : (managedDevicesActive?.endDate ?? aiActive?.endDate ?? subscription?.currentPeriodEnd ?? null);
 
   const menuActions: ActionsMenuGroup[] = isCancelled
     ? []
@@ -205,14 +195,26 @@ function BillingUsageContent() {
     : isOverdue
       ? {
           label: 'Pay Overage',
-          onClick: () => router.push('/settings/billing-usage/subscription'),
+          onClick: () => {
+            if (latestPendingInvoice) {
+              window.location.href = latestPendingInvoice.hostedInvoiceUrl;
+            } else {
+              router.push('/settings/billing-usage/subscription');
+            }
+          },
           variant: 'primary' as const,
         }
-      : {
-          label: 'Update Subscription',
-          onClick: () => router.push('/settings/billing-usage/subscription'),
-          variant: (isNearLimits ? 'primary' : 'card') as 'primary' | 'card',
-        };
+      : isTrial
+        ? {
+            label: 'Activate Subscription',
+            onClick: () => router.push('/settings/billing-usage/subscription'),
+            variant: 'primary' as const,
+          }
+        : {
+            label: 'Update Subscription',
+            onClick: () => router.push('/settings/billing-usage/subscription'),
+            variant: (isNearLimits ? 'primary' : 'card') as 'primary' | 'card',
+          };
 
   return (
     <PageLayout
@@ -223,21 +225,20 @@ function BillingUsageContent() {
       actions={[primaryAction]}
       menuActions={menuActions}
     >
-      <MockPreviewToolbar currentKey={isBillingUsageMockKey(mockKey) ? mockKey : null} onChange={setMock} />
-
       <div className={cn('grid gap-4', hasAi ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}>
         <UsageMetricCard
           title="Device Usage"
-          value={usage.devicesUsed}
+          value={devicesUsed}
           percentage={devicePct}
           state={deviceState}
           overdue={isOverdue}
           payg={deviceIsPayg}
+          hideProgress={isTrial}
         />
         {hasAi && (
           <UsageMetricCard
             title="AI Usage"
-            value={usage.aiUsed}
+            value={aiTokensUsed}
             percentage={aiPct}
             state={aiState}
             overdue={isOverdue}
@@ -264,8 +265,8 @@ function BillingUsageContent() {
             <div className={cn('flex flex-col gap-3 p-4', warnings.length > 0 && cn('border-t', accentBorderClass))}>
               {deviceState === 'over' && <BillingRow label="Device Overage" value={formatCount(deviceOverage)} />}
               {hasAi && aiState === 'over' && <BillingRow label="AI Overage" value={formatCount(aiOverage)} />}
-              {usage.estimatedOverageCost != null && (
-                <BillingRow label="Estimated Overage" value={formatCurrency(usage.estimatedOverageCost)} />
+              {estimatedOverageCost > 0 && (
+                <BillingRow label="Estimated Overage" value={formatCurrency(estimatedOverageCost)} />
               )}
               <BillingRow label="Next Billing" value={formatDate(nextBilling)} />
             </div>
@@ -281,7 +282,10 @@ function BillingUsageContent() {
             value={aiIsPayg ? 'Pay as you go' : hasAi ? formatCount(aiAllocation) : 'None'}
             muted={!hasAi && !aiIsPayg}
           />
-          <BillingRow label="Monthly Cost" value={formatCurrency(monthlyCost || usage.estimatedOverageCost || 0)} />
+          <BillingRow
+            label="Monthly Cost"
+            value={isTrial ? 'Free' : formatCurrency(monthlyCost || estimatedOverageCost)}
+          />
           {isCancelled ? (
             <BillingRow
               label="Plan ends on"
@@ -293,14 +297,25 @@ function BillingUsageContent() {
                 </>
               }
             />
+          ) : isTrial ? (
+            <BillingRow
+              label="Trial ends on"
+              warning
+              value={
+                <>
+                  {formatDate(trialExpirationDate)}
+                  <AlertTriangleIcon className="size-4 text-ods-warning" />
+                </>
+              }
+            />
           ) : (
             <BillingRow label="Next Billing" value={formatDate(nextBilling)} />
           )}
         </SectionBlock>
         <SectionBlock title="Usage Overview">
-          <BillingRow label="Active devices" value={formatCount(usage.activeDevices)} />
-          <BillingRow label="Inactive devices" value={formatCount(usage.inactiveDevices)} />
-          {hasAi && <BillingRow label="AI conversations" value={formatCount(usage.aiConversations)} />}
+          <BillingRow label="Active devices" value={formatCount(activeDevices)} />
+          <BillingRow label="Inactive devices" value={formatCount(inactiveDevices)} />
+          {hasAi && <BillingRow label="AI conversations" value={formatCount(0)} />}
         </SectionBlock>
       </div>
 
@@ -308,8 +323,9 @@ function BillingUsageContent() {
         isOpen={cancelStep === 'reason'}
         endDate={nextBilling}
         onClose={() => setCancelStep('idle')}
-        onConfirm={reason => {
+        onConfirm={(reason, comment) => {
           setCancelReason(reason);
+          setCancelComment(comment);
           setCancelStep('offer');
         }}
       />
@@ -321,6 +337,8 @@ function BillingUsageContent() {
         onClose={() => setCancelStep('idle')}
         onConfirm={() => {
           cancelSubscription.mutate({
+            reason: cancelReason ?? undefined,
+            description: cancelComment || undefined,
             onSuccess: () => setCancelStep('cancelled'),
           });
         }}
@@ -335,54 +353,14 @@ function BillingUsageContent() {
   );
 }
 
-const MOCK_PRESETS: ReadonlyArray<{ key: BillingUsageMockKey | null; label: string }> = [
-  { key: null, label: 'Live (empty)' },
-  { key: 'full', label: 'Full' },
-  { key: 'device-only', label: 'Device only' },
-  { key: 'warning-full', label: 'Warning' },
-  { key: 'warning-device-only', label: 'Warning (dev only)' },
-  { key: 'over-full', label: 'Overage' },
-  { key: 'over-device-only', label: 'Overage (dev only)' },
-  { key: 'over-ai-only', label: 'Overage (AI only)' },
-  { key: 'over-device-only-full', label: 'Overage (dev full)' },
-  { key: 'payg-full', label: 'Pay-as-you-go' },
-  { key: 'cancelled-full', label: 'Cancelled' },
-  { key: 'overdue-full', label: 'Overdue' },
-  { key: 'overdue-device-only', label: 'Overdue (dev only)' },
-];
-
-function MockPreviewToolbar({
-  currentKey,
-  onChange,
-}: {
-  currentKey: BillingUsageMockKey | null;
-  onChange: (key: BillingUsageMockKey | null) => void;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 p-2 rounded-md border border-dashed border-ods-border bg-ods-card">
-      <span className="text-h6 text-ods-text-secondary px-2">Preview state:</span>
-      {MOCK_PRESETS.map(({ key, label }) => {
-        const isActive = currentKey === key;
-        return (
-          <Button
-            key={key ?? 'live'}
-            size="sm"
-            variant={isActive ? 'primary' : 'outline'}
-            onClick={() => onChange(key)}
-          >
-            {label}
-          </Button>
-        );
-      })}
-    </div>
-  );
-}
-
 const billingUsageViewQuery = graphql`
   query billingUsageViewQuery {
     subscription {
       id
-      endDate
+      status
+      currentPeriodEnd
+      cancellationEffectiveAt
+      trialExpirationDate
       products {
         name
         packageOptions {
@@ -398,6 +376,23 @@ const billingUsageViewQuery = graphql`
           price
         }
       }
+      pendingInvoices {
+        id
+        hostedInvoiceUrl
+        amountDue
+        currency
+        createdAt
+      }
+      usage {
+        devicesUsed
+        activeDevices
+        inactiveDevices
+        aiTokensUsed
+      }
+      currentInvoice {
+        estimatedOverage
+        currency
+      }
     }
   }
 `;
@@ -409,6 +404,7 @@ function UsageMetricCard({
   state,
   overdue = false,
   payg = false,
+  hideProgress = false,
 }: {
   title: string;
   value: number;
@@ -416,10 +412,12 @@ function UsageMetricCard({
   state: UsageState;
   overdue?: boolean;
   payg?: boolean;
+  hideProgress?: boolean;
 }) {
   const progressVariant: 'success' | 'warning' | 'error' =
     state === 'success' ? 'success' : overdue ? 'error' : 'warning';
   const pillClass = overdue ? 'bg-ods-error/20 text-ods-error' : 'bg-ods-warning/20 text-ods-warning';
+  const showProgress = !payg && !hideProgress;
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-sm p-[var(--spacing-system-m)] flex gap-[var(--spacing-system-s)] items-center transition-all">
@@ -427,7 +425,7 @@ function UsageMetricCard({
         <p className="text-h5 text-ods-text-secondary uppercase">{title}</p>
         <div className="flex items-center gap-2">
           <p className="text-h2 text-ods-text-primary">{formatCount(value)}</p>
-          {payg ? null : state === 'over' ? (
+          {!showProgress ? null : state === 'over' ? (
             <span className={cn('inline-flex items-center px-2 py-0.5 rounded-sm text-h5 font-bold', pillClass)}>
               {percentage}%
             </span>
@@ -436,7 +434,7 @@ function UsageMetricCard({
           )}
         </div>
       </div>
-      {!payg && (
+      {showProgress && (
         <CircularProgress percentage={percentage} variant={progressVariant} overflow="wrap" showLabel={false} />
       )}
     </div>
