@@ -196,9 +196,11 @@ jobs:
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET" OPENFRAME_VERSION="$VERSION"
             done
+          elif [[ "${{ matrix.name }}" == "openframe-chat" && "${{ matrix.os }}" == "macos" ]]; then
+            make build TARGET="${{ matrix.target }}" OPENFRAME_VERSION="$VERSION" BUNDLES=app
           else
             make build TARGET="${{ matrix.target }}" OPENFRAME_VERSION="$VERSION"
-          fi          
+          fi
 
       - name: Sign Windows package
         if: steps.should_run.outputs.run == 'true' && runner.os == 'Windows'

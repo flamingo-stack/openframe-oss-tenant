@@ -275,6 +275,8 @@ jobs:
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
             done
+          elif [[ "${{ matrix.name }}" == "openframe-chat" && "${{ matrix.os }}" == "macos" ]]; then
+            make build TARGET="${{ matrix.target }}" BUNDLES=app
           else
             make build TARGET="${{ matrix.target }}"
           fi
