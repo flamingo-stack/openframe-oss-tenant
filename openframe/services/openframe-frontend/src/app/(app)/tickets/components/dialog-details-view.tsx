@@ -485,7 +485,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     if (!isOnHold && !isClosed) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Put On Hold',
-        variant: 'card',
+        variant: 'outline',
         icon: <HourglassClockIcon className="text-ods-text-secondary" />,
         onClick: handlePutOnHold,
         disabled: isUpdating,
@@ -495,7 +495,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     if (!isClosed) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Resolve',
-        variant: 'card',
+        variant: 'outline',
         icon: <CheckCircleIcon className="text-ods-text-secondary" />,
         onClick: handleResolve,
         disabled: isUpdating,
@@ -505,7 +505,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     if (isResolved) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Archive Ticket',
-        variant: 'card',
+        variant: 'outline',
         icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
         onClick: handleArchive,
         disabled: isUpdating,
@@ -515,7 +515,7 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     if (isArchived) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Unarchive Ticket',
-        variant: 'card',
+        variant: 'outline',
         icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
         onClick: handleUnarchive,
         disabled: isUpdating,

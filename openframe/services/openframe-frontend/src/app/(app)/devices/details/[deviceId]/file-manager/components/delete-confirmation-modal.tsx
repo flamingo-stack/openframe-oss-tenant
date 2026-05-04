@@ -53,10 +53,10 @@ export function DeleteConfirmationModal({
         <p className="text-sm text-ods-text-primary">{description}</p>
       </ModalContent>
       <ModalFooter>
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
+        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button size="sm" onClick={onConfirm} disabled={submitting}>
+        <Button size="small-legacy" onClick={onConfirm} disabled={submitting}>
           Delete
         </Button>
       </ModalFooter>

@@ -135,11 +135,11 @@ export function TagRow({ tag, onChange, onDelete, existingKeys, keySuggestionsRe
 
         <Button
           type="button"
-          variant="card"
+          variant="outline"
           size="icon"
           onClick={onDelete}
           aria-label="Remove tag row"
-          centerIcon={<Trash2 className="size-4 md:size-6 " color="var(--ods-attention-red-error)" />}
+          leftIcon={<Trash2 className="size-4 md:size-6 " color="var(--ods-attention-red-error)" />}
         />
       </div>
     </div>

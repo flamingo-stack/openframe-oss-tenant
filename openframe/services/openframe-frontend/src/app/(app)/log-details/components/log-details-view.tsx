@@ -101,7 +101,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         {
           label: 'Copy Log Details',
           onClick: handleCopyLogDetails,
-          variant: 'card' as const,
+          variant: 'outline' as const,
           icon: copied ? (
             <CheckIcon className="w-6 h-6 text-[var(--ods-attention-green-success)]" />
           ) : (

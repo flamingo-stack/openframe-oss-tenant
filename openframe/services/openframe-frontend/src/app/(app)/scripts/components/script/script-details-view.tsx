@@ -40,7 +40,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     () => [
       {
         label: 'Edit Script',
-        variant: 'card' as const,
+        variant: 'outline' as const,
         icon: <PenEditIcon size={20} />,
         onClick: handleEditScript,
       },
@@ -48,7 +48,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         label: 'Run Script',
         icon: <PlayIcon size={20} />,
         onClick: handleRunScript,
-        variant: 'primary' as const,
+        variant: 'accent' as const,
       },
     ],
     [handleRunScript, handleEditScript],

@@ -50,10 +50,10 @@ export function RenameItemModal({ isOpen, value, submitting, onChange, onSubmit,
         />
       </ModalContent>
       <ModalFooter>
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
+        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button size="sm" onClick={onSubmit} disabled={!value.trim() || submitting}>
+        <Button size="small-legacy" onClick={onSubmit} disabled={!value.trim() || submitting}>
           {submitting ? 'Renaming...' : 'Rename'}
         </Button>
       </ModalFooter>

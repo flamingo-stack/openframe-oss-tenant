@@ -59,7 +59,7 @@ export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTa
               prefetch={false}
               variant="outline"
               size="icon"
-              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
               aria-label="View details"
               className="bg-ods-card"
             />
@@ -92,7 +92,7 @@ export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTa
         title="Devices"
         rightActions={
           <Button
-            variant="card"
+            variant="outline"
             onClick={() => router.push(`/devices/new?organizationId=${organizationId}`)}
             leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
           >

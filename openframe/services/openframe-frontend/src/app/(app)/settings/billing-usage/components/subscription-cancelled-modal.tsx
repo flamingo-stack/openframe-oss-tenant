@@ -42,7 +42,7 @@ export function SubscriptionCancelledModal({ isOpen, endDate, onClose }: Subscri
 
       <ModalV2Footer>
         <div className="flex-1" />
-        <Button variant="primary" className="flex-1" onClick={onClose}>
+        <Button variant="accent" className="flex-1" onClick={onClose}>
           Close
         </Button>
       </ModalV2Footer>

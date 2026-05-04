@@ -64,10 +64,10 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
       </ModalContent>
 
       <ModalFooter className="px-10 pb-10 pt-0 border-t-0 gap-6">
-        <Button variant="flamingo-secondary" onClick={handleClose} disabled={isSubmitting}>
+        <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
           Cancel
         </Button>
-        <Button variant="flamingo-primary" onClick={handleSubmit} loading={isSubmitting}>
+        <Button variant="accent" onClick={handleSubmit} loading={isSubmitting}>
           Create Ticket
         </Button>
       </ModalFooter>

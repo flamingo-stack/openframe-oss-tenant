@@ -95,7 +95,7 @@ export function ScheduleActionFormCard({
           />
         </div>
         <Button
-          variant="card"
+          variant="outline"
           size="icon"
           onClick={onRemove}
           disabled={!canRemove}
@@ -165,7 +165,7 @@ export function ScheduleActionFormCard({
         <div className="flex flex-col gap-1">
           <Label className="text-h4 invisible">Action</Label>
           <Button
-            variant="card"
+            variant="outline"
             size="icon"
             onClick={onRemove}
             disabled={!canRemove}

@@ -50,10 +50,10 @@ export function NewFolderModal({ isOpen, folderName, submitting, onChange, onSub
         />
       </ModalContent>
       <ModalFooter>
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
+        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button size="sm" onClick={onSubmit} disabled={!folderName.trim() || submitting}>
+        <Button size="small-legacy" onClick={onSubmit} disabled={!folderName.trim() || submitting}>
           {submitting ? 'Creating...' : 'Create'}
         </Button>
       </ModalFooter>

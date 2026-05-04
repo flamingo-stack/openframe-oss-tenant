@@ -57,7 +57,7 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
       {
         label: 'Save Script',
         onClick: handleSave,
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         disabled: isSubmitting,
         loading: isSubmitting,
       },

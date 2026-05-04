@@ -162,7 +162,7 @@ export default function PasswordResetPage() {
                     !password || !confirmPassword || password !== confirmPassword || password.length < 8 || isLoading
                   }
                   loading={isLoading}
-                  variant="primary"
+                  variant="accent"
                   className="w-full md:flex-1"
                 >
                   Reset Password

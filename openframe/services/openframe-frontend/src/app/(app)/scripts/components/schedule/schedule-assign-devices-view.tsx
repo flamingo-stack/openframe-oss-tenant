@@ -159,7 +159,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       {
         label: 'Save Devices',
         onClick: handleSave,
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         loading: replaceAgentsMutation.isPending,
       },
     ],

@@ -79,7 +79,7 @@ export function OrganizationTicketsTab({ organizationId, organizationName }: Org
               prefetch={false}
               variant="outline"
               size="icon"
-              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
               aria-label="View details"
               className="bg-ods-card"
             />
@@ -113,7 +113,7 @@ export function OrganizationTicketsTab({ organizationId, organizationName }: Org
         rightActions={
           dialogVersion === 'v2' ? (
             <Button
-              variant="card"
+              variant="outline"
               onClick={() => router.push('/tickets/new')}
               leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
             >

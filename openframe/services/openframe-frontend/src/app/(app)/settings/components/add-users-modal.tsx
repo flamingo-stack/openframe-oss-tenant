@@ -117,7 +117,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
                   </SelectContent>
                 </Select>
                 {rows.length > 1 && (
-                  <Button variant="card" size="icon" onClick={() => removeRow(idx)} className="shrink-0">
+                  <Button variant="outline" size="icon" onClick={() => removeRow(idx)} className="shrink-0">
                     <TrashIcon className="size-5 text-[var(--ods-attention-red-error-action)]" />
                   </Button>
                 )}
@@ -126,10 +126,10 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
           ))}
 
           <Button
-            variant="ghost-subtle"
+            variant="transparent"
             className="self-start"
             onClick={addRow}
-            noPadding
+            noPaddingX
             leftIcon={<PlusCircleIcon size={24} className="text-ods-text-primary" />}
           >
             Add More Users

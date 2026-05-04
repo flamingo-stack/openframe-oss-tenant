@@ -83,7 +83,7 @@ export function AuthLoginSection({ availableProviders, onSso, onBack, isLoading 
                       onClick={() => handleSsoClick('openframe-sso')}
                       disabled={isLoading}
                       loading={isLoading && loginMethod === 'sso'}
-                      variant="primary"
+                      variant="accent"
                       className="md:!w-full"
                     >
                       Sign in with OpenFrame SSO

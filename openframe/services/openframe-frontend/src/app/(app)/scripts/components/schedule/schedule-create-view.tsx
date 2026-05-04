@@ -171,7 +171,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       {
         label: isEditMode ? 'Update Schedule' : 'Save Schedule',
         onClick: handleSubmit(onSubmit),
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         loading: isSubmitting || createMutation.isPending || updateMutation.isPending,
       },
     ],
@@ -339,11 +339,11 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             ))}
 
             <Button
-              variant="ghost-subtle"
+              variant="transparent"
               onClick={addAction}
               className="self-start text-ods-text-primary"
               leftIcon={<PlusCircleIcon size={20} />}
-              noPadding
+              noPaddingX
             >
               Add Script
             </Button>

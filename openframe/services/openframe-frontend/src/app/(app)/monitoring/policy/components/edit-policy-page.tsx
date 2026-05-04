@@ -202,13 +202,13 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     items.push({
       label: 'Test Policy',
       onClick: handleTestPolicy,
-      variant: 'card' as const,
+      variant: 'outline' as const,
       disabled: !hasQuery || campaign.isRunning,
     });
     items.push({
       label: 'Save Policy',
       onClick: handleSubmit(onSubmit, onFormError),
-      variant: 'primary' as const,
+      variant: 'accent' as const,
       disabled: isSaving || !hasName,
     });
     return items;

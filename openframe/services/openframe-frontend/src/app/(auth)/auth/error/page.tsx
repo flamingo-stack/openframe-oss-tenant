@@ -42,12 +42,12 @@ export default function AuthErrorPage() {
 
         <div className="flex gap-4">
           <Button
-            variant="card"
+            variant="outline"
             onClick={() => window.open('https://www.flamingo.run/contact', '_blank', 'noopener,noreferrer')}
           >
             Contact Support
           </Button>
-          <Button variant="primary" onClick={() => router.push('/auth')}>
+          <Button variant="accent" onClick={() => router.push('/auth')}>
             Go to Login
           </Button>
         </div>

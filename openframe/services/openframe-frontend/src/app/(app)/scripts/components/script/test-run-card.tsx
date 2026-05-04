@@ -109,7 +109,7 @@ export function TestRunCard({ run, onStop, onTestAgain, onClose }: TestRunCardPr
               <Button variant="outline" onClick={onTestAgain} className="flex-shrink-0">
                 Test Again
               </Button>
-              <Button variant="outline" size={'iconLg'} onClick={onClose} className="flex-shrink-0 p-3">
+              <Button variant="outline" size="icon" onClick={onClose} className="flex-shrink-0 p-3">
                 <X className="size-6" />
               </Button>
             </>
@@ -140,7 +140,7 @@ export function TestRunCard({ run, onStop, onTestAgain, onClose }: TestRunCardPr
               <Button variant="outline" onClick={onTestAgain} className="flex-shrink-0">
                 Test Again
               </Button>
-              <Button variant="outline" size={'iconLg'} onClick={onClose} className="flex-shrink-0 p-3">
+              <Button variant="outline" size="icon" onClick={onClose} className="flex-shrink-0 p-3">
                 <X className="size-6" />
               </Button>
             </>

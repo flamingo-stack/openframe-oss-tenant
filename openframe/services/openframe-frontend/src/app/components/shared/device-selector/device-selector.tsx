@@ -174,9 +174,9 @@ export function DeviceSelector({
               {disabledReason}
             </span>
             <Button
-              variant="device-action"
+              variant="outline"
               size="icon"
-              centerIcon={<PlusCircleIcon size={24} />}
+              leftIcon={<PlusCircleIcon size={24} />}
               className="text-ods-text-secondary shrink-0"
               disabled
             />
@@ -193,10 +193,10 @@ export function DeviceSelector({
         return (
           <div className="flex items-center justify-end w-[130px]">
             <Button
-              variant="device-action"
+              variant="outline"
               size="icon"
               onClick={() => toggleDevice(device)}
-              centerIcon={<TrashIcon size={24} />}
+              leftIcon={<TrashIcon size={24} />}
               className="text-ods-error hover:opacity-80"
               disabled={disabled}
             />
@@ -207,10 +207,10 @@ export function DeviceSelector({
       return (
         <div className="flex items-center justify-end w-[130px]">
           <Button
-            variant="device-action"
+            variant="outline"
             size="icon"
             onClick={() => toggleDevice(device)}
-            centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
+            leftIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
             className={
               isSelected
                 ? 'text-ods-accent border-ods-accent bg-[var(--ods-open-yellow-secondary)] hover:bg-[var(--ods-open-yellow-secondary-hover)]'

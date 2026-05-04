@@ -231,7 +231,7 @@ export function AuthSignupSection({
                 onClick={handleSubmit}
                 disabled={!isFormValid || isLoading}
                 loading={isLoading}
-                variant="primary"
+                variant="accent"
                 className="w-full md:flex-1"
               >
                 {getButtonText()}

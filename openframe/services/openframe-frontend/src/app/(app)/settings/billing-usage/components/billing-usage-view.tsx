@@ -190,7 +190,7 @@ function BillingUsageContent() {
     ? {
         label: 'Renew Subscription',
         onClick: () => router.push('/settings/billing-usage/subscription'),
-        variant: 'primary' as const,
+        variant: 'accent' as const,
       }
     : isOverdue
       ? {
@@ -202,18 +202,18 @@ function BillingUsageContent() {
               router.push('/settings/billing-usage/subscription');
             }
           },
-          variant: 'primary' as const,
+          variant: 'accent' as const,
         }
       : isTrial
         ? {
             label: 'Activate Subscription',
             onClick: () => router.push('/settings/billing-usage/subscription'),
-            variant: 'primary' as const,
+            variant: 'accent' as const,
           }
         : {
             label: 'Update Subscription',
             onClick: () => router.push('/settings/billing-usage/subscription'),
-            variant: (isNearLimits ? 'primary' : 'card') as 'primary' | 'card',
+            variant: (isNearLimits ? 'accent' : 'outline') as 'accent' | 'outline',
           };
 
   return (

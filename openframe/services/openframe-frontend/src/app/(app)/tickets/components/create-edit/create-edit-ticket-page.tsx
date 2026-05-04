@@ -29,7 +29,7 @@ export function CreateEditTicketPage() {
       {
         label: isEditMode ? 'Save Changes' : 'Save Ticket',
         onClick: handleSave,
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         disabled: isSubmitting || isLoadingTicket,
         loading: isSubmitting,
       },

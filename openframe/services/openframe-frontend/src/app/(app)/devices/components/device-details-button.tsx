@@ -7,7 +7,7 @@ interface DeviceDetailsButtonProps {
   deviceId?: string;
   machineId?: string;
   label?: string;
-  variant?: 'primary' | 'outline' | 'secondary';
+  variant?: 'accent' | 'outline';
   className?: string;
   openInNewTab?: boolean;
 }

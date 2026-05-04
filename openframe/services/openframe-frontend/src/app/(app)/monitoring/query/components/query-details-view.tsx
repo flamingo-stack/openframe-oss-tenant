@@ -80,7 +80,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         <div className="flex items-center gap-2">
           <Button
             leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
-            variant="card"
+            variant="outline"
             onClick={handleEditQuery}
           >
             Edit

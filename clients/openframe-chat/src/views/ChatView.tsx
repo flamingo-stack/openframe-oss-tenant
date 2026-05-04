@@ -340,9 +340,10 @@ export function ChatView() {
                 <Button
                   variant="outline"
                   size="icon"
-                  centerIcon={<Ellipsis01Icon className="w-5 h-5 text-ods-text-primary" />}
                   className="border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover"
-                />
+                >
+                  <Ellipsis01Icon className="w-5 h-5 text-ods-text-primary" />
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="p-0 border-none">
                 <ActionsMenu

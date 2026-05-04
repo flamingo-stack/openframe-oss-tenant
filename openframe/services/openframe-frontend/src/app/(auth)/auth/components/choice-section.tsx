@@ -263,7 +263,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                           setSuggestedDomains([]);
                         }}
                         variant="outline"
-                        size="sm"
+                        size="small-legacy"
                         className="font-body"
                       >
                         {suggestion}.{SAAS_DOMAIN_SUFFIX}
@@ -313,7 +313,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                   isCheckingDomain
                 }
                 loading={isLoading || isValidatingAccessCode || isCheckingDomain}
-                variant="primary"
+                variant="accent"
                 className="!w-full md:!w-full"
               >
                 {isValidatingAccessCode ? 'Validating...' : isCheckingDomain ? 'Checking...' : 'Continue'}
@@ -360,7 +360,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
           {/* Button Row with Forgot Password */}
           <div className="flex gap-6 items-center">
             <div className="flex-1 flex items-center">
-              <Button onClick={() => setShowForgotPassword(true)} variant="ghost" className="!w-full md:!w-full">
+              <Button onClick={() => setShowForgotPassword(true)} variant="transparent" className="!w-full md:!w-full">
                 Forgot password?
               </Button>
             </div>
@@ -369,7 +369,7 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 onClick={handleSignIn}
                 disabled={!isSignInEmailValid || isSigningIn || isLoading}
                 loading={isSigningIn || isLoading}
-                variant="primary"
+                variant="accent"
                 className="!w-full md:!w-full"
               >
                 Continue

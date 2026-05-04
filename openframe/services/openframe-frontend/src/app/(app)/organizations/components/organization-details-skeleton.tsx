@@ -10,7 +10,7 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useMemo } from 'react';
 
 /**
- * Mirrors PageLayout's TitleBlock used by OrganizationDetailsView with `variant="card"`.
+ * Mirrors PageLayout's TitleBlock used by OrganizationDetailsView with `variant="outline"`.
  *
  * Layout (matches `TitleBlock` in `@flamingo-stack/openframe-frontend-core`):
  * - Mobile (< md): row, items-end, justify-between. Self-padded card with border.

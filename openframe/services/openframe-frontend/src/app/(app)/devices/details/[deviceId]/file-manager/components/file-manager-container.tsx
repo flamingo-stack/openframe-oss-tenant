@@ -333,8 +333,8 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
           <div className="flex justify-between items-center mb-2">
             <div className="text-sm text-ods-text-primary">Uploading: {uploadProgress.file}</div>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="transparent"
+              size="small-legacy"
               onClick={cancelUpload}
               className="h-6 w-6 p-0 text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-secondary"
             >
@@ -352,8 +352,8 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
           <div className="flex justify-between items-center mb-2">
             <div className="text-sm text-ods-text-primary">Downloading: {downloadProgress.file}</div>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="transparent"
+              size="small-legacy"
               onClick={cancelDownload}
               className="h-6 w-6 p-0 text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-secondary"
             >
@@ -373,8 +373,8 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
               {clipboard.fileIds.length} item(s) {clipboard.operation === 'copy' ? 'copied' : 'cut'}
             </div>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="transparent"
+              size="small-legacy"
               onClick={clearClipboard}
               className="h-5 w-5 p-0 text-ods-text-secondary hover:text-ods-text-primary hover:bg-ods-bg-secondary"
             >

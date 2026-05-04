@@ -127,14 +127,14 @@ export function LiveTestPanel({
           {/* Actions */}
           <div className="flex flex-[1_0_0] items-center gap-4 justify-end">
             {!isRunning && (
-              <Button variant="outline" size="sm" className="h-11 md:h-12" onClick={onTestAgain}>
+              <Button variant="outline" size="small-legacy" className="h-11 md:h-12" onClick={onTestAgain}>
                 Test Again
               </Button>
             )}
             {isRunning && (
               <Button
                 variant="outline"
-                size="sm"
+                size="small-legacy"
                 className="h-11 md:h-12"
                 leftIcon={<Square size={14} />}
                 onClick={onStop}
@@ -146,7 +146,7 @@ export function LiveTestPanel({
               variant="outline"
               size="icon"
               onClick={onClose}
-              centerIcon={<X size={24} />}
+              leftIcon={<X size={24} />}
               aria-label="Close test panel"
             />
           </div>

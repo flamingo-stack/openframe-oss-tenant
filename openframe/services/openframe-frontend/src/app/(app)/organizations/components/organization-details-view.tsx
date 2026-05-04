@@ -128,14 +128,14 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     const archiveAction: PageActionButton = isArchived
       ? {
           label: 'Restore Organization',
-          variant: 'card',
+          variant: 'outline',
           icon: <Refresh01RightIcon className="w-5 h-5 text-ods-text-secondary" />,
           onClick: () => setRestoreModalOpen(true),
           disabled: organization.isDefault,
         }
       : {
           label: 'Archive Organization',
-          variant: 'card',
+          variant: 'outline',
           icon: isChecking ? (
             <Loading01Icon className="w-5 h-5 animate-spin" />
           ) : (
@@ -148,7 +148,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
     const editAction: PageActionButton = {
       label: 'Edit Organization',
-      variant: 'card',
+      variant: 'outline',
       icon: <PenEditIcon className="w-5 h-5 text-ods-text-secondary" />,
       onClick: handleEdit,
     };

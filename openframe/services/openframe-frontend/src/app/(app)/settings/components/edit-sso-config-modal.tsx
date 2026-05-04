@@ -209,9 +209,9 @@ export function SsoConfigModal({
               <div className="bg-ods-bg border border-ods-border rounded-lg p-3 flex items-center gap-3">
                 <code className="flex-1 text-sm text-ods-text-primary font-mono truncate">{redirectUrl}</code>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  centerIcon={
+                  variant="transparent"
+                  size="small-legacy"
+                  leftIcon={
                     copied ? (
                       <CheckIcon className="h-4 w-4 text-[var(--ods-attention-green-success)]" />
                     ) : (
@@ -248,9 +248,9 @@ export function SsoConfigModal({
                   className="bg-ods-card pr-10"
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  centerIcon={showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  variant="transparent"
+                  size="small-legacy"
+                  leftIcon={showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   onClick={() => setShowSecret(!showSecret)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 z-20"
                 />

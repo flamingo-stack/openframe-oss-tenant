@@ -293,7 +293,7 @@ export function NewDeviceContent() {
             ) : (
               <Copy02Icon className="w-5 h-5" />
             ),
-            variant: 'primary',
+            variant: 'accent',
           }}
           secondaryAction={{
             label: 'Run on Current Machine',

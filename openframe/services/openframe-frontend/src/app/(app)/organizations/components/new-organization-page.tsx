@@ -259,7 +259,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       className="p-[var(--spacing-system-l)]"
       headerActions={
         <Button
-          variant="primary"
+          variant="accent"
           disabled={saveDisabled}
           onClick={handleSave}
           className="bg-ods-accent text-ods-text-on-accent font-['DM_Sans'] font-bold text-[16px] px-4 py-2.5 h-12"

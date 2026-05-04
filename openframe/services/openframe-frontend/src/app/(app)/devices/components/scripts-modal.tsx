@@ -293,26 +293,26 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                     </Button>
                   ))}
                 </div>
-                <Button
+                <button
+                  type="button"
                   onClick={handleShowAll}
-                  variant="link"
-                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary underline leading-[20px] ml-2 p-0 h-auto"
+                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary underline leading-[20px] ml-2 p-0 h-auto bg-transparent border-0 cursor-pointer"
                 >
                   Show All
-                </Button>
+                </button>
               </div>
             </div>
 
             {/* Script List */}
             <div className="flex flex-col gap-2 flex-1 min-h-0">
               <div className="flex justify-end">
-                <Button
+                <button
+                  type="button"
                   onClick={handleSelectAll}
-                  variant="link"
-                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-accent underline leading-[20px] p-0 h-auto"
+                  className="font-['DM_Sans'] font-medium text-[14px] text-ods-accent underline leading-[20px] p-0 h-auto bg-transparent border-0 cursor-pointer"
                 >
                   Select All
-                </Button>
+                </button>
               </div>
 
               <div className="bg-ods-card border border-ods-border rounded-[6px] flex-1 min-h-0 overflow-hidden">

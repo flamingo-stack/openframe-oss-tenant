@@ -163,7 +163,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
       {
         label: 'Run Script',
         onClick: handleSubmit(onSubmit, onFormError),
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         disabled: selectedIds.size === 0,
         loading: isSubmitting,
       },

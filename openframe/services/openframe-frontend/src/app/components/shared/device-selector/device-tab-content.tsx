@@ -1,5 +1,4 @@
 import {
-  Button,
   type ColumnDef,
   DataTable,
   type Row,
@@ -65,23 +64,23 @@ export function DeviceTabContent({
       {!singleSelect && (
         <div className="flex justify-end -mb-2">
           {mode === 'available' ? (
-            <Button
-              variant="link"
+            <button
+              type="button"
               onClick={onAddAll}
               disabled={disabled}
-              className="text-heading-4 font-medium text-ods-accent hover:text-ods-accent-hover"
+              className="text-heading-4 font-medium text-ods-accent hover:text-ods-accent-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add All Devices
-            </Button>
+            </button>
           ) : selectedCount > 0 ? (
-            <Button
-              variant="link"
+            <button
+              type="button"
               onClick={onRemoveAll}
               disabled={disabled}
-              className="text-heading-4 font-medium text-ods-error hover:text-ods-error-hover"
+              className="text-heading-4 font-medium text-ods-error hover:text-ods-error-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Remove {selectedCount} Devices
-            </Button>
+            </button>
           ) : null}
         </div>
       )}

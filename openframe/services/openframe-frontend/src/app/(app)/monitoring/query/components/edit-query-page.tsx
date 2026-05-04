@@ -241,13 +241,13 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     items.push({
       label: 'Test Query',
       onClick: handleTestQuery,
-      variant: 'card' as const,
+      variant: 'outline' as const,
       disabled: !hasQuery || campaign.isRunning,
     });
     items.push({
       label: 'Save Query',
       onClick: handleSubmit(onSubmit, onFormError),
-      variant: 'primary' as const,
+      variant: 'accent' as const,
       disabled: isSaving || !hasName,
     });
     return items;

@@ -151,7 +151,7 @@ function SubscriptionSettingsContent() {
         </p>
         <div className="flex flex-1 justify-end">
           <Button
-            variant="primary"
+            variant="accent"
             onClick={handleSubmit}
             loading={updateSubscription.isPending}
             disabled={updateSubscription.isPending}

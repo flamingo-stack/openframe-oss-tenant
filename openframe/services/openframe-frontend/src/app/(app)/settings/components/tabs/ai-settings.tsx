@@ -519,7 +519,7 @@ export function AiSettingsTab() {
           ) : (
             <div className="flex gap-3">
               <Button
-                variant="primary"
+                variant="accent"
                 leftIcon={<Save className="w-4 h-4" />}
                 onClick={handleSave}
                 disabled={

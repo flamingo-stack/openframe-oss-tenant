@@ -81,7 +81,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
             prefetch={false}
             variant="outline"
             size="icon"
-            centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+            leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
             aria-label="View details"
             className="bg-ods-card"
           />
@@ -140,7 +140,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     if (hasResolvedTickets) {
       items.push({
         label: 'Archive Resolved',
-        variant: 'card' as const,
+        variant: 'outline' as const,
         icon: <BoxArchiveIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleArchiveResolved,
         disabled: archiveResolvedMutation.isPending || isLoading,
@@ -150,7 +150,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       items.push({
         label: 'New Ticket',
         onClick: handleNewTicket,
-        variant: 'card' as const,
+        variant: 'outline' as const,
         icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
       });
     }

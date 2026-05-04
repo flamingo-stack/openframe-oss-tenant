@@ -103,7 +103,7 @@ export function DevicesView() {
               prefetch={false}
               variant="outline"
               size="icon"
-              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
               aria-label="View details"
               className="bg-ods-card"
             />
@@ -178,7 +178,7 @@ export function DevicesView() {
             label: 'Add Device',
             onClick: () => router.push('/devices/new'),
             icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
-            variant: 'card',
+            variant: 'outline',
           },
         ]}
         contentClassName="flex flex-col"
@@ -204,7 +204,7 @@ export function DevicesView() {
             </div>
             {isMdUp ? (
               <Button
-                variant="card"
+                variant="outline"
                 onClick={openFilterModal}
                 leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
                 className="shrink-0"
@@ -213,10 +213,10 @@ export function DevicesView() {
               </Button>
             ) : (
               <Button
-                variant="card"
+                variant="outline"
                 size="icon"
                 onClick={openFilterModal}
-                centerIcon={<Filter02Icon className="text-ods-text-secondary" />}
+                leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
                 className="shrink-0"
               />
             )}

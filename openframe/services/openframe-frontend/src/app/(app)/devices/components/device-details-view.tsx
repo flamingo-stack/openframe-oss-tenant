@@ -223,7 +223,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const remoteShellAction: PageActionButton = isWindows
     ? {
         label: 'Remote Shell',
-        variant: 'device-action',
+        variant: 'outline',
         disabled: !actionAvailability?.remoteShellEnabled,
         submenu: [
           {
@@ -242,7 +242,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       }
     : {
         label: 'Remote Shell',
-        variant: 'device-action',
+        variant: 'outline',
         icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
         href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
         prefetch: false,
@@ -252,7 +252,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const actions: PageActionButton[] = [
     {
       label: 'Manage Files',
-      variant: 'device-action',
+      variant: 'outline',
       icon: <FolderIcon className="h-6 w-6 text-ods-text-secondary" />,
       iconOnlyOnDesktop: true,
       href: `/devices/details/${deviceId}/file-manager`,
@@ -261,7 +261,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     },
     {
       label: 'Remote Control',
-      variant: 'device-action',
+      variant: 'outline',
       icon: <ComputerMouseIcon className="h-6 w-6 text-ods-text-secondary" />,
       iconOnlyOnDesktop: true,
       href: `/devices/details/${deviceId}/remote-desktop`,

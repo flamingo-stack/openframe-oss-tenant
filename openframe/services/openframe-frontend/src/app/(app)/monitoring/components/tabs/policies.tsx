@@ -164,7 +164,7 @@ export function Policies() {
               prefetch={false}
               variant="outline"
               size="icon"
-              centerIcon={<Chevron02RightIcon className="w-5 h-5" />}
+              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
               aria-label="View details"
               className="bg-ods-card"
             />
@@ -196,7 +196,7 @@ export function Policies() {
     () => [
       {
         label: 'Add Policy',
-        variant: 'card' as const,
+        variant: 'outline' as const,
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddPolicy,
       },

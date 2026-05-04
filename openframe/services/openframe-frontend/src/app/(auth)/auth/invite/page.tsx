@@ -250,7 +250,7 @@ export default function InvitePage() {
               <div className="flex gap-6 items-center">
                 <div className="flex-1"></div>
                 <div className="flex-1">
-                  <Button onClick={() => router.push('/auth')} variant="primary" className="!w-full md:!w-full">
+                  <Button onClick={() => router.push('/auth')} variant="accent" className="!w-full md:!w-full">
                     Back to Login
                   </Button>
                 </div>
@@ -372,7 +372,7 @@ export default function InvitePage() {
                     isLoading
                   }
                   loading={isLoading}
-                  variant="primary"
+                  variant="accent"
                   className="w-full md:flex-1"
                 >
                   Accept Invitation
@@ -396,7 +396,7 @@ export default function InvitePage() {
             <Button onClick={() => setShowTenantSwitch(false)} variant="outline">
               Cancel
             </Button>
-            <Button onClick={handleTenantSwitch} variant="primary">
+            <Button onClick={handleTenantSwitch} variant="accent">
               Yes, Switch Organization
             </Button>
           </AlertDialogFooter>

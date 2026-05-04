@@ -74,15 +74,15 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
         </div>
 
         {/* Script Details - hidden on mobile */}
-        <Button variant="device-action" onClick={handleScriptDetails} className="hidden md:flex">
+        <Button variant="outline" onClick={handleScriptDetails} className="hidden md:flex">
           Script Details
         </Button>
 
         <Button
-          variant="device-action"
+          variant="outline"
           size="icon"
           onClick={toggleExpand}
-          centerIcon={
+          leftIcon={
             <span className={`inline-flex transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}>
               <Chevron01DownIcon size={24} />
             </span>
@@ -123,7 +123,7 @@ function ScheduleScriptCard({ action }: ScheduleScriptCardProps) {
 
             {/* Show Script Details - visible on mobile only */}
             <div className="md:hidden px-4 pb-4">
-              <Button variant="device-action" onClick={handleScriptDetails} className="w-full">
+              <Button variant="outline" onClick={handleScriptDetails} className="w-full">
                 Show Script Details
               </Button>
             </div>

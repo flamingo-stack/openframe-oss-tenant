@@ -570,7 +570,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           {/* Actions Dropdown */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="device-action" leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}>
+              <Button variant="outline" leftIcon={<MoreHorizontal className="w-6 h-6 mr-2" />}>
                 Actions
               </Button>
             </DropdownMenuTrigger>
@@ -592,7 +592,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           {displays.length > 1 && (
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
-                <Button variant="device-action" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
+                <Button variant="outline" leftIcon={<Monitor className="w-6 h-6 mr-2" />}>
                   Display {currentDisplay === 0 ? 'All' : currentDisplay}
                 </Button>
               </DropdownMenuTrigger>
@@ -613,7 +613,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
           {/* Settings Button */}
           <Button
-            variant="device-action"
+            variant="outline"
             leftIcon={<Settings className="w-6 h-6 mr-2" />}
             onClick={() => setSettingsOpen(true)}
           >

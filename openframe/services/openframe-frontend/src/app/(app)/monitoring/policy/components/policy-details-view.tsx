@@ -76,7 +76,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         <div className="flex items-center gap-2">
           <Button
             leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
-            variant="card"
+            variant="outline"
             onClick={handleEditPolicy}
           >
             Edit

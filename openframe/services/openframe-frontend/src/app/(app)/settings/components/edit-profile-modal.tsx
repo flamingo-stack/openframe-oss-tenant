@@ -159,7 +159,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, onImageChange,
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="accent"
           onClick={handleSave}
           disabled={isSaving}
           className="flex-1 h-12 bg-ods-accent text-ods-card font-bold text-lg hover:bg-ods-accent/90"

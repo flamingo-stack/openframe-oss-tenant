@@ -129,7 +129,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
         <Button variant="outline" onClick={handleClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={handleConfirm} disabled={selectedIds.size === 0}>
+        <Button variant="accent" onClick={handleConfirm} disabled={selectedIds.size === 0}>
           Select Device
         </Button>
       </div>
