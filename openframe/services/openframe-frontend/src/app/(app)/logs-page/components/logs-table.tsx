@@ -1,7 +1,7 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
-import { Chevron02RightIcon, Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ArrowRightUpIcon, Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
@@ -380,10 +380,11 @@ function LogsTableContent({
             <Button
               href={getLogDetailsUrl(row.original)}
               prefetch={false}
+              openInNewTab
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View log details"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
               className="bg-ods-card"
             />
           </div>

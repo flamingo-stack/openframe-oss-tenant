@@ -1,6 +1,6 @@
 'use client';
 
-import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ArrowRightUpIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
@@ -112,10 +112,11 @@ export function Queries() {
             <Button
               href={`/monitoring/query/${row.original.id}`}
               prefetch={false}
+              openInNewTab
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View details"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
               className="bg-ods-card"
             />
           </div>

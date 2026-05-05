@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  Chevron02RightIcon,
+  ArrowRightUpIcon,
   PlusCircleIcon,
   SearchIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -195,15 +195,18 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
       {
         id: 'open',
         cell: ({ row }: { row: Row<UiOrganizationEntry> }) => (
-          <Button
-            href={`/organizations/details/${row.original.organizationId}`}
-            prefetch={false}
-            variant="outline"
-            size="icon"
-            leftIcon={<Chevron02RightIcon className="w-6 h-6" />}
-            aria-label="View details"
-            className="bg-ods-card"
-          />
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/organizations/details/${row.original.organizationId}`}
+              prefetch={false}
+              openInNewTab
+              variant="outline"
+              size="icon"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
+              className="bg-ods-card"
+            />
+          </div>
         ),
         enableSorting: false,
         meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },

@@ -1,7 +1,7 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { Chevron02RightIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ArrowRightUpIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
@@ -162,10 +162,11 @@ export function Policies() {
             <Button
               href={`/monitoring/policy/${row.original.id}`}
               prefetch={false}
+              openInNewTab
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View details"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
               className="bg-ods-card"
             />
           </div>

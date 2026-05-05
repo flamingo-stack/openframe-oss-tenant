@@ -471,11 +471,10 @@ export function DeviceDetailsSkeleton({ activeTab = 'hardware' }: DeviceDetailsS
           {/* Title (text-h2) */}
           <Skeleton className="h-10 w-72 md:h-11 md:w-80" />
         </div>
-        {/* Action buttons: menu (...) + manage files (icon) + remote control (icon) + remote shell (split) */}
+        {/* Action buttons: menu (...) + run script (split) + remote shell (split) */}
         <div className="flex gap-2 items-center shrink-0">
           <Skeleton className="h-12 w-12 rounded-[6px]" />
-          <Skeleton className="h-12 w-12 rounded-[6px]" />
-          <Skeleton className="h-12 w-12 rounded-[6px]" />
+          <Skeleton className="h-12 w-[170px] rounded-[6px]" />
           <Skeleton className="h-12 w-[190px] rounded-[6px]" />
         </div>
       </div>

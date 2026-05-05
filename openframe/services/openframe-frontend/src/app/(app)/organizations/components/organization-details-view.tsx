@@ -9,6 +9,7 @@ import {
   TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ArrowRightUpIcon,
   BoxArchiveIcon,
   Loading01Icon,
   PenEditIcon,
@@ -73,7 +74,6 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     () => router.push(isArchived ? '/organizations?tab=archived' : '/organizations'),
     [router, isArchived],
   );
-  const handleEdit = useCallback(() => router.push(`/organizations/edit/${id}`), [router, id]);
 
   const handleArchiveClick = useCallback(async () => {
     if (!organization) return;
@@ -147,15 +147,16 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
           loading: isChecking,
         };
 
+    const editHref = `/organizations/edit/${id}`;
     const editAction: PageActionButton = {
       label: 'Edit Organization',
       variant: 'outline',
       icon: <PenEditIcon className="w-5 h-5 text-ods-text-secondary" />,
-      onClick: handleEdit,
+      href: editHref,
     };
 
     return [archiveAction, editAction];
-  }, [organization, isArchived, isChecking, handleArchiveClick, handleEdit]);
+  }, [organization, isArchived, isChecking, handleArchiveClick, id]);
 
   if (isLoading) {
     return <OrganizationDetailsSkeleton activeTab={activeTab} />;

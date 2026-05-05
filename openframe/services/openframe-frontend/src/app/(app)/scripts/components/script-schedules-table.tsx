@@ -2,7 +2,7 @@
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
 import {
-  Chevron02RightIcon,
+  ArrowRightUpIcon,
   PenEditIcon,
   PlusCircleIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -129,17 +129,17 @@ export function ScriptSchedulesTable() {
       {
         id: 'actions',
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={e => {
-              e.stopPropagation();
-              router.push(`/scripts/schedules/${row.original.id}/edit`);
-            }}
-            className="bg-ods-card"
-          >
-            <PenEditIcon size={20} className="text-ods-text-primary" />
-          </Button>
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/scripts/schedules/${row.original.id}/edit`}
+              prefetch={false}
+              variant="outline"
+              size="icon"
+              leftIcon={<PenEditIcon size={20} className="text-ods-text-primary" />}
+              aria-label="Edit schedule"
+              className="bg-ods-card"
+            />
+          </div>
         ),
         enableSorting: false,
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
@@ -147,21 +147,24 @@ export function ScriptSchedulesTable() {
       {
         id: 'open',
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
-          <Button
-            href={`/scripts/schedules/${row.original.id}`}
-            prefetch={false}
-            variant="outline"
-            size="icon"
-            leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-            aria-label="View details"
-            className="bg-ods-card"
-          />
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={`/scripts/schedules/${row.original.id}`}
+              prefetch={false}
+              openInNewTab
+              variant="outline"
+              size="icon"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
+              className="bg-ods-card"
+            />
+          </div>
         ),
         enableSorting: false,
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [router],
+    [],
   );
 
   const table = useDataTable<ScriptScheduleListItem>({

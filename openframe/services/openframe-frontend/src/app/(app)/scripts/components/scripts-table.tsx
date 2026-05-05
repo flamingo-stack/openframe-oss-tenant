@@ -7,7 +7,7 @@ import {
   ToolBadge,
 } from '@flamingo-stack/openframe-frontend-core/components';
 import {
-  Chevron02RightIcon,
+  ArrowRightUpIcon,
   ClipboardListIcon,
   PenEditIcon,
   PlusCircleIcon,
@@ -148,6 +148,11 @@ export function ScriptsTable() {
   const visibleScripts = useMemo(() => filteredScripts.slice(0, visibleCount), [filteredScripts, visibleCount]);
 
   const renderRowActions = useCallback((script: UiScriptEntry) => {
+    const runHref = `/scripts/details/${script.id}/run`;
+    const editHref = `/scripts/edit/${script.id}`;
+    const detailsHref = `/scripts/details/${script.id}`;
+    const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
+
     const groups: ActionsMenuGroup[] = [
       {
         items: [
@@ -155,19 +160,37 @@ export function ScriptsTable() {
             id: 'run-script',
             label: 'Run Script',
             icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
-            href: `/scripts/details/${script.id}/run`,
+            href: runHref,
+            iconAction: {
+              icon: newTabIcon,
+              'aria-label': 'Open Run Script in new tab',
+              href: runHref,
+              openInNewTab: true,
+            },
           },
           {
             id: 'edit-script',
             label: 'Edit Script',
             icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-            href: `/scripts/edit/${script.id}`,
+            href: editHref,
+            iconAction: {
+              icon: newTabIcon,
+              'aria-label': 'Open Edit Script in new tab',
+              href: editHref,
+              openInNewTab: true,
+            },
           },
           {
             id: 'script-details',
             label: 'Script Details',
             icon: <ClipboardListIcon className="w-6 h-6 text-ods-text-secondary" />,
-            href: `/scripts/details/${script.id}`,
+            href: detailsHref,
+            iconAction: {
+              icon: newTabIcon,
+              'aria-label': 'Open Script Details in new tab',
+              href: detailsHref,
+              openInNewTab: true,
+            },
           },
         ],
       },
@@ -268,10 +291,11 @@ export function ScriptsTable() {
             <Button
               href={`/scripts/details/${row.original.id}`}
               prefetch={false}
+              openInNewTab
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View details"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
               className="bg-ods-card"
             />
           </div>
