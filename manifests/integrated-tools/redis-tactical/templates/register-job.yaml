@@ -17,12 +17,9 @@ spec:
       containers:
       - name: register
         image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}
-        env:
-        - name: REDIS_HOST
-          valueFrom:
-            configMapKeyRef:
+        envFrom:
+          - configMapRef:
               name: tactical-redis
-              key: REDIS_HOST
         command:
           - /bin/sh
           - -uc
@@ -48,7 +45,7 @@ spec:
                   "toolUrls": [
                     {
                       "url": "redis://'"${REDIS_HOST}"'",
-                      "port": "6379",
+                      "port": "'"$REDIS_PORT"'",
                       "type": "DATABASE"
                     }
                   ],

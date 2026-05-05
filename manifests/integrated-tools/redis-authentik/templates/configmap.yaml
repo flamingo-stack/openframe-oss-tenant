@@ -1,9 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tactical-redis
+  name: authentik-redis
 data:
   REDIS_HOST: {{ .Values.redisConnection.host | quote }}
   REDIS_PORT: {{ .Values.redisConnection.port | quote }}
   REDIS_ADDRESS: "{{ .Values.redisConnection.host }}:{{ .Values.redisConnection.port }}"
-  REDIS_URL: "redis://{{ .Values.redisConnection.host }}:{{ .Values.redisConnection.port }}"
