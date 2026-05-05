@@ -7,11 +7,11 @@ import {
   PageLayout,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__generated__/billingUsageViewQuery.graphql';
+import { formatDate } from '@/lib/format-date';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
 import { CancelOfferModal } from './cancel-offer-modal';
@@ -36,10 +36,10 @@ function formatCurrency(value: number): string {
   });
 }
 
-function formatDate(iso: string | null | undefined): string {
+function formatDateOrDash(iso: string | null | undefined): string {
   if (!iso) return '—';
   try {
-    return format(parseISO(iso), 'MMM d, yyyy');
+    return formatDate(iso);
   } catch {
     return iso;
   }
@@ -268,7 +268,7 @@ function BillingUsageContent() {
               {estimatedOverageCost > 0 && (
                 <BillingRow label="Estimated Overage" value={formatCurrency(estimatedOverageCost)} />
               )}
-              <BillingRow label="Next Billing" value={formatDate(nextBilling)} />
+              <BillingRow label="Next Billing" value={formatDateOrDash(nextBilling)} />
             </div>
           )}
         </div>
@@ -292,7 +292,7 @@ function BillingUsageContent() {
               warning
               value={
                 <>
-                  {formatDate(nextBilling)}
+                  {formatDateOrDash(nextBilling)}
                   <AlertTriangleIcon className="size-4 text-ods-warning" />
                 </>
               }
@@ -303,13 +303,13 @@ function BillingUsageContent() {
               warning
               value={
                 <>
-                  {formatDate(trialExpirationDate)}
+                  {formatDateOrDash(trialExpirationDate)}
                   <AlertTriangleIcon className="size-4 text-ods-warning" />
                 </>
               }
             />
           ) : (
-            <BillingRow label="Next Billing" value={formatDate(nextBilling)} />
+            <BillingRow label="Next Billing" value={formatDateOrDash(nextBilling)} />
           )}
         </SectionBlock>
         <SectionBlock title="Usage Overview">
