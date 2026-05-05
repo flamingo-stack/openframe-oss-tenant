@@ -9,7 +9,6 @@ pub enum UpdaterPhase {
     StoppingService,
     ReplacingBinary,
     StartingService,
-    VerifyingHealth,
     Completed,
     Failed,
     RollingBack,
@@ -25,7 +24,6 @@ impl std::fmt::Display for UpdaterPhase {
             UpdaterPhase::StoppingService => "stopping_service",
             UpdaterPhase::ReplacingBinary => "replacing_binary",
             UpdaterPhase::StartingService => "starting_service",
-            UpdaterPhase::VerifyingHealth => "verifying_health",
             UpdaterPhase::Completed => "completed",
             UpdaterPhase::Failed => "failed",
             UpdaterPhase::RollingBack => "rolling_back",
@@ -60,9 +58,6 @@ impl UpdaterState {
     }
 
     pub fn is_terminal(&self) -> bool {
-        matches!(
-            self.phase,
-            UpdaterPhase::Completed | UpdaterPhase::Failed | UpdaterPhase::RolledBack
-        )
+        matches!(self.phase, UpdaterPhase::Completed | UpdaterPhase::Failed | UpdaterPhase::RolledBack)
     }
 }
