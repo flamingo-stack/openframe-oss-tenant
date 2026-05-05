@@ -19,18 +19,11 @@ const moveToFolderMutation = graphql`
 interface MoveToFolderArgs {
   id: string;
   parentId: string | null;
-  /** Connection IDs the moved item should leave (the source folder's items connection). */
   removeFromConnections: string[];
-  /** Connection IDs the moved item should join (the target folder's items connection if mounted). */
   appendToConnections?: string[];
   onCompleted?: () => void;
 }
 
-/**
- * `moveToFolder` works for both folders and articles per the schema. The
- * server returns the updated node; we use a manual updater to relocate the
- * edge between source and target connections in the cache.
- */
 export function useMoveToFolder() {
   const { toast } = useToast();
   const [commit, isInFlight] = useMutation<UseMoveToFolderMutationType>(moveToFolderMutation);

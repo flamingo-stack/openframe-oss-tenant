@@ -1,24 +1,24 @@
 'use client';
 
+import { Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  ActionsMenuDropdown,
+  type ActionsMenuItem,
   Button,
+  InputTrigger,
   ModalV2,
   ModalV2Content,
   ModalV2Footer,
   ModalV2Header,
   ModalV2Title,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { type FolderChildrenAction, useDeleteFolder } from '../hooks/use-delete-folder';
-import { useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
+import { buildFolderTree, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
+import { buildFolderMenuItemsWithRoot, type FolderMenuTarget } from './folder-menu-items';
 
-const ARCHIVE_VALUE = '__archive__';
+const ARCHIVE_LABEL = "Don't Move and Archive";
 
 export interface DeleteFolderTarget {
   id: string;
@@ -29,7 +29,6 @@ interface DeleteFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   folder: DeleteFolderTarget | null;
-  /** Connection ID of the parent folder's items list — the deleted folder is removed from here. */
   sourceConnectionId: string;
 }
 
@@ -39,24 +38,46 @@ interface DeleteFolderContentProps {
   sourceConnectionId: string;
 }
 
+type DeleteSelection = { kind: 'archive' } | { kind: 'move'; target: FolderMenuTarget };
+
+const DEFAULT_SELECTION: DeleteSelection = { kind: 'archive' };
+
+function selectionLabel(selection: DeleteSelection): string {
+  return selection.kind === 'archive' ? ARCHIVE_LABEL : selection.target.name;
+}
+
 function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFolderContentProps) {
   const { toast } = useToast();
   const { deleteFolder, isPending } = useDeleteFolder();
   const folders = useKnowledgeBaseFolders();
-  const [moveTarget, setMoveTarget] = useState<string>(ARCHIVE_VALUE);
+  const [selection, setSelection] = useState<DeleteSelection>(DEFAULT_SELECTION);
 
-  useEffect(() => {
-    setMoveTarget(ARCHIVE_VALUE);
-  }, []);
+  const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
-  const moveOptions = useMemo(() => folders.filter(f => f.id !== folder.id), [folders, folder.id]);
+  const groups = useMemo<{ items: ActionsMenuItem[] }[]>(
+    () => [
+      {
+        items: [
+          {
+            id: '__archive__',
+            label: ARCHIVE_LABEL,
+            onClick: () => setSelection({ kind: 'archive' }),
+          },
+          ...buildFolderMenuItemsWithRoot(tree, target => setSelection({ kind: 'move', target }), {
+            excludeFolderId: folder.id,
+          }),
+        ],
+      },
+    ],
+    [tree, folder.id],
+  );
 
   const handleConfirm = () => {
-    const childrenAction: FolderChildrenAction = moveTarget === ARCHIVE_VALUE ? 'ARCHIVE' : 'MOVE';
+    const childrenAction: FolderChildrenAction = selection.kind === 'archive' ? 'ARCHIVE' : 'MOVE';
     deleteFolder({
       id: folder.id,
       childrenAction,
-      moveTargetFolderId: childrenAction === 'MOVE' ? moveTarget : null,
+      moveTargetFolderId: selection.kind === 'move' ? selection.target.id : null,
       connections: [sourceConnectionId],
       onCompleted: () => {
         toast({ title: 'Folder deleted', description: folder.name, variant: 'success' });
@@ -67,7 +88,7 @@ function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFold
 
   return (
     <>
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
+      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)] overflow-visible">
         <p className="text-h4 text-ods-text-primary">
           Are you sure you want to delete <span className="text-ods-error">{folder.name}</span> folder? All articles
           inside will be archived or moved.
@@ -75,19 +96,20 @@ function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFold
 
         <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
           <p className="text-h4 text-ods-text-primary">Move Articles to</p>
-          <Select value={moveTarget} onValueChange={setMoveTarget} disabled={isPending}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ARCHIVE_VALUE}>Don't Move and Archive</SelectItem>
-              {moveOptions.map(option => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ActionsMenuDropdown
+            groups={groups}
+            align="start"
+            side="bottom"
+            sideOffset={4}
+            contentClassName="z-[1400]"
+            customTrigger={
+              <InputTrigger
+                selectedLabel={selectionLabel(selection)}
+                endIcon={<Chevron02DownIcon className="size-6" />}
+                disabled={isPending}
+              />
+            }
+          />
         </div>
       </ModalV2Content>
 

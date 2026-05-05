@@ -21,7 +21,6 @@ interface ArchiveArticleModalProps {
   isOpen: boolean;
   onClose: () => void;
   article: ArchiveArticleTarget | null;
-  /** Connection ID of the items list the article currently lives in. */
   sourceConnectionId: string;
 }
 
@@ -31,7 +30,6 @@ export function ArchiveArticleModal({ isOpen, onClose, article, sourceConnection
 
   const handleConfirm = async () => {
     if (!article || isPending) return;
-    // Append to the archive page's default-search connection if it's mounted; harmless otherwise.
     const archiveConnectionId = getArchivedArticlesConnectionId({ search: null, tagIds: null });
     try {
       await archiveArticle({
@@ -41,9 +39,7 @@ export function ArchiveArticleModal({ isOpen, onClose, article, sourceConnection
       });
       toast({ title: 'Article archived', description: article.name, variant: 'success' });
       onClose();
-    } catch {
-      // hook already toasted
-    }
+    } catch {}
   };
 
   return (
@@ -76,5 +72,4 @@ export function ArchiveArticleModal({ isOpen, onClose, article, sourceConnection
   );
 }
 
-// Re-export for callers that need to invalidate / append directly.
 export { ARCHIVED_ARTICLES_CONNECTION_KEY };

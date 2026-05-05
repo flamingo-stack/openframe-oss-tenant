@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { graphql, useMutation } from 'react-relay';
 import { ConnectionHandler } from 'relay-runtime';
 import type { useDeleteFolderMutation as UseDeleteFolderMutationType } from '@/__generated__/useDeleteFolderMutation.graphql';
+import { KNOWLEDGE_BASE_FOLDER_TREE_FIELD } from './use-knowledge-base-items';
 
 const deleteFolderMutation = graphql`
   mutation useDeleteFolderMutation($input: DeleteFolderInput!) {
@@ -17,9 +18,7 @@ export type FolderChildrenAction = 'MOVE' | 'ARCHIVE';
 interface DeleteFolderArgs {
   id: string;
   childrenAction: FolderChildrenAction;
-  /** Required when childrenAction === 'MOVE'. */
   moveTargetFolderId?: string | null;
-  /** Connection IDs to drop the deleted folder from (typically the parent folder's items connection). */
   connections: string[];
   onCompleted?: () => void;
 }
@@ -43,6 +42,14 @@ export function useDeleteFolder() {
             const connection = store.get(connectionId);
             if (connection) {
               ConnectionHandler.deleteNode(connection, id);
+            }
+          }
+          const root = store.getRoot();
+          const existing = root.getLinkedRecords(KNOWLEDGE_BASE_FOLDER_TREE_FIELD);
+          if (existing) {
+            const next = existing.filter(record => record.getDataID() !== id);
+            if (next.length !== existing.length) {
+              root.setLinkedRecords(next, KNOWLEDGE_BASE_FOLDER_TREE_FIELD);
             }
           }
         },

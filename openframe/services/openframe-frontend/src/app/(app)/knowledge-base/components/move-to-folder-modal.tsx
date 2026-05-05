@@ -5,6 +5,7 @@ import {
   ActionsMenuDropdown,
   type ActionsMenuItem,
   Button,
+  InputTrigger,
   ModalV2,
   ModalV2Content,
   ModalV2Footer,
@@ -12,15 +13,14 @@ import {
   ModalV2Title,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { forwardRef, Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import {
   buildFolderTree,
-  type FolderTreeNode,
   getKnowledgeBaseItemsConnectionId,
   useKnowledgeBaseFolders,
 } from '../hooks/use-knowledge-base-items';
 import { useMoveToFolder } from '../hooks/use-move-to-folder';
+import { buildFolderMenuItemsWithRoot, type FolderMenuTarget } from './folder-menu-items';
 
 export interface MoveToFolderItem {
   id: string;
@@ -32,66 +32,7 @@ interface MoveToFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: MoveToFolderItem | null;
-  /** Connection ID of the source folder's items list — the moved item is removed from here. */
   sourceConnectionId: string;
-}
-
-interface DropdownTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  selectedName: string | null;
-}
-
-const DropdownTrigger = forwardRef<HTMLButtonElement, DropdownTriggerProps>(
-  ({ selectedName, className, ...props }, ref) => (
-    <button
-      ref={ref}
-      type="button"
-      {...props}
-      className={cn(
-        'w-full flex items-center gap-2 px-3 py-3 rounded-[6px] bg-ods-card border transition-colors',
-        'border-ods-border hover:border-ods-text-secondary',
-        'data-[state=open]:border-ods-accent',
-        className,
-      )}
-    >
-      <span
-        className={cn(
-          'flex-1 min-w-0 text-left text-h4 truncate',
-          selectedName ? 'text-ods-text-primary' : 'text-ods-text-secondary',
-        )}
-      >
-        {selectedName ?? 'Select Folder'}
-      </span>
-      <Chevron02DownIcon className="size-6 shrink-0 text-ods-text-secondary transition-transform data-[state=open]:rotate-180" />
-    </button>
-  ),
-);
-DropdownTrigger.displayName = 'MoveToFolderDropdownTrigger';
-
-function buildMenuItems(
-  nodes: FolderTreeNode[],
-  excludeFolderId: string | null | undefined,
-  onSelect: (folder: { id: string; name: string }) => void,
-): ActionsMenuItem[] {
-  return nodes
-    .filter(node => node.id !== excludeFolderId)
-    .map(node => {
-      const childItems = node.children?.length ? buildMenuItems(node.children, excludeFolderId, onSelect) : [];
-
-      if (childItems.length > 0) {
-        return {
-          id: node.id,
-          label: node.name,
-          type: 'submenu',
-          submenu: childItems,
-        } satisfies ActionsMenuItem;
-      }
-
-      return {
-        id: node.id,
-        label: node.name,
-        onClick: () => onSelect({ id: node.id, name: node.name }),
-      } satisfies ActionsMenuItem;
-    });
 }
 
 interface MoveToFolderContentProps {
@@ -104,15 +45,16 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
   const { toast } = useToast();
   const { moveToFolder, isPending } = useMoveToFolder();
   const folders = useKnowledgeBaseFolders();
-  const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
+  const [selected, setSelected] = useState<FolderMenuTarget | null>(null);
 
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
-  // Folders can be moved into any folder *except themselves*. Articles have no
-  // such restriction (you can't move an article into itself anyway).
   const excludeFolderId = itemNonNull.type === 'folder' ? itemNonNull.id : null;
 
-  const groups = useMemo(() => [{ items: buildMenuItems(tree, excludeFolderId, setSelected) }], [tree, excludeFolderId]);
+  const groups = useMemo<{ items: ActionsMenuItem[] }[]>(
+    () => [{ items: buildFolderMenuItemsWithRoot(tree, setSelected, { excludeFolderId }) }],
+    [tree, excludeFolderId],
+  );
 
   const handleConfirm = async () => {
     if (!selected || isPending) return;
@@ -130,9 +72,7 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
         variant: 'success',
       });
       onClose();
-    } catch {
-      // hook already toasted
-    }
+    } catch {}
   };
 
   return (
@@ -144,7 +84,14 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
           align="start"
           side="bottom"
           sideOffset={4}
-          customTrigger={<DropdownTrigger selectedName={selected?.name ?? null} />}
+          contentClassName="z-[1400]"
+          customTrigger={
+            <InputTrigger
+              selectedLabel={selected?.name}
+              placeholder="Select Folder"
+              endIcon={<Chevron02DownIcon className="size-6" />}
+            />
+          }
         />
       </ModalV2Content>
 
@@ -153,7 +100,7 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="accent"
           className="flex-1"
           onClick={handleConfirm}
           disabled={!selected || isPending}
@@ -177,7 +124,7 @@ function MoveToFolderContentSkeleton({ onClose }: { onClose: () => void }) {
         <Button variant="outline" className="flex-1" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" className="flex-1" disabled>
+        <Button variant="accent" className="flex-1" disabled>
           Move
         </Button>
       </ModalV2Footer>

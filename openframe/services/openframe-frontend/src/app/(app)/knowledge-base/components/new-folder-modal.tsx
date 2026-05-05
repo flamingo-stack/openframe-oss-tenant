@@ -19,7 +19,6 @@ interface NewFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   parentFolderId?: string | null;
-  /** Connection ID of the items list at parentFolderId — required so the new folder appears via @appendEdge. */
   parentConnectionId: string;
   onCreated?: (folderId: string) => void;
 }
@@ -55,9 +54,7 @@ export function NewFolderModal({
       toast({ title: 'Folder created', description: trimmed, variant: 'success' });
       onCreated?.(result.id);
       onClose();
-    } catch {
-      // hook already toasted; keep modal open so user can retry
-    }
+    } catch {}
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {

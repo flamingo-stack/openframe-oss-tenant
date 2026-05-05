@@ -7,7 +7,6 @@ import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 interface ArticleTagsManagerProps {
   selected: string[];
   onChange: (tags: string[]) => void;
-  /** Existing tags fetched at the form level so they can be reused for save-time ID resolution. */
   availableTags: ReadonlyArray<KnowledgeBaseTag>;
   disabled?: boolean;
 }

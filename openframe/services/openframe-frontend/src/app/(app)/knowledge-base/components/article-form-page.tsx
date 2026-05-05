@@ -24,7 +24,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
   const router = useRouter();
   const availableTags = useKnowledgeBaseTags(initialFolderId ?? null);
 
-  const { form, isEditMode, isSubmitting, handleSave, managedFiles, onAddFiles, onRemoveFile } = useEditArticleForm({
+  const { form, isEditMode, isSubmitting, handleSave } = useEditArticleForm({
     articleId,
     initialFolderId,
     initialArticle,
@@ -43,14 +43,14 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
       {
         label: 'Save as Draft',
         onClick: () => handleSave('DRAFT', { availableTags }),
-        variant: 'card' as const,
+        variant: 'outline' as const,
         disabled: isSubmitting,
         loading: isSubmitting,
       },
       {
         label: 'Save and Publish',
         onClick: () => handleSave('PUBLISHED', { availableTags }),
-        variant: 'primary' as const,
+        variant: 'accent' as const,
         disabled: isSubmitting,
         loading: isSubmitting,
       },
@@ -63,15 +63,9 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
       title={isEditMode ? 'Edit Article' : 'New Article'}
       backButton={backButton}
       actions={actions}
-      padding="none"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <ArticleFormFields
-        form={form}
-        managedFiles={managedFiles}
-        onAddFiles={onAddFiles}
-        onRemoveFile={onRemoveFile}
-        availableTags={availableTags}
-      />
+      <ArticleFormFields form={form} availableTags={availableTags} />
     </PageLayout>
   );
 }
@@ -84,19 +78,28 @@ function EditFormBody({ articleId, initialFolderId }: { articleId: string; initi
   return <FormShell articleId={articleId} initialFolderId={initialFolderId} initialArticle={initialArticle} />;
 }
 
-function ArticleFormSkeleton() {
+function ArticleFormFallback({ isEditMode }: { isEditMode: boolean }) {
+  const router = useRouter();
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="h-8 w-1/3 rounded bg-ods-card animate-pulse" />
+    <PageLayout
+      title={isEditMode ? 'Edit Article' : 'New Article'}
+      backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-lf)]">
+        <div className="h-12 w-full rounded bg-ods-card animate-pulse" />
+        <div className="h-12 w-full rounded bg-ods-card animate-pulse" />
+      </div>
       <div className="h-12 w-full rounded bg-ods-card animate-pulse" />
       <div className="h-64 w-full rounded bg-ods-card animate-pulse" />
-    </div>
+    </PageLayout>
   );
 }
 
 export function ArticleFormPage({ articleId, initialFolderId }: ArticleFormPageProps) {
+  const isEditMode = articleId !== null;
   return (
-    <Suspense fallback={<ArticleFormSkeleton />}>
+    <Suspense fallback={<ArticleFormFallback isEditMode={isEditMode} />}>
       {articleId ? (
         <EditFormBody articleId={articleId} initialFolderId={initialFolderId} />
       ) : (

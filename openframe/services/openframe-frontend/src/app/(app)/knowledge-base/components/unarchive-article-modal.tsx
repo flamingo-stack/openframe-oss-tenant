@@ -3,8 +3,8 @@
 import { Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   ActionsMenuDropdown,
-  type ActionsMenuItem,
   Button,
+  InputTrigger,
   ModalV2,
   ModalV2Content,
   ModalV2Footer,
@@ -12,15 +12,15 @@ import {
   ModalV2Title,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import { forwardRef, Suspense, useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import {
   buildFolderTree,
-  type FolderTreeNode,
   getKnowledgeBaseItemsConnectionId,
+  KNOWLEDGE_BASE_ROOT_LABEL,
   useKnowledgeBaseFolders,
 } from '../hooks/use-knowledge-base-items';
 import { useUnarchiveArticle } from '../hooks/use-unarchive-article';
+import { buildFolderMenuItemsWithRoot, type FolderMenuTarget } from './folder-menu-items';
 
 export interface UnarchiveArticleTarget {
   id: string;
@@ -31,61 +31,7 @@ interface UnarchiveArticleModalProps {
   isOpen: boolean;
   onClose: () => void;
   article: UnarchiveArticleTarget | null;
-  /** Connection ID of the archive list — the article is removed from here on success. */
   sourceConnectionId: string;
-}
-
-interface DropdownTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  selectedName: string | null;
-}
-
-const DropdownTrigger = forwardRef<HTMLButtonElement, DropdownTriggerProps>(
-  ({ selectedName, className, ...props }, ref) => (
-    <button
-      ref={ref}
-      type="button"
-      {...props}
-      className={cn(
-        'w-full flex items-center gap-2 px-3 py-3 rounded-[6px] bg-ods-card border transition-colors',
-        'border-ods-border hover:border-ods-text-secondary',
-        'data-[state=open]:border-ods-accent',
-        className,
-      )}
-    >
-      <span
-        className={cn(
-          'flex-1 min-w-0 text-left text-h4 truncate',
-          selectedName ? 'text-ods-text-primary' : 'text-ods-text-secondary',
-        )}
-      >
-        {selectedName ?? 'Root (no folder)'}
-      </span>
-      <Chevron02DownIcon className="size-6 shrink-0 text-ods-text-secondary transition-transform data-[state=open]:rotate-180" />
-    </button>
-  ),
-);
-DropdownTrigger.displayName = 'UnarchiveDropdownTrigger';
-
-function buildMenuItems(
-  nodes: FolderTreeNode[],
-  onSelect: (folder: { id: string | null; name: string }) => void,
-): ActionsMenuItem[] {
-  return nodes.map(node => {
-    const childItems = node.children?.length ? buildMenuItems(node.children, onSelect) : [];
-    if (childItems.length > 0) {
-      return {
-        id: node.id,
-        label: node.name,
-        type: 'submenu',
-        submenu: childItems,
-      } satisfies ActionsMenuItem;
-    }
-    return {
-      id: node.id,
-      label: node.name,
-      onClick: () => onSelect({ id: node.id, name: node.name }),
-    } satisfies ActionsMenuItem;
-  });
 }
 
 interface UnarchiveContentProps {
@@ -98,25 +44,11 @@ function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveCon
   const { toast } = useToast();
   const { unarchiveArticle, isPending } = useUnarchiveArticle();
   const folders = useKnowledgeBaseFolders();
-  const [selected, setSelected] = useState<{ id: string | null; name: string } | null>(null);
+  const [selected, setSelected] = useState<FolderMenuTarget | null>(null);
 
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
-  const groups = useMemo(
-    () => [
-      {
-        items: [
-          {
-            id: '__root__',
-            label: 'Root (no folder)',
-            onClick: () => setSelected({ id: null, name: 'Root (no folder)' }),
-          } satisfies ActionsMenuItem,
-          ...buildMenuItems(tree, setSelected),
-        ],
-      },
-    ],
-    [tree],
-  );
+  const groups = useMemo(() => [{ items: buildFolderMenuItemsWithRoot(tree, setSelected) }], [tree]);
 
   const handleConfirm = async () => {
     if (!selected || isPending) return;
@@ -131,9 +63,7 @@ function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveCon
       });
       toast({ title: 'Unarchived', description: `${article.name} restored`, variant: 'success' });
       onClose();
-    } catch {
-      // hook already toasted
-    }
+    } catch {}
   };
 
   return (
@@ -145,7 +75,14 @@ function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveCon
           align="start"
           side="bottom"
           sideOffset={4}
-          customTrigger={<DropdownTrigger selectedName={selected?.name ?? null} />}
+          contentClassName="z-[1400]"
+          customTrigger={
+            <InputTrigger
+              selectedLabel={selected?.name}
+              placeholder={KNOWLEDGE_BASE_ROOT_LABEL}
+              endIcon={<Chevron02DownIcon className="size-6" />}
+            />
+          }
         />
       </ModalV2Content>
 
@@ -154,7 +91,7 @@ function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveCon
           Cancel
         </Button>
         <Button
-          variant="primary"
+          variant="accent"
           className="flex-1"
           onClick={handleConfirm}
           disabled={!selected || isPending}
@@ -178,7 +115,7 @@ function UnarchiveContentSkeleton({ onClose }: { onClose: () => void }) {
         <Button variant="outline" className="flex-1" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" className="flex-1" disabled>
+        <Button variant="accent" className="flex-1" disabled>
           Unarchive
         </Button>
       </ModalV2Footer>

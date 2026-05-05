@@ -19,9 +19,7 @@ const archiveArticleMutation = graphql`
 
 interface ArchiveArticleArgs {
   id: string;
-  /** Connections the article should be removed from (typically the current folder's items connection). */
   removeFromConnections: string[];
-  /** Connections the archived article should be appended to (typically the archive page connection). */
   appendToConnections?: string[];
   onCompleted?: () => void;
 }

@@ -4,11 +4,12 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback } from 'react';
 import { graphql, useMutation } from 'react-relay';
 import type { useCreateFolderMutation as UseCreateFolderMutationType } from '@/__generated__/useCreateFolderMutation.graphql';
+import { KNOWLEDGE_BASE_FOLDER_TREE_FIELD } from './use-knowledge-base-items';
 
 const createFolderMutation = graphql`
   mutation useCreateFolderMutation($name: String!, $parentId: ID, $connections: [ID!]!) {
     createFolder(name: $name, parentId: $parentId)
-      @appendEdge(connections: $connections, edgeTypeName: "KnowledgeBaseItemEdge") {
+      @appendNode(connections: $connections, edgeTypeName: "KnowledgeBaseItemEdge") {
       id
       type
       name
@@ -34,6 +35,15 @@ export function useCreateFolder() {
       new Promise<{ id: string }>((resolve, reject) => {
         commit({
           variables: { name, parentId, connections },
+          updater: store => {
+            const created = store.getRootField('createFolder');
+            if (!created) return;
+            const root = store.getRoot();
+            const existing = root.getLinkedRecords(KNOWLEDGE_BASE_FOLDER_TREE_FIELD);
+            if (!existing) return;
+            if (existing.some(record => record.getDataID() === created.getDataID())) return;
+            root.setLinkedRecords([...existing, created], KNOWLEDGE_BASE_FOLDER_TREE_FIELD);
+          },
           onCompleted: response => {
             if (response.createFolder?.id) {
               resolve({ id: response.createFolder.id });

@@ -7,7 +7,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
-import { useArchiveArticle } from './use-archive-article';
 import { useCreateArticle } from './use-create-article';
 import type { KnowledgeBaseItemNode } from './use-knowledge-base-item';
 import { getKnowledgeBaseItemsConnectionId } from './use-knowledge-base-items';
@@ -18,26 +17,11 @@ import { useUnarchiveArticle } from './use-unarchive-article';
 import { useUnpublishArticle } from './use-unpublish-article';
 import { useUpdateArticle } from './use-update-article';
 
-export type ManagedFileStatus = 'uploading' | 'uploaded' | 'error';
-
-export interface ManagedFile {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  contentType: string;
-  status: ManagedFileStatus;
-  error?: string;
-}
-
 export type SaveStatus = 'DRAFT' | 'PUBLISHED';
 
 interface UseEditArticleFormOptions {
   articleId: string | null;
   initialFolderId?: string | null;
-  /**
-   * Existing article fetched in edit mode. The form prefills from this and
-   * uses it to compute tag/status diffs at save time. `null` for create mode.
-   */
   initialArticle?: KnowledgeBaseItemNode | null;
 }
 
@@ -46,12 +30,6 @@ interface ArticleTagRef {
   key: string;
 }
 
-/**
- * Tag list state. The form holds tag KEYS for autocomplete UX (creatable +
- * freeSolo). At save time, keys are resolved to IDs against `availableTags`,
- * with unknown keys triggering tag creation. Pass the current set of available
- * tags so unknown keys can be detected.
- */
 interface SaveOptions {
   availableTags: ReadonlyArray<ArticleTagRef>;
 }
@@ -67,20 +45,17 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     defaultValues: ARTICLE_FORM_DEFAULTS,
   });
 
-  const [managedFiles, setManagedFiles] = useState<ManagedFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { createArticle } = useCreateArticle();
   const { updateArticle } = useUpdateArticle();
   const { publishArticle } = usePublishArticle();
   const { unpublishArticle } = useUnpublishArticle();
-  const { archiveArticle } = useArchiveArticle();
   const { unarchiveArticle } = useUnarchiveArticle();
   const { addTag } = useAddTag();
   const { removeTag } = useRemoveTag();
   const { createTag } = useCreateKnowledgeBaseTag();
 
-  // Snapshot the original tag IDs for diffing at save time
   const initialTagRefs = useMemo<ArticleTagRef[]>(() => {
     if (!initialArticle?.tags) return [];
     return initialArticle.tags.map(t => ({ id: t.id, key: t.key }));
@@ -88,71 +63,20 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
 
   useEffect(() => {
     if (isEditMode && initialArticle && initialArticle.type === 'ARTICLE') {
-      const attachments = initialArticle.attachments ?? [];
       form.reset({
         title: initialArticle.name,
-        folderId: initialArticle.parentId ?? '',
+        folderId: initialArticle.parentId ?? null,
         tags: initialTagRefs.map(t => t.key),
         body: initialArticle.content ?? '',
-        attachmentIds: attachments.map(a => a.id),
       });
-      setManagedFiles(
-        attachments.map(a => ({
-          id: a.id,
-          fileName: a.fileName,
-          fileSize: a.fileSize ?? 0,
-          contentType: a.contentType ?? 'application/octet-stream',
-          status: 'uploaded',
-        })),
-      );
     } else if (!isEditMode) {
-      form.reset({ ...ARTICLE_FORM_DEFAULTS, folderId: initialFolderId ?? '' });
-      setManagedFiles([]);
+      form.reset({
+        ...ARTICLE_FORM_DEFAULTS,
+        folderId: initialFolderId ?? null,
+      });
     }
   }, [isEditMode, initialArticle, initialFolderId, initialTagRefs, form]);
 
-  const onAddFiles = useCallback(
-    (files: File | File[] | undefined) => {
-      if (!files) return;
-      const fileArray = Array.isArray(files) ? files : [files];
-      const additions: ManagedFile[] = fileArray.map(file => ({
-        id: `local_${crypto.randomUUID()}`,
-        fileName: file.name,
-        fileSize: file.size,
-        contentType: file.type || 'application/octet-stream',
-        status: 'uploaded',
-      }));
-      setManagedFiles(prev => {
-        const next = [...prev, ...additions];
-        form.setValue(
-          'attachmentIds',
-          next.map(f => f.id),
-          { shouldDirty: true },
-        );
-        return next;
-      });
-    },
-    [form],
-  );
-
-  const onRemoveFile = useCallback(
-    (id: string) => {
-      setManagedFiles(prev => {
-        const next = prev.filter(f => f.id !== id);
-        form.setValue(
-          'attachmentIds',
-          next.map(f => f.id),
-          { shouldDirty: true },
-        );
-        return next;
-      });
-    },
-    [form],
-  );
-
-  /**
-   * Resolve form tag keys to tag IDs, creating new tags for any unknown keys.
-   */
   const resolveTagIds = useCallback(
     async (keys: ReadonlyArray<string>, availableTags: ReadonlyArray<ArticleTagRef>): Promise<string[]> => {
       const byKey = new Map(availableTags.map(t => [t.key, t.id]));
@@ -181,31 +105,27 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
         async data => {
           try {
             const tagIds = await resolveTagIds(data.tags, availableTags);
-            const folderId = data.folderId || null;
+            const folderId = data.folderId;
 
             if (isEditMode && articleId && initialArticle && initialArticle.type === 'ARTICLE') {
-              // ---- Edit path ----
-              await updateArticle({
-                input: {
-                  id: articleId,
-                  name: data.title,
-                  parentId: folderId,
-                  content: data.body,
-                  summary: data.body.slice(0, 160),
-                },
-              });
-
-              // Tag diff (parallel)
               const initialIds = new Set(initialTagRefs.map(t => t.id));
               const nextIds = new Set(tagIds);
               const toAdd = tagIds.filter(id => !initialIds.has(id));
               const toRemove = initialTagRefs.filter(t => !nextIds.has(t.id)).map(t => t.id);
               await Promise.all([
+                updateArticle({
+                  input: {
+                    id: articleId,
+                    name: data.title,
+                    parentId: folderId,
+                    content: data.body,
+                    summary: data.body.slice(0, 160),
+                  },
+                }),
                 ...toAdd.map(tagId => addTag(articleId, tagId)),
                 ...toRemove.map(tagId => removeTag(articleId, tagId)),
               ]);
 
-              // Status transition
               const currentStatus = (initialArticle.status ?? 'DRAFT') as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
               if (currentStatus !== targetStatus) {
                 if (targetStatus === 'PUBLISHED') {
@@ -218,7 +138,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                   }
                   await publishArticle(articleId);
                 } else {
-                  // targetStatus === 'DRAFT'
                   if (currentStatus === 'ARCHIVED') {
                     await unarchiveArticle({
                       id: articleId,
@@ -234,7 +153,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               toast({ title: 'Success', description: 'Article updated', variant: 'success' });
               router.push(`/knowledge-base/details/${articleId}`);
             } else {
-              // ---- Create path ----
               const targetConnectionId = getKnowledgeBaseItemsConnectionId({
                 parentId: folderId,
                 search: null,
@@ -254,7 +172,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               router.push(`/knowledge-base/details/${result.id}`);
             }
           } catch {
-            // Underlying mutation hook already surfaced an error toast.
           } finally {
             setIsSubmitting(false);
           }
@@ -291,19 +208,10 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     ],
   );
 
-  // The form supports archiving as part of save when status is set to ARCHIVED;
-  // however the primary article form only exposes Draft + Publish. Explicit
-  // archive happens via ArchiveArticleModal triggered from the actions menu.
-  // Keep the dependency reference to avoid unused-import errors.
-  void archiveArticle;
-
   return {
     form,
     isEditMode,
     isSubmitting,
     handleSave,
-    managedFiles,
-    onAddFiles,
-    onRemoveFile,
   };
 }

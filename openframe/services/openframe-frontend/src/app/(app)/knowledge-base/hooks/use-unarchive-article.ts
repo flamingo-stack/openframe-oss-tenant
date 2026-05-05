@@ -20,9 +20,7 @@ const unarchiveArticleMutation = graphql`
 interface UnarchiveArticleArgs {
   id: string;
   parentId: string | null;
-  /** Connections the article should be removed from (typically the archive page connection). */
   removeFromConnections: string[];
-  /** Connections the unarchived article should be appended to (typically the destination folder's items connection). */
   appendToConnections?: string[];
   onCompleted?: () => void;
 }

@@ -1,38 +1,30 @@
 'use client';
 
-import { Autocomplete, FileUpload, Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ActionsMenuDropdown,
+  FieldWrapper,
+  Input,
+  InputTrigger,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
-import type { ManagedFile } from '../hooks/use-edit-article-form';
-import { useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
+import { buildFolderTree, KNOWLEDGE_BASE_ROOT_LABEL, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
 import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 import type { ArticleFormData } from '../types/article.types';
 import { ArticleTagsManager } from './article-tags-manager';
+import { buildFolderMenuItemsWithRoot } from './folder-menu-items';
 import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
 
 interface ArticleFormFieldsProps {
   form: UseFormReturn<ArticleFormData>;
-  managedFiles: ManagedFile[];
-  onAddFiles: (files: File | File[] | undefined) => void;
-  onRemoveFile: (id: string) => void;
-  /** Existing tags fetched at the form level (passed through to ArticleTagsManager). */
   availableTags: ReadonlyArray<KnowledgeBaseTag>;
 }
 
-export function ArticleFormFields({
-  form,
-  managedFiles,
-  onAddFiles,
-  onRemoveFile,
-  availableTags,
-}: ArticleFormFieldsProps) {
+export function ArticleFormFields({ form, availableTags }: ArticleFormFieldsProps) {
   const { control } = form;
   const folders = useKnowledgeBaseFolders();
-
-  const folderOptions = useMemo(
-    () => folders.map(folder => ({ label: folder.name, value: folder.id })),
-    [folders],
-  );
+  const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
   const renderPreview = useCallback(
     (source: string) => (
@@ -46,7 +38,7 @@ export function ArticleFormFields({
   return (
     <>
       {/* Title + Folder */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-lf)]">
         <Controller
           name="title"
           control={control}
@@ -68,17 +60,31 @@ export function ArticleFormFields({
         <Controller
           name="folderId"
           control={control}
-          render={({ field, fieldState }) => (
-            <Autocomplete
-              label="Folder"
-              options={folderOptions}
-              value={field.value || null}
-              onChange={val => field.onChange(val ?? '')}
-              placeholder="Select folder"
-              error={fieldState.error?.message}
-              invalid={!!fieldState.error}
-            />
-          )}
+          render={({ field }) => {
+            const selectedName =
+              field.value === null
+                ? KNOWLEDGE_BASE_ROOT_LABEL
+                : (folders.find(f => f.id === field.value)?.name ?? null);
+
+            return (
+              <FieldWrapper label="Folder">
+                <ActionsMenuDropdown
+                  groups={[{ items: buildFolderMenuItemsWithRoot(tree, target => field.onChange(target.id)) }]}
+                  align="start"
+                  side="bottom"
+                  sideOffset={4}
+                  contentClassName="z-[1400]"
+                  customTrigger={
+                    <InputTrigger
+                      selectedLabel={selectedName}
+                      placeholder="Select Folder"
+                      endIcon={<Chevron02DownIcon className="size-6" />}
+                    />
+                  }
+                />
+              </FieldWrapper>
+            );
+          }}
         />
       </div>
 
@@ -104,16 +110,6 @@ export function ArticleFormFields({
             renderPreview={renderPreview}
           />
         )}
-      />
-
-      {/* File Upload */}
-      <FileUpload
-        onChange={onAddFiles}
-        managedFiles={managedFiles}
-        onRemoveManagedFile={onRemoveFile}
-        multiple
-        label="Upload Files"
-        description="(Click Here or Drag and Drop)"
       />
     </>
   );

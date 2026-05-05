@@ -19,8 +19,8 @@ export default function ArchivePage() {
   return (
     <PageLayout
       title="Archived Articles"
-      background="default"
       backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <SearchInput placeholder="Search archived articles" value={search} onChange={setSearch} />
       <ArchivedArticlesTable

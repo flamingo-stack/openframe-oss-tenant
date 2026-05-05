@@ -62,7 +62,7 @@ export const featureFlags = {
   },
   knowledgeBase: {
     enabled(): boolean {
-      return getFlagValue('knowledge-base', () => true);
+      return getFlagValue('knowledge-base', () => false);
     },
   },
 } as const;

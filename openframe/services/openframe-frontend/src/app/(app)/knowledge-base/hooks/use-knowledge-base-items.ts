@@ -2,48 +2,36 @@
 
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import { ConnectionHandler } from 'relay-runtime';
-import type { useKnowledgeBaseFoldersQuery as UseKnowledgeBaseFoldersQueryType } from '@/__generated__/useKnowledgeBaseFoldersQuery.graphql';
+import type { useKnowledgeBaseItemsFoldersQuery as UseKnowledgeBaseFoldersQueryType } from '@/__generated__/useKnowledgeBaseItemsFoldersQuery.graphql';
 
-/**
- * Connection key shared between the table query, fragment, and any mutation
- * that needs to insert/remove edges into the items list.
- */
-export const KNOWLEDGE_BASE_TABLE_CONNECTION_KEY = 'knowledgeBaseTable_knowledgeBaseItems';
+export const KNOWLEDGE_BASE_BODY_CONNECTION_KEY = 'knowledgeBaseBody_knowledgeBaseItems';
 
 export interface KnowledgeBaseItemsConnectionFilter {
   parentId: string | null;
   search: string | null;
+  tagIds?: ReadonlyArray<string>;
 }
 
-/**
- * Computes the Relay connection ID for the items list at a given folder. The
- * key + filter args here MUST match the @connection directive on the table
- * fragment in knowledge-base-table.tsx — otherwise mutation @appendEdge /
- * @deleteEdge directives won't find the connection in the cache.
- */
-export function getKnowledgeBaseItemsConnectionId({ parentId, search }: KnowledgeBaseItemsConnectionFilter): string {
-  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_TABLE_CONNECTION_KEY, {
-    filter: { parentId },
+export function getKnowledgeBaseItemsConnectionId({
+  parentId,
+  search,
+  tagIds,
+}: KnowledgeBaseItemsConnectionFilter): string {
+  const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds] : null;
+  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_BODY_CONNECTION_KEY, {
+    filter: { parentId, tagIds: normalizedTagIds },
     search: search ?? null,
   });
 }
 
-/**
- * Folder picker query. Reuses the same `knowledgeBaseItems` field with a
- * type=FOLDER filter and a large `first` so the entire folder tree fits in a
- * single response. Used by move/delete folder modals and the article-form
- * folder dropdown.
- */
+export const KNOWLEDGE_BASE_FOLDER_TREE_FIELD = 'knowledgeBaseFolderTree';
+
 export const knowledgeBaseFoldersQuery = graphql`
-  query useKnowledgeBaseFoldersQuery {
-    knowledgeBaseItems(filter: { type: FOLDER }, first: 200) {
-      edges {
-        node {
-          id
-          name
-          parentId
-        }
-      }
+  query useKnowledgeBaseItemsFoldersQuery {
+    knowledgeBaseFolderTree {
+      id
+      name
+      parentId
     }
   }
 `;
@@ -64,16 +52,13 @@ export function useKnowledgeBaseFolders(): FolderOption[] {
     {},
     { fetchPolicy: 'store-or-network' },
   );
-  return (data.knowledgeBaseItems.edges ?? []).map(edge => ({
-    id: edge.node.id,
-    name: edge.node.name,
-    parentId: edge.node.parentId ?? null,
+  return data.knowledgeBaseFolderTree.map(folder => ({
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId ?? null,
   }));
 }
 
-/**
- * Convert a flat folder list to a nested tree, sorted by name at each level.
- */
 export function buildFolderTree(folders: FolderOption[]): FolderTreeNode[] {
   const byParent = new Map<string | null, FolderTreeNode[]>();
   for (const folder of folders) {
@@ -91,3 +76,5 @@ export function buildFolderTree(folders: FolderOption[]): FolderTreeNode[] {
   roots.sort((a, b) => a.name.localeCompare(b.name));
   return roots;
 }
+
+export const KNOWLEDGE_BASE_ROOT_LABEL = 'Knowledge Base';

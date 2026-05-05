@@ -11,7 +11,7 @@ import type {
 const createArticleMutation = graphql`
   mutation useCreateArticleMutation($input: CreateArticleInput!, $connections: [ID!]!) {
     createArticle(input: $input)
-      @appendEdge(connections: $connections, edgeTypeName: "KnowledgeBaseItemEdge") {
+      @appendNode(connections: $connections, edgeTypeName: "KnowledgeBaseItemEdge") {
       id
       type
       name
@@ -32,13 +32,6 @@ const createArticleMutation = graphql`
         id
         key
         color
-      }
-      attachments {
-        id
-        fileName
-        fileSize
-        contentType
-        createdAt
       }
     }
   }
