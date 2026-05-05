@@ -2,9 +2,9 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
-use crate::platform::permissions::{Capability, PermissionUtils};
+use crate::platform::permissions::PermissionUtils;
 use crate::platform::DirectoryManager;
 
 #[cfg(windows)]

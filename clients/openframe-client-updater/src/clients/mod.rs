@@ -1,1 +1,3 @@
-// Phase 2: auth_client — OAuth2 token exchange
+pub mod auth_client;
+
+pub use auth_client::AuthClient;

@@ -1,4 +1,17 @@
-// Phase 2: infrastructure services (auth, config, NATS) — stubs for now
-// Phase 3: updater_state_service, update_progress_publisher
-// Phase 4: github_download_service, client_update_service, service_manager_service,
-//          health_verifier_service, atomic_replace (platform module)
+pub mod agent_auth_service;
+pub mod agent_configuration_service;
+pub mod encryption_service;
+pub mod initial_configuration_service;
+pub mod local_tls_config_provider;
+pub mod nats_connection_manager;
+pub mod nats_message_publisher;
+pub mod shared_token_service;
+
+pub use agent_auth_service::AgentAuthService;
+pub use agent_configuration_service::AgentConfigurationService;
+pub use encryption_service::EncryptionService;
+pub use initial_configuration_service::InitialConfigurationService;
+pub use local_tls_config_provider::LocalTlsConfigProvider;
+pub use nats_connection_manager::NatsConnectionManager;
+pub use nats_message_publisher::NatsMessagePublisher;
+pub use shared_token_service::SharedTokenService;
