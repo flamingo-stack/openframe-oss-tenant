@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assignmentsSchema } from '@/components/assignments';
 
 export const createTicketSchema = z.object({
   title: z.string().min(1, 'Title is required').max(255, 'Title must be at most 255 characters'),
@@ -12,6 +13,7 @@ export const createTicketSchema = z.object({
   // TODO: type — not yet supported by backend
   type: z.string(),
   assignKnowledgeBase: z.boolean(),
+  assignments: assignmentsSchema,
 });
 
 export type CreateTicketFormData = z.infer<typeof createTicketSchema>;

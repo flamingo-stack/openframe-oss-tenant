@@ -1,12 +1,17 @@
+import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
   type ColumnDef,
+  DataTable,
   DeviceCardCompact,
   multiSelectFilterFn,
   type Row,
   SquareAvatar,
   TableTimestampCell,
   TicketStatusTag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type ReactNode, useMemo } from 'react';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
@@ -120,4 +125,82 @@ export function getDialogTableColumns(options: DialogTableColumnsOptions = {}): 
   };
 
   return [titleColumn, sourceColumn, middleColumn, statusColumn];
+}
+
+export const dialogRowHref = (dialog: Dialog): string => `/tickets/dialog?id=${dialog.id}`;
+
+export const DIALOG_OPEN_COLUMN: ColumnDef<Dialog> = {
+  id: 'open',
+  cell: ({ row }: { row: Row<Dialog> }) => (
+    <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+      <Button
+        href={dialogRowHref(row.original)}
+        prefetch={false}
+        openInNewTab
+        variant="outline"
+        size="icon"
+        leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+        aria-label="Open in new tab"
+        className="bg-ods-card"
+      />
+    </div>
+  ),
+  enableSorting: false,
+  meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+};
+
+interface DialogTableBodyProps {
+  dialogs: Dialog[];
+  isLoading?: boolean;
+  emptyMessage?: string;
+  skeletonRows?: number;
+  stickyHeaderOffset?: string;
+  footerSlot?: ReactNode;
+  organizationLookup?: Record<string, string>;
+  isArchived?: boolean;
+  dialogVersion?: string;
+  actionsColumn?: ColumnDef<Dialog>;
+}
+
+export function DialogTableBody({
+  dialogs,
+  isLoading,
+  emptyMessage = 'No tickets found.',
+  skeletonRows,
+  stickyHeaderOffset,
+  footerSlot,
+  organizationLookup,
+  isArchived,
+  dialogVersion,
+  actionsColumn,
+}: DialogTableBodyProps) {
+  const columns = useMemo<ColumnDef<Dialog>[]>(() => {
+    const base = getDialogTableColumns({ organizationLookup, isArchived, dialogVersion });
+    return actionsColumn ? [...base, actionsColumn, DIALOG_OPEN_COLUMN] : [...base, DIALOG_OPEN_COLUMN];
+  }, [organizationLookup, isArchived, dialogVersion, actionsColumn]);
+
+  const table = useDataTable<Dialog>({
+    data: dialogs,
+    columns,
+    getRowId: row => String(row.id),
+    enableSorting: false,
+  });
+
+  return (
+    <DataTable table={table}>
+      <DataTable.Header
+        stickyHeader={!!stickyHeaderOffset}
+        stickyHeaderOffset={stickyHeaderOffset}
+        rightSlot={<DataTable.RowCount />}
+      />
+      <DataTable.Body
+        loading={isLoading}
+        skeletonRows={skeletonRows}
+        emptyMessage={emptyMessage}
+        rowClassName="mb-1"
+        rowHref={dialogRowHref}
+      />
+      {footerSlot}
+    </DataTable>
+  );
 }

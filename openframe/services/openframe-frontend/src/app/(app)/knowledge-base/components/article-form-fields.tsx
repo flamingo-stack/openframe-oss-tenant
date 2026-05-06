@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
+import { AssignmentsField } from '@/components/assignments';
 import { buildFolderTree, KNOWLEDGE_BASE_ROOT_LABEL, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
 import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 import type { ArticleFormData } from '../types/article.types';
@@ -110,6 +111,12 @@ export function ArticleFormFields({ form, availableTags }: ArticleFormFieldsProp
             renderPreview={renderPreview}
           />
         )}
+      />
+
+      <Controller
+        name="assignments"
+        control={control}
+        render={({ field }) => <AssignmentsField value={field.value ?? {}} onChange={field.onChange} />}
       />
     </>
   );

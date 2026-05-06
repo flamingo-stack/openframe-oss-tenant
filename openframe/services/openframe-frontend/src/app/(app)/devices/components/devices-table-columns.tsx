@@ -1,7 +1,18 @@
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { type ColumnDef, type Row, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  type ColumnDef,
+  type ColumnFiltersState,
+  DataTable,
+  type OnChangeFn,
+  type Row,
+  Tag,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
@@ -18,6 +29,87 @@ export function getDeviceTableRowActions(onRefresh?: () => void): (device: Devic
   );
   DeviceRowActions.displayName = 'DeviceRowActions';
   return DeviceRowActions;
+}
+
+export const deviceRowHref = (device: Device): string => `/devices/details/${device.machineId || device.id}`;
+
+export const DEVICE_OPEN_COLUMN: ColumnDef<Device> = {
+  id: 'open',
+  cell: ({ row }: { row: Row<Device> }) => (
+    <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+      <Button
+        href={deviceRowHref(row.original)}
+        prefetch={false}
+        openInNewTab
+        variant="outline"
+        size="icon"
+        leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+        aria-label="Open in new tab"
+        className="bg-ods-card"
+      />
+    </div>
+  ),
+  enableSorting: false,
+  meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+};
+
+interface DevicesTableBodyProps {
+  devices: Device[];
+  isLoading?: boolean;
+  emptyMessage?: string;
+  skeletonRows?: number;
+  stickyHeaderOffset?: string;
+  footerSlot?: ReactNode;
+  deviceFilters?: DeviceFilters | null;
+  columnFilters?: ColumnFiltersState;
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+  /** Optional extra column inserted before the open-in-new-tab column (e.g. row actions on the dedicated page). */
+  actionsColumn?: ColumnDef<Device>;
+}
+
+export function DevicesTableBody({
+  devices,
+  isLoading,
+  emptyMessage = 'No devices found.',
+  skeletonRows = 10,
+  stickyHeaderOffset,
+  footerSlot,
+  deviceFilters,
+  columnFilters,
+  onColumnFiltersChange,
+  actionsColumn,
+}: DevicesTableBodyProps) {
+  const columns = useMemo<ColumnDef<Device>[]>(() => {
+    const base = getDeviceTableColumns(deviceFilters ?? null);
+    return actionsColumn ? [...base, actionsColumn, DEVICE_OPEN_COLUMN] : [...base, DEVICE_OPEN_COLUMN];
+  }, [deviceFilters, actionsColumn]);
+
+  const table = useDataTable<Device>({
+    data: devices,
+    columns,
+    getRowId: row => String(row.machineId ?? row.id),
+    enableSorting: false,
+    state: columnFilters !== undefined ? { columnFilters } : undefined,
+    onColumnFiltersChange,
+  });
+
+  return (
+    <DataTable table={table}>
+      <DataTable.Header
+        stickyHeader={!!stickyHeaderOffset}
+        stickyHeaderOffset={stickyHeaderOffset}
+        rightSlot={<DataTable.RowCount />}
+      />
+      <DataTable.Body
+        loading={isLoading}
+        skeletonRows={skeletonRows}
+        emptyMessage={emptyMessage}
+        rowClassName="mb-1"
+        rowHref={deviceRowHref}
+      />
+      {footerSlot}
+    </DataTable>
+  );
 }
 
 function OrganizationCell({ device }: { device: Device }) {

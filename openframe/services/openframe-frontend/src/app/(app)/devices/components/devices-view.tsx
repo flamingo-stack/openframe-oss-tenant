@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  ArrowRightUpIcon,
   Filter02Icon,
   GridIcon,
   PlusCircleIcon,
@@ -19,7 +18,6 @@ import {
   type Row,
   TabSelector,
   TagSearchInput,
-  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
@@ -31,7 +29,7 @@ import { useGridInfiniteScroll } from '../hooks/use-grid-infinite-scroll';
 import { useTagFilterModal } from '../hooks/use-tag-filter-modal';
 import type { Device } from '../types/device.types';
 import { DevicesGrid } from './devices-grid';
-import { getDeviceFilterColumns, getDeviceTableColumns, getDeviceTableRowActions } from './devices-table-columns';
+import { DevicesTableBody, getDeviceFilterColumns, getDeviceTableRowActions } from './devices-table-columns';
 
 export function DevicesView() {
   const router = useRouter();
@@ -62,8 +60,6 @@ export function DevicesView() {
   const filterColumns = useMemo(() => getDeviceFilterColumns(deviceFilters ?? null), [deviceFilters]);
   const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
 
-  const baseColumns = useMemo(() => getDeviceTableColumns(deviceFilters ?? null), [deviceFilters]);
-
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
       ...(params.statuses.length > 0 ? [{ id: 'status', value: params.statuses }] : []),
@@ -81,50 +77,19 @@ export function DevicesView() {
     [columnFilters, handleFilterChange],
   );
 
-  const columns = useMemo<ColumnDef<Device>[]>(
-    () => [
-      ...baseColumns,
-      {
-        id: 'actions',
-        cell: ({ row }: { row: Row<Device> }) => (
-          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
-            {renderRowActions(row.original)}
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-      {
-        id: 'open',
-        cell: ({ row }: { row: Row<Device> }) => (
-          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-            <Button
-              href={`/devices/details/${row.original.machineId || row.original.id}`}
-              prefetch={false}
-              openInNewTab
-              variant="outline"
-              size="icon"
-              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
-              aria-label="Open in new tab"
-              className="bg-ods-card"
-            />
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-    ],
-    [baseColumns, renderRowActions],
+  const actionsColumn = useMemo<ColumnDef<Device>>(
+    () => ({
+      id: 'actions',
+      cell: ({ row }: { row: Row<Device> }) => (
+        <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+          {renderRowActions(row.original)}
+        </div>
+      ),
+      enableSorting: false,
+      meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+    }),
+    [renderRowActions],
   );
-
-  const table = useDataTable<Device>({
-    data: devices,
-    columns,
-    getRowId: (row: Device) => String(row.machineId ?? row.id),
-    enableSorting: false,
-    state: { columnFilters },
-    onColumnFiltersChange,
-  });
 
   const {
     isOpen: filterModalOpen,
@@ -142,8 +107,6 @@ export function DevicesView() {
     columns: filterColumns,
     setParams,
   });
-
-  const deviceRowHref = useCallback((device: Device) => `/devices/details/${device.machineId || device.id}`, []);
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
@@ -224,22 +187,25 @@ export function DevicesView() {
           </div>
 
           {params.viewMode === 'table' ? (
-            <DataTable table={table}>
-              <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-              <DataTable.Body
-                loading={isLoading || isDeviceFiltersLoading}
-                skeletonRows={10}
-                emptyMessage="No devices found. Try adjusting your search or filters."
-                rowHref={deviceRowHref}
-                rowClassName="mb-1"
-              />
-              <DataTable.InfiniteFooter
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={handleLoadMore}
-                skeletonRows={2}
-              />
-            </DataTable>
+            <DevicesTableBody
+              devices={devices}
+              isLoading={isLoading || isDeviceFiltersLoading}
+              emptyMessage="No devices found. Try adjusting your search or filters."
+              skeletonRows={10}
+              stickyHeaderOffset="top-[96px]"
+              deviceFilters={deviceFilters ?? null}
+              columnFilters={columnFilters}
+              onColumnFiltersChange={onColumnFiltersChange}
+              actionsColumn={actionsColumn}
+              footerSlot={
+                <DataTable.InfiniteFooter
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  onLoadMore={handleLoadMore}
+                  skeletonRows={2}
+                />
+              }
+            />
           ) : (
             <DevicesGrid
               devices={devices}

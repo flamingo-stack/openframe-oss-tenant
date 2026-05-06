@@ -37,6 +37,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DeviceInfoSection } from '@/app/components/shared';
 import { useAiModel } from '@/app/hooks/use-ai-model';
+import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
@@ -562,62 +563,65 @@ export function DialogDetailsView({ dialogId }: DialogDetailsViewProps) {
     >
       {/* Ticket / Device Info Section — hidden on mobile (shown via tab instead) */}
       {version === 'v2' ? (
-        <TicketInfoSection
-          className="hidden lg:block shrink-0"
-          organization={{
-            name:
-              dialog.organizationName ||
-              (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
-              'Unassigned',
-            imageSrc: getFullImageUrl(dialog.organizationImageUrl),
-          }}
-          user="Unassigned"
-          device={{
-            name:
-              dialog.deviceHostname ||
-              (isClientOwner(dialog.owner)
-                ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
-                : undefined) ||
-              'Unassigned',
-            icon: <MonitorIcon className="size-4" />,
-            onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
-          }}
-          status={dialog.status}
-          onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
-          expanded={isTicketInfoExpanded}
-          assigned={{
-            currentAssignee: dialog.assignedName
-              ? {
-                  id: dialog.assignedTo!,
-                  name: dialog.assignedName,
-                  avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
-                }
-              : undefined,
-            options: assigneeOptions.options.map(o => ({
-              ...o,
-              imageUrl: getFullImageUrl(o.imageUrl),
-            })),
-            isLoading: assigneeOptions.isLoading,
-            isPending: assignTicketMutation.isPending,
-            onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
-          }}
-          createdAt={dialog.createdAt ? formatDateTime(dialog.createdAt) : undefined}
-          description={dialog.description || dialog.title || ''}
-          attachments={uiAttachments}
-          tags={(dialog.labels || []).map(l => l.key)}
-          knowledgeBaseArticles={[]}
-          notes={uiNotes}
-          isAddingNote={addNoteMutation.isPending}
-          onAddNote={text => {
-            if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
-          }}
-          onEditNote={(id, text) => {
-            updateNoteMutation.mutate({ id, content: text });
-          }}
-          onDeleteNote={id => {
-            deleteNoteMutation.mutate(id);
-          }}
-        />
+        <>
+          <TicketInfoSection
+            className="hidden lg:block shrink-0"
+            organization={{
+              name:
+                dialog.organizationName ||
+                (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
+                'Unassigned',
+              imageSrc: getFullImageUrl(dialog.organizationImageUrl),
+            }}
+            user="Unassigned"
+            device={{
+              name:
+                dialog.deviceHostname ||
+                (isClientOwner(dialog.owner)
+                  ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
+                  : undefined) ||
+                'Unassigned',
+              icon: <MonitorIcon className="size-4" />,
+              onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+            }}
+            status={dialog.status}
+            onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
+            expanded={isTicketInfoExpanded}
+            assigned={{
+              currentAssignee: dialog.assignedName
+                ? {
+                    id: dialog.assignedTo!,
+                    name: dialog.assignedName,
+                    avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
+                  }
+                : undefined,
+              options: assigneeOptions.options.map(o => ({
+                ...o,
+                imageUrl: getFullImageUrl(o.imageUrl),
+              })),
+              isLoading: assigneeOptions.isLoading,
+              isPending: assignTicketMutation.isPending,
+              onAssign: userId => assignTicketMutation.mutate({ ticketId: dialog.id, assigneeId: userId }),
+            }}
+            createdAt={dialog.createdAt ? formatDateTime(dialog.createdAt) : undefined}
+            description={dialog.description || dialog.title || ''}
+            attachments={uiAttachments}
+            tags={(dialog.labels || []).map(l => l.key)}
+            knowledgeBaseArticles={[]}
+            notes={uiNotes}
+            isAddingNote={addNoteMutation.isPending}
+            onAddNote={text => {
+              if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
+            }}
+            onEditNote={(id, text) => {
+              updateNoteMutation.mutate({ id, content: text });
+            }}
+            onDeleteNote={id => {
+              deleteNoteMutation.mutate(id);
+            }}
+          />
+          <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" />
+        </>
       ) : (
         isClientOwner(dialog.owner) &&
         dialog.owner.machineId && (

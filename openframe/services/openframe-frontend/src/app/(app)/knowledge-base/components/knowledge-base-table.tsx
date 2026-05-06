@@ -1,23 +1,17 @@
 'use client';
 
 import {
-  BookTextIcon,
   BoxArchiveIcon,
-  Chevron02RightIcon,
   FolderEditIcon,
-  FolderIcon,
   PenEditIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   ActionsMenuDropdown,
   type ActionsMenuGroup,
-  Button,
   type ColumnDef,
   DataTable,
   type Row,
-  Tag as StatusTag,
-  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Suspense, useCallback, useMemo, useState } from 'react';
@@ -30,10 +24,10 @@ import type {
   knowledgeBaseTableRow_node$data,
   knowledgeBaseTableRow_node$key,
 } from '@/__generated__/knowledgeBaseTableRow_node.graphql';
-import { formatDate, formatTime } from '@/lib/format-date';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { ArchiveArticleModal, type ArchiveArticleTarget } from './archive-article-modal';
 import { DeleteFolderModal, type DeleteFolderTarget } from './delete-folder-modal';
+import { type KnowledgeBaseRow, KnowledgeBaseTableBody } from './knowledge-base-table-columns';
 import { type MoveToFolderItem, MoveToFolderModal } from './move-to-folder-modal';
 import { RenameFolderModal, type RenameFolderTarget } from './rename-folder-modal';
 import { UnarchiveArticleModal, type UnarchiveArticleTarget } from './unarchive-article-modal';
@@ -91,13 +85,6 @@ const archivedArticlesTableRelayFragment = graphql`
     }
   }
 `;
-
-type ArticleStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-
-const STATUS_VARIANT: Record<Exclude<ArticleStatus, 'PUBLISHED'>, 'warning' | 'grey'> = {
-  DRAFT: 'warning',
-  ARCHIVED: 'grey',
-};
 
 type Mode = 'standard' | 'archive';
 
@@ -203,117 +190,36 @@ export function KnowledgeBaseItemsListView({
     [mode],
   );
 
-  const columns = useMemo<ColumnDef<ItemNode>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Name',
-        cell: ({ row }: { row: Row<ItemNode> }) => {
-          const item = row.original;
-          const Icon = item.type === 'FOLDER' ? FolderIcon : BookTextIcon;
-          const status = item.status as ArticleStatus | null | undefined;
-          const tagStatus = status === 'DRAFT' || status === 'ARCHIVED' ? status : null;
-          return (
-            <div className="box-border content-stretch flex gap-[var(--spacing-system-m)] h-20 items-center justify-start py-0 relative shrink-0 w-full">
-              <div className="flex h-8 w-8 items-center justify-center relative rounded-[6px] shrink-0 border border-ods-border">
-                <Icon size={16} className="text-ods-text-secondary shrink-0" />
-              </div>
-              <div className="flex flex-col min-w-0 flex-1">
-                <div className="flex items-center gap-[var(--spacing-system-xsf)] min-w-0">
-                  <p className="text-h4 text-ods-text-primary leading-[24px] truncate">{item.name}</p>
-                  {tagStatus && (
-                    <StatusTag variant={STATUS_VARIANT[tagStatus]} label={tagStatus} className="shrink-0" />
-                  )}
-                </div>
-                {item.type === 'ARTICLE' && item.summary && (
-                  <p className="text-heading-5 text-ods-text-secondary line-clamp-1">{item.summary}</p>
-                )}
-              </div>
-            </div>
-          );
-        },
-        enableSorting: false,
-        meta: { width: 'flex-1 min-w-0' },
-      },
-      {
-        accessorKey: mode === 'archive' ? 'updatedAt' : 'createdAt',
-        header: mode === 'archive' ? 'Archived' : 'Created',
-        cell: ({ row }: { row: Row<ItemNode> }) => {
-          if (row.original.type !== 'ARTICLE') return null;
-          const ts = mode === 'archive' ? (row.original.updatedAt ?? row.original.createdAt) : row.original.createdAt;
-          if (!ts) return null;
-          return (
-            <div className="flex flex-col whitespace-nowrap">
-              <span className="text-h4 text-ods-text-primary">{formatDate(ts)}</span>
-              <span className="text-heading-5 text-ods-text-secondary">{formatTime(ts)}</span>
-            </div>
-          );
-        },
-        enableSorting: false,
-        meta: { width: 'w-[140px]', hideAt: 'lg' },
-      },
-      {
-        id: 'actions',
-        cell: ({ row }: { row: Row<ItemNode> }) => (
-          <div data-no-row-click className="flex justify-end pointer-events-auto">
-            {renderRowActions(row.original)}
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-      {
-        id: 'open',
-        cell: ({ row }: { row: Row<ItemNode> }) => {
-          const item = row.original;
-          const href =
-            item.type === 'ARTICLE' ? `/knowledge-base/details/${item.id}` : `/knowledge-base/folders/${item.id}`;
-          return (
-            <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-              <Button
-                href={href}
-                prefetch={false}
-                variant="outline"
-                size="icon"
-                aria-label={item.type === 'FOLDER' ? 'Open folder' : 'Open article'}
-                className="bg-ods-card"
-              >
-                <Chevron02RightIcon className="w-5 h-5" />
-              </Button>
-            </div>
-          );
-        },
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-    ],
-    [mode, renderRowActions],
-  );
-
-  const table = useDataTable<ItemNode>({
-    data: items,
-    columns,
-    getRowId: (row: ItemNode) => row.id,
-    enableSorting: false,
-  });
-
-  const rowHref = useCallback(
-    (item: ItemNode) =>
-      item.type === 'ARTICLE' ? `/knowledge-base/details/${item.id}` : `/knowledge-base/folders/${item.id}`,
-    [],
+  const actionsColumn = useMemo<ColumnDef<KnowledgeBaseRow>>(
+    () => ({
+      id: 'actions',
+      cell: ({ row }: { row: Row<KnowledgeBaseRow> }) => (
+        <div data-no-row-click className="flex justify-end pointer-events-auto">
+          {renderRowActions(row.original as ItemNode)}
+        </div>
+      ),
+      enableSorting: false,
+      meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+    }),
+    [renderRowActions],
   );
 
   return (
     <>
-      <DataTable table={table}>
-        <DataTable.Body emptyMessage={emptyMessage} rowHref={rowHref} />
-        <DataTable.InfiniteFooter
-          hasNextPage={hasNext}
-          isFetchingNextPage={isLoadingNext}
-          onLoadMore={onLoadMore}
-          skeletonRows={2}
-        />
-      </DataTable>
+      <KnowledgeBaseTableBody
+        items={items as ReadonlyArray<KnowledgeBaseRow> as KnowledgeBaseRow[]}
+        mode={mode}
+        emptyMessage={emptyMessage}
+        actionsColumn={actionsColumn}
+        footerSlot={
+          <DataTable.InfiniteFooter
+            hasNextPage={hasNext}
+            isFetchingNextPage={isLoadingNext}
+            onLoadMore={onLoadMore}
+            skeletonRows={2}
+          />
+        }
+      />
 
       {mode === 'standard' && (
         <>
