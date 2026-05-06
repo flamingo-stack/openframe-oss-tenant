@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  Chevron02RightIcon,
+  ArrowRightUpIcon,
   Filter02Icon,
   GridIcon,
   PlusCircleIcon,
@@ -101,10 +101,11 @@ export function DevicesView() {
             <Button
               href={`/devices/details/${row.original.machineId || row.original.id}`}
               prefetch={false}
+              openInNewTab
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View details"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
               className="bg-ods-card"
             />
           </div>

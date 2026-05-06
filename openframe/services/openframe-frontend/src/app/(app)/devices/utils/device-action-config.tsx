@@ -10,6 +10,7 @@ import {
   ShellIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
+  ArrowRightUpIcon,
   ComputerMouseIcon,
   FolderIcon,
   TerminalIcon,
@@ -18,6 +19,13 @@ import { Folder } from 'lucide-react';
 import React from 'react';
 import type { Device } from '../types/device.types';
 import { type DeviceActionAvailability, getDeviceActionAvailability } from './device-action-utils';
+
+const newTabIconAction = (href: string, label: string) => ({
+  icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
+  'aria-label': `Open ${label} in new tab`,
+  href,
+  openInNewTab: true,
+});
 
 /**
  * Shell submenu item configuration
@@ -145,13 +153,17 @@ export function toActionsMenuItem(
       icon: config.icon,
       type: 'submenu' as const,
       disabled: config.disabled,
-      submenu: config.submenu.map(item => ({
-        id: item.id,
-        label: item.label,
-        icon: item.icon,
-        href: `/devices/details/${deviceId}/remote-shell?shellType=${item.id}`,
-        onClick: () => handlers?.onShellSelect?.(item.id),
-      })),
+      submenu: config.submenu.map(item => {
+        const subHref = `/devices/details/${deviceId}/remote-shell?shellType=${item.id}`;
+        return {
+          id: item.id,
+          label: item.label,
+          icon: item.icon,
+          href: subHref,
+          onClick: () => handlers?.onShellSelect?.(item.id),
+          iconAction: newTabIconAction(subHref, item.label),
+        };
+      }),
     };
   }
 
@@ -162,5 +174,6 @@ export function toActionsMenuItem(
     disabled: config.disabled,
     href: config.href,
     onClick: handlers?.onClick,
+    iconAction: newTabIconAction(config.href, config.label),
   };
 }

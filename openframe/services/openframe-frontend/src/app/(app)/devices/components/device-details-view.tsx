@@ -16,6 +16,7 @@ import {
   TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ArrowRightUpIcon,
   BoxArchiveIcon,
   BracketCurlyIcon,
   ComputerMouseIcon,
@@ -156,12 +157,36 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     const primaryItems: ActionsMenuGroup['items'] = [];
     const destructiveItems: ActionsMenuGroup['items'] = [];
 
-    if (actionAvailability?.runScriptEnabled) {
+    const remoteDesktopHref = `/devices/details/${deviceId}/remote-desktop`;
+    const fileManagerHref = `/devices/details/${deviceId}/file-manager`;
+    const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
+
+    if (actionAvailability?.remoteControlEnabled) {
       primaryItems.push({
-        id: 'run-script',
-        label: 'Run Script',
-        icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
-        onClick: () => setIsScriptsModalOpen(true),
+        id: 'remote-control',
+        label: 'Remote Control',
+        icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
+        href: remoteDesktopHref,
+        iconAction: {
+          icon: newTabIcon,
+          'aria-label': 'Open Remote Control in new tab',
+          href: remoteDesktopHref,
+          openInNewTab: true,
+        },
+      });
+    }
+    if (actionAvailability?.manageFilesEnabled) {
+      primaryItems.push({
+        id: 'file-manager',
+        label: 'File Manager',
+        icon: <FolderIcon className="w-6 h-6 text-ods-text-secondary" />,
+        href: fileManagerHref,
+        iconAction: {
+          icon: newTabIcon,
+          'aria-label': 'Open File Manager in new tab',
+          href: fileManagerHref,
+          openInNewTab: true,
+        },
       });
     }
     if (actionAvailability?.archiveEnabled) {
@@ -188,7 +213,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       groups.push({ items: destructiveItems });
     }
     return groups;
-  }, [actionAvailability, openArchive, openDelete]);
+  }, [actionAvailability, deviceId, openArchive, openDelete]);
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId);
@@ -220,23 +245,39 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return normalizeOSType(osType) === 'WINDOWS';
   })();
 
+  const newTabIconAction = (href: string, label: string, disabled?: boolean) => ({
+    icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
+    'aria-label': `Open ${label} in new tab`,
+    href,
+    openInNewTab: true,
+    disabled,
+  });
+
+  const cmdHref = `/devices/details/${deviceId}/remote-shell?shellType=cmd`;
+  const psHref = `/devices/details/${deviceId}/remote-shell?shellType=powershell`;
+  const bashHref = `/devices/details/${deviceId}/remote-shell?shellType=bash`;
+  const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
+
   const remoteShellAction: PageActionButton = isWindows
     ? {
         label: 'Remote Shell',
         variant: 'outline',
+        icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
         disabled: !actionAvailability?.remoteShellEnabled,
         submenu: [
           {
             id: 'cmd',
             label: 'CMD',
             icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
-            href: `/devices/details/${deviceId}/remote-shell?shellType=cmd`,
+            href: cmdHref,
+            iconAction: newTabIconAction(cmdHref, 'CMD'),
           },
           {
             id: 'powershell',
             label: 'PowerShell',
             icon: <PowershellLogoGreyIcon className="w-6 h-6" />,
-            href: `/devices/details/${deviceId}/remote-shell?shellType=powershell`,
+            href: psHref,
+            iconAction: newTabIconAction(psHref, 'PowerShell'),
           },
         ],
       }
@@ -244,29 +285,20 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         label: 'Remote Shell',
         variant: 'outline',
         icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
-        href: `/devices/details/${deviceId}/remote-shell?shellType=bash`,
+        href: bashHref,
         prefetch: false,
         disabled: !actionAvailability?.remoteShellEnabled,
+        iconAction: newTabIconAction(bashHref, 'Remote Shell', !actionAvailability?.remoteShellEnabled),
       };
 
   const actions: PageActionButton[] = [
     {
-      label: 'Manage Files',
+      label: 'Run Script',
       variant: 'outline',
-      icon: <FolderIcon className="h-6 w-6 text-ods-text-secondary" />,
-      iconOnlyOnDesktop: true,
-      href: `/devices/details/${deviceId}/file-manager`,
-      prefetch: false,
-      disabled: !actionAvailability?.manageFilesEnabled,
-    },
-    {
-      label: 'Remote Control',
-      variant: 'outline',
-      icon: <ComputerMouseIcon className="h-6 w-6 text-ods-text-secondary" />,
-      iconOnlyOnDesktop: true,
-      href: `/devices/details/${deviceId}/remote-desktop`,
-      prefetch: false,
-      disabled: !actionAvailability?.remoteControlEnabled,
+      icon: <BracketCurlyIcon className="h-6 w-6 text-ods-text-secondary" />,
+      onClick: () => setIsScriptsModalOpen(true),
+      disabled: !actionAvailability?.runScriptEnabled,
+      iconAction: newTabIconAction(runScriptHref, 'Run Script', !actionAvailability?.runScriptEnabled),
     },
     remoteShellAction,
   ];

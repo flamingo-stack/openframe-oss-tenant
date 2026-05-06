@@ -10,6 +10,7 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React, { useCallback, useMemo, useState } from 'react';
+import { formatDate } from '@/lib/format-date';
 import type { Device, Software, Vulnerability } from '../../types/device.types';
 
 interface VulnerabilitiesTabProps {
@@ -49,16 +50,6 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
 
     return flattened;
   }, [device]);
-
-  // Format date for display
-  const formatDate = useCallback((dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  }, []);
 
   // Get severity from CVE (simple heuristic based on year and CVE format)
   const getSeverity = useCallback((_cve: string): 'critical' | 'high' | 'medium' | 'low' => {
@@ -147,7 +138,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
         meta: { width: 'w-[25%]' },
       },
     ],
-    [formatDate, getSeverity],
+    [getSeverity],
   );
 
   const table = useDataTable<VulnerabilityWithSoftware>({

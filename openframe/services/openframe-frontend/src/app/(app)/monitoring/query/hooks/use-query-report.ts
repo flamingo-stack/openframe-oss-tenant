@@ -4,6 +4,7 @@ import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { fleetApiClient } from '@/lib/fleet-api-client';
+import { formatDateTime } from '@/lib/format-date';
 import { queriesQueryKeys } from '../../hooks/use-queries';
 import type { QueryReportResponse } from '../../types/queries.types';
 
@@ -18,7 +19,7 @@ async function fetchQueryReport(queryId: number): Promise<QueryReportResponse> {
 function flattenResults(results: QueryReportResponse['results']): QueryResultRow[] {
   return results.map(result => ({
     host_name: result.host_name,
-    last_fetched: result.last_fetched,
+    last_fetched: result.last_fetched ? formatDateTime(result.last_fetched) : '',
     ...result.columns,
   }));
 }

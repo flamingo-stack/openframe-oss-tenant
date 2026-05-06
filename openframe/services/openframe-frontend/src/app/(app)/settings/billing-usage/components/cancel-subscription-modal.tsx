@@ -15,8 +15,8 @@ import {
   SelectValue,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { format, parseISO } from 'date-fns';
 import { useEffect, useId, useState } from 'react';
+import { formatDate } from '@/lib/format-date';
 
 export type CancelReason = 'TOO_EXPENSIVE' | 'NOT_USING_ENOUGH' | 'MISSING_FEATURE' | 'TECHNICAL_ISSUES' | 'OTHER';
 
@@ -60,7 +60,7 @@ interface CancelSubscriptionModalProps {
 function formatEndDate(iso: string | null): string {
   if (!iso) return '—';
   try {
-    return format(parseISO(iso), 'MMM do, yyyy');
+    return formatDate(iso);
   } catch {
     return iso;
   }
