@@ -2,13 +2,14 @@
 
 import type { Message as ChatMessage } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
 import { ticketService } from '../services';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
+import { ticketsQueryKeys } from '../utils/query-keys';
 
 interface UseSendAdminMessageOptions {
   ticketId: string;
@@ -18,8 +19,8 @@ interface UseSendAdminMessageOptions {
 
 export function useSendAdminMessage({ ticketId, messageDialogId, onBeforeDialogCreated }: UseSendAdminMessageOptions) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const currentUser = useAuthStore(state => state.user);
-  const fetchDialog = useTicketDetailsStore(state => state.fetchDialog);
   const addMessage = useTicketDetailsStore(state => state.addMessage);
 
   const mutation = useMutation({
@@ -44,7 +45,7 @@ export function useSendAdminMessage({ ticketId, messageDialogId, onBeforeDialogC
 
         onBeforeDialogCreated?.();
 
-        await fetchDialog(ticketId);
+        await queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
       }
 
       const displayName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Admin';

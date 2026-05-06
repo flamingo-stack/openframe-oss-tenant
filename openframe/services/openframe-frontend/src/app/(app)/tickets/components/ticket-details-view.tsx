@@ -33,11 +33,13 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
+import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -61,13 +63,14 @@ import { useSendAdminMessage } from '../hooks/use-send-admin-message';
 import { useSideChunkProcessor } from '../hooks/use-side-chunk-processor';
 import { useStopGeneration } from '../hooks/use-stop-generation';
 import { useDownloadTicketAttachment } from '../hooks/use-ticket-attachments';
+import { useTicketDetail } from '../hooks/use-ticket-detail';
 import { useTicketMessages } from '../hooks/use-ticket-messages';
 import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../hooks/use-ticket-notes';
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { useTicketStatus } from '../hooks/use-ticket-status';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
-import type { ClientDialogOwner, DialogOwner } from '../types/dialog.types';
-import { extractPendingApprovals, stripPendingApprovals } from '../utils/pending-approvals';
+import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.types';
+import { ticketsQueryKeys } from '../utils/query-keys';
 
 interface TicketDetailsViewProps {
   ticketId: string;
@@ -83,18 +86,11 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     return owner != null && typeof owner === 'object' && 'machineId' in owner;
   }, []);
 
-  const {
-    currentDialog: dialog,
-    isLoadingDialog: isLoading,
-    dialogError,
-    client,
-    admin,
-    fetchDialog,
-    clearCurrent,
-    updateDialogStatus,
-    setAccumulatorCallbacks,
-    updateApprovalStatusInMessages,
-  } = useTicketDetailsStore();
+  const queryClient = useQueryClient();
+  const { ticket: dialog, isPending: isLoading, error: dialogError } = useTicketDetail(ticketId);
+
+  const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
+    useTicketDetailsStore();
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
   const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
@@ -118,14 +114,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const currentUser = useAuthStore(state => state.user);
 
   const refetchDialog = useCallback(() => {
-    fetchDialog(ticketId);
-  }, [fetchDialog, ticketId]);
-  const addNoteMutation = useAddTicketNote(refetchDialog);
-  const updateNoteMutation = useUpdateTicketNote(refetchDialog);
-  const deleteNoteMutation = useDeleteTicketNote(refetchDialog);
+    queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
+  }, [queryClient, ticketId]);
+  const addNoteMutation = useAddTicketNote(ticketId);
+  const updateNoteMutation = useUpdateTicketNote(ticketId);
+  const deleteNoteMutation = useDeleteTicketNote(ticketId);
 
   const { download: downloadAttachment } = useDownloadTicketAttachment();
-  const assignTicketMutation = useAssignTicket(refetchDialog);
+  const assignTicketMutation = useAssignTicket();
   const assigneeOptions = useAssigneeOptions();
 
   const { isDirectMode, isStartingDirectChat, isSendingClientMessage, startDirectChat, sendClientMessage } =
@@ -226,14 +222,12 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     startInitialBuffering();
     hasCaughtUp.current = false;
 
-    fetchDialog(ticketId);
-
     return () => {
-      clearCurrent();
+      clearChatState();
       resetChunkTracking();
       hasCaughtUp.current = false;
     };
-  }, [ticketId, clearCurrent, fetchDialog, resetChunkTracking, startInitialBuffering]);
+  }, [ticketId, clearChatState, resetChunkTracking, startInitialBuffering]);
 
   useEffect(() => {
     if (!initialAiModel) return;
@@ -285,41 +279,42 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
   }, [reconnectionCount, messageDialogId, resetAndCatchUp]);
 
+  const applyStatus = useCallback(
+    (nextStatus: Dialog['status']) => {
+      queryClient.setQueryData<Dialog | null>(ticketsQueryKeys.detail(ticketId), prev =>
+        prev ? { ...prev, status: nextStatus } : prev,
+      );
+    },
+    [queryClient, ticketId],
+  );
+
   const handlePutOnHold = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await putOnHold(ticketId);
-    if (nextStatus) {
-      updateDialogStatus(nextStatus);
-    }
-  }, [dialog, isUpdating, putOnHold, ticketId, updateDialogStatus]);
+    if (nextStatus) applyStatus(nextStatus);
+  }, [dialog, isUpdating, putOnHold, ticketId, applyStatus]);
 
   const handleResolve = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await resolve(ticketId);
-    if (nextStatus) {
-      updateDialogStatus(nextStatus);
-    }
-  }, [dialog, isUpdating, resolve, ticketId, updateDialogStatus]);
+    if (nextStatus) applyStatus(nextStatus);
+  }, [dialog, isUpdating, resolve, ticketId, applyStatus]);
 
   const handleArchive = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await archive(ticketId);
-    if (nextStatus) {
-      updateDialogStatus(nextStatus);
-    }
-  }, [dialog, isUpdating, archive, ticketId, updateDialogStatus]);
+    if (nextStatus) applyStatus(nextStatus);
+  }, [dialog, isUpdating, archive, ticketId, applyStatus]);
 
   const handleUnarchive = useCallback(async () => {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await activate(ticketId);
-    if (nextStatus) {
-      updateDialogStatus(nextStatus);
-    }
-  }, [dialog, isUpdating, activate, ticketId, updateDialogStatus]);
+    if (nextStatus) applyStatus(nextStatus);
+  }, [dialog, isUpdating, activate, ticketId, applyStatus]);
 
   const handleApprovalAction = useCallback(
     async (requestId: string | undefined, approving: boolean) => {
@@ -528,7 +523,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   }
 
   if (dialogError) {
-    return <LoadError message={`Error loading ticket: ${dialogError}`} />;
+    return <LoadError message={`Error loading ticket: ${dialogError.message}`} />;
   }
 
   if (!dialog) {
@@ -604,7 +599,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         notes={uiNotes}
         isAddingNote={addNoteMutation.isPending}
         onAddNote={text => {
-          if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
+          if (dialog?.id) addNoteMutation.mutate({ content: text });
         }}
         onEditNote={(id, text) => {
           updateNoteMutation.mutate({ id, content: text });
@@ -613,7 +608,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" />
+      {/* <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" /> */}
 
       {/* Chat Section */}
       <div className="flex-1 flex flex-col min-h-[500px]">
@@ -681,7 +676,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
-                if (dialog?.id) addNoteMutation.mutate({ ticketId: dialog.id, content: text });
+                if (dialog?.id) addNoteMutation.mutate({ content: text });
               }}
               onEditNote={(id, text) => {
                 updateNoteMutation.mutate({ id, content: text });

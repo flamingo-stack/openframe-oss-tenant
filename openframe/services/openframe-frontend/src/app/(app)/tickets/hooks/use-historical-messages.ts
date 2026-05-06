@@ -8,6 +8,7 @@ import {
   processHistoricalMessagesWithErrors,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useRef } from 'react';
+import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import type { ChatType } from '../constants';
 import type { MessagePage } from '../services/ticket-service.types';
 import { type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
@@ -98,16 +99,18 @@ export function useHistoricalMessages({
       approvalStatuses: { ...approvalStatusesRef.current, ...historicalResolutions },
     });
 
-    const storeMessages: ChatMessage[] = processed.map(msg => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content as string | MessageSegment[],
-      name: msg.name,
-      assistantType: msg.assistantType,
-      authorType: msg.authorType,
-      timestamp: msg.timestamp,
-      avatar: msg.avatar,
-    }));
+    const storeMessages: ChatMessage[] = foldPendingApprovalsEnvelope(
+      processed.map(msg => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content as string | MessageSegment[],
+        name: msg.name,
+        assistantType: msg.assistantType,
+        authorType: msg.authorType,
+        timestamp: msg.timestamp,
+        avatar: msg.avatar,
+      })),
+    );
 
     const isPagination = processedPageCountRef.current > 0 && pages.length > processedPageCountRef.current;
 

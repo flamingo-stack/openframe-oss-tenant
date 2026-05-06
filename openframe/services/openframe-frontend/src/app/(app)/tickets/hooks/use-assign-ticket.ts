@@ -47,7 +47,7 @@ async function assignTicketApi({ ticketId, assigneeId }: AssignTicketParams) {
   return payload.ticket;
 }
 
-export function useAssignTicket(onSuccess?: () => void) {
+export function useAssignTicket() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -57,7 +57,6 @@ export function useAssignTicket(onSuccess?: () => void) {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket updated successfully', variant: 'success' });
-      onSuccess?.();
     },
     onError: err => {
       toast({
