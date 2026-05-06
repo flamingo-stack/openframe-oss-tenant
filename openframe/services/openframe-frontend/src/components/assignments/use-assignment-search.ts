@@ -2,7 +2,7 @@
 
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
-import { getDialogService } from '@/app/(app)/tickets/services';
+import { ticketService } from '@/app/(app)/tickets/services';
 import { postGraphQl } from './graphql';
 import type { AssignmentTargetType } from './types';
 
@@ -54,7 +54,7 @@ const fetchDevices = async (search: string): Promise<AssignmentSearchOption[]> =
 };
 
 const fetchTickets = async (search: string): Promise<AssignmentSearchOption[]> => {
-  const page = await getDialogService('v2').fetchDialogs({
+  const page = await ticketService.fetchDialogs({
     statuses: ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'],
     search: search || undefined,
     limit: PAGE_SIZE,

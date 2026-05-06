@@ -4,7 +4,7 @@ import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/i
 import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMemo, useState } from 'react';
-import { DialogTableBody } from '@/app/(app)/tickets/components/dialog-table-columns';
+import { TicketTableBody } from '@/app/(app)/tickets/components/ticket-table-columns';
 import type { Dialog } from '@/app/(app)/tickets/types/dialog.types';
 
 interface TicketsAssignedTableProps {
@@ -34,13 +34,7 @@ export function TicketsAssignedTable({ tickets, isLoading }: TicketsAssignedTabl
         onChange={e => setSearch(e.target.value)}
         startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
       />
-      <DialogTableBody
-        dialogs={filtered}
-        isLoading={isLoading}
-        emptyMessage="No tickets assigned."
-        skeletonRows={3}
-        dialogVersion="v2"
-      />
+      <TicketTableBody tickets={filtered} isLoading={isLoading} emptyMessage="No tickets assigned." skeletonRows={3} />
     </div>
   );
 }

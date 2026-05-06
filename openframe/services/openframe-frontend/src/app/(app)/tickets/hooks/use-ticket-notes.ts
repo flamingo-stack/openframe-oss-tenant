@@ -10,7 +10,7 @@ import {
   DELETE_TICKET_NOTE_MUTATION,
   UPDATE_TICKET_NOTE_MUTATION,
 } from '../queries/ticket-queries';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
+import { useTicketDetailsStore } from '../stores/ticket-details-store';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 
@@ -24,17 +24,17 @@ interface DeletePayload {
 }
 
 type DialogNotes = NonNullable<
-  NonNullable<ReturnType<typeof useDialogDetailsStore.getState>['currentDialog']>['notes']
+  NonNullable<ReturnType<typeof useTicketDetailsStore.getState>['currentDialog']>['notes']
 >;
 
 function getDialogState() {
-  return useDialogDetailsStore.getState();
+  return useTicketDetailsStore.getState();
 }
 
 function setDialogNotes(notes: DialogNotes) {
   const state = getDialogState();
   if (state.currentDialog) {
-    useDialogDetailsStore.setState({
+    useTicketDetailsStore.setState({
       currentDialog: { ...state.currentDialog, notes },
     });
   }

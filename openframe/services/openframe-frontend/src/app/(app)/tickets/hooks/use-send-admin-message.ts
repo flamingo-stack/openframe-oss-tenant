@@ -7,28 +7,20 @@ import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
-import { getDialogService } from '../services';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
-import type { DialogVersion } from './use-dialog-version';
+import { ticketService } from '../services';
+import { useTicketDetailsStore } from '../stores/ticket-details-store';
 
 interface UseSendAdminMessageOptions {
   ticketId: string;
   messageDialogId: string | null;
-  version: DialogVersion;
   onBeforeDialogCreated?: () => void;
 }
 
-export function useSendAdminMessage({
-  ticketId,
-  messageDialogId,
-  version,
-  onBeforeDialogCreated,
-}: UseSendAdminMessageOptions) {
+export function useSendAdminMessage({ ticketId, messageDialogId, onBeforeDialogCreated }: UseSendAdminMessageOptions) {
   const { toast } = useToast();
-  const service = getDialogService(version);
   const currentUser = useAuthStore(state => state.user);
-  const fetchDialog = useDialogDetailsStore(state => state.fetchDialog);
-  const addMessage = useDialogDetailsStore(state => state.addMessage);
+  const fetchDialog = useTicketDetailsStore(state => state.fetchDialog);
+  const addMessage = useTicketDetailsStore(state => state.addMessage);
 
   const mutation = useMutation({
     mutationFn: async (message: string) => {
@@ -52,7 +44,7 @@ export function useSendAdminMessage({
 
         onBeforeDialogCreated?.();
 
-        await fetchDialog(ticketId, version);
+        await fetchDialog(ticketId);
       }
 
       const displayName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Admin';
@@ -66,7 +58,7 @@ export function useSendAdminMessage({
       };
       addMessage('admin', optimistic);
 
-      await service.sendMessage(activeDialogId, trimmedMessage, CHAT_TYPE.ADMIN);
+      await ticketService.sendMessage(activeDialogId, trimmedMessage, CHAT_TYPE.ADMIN);
     },
     onError: (error: Error) => {
       toast({

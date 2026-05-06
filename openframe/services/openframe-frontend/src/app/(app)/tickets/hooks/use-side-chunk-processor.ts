@@ -12,7 +12,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
-import { type ApprovalStatus, type ChatSide, useDialogDetailsStore } from '../stores/dialog-details-store';
+import { type ApprovalStatus, type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
 
 interface UseSideChunkProcessorOptions {
   assistantName: string;
@@ -47,7 +47,7 @@ export function useSideChunkProcessor(
     dropIncompleteAssistantTail,
     setAccumulatorCallbacks,
     updateApprovalStatusInMessages,
-  } = useDialogDetailsStore();
+  } = useTicketDetailsStore();
 
   const { messages } = sideState;
 
@@ -197,7 +197,7 @@ export function useSideChunkProcessor(
     ],
   );
 
-  const approvalStatuses = useDialogDetailsStore(s => s.approvalStatuses);
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { processChunk: coreProcessChunk, updateApprovalStatus: coreUpdateApprovalStatus } = useRealtimeChunkProcessor({
     callbacks,

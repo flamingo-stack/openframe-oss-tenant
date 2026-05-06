@@ -3,6 +3,7 @@ import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import { API_ENDPOINTS } from '../constants';
+import { getDialogMessagesQuery } from '../queries/dialogs-queries';
 import {
   ARCHIVE_TICKET_MUTATION,
   GET_TICKETS_QUERY,
@@ -11,19 +12,17 @@ import {
   REOPEN_TICKET_MUTATION,
   RESOLVE_TICKET_MUTATION,
 } from '../queries/ticket-queries';
-import type { Dialog, DialogStatus } from '../types/dialog.types';
+import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import type {
-  DialogService,
-  DialogsPage,
-  FetchDialogsParams,
   FetchMessagesParams,
+  FetchTicketsParams,
   MessagePage,
-} from './dialog-service.types';
-import { DialogServiceV1 } from './dialog-service-v1';
+  TicketService as TicketServiceInterface,
+  TicketsPage,
+} from './ticket-service.types';
 
-// Raw ticket node from the GraphQL response
 interface TicketNode {
   id: string;
   ticketNumber: number;
@@ -94,7 +93,6 @@ interface TicketsResponse {
   };
 }
 
-// TicketStatus -> DialogStatus mapping
 const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
   ACTIVE: 'ACTIVE',
   TECH_REQUIRED: 'TECH_REQUIRED',
@@ -103,7 +101,6 @@ const TICKET_TO_DIALOG_STATUS: Record<string, DialogStatus> = {
   ARCHIVED: 'ARCHIVED',
 };
 
-// DialogStatus -> TicketStatus mapping (for filters)
 const DIALOG_TO_TICKET_STATUS: Record<string, string> = {
   ACTIVE: 'ACTIVE',
   TECH_REQUIRED: 'TECH_REQUIRED',
@@ -143,7 +140,6 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     aiResolutionSuggestedAt: null,
     rating: null,
 
-    // V2 ticket-specific fields
     currentMode: ticket.dialog?.currentMode,
     ticketNumber: ticket.ticketNumber,
     dialogId: ticket.dialog?.id,
@@ -173,13 +169,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
   };
 }
 
-/**
- * V2 dialog service that fetches tickets from the backend and normalizes them to the Dialog type.
- * For methods not yet v2-specific (messages, status, chunks, realtime), delegates to V1.
- */
-export class DialogServiceV2 implements DialogService {
-  private v1 = new DialogServiceV1();
-
+export class TicketService implements TicketServiceInterface {
   private async mutateTicketStatus(ticketId: string, mutation: string, responseKey: string): Promise<DialogStatus> {
     const response = await apiClient.post<GraphQlResponse<Record<string, StatusMutationPayload>>>(
       API_ENDPOINTS.GRAPHQL,
@@ -200,13 +190,12 @@ export class DialogServiceV2 implements DialogService {
     return TICKET_TO_DIALOG_STATUS[payload.ticket.status] || (payload.ticket.status as DialogStatus);
   }
 
-  async fetchDialogs(params: FetchDialogsParams): Promise<DialogsPage> {
+  async fetchDialogs(params: FetchTicketsParams): Promise<TicketsPage> {
     const paginationVars: Record<string, unknown> = { limit: params.limit };
     if (params.cursor) {
       paginationVars.cursor = params.cursor;
     }
 
-    // Map dialog status filters to ticket status filters
     const ticketStatuses = params.statuses.map(s => DIALOG_TO_TICKET_STATUS[s] || s);
 
     const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
@@ -246,7 +235,31 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
-    return this.v1.fetchMessages(params);
+    const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
+    const includeThinking = featureFlags.thinking.enabled();
+    const response = await apiClient.post<
+      GraphQlResponse<{
+        messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
+      }>
+    >('/chat/graphql', {
+      query: getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
+      variables: {
+        dialogId: params.dialogId,
+        chatType: params.chatType,
+        cursor: params.cursor,
+        limit: params.limit,
+        sortField: params.sortField || 'createdAt',
+        sortDirection: params.sortDirection || 'DESC',
+      },
+    });
+
+    const data = extractGraphQlData(response);
+    const { edges, pageInfo } = data.messages;
+
+    return {
+      messages: edges.map(edge => edge.node),
+      pageInfo,
+    };
   }
 
   async updateStatus(ticketId: string, status: DialogStatus): Promise<boolean> {
@@ -263,15 +276,35 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async sendMessage(dialogId: string, content: string, chatType: ChatType): Promise<void> {
-    return this.v1.sendMessage(dialogId, content, chatType);
+    const response = await apiClient.post(API_ENDPOINTS.SEND_MESSAGE, {
+      dialogId,
+      content,
+      chatType,
+    });
+
+    if (!response.ok) {
+      throw new Error(response.error || 'Failed to send message');
+    }
   }
 
   async approveRequest(requestId: string): Promise<void> {
-    return this.v1.approveRequest(requestId);
+    const response = await apiClient.post(`${API_ENDPOINTS.APPROVAL_REQUEST}/${requestId}/approve`, {
+      approve: true,
+    });
+
+    if (!response.ok) {
+      throw new Error(response.error || `Failed to approve request (${response.status})`);
+    }
   }
 
   async rejectRequest(requestId: string): Promise<void> {
-    return this.v1.rejectRequest(requestId);
+    const response = await apiClient.post(`${API_ENDPOINTS.APPROVAL_REQUEST}/${requestId}/approve`, {
+      approve: false,
+    });
+
+    if (!response.ok) {
+      throw new Error(response.error || `Failed to reject request (${response.status})`);
+    }
   }
 
   async archiveDialog(ticketId: string): Promise<boolean> {
@@ -280,6 +313,18 @@ export class DialogServiceV2 implements DialogService {
   }
 
   async fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]> {
-    return this.v1.fetchChunks(dialogId, chatType, fromSequenceId);
+    let url = `${API_ENDPOINTS.DIALOG_CHUNKS}/${dialogId}/chunks?chatType=${chatType}`;
+    if (fromSequenceId !== null && fromSequenceId !== undefined) {
+      url += `&fromSequenceId=${fromSequenceId}`;
+    }
+
+    const response = await apiClient.get<ChunkData[]>(url);
+
+    if (!response.ok) {
+      console.error(`Failed to fetch ${chatType} chunks:`, response.status);
+      return [];
+    }
+
+    return response.data || [];
   }
 }

@@ -12,60 +12,48 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getDialogTableColumns } from '../../../tickets/components/dialog-table-columns';
-import { useDialogVersion } from '../../../tickets/hooks/use-dialog-version';
-import { useDialogsQuery } from '../../../tickets/hooks/use-dialogs-query';
+import { useCallback, useMemo, useState } from 'react';
+import { getTicketTableColumns } from '../../../tickets/components/ticket-table-columns';
+import { useTicketsQuery } from '../../../tickets/hooks/use-tickets-query';
 import type { ClientDialogOwner, Dialog } from '../../../tickets/types/dialog.types';
-import { useOrganizationLookup } from '../../hooks/use-organization-lookup';
 import { OrganizationTabHeader } from './organization-tab-header';
 
 interface OrganizationTicketsTabProps {
   organizationId: string;
-  organizationName?: string;
 }
 
-function dialogBelongsToOrganization(dialog: Dialog, organizationId: string): boolean {
-  if (dialog.organizationId === organizationId) return true;
-  if ('machine' in (dialog.owner || {})) {
-    const owner = dialog.owner as ClientDialogOwner;
+function ticketBelongsToOrganization(ticket: Dialog, organizationId: string): boolean {
+  if (ticket.organizationId === organizationId) return true;
+  if ('machine' in (ticket.owner || {})) {
+    const owner = ticket.owner as ClientDialogOwner;
     if (owner.machine?.organizationId === organizationId) return true;
   }
   return false;
 }
 
-export function OrganizationTicketsTab({ organizationId, organizationName }: OrganizationTicketsTabProps) {
+export function OrganizationTicketsTab({ organizationId }: OrganizationTicketsTabProps) {
   const router = useRouter();
-  const dialogVersion = useDialogVersion();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
-  // Lazy organization lookup so the source column resolves names for the rows we display.
-  const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup();
-
-  const { dialogs, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useDialogsQuery({
+  const {
+    dialogs: tickets,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useTicketsQuery({
     archived: false,
     search: debouncedSearch,
   });
 
-  // Filter to only this organization's tickets. The backend doesn't yet expose a
-  // per-org filter on tickets, so we pull pages and filter client-side.
-  const orgDialogs = useMemo(
-    () => dialogs.filter(d => dialogBelongsToOrganization(d, organizationId)),
-    [dialogs, organizationId],
+  const orgTickets = useMemo(
+    () => tickets.filter(t => ticketBelongsToOrganization(t, organizationId)),
+    [tickets, organizationId],
   );
 
-  useEffect(() => {
-    // Seed the lookup with the org we're viewing so the source column has a name immediately.
-    if (organizationName) {
-      fetchOrganizationNames([organizationId]);
-    }
-  }, [organizationId, organizationName, fetchOrganizationNames]);
-
-  const baseColumns = useMemo(
-    () => getDialogTableColumns({ organizationLookup, isArchived: false, dialogVersion }),
-    [organizationLookup, dialogVersion],
-  );
+  const baseColumns = useMemo(() => getTicketTableColumns({ isArchived: false }), []);
 
   const columns = useMemo<ColumnDef<Dialog>[]>(
     () => [
@@ -94,13 +82,13 @@ export function OrganizationTicketsTab({ organizationId, organizationName }: Org
   );
 
   const table = useDataTable<Dialog>({
-    data: orgDialogs,
+    data: orgTickets,
     columns,
     getRowId: (row: Dialog) => String(row.id),
     enableSorting: false,
   });
 
-  const dialogRowHref = useCallback((d: Dialog) => `/tickets/dialog?id=${d.id}`, []);
+  const ticketRowHref = useCallback((t: Dialog) => `/tickets/dialog?id=${t.id}`, []);
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   if (error) {
@@ -112,15 +100,13 @@ export function OrganizationTicketsTab({ organizationId, organizationName }: Org
       <OrganizationTabHeader
         title="Tickets"
         rightActions={
-          dialogVersion === 'v2' ? (
-            <Button
-              variant="outline"
-              onClick={() => router.push('/tickets/new')}
-              leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-            >
-              New Ticket
-            </Button>
-          ) : null
+          <Button
+            variant="outline"
+            onClick={() => router.push('/tickets/new')}
+            leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
+          >
+            New Ticket
+          </Button>
         }
       />
 
@@ -136,13 +122,13 @@ export function OrganizationTicketsTab({ organizationId, organizationName }: Org
         <DataTable.Header
           stickyHeader
           stickyHeaderOffset="top-[96px]"
-          rightSlot={<DataTable.RowCount itemName="ticket" totalCount={orgDialogs.length} />}
+          rightSlot={<DataTable.RowCount itemName="ticket" totalCount={orgTickets.length} />}
         />
         <DataTable.Body
           loading={isLoading}
           skeletonRows={8}
           emptyMessage="No tickets found for this organization."
-          rowHref={dialogRowHref}
+          rowHref={ticketRowHref}
           rowClassName="mb-1"
         />
         <DataTable.InfiniteFooter

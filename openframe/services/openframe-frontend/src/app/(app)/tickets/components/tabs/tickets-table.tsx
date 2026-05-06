@@ -4,60 +4,38 @@ import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-fronte
 import { DataTable, ListPageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useOrganizationLookup } from '../../../organizations/hooks/use-organization-lookup';
+import { useCallback, useMemo, useState } from 'react';
 import { useArchiveResolvedMutation } from '../../hooks/use-archive-resolved-mutation';
-import { useDialogVersion } from '../../hooks/use-dialog-version';
-import { useDialogsQuery } from '../../hooks/use-dialogs-query';
 import { useTicketStatistics } from '../../hooks/use-ticket-statistics';
-import type { ClientDialogOwner, Dialog } from '../../types/dialog.types';
-import { DialogTableBody, getDialogTableColumns } from '../dialog-table-columns';
+import { useTicketsQuery } from '../../hooks/use-tickets-query';
+import { getTicketTableColumns, TicketTableBody } from '../ticket-table-columns';
 
-interface ChatsTableProps {
+interface TicketsTableProps {
   isArchived: boolean;
   statusFilters?: string[];
   onStatusFilterChange?: (status: string[]) => void;
 }
 
-export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: ChatsTableProps) {
+export function TicketsTable({ isArchived, statusFilters, onStatusFilterChange }: TicketsTableProps) {
   const router = useRouter();
-  const dialogVersion = useDialogVersion();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
-  // Lazy organization lookup - doesn't block initial render
-  const { lookup: organizationLookup, fetchOrganizationNames } = useOrganizationLookup();
   const archiveResolvedMutation = useArchiveResolvedMutation();
   const { resolvedCount } = useTicketStatistics({ enabled: !isArchived });
 
-  const { dialogs, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useDialogsQuery({
+  const {
+    dialogs: tickets,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useTicketsQuery({
     archived: isArchived,
     search: debouncedSearch,
     statusFilters,
   });
-
-  useEffect(() => {
-    if (dialogs.length === 0) return;
-
-    // Extract unique organization IDs from loaded dialogs
-    const organizationIds = dialogs
-      .map((dialog: Dialog) => {
-        const isClientOwner = 'machine' in (dialog.owner || {});
-        if (isClientOwner) {
-          const clientOwner = dialog.owner as ClientDialogOwner;
-          return clientOwner.machine?.organizationId;
-        }
-        return undefined;
-      })
-      .filter((id: string | undefined): id is string => !!id);
-
-    // Dedupe
-    const uniqueIds = Array.from(new Set(organizationIds));
-
-    if (uniqueIds.length > 0) {
-      fetchOrganizationNames(uniqueIds as string[]);
-    }
-  }, [dialogs, fetchOrganizationNames]);
 
   const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
@@ -75,7 +53,6 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
         onStatusFilterChange(newStatusFilters);
       }
 
-      // Scroll to top on filter change
       document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
     [isArchived, onStatusFilterChange],
@@ -103,7 +80,7 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
         disabled: archiveResolvedMutation.isPending || isLoading,
       });
     }
-    if (dialogVersion === 'v2' && !isArchived) {
+    if (!isArchived) {
       items.push({
         label: 'New Ticket',
         onClick: handleNewTicket,
@@ -113,7 +90,6 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
     }
     return items;
   }, [
-    dialogVersion,
     handleNewTicket,
     hasResolvedTickets,
     handleArchiveResolved,
@@ -124,20 +100,20 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
 
   const filterGroups = useMemo(
     () =>
-      getDialogTableColumns({ organizationLookup, isArchived, dialogVersion })
+      getTicketTableColumns({ isArchived })
         .filter(column => column.meta?.filter?.options)
         .map(column => ({
           id: String(column.id ?? (column as { accessorKey?: string }).accessorKey ?? ''),
           title: typeof column.header === 'string' ? column.header : '',
           options: column.meta?.filter?.options || [],
         })),
-    [organizationLookup, isArchived, dialogVersion],
+    [isArchived],
   );
 
   return (
     <ListPageLayout
       title={title}
-      searchPlaceholder="Search for Chat"
+      searchPlaceholder="Search for Ticket"
       searchValue={search}
       onSearch={setSearch}
       error={error}
@@ -150,15 +126,13 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
       currentMobileFilters={{ status: statusFilters || [] }}
       stickyHeader
     >
-      <DialogTableBody
-        dialogs={dialogs}
+      <TicketTableBody
+        tickets={tickets}
         isLoading={isLoading}
         emptyMessage={emptyMessage}
         skeletonRows={10}
         stickyHeaderOffset="top-[96px]"
-        organizationLookup={organizationLookup}
         isArchived={isArchived}
-        dialogVersion={dialogVersion}
         footerSlot={
           <DataTable.InfiniteFooter
             hasNextPage={hasNextPage}
@@ -172,11 +146,10 @@ export function ChatsTable({ isArchived, statusFilters, onStatusFilterChange }: 
   );
 }
 
-// Wrapper components for tab navigation
-export function CurrentChats(props: Omit<ChatsTableProps, 'isArchived'>) {
-  return <ChatsTable isArchived={false} {...props} />;
+export function CurrentTickets(props: Omit<TicketsTableProps, 'isArchived'>) {
+  return <TicketsTable isArchived={false} {...props} />;
 }
 
-export function ArchivedChats(props: Omit<ChatsTableProps, 'isArchived'>) {
-  return <ChatsTable isArchived={true} {...props} />;
+export function ArchivedTickets(props: Omit<TicketsTableProps, 'isArchived'>) {
+  return <TicketsTable isArchived={true} {...props} />;
 }

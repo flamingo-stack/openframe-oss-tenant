@@ -9,8 +9,8 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useRef } from 'react';
 import type { ChatType } from '../constants';
-import type { MessagePage } from '../services/dialog-service.types';
-import { type ChatSide, useDialogDetailsStore } from '../stores/dialog-details-store';
+import type { MessagePage } from '../services/ticket-service.types';
+import { type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
 
 interface UseHistoricalMessageSyncOptions {
   side: ChatSide;
@@ -25,7 +25,7 @@ interface UseHistoricalMessageSyncOptions {
 
 /**
  * Runs `processHistoricalMessagesWithErrors` against each newly-fetched page of
- * ticket messages and feeds the result into the dialog-details-store.
+ * ticket messages and feeds the result into the ticket-details-store.
  */
 export function useHistoricalMessages({
   side,
@@ -37,11 +37,11 @@ export function useHistoricalMessages({
   onApprove,
   onReject,
 }: UseHistoricalMessageSyncOptions) {
-  const getMessages = useDialogDetailsStore(s => s.getMessages);
-  const setMessages = useDialogDetailsStore(s => s.setMessages);
-  const prependWithBoundaryMerge = useDialogDetailsStore(s => s.prependWithBoundaryMerge);
-  const approvalStatuses = useDialogDetailsStore(s => s.approvalStatuses);
-  const mergeApprovalStatuses = useDialogDetailsStore(s => s.mergeApprovalStatuses);
+  const getMessages = useTicketDetailsStore(s => s.getMessages);
+  const setMessages = useTicketDetailsStore(s => s.setMessages);
+  const prependWithBoundaryMerge = useTicketDetailsStore(s => s.prependWithBoundaryMerge);
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
+  const mergeApprovalStatuses = useTicketDetailsStore(s => s.mergeApprovalStatuses);
 
   const approvalStatusesRef = useRef(approvalStatuses);
   approvalStatusesRef.current = approvalStatuses;

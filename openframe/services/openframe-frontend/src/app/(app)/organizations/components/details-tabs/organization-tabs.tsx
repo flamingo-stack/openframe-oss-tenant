@@ -29,7 +29,7 @@ function DevicesTab({ organization }: OrganizationTabProps) {
 }
 
 function TicketsTab({ organization }: OrganizationTabProps) {
-  return <OrganizationTicketsTab organizationId={organization.organizationId} organizationName={organization.name} />;
+  return <OrganizationTicketsTab organizationId={organization.organizationId} />;
 }
 
 function LogsTab({ organization }: OrganizationTabProps) {

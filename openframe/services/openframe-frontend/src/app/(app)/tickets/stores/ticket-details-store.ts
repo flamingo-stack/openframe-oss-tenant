@@ -6,7 +6,7 @@ import {
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
 import { create } from 'zustand';
-import { getDialogService } from '../services';
+import { ticketService } from '../services';
 import type { Dialog } from '../types/dialog.types';
 
 export type ChatSide = 'client' | 'admin';
@@ -32,7 +32,7 @@ function createSideState(): SideState {
 export type ApprovalStatus = 'approved' | 'rejected';
 export type ApprovalStatusMap = Record<string, ApprovalStatus>;
 
-interface DialogDetailsStore {
+interface TicketDetailsStore {
   // Dialog
   currentDialogId: string | null;
   currentDialog: Dialog | null;
@@ -47,7 +47,7 @@ interface DialogDetailsStore {
   approvalStatuses: ApprovalStatusMap;
 
   // Dialog actions
-  fetchDialog: (dialogId: string, version?: 'v1' | 'v2') => Promise<Dialog | null>;
+  fetchDialog: (dialogId: string) => Promise<Dialog | null>;
   clearCurrent: () => void;
   updateDialogStatus: (status: string) => void;
   updateDialogMode: (mode: string, dialogId?: string) => void;
@@ -100,15 +100,15 @@ interface DialogDetailsStore {
 }
 
 function produceSide(
-  state: DialogDetailsStore,
+  state: TicketDetailsStore,
   side: ChatSide,
   updater: (s: SideState) => SideState,
-): Pick<DialogDetailsStore, 'client' | 'admin'> {
+): Pick<TicketDetailsStore, 'client' | 'admin'> {
   const next = updater(state[side]);
   return side === 'client' ? { client: next, admin: state.admin } : { client: state.client, admin: next };
 }
 
-export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
+export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
   currentDialogId: null,
   currentDialog: null,
   isLoadingDialog: false,
@@ -119,9 +119,8 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
   admin: createSideState(),
   approvalStatuses: {},
 
-  fetchDialog: async (dialogId: string, version: 'v1' | 'v2' = 'v1') => {
+  fetchDialog: async (dialogId: string) => {
     const state = get();
-    const service = getDialogService(version);
 
     if (state.currentDialogId !== dialogId || state.currentDialog === null) {
       set({
@@ -133,7 +132,7 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
     }
 
     try {
-      const dialog = await service.fetchDialog(dialogId);
+      const dialog = await ticketService.fetchDialog(dialogId);
 
       set(s => ({
         currentDialog: dialog,

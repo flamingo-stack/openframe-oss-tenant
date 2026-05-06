@@ -5,8 +5,8 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
-import { getDialogService } from '../services';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
+import { ticketService } from '../services';
+import { useTicketDetailsStore } from '../stores/ticket-details-store';
 
 interface CreateDialogResponse {
   id: string;
@@ -28,7 +28,7 @@ interface UseDirectChatOptions {
 
 export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated }: UseDirectChatOptions) {
   const { toast } = useToast();
-  const updateDialogMode = useDialogDetailsStore(state => state.updateDialogMode);
+  const updateDialogMode = useTicketDetailsStore(state => state.updateDialogMode);
 
   const isDirectMode = currentMode === DIALOG_MODE.DIRECT;
 
@@ -92,13 +92,12 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
 
   const sendClientMessageMutation = useMutation({
     mutationFn: async (message: string) => {
-      const activeDialogId = dialogId || useDialogDetailsStore.getState().currentDialog?.dialogId;
+      const activeDialogId = dialogId || useTicketDetailsStore.getState().currentDialog?.dialogId;
       if (!activeDialogId) {
         throw new Error('No active dialog');
       }
 
-      const service = getDialogService('v2');
-      await service.sendMessage(activeDialogId, message.trim(), CHAT_TYPE.CLIENT);
+      await ticketService.sendMessage(activeDialogId, message.trim(), CHAT_TYPE.CLIENT);
     },
     onError: (error: Error) => {
       toast({
