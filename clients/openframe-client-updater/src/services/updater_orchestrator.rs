@@ -1,0 +1,275 @@
+use anyhow::{Context, Result};
+use std::path::PathBuf;
+use tokio::time::Duration;
+use tracing::{error, info, warn};
+
+use crate::clients::AuthClient;
+use crate::config::updater_config::{CLIENT_SERVICE_FULL_NAME, SERVICE_START_VERIFY_WAIT_SECS};
+use crate::listener::ClientUpdateListener;
+use crate::models::UpdaterPhase;
+use crate::platform::{atomic_replace, DirectoryManager};
+use crate::services::{
+    AgentAuthService, AgentConfigurationService, ClientUpdateService, EncryptionService,
+    GithubDownloadService, InitialConfigurationService, LocalTlsConfigProvider,
+    NatsConnectionManager, NatsMessagePublisher, ServiceManagerService, SharedTokenService,
+    UpdateProgressPublisher, UpdaterStateService,
+};
+
+pub struct UpdaterOrchestrator {
+    dir_manager: DirectoryManager,
+}
+
+impl UpdaterOrchestrator {
+    pub fn new(dir_manager: DirectoryManager) -> Self {
+        Self { dir_manager }
+    }
+
+    pub async fn start(&self) -> Result<()> {
+        // ── Build all services ─────────────────────────────────────────────
+        let initial_config_service = InitialConfigurationService::new(&self.dir_manager)
+            .context("Failed to init initial configuration service")?;
+
+        let agent_config_service = AgentConfigurationService::new(&self.dir_manager)
+            .context("Failed to init agent configuration service")?;
+
+        let server_host = initial_config_service
+            .get_server_url()
+            .context("Failed to read server_host from initial_config.json")?;
+
+        let http_url = format!("https://{}", server_host);
+        let ws_url = format!("wss://{}", server_host);
+
+        let http_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(120))
+            .danger_accept_invalid_certs(initial_config_service.is_local_mode()?)
+            .no_proxy()
+            .pool_max_idle_per_host(0)
+            .build()
+            .context("Failed to build HTTP client")?;
+
+        let encryption_service = EncryptionService::new();
+        let shared_token_service =
+            SharedTokenService::new(self.dir_manager.clone(), encryption_service);
+
+        let auth_client = AuthClient::new(http_url, http_client.clone());
+        let auth_service = AgentAuthService::new(
+            auth_client,
+            agent_config_service.clone(),
+            shared_token_service,
+        );
+
+        let tls_config_provider =
+            LocalTlsConfigProvider::new(initial_config_service.clone());
+
+        let nats_manager = NatsConnectionManager::new(
+            ws_url,
+            agent_config_service.clone(),
+            initial_config_service,
+            auth_service.clone(),
+            tls_config_provider,
+        );
+
+        let state_service = UpdaterStateService::new(&self.dir_manager);
+
+        // ── Authenticate ───────────────────────────────────────────────────
+        info!("Authenticating");
+        auth_service
+            .authenticate_initial()
+            .await
+            .context("Initial authentication failed")?;
+        info!("Authentication successful");
+
+        // ── Connect to NATS ────────────────────────────────────────────────
+        nats_manager.connect().await.context("Failed to connect to NATS")?;
+        info!("NATS connected");
+
+        let nats_publisher = NatsMessagePublisher::new(nats_manager.clone());
+
+        let machine_id = agent_config_service
+            .get_machine_id()
+            .await
+            .context("Failed to read machine_id")?;
+
+        let progress_publisher =
+            UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
+
+        // ── Crash recovery ─────────────────────────────────────────────────
+        state_service.cleanup_legacy_state();
+        self.recover_from_crash(&state_service, &progress_publisher).await?;
+
+        // ── Build update pipeline ──────────────────────────────────────────
+        let download_service = GithubDownloadService::new(http_client);
+
+        let update_service = ClientUpdateService::new(
+            download_service,
+            state_service,
+            progress_publisher,
+        );
+
+        let listener = ClientUpdateListener::new(
+            nats_manager,
+            update_service,
+            agent_config_service,
+        );
+
+        // ── Run forever ────────────────────────────────────────────────────
+        info!("Updater ready — listening for update commands");
+        let handle = listener.start().await;
+        handle.await.ok();
+
+        Ok(())
+    }
+
+    // ── Crash recovery ─────────────────────────────────────────────────────
+
+    async fn recover_from_crash(
+        &self,
+        state_service: &UpdaterStateService,
+        publisher: &UpdateProgressPublisher,
+    ) -> Result<()> {
+        let state = match state_service.load()? {
+            None => return Ok(()),
+            Some(s) => s,
+        };
+
+        info!(
+            phase = %state.phase,
+            version = %state.target_version,
+            "Crash recovery: found pending state"
+        );
+
+        let version = &state.target_version;
+        let target = ServiceManagerService::client_binary_path();
+
+        match state.phase {
+            // ── Never touched the service — just clean up ──────────────────
+            UpdaterPhase::Downloading | UpdaterPhase::Verifying | UpdaterPhase::Idle => {
+                if let Some(path) = &state.downloaded_binary_path {
+                    let p = PathBuf::from(path);
+                    if p.exists() {
+                        if let Err(e) = std::fs::remove_file(&p) {
+                            warn!("Failed to remove temp binary during recovery: {}", e);
+                        }
+                    }
+                }
+                publisher
+                    .publish_failure(
+                        &UpdaterPhase::Failed,
+                        version,
+                        "Updater crashed before stopping service — no changes made",
+                        false,
+                    )
+                    .await;
+                state_service.clear()?;
+            }
+
+            // ── Service was stopped, binary may or may not be replaced ──────
+            UpdaterPhase::StoppingService | UpdaterPhase::ReplacingBinary => {
+                self.restore_and_start(&state.backup_path, &target, version, publisher).await;
+                state_service.clear()?;
+            }
+
+            // ── New binary was written, service may or may not have started ─
+            UpdaterPhase::StartingService => {
+                match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
+                    Ok(true) => {
+                        info!("Crash recovery: service is already running — marking success");
+                        publisher.publish_success(version).await;
+                    }
+                    _ => {
+                        // Try starting it once
+                        info!("Crash recovery: service not running — attempting start");
+                        match ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+                            Ok(()) => {
+                                tokio::time::sleep(Duration::from_secs(
+                                    SERVICE_START_VERIFY_WAIT_SECS,
+                                ))
+                                .await;
+                                match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
+                                    Ok(true) => {
+                                        info!("Crash recovery: service started successfully");
+                                        publisher.publish_success(version).await;
+                                    }
+                                    _ => {
+                                        warn!("Crash recovery: service start failed — rolling back");
+                                        self.restore_and_start(
+                                            &state.backup_path,
+                                            &target,
+                                            version,
+                                            publisher,
+                                        )
+                                        .await;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                warn!("Crash recovery: start failed ({}), rolling back", e);
+                                self.restore_and_start(
+                                    &state.backup_path,
+                                    &target,
+                                    version,
+                                    publisher,
+                                )
+                                .await;
+                            }
+                        }
+                    }
+                }
+                state_service.clear()?;
+            }
+
+            // ── Terminal states — just clear ───────────────────────────────
+            UpdaterPhase::Completed
+            | UpdaterPhase::Failed
+            | UpdaterPhase::RollingBack
+            | UpdaterPhase::RolledBack => {
+                info!("Crash recovery: clearing terminal state ({})", state.phase);
+                state_service.clear()?;
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn restore_and_start(
+        &self,
+        backup_path: &Option<String>,
+        target: &PathBuf,
+        version: &str,
+        publisher: &UpdateProgressPublisher,
+    ) {
+        if let Some(path_str) = backup_path {
+            let backup = PathBuf::from(path_str);
+            if backup.exists() {
+                match atomic_replace::restore(&backup, target) {
+                    Ok(()) => {
+                        info!("Crash recovery: backup restored");
+                        if let Err(e) = ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
+                            error!("Crash recovery: failed to start restored service: {}", e);
+                        }
+                        publisher
+                            .publish_failure(
+                                &UpdaterPhase::RolledBack,
+                                version,
+                                "Updater crashed mid-update, old binary restored",
+                                true,
+                            )
+                            .await;
+                        return;
+                    }
+                    Err(e) => error!("Crash recovery: restore failed: {}", e),
+                }
+            }
+        }
+
+        // No backup available — just report failure
+        publisher
+            .publish_failure(
+                &UpdaterPhase::Failed,
+                version,
+                "Updater crashed mid-update, no backup available",
+                false,
+            )
+            .await;
+    }
+}

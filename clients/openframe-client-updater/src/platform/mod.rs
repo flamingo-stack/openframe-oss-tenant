@@ -1,3 +1,4 @@
+pub mod atomic_replace;
 pub mod directories;
 pub mod permissions;
 

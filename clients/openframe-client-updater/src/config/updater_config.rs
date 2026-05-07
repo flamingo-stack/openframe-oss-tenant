@@ -10,6 +10,12 @@ pub const CLIENT_UPDATE_ACK_WAIT_SECS: u64 = 120;
 pub const CLIENT_UPDATE_MAX_DELIVER: i64 = 10;
 pub const RECONNECTION_DELAY_MS: u64 = 5000;
 
+// Consumer creation retry settings
+pub const CONSUMER_RETRY_ATTEMPTS_PER_CYCLE: u32 = 5;
+pub const CONSUMER_INITIAL_RETRY_DELAY_MS: u64 = 1000;
+pub const CONSUMER_MAX_RETRY_DELAY_MS: u64 = 30000;
+pub const CONSUMER_CYCLE_PAUSE_MS: u64 = 30000;
+
 // Service stop/start timeouts
 pub const SERVICE_STOP_TIMEOUT_SECS: u64 = 30;
 pub const SERVICE_START_TIMEOUT_SECS: u64 = 30;

@@ -225,11 +225,7 @@ impl UpdaterService {
             .perform_health_check()
             .map_err(|e| anyhow::anyhow!("Directory health check: {}", e))?;
 
-        // Phase 5: Updater::new(dir_manager).start().await
-        info!("Updater core not yet implemented (Phase 5). Sleeping...");
-        loop {
-            tokio::time::sleep(std::time::Duration::from_secs(60)).await;
-        }
+        crate::UpdaterOrchestrator::new(dir_manager).start().await
     }
 
     pub fn run_as_service() -> Result<()> {
