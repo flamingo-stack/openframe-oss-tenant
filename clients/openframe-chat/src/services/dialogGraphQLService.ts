@@ -13,6 +13,20 @@ export interface DialogTokenUsage {
   contextSize: number | null;
 }
 
+interface DialogTokenUsageEntry extends DialogTokenUsage {
+  chatType: string;
+}
+
+const CLIENT_CHAT_TYPE = 'CLIENT_CHAT';
+
+function pickClientChatTokenUsage(entries: DialogTokenUsageEntry[] | null | undefined): DialogTokenUsage | null {
+  if (!entries) return null;
+  const match = entries.find(e => e.chatType === CLIENT_CHAT_TYPE);
+  if (!match) return null;
+  const { chatType: _chatType, ...usage } = match;
+  return usage;
+}
+
 export interface ResumableDialog {
   id: string;
   title: string;
@@ -27,6 +41,10 @@ export interface ResumableDialog {
     createdAt: string;
   } | null;
   tokenUsage: DialogTokenUsage | null;
+}
+
+interface RawResumableDialog extends Omit<ResumableDialog, 'tokenUsage'> {
+  tokenUsage: DialogTokenUsageEntry[] | null;
 }
 
 export type DialogOwner = MessageOwner;
@@ -56,6 +74,7 @@ export interface MessagesConnection {
 
 const TOKEN_USAGE_FRAGMENT = `
       tokenUsage {
+        chatType
         inputTokensSize
         outputTokensSize
         totalTokensSize
@@ -70,6 +89,11 @@ const CONTEXT_COMPACTION_FRAGMENT = `
             ... on ContextCompactionEndData {
               type
               summary
+            }`;
+
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
             }`;
 
 function getResumableDialogQuery({ includeTokenUsage = false } = {}) {
@@ -105,7 +129,7 @@ function getDialogTokenUsageQuery() {
 `;
 }
 
-function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
+function getDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -137,6 +161,8 @@ function getDialogMessagesQuery({ includeContextCompaction = false } = {}) {
             ... on TextData {
               text
             }
+
+            ${includeThinking ? THINKING_FRAGMENT : ''}
 
             ... on SystemData {
               text
@@ -241,10 +267,12 @@ export class DialogGraphQlService {
   async getResumableDialog({ includeTokenUsage = false } = {}): Promise<ResumableDialog | null> {
     try {
       await tokenService.ensureTokenReady();
-      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(
+      const data = await this.request<{ resumableDialog: RawResumableDialog | null }>(
         getResumableDialogQuery({ includeTokenUsage }),
       );
-      return data.resumableDialog;
+      if (!data.resumableDialog) return null;
+      const { tokenUsage, ...rest } = data.resumableDialog;
+      return { ...rest, tokenUsage: pickClientChatTokenUsage(tokenUsage) };
     } catch (error) {
       console.error('Failed to fetch resumable dialog:', error);
       return null;
@@ -255,13 +283,13 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
-    { includeContextCompaction = false } = {},
+    { includeContextCompaction = false, includeThinking = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
       const data = await this.request<{ messages: MessagesConnection }>(
-        getDialogMessagesQuery({ includeContextCompaction }),
+        getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
         {
           dialogId,
           chatType: 'CLIENT_CHAT',
@@ -282,11 +310,11 @@ export class DialogGraphQlService {
   async getDialogTokenUsage(dialogId: string): Promise<DialogTokenUsage | null> {
     try {
       await tokenService.ensureTokenReady();
-      const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsage | null } | null }>(
+      const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsageEntry[] | null } | null }>(
         getDialogTokenUsageQuery(),
         { id: dialogId },
       );
-      return data.dialog?.tokenUsage ?? null;
+      return pickClientChatTokenUsage(data.dialog?.tokenUsage);
     } catch (error) {
       console.error('Failed to fetch dialog token usage:', error);
       return null;

@@ -5,7 +5,7 @@
  * import { useAuthStore, useDevicesStore, useSSOStore } from '@/stores'
  */
 
-export type { AuthState } from '../app/auth/stores/auth-store';
+export type { AuthState } from '@/app/(auth)/auth/stores/auth-store';
 // Export selectors for performance optimization
 export {
   selectError as selectAuthError,
@@ -13,7 +13,7 @@ export {
   selectIsLoading as selectAuthLoading,
   selectUser,
   useAuthStore,
-} from '../app/auth/stores/auth-store';
+} from '@/app/(auth)/auth/stores/auth-store';
 export type { Device, DeviceFilter, DevicesState } from './devices-store';
 export {
   selectDeviceStats,

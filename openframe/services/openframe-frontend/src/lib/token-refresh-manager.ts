@@ -5,7 +5,7 @@
  * delegate to this module.
  */
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { clearStoredTokens } from './force-logout';
 import { runtimeEnv } from './runtime-config';
 
@@ -94,7 +94,7 @@ export async function refreshAccessToken(): Promise<boolean> {
 
   refreshPromise = (async () => {
     try {
-      const { useAuthStore } = await import('../app/auth/stores/auth-store');
+      const { useAuthStore } = await import('@/app/(auth)/auth/stores/auth-store');
       const authState = useAuthStore.getState();
       const tenantId =
         authState.tenantId || (authState.user as any)?.organizationId || (authState.user as any)?.tenantId;

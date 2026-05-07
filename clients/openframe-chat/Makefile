@@ -6,6 +6,11 @@ ifneq ($(TARGET),)
   TARGET_FLAG := --target $(TARGET)
 endif
 
+BUNDLES ?=
+ifneq ($(BUNDLES),)
+  BUNDLES_FLAG := --bundles $(BUNDLES)
+endif
+
 .PHONY: lint build test fmt fmt-check clippy clean
 
 fmt:
@@ -22,7 +27,7 @@ lint: fmt-check clippy
 build:
 	rm -rf node_modules
 	npm install
-	npx tauri build $(TARGET_FLAG)
+	npx tauri build $(TARGET_FLAG) $(BUNDLES_FLAG)
 
 test: build
 	$(CARGO) tauri test

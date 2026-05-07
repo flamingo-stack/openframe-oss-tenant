@@ -20,11 +20,11 @@ import {
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
+import type { Device } from '@/app/(app)/devices/types/device.types';
+import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
-import type { Device } from '../../../devices/types/device.types';
-import { getDeviceStatusConfig } from '../../../devices/utils/device-status';
 import type { DeviceSelectorProps } from './device-selector.types';
 import { DeviceTabContent } from './device-tab-content';
 import { useDeviceSelector } from './use-device-selector';
@@ -46,6 +46,13 @@ export function DeviceSelector({
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
     useDeviceSelector({ devices, selectedIds, getDeviceKey });
 
+  // Read latest selectedIds via ref so toggleDevice can stay reference-stable.
+  // The DataTable rows are React.memo'd; rows that don't re-render keep an old
+  // toggleDevice closure, and a stale closure that captured an outdated
+  // selectedIds would corrupt the set on the next click.
+  const selectedIdsRef = useRef(selectedIds);
+  selectedIdsRef.current = selectedIds;
+
   const toggleDevice = useCallback(
     (device: Device) => {
       if (disabled) return;
@@ -53,12 +60,13 @@ export function DeviceSelector({
       const key = getDeviceKey(device);
       if (key === undefined) return;
 
+      const current = selectedIdsRef.current;
       if (singleSelect) {
-        onSelectionChange(selectedIds.has(key) ? new Set() : new Set([key]));
+        onSelectionChange(current.has(key) ? new Set() : new Set([key]));
         return;
       }
 
-      const next = new Set(selectedIds);
+      const next = new Set(current);
       if (next.has(key)) {
         next.delete(key);
       } else {
@@ -66,7 +74,7 @@ export function DeviceSelector({
       }
       onSelectionChange(next);
     },
-    [disabled, isDeviceDisabled, getDeviceKey, selectedIds, onSelectionChange, singleSelect],
+    [disabled, isDeviceDisabled, getDeviceKey, onSelectionChange, singleSelect],
   );
 
   const addAllDevices = useCallback(() => {
@@ -166,9 +174,9 @@ export function DeviceSelector({
               {disabledReason}
             </span>
             <Button
-              variant="device-action"
+              variant="outline"
               size="icon"
-              centerIcon={<PlusCircleIcon size={24} />}
+              leftIcon={<PlusCircleIcon size={24} />}
               className="text-ods-text-secondary shrink-0"
               disabled
             />
@@ -185,10 +193,10 @@ export function DeviceSelector({
         return (
           <div className="flex items-center justify-end w-[130px]">
             <Button
-              variant="device-action"
+              variant="outline"
               size="icon"
               onClick={() => toggleDevice(device)}
-              centerIcon={<TrashIcon size={24} />}
+              leftIcon={<TrashIcon size={24} />}
               className="text-ods-error hover:opacity-80"
               disabled={disabled}
             />
@@ -199,10 +207,10 @@ export function DeviceSelector({
       return (
         <div className="flex items-center justify-end w-[130px]">
           <Button
-            variant="device-action"
+            variant="outline"
             size="icon"
             onClick={() => toggleDevice(device)}
-            centerIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
+            leftIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
             className={
               isSelected
                 ? 'text-ods-accent border-ods-accent bg-[var(--ods-open-yellow-secondary)] hover:bg-[var(--ods-open-yellow-secondary-hover)]'
@@ -237,6 +245,18 @@ export function DeviceSelector({
   const ActiveTabComponent = getTabComponent(assignTabs, activeSubTab);
 
   const availableInfiniteScroll = activeSubTab === 'available' ? infiniteScroll : undefined;
+
+  // Per-row className whose value differs by selection state. DataTableRow is
+  // React.memo'd on `className`, so only rows whose selection actually flipped
+  // re-render — the rest keep their cached cells (with stable toggleDevice).
+  const rowClassName = useCallback(
+    (device: Device): string => {
+      const key = getDeviceKey(device);
+      if (key === undefined) return '';
+      return selectedIds.has(key) ? 'is-selected' : '';
+    },
+    [selectedIds, getDeviceKey],
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -275,7 +295,9 @@ export function DeviceSelector({
         </div>
       )}
 
-      {!singleSelect && <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} />}
+      {!singleSelect && (
+        <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} showRightGradient />
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex-1">
@@ -305,6 +327,7 @@ export function DeviceSelector({
           infiniteScroll: availableInfiniteScroll,
           singleSelect,
           isDeviceDisabled,
+          rowClassName,
         }}
       />
     </div>

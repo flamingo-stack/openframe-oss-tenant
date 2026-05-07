@@ -58,6 +58,17 @@ pub async fn launch_as_user(
     launch_via_sudo(executable, args, &user.username).await
 }
 
+pub async fn is_gui_session_ready(uid: u32) -> bool {
+    let uid = uid.to_string();
+    ["Dock", "Finder"].iter().all(|name| {
+        std::process::Command::new("pgrep")
+            .args(["-u", &uid, "-x", name])
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    })
+}
+
 pub async fn is_process_running(executable_path: &str) -> bool {
     match Command::new("pgrep")
         .args(["-f", executable_path])

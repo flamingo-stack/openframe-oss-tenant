@@ -1,63 +1,35 @@
-# Multi-stage Dockerfile for Next.js (Node 22)
-# - Builds app with Next (distDir set to "dist")
-# - Optimized for fast, repeatable builds on amd64/arm64 using BuildKit cache mounts
+# syntax=docker/dockerfile:1.7
+# Next.js 16 standalone (distDir=dist), multi-arch via BuildKit
 
-##########
-# deps
-##########
-FROM --platform=$BUILDPLATFORM node:22-alpine AS deps
-WORKDIR /app
-
-ENV NEXT_TELEMETRY_DISABLED=1
-ARG GITHUB_TOKEN
-
-# Copy dependency manifests first for best layer caching
-COPY package.json package-lock.json ./
-
-# Install dependencies deterministically from lockfile + cache npm download artifacts
-RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=secret,id=GITHUB_TOKEN,required=false \
-    export GITHUB_TOKEN="${GITHUB_TOKEN:-$(cat /run/secrets/GITHUB_TOKEN 2>/dev/null)}" && \
-    npm ci --no-audit --no-fund
-
-##########
-# build
-##########
 FROM --platform=$BUILDPLATFORM node:22-alpine AS builder
 WORKDIR /app
-
-# Reuse installed node_modules from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-
-# Now copy the rest of the source
-COPY . .
-
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app (distDir is configured as "dist")
-# Use BuildKit cache mounts for faster incremental builds (works across amd64/arm64)
-RUN --mount=type=cache,target=/app/.next/cache \
-    --mount=type=cache,target=/app/dist/cache \
+# Declared (unused) to silence buildx warning — CI passes --build-arg GITHUB_ACTOR uniformly.
+ARG GITHUB_ACTOR
+
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
+
+COPY . .
+RUN --mount=type=cache,target=/app/dist/cache \
     npm run build
 
-##########
-# runtime
-##########
 FROM --platform=$TARGETPLATFORM node:22-alpine AS runner
 WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+RUN addgroup -S -g 1001 nodejs && \
+    adduser  -S -u 1001 -G nodejs nextjs
 
-# Copy production dependencies (pruned from full install)
-COPY package.json package-lock.json ./
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm prune --omit=dev
+COPY --from=builder --chown=nextjs:nodejs /app/dist/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/dist/static      ./dist/static
+COPY --from=builder --chown=nextjs:nodejs /app/public           ./public
 
-# Copy build output and public assets
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
-
-# Default command uses package.json start script (next start -p 3000)
-CMD ["npm", "start"]
+USER nextjs
+EXPOSE 3000
+CMD ["node", "server.js"]

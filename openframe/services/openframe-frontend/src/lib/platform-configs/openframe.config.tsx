@@ -81,8 +81,8 @@ export const openframeConfig: AppConfig = {
         right.push(
           <Button
             key="profile-button"
-            variant="ghost"
-            size="sm"
+            variant="transparent"
+            size="small-legacy"
             onClick={() => router.push('/profile')}
             leftIcon={<UserIcon className="w-5 h-5" />}
           >
@@ -91,7 +91,7 @@ export const openframeConfig: AppConfig = {
         );
       } else if (onSignUp) {
         right.push(
-          <Button key="signup-button" variant="primary" size="sm" onClick={onSignUp}>
+          <Button key="signup-button" variant="accent" size="small-legacy" onClick={onSignUp}>
             Sign Up
           </Button>,
         );
@@ -102,7 +102,7 @@ export const openframeConfig: AppConfig = {
         <Button
           key="get-started-button"
           variant="outline"
-          size="sm"
+          size="small-legacy"
           onClick={() => window.open('https://github.com/openframe-dev', '_blank')}
         >
           Get Started

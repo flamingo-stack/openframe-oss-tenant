@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useAuthSession } from '@/app/auth/hooks/use-auth-session';
+import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { initializeGraphQlIntrospection } from '@/lib/graphql-client';
 
 /**

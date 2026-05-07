@@ -1,6 +1,6 @@
 import type { TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
-import type { Device } from '../../../devices/types/device.types';
+import type { Device } from '@/app/(app)/devices/types/device.types';
 
 export type SubTab = 'available' | 'selected';
 
@@ -55,4 +55,10 @@ export interface DeviceTabContentProps {
   singleSelect?: boolean;
   /** Return a tooltip string if the device should be disabled, or undefined if enabled. */
   isDeviceDisabled?: (device: Device) => string | undefined;
+  /**
+   * Per-row className. The DataTable row is React.memo'd on this string, so
+   * varying it by selection state is what invalidates only the changed row's
+   * memo (and therefore re-renders its action button icon).
+   */
+  rowClassName?: (device: Device) => string;
 }

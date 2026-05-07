@@ -87,6 +87,7 @@ impl ToolInstallationService {
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
         let version_clone = tool_installation_message.version.clone();
+        let effective_version = tool_installation_message.effective_version().to_string();
         let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
@@ -150,14 +151,16 @@ impl ToolInstallationService {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
 
+                let resolved_config = config.with_version_override(&version_clone, &effective_version);
+
                 let exec_path = self.install_from_download_config(
-                    config,
+                    &resolved_config,
                     tool_agent_id,
                     &tool_folder_path,
                     &default_agent_path,
                 ).await?;
 
-                (exec_path, config.installation_type, config.bundle_id.clone(), config.service_name.clone())
+                (exec_path, resolved_config.installation_type, resolved_config.bundle_id.clone(), resolved_config.service_name.clone())
             }
             None => {
                 self.download_from_artifactory(tool_agent_id, &default_agent_path).await?;
@@ -192,6 +195,9 @@ impl ToolInstallationService {
                     .find(|c| c.matches_current_os())
                     .with_context(|| format!("No local filename configuration for current OS for asset: {}", asset.id))?;
                 let asset_path = self.directory_manager.get_asset_path(tool_agent_id, &local_filename_config.filename, is_executable);
+
+                let asset_original_version = asset.original_version();
+                let asset_effective_version = asset.effective_version();
                 
                 // Download and save asset if it doesn't already exist
                 if !asset_path.exists() {
@@ -224,10 +230,12 @@ impl ToolInstallationService {
                                 .with_context(|| format!("No download configurations for Github asset: {}", asset.id))?;
                             let config = self.github_download_service.find_config_for_current_os(download_configs)
                                 .with_context(|| format!("Failed to find download configuration for current OS: {}", asset.id))?;
-                            info!("Downloading Github asset: {} from {}", asset.id, config.link);
+
+                            let resolved_config = config.with_version_override(asset_original_version, asset_effective_version);
+                            info!("Downloading Github asset: {} from {}", asset.id, resolved_config.link);
 
                             self.github_download_service
-                                .download_and_extract(config)
+                                .download_and_extract(&resolved_config)
                                 .await
                                 .with_context(|| format!("Failed to download and extract Github asset: {}", asset.id))?
                         }

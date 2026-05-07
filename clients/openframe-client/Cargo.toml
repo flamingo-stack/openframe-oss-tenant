@@ -19,6 +19,29 @@ path = "src/main.rs"
 name = "openframe"
 path = "src/lib.rs"
 
+[features]
+default = []
+
+# Tool-level version overrides. Keyed by ToolInstallationMessage.tool_id.
+# Each feature gates a per-tool override that rewrites the main download link.
+openframe-chat-version     = []
+meshcentral-agent-version  = []
+fleetmdm-agent-version     = []
+tacticalrmm-agent-version  = []
+
+# Asset-level version overrides. Keyed by Asset.id inside a ToolInstallationMessage.
+# These binaries ship as assets under another tool and can be pinned independently.
+osquery-version            = []
+
+# Umbrella — enables every override above.
+all-tool-versions = [
+    "openframe-chat-version",
+    "meshcentral-agent-version",
+    "fleetmdm-agent-version",
+    "tacticalrmm-agent-version",
+    "osquery-version",
+]
+
 [dependencies]
 tokio = { version = "1.0", features = ["full", "macros", "rt-multi-thread", "sync"] }
 serde = { version = "1.0", features = ["derive"] }

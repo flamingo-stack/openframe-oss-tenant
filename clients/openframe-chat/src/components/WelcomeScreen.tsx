@@ -51,7 +51,7 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
         <FeatureList items={features} className="w-full" />
 
-        <Button variant="flamingo-primary" size="default" onClick={onGetStarted}>
+        <Button variant="accent" size="default" onClick={onGetStarted}>
           Get Started
         </Button>
       </div>

@@ -40,11 +40,6 @@ export const featureFlags = {
       return getFlagValue('dialog-stop', () => false);
     },
   },
-  tickets: {
-    enabled(): boolean {
-      return getFlagValue('tickets', () => false);
-    },
-  },
   tokenBasedMemory: {
     enabled(): boolean {
       return getFlagValue('token-based-memory', () => false);
@@ -52,7 +47,17 @@ export const featureFlags = {
   },
   subscription: {
     enabled(): boolean {
-      return getFlagValue('subscription', () => runtimeEnv.featureSubscription());
+      return getFlagValue('billings', () => false);
+    },
+  },
+  thinking: {
+    enabled(): boolean {
+      return getFlagValue('thinking', () => false);
+    },
+  },
+  knowledgeBase: {
+    enabled(): boolean {
+      return getFlagValue('knowledge-base', () => false);
     },
   },
 } as const;

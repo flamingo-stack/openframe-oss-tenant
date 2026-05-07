@@ -4,7 +4,7 @@
  * Uses SHARED_HOST_URL when provided; otherwise uses relative URLs.
  */
 
-import { REFRESH_TOKEN_KEY } from '@/app/auth/hooks/use-token-storage';
+import { REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { isSaasSharedMode } from './app-mode';
 import { forceLogout } from './force-logout';
 import { runtimeEnv } from './runtime-config';

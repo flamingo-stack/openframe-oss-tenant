@@ -4,21 +4,31 @@ use std::sync::Arc;
 use tokio::runtime::Runtime;
 use tracing::{error, info, warn};
 
+use crate::installation_initial_config_service::{
+    InstallConfigParams, InstallationInitialConfigService,
+};
 use crate::platform::permissions::{Capability, PermissionUtils};
-use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
+use crate::service_adapter::{CrossPlatformServiceManager, RecoveryConfig, ServiceConfig};
 use crate::{platform::DirectoryManager, Client};
-use crate::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
 
 #[cfg(windows)]
 use windows_service::{
-    define_windows_service, service_dispatcher,
+    define_windows_service,
     service::{ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus, ServiceType},
     service_control_handler::{self, ServiceControlHandlerResult, ServiceStatusHandle},
+    service_dispatcher,
 };
 
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
+
+// Windows SCM recovery policy: restart on every failure after a 5-minute delay,
+// reset the failure counter after a full day of clean operation.
+const FIRST_RESTART_SERVICE_SECS: u64 = 10;
+const SECOND_RESTART_SERVICE_SECS: u64 = 60;
+const SUBSEQUENT_RESTART_SERVICE_SECS: u64 = 300;
+const RECOVERY_RESET_PERIOD_DAYS: u32 = 1;
 
 // Full service identifier used by all platforms
 // Format: "com.openframe.{SERVICE_NAME}" -> "com.openframe.client"
@@ -47,7 +57,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
                     if let Some(tx) = shutdown_tx.lock().unwrap().take() {
                         let _ = tx.send(());
                     }
-                    
+
                     ServiceControlHandlerResult::NoError
                 }
                 ServiceControl::Interrogate => {
@@ -242,12 +252,10 @@ impl Service {
         // Copy the binary to the installation location if it's not already there
         if current_exe_path != install_path {
             info!("Installing OpenFrame binary to: {}", install_path.display());
-            
-            // On Windows, create the OpenFrame application directory
-            // On Unix, /usr/local/bin should already exist (system directory)
-            #[cfg(target_os = "windows")]
-            {
-                if let Some(parent) = install_path.parent() {
+
+            if let Some(parent) = install_path.parent() {
+                if !parent.exists() {
+                    info!("Creating directory: {}", parent.display());
                     std::fs::create_dir_all(parent)
                         .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
                 }
@@ -269,7 +277,6 @@ impl Service {
             
             info!("Binary installed successfully. You can now use 'openframe' command from anywhere.");
             
-            // Windows: добавляем bin директорию в PATH
             #[cfg(target_os = "windows")]
             {
                 if let Some(bin_dir) = install_path.parent() {
@@ -313,6 +320,13 @@ impl Service {
             file_limit: Some(4096),
             exit_timeout_seconds: Some(10),
             is_interactive: true,
+            recovery: Some(RecoveryConfig {
+                first_restart_secs: FIRST_RESTART_SERVICE_SECS,
+                second_restart_secs: SECOND_RESTART_SERVICE_SECS,
+                subsequent_restart_secs: SUBSEQUENT_RESTART_SERVICE_SECS,
+                reset_period_days: RECOVERY_RESET_PERIOD_DAYS,
+                enable_on_non_crash_failures: true,
+            }),
             ..ServiceConfig::default()
         };
 
@@ -555,9 +569,9 @@ impl Service {
     /// Broadcast environment change notification to Windows
     #[cfg(target_os = "windows")]
     fn broadcast_environment_change() -> Result<()> {
-        use windows::Win32::UI::WindowsAndMessaging::*;
-        use windows::Win32::Foundation::*;
         use windows::core::PCWSTR;
+        use windows::Win32::Foundation::*;
+        use windows::Win32::UI::WindowsAndMessaging::*;
 
         unsafe {
             let env_str: Vec<u16> = "Environment\0".encode_utf16().collect();

@@ -83,11 +83,11 @@ export function TagsEditor({ tags, onTagsChange, addLabel = 'Add Tag' }: TagsEdi
 
         <Button
           type="button"
-          variant="ghost-subtle"
+          variant="transparent"
           className="text-ods-text-primary self-start"
           onClick={addTag}
           leftIcon={<PlusCircle className="size-6" />}
-          noPadding
+          noPaddingX
         >
           {addLabel}
         </Button>

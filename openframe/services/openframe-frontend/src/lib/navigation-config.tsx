@@ -1,5 +1,6 @@
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
+  BookBookmarkIcon,
   BracketCurlyIcon,
   ChartDonutIcon,
   ClipboardListIcon,
@@ -11,6 +12,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
+import { featureFlags } from './feature-flags';
 
 export const getNavigationItems = (pathname: string): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
@@ -79,6 +81,17 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
         isActive: pathname.startsWith('/mingo'),
       },
     );
+  }
+
+  if (featureFlags.knowledgeBase.enabled()) {
+    baseItems.push({
+      id: 'knowledge-base',
+      label: 'Knowledge Base',
+      icon: <BookBookmarkIcon size={24} />,
+      path: '/knowledge-base',
+      section: 'secondary',
+      isActive: pathname.startsWith('/knowledge-base'),
+    });
   }
 
   baseItems.push({

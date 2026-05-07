@@ -555,25 +555,27 @@ impl ToolRunManager {
 
                         #[cfg(target_os = "macos")]
                         {
-                            use crate::platform::user_session::{get_console_user, launch_as_user, is_process_running};
+                            use crate::platform::user_session::{get_console_user, is_gui_session_ready, launch_as_user, is_process_running};
 
                             info!(tool_id = %tool.tool_agent_id, "Launching as GuiApp on macOS");
 
-                            // Check if already running
                             if is_process_running(&command_path).await {
                                 info!(tool_id = %tool.tool_agent_id, "Already running, skipping launch");
                                 return;
                             }
 
-                            // Wait for console user (handles boot-time when no user logged in yet)
                             let user = loop {
                                 if let Some(u) = get_console_user() {
                                     break u;
                                 }
-                                sleep(Duration::from_secs(5)).await;
+                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
                             };
 
-                            // For GUI apps with bundle_id: write config to preferences and launch without args
+                            while !is_gui_session_ready(user.uid).await {
+                                info!(tool_id = %tool.tool_agent_id, "GUI session not ready for uid={}, waiting", user.uid);
+                                sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            }
+
                             let launch_args = match bundle_id {
                                 Some(bid) => {
                                     let prefs = crate::platform::preferences_writer::args_to_pairs(&processed_args);
@@ -594,7 +596,6 @@ impl ToolRunManager {
                                 Ok(mut child) => {
                                     info!(tool_id = %tool.tool_agent_id, "Launched as user {}, PID: {:?}", user.username, child.id());
 
-                                    // Drain stdout/stderr to prevent pipe buffer blocking
                                     if let Some(stdout) = child.stdout.take() {
                                         tokio::spawn(async move {
                                             let mut lines = BufReader::new(stdout).lines();
@@ -608,14 +609,22 @@ impl ToolRunManager {
                                         });
                                     }
 
-                                    info!(tool_id = %tool.tool_agent_id, "GuiApp launched - no lifecycle monitoring");
+                                    sleep(Duration::from_secs(3)).await;
+                                    if is_process_running(&command_path).await {
+                                        info!(tool_id = %tool.tool_agent_id, "GuiApp verified running");
+                                        return;
+                                    }
+
+                                    warn!(tool_id = %tool.tool_agent_id, "GuiApp not running after launch, retrying");
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
                                 }
                                 Err(e) => {
                                     error!(tool_id = %tool.tool_agent_id, "Failed to launch as user: {:#}", e);
+                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                                    continue;
                                 }
                             }
-
-                            return;
                         }
 
                         #[cfg(all(unix, not(target_os = "macos")))]

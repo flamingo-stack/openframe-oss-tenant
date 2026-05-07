@@ -101,13 +101,35 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
 
   const appendSegmentsToLastAssistant = useCallback(
     (segments: MessageSegment[]) => {
+      const incomingCompaction = [...segments]
+        .reverse()
+        .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
+
       setMessages(prev => {
         const newMessages = [...prev];
         for (let i = newMessages.length - 1; i >= 0; i--) {
           if (newMessages[i].role === 'assistant') {
             const existing = Array.isArray(newMessages[i].content) ? (newMessages[i].content as MessageSegment[]) : [];
-            const merged = segmentAccumulator.replaySegments([...existing, ...segments]);
-            newMessages[i] = { ...newMessages[i], content: merged };
+
+            let nextContent: MessageSegment[];
+
+            if (incomingCompaction) {
+              const startedIdx = existing.findIndex(s => s.type === 'context_compaction' && s.status === 'started');
+              const hasAnyCompaction = existing.some(s => s.type === 'context_compaction');
+
+              if (incomingCompaction.status === 'completed' && startedIdx !== -1) {
+                nextContent = [...existing];
+                nextContent[startedIdx] = incomingCompaction;
+              } else if (!hasAnyCompaction) {
+                nextContent = [...existing, incomingCompaction];
+              } else {
+                nextContent = existing;
+              }
+            } else {
+              nextContent = segmentAccumulator.replaySegments([...existing, ...segments]);
+            }
+
+            newMessages[i] = { ...newMessages[i], content: nextContent };
             return newMessages;
           }
         }
