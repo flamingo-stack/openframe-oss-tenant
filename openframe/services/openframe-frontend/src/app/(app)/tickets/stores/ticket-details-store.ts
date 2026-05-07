@@ -6,8 +6,6 @@ import {
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
 import { create } from 'zustand';
-import { getDialogService } from '../services';
-import type { Dialog } from '../types/dialog.types';
 
 export type ChatSide = 'client' | 'admin';
 
@@ -32,25 +30,15 @@ function createSideState(): SideState {
 export type ApprovalStatus = 'approved' | 'rejected';
 export type ApprovalStatusMap = Record<string, ApprovalStatus>;
 
-interface DialogDetailsStore {
-  // Dialog
-  currentDialogId: string | null;
-  currentDialog: Dialog | null;
-  isLoadingDialog: boolean;
-  loadingDialogId: string | null;
-  dialogError: string | null;
-
+interface TicketDetailsStore {
   // Per-side state
   client: SideState;
   admin: SideState;
 
   approvalStatuses: ApprovalStatusMap;
 
-  // Dialog actions
-  fetchDialog: (dialogId: string, version?: 'v1' | 'v2') => Promise<Dialog | null>;
-  clearCurrent: () => void;
-  updateDialogStatus: (status: string) => void;
-  updateDialogMode: (mode: string, dialogId?: string) => void;
+  // Reset all chat-side state (e.g. on ticket switch)
+  clearChatState: () => void;
 
   // Per-side message actions
   setMessages: (side: ChatSide, messages: ChatMessage[]) => void;
@@ -71,7 +59,6 @@ interface DialogDetailsStore {
   getStreamingMessage: (side: ChatSide) => ChatMessage | null;
   updateStreamingMessageSegments: (side: ChatSide, segments: MessageSegment[]) => void;
   appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[]) => void;
-  dropIncompleteAssistantTail: (side: ChatSide) => void;
 
   // Approvals
   updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
@@ -100,96 +87,25 @@ interface DialogDetailsStore {
 }
 
 function produceSide(
-  state: DialogDetailsStore,
+  state: TicketDetailsStore,
   side: ChatSide,
   updater: (s: SideState) => SideState,
-): Pick<DialogDetailsStore, 'client' | 'admin'> {
+): Pick<TicketDetailsStore, 'client' | 'admin'> {
   const next = updater(state[side]);
   return side === 'client' ? { client: next, admin: state.admin } : { client: state.client, admin: next };
 }
 
-export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
-  currentDialogId: null,
-  currentDialog: null,
-  isLoadingDialog: false,
-  loadingDialogId: null,
-  dialogError: null,
-
+export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
   client: createSideState(),
   admin: createSideState(),
   approvalStatuses: {},
 
-  fetchDialog: async (dialogId: string, version: 'v1' | 'v2' = 'v1') => {
-    const state = get();
-    const service = getDialogService(version);
-
-    if (state.currentDialogId !== dialogId || state.currentDialog === null) {
-      set({
-        isLoadingDialog: true,
-        loadingDialogId: dialogId,
-        dialogError: null,
-        currentDialogId: dialogId,
-      });
-    }
-
-    try {
-      const dialog = await service.fetchDialog(dialogId);
-
-      set(s => ({
-        currentDialog: dialog,
-        isLoadingDialog: s.currentDialogId !== dialogId ? s.isLoadingDialog : false,
-        loadingDialogId: s.currentDialogId !== dialogId ? s.loadingDialogId : null,
-        dialogError: dialog ? null : 'Dialog not found',
-      }));
-
-      return dialog;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dialog';
-      set({
-        dialogError: errorMessage,
-        isLoadingDialog: false,
-        loadingDialogId: null,
-        currentDialog: null,
-      });
-      throw error;
-    }
-  },
-
-  clearCurrent: () =>
+  clearChatState: () =>
     set({
-      currentDialogId: null,
-      currentDialog: null,
-      dialogError: null,
-      loadingDialogId: null,
       client: createSideState(),
       admin: createSideState(),
       approvalStatuses: {},
     }),
-
-  updateDialogStatus: (status: string) => {
-    const state = get();
-    if (state.currentDialog) {
-      set({
-        currentDialog: {
-          ...state.currentDialog,
-          status: status as Dialog['status'],
-        },
-      });
-    }
-  },
-
-  updateDialogMode: (mode: string, dialogId?: string) => {
-    const state = get();
-    if (state.currentDialog) {
-      set({
-        currentDialog: {
-          ...state.currentDialog,
-          currentMode: mode,
-          ...(dialogId ? { dialogId } : {}),
-        },
-      });
-    }
-  },
 
   setMessages: (side, messages) => set(state => produceSide(state, side, s => ({ ...s, messages }))),
 
@@ -264,28 +180,6 @@ export const useDialogDetailsStore = create<DialogDetailsStore>((set, get) => ({
         const idx = s.messages.findIndex(m => m.id === updatedMessage.id);
         const nextMessages = idx !== -1 ? s.messages.map((m, i) => (i === idx ? updatedMessage : m)) : s.messages;
         return { ...s, streaming: updatedMessage, messages: nextMessages };
-      }),
-    ),
-
-  dropIncompleteAssistantTail: side =>
-    set(state =>
-      produceSide(state, side, s => {
-        let dropFromIndex = s.messages.length;
-        for (let i = s.messages.length - 1; i >= 0; i--) {
-          const msg = s.messages[i];
-          if (msg.role !== 'assistant') break;
-          const isSynthetic = typeof msg.id === 'string' && msg.id.startsWith('pending-approvals-');
-          const hasExecutingTool =
-            Array.isArray(msg.content) &&
-            msg.content.some(seg => seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL');
-          if (isSynthetic || hasExecutingTool) {
-            dropFromIndex = i;
-          } else {
-            break;
-          }
-        }
-        if (dropFromIndex === s.messages.length) return s;
-        return { ...s, messages: s.messages.slice(0, dropFromIndex) };
       }),
     ),
 

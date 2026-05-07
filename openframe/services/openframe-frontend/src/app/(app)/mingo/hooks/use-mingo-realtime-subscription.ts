@@ -22,6 +22,12 @@ import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
 
 const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const;
 
+function isInProgress(segments: MessageSegment[]): boolean {
+  return segments.some(
+    seg => (seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL') || seg.type === 'approval_request',
+  );
+}
+
 interface UseMingoRealtimeSubscriptionOptions {
   onChunkReceived?: (dialogId: string, chunk: ChunkData, messageType: NatsMessageType) => void;
 }
@@ -202,6 +208,13 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     const currentStreaming = getStreamingMessage(dialogId);
     if (currentStreaming) return;
 
+    const current = getMessages(dialogId);
+    const last = current[current.length - 1];
+    if (last?.role === 'assistant' && Array.isArray(last.content) && isInProgress(last.content)) {
+      setStreamingMessage(dialogId, last);
+      return;
+    }
+
     const assistantMessage: CoreMessage = {
       id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       role: 'assistant',
@@ -213,7 +226,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
     setStreamingMessage(dialogId, assistantMessage);
     addMessage(dialogId, assistantMessage);
-  }, [dialogId, getStreamingMessage, setStreamingMessage, addMessage]);
+  }, [dialogId, getMessages, getStreamingMessage, setStreamingMessage, addMessage]);
 
   const addErrorMessage = useCallback(
     (errorText: string) => {

@@ -1,13 +1,20 @@
 'use client';
 
-import { DetailPageContainer, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
-import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  CheckboxBlock,
+  ImageUploader,
+  Input,
+  PageLayout,
+  Textarea,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { Info as InfoIcon, UsersRound as UsersGroupIcon } from 'lucide-react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useMemo, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { getFullImageUrl } from '@/lib/image-url';
+import { runtimeEnv } from '@/lib/runtime-config';
+import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
 import { useCreateOrganization } from '../hooks/use-create-organization';
 import { useOrganizationDetails } from '../hooks/use-organization-details';
 import { useUpdateOrganization } from '../hooks/use-update-organization';
@@ -16,187 +23,216 @@ interface NewOrganizationPageProps {
   organizationId: string | null;
 }
 
-import { ContactInformationTab, type ContactInfoState } from './tabs/contact-information';
-import { GeneralInformationTab, type GeneralInfoState } from './tabs/general-information';
+interface FormState {
+  name: string;
+  website: string;
+  notes: string;
+  physicalAddress: string;
+  mailingAddress: string;
+  mailingSameAsPhysical: boolean;
+  imageUrl?: string;
+}
 
-const DEFAULT_GENERAL: GeneralInfoState = {
+interface PreservedFields {
+  category?: string;
+  numberOfEmployees: number | null;
+  monthlyRevenue: number | null;
+  contractStartDate?: string;
+  contractEndDate?: string;
+  contacts: Array<{ contactName: string; title: string; phone: string; email: string }>;
+}
+
+const DEFAULT_FORM: FormState = {
   name: '',
-  category: '',
-  employees: '',
-  serviceTier: 'Enterprise',
-  sla: 'Critical',
-  mrr: '',
   website: '',
-  contractStart: '',
-  contractEnd: '',
   notes: '',
+  physicalAddress: '',
+  mailingAddress: '',
+  mailingSameAsPhysical: true,
 };
 
-const NEW_ORG_TAB_IDS = ['general', 'contact'] as const;
-const DEFAULT_NEW_ORG_TAB = 'general';
+const DEFAULT_PRESERVED: PreservedFields = {
+  numberOfEmployees: null,
+  monthlyRevenue: null,
+  contacts: [],
+};
+
+const buildAddressDto = (raw: string) => ({
+  street1: raw || '',
+  street2: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: '',
+});
+
+const stripPlaceholder = (value?: string | null): string => {
+  if (!value || value === '-') return '';
+  return value;
+};
+
+const contactToDto = (c: { name: string; title: string; phone: string; email: string }) => ({
+  contactName: c.name,
+  title: c.title,
+  phone: c.phone,
+  email: c.email,
+});
 
 export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
-
-  const requestedTab = searchParams?.get('tab') ?? DEFAULT_NEW_ORG_TAB;
-  const activeTab = (NEW_ORG_TAB_IDS as readonly string[]).includes(requestedTab) ? requestedTab : DEFAULT_NEW_ORG_TAB;
-
-  // Controlled mode for TabNavigation: URL is the single source of truth.
-  // Avoids a flicker bug in `urlSync` mode where the internal sync effect
-  // briefly resets the active tab to the URL's previous value during navigation.
-  const handleTabChange = useCallback(
-    (tabId: string) => {
-      const params = new URLSearchParams(searchParams?.toString() ?? '');
-      params.set('tab', tabId);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    },
-    [router, pathname, searchParams],
-  );
+  const queryClient = useQueryClient();
 
   const { createOrganization } = useCreateOrganization();
-  const { organization } = useOrganizationDetails(organizationId);
   const { updateOrganization } = useUpdateOrganization();
-  const queryClient = useQueryClient();
+  const { organization } = useOrganizationDetails(organizationId);
+
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+  const [preserved, setPreserved] = useState<PreservedFields>(DEFAULT_PRESERVED);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const [general, setGeneral] = useState<GeneralInfoState>(DEFAULT_GENERAL);
-  const [contact, setContact] = useState<ContactInfoState>({
-    primaryName: '',
-    primaryTitle: '',
-    primaryPhone: '',
-    primaryEmail: '',
-    billingName: '',
-    billingTitle: '',
-    billingPhone: '',
-    billingEmail: '',
-    technicalName: '',
-    technicalTitle: '',
-    technicalPhone: '',
-    technicalEmail: '',
-    physicalAddress: '',
-    mailingAddress: '',
-    mailingSameAsPhysical: true,
-  });
-
   const [didPrefill, setDidPrefill] = useState(false);
 
-  React.useEffect(() => {
-    if (organizationId && organization && !didPrefill) {
-      setGeneral(prev => ({
-        ...prev,
-        name: organization.name || '',
-        category: organization.industry || '',
-        employees: organization.employees != null ? String(organization.employees) : '',
-        mrr: organization.mrrUsd != null ? String(organization.mrrUsd) : '',
-        website: organization.website || '',
-        contractStart: organization.contractStart
-          ? new Date(organization.contractStart).toISOString().slice(0, 10)
-          : '',
-        contractEnd: organization.contractEnd ? new Date(organization.contractEnd).toISOString().slice(0, 10) : '',
-        notes: (organization.notes || []).join('\n'),
-        imageUrl: organization.imageUrl || undefined,
-      }));
+  // For new orgs: file is held in memory until creation, then uploaded.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | undefined>(undefined);
+  const previewUrlRef = useRef<string | undefined>(undefined);
 
-      setContact(prev => ({
-        ...prev,
-        primaryName: organization.primary.name || '',
-        primaryTitle: organization.primary.title || '',
-        primaryPhone: organization.primary.phone || '',
-        primaryEmail: organization.primary.email || '',
-        billingName: organization.billing.name || '',
-        billingTitle: organization.billing.title || '',
-        billingPhone: organization.billing.phone || '',
-        billingEmail: organization.billing.email || '',
-        technicalName: organization.technical.name || '',
-        technicalTitle: organization.technical.title || '',
-        technicalPhone: organization.technical.phone || '',
-        technicalEmail: organization.technical.email || '',
-        physicalAddress: organization.physicalAddress || '',
-        mailingAddress: organization.mailingAddress || '',
-        mailingSameAsPhysical: prev.mailingSameAsPhysical,
-      }));
+  const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
+  const showImageUploader = isSaasTenant && featureFlags.organizationImages.uploadEnabled();
+  const displayedImage = pendingPreviewUrl || getFullImageUrl(form.imageUrl);
 
-      setDidPrefill(true);
-    }
-  }, [organizationId, organization, didPrefill]);
+  const set = (partial: Partial<FormState>) => setForm(prev => ({ ...prev, ...partial }));
 
-  const tabs = useMemo<TabItem[]>(
-    () => [
-      { id: 'general', label: 'General Information', icon: InfoIcon as TabItem['icon'] },
-      { id: 'contact', label: 'Contact Information', icon: UsersGroupIcon as TabItem['icon'] },
-    ],
+  // Revoke blob URLs on unmount
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
     [],
   );
 
-  const saveDisabled = !general.name.trim() || isSubmitting;
+  useEffect(() => {
+    if (!organizationId || !organization || didPrefill) return;
 
-  const toNumberOrNull = (value: string): number | null => {
-    const cleaned = (value || '').toString().replace(/,/g, '').trim();
-    if (cleaned === '') return null;
-    const num = Number(cleaned);
-    return Number.isFinite(num) ? num : null;
+    const physical = organization.physicalAddress || '';
+    const mailing = organization.mailingAddress || '';
+    const sameAsPhysical = !mailing || mailing === physical;
+
+    setForm({
+      name: stripPlaceholder(organization.name),
+      website: stripPlaceholder(organization.website),
+      notes: (organization.notes || []).join('\n'),
+      physicalAddress: physical,
+      mailingAddress: mailing,
+      mailingSameAsPhysical: sameAsPhysical,
+      imageUrl: organization.imageUrl || undefined,
+    });
+
+    const reconstructedContacts = [organization.primary, organization.billing, organization.technical]
+      .filter(c => c.name || c.title || c.phone || c.email)
+      .map(contactToDto);
+
+    setPreserved({
+      category: stripPlaceholder(organization.industry) || undefined,
+      numberOfEmployees: organization.employees,
+      monthlyRevenue: organization.mrrUsd,
+      contractStartDate: organization.contractStart
+        ? new Date(organization.contractStart).toISOString().slice(0, 10)
+        : undefined,
+      contractEndDate: organization.contractEnd
+        ? new Date(organization.contractEnd).toISOString().slice(0, 10)
+        : undefined,
+      contacts: reconstructedContacts,
+    });
+
+    setDidPrefill(true);
+  }, [organizationId, organization, didPrefill]);
+
+  // Mirror physical → mailing when checkbox is on
+  useEffect(() => {
+    if (form.mailingSameAsPhysical && form.mailingAddress !== form.physicalAddress) {
+      setForm(prev => ({ ...prev, mailingAddress: prev.physicalAddress }));
+    }
+  }, [form.mailingSameAsPhysical, form.physicalAddress, form.mailingAddress]);
+
+  const replacePendingPreview = (file: File | null) => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    if (file) {
+      const next = URL.createObjectURL(file);
+      previewUrlRef.current = next;
+      setPendingPreviewUrl(next);
+    } else {
+      previewUrlRef.current = undefined;
+      setPendingPreviewUrl(undefined);
+    }
+    setPendingFile(file);
   };
 
-  const buildContacts = () => {
-    const contacts = [] as Array<{ contactName: string; title: string; phone: string; email: string }>;
-    if (contact.primaryName || contact.primaryTitle || contact.primaryPhone || contact.primaryEmail) {
-      contacts.push({
-        contactName: contact.primaryName,
-        title: contact.primaryTitle,
-        phone: contact.primaryPhone,
-        email: contact.primaryEmail,
-      });
+  const handleImageChange = async (file: File) => {
+    if (organizationId) {
+      try {
+        const uploadedUrl = await uploadWithAuth(`/api/organizations/${organizationId}/image`, file);
+        set({ imageUrl: uploadedUrl });
+        toast({
+          title: 'Upload successful',
+          description: 'Organization image has been updated',
+          variant: 'success',
+        });
+      } catch (err) {
+        toast({
+          title: 'Upload failed',
+          description: err instanceof Error ? err.message : 'Failed to upload image',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      replacePendingPreview(file);
     }
-    if (contact.billingName || contact.billingTitle || contact.billingPhone || contact.billingEmail) {
-      contacts.push({
-        contactName: contact.billingName,
-        title: contact.billingTitle,
-        phone: contact.billingPhone,
-        email: contact.billingEmail,
-      });
-    }
-    if (contact.technicalName || contact.technicalTitle || contact.technicalPhone || contact.technicalEmail) {
-      contacts.push({
-        contactName: contact.technicalName,
-        title: contact.technicalTitle,
-        phone: contact.technicalPhone,
-        email: contact.technicalEmail,
-      });
-    }
-    return contacts;
   };
 
-  const buildAddressDto = (raw: string) => ({
-    street1: raw || '',
-    street2: '',
-    city: '',
-    state: '',
-    postalCode: '',
-    country: '',
-  });
+  const handleImageRemove = async () => {
+    if (organizationId && form.imageUrl) {
+      try {
+        await deleteWithAuth(`/api/organizations/${organizationId}/image`);
+        set({ imageUrl: undefined });
+        toast({
+          title: 'Delete successful',
+          description: 'Organization image has been deleted',
+          variant: 'success',
+        });
+      } catch (err) {
+        toast({
+          title: 'Delete failed',
+          description: err instanceof Error ? err.message : 'Failed to delete image',
+          variant: 'destructive',
+        });
+      }
+    } else {
+      replacePendingPreview(null);
+    }
+  };
 
   const handleSave = async () => {
+    if (!form.name.trim() || isSubmitting) return;
+
     try {
       setIsSubmitting(true);
 
       const payload = {
-        name: general.name.trim(),
-        category: general.category || undefined,
-        numberOfEmployees: toNumberOrNull(general.employees),
-        websiteUrl: general.website || undefined,
-        notes: general.notes || undefined,
+        name: form.name.trim(),
+        category: preserved.category,
+        numberOfEmployees: preserved.numberOfEmployees,
+        websiteUrl: form.website.trim() || undefined,
+        notes: form.notes || undefined,
         contactInformation: {
-          contacts: buildContacts(),
-          physicalAddress: buildAddressDto(contact.physicalAddress),
-          mailingAddress: buildAddressDto(contact.mailingAddress),
-          mailingAddressSameAsPhysical: Boolean(contact.mailingSameAsPhysical),
+          contacts: preserved.contacts,
+          physicalAddress: buildAddressDto(form.physicalAddress),
+          mailingAddress: buildAddressDto(form.mailingSameAsPhysical ? form.physicalAddress : form.mailingAddress),
+          mailingAddressSameAsPhysical: form.mailingSameAsPhysical,
         },
-        monthlyRevenue: toNumberOrNull(general.mrr),
-        contractStartDate: general.contractStart || undefined,
-        contractEndDate: general.contractEnd || undefined,
+        monthlyRevenue: preserved.monthlyRevenue,
+        contractStartDate: preserved.contractStartDate,
+        contractEndDate: preserved.contractEndDate,
       };
 
       let createdOrganizationId: string | null = null;
@@ -208,23 +244,11 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         createdOrganizationId = response?.organizationId || response?.id || null;
       }
 
-      if (!organizationId && createdOrganizationId && general.logoUrl && general.logoUrl.startsWith('data:')) {
+      // Deferred logo upload for newly-created orgs
+      if (!organizationId && createdOrganizationId && pendingFile) {
         try {
-          const response = await fetch(general.logoUrl);
-          const blob = await response.blob();
-
-          const formData = new FormData();
-          formData.append('file', blob, 'logo.png');
-
-          const uploadResponse = await apiClient.request(`/organizations/${createdOrganizationId}/image`, {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (!uploadResponse.ok) {
-            throw new Error('Failed to upload logo');
-          }
-        } catch (_imageError) {
+          await uploadWithAuth(`/api/organizations/${createdOrganizationId}/image`, pendingFile);
+        } catch {
           toast({
             title: 'Warning',
             description: 'Organization was created but logo upload failed',
@@ -237,54 +261,112 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
 
       toast({
         title: organizationId ? 'Organization updated' : 'Organization created',
-        description: `${general.name} has been ${organizationId ? 'updated' : 'created'}`,
+        description: `${form.name} has been ${organizationId ? 'updated' : 'created'}`,
       });
       router.push('/organizations');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to create organization';
-      toast({ title: 'Create failed', description: msg, variant: 'destructive' });
+      const msg = e instanceof Error ? e.message : 'Failed to save organization';
+      toast({ title: 'Save failed', description: msg, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const saveDisabled = !form.name.trim() || isSubmitting;
+
   return (
-    <DetailPageContainer
+    <PageLayout
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       title={organizationId ? 'Edit Organization' : 'New Organization'}
       backButton={{
         label: organizationId ? 'Back to Organization' : 'Back to Organizations',
         onClick: () => router.push(organizationId ? `/organizations/details/${organizationId}` : '/organizations'),
       }}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
-      headerActions={
-        <Button
-          variant="accent"
-          disabled={saveDisabled}
-          onClick={handleSave}
-          className="bg-ods-accent text-ods-text-on-accent font-['DM_Sans'] font-bold text-[16px] px-4 py-2.5 h-12"
-        >
-          {isSubmitting ? 'Saving...' : 'Save Organization'}
-        </Button>
-      }
+      actions={[
+        {
+          label: isSubmitting ? 'Saving...' : 'Save Organization',
+          variant: 'accent',
+          onClick: handleSave,
+          disabled: saveDisabled,
+          loading: isSubmitting,
+        },
+      ]}
     >
-      <div className="flex flex-col w-full">
-        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
-          {tabId => (
-            <>
-              {tabId === 'general' && (
-                <GeneralInformationTab
-                  value={general}
-                  onChange={setGeneral}
-                  organizationId={organization?.organizationId || undefined}
-                />
-              )}
+      <div className="flex flex-col gap-6 w-full">
+        {/* Row 1: name + website (left) | image (right on lg, below on md/sm) */}
+        <div className="flex flex-col lg:flex-row gap-6 items-stretch">
+          <div className="flex-1 min-w-0 flex flex-col gap-6 md:flex-row md:gap-6 lg:flex-col">
+            <div className="flex-1 min-w-0">
+              <Input
+                label="Organization Name"
+                placeholder="Company Name"
+                value={form.name}
+                onChange={e => set({ name: e.target.value })}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <Input
+                label="Website URL"
+                placeholder="https://www.website.com"
+                value={form.website}
+                onChange={e => set({ website: e.target.value })}
+              />
+            </div>
+          </div>
 
-              {tabId === 'contact' && <ContactInformationTab value={contact} onChange={setContact} />}
-            </>
+          {showImageUploader && (
+            <div className="w-full lg:w-[316px] shrink-0">
+              <ImageUploader
+                value={displayedImage}
+                onChange={handleImageChange}
+                onRemove={handleImageRemove}
+                objectFit="contain"
+                label="Organization Logo"
+                description="(Click here or drag and drop)"
+              />
+            </div>
           )}
-        </TabNavigation>
+        </div>
+
+        {/* Notes */}
+        <Textarea
+          label="Notes"
+          rows={4}
+          placeholder="Your notes here..."
+          value={form.notes}
+          onChange={e => set({ notes: e.target.value })}
+          className="min-h-[96px] resize-y"
+        />
+
+        {/* Row 3: physical address + same-as-physical checkbox */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-end">
+          <div className="flex-1 min-w-0">
+            <Input
+              label="Physical Address"
+              placeholder="123 Main St, City, State, ZIP"
+              value={form.physicalAddress}
+              onChange={e => set({ physicalAddress: e.target.value })}
+            />
+          </div>
+          <CheckboxBlock
+            id="mailing-same"
+            className="flex-1 min-w-0 md:max-w-[50%]"
+            label="Mailing Address Same as Physical"
+            checked={form.mailingSameAsPhysical}
+            onCheckedChange={c => set({ mailingSameAsPhysical: Boolean(c) })}
+          />
+        </div>
+
+        {/* Mailing address (full width) */}
+        <Input
+          label="Mailing Address"
+          placeholder="123 Main St, City, State, ZIP"
+          value={form.mailingAddress}
+          onChange={e => set({ mailingAddress: e.target.value })}
+          disabled={form.mailingSameAsPhysical}
+          className="disabled:opacity-60"
+        />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

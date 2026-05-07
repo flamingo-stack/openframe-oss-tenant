@@ -2,33 +2,26 @@
 
 import type { Message as ChatMessage } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
-import { getDialogService } from '../services';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
-import type { DialogVersion } from './use-dialog-version';
+import { ticketService } from '../services';
+import { useTicketDetailsStore } from '../stores/ticket-details-store';
+import { ticketsQueryKeys } from '../utils/query-keys';
 
 interface UseSendAdminMessageOptions {
   ticketId: string;
   messageDialogId: string | null;
-  version: DialogVersion;
   onBeforeDialogCreated?: () => void;
 }
 
-export function useSendAdminMessage({
-  ticketId,
-  messageDialogId,
-  version,
-  onBeforeDialogCreated,
-}: UseSendAdminMessageOptions) {
+export function useSendAdminMessage({ ticketId, messageDialogId, onBeforeDialogCreated }: UseSendAdminMessageOptions) {
   const { toast } = useToast();
-  const service = getDialogService(version);
+  const queryClient = useQueryClient();
   const currentUser = useAuthStore(state => state.user);
-  const fetchDialog = useDialogDetailsStore(state => state.fetchDialog);
-  const addMessage = useDialogDetailsStore(state => state.addMessage);
+  const addMessage = useTicketDetailsStore(state => state.addMessage);
 
   const mutation = useMutation({
     mutationFn: async (message: string) => {
@@ -52,7 +45,7 @@ export function useSendAdminMessage({
 
         onBeforeDialogCreated?.();
 
-        await fetchDialog(ticketId, version);
+        await queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
       }
 
       const displayName = [currentUser?.firstName, currentUser?.lastName].filter(Boolean).join(' ') || 'Admin';
@@ -66,7 +59,7 @@ export function useSendAdminMessage({
       };
       addMessage('admin', optimistic);
 
-      await service.sendMessage(activeDialogId, trimmedMessage, CHAT_TYPE.ADMIN);
+      await ticketService.sendMessage(activeDialogId, trimmedMessage, CHAT_TYPE.ADMIN);
     },
     onError: (error: Error) => {
       toast({

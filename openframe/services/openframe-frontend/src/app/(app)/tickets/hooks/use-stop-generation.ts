@@ -5,11 +5,11 @@ import { useMutation } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS, CHAT_TYPE } from '../constants';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
+import { useTicketDetailsStore } from '../stores/ticket-details-store';
 
 export function useStopGeneration(messageDialogId: string | null) {
   const { toast } = useToast();
-  const setTypingIndicator = useDialogDetailsStore(state => state.setTypingIndicator);
+  const setTypingIndicator = useTicketDetailsStore(state => state.setTypingIndicator);
 
   const mutation = useMutation({
     mutationFn: async () => {

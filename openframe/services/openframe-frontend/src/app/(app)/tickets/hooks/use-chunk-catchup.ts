@@ -9,8 +9,7 @@ import {
   useChunkCatchup as useChunkCatchupCore,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useMemo } from 'react';
-import { getDialogService } from '../services';
-import { useDialogVersion } from './use-dialog-version';
+import { ticketService } from '../services';
 
 export type { ChunkData, NatsMessageType, UseChunkCatchupReturn };
 
@@ -20,18 +19,15 @@ interface UseChunkCatchupOptions {
 }
 
 export function useChunkCatchup({ dialogId, onChunkReceived }: UseChunkCatchupOptions): UseChunkCatchupReturn {
-  const version = useDialogVersion();
-  const service = getDialogService(version);
-
   const fetchChunks = useCallback(
     async (
       dialogId: string,
       chatType: (typeof CHAT_TYPE)[keyof typeof CHAT_TYPE],
       fromSequenceId?: number | null,
     ): Promise<ChunkData[]> => {
-      return service.fetchChunks(dialogId, chatType, fromSequenceId);
+      return ticketService.fetchChunks(dialogId, chatType, fromSequenceId);
     },
-    [service],
+    [],
   );
 
   const options = useMemo<CoreChunkCatchupOptions>(

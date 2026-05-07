@@ -26,6 +26,44 @@ export interface Organization {
   imageUrl?: string | null;
 }
 
+export interface OrganizationNode {
+  id: string;
+  organizationId: string;
+  name?: string | null;
+  websiteUrl?: string | null;
+  category?: string | null;
+  numberOfEmployees?: number | null;
+  monthlyRevenue?: number | null;
+  contractEndDate?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  contactInformation?: {
+    contacts?: Array<{ contactName?: string | null; email?: string | null }> | null;
+  } | null;
+  image?: { imageUrl?: string | null } | null;
+}
+
+export function mapOrganizationNode(node: OrganizationNode): Organization {
+  const primaryContact = node.contactInformation?.contacts?.[0];
+  return {
+    id: node.id,
+    organizationId: node.organizationId,
+    name: node.name ?? '-',
+    websiteUrl: node.websiteUrl ?? '',
+    contact: {
+      name: primaryContact?.contactName ?? '',
+      email: primaryContact?.email ?? '',
+    },
+    tier: 'Basic',
+    industry: node.category ?? '-',
+    mrrUsd: node.monthlyRevenue ?? 0,
+    numberOfEmployees: node.numberOfEmployees ?? 0,
+    contractDue: node.contractEndDate ?? '',
+    lastActivity: node.updatedAt || node.createdAt || new Date().toISOString(),
+    imageUrl: node.image?.imageUrl ?? null,
+  };
+}
+
 interface OrganizationsPage {
   organizations: Organization[];
   pageInfo: {
@@ -88,27 +126,9 @@ export function useOrganizations(search = '', status?: string) {
         throw new Error(graphqlResponse.errors[0].message || 'GraphQL error occurred');
       }
 
-      const nodes = graphqlResponse.data.organizations.edges.map(e => e.node);
-      const organizations: Organization[] = nodes.map((o: any): Organization => {
-        const primaryContact = o.contactInformation?.contacts?.[0];
-        return {
-          id: o.id,
-          organizationId: o.organizationId,
-          name: o.name ?? '-',
-          websiteUrl: o.websiteUrl ?? '',
-          contact: {
-            name: primaryContact?.contactName ?? '',
-            email: primaryContact?.email ?? '',
-          },
-          tier: 'Basic',
-          industry: o.category ?? '-',
-          mrrUsd: o.monthlyRevenue ?? 0,
-          numberOfEmployees: o.numberOfEmployees ?? 0,
-          contractDue: o.contractEndDate ?? '',
-          lastActivity: o.updatedAt || o.createdAt || new Date().toISOString(),
-          imageUrl: o.image?.imageUrl || null,
-        };
-      });
+      const organizations: Organization[] = graphqlResponse.data.organizations.edges.map(({ node }) =>
+        mapOrganizationNode(node as OrganizationNode),
+      );
 
       return {
         organizations,
