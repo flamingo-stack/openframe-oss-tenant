@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use async_nats::jetstream;
 use std::path::PathBuf;
+use tokio::sync::mpsc;
 use tokio::time::{interval, Duration};
 use tracing::{debug, error, info};
 
@@ -10,12 +11,13 @@ use crate::services::{AgentConfigurationService, InitialConfigurationService, In
 
 use super::log_parser::LogBatchMessage;
 use super::log_rotation::LogRotationManager;
-use super::log_source::{FileLogSource, LogSourceKind, LogSourceRegistry};
+use super::log_source::{FileLogSource, LogSource, LogSourceKind, LogSourceRegistry};
 
 const BATCH_INTERVAL_SECS: u64 = 60;
 const MAX_LOGS_PER_BATCH: usize = 50;
 const RECONNECT_DELAY_SECS: u64 = 5;
 const INITIAL_KEY_CHECK_INTERVAL_SECS: u64 = 10;
+const SOURCE_DISCOVERY_INTERVAL_SECS: u64 = 30;
 const NATS_SUBJECT: &str = "agents.logs";
 const NATS_HEADER_MACHINE_ID: &str = "openframe-client";
 
@@ -158,20 +160,34 @@ impl LogStreamingRunManager {
                 initial_key,
             );
 
-            if let Err(e) = connection.connect().await {
-                error!("Failed to connect to NATS logs: {:#}", e);
-                return;
+            loop {
+                match connection.connect().await {
+                    Ok(()) => break,
+                    Err(e) => {
+                        error!("Failed to connect to NATS logs: {:#}, retrying in {}s", e, RECONNECT_DELAY_SECS);
+                        tokio::time::sleep(Duration::from_secs(RECONNECT_DELAY_SECS)).await;
+                    }
+                }
             }
 
-            let registry = self.create_source_registry().await;
+            let registry = self.create_source_registry();
 
             let rotation_manager = LogRotationManager::new(
                 self.log_file_path.clone(),
                 self.offset_file_path.clone(),
             );
 
+            let (source_tx, source_rx) = mpsc::channel::<Box<dyn LogSource>>(4);
+
+            spawn_source_discovery(
+                source_tx,
+                self.installed_tools_service,
+                self.directory_manager,
+            );
+
             log_streaming_loop(
                 registry,
+                source_rx,
                 rotation_manager,
                 connection,
                 self.hostname,
@@ -185,7 +201,7 @@ impl LogStreamingRunManager {
         Ok(())
     }
 
-    async fn create_source_registry(&self) -> LogSourceRegistry {
+    fn create_source_registry(&self) -> LogSourceRegistry {
         let mut registry = LogSourceRegistry::new();
 
         let source = FileLogSource::new(
@@ -195,37 +211,7 @@ impl LogStreamingRunManager {
         );
         registry.register(Box::new(source));
 
-        self.register_meshcentral_source(&mut registry).await;
-
         registry
-    }
-
-    async fn register_meshcentral_source(&self, registry: &mut LogSourceRegistry) {
-        let meshcentral_id = LogSourceKind::Meshcentral.to_string();
-
-        let tool = match self.installed_tools_service.get_all().await {
-            Ok(tools) => tools.into_iter().find(|t| t.tool_agent_id == meshcentral_id),
-            Err(e) => {
-                error!("Failed to get installed tools: {:#}", e);
-                return;
-            }
-        };
-
-        let Some(tool) = tool else {
-            error!("Meshcentral agent not installed, skipping log source registration");
-            return;
-        };
-        if tool.installation.executable_path().is_none() {
-            error!("Meshcentral agent has no executable path, skipping log source registration");
-            return;
-        }
-
-        let tool_dir = self.directory_manager.app_support_dir().join(&meshcentral_id);
-        let log_path = tool_dir.join(format!("{}.log", meshcentral_id));
-        let offset_path = self.directory_manager.secured_dir().join("meshcentral_log_offset");
-
-        let source = FileLogSource::new(LogSourceKind::Meshcentral, log_path, offset_path);
-        registry.register(Box::new(source));
     }
 
     async fn wait_for_initial_key(&self) -> String {
@@ -244,8 +230,52 @@ impl LogStreamingRunManager {
     }
 }
 
+fn spawn_source_discovery(
+    tx: mpsc::Sender<Box<dyn LogSource>>,
+    installed_tools_service: InstalledToolsService,
+    directory_manager: DirectoryManager,
+) {
+    tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(SOURCE_DISCOVERY_INTERVAL_SECS)).await;
+
+            match create_meshcentral_source(&installed_tools_service, &directory_manager).await {
+                Some(source) => {
+                    info!("Meshcentral log source discovered, registering");
+                    if tx.send(source).await.is_err() {
+                        return;
+                    }
+                    return;
+                }
+                None => {
+                    debug!("Meshcentral not installed yet, will retry in {}s", SOURCE_DISCOVERY_INTERVAL_SECS);
+                }
+            }
+        }
+    });
+}
+
+async fn create_meshcentral_source(
+    installed_tools_service: &InstalledToolsService,
+    directory_manager: &DirectoryManager,
+) -> Option<Box<dyn LogSource>> {
+    let meshcentral_id = LogSourceKind::Meshcentral.to_string();
+
+    let tools = installed_tools_service.get_all().await.ok()?;
+    let tool = tools.into_iter().find(|t| t.tool_agent_id == meshcentral_id)?;
+    tool.installation.executable_path()?;
+
+    let tool_dir = directory_manager.app_support_dir().join(&meshcentral_id);
+    let log_path = tool_dir.join(format!("{}.log", meshcentral_id));
+    let offset_path = directory_manager.secured_dir().join("meshcentral_log_offset");
+
+    let source = FileLogSource::new(LogSourceKind::Meshcentral, log_path, offset_path);
+    Some(Box::new(source))
+}
+
 async fn log_streaming_loop(
     mut registry: LogSourceRegistry,
+    mut source_rx: mpsc::Receiver<Box<dyn LogSource>>,
     rotation_manager: LogRotationManager,
     connection: NatsLogConnection,
     hostname: String,
@@ -258,6 +288,11 @@ async fn log_streaming_loop(
 
     loop {
         ticker.tick().await;
+
+        // Drain any newly discovered sources
+        while let Ok(source) = source_rx.try_recv() {
+            registry.register(source);
+        }
 
         let logs = registry.read_all(MAX_LOGS_PER_BATCH);
 

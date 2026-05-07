@@ -166,7 +166,7 @@ impl LogSourceRegistry {
                         }
                     }
                     Err(e) => {
-                        info!("Failed to read from '{}': {:#}", source.name(), e);
+                        error!("Failed to read from '{}': {:#}", source.name(), e);
                         active[i] = false;
                     }
                 }
