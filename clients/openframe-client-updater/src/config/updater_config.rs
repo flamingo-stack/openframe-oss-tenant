@@ -14,18 +14,14 @@ pub const RECONNECTION_DELAY_MS: u64 = 5000;
 pub const SERVICE_STOP_TIMEOUT_SECS: u64 = 30;
 pub const SERVICE_START_TIMEOUT_SECS: u64 = 30;
 
-// Health verification: wait up to this long for heartbeat after restart
-pub const HEALTH_CHECK_TIMEOUT_SECS: u64 = 60;
+// After starting the client service, wait this long before checking Running state
+pub const SERVICE_START_VERIFY_WAIT_SECS: u64 = 5;
 
 // Atomic binary replace: retries with backoff on Windows file locking
 pub const REPLACE_MAX_RETRIES: u32 = 10;
 pub const REPLACE_RETRY_DELAY_MS: u64 = 500;
 
-// Heartbeat interval on the main client (used to size health check window)
-pub const HEARTBEAT_INTERVAL_SECS: u64 = 60;
-
 // Subject patterns — format with machine_id at runtime
-pub const SUBJECT_HEARTBEAT: &str = "machine.{machine_id}.heartbeat";
 pub const SUBJECT_UPDATE_PROGRESS: &str = "machine.{machine_id}.client-update-progress";
 pub const SUBJECT_INSTALLED_AGENT: &str = "machine.{machine_id}.installed-agent";
 
