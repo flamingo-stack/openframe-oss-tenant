@@ -17,5 +17,5 @@ pub const CONSUMER_CYCLE_PAUSE_MS: u64 = 30000; // 30 seconds pause between retr
 pub const RECONNECTION_DELAY_MS: u64 = 5000; // 5 seconds
 
 // NATS message settings
-pub const CONSUMER_ACK_WAIT_SECS: u64 = 1200;
+pub const CONSUMER_ACK_WAIT_SECS: u64 = 120;
 pub const CONSUMER_MAX_DELIVER: i64 = 10; // Maximum delivery attempts
