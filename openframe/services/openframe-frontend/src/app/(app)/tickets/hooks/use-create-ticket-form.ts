@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { applyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS, CREATION_SOURCE } from '../constants';
@@ -52,12 +53,19 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       labelIds: [],
       description: '',
       assignKnowledgeBase: false,
+      assignments: {},
     },
+  });
+
+  const assignedItems = useAssignedItems({
+    itemId: ticketId ?? null,
+    itemType: 'TICKET',
+    enabled: isEditMode,
   });
 
   // Prefill form when ticket data loads
   useEffect(() => {
-    if (ticket && isEditMode) {
+    if (ticket && isEditMode && assignedItems.isReady) {
       form.reset({
         title: ticket.title || '',
         description: ticket.description || '',
@@ -68,6 +76,7 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
         type: 'text',
         labelIds: ticket.labels?.map(l => l.id) || [],
         assignKnowledgeBase: false,
+        assignments: assignedItems.value,
       });
 
       if (ticket.attachments?.length) {
@@ -75,9 +84,10 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tempAttachments.initializeExisting is stable (useCallback)
-  }, [ticket, isEditMode, form, tempAttachments.initializeExisting]);
+  }, [ticket, isEditMode, form, tempAttachments.initializeExisting, assignedItems.isReady, assignedItems.value]);
 
   const handleSave = form.handleSubmit(async data => {
+    const nextAssignments = data.assignments ?? {};
     if (isEditMode && ticketId) {
       const tempAttachmentIds = tempAttachments.getTempAttachmentIds();
 
@@ -95,10 +105,12 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
         labelIds: data.labelIds,
         tempAttachmentIds: tempAttachmentIds.length ? tempAttachmentIds : undefined,
       });
+
+      await applyAssignmentsDiff(ticketId, 'TICKET', assignedItems.value, nextAssignments);
     } else {
       const tempAttachmentIds = tempAttachments.getTempAttachmentIds();
 
-      await createTicketMutation.mutateAsync({
+      const created = await createTicketMutation.mutateAsync({
         title: data.title,
         description: data.description || undefined,
         organizationId: data.organizationId || undefined,
@@ -107,6 +119,10 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
         labelIds: data.labelIds.length ? data.labelIds : undefined,
         tempAttachmentIds: tempAttachmentIds.length ? tempAttachmentIds : undefined,
       });
+
+      if (created?.id && Object.keys(nextAssignments).length > 0) {
+        await applyAssignmentsDiff(created.id, 'TICKET', {}, nextAssignments);
+      }
     }
   });
 

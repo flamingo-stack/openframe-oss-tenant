@@ -2,8 +2,7 @@
 
 import { useMutation } from '@tanstack/react-query';
 import { APPROVAL_STATUS, type ApprovalStatus } from '../constants';
-import { getDialogService } from '../services';
-import { useDialogVersion } from './use-dialog-version';
+import { ticketService } from '../services';
 
 export type ApprovalRequestAction = {
   requestId: string;
@@ -11,15 +10,12 @@ export type ApprovalRequestAction = {
 };
 
 export function useApprovalRequests() {
-  const version = useDialogVersion();
-  const service = getDialogService(version);
-
   const approvalMutation = useMutation({
     mutationFn: async ({ requestId, approve }: ApprovalRequestAction) => {
       if (approve) {
-        await service.approveRequest(requestId);
+        await ticketService.approveRequest(requestId);
       } else {
-        await service.rejectRequest(requestId);
+        await ticketService.rejectRequest(requestId);
       }
     },
   });

@@ -10,6 +10,7 @@ import {
   TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ArrowRightUpIcon,
   BracketCurlyIcon,
   ClockHistoryIcon,
   MonitorIcon,
@@ -79,30 +80,25 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
     router.push('/scripts/?tab=schedules');
   }, [router]);
 
-  const handleEditDevices = useCallback(() => {
-    router.push(`/scripts/schedules/${scheduleId}/devices`);
-  }, [router, scheduleId]);
-
-  const handleEditSchedule = useCallback(() => {
-    router.push(`/scripts/schedules/${scheduleId}/edit`);
-  }, [router, scheduleId]);
+  const editDevicesHref = `/scripts/schedules/${scheduleId}/devices`;
+  const editScheduleHref = `/scripts/schedules/${scheduleId}/edit`;
 
   const actions = useMemo(
     () => [
       {
         label: 'Edit Devices',
         variant: 'outline' as const,
-        onClick: handleEditDevices,
+        href: editDevicesHref,
         icon: <PenEditIcon size={20} />,
       },
       {
         label: 'Edit Schedule',
         variant: 'outline' as const,
-        onClick: handleEditSchedule,
+        href: editScheduleHref,
         icon: <PenEditIcon size={20} />,
       },
     ],
-    [handleEditSchedule, handleEditDevices],
+    [editDevicesHref, editScheduleHref],
   );
 
   if (isLoading) {

@@ -8,7 +8,7 @@ import {
   ModalV2Header,
   ModalV2Title,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { format, parseISO } from 'date-fns';
+import { formatDate } from '@/lib/format-date';
 
 interface SubscriptionCancelledModalProps {
   isOpen: boolean;
@@ -19,7 +19,7 @@ interface SubscriptionCancelledModalProps {
 function formatEndDate(iso: string | null): string {
   if (!iso) return '—';
   try {
-    return format(parseISO(iso), 'MMM do, yyyy');
+    return formatDate(iso);
   } catch {
     return iso;
   }

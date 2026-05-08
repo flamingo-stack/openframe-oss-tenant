@@ -12,7 +12,13 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
-import { type ApprovalStatus, type ChatSide, useDialogDetailsStore } from '../stores/dialog-details-store';
+import { type ApprovalStatus, type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
+
+function isInProgress(segments: MessageSegment[]): boolean {
+  return segments.some(
+    seg => (seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL') || seg.type === 'approval_request',
+  );
+}
 
 interface UseSideChunkProcessorOptions {
   assistantName: string;
@@ -38,16 +44,16 @@ export function useSideChunkProcessor(
   const {
     [side]: sideState,
     addMessage,
+    getMessages,
     getStreamingMessage,
     setStreamingMessage,
     setTypingIndicator,
     setTokenUsage,
     updateStreamingMessageSegments,
     appendSegmentsToLastAssistant,
-    dropIncompleteAssistantTail,
     setAccumulatorCallbacks,
     updateApprovalStatusInMessages,
-  } = useDialogDetailsStore();
+  } = useTicketDetailsStore();
 
   const { messages } = sideState;
 
@@ -60,7 +66,11 @@ export function useSideChunkProcessor(
   const ensureAssistantMessage = useCallback(() => {
     if (getStreamingMessage(side)) return;
 
-    dropIncompleteAssistantTail(side);
+    const last = getMessages(side).at(-1);
+    if (last?.role === 'assistant' && Array.isArray(last.content) && isInProgress(last.content)) {
+      setStreamingMessage(side, last);
+      return;
+    }
 
     const assistantMessage: ChatMessage = {
       id: `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -73,16 +83,9 @@ export function useSideChunkProcessor(
 
     setStreamingMessage(side, assistantMessage);
     addMessage(side, assistantMessage);
-  }, [
-    side,
-    assistantName,
-    assistantType,
-    getStreamingMessage,
-    setStreamingMessage,
-    addMessage,
-    dropIncompleteAssistantTail,
-  ]);
+  }, [side, assistantName, assistantType, getMessages, getStreamingMessage, setStreamingMessage, addMessage]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: history loads async; need to recompute when `messages` arrives so the accumulator picks up the real initial state.
   const incompleteState = useMemo(() => {
     const tail: MessageSegment[] = [];
     let lastAssistantId = '';
@@ -112,7 +115,7 @@ export function useSideChunkProcessor(
       assistantType,
       timestamp: lastAssistantTimestamp,
     });
-  }, [assistantName, assistantType]);
+  }, [messages, assistantName, assistantType]);
 
   const callbacks = useMemo(
     () => ({
@@ -197,7 +200,7 @@ export function useSideChunkProcessor(
     ],
   );
 
-  const approvalStatuses = useDialogDetailsStore(s => s.approvalStatuses);
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { processChunk: coreProcessChunk, updateApprovalStatus: coreUpdateApprovalStatus } = useRealtimeChunkProcessor({
     callbacks,

@@ -1,7 +1,11 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
-import { Chevron02RightIcon, Refresh02HrIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  ArrowRightUpIcon,
+  EyeIcon,
+  Refresh02HrIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
@@ -374,22 +378,40 @@ function LogsTableContent({
         meta: { width: 'flex-1', hideAt: 'lg' },
       },
       {
-        id: 'open',
+        id: 'quickView',
         cell: ({ row }: { row: Row<UiLogEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={getLogDetailsUrl(row.original)}
-              prefetch={false}
+              onClick={() => setSelectedLog(row.original)}
               variant="outline"
               size="icon"
-              leftIcon={<Chevron02RightIcon className="w-5 h-5" />}
-              aria-label="View log details"
+              leftIcon={<EyeIcon className="w-5 h-5" />}
+              aria-label="Quick view"
               className="bg-ods-card"
             />
           </div>
         ),
         enableSorting: false,
         meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+            <Button
+              href={getLogDetailsUrl(row.original)}
+              prefetch={false}
+              openInNewTab
+              variant="outline"
+              size="icon"
+              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+              aria-label="Open in new tab"
+              className="bg-ods-card"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
     [logFilters, getLogDetailsUrl, organizationLocked],
@@ -424,10 +446,6 @@ function LogsTableContent({
     onColumnFiltersChange: handleColumnFiltersChange,
   });
 
-  const handleRowClick = useCallback((log: UiLogEntry) => {
-    setSelectedLog(log);
-  }, []);
-
   const handleCloseModal = useCallback(() => {
     setSelectedLog(null);
   }, []);
@@ -444,7 +462,6 @@ function LogsTableContent({
               ? 'No logs found for this device. Try adjusting your search or filters.'
               : 'No logs found. Try adjusting your search or filters.'
           }
-          onRowClick={handleRowClick}
           rowHref={getLogDetailsUrl}
           rowClassName="mb-1"
         />
@@ -521,6 +538,11 @@ function LogsTableSkeleton() {
         header: 'Log Details',
         enableSorting: false,
         meta: { width: 'flex-1', hideAt: 'lg' },
+      },
+      {
+        id: 'quickView',
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none ml-auto', align: 'right' },
       },
       {
         id: 'open',

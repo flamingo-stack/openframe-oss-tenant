@@ -73,10 +73,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     if (!dialogId) return [];
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
-    const filteredMessages = currentMessages.filter(msg => !msg.id.startsWith('pending-approvals-'));
     const cache = messageCacheRef.current;
 
-    return filteredMessages.map(msg => {
+    return currentMessages.map(msg => {
       const cached = cache.get(msg);
       if (cached) return cached;
 

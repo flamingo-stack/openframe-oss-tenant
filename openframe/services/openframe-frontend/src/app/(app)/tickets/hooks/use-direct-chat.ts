@@ -1,12 +1,13 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
-import { getDialogService } from '../services';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
+import { ticketService } from '../services';
+import type { Dialog } from '../types/dialog.types';
+import { ticketsQueryKeys } from '../utils/query-keys';
 
 interface CreateDialogResponse {
   id: string;
@@ -28,7 +29,16 @@ interface UseDirectChatOptions {
 
 export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated }: UseDirectChatOptions) {
   const { toast } = useToast();
-  const updateDialogMode = useDialogDetailsStore(state => state.updateDialogMode);
+  const queryClient = useQueryClient();
+
+  const setMode = useCallback(
+    (mode: string, newDialogId?: string) => {
+      queryClient.setQueryData<Dialog | null>(ticketsQueryKeys.detail(ticketId), prev =>
+        prev ? { ...prev, currentMode: mode, ...(newDialogId ? { dialogId: newDialogId } : {}) } : prev,
+      );
+    },
+    [queryClient, ticketId],
+  );
 
   const isDirectMode = currentMode === DIALOG_MODE.DIRECT;
 
@@ -51,7 +61,7 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
       return response.data;
     },
     onSuccess: data => {
-      updateDialogMode(DIALOG_MODE.DIRECT, data.id);
+      setMode(DIALOG_MODE.DIRECT, data.id);
       onDialogCreated?.();
     },
     onError: (error: Error) => {
@@ -78,7 +88,7 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
       return response.data;
     },
     onSuccess: () => {
-      updateDialogMode(DIALOG_MODE.DIRECT);
+      setMode(DIALOG_MODE.DIRECT);
     },
     onError: (error: Error) => {
       toast({
@@ -92,13 +102,13 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
 
   const sendClientMessageMutation = useMutation({
     mutationFn: async (message: string) => {
-      const activeDialogId = dialogId || useDialogDetailsStore.getState().currentDialog?.dialogId;
+      const cached = queryClient.getQueryData<Dialog | null>(ticketsQueryKeys.detail(ticketId));
+      const activeDialogId = dialogId || cached?.dialogId;
       if (!activeDialogId) {
         throw new Error('No active dialog');
       }
 
-      const service = getDialogService('v2');
-      await service.sendMessage(activeDialogId, message.trim(), CHAT_TYPE.CLIENT);
+      await ticketService.sendMessage(activeDialogId, message.trim(), CHAT_TYPE.CLIENT);
     },
     onError: (error: Error) => {
       toast({

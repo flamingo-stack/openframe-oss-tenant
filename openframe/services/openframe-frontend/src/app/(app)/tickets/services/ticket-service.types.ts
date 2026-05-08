@@ -2,7 +2,7 @@ import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import type { ChatType } from '../constants';
 import type { CursorPageInfo, Dialog, DialogStatus, Message } from '../types/dialog.types';
 
-export interface DialogsPage {
+export interface TicketsPage {
   dialogs: Dialog[];
   pageInfo: CursorPageInfo;
 }
@@ -12,7 +12,7 @@ export interface MessagePage {
   pageInfo: CursorPageInfo;
 }
 
-export interface FetchDialogsParams {
+export interface FetchTicketsParams {
   statuses: string[];
   search?: string;
   cursor?: string;
@@ -28,14 +28,14 @@ export interface FetchMessagesParams {
   sortDirection?: 'ASC' | 'DESC';
 }
 
-export interface DialogService {
-  fetchDialogs(params: FetchDialogsParams): Promise<DialogsPage>;
+export interface TicketService {
+  fetchDialogs(params: FetchTicketsParams): Promise<TicketsPage>;
   fetchDialog(id: string): Promise<Dialog | null>;
   fetchMessages(params: FetchMessagesParams): Promise<MessagePage>;
-  updateStatus(dialogId: string, status: DialogStatus): Promise<boolean>;
+  updateStatus(ticketId: string, status: DialogStatus): Promise<boolean>;
   sendMessage(dialogId: string, content: string, chatType: ChatType): Promise<void>;
   approveRequest(requestId: string): Promise<void>;
   rejectRequest(requestId: string): Promise<void>;
-  archiveDialog(dialogId: string): Promise<boolean>;
+  archiveDialog(ticketId: string): Promise<boolean>;
   fetchChunks(dialogId: string, chatType: ChatType, fromSequenceId?: number | null): Promise<ChunkData[]>;
 }

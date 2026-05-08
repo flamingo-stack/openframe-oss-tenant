@@ -12,6 +12,7 @@ import { Card, PageLayout, SquareAvatar, Tag } from '@flamingo-stack/openframe-f
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
+import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
@@ -183,6 +184,8 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       </Card>
 
       <SimpleMarkdownRenderer content={article.content ?? ''} textSize="compact" />
+
+      <AssignedItemsView itemId={article.id} itemType="KNOWLEDGE_ARTICLE" />
 
       <ArchiveArticleModal
         isOpen={archiveOpen}

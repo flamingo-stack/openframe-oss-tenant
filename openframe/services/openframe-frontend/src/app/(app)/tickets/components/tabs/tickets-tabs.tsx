@@ -4,20 +4,20 @@ import { TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core'
 import { BoxArchiveIcon, TagsIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter } from 'next/navigation';
 import React, { useCallback } from 'react';
-import { ArchivedChats, CurrentChats } from './chats-table';
+import { ArchivedTickets, CurrentTickets } from './tickets-table';
 
 export const TICKETS_TABS: TabItem[] = [
   {
     id: 'current',
     label: 'Current Tickets',
     icon: TagsIcon,
-    component: CurrentChats,
+    component: CurrentTickets,
   },
   {
     id: 'archived',
     label: 'Archive',
     icon: BoxArchiveIcon,
-    component: ArchivedChats,
+    component: ArchivedTickets,
   },
 ];
 

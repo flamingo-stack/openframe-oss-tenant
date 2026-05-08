@@ -3,6 +3,7 @@
 import type { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core';
 import { ActionsMenuDropdown, normalizeOSType } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ArrowRightUpIcon,
   BoxArchiveIcon,
   BracketCurlyIcon,
   TrashIcon,
@@ -75,12 +76,20 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     }
 
     // Run Script is always in the dropdown
+    const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
     actionItems.push({
       id: 'run-script',
       label: 'Run Script',
       icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
       disabled: !actionAvailability.runScriptEnabled,
       onClick: handleRunScript,
+      iconAction: {
+        icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
+        'aria-label': 'Open Run Script in new tab',
+        href: runScriptHref,
+        openInNewTab: true,
+        disabled: !actionAvailability.runScriptEnabled,
+      },
     });
 
     if (actionItems.length > 0) {

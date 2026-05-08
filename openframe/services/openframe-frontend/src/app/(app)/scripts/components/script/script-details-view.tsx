@@ -6,7 +6,7 @@ import {
   NotFoundError,
   ScriptInfoSection,
 } from '@flamingo-stack/openframe-frontend-core';
-import { PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useScriptDetails } from '../../hooks/use-script-details';
@@ -26,15 +26,8 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     router.push('/scripts');
   }, [router]);
 
-  const handleEditScript = useCallback(() => {
-    router.push(`/scripts/edit/${scriptId}`);
-  }, [router, scriptId]);
-
-  const handleRunScript = useCallback(() => {
-    if (scriptDetails?.id) {
-      router.push(`/scripts/details/${scriptDetails.id}/run`);
-    }
-  }, [router, scriptDetails?.id]);
+  const editHref = `/scripts/edit/${scriptId}`;
+  const runHref = scriptDetails?.id ? `/scripts/details/${scriptDetails.id}/run` : undefined;
 
   const actions = useMemo(
     () => [
@@ -42,16 +35,26 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
         label: 'Edit Script',
         variant: 'outline' as const,
         icon: <PenEditIcon size={20} />,
-        onClick: handleEditScript,
+        href: editHref,
       },
-      {
-        label: 'Run Script',
-        icon: <PlayIcon size={20} />,
-        onClick: handleRunScript,
-        variant: 'accent' as const,
-      },
+      ...(runHref
+        ? [
+            {
+              label: 'Run Script',
+              icon: <PlayIcon size={20} />,
+              href: runHref,
+              variant: 'accent' as const,
+              iconAction: {
+                icon: <ArrowRightUpIcon className="w-5 h-5" />,
+                'aria-label': 'Open Run Script in new tab',
+                href: runHref,
+                openInNewTab: true,
+              },
+            },
+          ]
+        : []),
     ],
-    [handleRunScript, handleEditScript],
+    [editHref, runHref],
   );
 
   if (isLoading) {

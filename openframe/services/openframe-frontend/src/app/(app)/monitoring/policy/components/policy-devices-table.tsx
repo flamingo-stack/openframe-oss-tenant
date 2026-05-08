@@ -2,7 +2,9 @@
 
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
   type ColumnDef,
   DataTable,
   type Row,
@@ -101,6 +103,26 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           );
         },
         meta: { width: 'w-[140px]' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<PolicyDeviceRow> }) =>
+          row.original.machineId ? (
+            <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+              <Button
+                href={`/devices/details/${row.original.machineId}`}
+                prefetch={false}
+                openInNewTab
+                variant="outline"
+                size="icon"
+                leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+                aria-label="Open in new tab"
+                className="bg-ods-card"
+              />
+            </div>
+          ) : null,
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
     [],

@@ -40,11 +40,6 @@ export const featureFlags = {
       return getFlagValue('dialog-stop', () => false);
     },
   },
-  tickets: {
-    enabled(): boolean {
-      return getFlagValue('tickets', () => false);
-    },
-  },
   tokenBasedMemory: {
     enabled(): boolean {
       return getFlagValue('token-based-memory', () => false);

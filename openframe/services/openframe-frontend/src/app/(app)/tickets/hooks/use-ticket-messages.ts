@@ -1,14 +1,11 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import type { ChatType } from '../constants';
-import { getDialogService } from '../services';
-import type { MessagePage } from '../services/dialog-service.types';
+import { ticketService } from '../services';
+import type { MessagePage } from '../services/ticket-service.types';
 import type { Message } from '../types/dialog.types';
-import { useDialogVersion } from './use-dialog-version';
 
 export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
-  const version = useDialogVersion();
-  const service = getDialogService(version);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -23,7 +20,7 @@ export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
         return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
       }
 
-      return service.fetchMessages({
+      return ticketService.fetchMessages({
         dialogId,
         chatType,
         cursor: pageParam,

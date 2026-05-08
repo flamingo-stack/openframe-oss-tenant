@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS } from '../constants';
 import { GET_TICKET_STATISTICS_QUERY } from '../queries/ticket-queries';
 import type { GraphQlResponse } from '../utils/graphql';
@@ -22,8 +21,6 @@ interface TicketStatisticsResponse {
 }
 
 export function useTicketStatistics({ enabled = true }: { enabled?: boolean } = {}) {
-  const isTicketsEnabled = featureFlags.tickets.enabled();
-
   const { data, isLoading } = useQuery({
     queryKey: ticketsQueryKeys.statistics(),
     queryFn: async () => {
@@ -32,7 +29,7 @@ export function useTicketStatistics({ enabled = true }: { enabled?: boolean } = 
       });
       return extractGraphQlData(response);
     },
-    enabled: enabled && isTicketsEnabled,
+    enabled,
     staleTime: 60_000,
   });
 
