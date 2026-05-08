@@ -255,8 +255,7 @@ pub fn run() {
                             });
                         }
                         "quit" => {
-                            // Force quit using std::process::exit to bypass ExitRequested event
-                            // This ensures the tray menu Quit button actually closes the app
+                            // std::process::exit bypasses ExitRequested; app.exit() would loop back.
                             std::process::exit(0);
                         }
                         _ => {}
@@ -264,9 +263,7 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // On macOS, replace the system Quit menu item (which calls terminate:
-            // and bypasses Tauri's event loop entirely) with a custom "Quit to Tray"
-            // action bound to Cmd+Q. The only way to fully exit is via the tray menu.
+            // Cmd+Q calls NSApp.terminate: directly, bypassing RunEvent::ExitRequested — intercept it.
             #[cfg(target_os = "macos")]
             {
                 let quit_to_tray_i = MenuItem::with_id(
@@ -305,11 +302,10 @@ pub fn run() {
                     println!("[INFO] Main window shown on startup");
                 }
             } else {
-                // Explicitly hide window in background mode to ensure it stays hidden
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.hide();
                 }
-                // On macOS, switch to Accessory so no Dock icon appears on background launch
+                // Accessory: no Dock icon on --background launch.
                 #[cfg(target_os = "macos")]
                 let _ = app.handle().set_activation_policy(ActivationPolicy::Accessory);
                 println!("[INFO] Starting in background mode (tray only)");
@@ -353,10 +349,7 @@ pub fn run() {
                     for (_, window) in app_handle.webview_windows() {
                         let _ = window.hide();
                     }
-                    // Defer the policy switch to the next event loop iteration.
-                    // Calling set_activation_policy synchronously from within the event
-                    // handler deadlocks because Tauri routes it through the same event
-                    // loop queue we are currently blocking.
+                    // Deferred: calling set_activation_policy from within a RunEvent handler deadlocks the event loop queue.
                     #[cfg(target_os = "macos")]
                     {
                         let handle = app_handle.clone();
