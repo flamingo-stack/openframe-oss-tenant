@@ -5,6 +5,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ApprovalStatus } from '../../tickets/constants';
 import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../../tickets/constants';
@@ -212,7 +213,7 @@ export function useMingoDialogSelection() {
       }));
 
     const assistantConfig = ASSISTANT_CONFIG.MINGO;
-    const { messages: allProcessedMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
+    const { messages: rawProcessedMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
       assistantName: assistantConfig.name,
       assistantType: assistantConfig.type,
       chatTypeFilter: CHAT_TYPE.ADMIN,
@@ -220,6 +221,7 @@ export function useMingoDialogSelection() {
       onReject: handleRejectRef.current,
       approvalStatuses: Object.fromEntries(Object.entries(approvalStatusesRef.current).map(([k, v]) => [k, v as any])),
     });
+    const allProcessedMessages = foldPendingApprovalsEnvelope(rawProcessedMessages as Message[]);
 
     if (allProcessedMessages.length === 0) {
       processedPageCountRef.current = pages.length;
@@ -234,7 +236,6 @@ export function useMingoDialogSelection() {
       const realtimeMessages = existingMessages.filter(m => {
         if (processedMessageIds.has(m.id)) return false;
         if (rawPageMessageIds.has(m.id)) return false;
-        if (m.id.startsWith('pending-approvals-')) return false;
         if (m.role === 'user' && m.id.startsWith('optimistic-') && typeof m.content === 'string') {
           return !allProcessedMessages.some(pm => pm.role === 'user' && pm.content === m.content);
         }

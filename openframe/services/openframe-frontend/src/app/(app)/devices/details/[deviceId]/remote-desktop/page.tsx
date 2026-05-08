@@ -265,6 +265,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   // Clipboard interceptor
   useEffect(() => {
+    if (!isPageReady) return;
     const desktop = desktopRef.current;
     if (!desktop) return;
     if (!clipboardEnabled) {
@@ -304,7 +305,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     return () => {
       desktop.setClipboardInterceptor?.(null);
     };
-  }, [clipboardEnabled, meshcentralAgentId]);
+  }, [clipboardEnabled, meshcentralAgentId, isPageReady]);
 
   const handleBack = () => {
     tunnelRef.current?.stop();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore } from '@/stores';
 import { API_ENDPOINTS } from '../constants';
@@ -10,9 +10,10 @@ import {
   DELETE_TICKET_NOTE_MUTATION,
   UPDATE_TICKET_NOTE_MUTATION,
 } from '../queries/ticket-queries';
-import { useDialogDetailsStore } from '../stores/dialog-details-store';
+import type { Dialog } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
+import { ticketsQueryKeys } from '../utils/query-keys';
 
 interface NotePayload {
   note?: { id: string; content: string } | null;
@@ -23,28 +24,29 @@ interface DeletePayload {
   userErrors: Array<{ field?: string[]; message: string }>;
 }
 
-type DialogNotes = NonNullable<
-  NonNullable<ReturnType<typeof useDialogDetailsStore.getState>['currentDialog']>['notes']
->;
+type DialogNotes = NonNullable<Dialog['notes']>;
 
-function getDialogState() {
-  return useDialogDetailsStore.getState();
+function setNotesInCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  ticketId: string,
+  updater: (notes: DialogNotes) => DialogNotes,
+) {
+  queryClient.setQueryData<Dialog | null>(ticketsQueryKeys.detail(ticketId), prev => {
+    if (!prev) return prev;
+    return { ...prev, notes: updater(prev.notes ?? []) };
+  });
 }
 
-function setDialogNotes(notes: DialogNotes) {
-  const state = getDialogState();
-  if (state.currentDialog) {
-    useDialogDetailsStore.setState({
-      currentDialog: { ...state.currentDialog, notes },
-    });
-  }
+function getNotesFromCache(queryClient: ReturnType<typeof useQueryClient>, ticketId: string): DialogNotes {
+  return queryClient.getQueryData<Dialog | null>(ticketsQueryKeys.detail(ticketId))?.notes ?? [];
 }
 
-export function useAddTicketNote(onSuccess?: () => void) {
+export function useAddTicketNote(ticketId: string) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ ticketId, content }: { ticketId: string; content: string }) => {
+    mutationFn: async ({ content }: { content: string }) => {
       const response = await apiClient.post<GraphQlResponse<{ addTicketNote: NotePayload }>>(API_ENDPOINTS.GRAPHQL, {
         query: ADD_TICKET_NOTE_MUTATION,
         variables: { input: { ticketId, content } },
@@ -55,8 +57,8 @@ export function useAddTicketNote(onSuccess?: () => void) {
       }
       return data.addTicketNote.note;
     },
-    onMutate: async ({ ticketId, content }) => {
-      const previousNotes = getDialogState().currentDialog?.notes || [];
+    onMutate: async ({ content }) => {
+      const previousNotes = getNotesFromCache(queryClient, ticketId);
       const currentUser = useAuthStore.getState().user;
       const optimisticNote = {
         id: `optimistic-${Date.now()}`,
@@ -70,14 +72,16 @@ export function useAddTicketNote(onSuccess?: () => void) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      setDialogNotes([...previousNotes, optimisticNote]);
+      setNotesInCache(queryClient, ticketId, notes => [...notes, optimisticNote]);
       return { previousNotes };
     },
     onSuccess: () => {
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
     },
     onError: (err, _vars, context) => {
-      if (context?.previousNotes) setDialogNotes(context.previousNotes);
+      if (context?.previousNotes) {
+        setNotesInCache(queryClient, ticketId, () => context.previousNotes);
+      }
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to add note',
@@ -87,8 +91,9 @@ export function useAddTicketNote(onSuccess?: () => void) {
   });
 }
 
-export function useUpdateTicketNote(onSuccess?: () => void) {
+export function useUpdateTicketNote(ticketId: string) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ id, content }: { id: string; content: string }) => {
@@ -103,18 +108,19 @@ export function useUpdateTicketNote(onSuccess?: () => void) {
       return data.updateTicketNote.note;
     },
     onMutate: async ({ id, content }) => {
-      const previousNotes = getDialogState().currentDialog?.notes || [];
-      const updatedNotes = previousNotes.map(note =>
-        note.id === id ? { ...note, content, updatedAt: new Date().toISOString() } : note,
+      const previousNotes = getNotesFromCache(queryClient, ticketId);
+      setNotesInCache(queryClient, ticketId, notes =>
+        notes.map(note => (note.id === id ? { ...note, content, updatedAt: new Date().toISOString() } : note)),
       );
-      setDialogNotes(updatedNotes);
       return { previousNotes };
     },
     onSuccess: () => {
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
     },
     onError: (err, _vars, context) => {
-      if (context?.previousNotes) setDialogNotes(context.previousNotes);
+      if (context?.previousNotes) {
+        setNotesInCache(queryClient, ticketId, () => context.previousNotes);
+      }
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to update note',
@@ -124,8 +130,9 @@ export function useUpdateTicketNote(onSuccess?: () => void) {
   });
 }
 
-export function useDeleteTicketNote(onSuccess?: () => void) {
+export function useDeleteTicketNote(ticketId: string) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -142,15 +149,17 @@ export function useDeleteTicketNote(onSuccess?: () => void) {
       }
     },
     onMutate: async id => {
-      const previousNotes = getDialogState().currentDialog?.notes || [];
-      setDialogNotes(previousNotes.filter(note => note.id !== id));
+      const previousNotes = getNotesFromCache(queryClient, ticketId);
+      setNotesInCache(queryClient, ticketId, notes => notes.filter(note => note.id !== id));
       return { previousNotes };
     },
     onSuccess: () => {
-      onSuccess?.();
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
     },
     onError: (err, _vars, context) => {
-      if (context?.previousNotes) setDialogNotes(context.previousNotes);
+      if (context?.previousNotes) {
+        setNotesInCache(queryClient, ticketId, () => context.previousNotes);
+      }
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to delete note',

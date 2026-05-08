@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { applyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
 import { useCreateArticle } from './use-create-article';
@@ -61,13 +62,20 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     return initialArticle.tags.map(t => ({ id: t.id, key: t.key }));
   }, [initialArticle?.tags]);
 
+  const assignedItems = useAssignedItems({
+    itemId: articleId,
+    itemType: 'KNOWLEDGE_ARTICLE',
+    enabled: isEditMode,
+  });
+
   useEffect(() => {
-    if (isEditMode && initialArticle && initialArticle.type === 'ARTICLE') {
+    if (isEditMode && initialArticle && initialArticle.type === 'ARTICLE' && assignedItems.isReady) {
       form.reset({
         title: initialArticle.name,
         folderId: initialArticle.parentId ?? null,
         tags: initialTagRefs.map(t => t.key),
         body: initialArticle.content ?? '',
+        assignments: assignedItems.value,
       });
     } else if (!isEditMode) {
       form.reset({
@@ -75,7 +83,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
         folderId: initialFolderId ?? null,
       });
     }
-  }, [isEditMode, initialArticle, initialFolderId, initialTagRefs, form]);
+  }, [isEditMode, initialArticle, initialFolderId, initialTagRefs, form, assignedItems.isReady, assignedItems.value]);
 
   const resolveTagIds = useCallback(
     async (keys: ReadonlyArray<string>, availableTags: ReadonlyArray<ArticleTagRef>): Promise<string[]> => {
@@ -124,6 +132,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 }),
                 ...toAdd.map(tagId => addTag(articleId, tagId)),
                 ...toRemove.map(tagId => removeTag(articleId, tagId)),
+                applyAssignmentsDiff(articleId, 'KNOWLEDGE_ARTICLE', assignedItems.value, data.assignments ?? {}),
               ]);
 
               const currentStatus = (initialArticle.status ?? 'DRAFT') as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
@@ -168,6 +177,9 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 },
                 connections: [targetConnectionId],
               });
+              if (data.assignments && Object.keys(data.assignments).length > 0) {
+                await applyAssignmentsDiff(result.id, 'KNOWLEDGE_ARTICLE', {}, data.assignments);
+              }
               toast({ title: 'Success', description: 'Article created', variant: 'success' });
               router.push(`/knowledge-base/details/${result.id}`);
             }
@@ -192,6 +204,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     [
       addTag,
       articleId,
+      assignedItems.value,
       createArticle,
       form,
       initialArticle,

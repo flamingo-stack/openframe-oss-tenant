@@ -36,7 +36,7 @@ spec:
       - name: wait-for-redis
         image: redis:latest
         command: ['sh', '-c',
-          'until redis-cli -h authentik-redis-0.authentik-redis.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
+          'until redis-cli -h redis-authentik-headless.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
 
       containers:
       - name: server
@@ -140,7 +140,7 @@ spec:
       - name: wait-for-redis
         image: redis:latest
         command: ['sh', '-c',
-          'until redis-cli -h authentik-redis-0.authentik-redis.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
+          'until redis-cli -h redis-authentik-headless.integrated-tools.svc.cluster.local ping | grep -q PONG; do echo waiting for redis; sleep 2; done;']
 
       - name: wait-for-server
         image: {{ .Values.registerJob.image.registry }}/{{ .Values.registerJob.image.repository }}:{{ .Values.registerJob.image.tag }}

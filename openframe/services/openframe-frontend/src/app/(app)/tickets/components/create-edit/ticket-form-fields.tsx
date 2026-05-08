@@ -10,6 +10,7 @@ import {
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
+import { AssignmentsField } from '@/components/assignments';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
 import type { AssigneeOption } from '../../hooks/use-ticket-options';
@@ -190,6 +191,18 @@ export function TicketFormFields({
           }}
         />
       </div>
+
+      {/* <Controller
+        name="assignments"
+        control={control}
+        render={({ field }) => (
+          <AssignmentsField
+            value={field.value ?? {}}
+            onChange={field.onChange}
+            enabledTypes={['ORGANIZATION', 'DEVICE', 'KNOWLEDGE_ARTICLE']}
+          />
+        )}
+      /> */}
 
       {/* Labels / Tags */}
       <Controller
