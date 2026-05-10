@@ -28,7 +28,6 @@ impl ClientUpdateListener {
         Self { nats, update_service, config_service }
     }
 
-    /// Spawns the listener loop in a background task.
     pub async fn start(&self) -> tokio::task::JoinHandle<()> {
         let listener = self.clone();
         tokio::spawn(async move {
@@ -97,16 +96,12 @@ impl ClientUpdateListener {
             }
             Err(e) => {
                 error!("Update failed for v{}: {:#} — leaving unacked for redelivery", version, e);
-                // Do not ACK — NATS will redeliver after ack_wait expires
             }
         }
 
         Ok(())
     }
 
-    /// Creates or attaches to the durable consumer. Retries indefinitely with
-    /// exponential backoff — the updater must eventually get the consumer or
-    /// it cannot function.
     async fn acquire_consumer(
         &self,
         js: &jetstream::Context,

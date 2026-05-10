@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-/// Published to `machine.{id}.client-update-progress` at every phase transition.
-/// On success, also publish InstalledAgentMessage to `machine.{id}.installed-agent`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateProgressMessage {

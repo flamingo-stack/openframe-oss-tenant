@@ -34,11 +34,7 @@ impl ClientUpdateService {
         }
     }
 
-    /// Entry point called by the NATS listener for each incoming update message.
-    /// Returns Ok(()) whether the update succeeded or failed — errors are reported
-    /// via NATS progress messages and the caller should ACK the message accordingly.
     pub async fn process_update(&self, msg: ClientUpdateMessage) -> Result<()> {
-        // Prevent concurrent updates
         let mut guard = self.in_progress.lock().await;
         if *guard {
             warn!("Update already in progress, ignoring message for v{}", msg.version);
@@ -58,7 +54,6 @@ impl ClientUpdateService {
         let version = &msg.version;
         info!("Starting update to v{}", version);
 
-        // Validate semver before touching anything
         if semver::Version::parse(version.trim_start_matches('v')).is_err() {
             let reason = format!("Invalid version string: '{}'", version);
             error!("{}", reason);
@@ -68,7 +63,6 @@ impl ClientUpdateService {
             return Err(anyhow!(reason));
         }
 
-        // Find download config for this OS
         let config = self
             .download_service
             .find_for_current_os(&msg.download_configurations)
@@ -76,7 +70,6 @@ impl ClientUpdateService {
 
         let mut state = UpdaterState::new(version.clone());
 
-        // ── Downloading ───────────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::Downloading)?;
         self.progress_publisher.publish(&UpdaterPhase::Downloading, version).await;
 
@@ -90,7 +83,6 @@ impl ClientUpdateService {
             }
         };
 
-        // ── Verifying ─────────────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::Verifying)?;
         self.progress_publisher.publish(&UpdaterPhase::Verifying, version).await;
 
@@ -104,7 +96,6 @@ impl ClientUpdateService {
             return Err(anyhow!(reason));
         }
 
-        // Write new binary to a temp file next to the target
         let target = ServiceManagerService::client_binary_path();
         let temp_path = match atomic_replace::write_temp(&binary_bytes, &target) {
             Ok(p) => p,
@@ -118,7 +109,6 @@ impl ClientUpdateService {
         state.downloaded_binary_path = Some(temp_path.to_string_lossy().to_string());
         self.state_service.save(&state)?;
 
-        // ── StoppingService ───────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::StoppingService)?;
         self.progress_publisher.publish(&UpdaterPhase::StoppingService, version).await;
 
@@ -130,7 +120,6 @@ impl ClientUpdateService {
             return Err(anyhow!(reason));
         }
 
-        // ── ReplacingBinary ───────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::ReplacingBinary)?;
         self.progress_publisher.publish(&UpdaterPhase::ReplacingBinary, version).await;
 
@@ -139,7 +128,6 @@ impl ClientUpdateService {
             Err(e) => {
                 let reason = format!("Binary replacement failed: {:#}", e);
                 error!("{}", reason);
-                // Service is stopped — attempt to restart old binary (still at target if replace failed)
                 self.try_start_service(version, false).await;
                 self.fail(&mut state, version, &reason, true).await;
                 return Err(anyhow!(reason));
@@ -148,7 +136,6 @@ impl ClientUpdateService {
         state.backup_path = Some(backup_path.to_string_lossy().to_string());
         self.state_service.save(&state)?;
 
-        // ── StartingService ───────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::StartingService)?;
         self.progress_publisher.publish(&UpdaterPhase::StartingService, version).await;
 
@@ -158,7 +145,6 @@ impl ClientUpdateService {
             return self.rollback(&mut state, &target, &backup_path, version, &reason).await;
         }
 
-        // Wait for the service to initialize, then confirm it is running
         info!("Waiting {}s before verifying service state", SERVICE_START_VERIFY_WAIT_SECS);
         tokio::time::sleep(tokio::time::Duration::from_secs(SERVICE_START_VERIFY_WAIT_SECS)).await;
 
@@ -178,11 +164,9 @@ impl ClientUpdateService {
             }
         }
 
-        // ── Completed ─────────────────────────────────────────────────────
         self.state_service.transition(&mut state, UpdaterPhase::Completed)?;
         self.progress_publisher.publish_success(version).await;
 
-        // Clean up backup
         if let Err(e) = std::fs::remove_file(&backup_path) {
             warn!("Failed to remove backup file {}: {}", backup_path.display(), e);
         }
@@ -191,8 +175,6 @@ impl ClientUpdateService {
         info!("Update to v{} completed", version);
         Ok(())
     }
-
-    // ── rollback ──────────────────────────────────────────────────────────
 
     async fn rollback(
         &self,
@@ -214,7 +196,6 @@ impl ClientUpdateService {
             return Err(anyhow!(full_reason));
         }
 
-        // Restart the old binary
         self.try_start_service(version, true).await;
 
         self.state_service.transition(state, UpdaterPhase::RolledBack)?;

@@ -7,10 +7,8 @@ use tokio::sync::RwLock;
 use crate::models::AgentConfiguration;
 use crate::platform::DirectoryManager;
 
-/// Read-only view of `agent_config.json` (owned by the main client).
-/// Credentials (machine_id, client_id, client_secret) are read from disk.
-/// Access and refresh tokens are held in-memory only — the updater never
-/// writes to the shared agent_config.json to avoid racing the main client.
+// Credentials read from agent_config.json (owned by the main client, never written here).
+// Tokens are in-memory only — avoids racing the main client on the shared file.
 #[derive(Clone)]
 pub struct AgentConfigurationService {
     config_file_path: PathBuf,
@@ -42,17 +40,14 @@ impl AgentConfigurationService {
         Ok((cfg.client_id, cfg.client_secret))
     }
 
-    /// Returns the in-memory access token set by the last successful authentication.
     pub async fn get_access_token(&self) -> Result<String> {
         Ok(self.access_token.read().await.clone())
     }
 
-    /// Returns the in-memory refresh token set by the last successful authentication.
     pub async fn get_refresh_token(&self) -> Result<String> {
         Ok(self.refresh_token.read().await.clone())
     }
 
-    /// Stores new tokens in memory. Never touches agent_config.json.
     pub async fn update_tokens(&self, access_token: String, refresh_token: String) -> Result<()> {
         *self.access_token.write().await = access_token;
         *self.refresh_token.write().await = refresh_token;

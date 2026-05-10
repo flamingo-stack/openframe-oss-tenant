@@ -4,28 +4,17 @@ use tracing::{info, warn};
 
 use crate::config::updater_config::{REPLACE_MAX_RETRIES, REPLACE_RETRY_DELAY_MS};
 
-/// Atomically replaces `target` with `new_binary`.
-///
-/// Steps:
-///   1. Rename `target` → `<target>.backup.<timestamp>` (keeps old binary safe)
-///   2. Rename `new_binary` → `target`
-///
+/// Renames `target` to a timestamped backup, then renames `new_binary` to `target`.
 /// Returns the backup path so the caller can restore on failure.
-///
-/// On Windows, the rename in step 1 is used as a lock probe — if AV or SCM still
-/// holds a handle the rename fails and we retry with backoff.
 pub fn replace(target: &Path, new_binary: &Path) -> Result<PathBuf> {
     let backup_path = backup_path_for(target);
 
-    // Step 1: move current binary to backup location (probe + backup in one operation)
     rename_with_retry(target, &backup_path)
         .with_context(|| format!("Failed to move {} to backup", target.display()))?;
 
     info!("Backed up current binary: {}", backup_path.display());
 
-    // Step 2: move new binary into place
     if let Err(e) = std::fs::rename(new_binary, target) {
-        // Activation failed — attempt to restore backup before returning the error
         warn!("Failed to activate new binary, restoring backup: {}", e);
         if let Err(restore_err) = std::fs::rename(&backup_path, target) {
             warn!("Restore also failed: {}", restore_err);
@@ -37,9 +26,7 @@ pub fn replace(target: &Path, new_binary: &Path) -> Result<PathBuf> {
     Ok(backup_path)
 }
 
-/// Restores `backup` back to `target`. Used in the rollback path.
 pub fn restore(backup: &Path, target: &Path) -> Result<()> {
-    // If the failed new binary is still at target, remove it first
     if target.exists() {
         std::fs::remove_file(target)
             .with_context(|| format!("Failed to remove failed binary at {}", target.display()))?;
@@ -52,8 +39,7 @@ pub fn restore(backup: &Path, target: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Writes binary bytes to a temporary file in the same directory as `target`.
-/// Returns the temp file path. The caller is responsible for cleaning up on failure.
+/// Writes bytes to a temp file in the same directory as `target` (same filesystem → atomic rename).
 pub fn write_temp(bytes: &[u8], target: &Path) -> Result<PathBuf> {
     let dir = target
         .parent()
@@ -89,9 +75,7 @@ fn backup_path_for(target: &Path) -> PathBuf {
     target.parent().unwrap_or(Path::new(".")).join(filename)
 }
 
-/// On Windows, AV / Defender / SCM can hold a file handle briefly after the
-/// service is reported stopped. We use rename as a probe: if it succeeds the
-/// file is free; otherwise we wait and retry.
+// On Windows, AV/SCM can hold the handle briefly after service stop — rename is the probe.
 fn rename_with_retry(from: &Path, to: &Path) -> Result<()> {
     for attempt in 1..=REPLACE_MAX_RETRIES {
         match std::fs::rename(from, to) {

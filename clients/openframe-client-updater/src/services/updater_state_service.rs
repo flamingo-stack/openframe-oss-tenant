@@ -18,7 +18,6 @@ impl UpdaterStateService {
         }
     }
 
-    /// Loads the persisted state. Returns `None` if no state file exists (clean start).
     pub fn load(&self) -> Result<Option<UpdaterState>> {
         if !self.state_file_path.exists() {
             return Ok(None);
@@ -39,7 +38,6 @@ impl UpdaterStateService {
         Ok(Some(state))
     }
 
-    /// Persists the current state to disk. Called after every phase transition.
     pub fn save(&self, state: &UpdaterState) -> Result<()> {
         if let Some(parent) = self.state_file_path.parent() {
             fs::create_dir_all(parent)
@@ -56,7 +54,6 @@ impl UpdaterStateService {
         Ok(())
     }
 
-    /// Removes the state file. Called after a terminal phase (Completed, Failed, RolledBack).
     pub fn clear(&self) -> Result<()> {
         if self.state_file_path.exists() {
             fs::remove_file(&self.state_file_path)
@@ -66,8 +63,7 @@ impl UpdaterStateService {
         Ok(())
     }
 
-    /// Removes the legacy `update_state.json` written by the main client's old update flow,
-    /// if it exists. Called once on startup after Phase 7 removes the client's update logic.
+    // Removes update_state.json left by the old client update flow after Phase 7 migration.
     pub fn cleanup_legacy_state(&self) {
         let legacy_path = self.state_file_path
             .parent()
@@ -88,7 +84,6 @@ impl UpdaterStateService {
         &self.state_file_path
     }
 
-    /// Convenience: transition the phase, persist, and return the updated state.
     pub fn transition(&self, state: &mut UpdaterState, phase: UpdaterPhase) -> Result<()> {
         state.phase = phase;
         self.save(state)

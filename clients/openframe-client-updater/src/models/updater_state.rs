@@ -37,9 +37,7 @@ impl std::fmt::Display for UpdaterPhase {
 pub struct UpdaterState {
     pub target_version: String,
     pub phase: UpdaterPhase,
-    /// Path to the backup of the old binary (exists from StoppingService onward)
     pub backup_path: Option<String>,
-    /// Path to the staged new binary download (exists from Downloading onward)
     pub downloaded_binary_path: Option<String>,
     pub started_at: String,
     pub failure_reason: Option<String>,

@@ -4,9 +4,7 @@ use anyhow::Result;
 use crate::platform::DirectoryManager;
 use crate::services::EncryptionService;
 
-/// Writes the updater's access token to `shared_token_updater.enc`.
-/// Uses a separate file from the main client's `shared_token.enc` to avoid
-/// race conditions between the two concurrently running processes.
+// Separate file from the main client's shared_token.enc — avoids concurrent write races.
 #[derive(Clone)]
 pub struct SharedTokenService {
     dir_manager: DirectoryManager,

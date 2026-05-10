@@ -25,7 +25,6 @@ impl UpdaterOrchestrator {
     }
 
     pub async fn start(&self) -> Result<()> {
-        // ── Build all services ─────────────────────────────────────────────
         let initial_config_service = InitialConfigurationService::new(&self.dir_manager)
             .context("Failed to init initial configuration service")?;
 
@@ -71,7 +70,6 @@ impl UpdaterOrchestrator {
 
         let state_service = UpdaterStateService::new(&self.dir_manager);
 
-        // ── Authenticate ───────────────────────────────────────────────────
         info!("Authenticating");
         auth_service
             .authenticate_initial()
@@ -79,7 +77,6 @@ impl UpdaterOrchestrator {
             .context("Initial authentication failed")?;
         info!("Authentication successful");
 
-        // ── Connect to NATS ────────────────────────────────────────────────
         nats_manager.connect().await.context("Failed to connect to NATS")?;
         info!("NATS connected");
 
@@ -93,11 +90,9 @@ impl UpdaterOrchestrator {
         let progress_publisher =
             UpdateProgressPublisher::new(nats_publisher, machine_id.clone());
 
-        // ── Crash recovery ─────────────────────────────────────────────────
         state_service.cleanup_legacy_state();
         self.recover_from_crash(&state_service, &progress_publisher).await?;
 
-        // ── Build update pipeline ──────────────────────────────────────────
         let download_service = GithubDownloadService::new(http_client);
 
         let update_service = ClientUpdateService::new(
@@ -112,15 +107,12 @@ impl UpdaterOrchestrator {
             agent_config_service,
         );
 
-        // ── Run forever ────────────────────────────────────────────────────
         info!("Updater ready — listening for update commands");
         let handle = listener.start().await;
         handle.await.ok();
 
         Ok(())
     }
-
-    // ── Crash recovery ─────────────────────────────────────────────────────
 
     async fn recover_from_crash(
         &self,
@@ -142,7 +134,6 @@ impl UpdaterOrchestrator {
         let target = ServiceManagerService::client_binary_path();
 
         match state.phase {
-            // ── Never touched the service — just clean up ──────────────────
             UpdaterPhase::Downloading | UpdaterPhase::Verifying | UpdaterPhase::Idle => {
                 if let Some(path) = &state.downloaded_binary_path {
                     let p = PathBuf::from(path);
@@ -163,13 +154,11 @@ impl UpdaterOrchestrator {
                 state_service.clear()?;
             }
 
-            // ── Service was stopped, binary may or may not be replaced ──────
             UpdaterPhase::StoppingService | UpdaterPhase::ReplacingBinary => {
                 self.restore_and_start(&state.backup_path, &target, version, publisher).await;
                 state_service.clear()?;
             }
 
-            // ── New binary was written, service may or may not have started ─
             UpdaterPhase::StartingService => {
                 match ServiceManagerService::is_running(CLIENT_SERVICE_FULL_NAME) {
                     Ok(true) => {
@@ -177,7 +166,6 @@ impl UpdaterOrchestrator {
                         publisher.publish_success(version).await;
                     }
                     _ => {
-                        // Try starting it once
                         info!("Crash recovery: service not running — attempting start");
                         match ServiceManagerService::start(CLIENT_SERVICE_FULL_NAME) {
                             Ok(()) => {
@@ -218,7 +206,6 @@ impl UpdaterOrchestrator {
                 state_service.clear()?;
             }
 
-            // ── Terminal states — just clear ───────────────────────────────
             UpdaterPhase::Completed
             | UpdaterPhase::Failed
             | UpdaterPhase::RollingBack
@@ -262,7 +249,6 @@ impl UpdaterOrchestrator {
             }
         }
 
-        // No backup available — just report failure
         publisher
             .publish_failure(
                 &UpdaterPhase::Failed,

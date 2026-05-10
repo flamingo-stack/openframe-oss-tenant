@@ -4,11 +4,6 @@ use tracing::{info, warn};
 use crate::models::{InstalledAgentMessage, UpdateProgressMessage, UpdaterPhase};
 use crate::services::NatsMessagePublisher;
 
-/// Publishes update phase transitions to the backend.
-///
-/// Two NATS subjects:
-/// - `machine.{id}.client-update-progress` — every phase transition (new, for granular tracking)
-/// - `machine.{id}.installed-agent`        — on success only (backward compat with existing backend)
 #[derive(Clone)]
 pub struct UpdateProgressPublisher {
     nats_publisher: NatsMessagePublisher,
@@ -20,8 +15,7 @@ impl UpdateProgressPublisher {
         Self { nats_publisher, machine_id }
     }
 
-    /// Publishes a phase transition. Logs and swallows errors so a publish failure
-    /// never aborts the update itself.
+    // Errors are swallowed — a NATS hiccup must never abort the binary swap.
     pub async fn publish(&self, phase: &UpdaterPhase, version: &str) {
         let subject = self.progress_subject();
         let msg = UpdateProgressMessage::new(phase.to_string(), version);
@@ -32,7 +26,6 @@ impl UpdateProgressPublisher {
         }
     }
 
-    /// Publishes a failure with reason and rollback status.
     pub async fn publish_failure(
         &self,
         phase: &UpdaterPhase,
@@ -55,9 +48,7 @@ impl UpdateProgressPublisher {
         }
     }
 
-    /// Publishes success: sends Completed to the progress subject, then
-    /// InstalledAgentMessage to `machine.{id}.installed-agent` for backward
-    /// compatibility with the backend's existing installed-agent handler.
+    // Also publishes installed-agent for backward compat with the existing backend handler.
     pub async fn publish_success(&self, version: &str) {
         self.publish(&UpdaterPhase::Completed, version).await;
 

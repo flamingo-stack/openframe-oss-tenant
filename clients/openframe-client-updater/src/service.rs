@@ -6,6 +6,7 @@ use tracing::{info, warn};
 
 use crate::platform::permissions::PermissionUtils;
 use crate::platform::DirectoryManager;
+use crate::service_adapter::{CrossPlatformServiceManager, RecoveryConfig, ServiceConfig};
 
 #[cfg(windows)]
 use windows_service::{
@@ -192,13 +193,46 @@ impl UpdaterService {
             info!("Binary installed to: {}", install_path.display());
         }
 
-        // Phase 6 will wire in CrossPlatformServiceManager here.
-        // For now, emit a clear message that the binary is placed correctly.
-        info!(
-            "Updater binary ready at {}. OS service registration will be completed in Phase 6.",
-            install_path.display()
-        );
+        info!("Updater binary ready at {}", install_path.display());
 
+        let (user_name, group_name) = match std::env::consts::OS {
+            "windows" => (Some("LocalSystem".to_string()), None),
+            "macos"   => (Some("root".to_string()), Some("wheel".to_string())),
+            _         => (Some("root".to_string()), Some("root".to_string())),
+        };
+
+        let config = ServiceConfig {
+            name: SERVICE_NAME.to_string(),
+            display_name: DISPLAY_NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            exec_path: install_path,
+            run_at_load: true,
+            keep_alive: true,
+            restart_on_crash: true,
+            restart_throttle_seconds: 10,
+            working_directory: Some(dir_manager.app_support_dir().to_path_buf()),
+            stdout_path: Some(dir_manager.logs_dir().join("updater_output.log")),
+            stderr_path: Some(dir_manager.logs_dir().join("updater_error.log")),
+            user_name,
+            group_name,
+            file_limit: Some(4096),
+            exit_timeout_seconds: Some(10),
+            is_interactive: true,
+            recovery: Some(RecoveryConfig {
+                first_restart_secs: FIRST_RESTART_SERVICE_SECS,
+                second_restart_secs: SECOND_RESTART_SERVICE_SECS,
+                subsequent_restart_secs: SUBSEQUENT_RESTART_SERVICE_SECS,
+                reset_period_days: RECOVERY_RESET_PERIOD_DAYS,
+                enable_on_non_crash_failures: true,
+            }),
+            ..ServiceConfig::default()
+        };
+
+        CrossPlatformServiceManager::with_config(config)
+            .install()
+            .context("Failed to register OS service")?;
+
+        info!("OpenFrame Client Updater service installed successfully");
         Ok(())
     }
 
@@ -206,9 +240,23 @@ impl UpdaterService {
         if !PermissionUtils::is_admin() {
             return Err(anyhow::anyhow!("Admin privileges required for uninstallation"));
         }
+
         info!("Uninstalling OpenFrame Client Updater service");
-        // Phase 6: call CrossPlatformServiceManager::uninstall()
-        warn!("Full OS service unregistration will be implemented in Phase 6");
+
+        let install_path = Self::get_install_location();
+        let config = ServiceConfig {
+            name: SERVICE_NAME.to_string(),
+            display_name: DISPLAY_NAME.to_string(),
+            description: DESCRIPTION.to_string(),
+            exec_path: install_path,
+            ..ServiceConfig::default()
+        };
+
+        CrossPlatformServiceManager::with_config(config)
+            .uninstall()
+            .context("Failed to unregister OS service")?;
+
+        info!("OpenFrame Client Updater service uninstalled");
         Ok(())
     }
 
