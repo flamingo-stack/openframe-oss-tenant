@@ -186,8 +186,15 @@ pub fn run() {
             }
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_i, &quit_i])?;
+
+            #[cfg(target_os = "macos")]
+            let menu = Menu::with_items(app, &[&show_i])?;
+
+            #[cfg(not(target_os = "macos"))]
+            let menu = {
+                let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+                Menu::with_items(app, &[&show_i, &quit_i])?
+            };
             
             let icons_dir = app.path().resource_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from(""))
