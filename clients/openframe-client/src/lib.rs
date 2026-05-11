@@ -139,6 +139,7 @@ pub struct Client {
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
+    installed_tools_service: InstalledToolsService,
     initial_key_service: Arc<InitialKeyService>,
 }
 
@@ -408,6 +409,7 @@ impl Client {
             update_handler_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
+            installed_tools_service,
             initial_key_service,
         })
     }
@@ -420,6 +422,7 @@ impl Client {
         LogStreamingRunManager::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
+            &self.installed_tools_service,
             &self.directory_manager,
         )?.start().await?;
         info!("NATS log streaming initialized successfully");
