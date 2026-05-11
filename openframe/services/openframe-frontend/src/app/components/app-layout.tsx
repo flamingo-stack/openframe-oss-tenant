@@ -9,6 +9,7 @@ import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { performLogout } from '@/app/(auth)/auth/utils/auth-actions';
+import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
@@ -66,9 +67,11 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl), [userImageUrl]);
 
+  const notificationsEnabled = featureFlags.notifications.enabled();
+
   const headerProps = useMemo(
     () => ({
-      showNotifications: false,
+      showNotifications: notificationsEnabled,
       showUser: true,
       userName: displayName,
       userEmail,
@@ -76,7 +79,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       onProfile: handleProfile,
       onLogout: handleLogout,
     }),
-    [displayName, userEmail, avatarUrl, handleProfile, handleLogout],
+    [notificationsEnabled, displayName, userEmail, avatarUrl, handleProfile, handleLogout],
   );
 
   const mobileBurgerMenuProps = useMemo(

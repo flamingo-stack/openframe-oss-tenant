@@ -2,30 +2,14 @@
 
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback } from 'react';
-import { TicketsTabNavigation } from './tabs';
-import { TicketsTabContent } from './tabs/tickets-tab-content';
+import { CurrentTickets } from './tickets-table';
 
 export function TicketsView() {
-  const { params, setParam, setParams } = useApiParams({
-    tab: { type: 'string', default: 'current' },
+  const { params, setParam } = useApiParams({
     status: { type: 'array', default: [] },
   });
 
-  const handleTabChange = useCallback(
-    (tab: string) => {
-      setParams({ tab, status: [] });
-    },
-    [setParams],
-  );
+  const handleStatusFilterChange = useCallback((status: string[]) => setParam('status', status), [setParam]);
 
-  return (
-    <div className="flex flex-col w-full -mt-4">
-      <TicketsTabNavigation activeTab={params.tab} onTabChange={handleTabChange} />
-      <TicketsTabContent
-        activeTab={params.tab}
-        statusFilters={params.status}
-        onStatusFilterChange={status => setParam('status', status)}
-      />
-    </div>
-  );
+  return <CurrentTickets statusFilters={params.status} onStatusFilterChange={handleStatusFilterChange} />;
 }

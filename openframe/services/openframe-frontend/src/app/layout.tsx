@@ -3,6 +3,7 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Suspense } from 'react';
 import './globals.css';
 import '@flamingo-stack/openframe-frontend-core/styles';
+import { NotificationsProvider } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { DevTicketObserver } from '@/app/(auth)/auth/components/dev-ticket-observer';
 import { azeretMono, dmSans } from '@/lib/fonts';
 import { Toaster } from '@/lib/openframe-core-ui';
@@ -99,13 +100,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <GraphQlIntrospectionInitializer />
               </Suspense>
             )}
-            <FeatureFlagsGate>
-              <RouteGuard>
-                <div className="relative flex min-h-screen flex-col">
-                  <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
-                </div>
-              </RouteGuard>
-            </FeatureFlagsGate>
+            <NotificationsProvider>
+              <FeatureFlagsGate>
+                <RouteGuard>
+                  <div className="relative flex min-h-screen flex-col">
+                    <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
+                  </div>
+                </RouteGuard>
+              </FeatureFlagsGate>
+            </NotificationsProvider>
           </QueryClientProvider>
         </RelayProvider>
         <Toaster />

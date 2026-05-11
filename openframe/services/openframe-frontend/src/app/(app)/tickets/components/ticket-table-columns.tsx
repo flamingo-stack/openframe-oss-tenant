@@ -2,9 +2,11 @@ import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/compon
 import {
   Button,
   type ColumnDef,
+  type ColumnFiltersState,
   DataTable,
   DeviceCardCompact,
   multiSelectFilterFn,
+  type OnChangeFn,
   type Row,
   SquareAvatar,
   TicketStatusTag,
@@ -42,7 +44,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
         </div>
       );
     },
-    meta: { width: 'w-[70%] md:flex-1 min-w-0' },
+    meta: { width: 'w-[60%] md:flex-1 min-w-0' },
   };
 
   const sourceColumn: ColumnDef<Dialog> = {
@@ -138,6 +140,8 @@ interface TicketTableBodyProps {
   footerSlot?: ReactNode;
   isArchived?: boolean;
   actionsColumn?: ColumnDef<Dialog>;
+  columnFilters?: ColumnFiltersState;
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
 }
 
 export function TicketTableBody({
@@ -149,6 +153,8 @@ export function TicketTableBody({
   footerSlot,
   isArchived,
   actionsColumn,
+  columnFilters,
+  onColumnFiltersChange,
 }: TicketTableBodyProps) {
   const columns = useMemo<ColumnDef<Dialog>[]>(() => {
     const base = getTicketTableColumns({ isArchived });
@@ -160,6 +166,8 @@ export function TicketTableBody({
     columns,
     getRowId: row => String(row.id),
     enableSorting: false,
+    state: columnFilters !== undefined ? { columnFilters } : undefined,
+    onColumnFiltersChange,
   });
 
   return (

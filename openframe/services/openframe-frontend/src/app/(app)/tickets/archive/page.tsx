@@ -2,13 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
-import { TicketsView } from './components/tickets-view';
+import { ArchivedTickets } from '../components/tickets-table';
 
-export default function Tickets() {
+export default function TicketsArchive() {
   const router = useRouter();
 
   useEffect(() => {
@@ -18,10 +17,11 @@ export default function Tickets() {
     }
   }, [router]);
 
-  // Don't render anything if not in saas-tenant mode
+  const handleBack = useCallback(() => router.push('/tickets'), [router]);
+
   if (!isSaasTenantMode()) {
     return null;
   }
 
-  return <TicketsView />;
+  return <ArchivedTickets backButton={{ label: 'Back to Tickets', onClick: handleBack }} />;
 }
