@@ -1,16 +1,16 @@
 'use client';
 
 import { PageLayout, Skeleton, SkeletonButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 
 export function SubscriptionSettingsSkeleton() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings/billing-usage');
 
   return (
     <PageLayout
       title="Subscription Settings"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Billing & Usage', onClick: () => router.push('/settings/billing-usage') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <Skeleton className="h-16 w-full rounded-md" />
 

@@ -279,7 +279,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       title={organizationId ? 'Edit Organization' : 'New Organization'}
       backButton={{
-        label: organizationId ? 'Back to Organization' : 'Back to Organizations',
+        label: organizationId ? 'Back' : 'Back',
         onClick: () => router.push(organizationId ? `/organizations/details/${organizationId}` : '/organizations'),
       }}
       actions={[

@@ -3,9 +3,10 @@
 import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { TerminalSquare } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
 
@@ -21,7 +22,6 @@ interface RemoteShellPageProps {
 }
 
 export default function RemoteShellPage({ params }: RemoteShellPageProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const toastRef = useRef(toast);
@@ -31,6 +31,8 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
+  const safeBackToDevice = useSafeBack(`/devices/details/${deviceId}`);
+  const safeBackToDevices = useSafeBack('/devices');
 
   const shellTypeParam = searchParams.get('shellType');
   const shellType = useMemo<'cmd' | 'powershell'>(() => {
@@ -209,7 +211,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
 
   const handleBack = () => {
     tunnelRef.current?.stop();
-    router.push(`/devices/details/${deviceId}`);
+    safeBackToDevice();
   };
 
   const statusText = state === 3 ? 'Connected' : state === 2 ? 'Open' : state === 1 ? 'Connecting' : 'Idle';
@@ -263,7 +265,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
     return (
       <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
-        <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
+        <Button onClick={safeBackToDevices}>Back</Button>
       </div>
     );
   }
@@ -276,7 +278,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
           Error: MeshCentral Agent ID not available for this device
         </div>
         <p className="text-ods-text-secondary">Remote shell requires MeshCentral agent to be connected.</p>
-        <Button onClick={() => router.push(`/devices/details/${deviceId}`)}>Back to Device</Button>
+        <Button onClick={safeBackToDevice}>Back</Button>
       </div>
     );
   }
@@ -287,7 +289,7 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
       className="p-4 md:p-6 h-full"
       contentClassName="flex flex-col"
       backButton={{
-        label: 'Back to Device',
+        label: 'Back',
         onClick: handleBack,
       }}
     >

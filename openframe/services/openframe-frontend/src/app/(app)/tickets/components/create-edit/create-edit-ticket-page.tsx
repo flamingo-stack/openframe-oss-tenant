@@ -1,13 +1,13 @@
 'use client';
 
 import { PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useCreateTicketForm } from '../../hooks/use-create-ticket-form';
 import { TicketFormFields } from './ticket-form-fields';
 
 export function CreateEditTicketPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const ticketId = searchParams.get('edit');
 
@@ -16,12 +16,12 @@ export function CreateEditTicketPage() {
       ticketId,
     });
 
+  const backToTicket = useSafeBack(`/tickets/dialog?id=${ticketId ?? ''}`);
+  const backToTickets = useSafeBack('/tickets');
   const backButton = useMemo(
     () =>
-      isEditMode && ticketId
-        ? { label: 'Back to Ticket', onClick: () => router.push(`/tickets/dialog?id=${ticketId}`) }
-        : { label: 'Back to Tickets', onClick: () => router.push('/tickets') },
-    [router, isEditMode, ticketId],
+      isEditMode && ticketId ? { label: 'Back', onClick: backToTicket } : { label: 'Back', onClick: backToTickets },
+    [isEditMode, ticketId, backToTicket, backToTickets],
   );
 
   const actions = useMemo(

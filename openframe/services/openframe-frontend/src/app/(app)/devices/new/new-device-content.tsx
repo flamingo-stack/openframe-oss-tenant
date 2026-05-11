@@ -8,7 +8,6 @@ import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { graphql, useLazyLoadQuery } from 'react-relay';
@@ -18,6 +17,7 @@ import { OrgAvatar } from '@/app/components/shared';
 import { OsPlatformSelector } from '@/app/components/shared/os-platform-selector';
 import { isValidTag, type TagEntryWithId, TagsEditor } from '@/app/components/shared/tags';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { AntivirusWarning } from '../components/antivirus-warning';
 import { useInstallCommand } from '../hooks/use-install-command';
@@ -48,7 +48,7 @@ const newDeviceSchema = z.object({
 type NewDeviceFormValues = z.infer<typeof newDeviceSchema>;
 
 export function NewDeviceContent() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/devices');
   const { toast } = useToast();
 
   // Relay query for organizations
@@ -227,7 +227,7 @@ export function NewDeviceContent() {
   return (
     <DetailPageContainer
       title="New Device"
-      backButton={{ label: 'Back to Devices', onClick: () => router.push('/devices') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       padding="none"
       className="p-[var(--spacing-system-l)]"
     >

@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__generated__/billingUsageViewQuery.graphql';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDate } from '@/lib/format-date';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
@@ -61,6 +62,7 @@ export function BillingUsageView() {
 
 function BillingUsageContent() {
   const router = useRouter();
+  const handleBack = useSafeBack('/settings');
   const data = useLazyLoadQuery<BillingUsageViewQueryType>(
     billingUsageViewQuery,
     {},
@@ -220,7 +222,7 @@ function BillingUsageContent() {
     <PageLayout
       title="Billing & Usage"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actionsVariant={menuActions.length > 0 ? 'menu-primary' : 'primary-buttons'}
       actions={[primaryAction]}
       menuActions={menuActions}

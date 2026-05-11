@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -125,13 +126,9 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     }
   }, [policyDetails, isExistingPolicy, reset]);
 
-  const handleBack = useCallback(() => {
-    if (isExistingPolicy && numericId) {
-      router.push(`/monitoring/policy/${numericId}`);
-    } else {
-      router.push('/monitoring?tab=policies');
-    }
-  }, [isExistingPolicy, numericId, router]);
+  const handleBack = useSafeBack(
+    isExistingPolicy && numericId ? `/monitoring/policy/${numericId}` : '/monitoring?tab=policies',
+  );
 
   const onSubmit = useCallback(
     (data: PolicyFormData) => {
@@ -230,7 +227,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
     <FormPageContainer
       title={isExistingPolicy && policyDetails ? policyDetails.name : 'New Policy'}
       backButton={{
-        label: 'Back to Policies',
+        label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}

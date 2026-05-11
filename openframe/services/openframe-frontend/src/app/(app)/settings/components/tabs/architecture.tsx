@@ -3,8 +3,8 @@
 import { ListPageContainer, ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useIntegratedTools } from '../../hooks/use-integrated-tools';
 
 interface ArchitectureTabProps {
@@ -12,7 +12,7 @@ interface ArchitectureTabProps {
 }
 
 export function ArchitectureTab({ title = 'Architecture Overview' }: ArchitectureTabProps) {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
   const { tools, isLoading, fetchIntegratedTools } = useIntegratedTools();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -55,7 +55,7 @@ export function ArchitectureTab({ title = 'Architecture Overview' }: Architectur
       background="default"
       padding="none"
       className="p-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <div>
         <Input

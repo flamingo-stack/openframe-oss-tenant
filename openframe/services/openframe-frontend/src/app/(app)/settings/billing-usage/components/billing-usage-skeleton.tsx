@@ -1,16 +1,16 @@
 'use client';
 
 import { PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 
 export function BillingUsageSkeleton() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
 
   return (
     <PageLayout
       title="Billing & Usage"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Skeleton className="h-24 w-full rounded-md" />

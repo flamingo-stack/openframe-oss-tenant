@@ -2,11 +2,11 @@
 
 import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
 import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
-import { useRouter } from 'next/navigation';
 import { use } from 'react';
 import { FileManagerContainer } from '@/app/(app)/devices/details/[deviceId]/file-manager/components/file-manager-container';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-utils';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 
 const PAGE_PADDING = 'pt-4 px-4 md:pt-6 md:px-6';
 
@@ -17,16 +17,16 @@ interface FileManagerPageProps {
 }
 
 export default function FileManagerPage({ params }: FileManagerPageProps) {
-  const router = useRouter();
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
+  const handleBack = useSafeBack(`/devices/details/${deviceId}`);
 
   const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId, { polling: false });
 
   const meshcentralAgentId = deviceDetails ? getMeshCentralAgentId(deviceDetails) : undefined;
 
   if (isLoading) {
-    return <FileManagerPageSkeleton onBack={() => router.push(`/devices/details/${deviceId}`)} />;
+    return <FileManagerPageSkeleton onBack={handleBack} />;
   }
 
   if (error) {
@@ -35,12 +35,12 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
         title="File Manager"
         className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
-        backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
+        backButton={{ label: 'Back', onClick: handleBack }}
         padding="none"
       >
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="text-ods-attention-red-error text-lg">Error: {error}</div>
-          <Button variant="outline" onClick={() => router.push(`/devices/details/${deviceId}`)}>
+          <Button variant="outline" onClick={handleBack}>
             Return to Device Details
           </Button>
         </div>
@@ -54,7 +54,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
         title="File Manager"
         className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
-        backButton={{ label: 'Back to Device', onClick: () => router.push(`/devices/details/${deviceId}`) }}
+        backButton={{ label: 'Back', onClick: handleBack }}
         padding="none"
       >
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
@@ -62,7 +62,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
             MeshCentral Agent ID is required for file manager functionality
           </div>
           <p className="text-ods-text-secondary">File manager requires MeshCentral agent to be connected.</p>
-          <Button variant="outline" onClick={() => router.push(`/devices/details/${deviceId}`)}>
+          <Button variant="outline" onClick={handleBack}>
             Return to Device Details
           </Button>
         </div>
@@ -93,7 +93,7 @@ function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
       className={`${PAGE_PADDING} h-full`}
       contentClassName="flex flex-col min-h-0 overflow-hidden"
       backButton={{
-        label: 'Back to Device',
+        label: 'Back',
         onClick: onBack,
       }}
       padding="none"

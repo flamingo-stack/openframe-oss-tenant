@@ -2,13 +2,14 @@
 
 import { PageLayout, SearchInput } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { useState } from 'react';
 import { ArchivedArticlesTable } from '@/app/(app)/knowledge-base/components/knowledge-base-table';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 
 export default function ArchivePage() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/knowledge-base');
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
@@ -19,7 +20,7 @@ export default function ArchivePage() {
   return (
     <PageLayout
       title="Archived Articles"
-      backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <SearchInput placeholder="Search archived articles" value={search} onChange={setSearch} />

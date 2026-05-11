@@ -6,6 +6,7 @@ import { AuthSignupSection } from '@/app/(auth)/auth/components/signup-section';
 import { useAuth } from '@/app/(auth)/auth/hooks/use-auth';
 import { AuthLayout } from '@/app/(auth)/auth/layouts';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { isAuthOnlyMode } from '@/lib/app-mode';
 
 export default function SignupPage() {
@@ -53,9 +54,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleBack = () => {
-    router.push('/auth/');
-  };
+  const handleBack = useSafeBack('/auth/');
 
   return (
     <AuthLayout>

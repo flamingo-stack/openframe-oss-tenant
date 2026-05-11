@@ -27,6 +27,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
@@ -139,9 +140,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     [normalizedDevice],
   );
 
-  const handleBack = () => {
-    router.push('/devices');
-  };
+  const handleBack = useSafeBack('/devices');
 
   const {
     openArchive,
@@ -309,7 +308,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'
       }
       backButton={{
-        label: 'Back to Devices',
+        label: 'Back',
         onClick: handleBack,
       }}
       actionsVariant="menu-primary"

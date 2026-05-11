@@ -17,8 +17,8 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
 import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
@@ -62,7 +62,7 @@ export function SsoConfigurationTab() {
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig();
   const { fetchTenantDomain, updateSharedAutoProvision } = useTenantDomain();
   const { toast } = useToast();
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -276,7 +276,7 @@ export function SsoConfigurationTab() {
       background="default"
       padding="none"
       className="p-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <Input
         startAdornment={<SearchIcon />}

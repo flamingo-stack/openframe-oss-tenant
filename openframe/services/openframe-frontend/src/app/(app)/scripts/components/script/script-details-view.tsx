@@ -7,8 +7,8 @@ import {
   ScriptInfoSection,
 } from '@flamingo-stack/openframe-frontend-core';
 import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useScriptDetails } from '../../hooks/use-script-details';
 import { ScriptArgumentsCard } from './script-arguments-card';
 import { ScriptDetailsSkeleton } from './script-details-skeleton';
@@ -19,12 +19,8 @@ interface ScriptDetailsViewProps {
 }
 
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
-  const router = useRouter();
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
-
-  const handleBack = useCallback(() => {
-    router.push('/scripts');
-  }, [router]);
+  const handleBack = useSafeBack('/scripts');
 
   const editHref = `/scripts/edit/${scriptId}`;
   const runHref = scriptDetails?.id ? `/scripts/details/${scriptDetails.id}/run` : undefined;
@@ -73,7 +69,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     <DetailPageContainer
       title={scriptDetails.name}
       backButton={{
-        label: 'Back to Scripts',
+        label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}

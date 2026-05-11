@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -164,13 +165,9 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     }
   }, [queryDetails, isExistingQuery, reset]);
 
-  const handleBack = useCallback(() => {
-    if (isExistingQuery && numericId) {
-      router.push(`/monitoring/query/${numericId}`);
-    } else {
-      router.push('/monitoring?tab=queries');
-    }
-  }, [isExistingQuery, numericId, router]);
+  const handleBack = useSafeBack(
+    isExistingQuery && numericId ? `/monitoring/query/${numericId}` : '/monitoring?tab=queries',
+  );
 
   const onSubmit = useCallback(
     (data: QueryFormData) => {
@@ -269,7 +266,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
     <FormPageContainer
       title={isExistingQuery && queryDetails ? queryDetails.name : 'New Query'}
       backButton={{
-        label: 'Back to Queries',
+        label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}

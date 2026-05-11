@@ -22,6 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../../hooks/use-script-schedule-mutations';
 import {
@@ -95,9 +96,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const repeatEnabled = watch('repeatEnabled');
   const supportedPlatforms = watch('supportedPlatforms');
 
-  const handleBack = useCallback(() => {
-    isEditMode ? router.push(`/scripts/schedules/${scheduleId}`) : router.push('/scripts/?tab=schedules');
-  }, [router, isEditMode, scheduleId]);
+  const handleBack = useSafeBack(isEditMode ? `/scripts/schedules/${scheduleId}` : '/scripts/?tab=schedules');
 
   const togglePlatform = useCallback(
     (platform: Platform) => {
@@ -187,7 +186,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
       <DetailPageContainer
         title={isEditMode ? 'Edit Script Schedule' : 'New Script Schedule'}
         backButton={{
-          label: isEditMode ? 'Back to Schedule' : 'Back to Script Schedules',
+          label: isEditMode ? 'Back' : 'Back',
           onClick: handleBack,
         }}
         actions={actions}

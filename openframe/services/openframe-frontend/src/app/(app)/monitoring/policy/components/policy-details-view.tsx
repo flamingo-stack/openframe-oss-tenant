@@ -12,6 +12,7 @@ import {
 import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
@@ -38,9 +39,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const { deletePolicy, isDeleting } = usePolicies();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleBack = () => {
-    router.push('/monitoring?tab=policies');
-  };
+  const handleBack = useSafeBack('/monitoring?tab=policies');
 
   const handleEditPolicy = () => {
     router.push(`/monitoring/policy/edit/${policyId}`);
@@ -68,7 +67,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
     <DetailPageContainer
       title={policyDetails.name}
       backButton={{
-        label: 'Back to Policies',
+        label: 'Back',
         onClick: handleBack,
       }}
       className="p-[var(--spacing-system-l)]"

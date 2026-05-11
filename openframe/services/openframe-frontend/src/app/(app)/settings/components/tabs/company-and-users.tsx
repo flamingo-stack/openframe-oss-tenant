@@ -11,9 +11,9 @@ import {
   Tag,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { InvitationStatus } from '../../hooks/use-invitations';
 import { UserStatus } from '../../hooks/use-users';
 import {
@@ -43,7 +43,7 @@ const statusToVariant = {
 } as const satisfies Record<UnifiedUserStatus, 'success' | 'grey' | 'warning' | 'error'>;
 
 export function CompanyAndUsersTab() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
   const {
     records,
     isLoading,
@@ -284,7 +284,7 @@ export function CompanyAndUsersTab() {
       background="default"
       padding="none"
       className="p-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <DataTable table={table}>
         <DataTable.Header rightSlot={<DataTable.RowCount />} />

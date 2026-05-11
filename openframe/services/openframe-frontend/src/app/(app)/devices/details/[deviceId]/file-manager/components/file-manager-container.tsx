@@ -3,8 +3,8 @@
 import { Button, DetailPageContainer, Progress } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { FileAction, FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import { FileManager, FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
-import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useMeshFileManager } from '../../../../hooks/use-mesh-file-manager';
 import { DeleteConfirmationModal } from './delete-confirmation-modal';
 import { NewFolderModal } from './new-folder-modal';
@@ -19,7 +19,6 @@ interface FileManagerContainerProps {
 }
 
 export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, className }: FileManagerContainerProps) {
-  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -70,9 +69,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
 
   const showFileManagerSkeleton =
     connectionState === 'disconnected' || (connectionState === 'connecting' && files.length === 0);
-  const handleBackToDevice = useCallback(() => {
-    router.push(`/devices/details/${deviceId}`);
-  }, [router, deviceId]);
+  const handleBackToDevice = useSafeBack(`/devices/details/${deviceId}`);
 
   const handleNavigate = useCallback(
     (path: string) => {
@@ -281,7 +278,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
       className={className ? `${className} h-full` : 'h-full'}
       contentClassName="flex flex-col min-h-0 overflow-hidden"
       backButton={{
-        label: 'Back to Device',
+        label: 'Back',
         onClick: handleBackToDevice,
       }}
       padding="none"

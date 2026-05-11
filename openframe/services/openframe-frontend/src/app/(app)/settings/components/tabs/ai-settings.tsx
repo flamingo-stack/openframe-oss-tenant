@@ -22,8 +22,8 @@ import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-cor
 import { AiRobotIcon, ClaudeIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { AlertCircle, Edit2, Save, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
 import { useAiConfiguration } from '../../hooks/use-ai-configuration';
 import { useAiPolicies } from '../../hooks/use-ai-policies';
@@ -61,7 +61,7 @@ const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
 };
 
 export function AiSettingsTab() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
   const { toast } = useToast();
 
   const { configuration, supportedModels, isLoading, isSaving, updateConfiguration } = useAiConfiguration();
@@ -502,7 +502,7 @@ export function AiSettingsTab() {
       background="default"
       padding="none"
       className="p-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <div className="space-y-8">
         {/* Header with title and edit button */}

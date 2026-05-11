@@ -13,6 +13,7 @@ import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
@@ -42,9 +43,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const { deleteQuery, isDeleting } = useQueries();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const handleBack = () => {
-    router.push('/monitoring?tab=queries');
-  };
+  const handleBack = useSafeBack('/monitoring?tab=queries');
 
   const handleEditQuery = () => {
     router.push(`/monitoring/query/edit/${queryId}`);
@@ -72,7 +71,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
     <DetailPageContainer
       title={queryDetails.name}
       backButton={{
-        label: 'Back to Queries',
+        label: 'Back',
         onClick: handleBack,
       }}
       className="p-[var(--spacing-system-l)]"
