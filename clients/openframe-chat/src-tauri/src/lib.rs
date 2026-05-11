@@ -14,15 +14,10 @@ use tauri::menu::Menu;
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
 
-// Stores the "go to tray" action so the C callback can reach it without generics.
 #[cfg(target_os = "macos")]
 static DOCK_QUIT_ACTION: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
     std::sync::OnceLock::new();
 
-// Replaces applicationShouldTerminate: on tao's AppDelegate.
-// Returns NSTerminateCancel (0) and hides to tray instead of exiting.
-// Dock right-click → Quit takes the same path as NSApp.terminate: (bypasses
-// RunEvent::ExitRequested), so this is the only reliable intercept point.
 #[cfg(target_os = "macos")]
 unsafe extern "C" fn on_application_should_terminate(
     _this: *mut objc2::runtime::AnyObject,
@@ -321,8 +316,6 @@ pub fn run() {
                     }
                 });
 
-                // Intercept Dock right-click → Quit (same terminate: path as Cmd+Q).
-                // Store the action in a static so the C callback can reach it.
                 let h1 = app.handle().clone();
                 let h2 = app.handle().clone();
                 let _ = DOCK_QUIT_ACTION.set(Box::new(move || {
@@ -335,7 +328,6 @@ pub fn run() {
                     });
                 }));
 
-                // Replace applicationShouldTerminate: on tao's existing AppDelegate.
                 let mtm = objc2_foundation::MainThreadMarker::new().unwrap();
                 unsafe {
                     use std::ffi::c_char;
