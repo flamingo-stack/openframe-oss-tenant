@@ -14,6 +14,27 @@ use tauri::menu::Menu;
 #[cfg(target_os = "macos")]
 use tauri::ActivationPolicy;
 
+// Stores the "go to tray" action so the C callback can reach it without generics.
+#[cfg(target_os = "macos")]
+static DOCK_QUIT_ACTION: std::sync::OnceLock<Box<dyn Fn() + Send + Sync>> =
+    std::sync::OnceLock::new();
+
+// Replaces applicationShouldTerminate: on tao's AppDelegate.
+// Returns NSTerminateCancel (0) and hides to tray instead of exiting.
+// Dock right-click → Quit takes the same path as NSApp.terminate: (bypasses
+// RunEvent::ExitRequested), so this is the only reliable intercept point.
+#[cfg(target_os = "macos")]
+unsafe extern "C" fn on_application_should_terminate(
+    _this: *mut objc2::runtime::AnyObject,
+    _sel: objc2::runtime::Sel,
+    _sender: *mut objc2::runtime::AnyObject,
+) -> usize {
+    if let Some(action) = DOCK_QUIT_ACTION.get() {
+        action();
+    }
+    0 // NSTerminateCancel
+}
+
 #[cfg(target_os = "macos")]
 fn restore_dock_icon() {
     use objc2::AnyThread;
@@ -299,6 +320,57 @@ pub fn run() {
                         });
                     }
                 });
+
+                // Intercept Dock right-click → Quit (same terminate: path as Cmd+Q).
+                // Store the action in a static so the C callback can reach it.
+                let h1 = app.handle().clone();
+                let h2 = app.handle().clone();
+                let _ = DOCK_QUIT_ACTION.set(Box::new(move || {
+                    for (_, window) in h1.webview_windows() {
+                        let _ = window.hide();
+                    }
+                    let h = h2.clone();
+                    let _ = h1.run_on_main_thread(move || {
+                        let _ = h.set_activation_policy(ActivationPolicy::Accessory);
+                    });
+                }));
+
+                // Replace applicationShouldTerminate: on tao's existing AppDelegate.
+                let mtm = objc2_foundation::MainThreadMarker::new().unwrap();
+                unsafe {
+                    use std::ffi::c_char;
+                    use objc2::runtime::{AnyClass, AnyObject, Sel};
+                    use objc2::{msg_send, sel};
+                    use objc2_app_kit::NSApplication;
+
+                    extern "C" {
+                        fn class_replaceMethod(
+                            cls: *const AnyClass,
+                            name: Sel,
+                            imp: Option<unsafe extern "C" fn()>,
+                            types: *const c_char,
+                        ) -> Option<unsafe extern "C" fn()>;
+                    }
+
+                    let ns_app = NSApplication::sharedApplication(mtm);
+                    let delegate: *mut AnyObject = msg_send![&*ns_app, delegate];
+                    if !delegate.is_null() {
+                        let class: *const AnyClass = msg_send![delegate, class];
+                        class_replaceMethod(
+                            class,
+                            sel!(applicationShouldTerminate:),
+                            Some(std::mem::transmute(
+                                on_application_should_terminate
+                                    as unsafe extern "C" fn(
+                                        *mut AnyObject,
+                                        Sel,
+                                        *mut AnyObject,
+                                    ) -> usize,
+                            )),
+                            c"Q@:@".as_ptr(),
+                        );
+                    }
+                }
             }
 
             // Show window on startup unless --background flag is passed
