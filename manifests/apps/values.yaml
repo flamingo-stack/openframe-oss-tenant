@@ -210,7 +210,7 @@ apps:
     project: integrated-tools
     namespace: integrated-tools
     syncWave: "2"
-  redis-fleetmdm:
+  redis-fleet:
     enabled: true
     project: integrated-tools
     namespace: integrated-tools

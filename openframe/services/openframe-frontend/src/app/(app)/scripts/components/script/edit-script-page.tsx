@@ -3,8 +3,8 @@
 import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-frontend-core';
 import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useEditScriptForm } from '../../hooks/use-edit-script-form';
 import { useScriptDetails } from '../../hooks/use-script-details';
 import { useTestRuns } from '../../hooks/use-test-runs';
@@ -18,14 +18,12 @@ interface EditScriptPageProps {
 }
 
 export function EditScriptPage({ scriptId }: EditScriptPageProps) {
-  const router = useRouter();
   const isEditMode = Boolean(scriptId);
+  const handleBackToList = useSafeBack('/scripts');
+  const handleBackToDetails = useSafeBack(`/scripts/details/${scriptId}`);
   const backButton = useMemo(
-    () =>
-      isEditMode
-        ? { label: 'Back to Script Details', onClick: () => router.push(`/scripts/details/${scriptId}`) }
-        : { label: 'Back to Scripts', onClick: () => router.push('/scripts') },
-    [isEditMode, scriptId, router],
+    () => (isEditMode ? { label: 'Back', onClick: handleBackToDetails } : { label: 'Back', onClick: handleBackToList }),
+    [isEditMode, handleBackToDetails, handleBackToList],
   );
 
   const { scriptDetails, isLoading: isLoadingScript, error: scriptError } = useScriptDetails(scriptId || '');
@@ -36,16 +34,9 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
 
   const watchedSupportedPlatforms = form.watch('supported_platforms');
 
-  const handleBack = useCallback(() => {
-    router.push('/scripts');
-  }, [router]);
-
-  const handleDeviceSelected = useCallback(
-    (device: SelectedTestDevice) => {
-      handleRunTest(device);
-    },
-    [handleRunTest],
-  );
+  const handleDeviceSelected = (device: SelectedTestDevice) => {
+    handleRunTest(device);
+  };
 
   const actions = useMemo(
     () => [
@@ -76,9 +67,9 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
           <Card className="bg-ods-error/20 border border-ods-error p-6">
             <h2 className="text-ods-error text-xl font-semibold mb-2">Error Loading Script</h2>
             <p className="text-ods-error">{scriptError}</p>
-            <Button onClick={handleBack} variant="destructive" className="mt-4">
+            <Button onClick={handleBackToList} variant="destructive" className="mt-4">
               <ArrowLeft className="w-4 h-4" />
-              Back to Scripts
+              Back
             </Button>
           </Card>
         </div>

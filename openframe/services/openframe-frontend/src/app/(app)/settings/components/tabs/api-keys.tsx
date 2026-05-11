@@ -11,8 +11,8 @@ import {
   Tag,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDate, formatTime } from '@/lib/format-date';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
@@ -22,7 +22,7 @@ import { RegenerateApiKeyModal } from '../../components/regenerate-api-key-modal
 import { type ApiKeyRecord, useApiKeys } from '../../hooks/use-api-keys';
 
 export function ApiKeysTab() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings');
   const { items, isLoading, error, fetchApiKeys, createApiKey, updateApiKey, regenerateApiKey, setApiKeyEnabled } =
     useApiKeys();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -202,7 +202,7 @@ export function ApiKeysTab() {
       background="default"
       padding="none"
       className="p-[var(--spacing-system-l)]"
-      backButton={{ label: 'Back to Settings', onClick: () => router.push('/settings') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
     >
       <DataTable table={table}>
         <DataTable.Header rightSlot={<DataTable.RowCount />} />

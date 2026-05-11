@@ -1,12 +1,12 @@
 'use client';
 
 import { Button, CheckboxBlock, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useRouter } from 'next/navigation';
 import { type ReactNode, Suspense, useCallback, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionSettingsViewQuery as SubscriptionSettingsViewQueryType } from '@/__generated__/subscriptionSettingsViewQuery.graphql';
 import { useSubscriptionLock } from '@/app/components/subscription-lock/subscription-lock-context';
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useUpdateSubscription } from '../hooks/use-update-subscription';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
 import { ModelTokenRates } from './model-token-rates';
@@ -70,7 +70,7 @@ export function SubscriptionSettingsView() {
 }
 
 function SubscriptionSettingsContent() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/settings/billing-usage');
   const { isLocked, copy } = useSubscriptionLock();
   const data = useLazyLoadQuery<SubscriptionSettingsViewQueryType>(
     subscriptionSettingsViewQuery,
@@ -111,11 +111,7 @@ function SubscriptionSettingsContent() {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       title={isLocked ? undefined : 'Subscription Settings'}
       showHeader={!isLocked}
-      backButton={
-        isLocked
-          ? undefined
-          : { label: 'Back to Billing & Usage', onClick: () => router.push('/settings/billing-usage') }
-      }
+      backButton={isLocked ? undefined : { label: 'Back', onClick: handleBack }}
     >
       {isLocked && copy && <TrialEndedBanner copy={copy} />}
 

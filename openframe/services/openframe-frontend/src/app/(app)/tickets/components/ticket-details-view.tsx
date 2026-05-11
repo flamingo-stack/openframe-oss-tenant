@@ -543,7 +543,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     <PageLayout
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
-        label: 'Back to Tickets',
+        label: 'Back',
         onClick: () => router.push('/tickets'),
       }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] h-[calc(100%)]"

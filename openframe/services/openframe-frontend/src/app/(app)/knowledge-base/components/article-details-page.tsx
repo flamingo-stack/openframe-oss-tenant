@@ -10,8 +10,9 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Card, PageLayout, SquareAvatar, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
@@ -37,7 +38,7 @@ const STATUS_VARIANT: Record<ArticleStatus, 'success' | 'warning' | 'grey'> = {
 };
 
 function ArticleDetailsContent({ articleId }: { articleId: string }) {
-  const router = useRouter();
+  const handleBack = useSafeBack('/knowledge-base');
   const { toast } = useToast();
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
@@ -145,7 +146,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   return (
     <PageLayout
       title={article.name}
-      backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actionsVariant="menu-primary"
       actions={actions}
       menuActions={menuActions}
@@ -210,11 +211,11 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
 }
 
 function ArticleDetailsFallback() {
-  const router = useRouter();
+  const handleBack = useSafeBack('/knowledge-base');
   return (
     <PageLayout
       title=""
-      backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="h-32 w-full rounded bg-ods-card animate-pulse" />

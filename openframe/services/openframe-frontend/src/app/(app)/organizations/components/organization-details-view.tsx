@@ -19,6 +19,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { formatDate, formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -70,10 +71,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
   const isArchived = organization?.status === 'ARCHIVED';
 
-  const handleBack = useCallback(
-    () => router.push(isArchived ? '/organizations?tab=archived' : '/organizations'),
-    [router, isArchived],
-  );
+  const handleBack = useSafeBack(isArchived ? '/organizations?tab=archived' : '/organizations');
 
   const handleArchiveClick = useCallback(async () => {
     if (!organization) return;
@@ -183,7 +181,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
         image={{ src: logoSrc || '', alt: organization.name || 'Organization' }}
         className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
         backButton={{
-          label: isArchived ? 'Back to Archived Organizations' : 'Back to Organizations',
+          label: isArchived ? 'Back' : 'Back',
           onClick: handleBack,
         }}
         actions={actions}

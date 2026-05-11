@@ -49,6 +49,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "resources": [
+      "icons/tray-windows32x32.png",
+      "icons/tray-windows16x16.png",
+      "icons/tray-macos22x22.png",
+      "icons/tray-macos44x44.png"
+    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",

@@ -11,9 +11,10 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Loader2, Monitor, MoreHorizontal, Settings } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { DisplayInfo, MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
 import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
@@ -35,7 +36,6 @@ interface LegacyDeviceData {
 }
 
 export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const toastRef = useRef(toast);
@@ -45,6 +45,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
+  const safeBackToDevice = useSafeBack(`/devices/details/${deviceId}`);
+  const safeBackToDevices = useSafeBack('/devices');
 
   // Check for legacy deviceData query param (backward compatibility)
   const deviceDataParam = searchParams.get('deviceData');
@@ -309,7 +311,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const handleBack = () => {
     tunnelRef.current?.stop();
-    router.push(`/devices/details/${deviceId}`);
+    safeBackToDevice();
   };
 
   const statusText = isReconnecting
@@ -524,7 +526,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     return (
       <div className="p-4 md:p-6 h-full flex flex-col items-center justify-center gap-4">
         <div className="text-ods-attention-red-error text-lg">Error: {deviceError}</div>
-        <Button onClick={() => router.push('/devices')}>Back to Devices</Button>
+        <Button onClick={safeBackToDevices}>Back</Button>
       </div>
     );
   }
@@ -537,7 +539,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           Error: MeshCentral Agent ID not available for this device
         </div>
         <p className="text-ods-text-secondary">Remote desktop requires MeshCentral agent to be connected.</p>
-        <Button onClick={() => router.push(`/devices/details/${deviceId}`)}>Back to Device</Button>
+        <Button onClick={safeBackToDevice}>Back</Button>
       </div>
     );
   }
@@ -547,7 +549,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
       className="p-4 md:p-6 h-full"
       contentClassName="flex flex-col"
       backButton={{
-        label: 'Back to Device',
+        label: 'Back',
         onClick: handleBack,
       }}
     >

@@ -1,8 +1,9 @@
 'use client';
 
 import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Suspense, useMemo } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useEditArticleForm } from '../hooks/use-edit-article-form';
 import type { KnowledgeBaseItemNode } from '../hooks/use-knowledge-base-item';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
@@ -21,7 +22,6 @@ interface FormShellProps {
 }
 
 function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProps) {
-  const router = useRouter();
   const availableTags = useKnowledgeBaseTags(initialFolderId ?? null);
 
   const { form, isEditMode, isSubmitting, handleSave } = useEditArticleForm({
@@ -30,12 +30,11 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
     initialArticle,
   });
 
+  const backToArticle = useSafeBack(`/knowledge-base/details/${articleId ?? ''}`);
+  const backToKb = useSafeBack('/knowledge-base');
   const backButton = useMemo(
-    () =>
-      isEditMode && articleId
-        ? { label: 'Back to Article', onClick: () => router.push(`/knowledge-base/details/${articleId}`) }
-        : { label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') },
-    [router, isEditMode, articleId],
+    () => (isEditMode && articleId ? { label: 'Back', onClick: backToArticle } : { label: 'Back', onClick: backToKb }),
+    [isEditMode, articleId, backToArticle, backToKb],
   );
 
   const actions = useMemo(
@@ -79,11 +78,11 @@ function EditFormBody({ articleId, initialFolderId }: { articleId: string; initi
 }
 
 function ArticleFormFallback({ isEditMode }: { isEditMode: boolean }) {
-  const router = useRouter();
+  const handleBack = useSafeBack('/knowledge-base');
   return (
     <PageLayout
       title={isEditMode ? 'Edit Article' : 'New Article'}
-      backButton={{ label: 'Back to Knowledge Base', onClick: () => router.push('/knowledge-base') }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-lf)]">

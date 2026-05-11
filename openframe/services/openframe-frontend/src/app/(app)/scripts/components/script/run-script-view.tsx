@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
 import { useRunScriptData } from '../../hooks/use-run-script-data';
@@ -71,9 +72,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     }
   }, [scriptDetails, reset]);
 
-  const handleBack = useCallback(() => {
-    router.push(`/scripts/details/${scriptId}`);
-  }, [router, scriptId]);
+  const handleBack = useSafeBack(`/scripts/details/${scriptId}`);
 
   const onSubmit = useCallback(
     async (data: RunFormData) => {
@@ -186,7 +185,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   return (
     <DetailPageContainer
       title="Run Script"
-      backButton={{ label: 'Back to Script Details', onClick: handleBack }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       className="p-[var(--spacing-system-l)]"
     >

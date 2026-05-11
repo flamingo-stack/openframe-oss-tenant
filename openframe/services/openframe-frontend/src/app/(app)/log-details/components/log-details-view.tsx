@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DeviceInfoSection } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDateTime } from '@/lib/format-date';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
@@ -54,9 +55,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     }
   }, [logId, ingestDay, toolType, eventType, timestamp, fetchLogDetailsById, router]);
 
-  const handleBackToLogs = () => {
-    router.push('/logs-page');
-  };
+  const handleBackToLogs = useSafeBack('/logs-page');
 
   const handleCopyLogDetails = () => {
     if (logDetails) {
@@ -84,7 +83,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
             className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-3 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
             leftIcon={<ChevronLeft className="h-4 w-4" />}
           >
-            Back to Logs
+            Back
           </Button>
         </div>
       </div>
@@ -95,7 +94,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
     <DetailPageContainer
       title="Log Details"
       backButton={{
-        label: 'Back to Logs',
+        label: 'Back',
         onClick: handleBackToLogs,
       }}
       actions={[

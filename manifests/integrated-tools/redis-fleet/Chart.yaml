@@ -1,6 +1,6 @@
 apiVersion: v2
-name: redis-tactical-wrapper
-description: Wrapper chart for Tactical Redis
+name: redis-fleet-wrapper
+description: Wrapper chart for Fleet Redis
 type: application
 version: 0.0.1
 appVersion: "0.0.1"

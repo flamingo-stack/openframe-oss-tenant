@@ -18,6 +18,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { ScheduleDetailSkeleton } from './schedule-details-skeleton';
 import { ScheduleDevicesTab } from './schedule-devices-tab';
@@ -76,9 +77,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
     [router, pathname, searchParams],
   );
 
-  const handleBack = useCallback(() => {
-    router.push('/scripts/?tab=schedules');
-  }, [router]);
+  const handleBack = useSafeBack('/scripts/?tab=schedules');
 
   const editDevicesHref = `/scripts/schedules/${scheduleId}/devices`;
   const editScheduleHref = `/scripts/schedules/${scheduleId}/edit`;
@@ -116,7 +115,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   return (
     <DetailPageContainer
       title={schedule.name}
-      backButton={{ label: 'Back to Script Schedules', onClick: handleBack }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       actionsVariant="icon-buttons"
       padding="none"

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
@@ -114,9 +115,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
     setIsInitialized(true);
   }
 
-  const handleBack = useCallback(() => {
-    router.push(`/scripts/schedules/${scheduleId}`);
-  }, [router, scheduleId]);
+  const handleBack = useSafeBack(`/scripts/schedules/${scheduleId}`);
 
   const handleSave = useCallback(async () => {
     const selectedDevices = allDevices.filter(d => selectedAgentIds.has(getDevicePrimaryId(d)));
@@ -184,7 +183,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   return (
     <DetailPageContainer
       title="Schedule Devices"
-      backButton={{ label: 'Back to Schedule', onClick: handleBack }}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       className="p-[var(--spacing-system-l)]"
     >
