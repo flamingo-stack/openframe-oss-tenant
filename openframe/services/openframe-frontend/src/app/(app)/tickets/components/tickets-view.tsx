@@ -17,6 +17,7 @@ export function TicketsView() {
     status: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
     assigneeIds: { type: 'array', default: [] },
+    search: { type: 'string', default: '' },
     viewMode: { type: 'string', default: isBoardEnabled ? 'board' : 'table' },
   });
 
@@ -25,6 +26,7 @@ export function TicketsView() {
   const handleStatusFilterChange = useCallback((status: string[]) => setParam('status', status), [setParam]);
   const handleOrganizationIdsChange = useCallback((ids: string[]) => setParam('organizationIds', ids), [setParam]);
   const handleAssigneeIdsChange = useCallback((ids: string[]) => setParam('assigneeIds', ids), [setParam]);
+  const handleSearchChange = useCallback((value: string) => setParam('search', value), [setParam]);
 
   const tabs = useMemo(
     () =>
@@ -49,11 +51,19 @@ export function TicketsView() {
         onOrganizationIdsChange={handleOrganizationIdsChange}
         assigneeIds={params.assigneeIds}
         onAssigneeIdsChange={handleAssigneeIdsChange}
+        search={params.search}
+        onSearchChange={handleSearchChange}
       />
     );
   }
 
   return (
-    <CurrentTickets statusFilters={params.status} onStatusFilterChange={handleStatusFilterChange} selector={tabs} />
+    <CurrentTickets
+      statusFilters={params.status}
+      onStatusFilterChange={handleStatusFilterChange}
+      selector={tabs}
+      search={params.search}
+      onSearchChange={handleSearchChange}
+    />
   );
 }

@@ -23,6 +23,8 @@ interface TicketsTableProps {
   onStatusFilterChange?: (status: string[]) => void;
   backButton?: { label?: string; onClick: () => void };
   selector?: ReactNode;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 export function TicketsTable({
@@ -31,8 +33,9 @@ export function TicketsTable({
   onStatusFilterChange,
   backButton,
   selector,
+  search,
+  onSearchChange,
 }: TicketsTableProps) {
-  const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
@@ -117,7 +120,7 @@ export function TicketsTable({
           <Input
             placeholder="Search for Ticket"
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => onSearchChange(e.target.value)}
             className="flex-1"
             startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
           />

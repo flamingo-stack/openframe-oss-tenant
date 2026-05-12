@@ -30,11 +30,14 @@ export const dialogsQueryKeys = {
       },
     ] as const,
 
-  // Board view (multi-column snapshot) keyed by search + filters
-  board: (params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] }) =>
+  // All board column queries (one infinite query per status)
+  boardColumns: () => [...dialogsQueryKeys.all, 'boardColumn'] as const,
+
+  // Specific board column keyed by status + search + filters
+  boardColumn: (status: string, params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] }) =>
     [
-      ...dialogsQueryKeys.all,
-      'board',
+      ...dialogsQueryKeys.boardColumns(),
+      status,
       {
         search: params.search || '',
         organizationIds: params.organizationIds || [],
