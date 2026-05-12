@@ -23,5 +23,5 @@ export default function TicketsArchive() {
     return null;
   }
 
-  return <ArchivedTickets backButton={{ label: 'Back to Tickets', onClick: handleBack }} />;
+  return <ArchivedTickets backButton={{ label: 'Back', onClick: handleBack }} />;
 }

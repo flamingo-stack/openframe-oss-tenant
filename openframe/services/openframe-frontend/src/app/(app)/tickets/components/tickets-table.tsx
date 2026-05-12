@@ -113,7 +113,7 @@ export function TicketsTable({
       contentClassName="flex flex-col"
     >
       <div>
-        <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+        <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
           <Input
             placeholder="Search for Ticket"
             value={search}
