@@ -52,7 +52,12 @@ export const featureFlags = {
   },
   notifications: {
     enabled(): boolean {
-      return getFlagValue('notifications', () => true);
+      return getFlagValue('notifications', () => false);
+    },
+  },
+  ticketsBoard: {
+    enabled(): boolean {
+      return getFlagValue('tickets-board', () => false);
     },
   },
 } as const;

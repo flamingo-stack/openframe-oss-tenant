@@ -98,12 +98,13 @@ export function TicketsBoard({
         return columnFromTicketStatus(status, state.tickets.map(dialogToBoardTicket), {
           total: state.total,
           hasMore: state.hasMore,
+          isLoading,
           isLoadingMore: state.isLoadingMore,
           system: ['ACTIVE', 'TECH_REQUIRED', 'RESOLVED'].includes(status),
           allowedFromColumns: allowedFromByStatus[status],
         });
       }),
-    [columns, allowedFromByStatus],
+    [columns, allowedFromByStatus, isLoading],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
