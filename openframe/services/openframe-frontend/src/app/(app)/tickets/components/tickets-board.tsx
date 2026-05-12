@@ -11,13 +11,12 @@ import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/i
 import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { useReorderTicket } from '../hooks/use-reorder-ticket';
-import { useTicketStatus } from '../hooks/use-ticket-status';
+import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { BOARD_STATUSES, useTicketsBoardQuery } from '../hooks/use-tickets-board-query';
 import type { BoardStatus } from '../services/ticket-service.types';
-import type { Dialog, DialogStatus } from '../types/dialog.types';
+import type { Dialog } from '../types/dialog.types';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { OrganizationFilter } from './organization-filter';
@@ -73,8 +72,8 @@ export function TicketsBoard({
     organizationIds,
     assigneeIds,
   });
-  const { mutate: reorderTicket, isPending: isReordering } = useReorderTicket();
-  const { updateTicketStatus, isUpdating } = useTicketStatus();
+  const { mutate: moveTicket } = useMoveTicket();
+  const movingIds = useMovingTicketIds();
   const { data: statusTransitions } = useTicketStatusTransitions();
   const { actions, menuActions } = useTicketsActions({ isLoading });
 
@@ -115,19 +114,15 @@ export function TicketsBoard({
       const isCrossColumn = change.fromColumnId !== change.toColumnId;
       if (targetStatus === 'TECH_REQUIRED' && isCrossColumn) return;
 
-      if (isCrossColumn && change.afterTicketId === null && change.beforeTicketId === null) {
-        updateTicketStatus(change.ticketId, targetStatus as DialogStatus);
-        return;
-      }
-
-      reorderTicket({
-        id: change.ticketId,
+      moveTicket({
+        ticketId: change.ticketId,
+        sourceStatus: change.fromColumnId as BoardStatus,
+        targetStatus,
         afterTicketId: change.afterTicketId,
         beforeTicketId: change.beforeTicketId,
-        status: isCrossColumn ? targetStatus : undefined,
       });
     },
-    [reorderTicket, updateTicketStatus],
+    [moveTicket],
   );
 
   if (error) {
@@ -165,7 +160,7 @@ export function TicketsBoard({
         </div>
       </div>
 
-      <div aria-busy={isLoading || isReordering || isUpdating} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+      <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
         <Board
           columns={boardColumns}
           onChange={handleChange}

@@ -16,16 +16,16 @@ export interface AutocompleteOption {
   value: string;
 }
 
-export interface AssigneeOption extends AutocompleteOption {
+export interface AvatarOption extends AutocompleteOption {
   imageUrl?: string;
 }
 
 const EMPTY_AUTOCOMPLETE_OPTIONS: AutocompleteOption[] = [];
-const EMPTY_ASSIGNEE_OPTIONS: AssigneeOption[] = [];
+const EMPTY_AVATAR_OPTIONS: AvatarOption[] = [];
 
 // --- Organizations (reuse existing query via /api/graphql) ---
 
-async function fetchOrganizationOptions(search: string): Promise<AutocompleteOption[]> {
+async function fetchOrganizationOptions(search: string): Promise<AvatarOption[]> {
   const response = await apiClient.post<any>('/api/graphql', {
     query: GET_ORGANIZATIONS_MIN_QUERY,
     variables: { search, first: 50 },
@@ -36,6 +36,7 @@ async function fetchOrganizationOptions(search: string): Promise<AutocompleteOpt
   return edges.map(({ node }: any) => ({
     label: node.name,
     value: node.organizationId,
+    imageUrl: node.image?.imageUrl,
   }));
 }
 
@@ -45,7 +46,7 @@ export function useOrganizationOptions(search = '') {
     queryFn: () => fetchOrganizationOptions(search),
   });
 
-  return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_AVATAR_OPTIONS, isLoading: query.isLoading };
 }
 
 // --- Devices (reuse existing query via /api/graphql) ---
@@ -77,7 +78,7 @@ export function useDeviceOptions(organizationId?: string, search = '') {
 
 // --- Users / Assignees (REST via /api/users) ---
 
-async function fetchAssigneeOptions(): Promise<AssigneeOption[]> {
+async function fetchAssigneeOptions(): Promise<AvatarOption[]> {
   const response = await apiClient.get<any>('/api/users?page=0&size=100');
   if (!response.ok) throw new Error(response.error || 'Failed to fetch users');
 
@@ -95,7 +96,7 @@ export function useAssigneeOptions() {
     queryFn: fetchAssigneeOptions,
   });
 
-  return { options: query.data ?? EMPTY_ASSIGNEE_OPTIONS, isLoading: query.isLoading };
+  return { options: query.data ?? EMPTY_AVATAR_OPTIONS, isLoading: query.isLoading };
 }
 
 // --- Labels (ticket-specific, via /chat/graphql) ---

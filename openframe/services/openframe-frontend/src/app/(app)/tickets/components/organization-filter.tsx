@@ -5,12 +5,15 @@ import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useState } from 'react';
 import { useOrganizationOptions } from '../hooks/use-ticket-options';
+import { renderAvatarOption } from './avatar-autocomplete';
 
 interface OrganizationFilterProps {
   value: string[];
   onChange: (value: string[]) => void;
   className?: string;
 }
+
+const renderOption = renderAvatarOption('square');
 
 export function OrganizationFilter({ value, onChange, className }: OrganizationFilterProps) {
   const [search, setSearch] = useState('');
@@ -28,6 +31,7 @@ export function OrganizationFilter({ value, onChange, className }: OrganizationF
       placeholder="Show All Organizations"
       loading={isLoading}
       startAdornment={<Filter02Icon className="size-6 text-ods-text-secondary" />}
+      renderOption={renderOption}
       className={className}
     />
   );

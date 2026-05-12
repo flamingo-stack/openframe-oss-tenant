@@ -1,23 +1,19 @@
 'use client';
 
-import {
-  Autocomplete,
-  FileUpload,
-  Input,
-  Label,
-  SquareAvatar,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Autocomplete, FileUpload, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { AssignmentsField } from '@/components/assignments';
-import { getFullImageUrl } from '@/lib/image-url';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
-import type { AssigneeOption } from '../../hooks/use-ticket-options';
 import { useAssigneeOptions, useDeviceOptions, useOrganizationOptions } from '../../hooks/use-ticket-options';
 import type { CreateTicketFormData } from '../../types/create-ticket.types';
+import { avatarStartAdornment, renderAvatarOption } from '../avatar-autocomplete';
 import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
 import { TicketTagsManager } from './ticket-tags-manager';
+
+const renderOrganizationOption = renderAvatarOption('square');
+const renderAssigneeOption = renderAvatarOption('round');
 
 interface TicketFormFieldsProps {
   form: UseFormReturn<CreateTicketFormData>;
@@ -102,25 +98,30 @@ export function TicketFormFields({
         <Controller
           name="organizationId"
           control={control}
-          render={({ field, fieldState }) => (
-            <Autocomplete
-              label="Organization"
-              options={organizationOptions.options}
-              value={field.value ?? null}
-              onChange={val => {
-                field.onChange(val);
-                resetField('deviceId');
-                setDeviceSearch('');
-              }}
-              onInputChange={setOrgSearch}
-              placeholder="Select Organization"
-              loading={organizationOptions.isLoading}
-              disabled={isFaeForm || lockOrgAndDevice}
-              disableClientFilter
-              error={fieldState.error?.message}
-              invalid={!!fieldState.error}
-            />
-          )}
+          render={({ field, fieldState }) => {
+            const selectedOrg = organizationOptions.options.find(o => o.value === field.value);
+            return (
+              <Autocomplete
+                label="Organization"
+                options={organizationOptions.options}
+                value={field.value ?? null}
+                onChange={val => {
+                  field.onChange(val);
+                  resetField('deviceId');
+                  setDeviceSearch('');
+                }}
+                onInputChange={setOrgSearch}
+                placeholder="Select Organization"
+                loading={organizationOptions.isLoading}
+                disabled={isFaeForm || lockOrgAndDevice}
+                disableClientFilter
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
+                startAdornment={avatarStartAdornment(selectedOrg, 'square')}
+                renderOption={renderOrganizationOption}
+              />
+            );
+          }}
         />
 
         <Controller
@@ -147,9 +148,7 @@ export function TicketFormFields({
           name="assignedTo"
           control={control}
           render={({ field }) => {
-            const selectedAssignee = assigneeOptions.options.find(o => o.value === field.value) as
-              | AssigneeOption
-              | undefined;
+            const selectedAssignee = assigneeOptions.options.find(o => o.value === field.value);
             return (
               <Autocomplete
                 label="Assigned"
@@ -158,34 +157,8 @@ export function TicketFormFields({
                 onChange={val => field.onChange(val)}
                 placeholder="Select Assignee"
                 loading={assigneeOptions.isLoading}
-                startAdornment={
-                  selectedAssignee ? (
-                    <SquareAvatar
-                      src={getFullImageUrl(selectedAssignee.imageUrl)}
-                      alt={selectedAssignee.label}
-                      fallback={selectedAssignee.label}
-                      size="sm"
-                      variant="round"
-                      className="h-6 w-6"
-                    />
-                  ) : undefined
-                }
-                renderOption={option => {
-                  const assignee = option as AssigneeOption;
-                  return (
-                    <div className="flex items-center gap-3 w-full min-w-0">
-                      <SquareAvatar
-                        src={getFullImageUrl(assignee.imageUrl)}
-                        alt={assignee.label}
-                        fallback={assignee.label}
-                        size="sm"
-                        variant="round"
-                        className="h-6 w-6 shrink-0"
-                      />
-                      <span className="truncate">{assignee.label}</span>
-                    </div>
-                  );
-                }}
+                startAdornment={avatarStartAdornment(selectedAssignee, 'round')}
+                renderOption={renderAssigneeOption}
               />
             );
           }}
