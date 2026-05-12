@@ -173,7 +173,7 @@ export function DevicesView() {
                 leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
                 className="shrink-0"
               >
-                Filter Tags
+                Device Tags
               </Button>
             ) : (
               <Button
