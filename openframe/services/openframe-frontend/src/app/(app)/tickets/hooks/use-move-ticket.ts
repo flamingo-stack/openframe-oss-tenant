@@ -11,7 +11,7 @@ import {
   type OptimisticMoveSnapshot,
   rollbackOptimisticMove,
 } from '../utils/optimistic-board';
-import { dialogsQueryKeys } from '../utils/query-keys';
+import { dialogsQueryKeys, ticketsQueryKeys } from '../utils/query-keys';
 
 export interface MoveTicketParams {
   ticketId: string;
@@ -67,6 +67,9 @@ export function useMoveTicket() {
         variant: 'destructive',
         duration: 5000,
       });
+    },
+    onSettled: (_data, _err, params) => {
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(params.ticketId) });
     },
   });
 }

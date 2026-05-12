@@ -1,7 +1,7 @@
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import type { BoardStatus, TicketsPage } from '../services/ticket-service.types';
 import type { Dialog } from '../types/dialog.types';
-import { dialogsQueryKeys } from './query-keys';
+import { dialogsQueryKeys, ticketsQueryKeys } from './query-keys';
 
 export interface OptimisticMoveInput {
   ticketId: string;
@@ -15,6 +15,7 @@ type BoardQueryKey = readonly [string, string, BoardStatus, Record<string, unkno
 
 export interface OptimisticMoveSnapshot {
   entries: Array<readonly [QueryKey, InfiniteData<TicketsPage> | undefined]>;
+  detail?: { key: QueryKey; data: Dialog | null | undefined };
 }
 
 function isBoardQueryKey(key: QueryKey): key is BoardQueryKey {
@@ -97,15 +98,23 @@ export function applyOptimisticMove(queryClient: QueryClient, input: OptimisticM
     queryKey: dialogsQueryKeys.boardColumns(),
   });
 
+  const detailKey = ticketsQueryKeys.detail(input.ticketId);
+  const detailData = queryClient.getQueryData<Dialog | null>(detailKey);
+
   const snapshot: OptimisticMoveSnapshot = {
     entries: entries.map(([key, data]) => [key, data] as const),
+    detail: { key: detailKey, data: detailData },
   };
 
-  const movedDialog = findDialogInCache(entries, input.ticketId);
+  const movedDialog = findDialogInCache(entries, input.ticketId) ?? detailData ?? undefined;
   if (!movedDialog) return snapshot;
 
   const updatedDialog: Dialog = { ...movedDialog, status: input.targetStatus };
   const isSameColumn = input.sourceStatus === input.targetStatus;
+
+  if (detailData) {
+    queryClient.setQueryData<Dialog | null>(detailKey, { ...detailData, status: input.targetStatus });
+  }
 
   for (const [key, data] of entries) {
     if (!data || !isBoardQueryKey(key)) continue;
@@ -132,5 +141,8 @@ export function applyOptimisticMove(queryClient: QueryClient, input: OptimisticM
 export function rollbackOptimisticMove(queryClient: QueryClient, snapshot: OptimisticMoveSnapshot): void {
   for (const [key, data] of snapshot.entries) {
     queryClient.setQueryData(key, data);
+  }
+  if (snapshot.detail) {
+    queryClient.setQueryData(snapshot.detail.key, snapshot.detail.data);
   }
 }
