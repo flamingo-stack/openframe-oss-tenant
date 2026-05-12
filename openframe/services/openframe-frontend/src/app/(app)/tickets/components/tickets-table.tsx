@@ -1,14 +1,7 @@
 'use client';
 
+import { Filter02Icon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  BoxArchiveIcon,
-  Filter02Icon,
-  PlusCircleIcon,
-  SearchIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import {
-  type ActionsMenuGroup,
-  type ActionsMenuItem,
   Button,
   type ColumnFiltersState,
   DataTable,
@@ -19,10 +12,8 @@ import {
   PageLayout,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
-import { useArchiveResolvedMutation } from '../hooks/use-archive-resolved-mutation';
-import { useTicketStatistics } from '../hooks/use-ticket-statistics';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
 import { getTicketTableColumns, TicketTableBody } from './ticket-table-columns';
 
@@ -31,16 +22,19 @@ interface TicketsTableProps {
   statusFilters?: string[];
   onStatusFilterChange?: (status: string[]) => void;
   backButton?: { label?: string; onClick: () => void };
+  selector?: ReactNode;
 }
 
-export function TicketsTable({ isArchived, statusFilters, onStatusFilterChange, backButton }: TicketsTableProps) {
-  const router = useRouter();
+export function TicketsTable({
+  isArchived,
+  statusFilters,
+  onStatusFilterChange,
+  backButton,
+  selector,
+}: TicketsTableProps) {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-
-  const archiveResolvedMutation = useArchiveResolvedMutation();
-  const { resolvedCount } = useTicketStatistics({ enabled: !isArchived });
 
   const {
     dialogs: tickets,
@@ -55,11 +49,9 @@ export function TicketsTable({ isArchived, statusFilters, onStatusFilterChange, 
     statusFilters,
   });
 
-  const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
+  const { actions, menuActions } = useTicketsActions({ isLoading, enabled: !isArchived });
 
-  const handleArchiveResolved = useCallback(async () => {
-    await archiveResolvedMutation.mutateAsync();
-  }, [archiveResolvedMutation]);
+  const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const columnFilters = useMemo<ColumnFiltersState>(
     () => (statusFilters && statusFilters.length > 0 ? [{ id: 'status', value: statusFilters }] : []),
@@ -86,50 +78,10 @@ export function TicketsTable({ isArchived, statusFilters, onStatusFilterChange, 
     [isArchived, onStatusFilterChange],
   );
 
-  const hasResolvedTickets = !isArchived && resolvedCount > 0;
-
   const title = isArchived ? 'Archived Tickets' : 'Tickets';
   const emptyMessage = isArchived
     ? 'No archived tickets found. Try adjusting your search or filters.'
     : 'No tickets found. Try adjusting your search or filters.';
-
-  const handleNewTicket = useCallback(() => {
-    router.push('/tickets/new');
-  }, [router]);
-
-  const actions = useMemo(() => {
-    if (isArchived) return [];
-    return [
-      {
-        label: 'New Ticket',
-        onClick: handleNewTicket,
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
-      },
-    ];
-  }, [handleNewTicket, isArchived]);
-
-  const menuActions = useMemo<ActionsMenuGroup[]>(() => {
-    if (isArchived) return [];
-    const items: ActionsMenuItem[] = [
-      {
-        id: 'tickets-archive',
-        label: 'Tickets Archive',
-        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
-        href: '/tickets/archive',
-      },
-    ];
-    if (hasResolvedTickets) {
-      items.push({
-        id: 'archive-resolved',
-        label: 'Archive Resolved',
-        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
-        onClick: handleArchiveResolved,
-        disabled: archiveResolvedMutation.isPending || isLoading,
-      });
-    }
-    return [{ items }];
-  }, [isArchived, hasResolvedTickets, handleArchiveResolved, archiveResolvedMutation.isPending, isLoading]);
 
   const filterGroups = useMemo(
     () =>
@@ -156,56 +108,60 @@ export function TicketsTable({ isArchived, statusFilters, onStatusFilterChange, 
       actions={actions.length > 0 ? actions : undefined}
       menuActions={menuActions.length > 0 ? menuActions : undefined}
       actionsVariant="menu-primary"
+      selector={selector}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+      contentClassName="flex flex-col"
     >
-      <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] py-[var(--spacing-system-l)]">
-        <Input
-          placeholder="Search for Ticket"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="flex-1"
-          startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-        />
+      <div>
+        <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+          <Input
+            placeholder="Search for Ticket"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="flex-1"
+            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+          />
+          {hasMobileFilter && (
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileFilterOpen(true)}
+              aria-label="Open filters"
+              leftIcon={<Filter02Icon />}
+            />
+          )}
+        </div>
+
         {hasMobileFilter && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileFilterOpen(true)}
-            aria-label="Open filters"
-            leftIcon={<Filter02Icon />}
+          <FilterModal
+            isOpen={mobileFilterOpen}
+            onClose={() => setMobileFilterOpen(false)}
+            filterGroups={filterGroups}
+            onFilterChange={handleMobileFilterChange}
+            currentFilters={{ status: statusFilters || [] }}
           />
         )}
-      </div>
 
-      {hasMobileFilter && (
-        <FilterModal
-          isOpen={mobileFilterOpen}
-          onClose={() => setMobileFilterOpen(false)}
-          filterGroups={filterGroups}
-          onFilterChange={handleMobileFilterChange}
-          currentFilters={{ status: statusFilters || [] }}
+        <TicketTableBody
+          tickets={tickets}
+          isLoading={isLoading}
+          emptyMessage={emptyMessage}
+          skeletonRows={10}
+          stickyHeaderOffset="top-[96px]"
+          isArchived={isArchived}
+          columnFilters={isArchived ? undefined : columnFilters}
+          onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
+          footerSlot={
+            <DataTable.InfiniteFooter
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              onLoadMore={handleFetchNextPage}
+              skeletonRows={2}
+            />
+          }
         />
-      )}
-
-      <TicketTableBody
-        tickets={tickets}
-        isLoading={isLoading}
-        emptyMessage={emptyMessage}
-        skeletonRows={10}
-        stickyHeaderOffset="top-[96px]"
-        isArchived={isArchived}
-        columnFilters={isArchived ? undefined : columnFilters}
-        onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
-        footerSlot={
-          <DataTable.InfiniteFooter
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            onLoadMore={handleFetchNextPage}
-            skeletonRows={2}
-          />
-        }
-      />
+      </div>
     </PageLayout>
   );
 }

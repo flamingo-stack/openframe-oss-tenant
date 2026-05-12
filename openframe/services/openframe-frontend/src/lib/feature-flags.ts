@@ -35,16 +35,6 @@ export const featureFlags = {
       return getFlagValue('ssoAutoAllow', () => runtimeEnv.featureSsoAllowDomain());
     },
   },
-  dialogStop: {
-    enabled(): boolean {
-      return getFlagValue('dialog-stop', () => false);
-    },
-  },
-  tokenBasedMemory: {
-    enabled(): boolean {
-      return getFlagValue('token-based-memory', () => false);
-    },
-  },
   subscription: {
     enabled(): boolean {
       return getFlagValue('billings', () => false);

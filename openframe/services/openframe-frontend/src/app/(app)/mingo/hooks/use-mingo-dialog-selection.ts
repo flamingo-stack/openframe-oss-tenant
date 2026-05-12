@@ -9,7 +9,7 @@ import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ApprovalStatus } from '../../tickets/constants';
 import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../../tickets/constants';
-import { getMingoDialogMessagesQuery, getMingoDialogQuery } from '../queries/dialogs-queries';
+import { GET_MINGO_DIALOG_QUERY, getMingoDialogMessagesQuery } from '../queries/dialogs-queries';
 import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
@@ -91,9 +91,8 @@ export function useMingoDialogSelection() {
     queryFn: async () => {
       if (!activeDialogId) return null;
 
-      const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
       const response = await apiClient.post<DialogResponse>('/chat/graphql', {
-        query: getMingoDialogQuery({ includeTokenUsage }),
+        query: GET_MINGO_DIALOG_QUERY,
         variables: { id: activeDialogId },
       });
 
@@ -112,10 +111,9 @@ export function useMingoDialogSelection() {
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
       if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
 
-      const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
       const includeThinking = featureFlags.thinking.enabled();
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
-        query: getMingoDialogMessagesQuery({ includeContextCompaction, includeThinking }),
+        query: getMingoDialogMessagesQuery({ includeThinking }),
         variables: {
           dialogId: activeDialogId,
           cursor: pageParam,

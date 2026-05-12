@@ -40,7 +40,6 @@ import { useAiModel } from '@/app/hooks/use-ai-model';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
-import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -537,7 +536,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
   const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
-  const showTokenMemory = !isClosed && featureFlags.tokenBasedMemory.enabled();
+  const showTokenMemory = !isClosed;
 
   return (
     <PageLayout
@@ -807,11 +806,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendAdminMessage}
-                  onStop={
-                    featureFlags.dialogStop.enabled() && isAdminChatTyping && adminPendingApprovals.length === 0
-                      ? handleStopGeneration
-                      : undefined
-                  }
+                  onStop={isAdminChatTyping && adminPendingApprovals.length === 0 ? handleStopGeneration : undefined}
                   sending={
                     isSendingAdminMessage ||
                     isAdminChatTyping ||

@@ -3,7 +3,6 @@
 import { AppLayout as CoreAppLayout } from '@flamingo-stack/openframe-frontend-core/components/navigation';
 import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
-import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo } from 'react';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
@@ -97,7 +96,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
 
   return (
     <CoreAppLayout
-      mainClassName={cn('pb-20 md:pb-20', mainClassName)}
+      mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
       sidebarConfig={sidebarConfig}
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={mobileBurgerMenuProps}

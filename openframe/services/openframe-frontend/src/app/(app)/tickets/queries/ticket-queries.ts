@@ -91,17 +91,7 @@ export const DELETE_TICKET_ATTACHMENT = `
   }
 `;
 
-const TICKET_TOKEN_USAGE_FRAGMENT = `
-        tokenUsage {
-          chatType
-          inputTokensSize
-          outputTokensSize
-          totalTokensSize
-          contextSize
-        }`;
-
-export function getTicketQuery({ includeTokenUsage = false } = {}) {
-  return `
+export const GET_TICKET_QUERY = `
   query GetTicket($id: ID!) {
     ticket(id: $id) {
       id
@@ -151,7 +141,13 @@ export function getTicketQuery({ includeTokenUsage = false } = {}) {
       dialog {
         id
         currentMode
-        ${includeTokenUsage ? TICKET_TOKEN_USAGE_FRAGMENT : ''}
+        tokenUsage {
+          chatType
+          inputTokensSize
+          outputTokensSize
+          totalTokensSize
+          contextSize
+        }
       }
       attachments {
         id
@@ -181,14 +177,14 @@ export function getTicketQuery({ includeTokenUsage = false } = {}) {
       createdAt
       updatedAt
       resolvedAt
+      order
     }
   }
 `;
-}
 
 export const GET_TICKETS_QUERY = `
   query GetTickets($filter: TicketFilterInput, $pagination: CursorPaginationInput, $search: String) {
-    tickets(filter: $filter, pagination: $pagination, search: $search) {
+    tickets(filter: $filter, pagination: $pagination, search: $search, sort: { field: "order", direction: ASC }) {
       edges {
         cursor
         node {
@@ -234,6 +230,7 @@ export const GET_TICKETS_QUERY = `
           createdAt
           updatedAt
           resolvedAt
+          order
         }
       }
       pageInfo {
@@ -245,6 +242,91 @@ export const GET_TICKETS_QUERY = `
       filteredCount
     }
   }
+`;
+
+const BOARD_CARD_TICKET_FRAGMENT = `
+  fragment BoardCardTicket on Ticket {
+    id
+    ticketNumber
+    title
+    status
+    owner {
+      ... on ClientTicketOwner {
+        type
+        machineId
+        machine {
+          id
+          machineId
+          hostname
+          organizationId
+        }
+      }
+      ... on AdminTicketOwner {
+        type
+        userId
+        user {
+          id
+          firstName
+          lastName
+        }
+      }
+    }
+    deviceId
+    deviceHostname
+    organizationId
+    organizationName
+    assignedTo
+    assignedName
+    assigneeImage {
+      imageUrl
+    }
+    labels {
+      id
+      key
+      color
+    }
+    createdAt
+    updatedAt
+    resolvedAt
+    order
+  }
+`;
+
+const BOARD_COLUMN_CONNECTION_FRAGMENT = `
+  fragment BoardColumnConnection on TicketConnection {
+    edges {
+      cursor
+      node {
+        ...BoardCardTicket
+      }
+    }
+    pageInfo {
+      hasNextPage
+      hasPreviousPage
+      startCursor
+      endCursor
+    }
+    filteredCount
+  }
+`;
+
+export const GET_TICKETS_BOARD_QUERY = `
+  query GetTicketsBoard($limit: Int!, $search: String, $organizationIds: [ID!], $assigneeIds: [ID!]) {
+    active: tickets(filter: { statuses: [ACTIVE], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
+      ...BoardColumnConnection
+    }
+    techRequired: tickets(filter: { statuses: [TECH_REQUIRED], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
+      ...BoardColumnConnection
+    }
+    onHold: tickets(filter: { statuses: [ON_HOLD], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
+      ...BoardColumnConnection
+    }
+    resolved: tickets(filter: { statuses: [RESOLVED], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
+      ...BoardColumnConnection
+    }
+  }
+  ${BOARD_COLUMN_CONNECTION_FRAGMENT}
+  ${BOARD_CARD_TICKET_FRAGMENT}
 `;
 
 export const GET_TICKET_LABELS_QUERY = `
@@ -417,6 +499,15 @@ export const REOPEN_TICKET_MUTATION = `
   }
 `;
 
+export const REORDER_TICKET_MUTATION = `
+  mutation ReorderTicket($input: ReorderTicketInput!) {
+    reorderTicket(input: $input) {
+      ticket { id status order }
+      userErrors { field message }
+    }
+  }
+`;
+
 export const ASSIGN_TICKET_MUTATION = `
   mutation AssignTicket($input: AssignTicketInput!) {
     assignTicket(input: $input) {
@@ -449,6 +540,15 @@ export const UNLINK_ORGANIZATION_FROM_TICKET_MUTATION = `
     unlinkOrganizationFromTicket(input: $input) {
       ticket { id organizationId organizationName }
       userErrors { field message }
+    }
+  }
+`;
+
+export const GET_TICKET_STATUS_TRANSITIONS_QUERY = `
+  query TicketStatusTransitions {
+    ticketStatusTransitions {
+      from
+      to
     }
   }
 `;

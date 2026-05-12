@@ -40,6 +40,7 @@ export interface Dialog {
   // V2 ticket-specific fields (only populated when fetched as ticket)
   currentMode?: string; // 'AI' | 'DIRECT'
   ticketNumber?: number;
+  order?: string;
   dialogId?: string;
   description?: string;
   creationSource?: string;

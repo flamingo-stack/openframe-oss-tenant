@@ -7,6 +7,7 @@ function getMainClassNameOverride(pathname: string | null): string | undefined {
   if (!pathname) return undefined;
   if (pathname.startsWith('/mingo')) return 'p-0 md:p-0';
   if (/^\/devices\/details\/[^/]+\/file-manager/.test(pathname)) return 'pb-0 md:pb-0';
+  if (pathname.startsWith('/tickets')) return 'pb-0 md:pb-0';
   return undefined;
 }
 

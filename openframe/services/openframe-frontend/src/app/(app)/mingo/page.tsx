@@ -14,7 +14,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { isSaasTenantMode } from '@/lib/app-mode';
-import { featureFlags } from '@/lib/feature-flags';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
@@ -339,18 +338,14 @@ export default function Mingo() {
                 reserveAvatarOffset={false}
                 placeholder="Enter your Request..."
                 onSend={handleSendMessage}
-                onStop={
-                  featureFlags.dialogStop.enabled() && isTyping && !isCompacting && pendingApprovals.length === 0
-                    ? stopGeneration
-                    : undefined
-                }
+                onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
                 sending={
                   isTyping || isCompacting || isCreatingDialog || isSelectingDialog || pendingApprovals.length > 0
                 }
                 autoFocus={isDraftChat}
                 className="bg-ods-card rounded-lg"
               />
-              {featureFlags.tokenBasedMemory.enabled() && currentModel && (
+              {currentModel && (
                 <div className="mx-auto w-full max-w-3xl mt-3">
                   <ModelDisplay
                     provider={currentModel.provider}
