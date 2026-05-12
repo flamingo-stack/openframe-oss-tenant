@@ -10,7 +10,7 @@ import {
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
@@ -27,6 +27,8 @@ interface TicketsBoardProps {
   onOrganizationIdsChange?: (ids: string[]) => void;
   assigneeIds?: string[];
   onAssigneeIdsChange?: (ids: string[]) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 function initialsOf(name?: string): string | undefined {
@@ -63,8 +65,9 @@ export function TicketsBoard({
   onOrganizationIdsChange,
   assigneeIds,
   onAssigneeIdsChange,
+  search,
+  onSearchChange,
 }: TicketsBoardProps) {
-  const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
   const { columns, loadMore, isLoading, error } = useTicketsBoardQuery({
@@ -110,14 +113,10 @@ export function TicketsBoard({
 
   const handleChange = useCallback(
     (change: BoardChange) => {
-      const targetStatus = change.toColumnId as BoardStatus;
-      const isCrossColumn = change.fromColumnId !== change.toColumnId;
-      if (targetStatus === 'TECH_REQUIRED' && isCrossColumn) return;
-
       moveTicket({
         ticketId: change.ticketId,
         sourceStatus: change.fromColumnId as BoardStatus,
-        targetStatus,
+        targetStatus: change.toColumnId as BoardStatus,
         afterTicketId: change.afterTicketId,
         beforeTicketId: change.beforeTicketId,
       });
@@ -143,7 +142,7 @@ export function TicketsBoard({
         <Input
           placeholder="Search for Ticket"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => onSearchChange(e.target.value)}
           startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
         />
         <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
