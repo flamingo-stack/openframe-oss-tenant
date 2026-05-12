@@ -16,12 +16,9 @@ import {
   BoxArchiveIcon,
   ChatsIcon,
   CheckCircleIcon,
-  ClipboardListIcon,
-  ComputerMouseIcon,
   HourglassClockIcon,
   MonitorIcon,
   PenEditIcon,
-  TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type ActionsMenuGroup,
@@ -44,6 +41,9 @@ import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
+import { useDeviceDetails } from '../../devices/hooks/use-device-details';
+import { getDeviceActionAvailability } from '../../devices/utils/device-action-utils';
+import { buildDeviceMenuItems } from '../../devices/utils/device-menu-items';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
   APPROVAL_STATUS,
@@ -88,6 +88,18 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const queryClient = useQueryClient();
   const { ticket: dialog, isPending: isLoading, error: dialogError } = useTicketDetail(ticketId);
+
+  // Device referenced by the ticket. Same hook & availability utility used by
+  // the Devices view, so remote-action gating stays in sync across views.
+  const machineId = useMemo(() => {
+    if (!dialog) return undefined;
+    return dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+  }, [dialog, isClientOwner]);
+  const { deviceDetails } = useDeviceDetails(machineId);
+  const actionAvailability = useMemo(
+    () => (deviceDetails ? getDeviceActionAvailability(deviceDetails) : null),
+    [deviceDetails],
+  );
 
   const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
     useTicketDetailsStore();
@@ -417,7 +429,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (!dialog) return [];
 
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
-    const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
 
     const ticketItems: ActionsMenuItem[] = [];
     const deviceItems: ActionsMenuItem[] = [];
@@ -432,39 +443,15 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
 
     if (machineId) {
-      deviceItems.push(
-        {
-          id: 'device-details',
-          label: 'Device Details',
-          icon: <MonitorIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}`,
-        },
-        {
-          id: 'remote-shell',
-          label: 'Remote Shell',
-          icon: <TerminalIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}/remote-shell`,
-        },
-        {
-          id: 'remote-control',
-          label: 'Remote Control',
-          icon: <ComputerMouseIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}/remote-desktop`,
-        },
-        {
-          id: 'device-logs',
-          label: 'Device Logs',
-          icon: <ClipboardListIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}?tab=logs`,
-        },
-      );
+      const items = buildDeviceMenuItems({ deviceId: machineId, availability: actionAvailability });
+      deviceItems.push(items.deviceDetails, items.remoteShell, items.remoteControl, items.deviceLogs);
     }
 
     const groups: ActionsMenuGroup[] = [];
     if (ticketItems.length > 0) groups.push({ items: ticketItems, separator: deviceItems.length > 0 });
     if (deviceItems.length > 0) groups.push({ items: deviceItems });
     return groups;
-  }, [dialog, isClientOwner, router]);
+  }, [dialog, machineId, actionAvailability, router]);
 
   const pageActions = useMemo<PageActionButton[]>(() => {
     if (!dialog) return [];

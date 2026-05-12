@@ -12,8 +12,8 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
 import type { Device } from '../types/device.types';
-import { getDeviceActionButtons, toActionsMenuItem } from '../utils/device-action-config';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
+import { buildDeviceMenuItems } from '../utils/device-menu-items';
 
 interface DeviceActionsDropdownProps {
   device: Device;
@@ -56,10 +56,17 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     }
   }, [deviceId, onRunScript, router]);
 
-  // Get unified action button configs
-  const actionButtons = useMemo(
-    () => getDeviceActionButtons(device, deviceId, isWindows),
-    [device, deviceId, isWindows],
+  // Shared registry of device menu items — same source used by Tickets view.
+  const menuItems = useMemo(
+    () =>
+      buildDeviceMenuItems({
+        deviceId,
+        availability: actionAvailability,
+        iconSize: 'w-6 h-6',
+        isWindows,
+        withNewTabAction: true,
+      }),
+    [deviceId, actionAvailability, isWindows],
   );
 
   // Build menu groups - different items for table vs detail context
@@ -70,9 +77,9 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     // In table context, include all remote actions
     // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
     if (context === 'table') {
-      actionItems.push(toActionsMenuItem(actionButtons.remoteShell, deviceId));
-      actionItems.push(toActionsMenuItem(actionButtons.remoteControl, deviceId));
-      actionItems.push(toActionsMenuItem(actionButtons.manageFiles, deviceId));
+      actionItems.push(menuItems.remoteShell);
+      actionItems.push(menuItems.remoteControl);
+      actionItems.push(menuItems.manageFiles);
     }
 
     // Run Script is always in the dropdown
@@ -127,17 +134,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
     }
 
     return groups;
-  }, [
-    context,
-    actionAvailability,
-    actionButtons.manageFiles,
-    actionButtons.remoteControl,
-    actionButtons.remoteShell,
-    deviceId,
-    handleRunScript,
-    openArchive,
-    openDelete,
-  ]);
+  }, [context, actionAvailability, menuItems, deviceId, handleRunScript, openArchive, openDelete]);
 
   // Don't render if no actions available
   if (menuGroups.length === 0 || menuGroups.every(g => g.items.length === 0)) {
