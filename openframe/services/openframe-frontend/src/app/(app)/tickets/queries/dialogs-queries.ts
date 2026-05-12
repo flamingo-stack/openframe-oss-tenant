@@ -12,22 +12,12 @@ export const GET_DIALOG_STATISTICS_QUERY = `
   }
 `;
 
-const CONTEXT_COMPACTION_FRAGMENT = `
-            ... on ContextCompactionStartData {
-              type
-            }
-
-            ... on ContextCompactionEndData {
-              type
-              summary
-            }`;
-
 const THINKING_FRAGMENT = `
             ... on ThinkingData {
               text
             }`;
 
-export function getDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
+export function getDialogMessagesQuery({ includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -100,7 +90,14 @@ export function getDialogMessagesQuery({ includeContextCompaction = false, inclu
               approvalType
             }
 
-            ${includeContextCompaction ? CONTEXT_COMPACTION_FRAGMENT : ''}
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }
 
             ... on ErrorData {
               error

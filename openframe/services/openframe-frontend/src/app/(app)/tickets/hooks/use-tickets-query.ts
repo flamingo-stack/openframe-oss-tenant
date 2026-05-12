@@ -9,12 +9,12 @@ import { type DialogsQueryParams, dialogsQueryKeys } from '../utils/query-keys';
 
 const TICKETS_PAGE_SIZE = 20;
 
-export function useTicketsQuery({ archived, search, statusFilters }: DialogsQueryParams) {
+export function useTicketsQuery({ archived, search, statusFilters, organizationIds, assigneeIds }: DialogsQueryParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const query = useInfiniteQuery<TicketsPage, Error>({
-    queryKey: dialogsQueryKeys.list({ archived, search, statusFilters }),
+    queryKey: dialogsQueryKeys.list({ archived, search, statusFilters, organizationIds, assigneeIds }),
     queryFn: async ({ pageParam }) => {
       let statuses: string[];
       if (statusFilters && statusFilters.length > 0) {
@@ -28,6 +28,8 @@ export function useTicketsQuery({ archived, search, statusFilters }: DialogsQuer
       return ticketService.fetchDialogs({
         statuses,
         search: search || undefined,
+        organizationIds: organizationIds?.length ? organizationIds : undefined,
+        assigneeIds: assigneeIds?.length ? assigneeIds : undefined,
         cursor: pageParam as string | undefined,
         limit: TICKETS_PAGE_SIZE,
       });
@@ -53,8 +55,10 @@ export function useTicketsQuery({ archived, search, statusFilters }: DialogsQuer
   const dialogs = useMemo(() => query.data?.pages.flatMap(page => page.dialogs) ?? [], [query.data?.pages]);
 
   const resetToFirstPage = useCallback(() => {
-    queryClient.resetQueries({ queryKey: dialogsQueryKeys.list({ archived, search, statusFilters }) });
-  }, [queryClient, archived, search, statusFilters]);
+    queryClient.resetQueries({
+      queryKey: dialogsQueryKeys.list({ archived, search, statusFilters, organizationIds, assigneeIds }),
+    });
+  }, [queryClient, archived, search, statusFilters, organizationIds, assigneeIds]);
 
   return {
     dialogs,

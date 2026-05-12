@@ -34,10 +34,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
-import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -78,6 +78,7 @@ interface TicketDetailsViewProps {
 
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
+  const handleBackToTickets = useSafeBack('/tickets');
   const { toast } = useToast();
   const initialAiModel = useAiModel();
   const [currentClientModel, setCurrentClientModel] = useState<{ provider: string; displayName: string } | null>(null);
@@ -524,14 +525,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
   const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
-  const showTokenMemory = !isClosed && featureFlags.tokenBasedMemory.enabled();
+  const showTokenMemory = !isClosed;
 
   return (
     <PageLayout
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
         label: 'Back',
-        onClick: () => router.push('/tickets'),
+        onClick: handleBackToTickets,
       }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] h-[calc(100%)]"
       actions={pageActions}
@@ -794,11 +795,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   reserveAvatarOffset={false}
                   placeholder="Enter your Request..."
                   onSend={handleSendAdminMessage}
-                  onStop={
-                    featureFlags.dialogStop.enabled() && isAdminChatTyping && adminPendingApprovals.length === 0
-                      ? handleStopGeneration
-                      : undefined
-                  }
+                  onStop={isAdminChatTyping && adminPendingApprovals.length === 0 ? handleStopGeneration : undefined}
                   sending={
                     isSendingAdminMessage ||
                     isAdminChatTyping ||

@@ -6,20 +6,28 @@ import { API_ENDPOINTS } from '../constants';
 import { getDialogMessagesQuery } from '../queries/dialogs-queries';
 import {
   ARCHIVE_TICKET_MUTATION,
+  GET_TICKET_QUERY,
+  GET_TICKET_STATUS_TRANSITIONS_QUERY,
+  GET_TICKETS_BOARD_QUERY,
   GET_TICKETS_QUERY,
-  getTicketQuery,
   PUT_TICKET_ON_HOLD_MUTATION,
   REOPEN_TICKET_MUTATION,
+  REORDER_TICKET_MUTATION,
   RESOLVE_TICKET_MUTATION,
 } from '../queries/ticket-queries';
 import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import type {
+  BoardStatus,
   FetchMessagesParams,
+  FetchTicketsBoardParams,
   FetchTicketsParams,
   MessagePage,
+  ReorderTicketParams,
   TicketService as TicketServiceInterface,
+  TicketStatusTransition,
+  TicketsBoardPage,
   TicketsPage,
 } from './ticket-service.types';
 
@@ -79,6 +87,7 @@ interface TicketNode {
   createdAt: string;
   updatedAt?: string;
   resolvedAt?: string;
+  order?: string;
 }
 
 interface TicketResponse {
@@ -142,6 +151,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
 
     currentMode: ticket.dialog?.currentMode,
     ticketNumber: ticket.ticketNumber,
+    order: ticket.order,
     dialogId: ticket.dialog?.id,
     description: ticket.description,
     creationSource: ticket.creationSource,
@@ -197,11 +207,18 @@ export class TicketService implements TicketServiceInterface {
     }
 
     const ticketStatuses = params.statuses.map(s => DIALOG_TO_TICKET_STATUS[s] || s);
+    const filter: Record<string, unknown> = { statuses: ticketStatuses };
+    if (params.organizationIds?.length) {
+      filter.organizationIds = params.organizationIds;
+    }
+    if (params.assigneeIds?.length) {
+      filter.assigneeIds = params.assigneeIds;
+    }
 
     const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
       query: GET_TICKETS_QUERY,
       variables: {
-        filter: { statuses: ticketStatuses },
+        filter,
         pagination: paginationVars,
         search: params.search || undefined,
       },
@@ -218,13 +235,47 @@ export class TicketService implements TicketServiceInterface {
         startCursor: null,
         endCursor: null,
       },
+      filteredCount: connection?.filteredCount ?? 0,
     };
   }
 
+  async fetchTicketsBoard(params: FetchTicketsBoardParams): Promise<TicketsBoardPage> {
+    const response = await apiClient.post<
+      GraphQlResponse<Record<'active' | 'techRequired' | 'onHold' | 'resolved', TicketsResponse['tickets']>>
+    >(API_ENDPOINTS.GRAPHQL, {
+      query: GET_TICKETS_BOARD_QUERY,
+      variables: {
+        limit: params.limit,
+        search: params.search || undefined,
+        organizationIds: params.organizationIds?.length ? params.organizationIds : undefined,
+        assigneeIds: params.assigneeIds?.length ? params.assigneeIds : undefined,
+      },
+    });
+
+    const data = extractGraphQlData(response);
+    const toPage = (conn: TicketsResponse['tickets'] | undefined): TicketsPage => ({
+      dialogs: (conn?.edges || []).map(edge => normalizeTicketToDialog(edge.node)),
+      pageInfo: conn?.pageInfo || {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null,
+      },
+      filteredCount: conn?.filteredCount ?? 0,
+    });
+
+    const result: Record<BoardStatus, TicketsPage> = {
+      ACTIVE: toPage(data.active),
+      TECH_REQUIRED: toPage(data.techRequired),
+      ON_HOLD: toPage(data.onHold),
+      RESOLVED: toPage(data.resolved),
+    };
+    return result;
+  }
+
   async fetchDialog(id: string): Promise<Dialog | null> {
-    const includeTokenUsage = featureFlags.tokenBasedMemory.enabled();
     const response = await apiClient.post<GraphQlResponse<TicketResponse>>(API_ENDPOINTS.GRAPHQL, {
-      query: getTicketQuery({ includeTokenUsage }),
+      query: GET_TICKET_QUERY,
       variables: { id },
     });
 
@@ -235,14 +286,13 @@ export class TicketService implements TicketServiceInterface {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
-    const includeContextCompaction = featureFlags.tokenBasedMemory.enabled();
     const includeThinking = featureFlags.thinking.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
+      query: getDialogMessagesQuery({ includeThinking }),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,
@@ -273,6 +323,46 @@ export class TicketService implements TicketServiceInterface {
       throw new Error(`Unsupported status transition: ${status}`);
     }
     return this.mutateTicketStatus(ticketId, mapped.mutation, mapped.key);
+  }
+
+  async fetchTicketStatusTransitions(): Promise<TicketStatusTransition[]> {
+    const response = await apiClient.post<
+      GraphQlResponse<{ ticketStatusTransitions: Array<{ from: string; to: string[] }> }>
+    >(API_ENDPOINTS.GRAPHQL, { query: GET_TICKET_STATUS_TRANSITIONS_QUERY });
+
+    const data = extractGraphQlData(response);
+    return data.ticketStatusTransitions.map(t => ({
+      from: TICKET_TO_DIALOG_STATUS[t.from] || (t.from as DialogStatus),
+      to: t.to.map(s => TICKET_TO_DIALOG_STATUS[s] || (s as DialogStatus)),
+    }));
+  }
+
+  async reorderTicket(params: ReorderTicketParams): Promise<DialogStatus> {
+    const input: Record<string, unknown> = {
+      id: params.id,
+      afterTicketId: params.afterTicketId,
+      beforeTicketId: params.beforeTicketId,
+    };
+    if (params.status) {
+      input.status = DIALOG_TO_TICKET_STATUS[params.status] ?? params.status;
+    }
+
+    const response = await apiClient.post<GraphQlResponse<Record<'reorderTicket', StatusMutationPayload>>>(
+      API_ENDPOINTS.GRAPHQL,
+      { query: REORDER_TICKET_MUTATION, variables: { input } },
+    );
+
+    const data = extractGraphQlData(response);
+    const payload = data.reorderTicket;
+
+    if (payload.userErrors?.length) {
+      throw new Error(payload.userErrors[0].message);
+    }
+    if (!payload.ticket) {
+      throw new Error('reorderTicket returned no ticket');
+    }
+
+    return TICKET_TO_DIALOG_STATUS[payload.ticket.status] || (payload.ticket.status as DialogStatus);
   }
 
   async sendMessage(dialogId: string, content: string, chatType: ChatType): Promise<void> {

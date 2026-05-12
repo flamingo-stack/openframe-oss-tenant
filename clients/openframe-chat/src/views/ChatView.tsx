@@ -43,7 +43,6 @@ function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsag
 
 export function ChatView() {
   const { flags } = useFeatureFlags();
-  const tokenBasedMemory = flags['token-based-memory'];
   const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
@@ -70,12 +69,9 @@ export function ChatView() {
   } | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
 
-  const handleTokenUsage = useCallback(
-    (data: TokenUsageData) => {
-      tokenBasedMemory && setTokenUsage(data);
-    },
-    [tokenBasedMemory],
-  );
+  const handleTokenUsage = useCallback((data: TokenUsageData) => {
+    setTokenUsage(data);
+  }, []);
 
   const handleDialogClosed = useCallback(() => {
     setActiveTicket(prev => (prev ? { ...prev, status: 'RESOLVED' } : { status: 'RESOLVED' }));
@@ -136,13 +132,13 @@ export function ChatView() {
   );
 
   const fetchResumableDialog = useCallback(() => {
-    dialogGraphQlService.getResumableDialog({ includeTokenUsage: tokenBasedMemory }).then(dialog => {
+    dialogGraphQlService.getResumableDialog().then(dialog => {
       setResumableDialog(dialog);
       if (dialog?.tokenUsage) {
         setTokenUsage(toTokenUsageData(dialog.tokenUsage));
       }
     });
-  }, [tokenBasedMemory]);
+  }, []);
 
   useEffect(() => {
     if (!flags.tickets) {
@@ -229,11 +225,10 @@ export function ChatView() {
   useEffect(() => {
     if (!dialogId) return;
     if (tokenUsage) return;
-    if (!tokenBasedMemory) return;
     dialogGraphQlService.getDialogTokenUsage(dialogId).then(usage => {
       if (usage) setTokenUsage(toTokenUsageData(usage));
     });
-  }, [dialogId, tokenBasedMemory]);
+  }, [dialogId, tokenUsage]);
 
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
@@ -401,7 +396,7 @@ export function ChatView() {
         ) : (
           <ChatInput
             onSend={sendMessage}
-            onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
+            onStop={isStreaming && !hasPendingApproval ? stopGeneration : undefined}
             sending={isStreaming || isCompacting || hasPendingApproval}
             awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
             placeholder="Enter your request here..."

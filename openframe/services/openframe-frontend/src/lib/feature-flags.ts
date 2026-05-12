@@ -35,16 +35,6 @@ export const featureFlags = {
       return getFlagValue('ssoAutoAllow', () => runtimeEnv.featureSsoAllowDomain());
     },
   },
-  dialogStop: {
-    enabled(): boolean {
-      return getFlagValue('dialog-stop', () => false);
-    },
-  },
-  tokenBasedMemory: {
-    enabled(): boolean {
-      return getFlagValue('token-based-memory', () => false);
-    },
-  },
   subscription: {
     enabled(): boolean {
       return getFlagValue('billings', () => false);
@@ -58,6 +48,16 @@ export const featureFlags = {
   knowledgeBase: {
     enabled(): boolean {
       return getFlagValue('knowledge-base', () => false);
+    },
+  },
+  notifications: {
+    enabled(): boolean {
+      return getFlagValue('notifications', () => false);
+    },
+  },
+  ticketsBoard: {
+    enabled(): boolean {
+      return getFlagValue('tickets-board', () => false);
     },
   },
 } as const;

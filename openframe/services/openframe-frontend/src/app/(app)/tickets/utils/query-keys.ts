@@ -6,6 +6,8 @@ export interface DialogsQueryParams {
   archived: boolean;
   search?: string;
   statusFilters?: string[];
+  organizationIds?: string[];
+  assigneeIds?: string[];
 }
 
 export const dialogsQueryKeys = {
@@ -23,6 +25,20 @@ export const dialogsQueryKeys = {
         archived: params.archived,
         search: params.search || '',
         statusFilters: params.statusFilters || [],
+        organizationIds: params.organizationIds || [],
+        assigneeIds: params.assigneeIds || [],
+      },
+    ] as const,
+
+  // Board view (multi-column snapshot) keyed by search + filters
+  board: (params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] }) =>
+    [
+      ...dialogsQueryKeys.all,
+      'board',
+      {
+        search: params.search || '',
+        organizationIds: params.organizationIds || [],
+        assigneeIds: params.assigneeIds || [],
       },
     ] as const,
 } as const;
@@ -42,4 +58,5 @@ export const ticketsQueryKeys = {
   labels: () => [...ticketsQueryKeys.all, 'labels'] as const,
   detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
   statistics: () => [...ticketsQueryKeys.all, 'statistics'] as const,
+  statusTransitions: () => [...ticketsQueryKeys.all, 'statusTransitions'] as const,
 } as const;

@@ -72,32 +72,7 @@ export interface MessagesConnection {
   pageInfo: PageInfo;
 }
 
-const TOKEN_USAGE_FRAGMENT = `
-      tokenUsage {
-        chatType
-        inputTokensSize
-        outputTokensSize
-        totalTokensSize
-        contextSize
-      }`;
-
-const CONTEXT_COMPACTION_FRAGMENT = `
-            ... on ContextCompactionStartData {
-              type
-            }
-
-            ... on ContextCompactionEndData {
-              type
-              summary
-            }`;
-
-const THINKING_FRAGMENT = `
-            ... on ThinkingData {
-              text
-            }`;
-
-function getResumableDialogQuery({ includeTokenUsage = false } = {}) {
-  return `
+const RESUMABLE_DIALOG_QUERY = `
   query GetDialog {
     resumableDialog {
       id
@@ -112,24 +87,38 @@ function getResumableDialogQuery({ includeTokenUsage = false } = {}) {
         dialogId
         createdAt
       }
-      ${includeTokenUsage ? TOKEN_USAGE_FRAGMENT : ''}
+      tokenUsage {
+        chatType
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
+      }
     }
   }
 `;
-}
 
-function getDialogTokenUsageQuery() {
-  return `
+const DIALOG_TOKEN_USAGE_QUERY = `
   query GetDialogById($id: ID!) {
     dialog(id: $id) {
       id
-      ${TOKEN_USAGE_FRAGMENT}
+      tokenUsage {
+        chatType
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
+      }
     }
   }
 `;
-}
 
-function getDialogMessagesQuery({ includeContextCompaction = false, includeThinking = false } = {}) {
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
+            }`;
+
+function getDialogMessagesQuery({ includeThinking = false } = {}) {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -202,7 +191,14 @@ function getDialogMessagesQuery({ includeContextCompaction = false, includeThink
               approvalType
             }
 
-            ${includeContextCompaction ? CONTEXT_COMPACTION_FRAGMENT : ''}
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
+            }
 
             ... on ErrorData {
               error
@@ -264,12 +260,10 @@ export class DialogGraphQlService {
     return client.request<T>(document, variables);
   }
 
-  async getResumableDialog({ includeTokenUsage = false } = {}): Promise<ResumableDialog | null> {
+  async getResumableDialog(): Promise<ResumableDialog | null> {
     try {
       await tokenService.ensureTokenReady();
-      const data = await this.request<{ resumableDialog: RawResumableDialog | null }>(
-        getResumableDialogQuery({ includeTokenUsage }),
-      );
+      const data = await this.request<{ resumableDialog: RawResumableDialog | null }>(RESUMABLE_DIALOG_QUERY);
       if (!data.resumableDialog) return null;
       const { tokenUsage, ...rest } = data.resumableDialog;
       return { ...rest, tokenUsage: pickClientChatTokenUsage(tokenUsage) };
@@ -283,13 +277,13 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
-    { includeContextCompaction = false, includeThinking = false } = {},
+    { includeThinking = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
       const data = await this.request<{ messages: MessagesConnection }>(
-        getDialogMessagesQuery({ includeContextCompaction, includeThinking }),
+        getDialogMessagesQuery({ includeThinking }),
         {
           dialogId,
           chatType: 'CLIENT_CHAT',
@@ -311,7 +305,7 @@ export class DialogGraphQlService {
     try {
       await tokenService.ensureTokenReady();
       const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsageEntry[] | null } | null }>(
-        getDialogTokenUsageQuery(),
+        DIALOG_TOKEN_USAGE_QUERY,
         { id: dialogId },
       );
       return pickClientChatTokenUsage(data.dialog?.tokenUsage);
