@@ -73,6 +73,7 @@ export function useTicketsBoardQuery({ search, organizationIds, assigneeIds }: U
     gcTime: 5 * 60_000,
     retry: 2,
     retryDelay: 1000,
+    refetchInterval: 30_000,
   });
 
   const [columns, setColumns] = useState<BoardColumnsState>(emptyColumns);
