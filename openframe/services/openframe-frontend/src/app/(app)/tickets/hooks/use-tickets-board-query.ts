@@ -4,7 +4,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ticketService } from '../services';
-import type { BoardStatus, TicketsBoardPage } from '../services/ticket-service.types';
+import type { BoardStatus, TicketsBoardPage, TicketsPage } from '../services/ticket-service.types';
 import type { Dialog } from '../types/dialog.types';
 import { dialogsQueryKeys } from '../utils/query-keys';
 
@@ -40,15 +40,22 @@ function emptyColumns(): BoardColumnsState {
   };
 }
 
-function pageToColumn(page: TicketsBoardPage[BoardStatus]): BoardColumnState {
+function pageToColumn(page: TicketsPage, isLoadingMore: boolean): BoardColumnState {
   return {
     tickets: page.dialogs,
     total: page.filteredCount,
     endCursor: page.pageInfo.endCursor ?? null,
     hasMore: !!page.pageInfo.hasNextPage,
-    isLoadingMore: false,
+    isLoadingMore,
   };
 }
+
+const EMPTY_LOADING_MORE: Record<BoardStatus, boolean> = {
+  ACTIVE: false,
+  TECH_REQUIRED: false,
+  ON_HOLD: false,
+  RESOLVED: false,
+};
 
 export interface UseTicketsBoardQueryParams {
   search?: string;
@@ -60,15 +67,25 @@ export function useTicketsBoardQuery({ search, organizationIds, assigneeIds }: U
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const queryKey = useMemo(
+    () => dialogsQueryKeys.board({ search, organizationIds, assigneeIds }),
+    [search, organizationIds, assigneeIds],
+  );
+
   const query = useQuery<TicketsBoardPage, Error>({
-    queryKey: dialogsQueryKeys.board({ search, organizationIds, assigneeIds }),
-    queryFn: () =>
-      ticketService.fetchTicketsBoard({
+    queryKey,
+    queryFn: () => {
+      const cached = queryClient.getQueryData<TicketsBoardPage>(queryKey);
+      const limit = cached
+        ? Math.max(BOARD_INITIAL_PAGE_SIZE, ...BOARD_STATUSES.map(s => cached[s].dialogs.length))
+        : BOARD_INITIAL_PAGE_SIZE;
+      return ticketService.fetchTicketsBoard({
         search: search || undefined,
         organizationIds: organizationIds?.length ? organizationIds : undefined,
         assigneeIds: assigneeIds?.length ? assigneeIds : undefined,
-        limit: BOARD_INITIAL_PAGE_SIZE,
-      }),
+        limit,
+      });
+    },
     staleTime: 60_000,
     gcTime: 5 * 60_000,
     retry: 2,
@@ -76,17 +93,17 @@ export function useTicketsBoardQuery({ search, organizationIds, assigneeIds }: U
     refetchInterval: 30_000,
   });
 
-  const [columns, setColumns] = useState<BoardColumnsState>(emptyColumns);
+  const [loadingMore, setLoadingMore] = useState<Record<BoardStatus, boolean>>(EMPTY_LOADING_MORE);
 
-  useEffect(() => {
-    if (!query.data) return;
-    setColumns({
-      ACTIVE: pageToColumn(query.data.ACTIVE),
-      TECH_REQUIRED: pageToColumn(query.data.TECH_REQUIRED),
-      ON_HOLD: pageToColumn(query.data.ON_HOLD),
-      RESOLVED: pageToColumn(query.data.RESOLVED),
-    });
-  }, [query.data]);
+  const columns = useMemo<BoardColumnsState>(() => {
+    if (!query.data) return emptyColumns();
+    return {
+      ACTIVE: pageToColumn(query.data.ACTIVE, loadingMore.ACTIVE),
+      TECH_REQUIRED: pageToColumn(query.data.TECH_REQUIRED, loadingMore.TECH_REQUIRED),
+      ON_HOLD: pageToColumn(query.data.ON_HOLD, loadingMore.ON_HOLD),
+      RESOLVED: pageToColumn(query.data.RESOLVED, loadingMore.RESOLVED),
+    };
+  }, [query.data, loadingMore]);
 
   useEffect(() => {
     if (query.error) {
@@ -103,10 +120,10 @@ export function useTicketsBoardQuery({ search, organizationIds, assigneeIds }: U
       const status = columnId as BoardStatus;
       if (!BOARD_STATUSES.includes(status)) return;
 
-      const current = columns[status];
-      if (!current.hasMore || current.isLoadingMore || !current.endCursor) return;
+      const current = query.data?.[status];
+      if (!current?.pageInfo.hasNextPage || !current.pageInfo.endCursor || loadingMore[status]) return;
 
-      setColumns(prev => ({ ...prev, [status]: { ...prev[status], isLoadingMore: true } }));
+      setLoadingMore(prev => ({ ...prev, [status]: true }));
 
       try {
         const page = await ticketService.fetchDialogs({
@@ -114,41 +131,39 @@ export function useTicketsBoardQuery({ search, organizationIds, assigneeIds }: U
           search: search || undefined,
           organizationIds: organizationIds?.length ? organizationIds : undefined,
           assigneeIds: assigneeIds?.length ? assigneeIds : undefined,
-          cursor: current.endCursor,
+          cursor: current.pageInfo.endCursor,
           limit: BOARD_LOAD_MORE_PAGE_SIZE,
         });
 
-        setColumns(prev => {
-          const existingIds = new Set(prev[status].tickets.map(t => t.id));
-          const newTickets = page.dialogs.filter(t => !existingIds.has(t.id));
+        queryClient.setQueryData<TicketsBoardPage>(queryKey, prev => {
+          if (!prev) return prev;
+          const existingIds = new Set(prev[status].dialogs.map(t => t.id));
+          const newDialogs = page.dialogs.filter(t => !existingIds.has(t.id));
           return {
             ...prev,
             [status]: {
-              tickets: [...prev[status].tickets, ...newTickets],
-              total: page.filteredCount,
-              endCursor: page.pageInfo.endCursor ?? null,
-              hasMore: !!page.pageInfo.hasNextPage,
-              isLoadingMore: false,
+              dialogs: [...prev[status].dialogs, ...newDialogs],
+              filteredCount: page.filteredCount,
+              pageInfo: page.pageInfo,
             },
           };
         });
       } catch (err) {
-        setColumns(prev => ({ ...prev, [status]: { ...prev[status], isLoadingMore: false } }));
         toast({
           title: 'Failed to Load More Tickets',
           description: err instanceof Error ? err.message : 'Unknown error',
           variant: 'destructive',
         });
+      } finally {
+        setLoadingMore(prev => ({ ...prev, [status]: false }));
       }
     },
-    [columns, search, organizationIds, assigneeIds, toast],
+    [query.data, loadingMore, search, organizationIds, assigneeIds, queryClient, queryKey, toast],
   );
 
   const refetch = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: dialogsQueryKeys.board({ search, organizationIds, assigneeIds }),
-    });
-  }, [queryClient, search, organizationIds, assigneeIds]);
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]);
 
   return useMemo(
     () => ({
