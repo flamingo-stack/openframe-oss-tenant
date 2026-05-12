@@ -37,6 +37,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
@@ -77,6 +78,7 @@ interface TicketDetailsViewProps {
 
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
+  const handleBackToTickets = useSafeBack('/tickets');
   const { toast } = useToast();
   const initialAiModel = useAiModel();
   const [currentClientModel, setCurrentClientModel] = useState<{ provider: string; displayName: string } | null>(null);
@@ -543,7 +545,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       title={dialog.title || 'Untitled Dialog'}
       backButton={{
         label: 'Back',
-        onClick: () => router.push('/tickets'),
+        onClick: handleBackToTickets,
       }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] h-[calc(100%)]"
       actions={pageActions}

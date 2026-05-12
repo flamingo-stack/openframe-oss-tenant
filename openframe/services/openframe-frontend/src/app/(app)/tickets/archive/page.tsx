@@ -3,12 +3,14 @@
 export const dynamic = 'force-dynamic';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { ArchivedTickets } from '../components/tickets-table';
 
 export default function TicketsArchive() {
   const router = useRouter();
+  const handleBack = useSafeBack('/tickets');
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -16,8 +18,6 @@ export default function TicketsArchive() {
       return;
     }
   }, [router]);
-
-  const handleBack = useCallback(() => router.push('/tickets'), [router]);
 
   if (!isSaasTenantMode()) {
     return null;
