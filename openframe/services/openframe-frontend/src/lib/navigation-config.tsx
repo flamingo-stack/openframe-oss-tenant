@@ -31,8 +31,8 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
       id: 'organizations',
       label: 'Customers',
       icon: <IdCardIcon size={24} />,
-      path: '/organizations',
-      isActive: pathname.startsWith('/organizations'),
+      path: '/customers',
+      isActive: pathname.startsWith('/customers'),
     },
     {
       id: 'devices',

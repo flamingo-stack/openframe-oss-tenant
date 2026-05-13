@@ -2,9 +2,9 @@
 
 import { Skeleton, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useMemo, useState } from 'react';
+import { CustomersAssignedTable } from './tables/customers-assigned-table';
 import { DevicesAssignedTable } from './tables/devices-assigned-table';
 import { KnowledgeBaseAssignedTable } from './tables/knowledge-base-assigned-table';
-import { OrganizationsAssignedTable } from './tables/organizations-assigned-table';
 import { TicketsAssignedTable } from './tables/tickets-assigned-table';
 import { TARGET_CONFIG } from './target-config';
 import { ASSIGNMENT_TARGET_TYPES, type AssignmentItemType, type AssignmentTargetType } from './types';
@@ -17,7 +17,7 @@ export interface AssignedItemsViewProps {
 }
 
 export function AssignedItemsView({ itemId, itemType, className }: AssignedItemsViewProps) {
-  const { value, organizations, devices, articles, tickets, isLoading } = useAssignedItems({ itemId, itemType });
+  const { value, customers, devices, articles, tickets, isLoading } = useAssignedItems({ itemId, itemType });
 
   const activeTypes = useMemo(() => ASSIGNMENT_TARGET_TYPES.filter(type => (value[type]?.length ?? 0) > 0), [value]);
 
@@ -37,7 +37,7 @@ export function AssignedItemsView({ itemId, itemType, className }: AssignedItems
   const renderTabBody = (type: AssignmentTargetType) => {
     switch (type) {
       case 'ORGANIZATION':
-        return <OrganizationsAssignedTable organizations={organizations ?? []} isLoading={isLoading} />;
+        return <CustomersAssignedTable customers={customers ?? []} isLoading={isLoading} />;
       case 'DEVICE':
         return <DevicesAssignedTable devices={devices ?? []} isLoading={isLoading} />;
       case 'KNOWLEDGE_ARTICLE':

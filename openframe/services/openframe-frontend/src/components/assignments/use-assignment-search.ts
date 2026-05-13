@@ -35,7 +35,7 @@ const KNOWLEDGE_ARTICLES_SEARCH_QUERY = `#graphql
   }
 `;
 
-const fetchOrganizations = async (search: string): Promise<AssignmentSearchOption[]> => {
+const fetchCustomers = async (search: string): Promise<AssignmentSearchOption[]> => {
   const data = await postGraphQl<{ organizations: ConnectionEdges<{ id: string; name: string }> }>(
     ORGANIZATIONS_SEARCH_QUERY,
     { search, first: PAGE_SIZE },
@@ -74,7 +74,7 @@ const fetchKnowledgeArticles = async (search: string): Promise<AssignmentSearchO
 };
 
 const FETCHERS: Record<AssignmentTargetType, (search: string) => Promise<AssignmentSearchOption[]>> = {
-  ORGANIZATION: fetchOrganizations,
+  ORGANIZATION: fetchCustomers,
   DEVICE: fetchDevices,
   TICKET: fetchTickets,
   KNOWLEDGE_ARTICLE: fetchKnowledgeArticles,
