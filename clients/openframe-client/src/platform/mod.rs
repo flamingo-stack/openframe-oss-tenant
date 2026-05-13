@@ -10,8 +10,6 @@ pub mod permissions;
 pub mod system_service;
 pub mod tool_updater;
 pub mod uninstall;
-pub mod update_scripts;
-pub mod updater_launcher;
 pub mod user_session;
 
 #[cfg(target_os = "macos")]

@@ -16,6 +16,9 @@ pub fn lookup(tool_key: &str) -> Option<&'static str> {
         #[cfg(feature = "osquery-version")]
         "osqueryd" => Some(env!("OSQUERY_VERSION")),
 
+        #[cfg(feature = "openframe-client-updater-version")]
+        "openframe-client-updater" => Some(env!("OPENFRAME_CLIENT_UPDATER_VERSION")),
+
         _ => None,
     }
 }

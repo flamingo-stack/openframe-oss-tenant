@@ -48,6 +48,20 @@ impl UpdateProgressPublisher {
         }
     }
 
+    // Reports the updater's own version to the backend on startup.
+    pub async fn publish_updater_version(&self) {
+        let version = env!("OPENFRAME_UPDATER_VERSION");
+        let subject = self.installed_agent_subject();
+        let msg = InstalledAgentMessage {
+            agent_type: "openframe-client-updater".to_string(),
+            version: version.to_string(),
+        };
+        info!(version = %version, subject = %subject, "Reporting updater version to backend");
+        if let Err(e) = self.nats_publisher.publish(&subject, &msg).await {
+            warn!("Failed to publish updater version: {}", e);
+        }
+    }
+
     // Also publishes installed-agent for backward compat with the existing backend handler.
     pub async fn publish_success(&self, version: &str) {
         self.publish(&UpdaterPhase::Completed, version).await;

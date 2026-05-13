@@ -33,6 +33,10 @@ tacticalrmm-agent-version  = []
 # These binaries ship as assets under another tool and can be pinned independently.
 osquery-version            = []
 
+# Pins the version of openframe-client-updater installed on managed machines.
+# When enabled, overrides whatever version the backend requests via TOOL_UPDATE.
+openframe-client-updater-version = []
+
 # Umbrella — enables every override above.
 all-tool-versions = [
     "openframe-chat-version",
@@ -40,6 +44,7 @@ all-tool-versions = [
     "fleetmdm-agent-version",
     "tacticalrmm-agent-version",
     "osquery-version",
+    "openframe-client-updater-version",
 ]
 
 [dependencies]
@@ -110,20 +115,3 @@ OpenFrame is a powerful system management and monitoring solution that provides:
 - Integration with various management platforms
 """
 
-[package.metadata.velopack]
-version = "0.1.0"
-product-name = "OpenFrame"
-executable = "openframe-client"
-authors = ["Flamingo Team"]
-first-run = true
-license = "MIT"
-support-url = "https://github.com/flamingo-stack/openframe-oss-tenant"
-icon = "icons/icon.ico"
-splash-image = "icons/splash.png"
-release-notes = "Initial release of OpenFrame"
-setup-icon = "icons/setup.ico"
-company-name = "Flamingo"
-copyright = "Copyright © 2024 Flamingo Team"
-suggest-reboot = false
-compression-level = "normal"
-delta = true 

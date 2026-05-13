@@ -52,11 +52,8 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
-use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
-use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
 use crate::services::tool_agent_update_service::ToolAgentUpdateService;
-use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::initial_authentication_processor::InitialAuthenticationProcessor;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::installed_agent_message_publisher::InstalledAgentMessagePublisher;
@@ -66,7 +63,7 @@ use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
-use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
+use crate::services::InitialKeyService;
 use crate::services::command_execution_service::CommandExecutionService;
 use crate::listener::command_execution_listener::CommandExecutionListener;
 use crate::logging::nats_streaming::LogStreamingRunManager;
@@ -141,13 +138,11 @@ pub struct Client {
     auth_processor: InitialAuthenticationProcessor,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
-    openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
     command_execution_listener: CommandExecutionListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
-    update_handler_service: UpdateHandlerService,
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
@@ -333,18 +328,8 @@ impl Client {
             tool_connection_service.clone(),
         );
 
-        // Initialize OpenFrame client info service
-        let openframe_client_info_service = OpenFrameClientInfoService::new(directory_manager.clone())
-            .context("Failed to initialize OpenFrame client info service")?;
-
-        // Initialize GitHub download service (used by update and installation services)
+        // Initialize GitHub download service (used by tool installation and update services)
         let github_download_service = GithubDownloadService::new(download_client.clone(), DmgExtractor::new());
-
-        // Initialize update state and cleanup services (needed by update service)
-        let update_state_service = UpdateStateService::new(directory_manager.clone())
-            .context("Failed to initialize update state service")?;
-        let update_cleanup_service = UpdateCleanupService::new()
-            .context("Failed to initialize update cleanup service")?;
 
         // Initialize tool installation service
         let tool_installation_service = ToolInstallationService::new(
@@ -360,14 +345,6 @@ impl Client {
             config_service.clone(),
             installed_agent_message_publisher.clone(),
             tool_connection_service.clone(),
-        );
-
-        // Initialize OpenFrame client update service
-        let openframe_client_update_service = OpenFrameClientUpdateService::new(
-            openframe_client_info_service.clone(),
-            github_download_service.clone(),
-            update_state_service.clone(),
-            tool_run_manager.clone(),
         );
 
         // Initialize tool agent update service
@@ -387,13 +364,6 @@ impl Client {
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
             nats_connection_manager.clone(), 
             tool_installation_service, 
-            config_service.clone()
-        );
-
-        // Initialize OpenFrame client update listener
-        let openframe_client_update_listener = OpenFrameClientUpdateListener::new(
-            nats_connection_manager.clone(),
-            openframe_client_update_service,
             config_service.clone()
         );
 
@@ -420,15 +390,6 @@ impl Client {
         );
         let machine_heartbeat_run_manager = MachineHeartbeatRunManager::new(machine_heartbeat_publisher);
 
-        // Initialize update handler service
-        let update_handler_service = UpdateHandlerService::new(
-            update_state_service.clone(),
-            openframe_client_info_service.clone(),
-            update_cleanup_service.clone(),
-            installed_agent_message_publisher.clone(),
-            config_service.clone(),
-        );
-
         Ok(Self {
             config,
             directory_manager,
@@ -436,13 +397,11 @@ impl Client {
             auth_processor,
             nats_connection_manager,
             tool_installation_message_listener,
-            openframe_client_update_listener,
             tool_agent_update_listener,
             command_execution_listener,
             tool_run_manager,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
-            update_handler_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
             installed_tools_service,
@@ -469,20 +428,11 @@ impl Client {
         // Connect to NATS
         self.nats_connection_manager.connect().await?;
 
-        // Handle any pending update from previous run (after NATS is connected)
-        if let Err(e) = self.update_handler_service.handle_pending_update().await {
-            error!("Failed to handle pending update: {:#}", e);
-            // Continue startup even if update handling fails - don't block the client
-        }
-
         // Start machine heartbeat run manager
         self.machine_heartbeat_run_manager.start();
 
         //Start tool installation message listener in background
         self.tool_installation_message_listener.start().await?;
-
-        // Start OpenFrame client update listener in background
-        self.openframe_client_update_listener.start().await?;
 
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;

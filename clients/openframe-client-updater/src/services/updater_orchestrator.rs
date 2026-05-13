@@ -93,6 +93,8 @@ impl UpdaterOrchestrator {
         state_service.cleanup_legacy_state();
         self.recover_from_crash(&state_service, &progress_publisher).await?;
 
+        progress_publisher.publish_updater_version().await;
+
         let download_service = GithubDownloadService::new(http_client);
 
         let update_service = ClientUpdateService::new(
