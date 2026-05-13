@@ -1,3 +1,6 @@
+'use client';
+
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { postGraphQl } from './graphql';
 import { ensureGlobalId } from './relay-id';
 import { ASSIGNMENT_TARGET_TYPES, type AssignmentItemType, type AssignmentsValue } from './types';
@@ -19,12 +22,14 @@ const UNASSIGN_ITEM_MUTATION = `#graphql
   }
 `;
 
-export async function applyAssignmentsDiff(
-  itemId: string,
-  itemType: AssignmentItemType,
-  prev: AssignmentsValue,
-  next: AssignmentsValue,
-): Promise<void> {
+interface ApplyAssignmentsDiffInput {
+  itemId: string;
+  itemType: AssignmentItemType;
+  prev: AssignmentsValue;
+  next: AssignmentsValue;
+}
+
+async function applyAssignmentsDiff({ itemId, itemType, prev, next }: ApplyAssignmentsDiffInput): Promise<void> {
   const normalizedItemId = ensureGlobalId(itemType, itemId);
   const tasks: Promise<unknown>[] = [];
 
@@ -58,4 +63,14 @@ export async function applyAssignmentsDiff(
   }
 
   await Promise.all(tasks);
+}
+
+export function useApplyAssignmentsDiff() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: applyAssignmentsDiff,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['assignments', 'assigned-items'] });
+    },
+  });
 }

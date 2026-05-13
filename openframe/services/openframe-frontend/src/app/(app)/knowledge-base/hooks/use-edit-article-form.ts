@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { applyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
+import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
 import { useCreateArticle } from './use-create-article';
@@ -56,6 +56,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
   const { addTag } = useAddTag();
   const { removeTag } = useRemoveTag();
   const { createTag } = useCreateKnowledgeBaseTag();
+  const { mutateAsync: applyAssignmentsDiff } = useApplyAssignmentsDiff();
 
   const initialTagRefs = useMemo<ArticleTagRef[]>(() => {
     if (!initialArticle?.tags) return [];
@@ -132,7 +133,12 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 }),
                 ...toAdd.map(tagId => addTag(articleId, tagId)),
                 ...toRemove.map(tagId => removeTag(articleId, tagId)),
-                applyAssignmentsDiff(articleId, 'KNOWLEDGE_ARTICLE', assignedItems.value, data.assignments ?? {}),
+                applyAssignmentsDiff({
+                  itemId: articleId,
+                  itemType: 'KNOWLEDGE_ARTICLE',
+                  prev: assignedItems.value,
+                  next: data.assignments ?? {},
+                }),
               ]);
 
               const currentStatus = (initialArticle.status ?? 'DRAFT') as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
@@ -178,7 +184,12 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 connections: [targetConnectionId],
               });
               if (data.assignments && Object.keys(data.assignments).length > 0) {
-                await applyAssignmentsDiff(result.id, 'KNOWLEDGE_ARTICLE', {}, data.assignments);
+                await applyAssignmentsDiff({
+                  itemId: result.id,
+                  itemType: 'KNOWLEDGE_ARTICLE',
+                  prev: {},
+                  next: data.assignments,
+                });
               }
               toast({ title: 'Success', description: 'Article created', variant: 'success' });
               router.push(`/knowledge-base/details/${result.id}`);
@@ -203,6 +214,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     },
     [
       addTag,
+      applyAssignmentsDiff,
       articleId,
       assignedItems.value,
       createArticle,
