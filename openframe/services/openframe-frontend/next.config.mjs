@@ -8,6 +8,7 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: projectRoot,
+  transpilePackages: ['@flamingo-stack/openframe-frontend-core'],
   trailingSlash: true,
   distDir: 'dist',
   images: {

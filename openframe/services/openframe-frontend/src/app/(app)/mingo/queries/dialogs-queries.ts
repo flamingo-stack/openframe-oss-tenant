@@ -103,6 +103,7 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
               parameters
               requiresApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ExecutedToolData {
@@ -113,6 +114,7 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
               success
               requiredApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ApprovalRequestData {
@@ -121,6 +123,16 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
               approvalType
               command
               explanation
+              toolCalls {
+                toolExecutionRequestId
+                toolName
+                toolTitle
+                toolExplanation
+                toolType
+                requiresApproval
+                approvalType
+                toolCallArguments
+              }
             }
 
             ... on ApprovalResultData {
