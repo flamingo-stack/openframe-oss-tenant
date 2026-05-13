@@ -1,6 +1,7 @@
 import {
   type ChatApprovalStatus,
   type Message,
+  type PendingToolCallData,
   processHistoricalMessages,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
@@ -46,7 +47,10 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     if (!data?.pages) {
       return {
         historicalMessages: [] as Message[],
-        escalatedApprovals: new Map() as Map<string, { command: string; explanation?: string; approvalType: string }>,
+        escalatedApprovals: new Map() as Map<
+          string,
+          { command: string; explanation?: string; approvalType: string; toolCalls?: PendingToolCallData[] }
+        >,
       };
     }
 
@@ -65,10 +69,11 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       approvalStatuses,
       assistantAvatar: faeAvatar,
       displayApprovalTypes: ['CLIENT'],
+      batchApprovalsEnabled: flags['batch-approvals'],
     });
 
     return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses]);
+  }, [data?.pages, onApprove, onReject, approvalStatuses, flags]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });
