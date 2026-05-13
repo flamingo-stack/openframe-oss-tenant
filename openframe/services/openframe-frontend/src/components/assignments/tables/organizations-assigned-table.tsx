@@ -31,7 +31,7 @@ export function OrganizationsAssignedTable({ organizations, isLoading }: Organiz
       <OrganizationsTableBody
         organizations={filtered}
         isLoading={isLoading}
-        emptyMessage="No organizations assigned."
+        emptyMessage="No customers assigned."
         skeletonRows={3}
       />
     </div>

@@ -102,7 +102,7 @@ export function TicketFormFields({
             const selectedOrg = organizationOptions.options.find(o => o.value === field.value);
             return (
               <Autocomplete
-                label="Organization"
+                label="Customer"
                 options={organizationOptions.options}
                 value={field.value ?? null}
                 onChange={val => {
@@ -111,7 +111,7 @@ export function TicketFormFields({
                   setDeviceSearch('');
                 }}
                 onInputChange={setOrgSearch}
-                placeholder="Select Organization"
+                placeholder="Select Customer"
                 loading={organizationOptions.isLoading}
                 disabled={isFaeForm || lockOrgAndDevice}
                 disableClientFilter
@@ -134,7 +134,7 @@ export function TicketFormFields({
               value={field.value ?? null}
               onChange={val => field.onChange(val)}
               onInputChange={setDeviceSearch}
-              placeholder={selectedOrgId ? 'Select Device' : 'Select Organization first'}
+              placeholder={selectedOrgId ? 'Select Device' : 'Select Customer first'}
               loading={deviceOptions.isLoading}
               disabled={isFaeForm || !selectedOrgId || lockOrgAndDevice}
               disableClientFilter

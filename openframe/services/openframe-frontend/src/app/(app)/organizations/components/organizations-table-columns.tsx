@@ -176,7 +176,7 @@ interface OrganizationsSearchInputProps {
 export function OrganizationsSearchInput({ value, onChange }: OrganizationsSearchInputProps) {
   return (
     <Input
-      placeholder="Search for Organization"
+      placeholder="Search for Customer"
       value={value}
       onChange={e => onChange(e.target.value)}
       startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
@@ -196,7 +196,7 @@ interface OrganizationsTableBodyProps {
 export function OrganizationsTableBody({
   organizations,
   isLoading,
-  emptyMessage = 'No organizations found.',
+  emptyMessage = 'No customers found.',
   skeletonRows = 10,
   stickyHeaderOffset,
   footerSlot,

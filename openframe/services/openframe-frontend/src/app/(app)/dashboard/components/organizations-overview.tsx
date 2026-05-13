@@ -101,13 +101,13 @@ export function OrganizationsOverviewSection() {
   return (
     <div className="space-y-4">
       <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-        Organizations Overview
+        Customers Overview
       </h2>
       {loading ? (
         <Skeleton className="h-5 w-48" />
       ) : (
         <p className="text-ods-text-secondary font-['DM_Sans'] font-medium text-[14px]">
-          {totalOrganizations.toLocaleString()} Organizations in Total
+          {totalOrganizations.toLocaleString()} Customers in Total
         </p>
       )}
 

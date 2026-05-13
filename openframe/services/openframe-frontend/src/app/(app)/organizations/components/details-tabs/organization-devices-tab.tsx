@@ -119,7 +119,7 @@ export function OrganizationDevicesTab({ organizationId }: OrganizationDevicesTa
         <DataTable.Body
           loading={isLoading}
           skeletonRows={8}
-          emptyMessage="No devices found for this organization."
+          emptyMessage="No devices found for this customer."
           rowHref={deviceRowHref}
           rowClassName="mb-1"
         />

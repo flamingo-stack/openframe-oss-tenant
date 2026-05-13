@@ -17,13 +17,13 @@ function ArchivedOrganizations() {
 export const ORGANIZATIONS_TABS: TabItem[] = [
   {
     id: 'active',
-    label: 'Active Organizations',
+    label: 'Active Customers',
     icon: IdCardIcon,
     component: ActiveOrganizations,
   },
   {
     id: 'archived',
-    label: 'Archived Organizations',
+    label: 'Archived Customers',
     icon: BoxArchiveIcon,
     component: ArchivedOrganizations,
   },

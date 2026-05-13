@@ -131,7 +131,7 @@ export function DeviceSelector({
       },
       {
         key: 'organization',
-        label: 'ORGANIZATION',
+        label: 'CUSTOMER',
         width: 'w-1/4',
         hideAt: 'lg',
         renderCell: (device: Device) => {
@@ -141,7 +141,7 @@ export function DeviceSelector({
               {featureFlags.organizationImages.displayEnabled() && (
                 <OrganizationIcon
                   imageUrl={fullImageUrl}
-                  organizationName={device.organization || 'Organization'}
+                  organizationName={device.organization || 'Customer'}
                   size="sm"
                 />
               )}

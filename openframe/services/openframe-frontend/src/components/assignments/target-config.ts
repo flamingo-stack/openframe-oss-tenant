@@ -22,9 +22,9 @@ export interface TargetMeta {
 
 export const TARGET_CONFIG: Record<AssignmentTargetType, TargetMeta> = {
   ORGANIZATION: {
-    rowLabel: 'Assigned Organizations',
-    menuLabel: 'Organization',
-    tabLabel: 'Organizations',
+    rowLabel: 'Assigned Customers',
+    menuLabel: 'Customer',
+    tabLabel: 'Customers',
     icon: IdCardIcon,
   },
   DEVICE: { rowLabel: 'Assigned Devices', menuLabel: 'Device', tabLabel: 'Devices', icon: MonitorIcon },

@@ -118,7 +118,7 @@ function OrganizationCell({ device }: { device: Device }) {
   return (
     <div className="flex items-center gap-3">
       {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Organization'} size="sm" />
+        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Customer'} size="sm" />
       )}
       <div className="flex flex-col justify-center flex-1 min-w-0">
         <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
@@ -180,7 +180,7 @@ export function getDeviceFilterColumns(deviceFilters?: DeviceFilters | null): De
     },
     {
       key: 'organization',
-      label: 'ORGANIZATION',
+      label: 'CUSTOMER',
       filterable: true,
       filterOptions: deduplicateFilterOptions(
         deviceFilters?.organizationIds?.map(org => ({
@@ -276,7 +276,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
     {
       accessorKey: 'organization',
       id: 'organization',
-      header: 'ORGANIZATION',
+      header: 'CUSTOMER',
       cell: ({ row }: { row: Row<Device> }) => <OrganizationCell device={row.original} />,
       meta: {
         width: 'w-1/6',

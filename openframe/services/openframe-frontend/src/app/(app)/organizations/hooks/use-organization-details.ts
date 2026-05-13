@@ -93,7 +93,7 @@ async function fetchOrganization(id: string): Promise<OrganizationDetails> {
 
   const org = (response.data as any)?.data?.organizationByOrganizationId;
   if (!org) {
-    throw new Error('Organization not found');
+    throw new Error('Customer not found');
   }
 
   return mapOrganization(org);

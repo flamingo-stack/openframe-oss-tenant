@@ -15,7 +15,7 @@ export function useOrganizationArchive() {
   const archiveOrganization = useCallback(async (id: string) => {
     const resp = await apiClient.patch(`/api/organizations/${id}/status`, { status: 'ARCHIVED' });
     if (!resp.ok) {
-      throw new Error(resp.error || 'Failed to archive organization');
+      throw new Error(resp.error || 'Failed to archive customer');
     }
     return resp.data;
   }, []);
@@ -23,7 +23,7 @@ export function useOrganizationArchive() {
   const restoreOrganization = useCallback(async (id: string) => {
     const resp = await apiClient.patch(`/api/organizations/${id}/status`, { status: 'ACTIVE' });
     if (!resp.ok) {
-      throw new Error(resp.error || 'Failed to restore organization');
+      throw new Error(resp.error || 'Failed to restore customer');
     }
     return resp.data;
   }, []);

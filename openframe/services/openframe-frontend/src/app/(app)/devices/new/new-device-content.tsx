@@ -41,7 +41,7 @@ const newDeviceContentQuery = graphql`
 `;
 
 const newDeviceSchema = z.object({
-  organizationId: z.string().min(1, 'Organization is required'),
+  organizationId: z.string().min(1, 'Customer is required'),
   platform: z.custom<OSPlatformId>(),
 });
 
@@ -110,7 +110,7 @@ export function NewDeviceContent() {
   const validateBeforeAction = useCallback(async () => {
     const valid = await form.trigger();
     if (!valid) {
-      toast({ title: 'Validation error', description: 'Please select an organization', variant: 'destructive' });
+      toast({ title: 'Validation error', description: 'Please select a customer', variant: 'destructive' });
       return false;
     }
     if (!initialKey) {
@@ -241,8 +241,8 @@ export function NewDeviceContent() {
                 options={orgOptions}
                 value={field.value || null}
                 onChange={val => field.onChange(val ?? '')}
-                label="Select Organization"
-                placeholder="Choose organization"
+                label="Select Customer"
+                placeholder="Choose customer"
                 loading={false}
                 error={fieldState.error?.message}
                 startAdornment={

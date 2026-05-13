@@ -38,13 +38,13 @@ export function useUnlinkOrganization(onSuccess?: () => void) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
-      toast({ title: 'Success', description: 'Organization unlinked from ticket', variant: 'success' });
+      toast({ title: 'Success', description: 'Customer unlinked from ticket', variant: 'success' });
       onSuccess?.();
     },
     onError: err => {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to unlink organization',
+        description: err instanceof Error ? err.message : 'Failed to unlink customer',
         variant: 'destructive',
       });
     },

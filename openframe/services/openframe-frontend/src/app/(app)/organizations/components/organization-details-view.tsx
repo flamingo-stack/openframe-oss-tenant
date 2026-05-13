@@ -95,10 +95,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       await archiveOrganization(organization.organizationId);
       await queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.all });
       await queryClient.invalidateQueries({ queryKey: organizationDetailsQueryKeys.detail(id) });
-      toast({ title: 'Organization archived', description: `${organization.name} was archived` });
+      toast({ title: 'Customer archived', description: `${organization.name} was archived` });
       router.push('/organizations?tab=archived');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to archive organization';
+      const msg = e instanceof Error ? e.message : 'Failed to archive customer';
       toast({ title: 'Archive failed', description: msg, variant: 'destructive' });
     } finally {
       setIsPending(false);
@@ -112,10 +112,10 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
       await restoreOrganization(organization.organizationId);
       await queryClient.invalidateQueries({ queryKey: organizationsQueryKeys.all });
       await queryClient.invalidateQueries({ queryKey: organizationDetailsQueryKeys.detail(id) });
-      toast({ title: 'Organization restored', description: `${organization.name} was restored` });
+      toast({ title: 'Customer restored', description: `${organization.name} was restored` });
       router.push('/organizations');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to restore organization';
+      const msg = e instanceof Error ? e.message : 'Failed to restore customer';
       toast({ title: 'Restore failed', description: msg, variant: 'destructive' });
     } finally {
       setIsPending(false);
@@ -126,14 +126,14 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
     if (!organization) return [];
     const archiveAction: PageActionButton = isArchived
       ? {
-          label: 'Restore Organization',
+          label: 'Restore Customer',
           variant: 'outline',
           icon: <Refresh01RightIcon className="w-5 h-5 text-ods-text-secondary" />,
           onClick: () => setRestoreModalOpen(true),
           disabled: organization.isDefault,
         }
       : {
-          label: 'Archive Organization',
+          label: 'Archive Customer',
           variant: 'outline',
           icon: isChecking ? (
             <Loading01Icon className="w-5 h-5 animate-spin" />
@@ -147,7 +147,7 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
 
     const editHref = `/organizations/edit/${id}`;
     const editAction: PageActionButton = {
-      label: 'Edit Organization',
+      label: 'Edit Customer',
       variant: 'outline',
       icon: <PenEditIcon className="w-5 h-5 text-ods-text-secondary" />,
       href: editHref,
@@ -161,11 +161,11 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   }
 
   if (error) {
-    return <LoadError message={`Error loading organization: ${error}`} />;
+    return <LoadError message={`Error loading customer: ${error}`} />;
   }
 
   if (!organization) {
-    return <NotFoundError message="Organization not found" />;
+    return <NotFoundError message="Customer not found" />;
   }
 
   const subtitleParts = [organization.website, organization.industry].filter(p => p && p !== '-');
@@ -176,9 +176,9 @@ export function OrganizationDetailsView({ id }: OrganizationDetailsViewProps) {
   return (
     <>
       <PageLayout
-        title={organization.name || 'Organization'}
+        title={organization.name || 'Customer'}
         subtitle={subtitle}
-        image={{ src: logoSrc || '', alt: organization.name || 'Organization' }}
+        image={{ src: logoSrc || '', alt: organization.name || 'Customer' }}
         className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
         backButton={{
           label: isArchived ? 'Back' : 'Back',

@@ -48,7 +48,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">{device.organization || 'Unknown'}</p>
-          <p className="text-ods-text-secondary text-h6">Organization Name</p>
+          <p className="text-ods-text-secondary text-h6">Customer Name</p>
         </div>
         <div>
           <p className="text-ods-text-primary font-medium">

@@ -30,7 +30,7 @@ async function fetchOrganizationOptions(search: string): Promise<AvatarOption[]>
     query: GET_ORGANIZATIONS_MIN_QUERY,
     variables: { search, first: 50 },
   });
-  if (!response.ok) throw new Error(response.error || 'Failed to fetch organizations');
+  if (!response.ok) throw new Error(response.error || 'Failed to fetch customers');
 
   const edges = response.data?.data?.organizations?.edges ?? [];
   return edges.map(({ node }: any) => ({

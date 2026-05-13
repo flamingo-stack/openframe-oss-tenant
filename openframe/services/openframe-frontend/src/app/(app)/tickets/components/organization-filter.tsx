@@ -28,7 +28,7 @@ export function OrganizationFilter({ value, onChange, className }: OrganizationF
       onChange={onChange}
       onInputChange={setSearch}
       disableClientFilter
-      placeholder="Show All Organizations"
+      placeholder="Show All Customers"
       loading={isLoading}
       startAdornment={<Filter02Icon className="size-6 text-ods-text-secondary" />}
       renderOption={renderOption}

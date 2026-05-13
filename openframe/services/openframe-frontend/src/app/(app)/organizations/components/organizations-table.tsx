@@ -53,7 +53,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
   const actions = useMemo(
     () => [
       {
-        label: 'Add Organization',
+        label: 'Add Customer',
         icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
         onClick: handleAddOrganization,
         variant: 'outline' as const,
@@ -64,7 +64,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
 
   return (
     <PageLayout
-      title="Organizations"
+      title="Customers"
       actions={actions}
       actionsVariant="icon-buttons"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
@@ -88,7 +88,7 @@ export function OrganizationsTable({ status }: OrganizationsTableProps) {
           <OrganizationsTableBody
             organizations={organizations}
             isLoading={isLoading}
-            emptyMessage="No organizations found. Try adjusting your search."
+            emptyMessage="No customers found. Try adjusting your search."
             skeletonRows={10}
             stickyHeaderOffset="top-[96px]"
             footerSlot={

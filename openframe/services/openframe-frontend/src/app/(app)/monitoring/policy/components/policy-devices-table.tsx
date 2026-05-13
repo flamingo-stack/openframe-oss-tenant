@@ -54,18 +54,14 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
       {
         id: 'organization',
         accessorKey: 'organization',
-        header: 'ORGANIZATION',
+        header: 'CUSTOMER',
         cell: ({ row }: { row: Row<PolicyDeviceRow> }) => {
           const r = row.original;
           const fullImageUrl = getFullImageUrl(r.organizationImageUrl);
           return (
             <div className="flex items-center gap-3">
               {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon
-                  imageUrl={fullImageUrl}
-                  organizationName={r.organization || 'Organization'}
-                  size="sm"
-                />
+                <OrganizationIcon imageUrl={fullImageUrl} organizationName={r.organization || 'Customer'} size="sm" />
               )}
               <div className="flex flex-col justify-center flex-1 min-w-0">
                 <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">

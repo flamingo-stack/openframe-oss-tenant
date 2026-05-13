@@ -24,10 +24,10 @@ export function RestoreOrganizationModal({ open, onOpenChange, onConfirm, isPend
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="bg-ods-card border border-ods-border p-10 max-w-[600px] gap-6">
         <AlertDialogHeader className="gap-0">
-          <AlertDialogTitle className="text-h2 text-ods-text-primary">Restore Organization</AlertDialogTitle>
+          <AlertDialogTitle className="text-h2 text-ods-text-primary">Restore Customer</AlertDialogTitle>
         </AlertDialogHeader>
         <AlertDialogDescription className="text-h4 text-ods-text-primary">
-          This organization will be moved back to your active workspace.
+          This customer will be moved back to your active workspace.
         </AlertDialogDescription>
         <AlertDialogFooter className="gap-4">
           <AlertDialogCancel
@@ -42,7 +42,7 @@ export function RestoreOrganizationModal({ open, onOpenChange, onConfirm, isPend
             className="flex-1 bg-[#ffc008] text-ods-bg text-h3 px-4 py-3 rounded-[6px] hover:bg-[#ffc008]/90 inline-flex items-center justify-center gap-2"
           >
             {isPending && <Loading01Icon size={20} className="animate-spin" />}
-            {isPending ? 'Restoring...' : 'Restore Organization'}
+            {isPending ? 'Restoring...' : 'Restore Customer'}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

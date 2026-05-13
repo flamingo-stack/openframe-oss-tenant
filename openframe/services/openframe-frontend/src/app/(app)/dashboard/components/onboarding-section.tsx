@@ -44,11 +44,11 @@ export function OnboardingSection() {
   const onboardingSteps: OnboardingStepConfig[] = [
     {
       id: 'organizations-setup',
-      title: 'Organizations Setup',
-      description: 'Create and configure your organizational structure',
+      title: 'Customers Setup',
+      description: 'Create and configure your customer structure',
       actionIcon: (color = 'black') => <OrganizationsIcon color={color} className="w-6 h-6" />,
-      actionText: 'Add Organization',
-      completedText: 'Add Organization',
+      actionText: 'Add Customer',
+      completedText: 'Add Customer',
       onAction: handleOrganizationAction,
     },
     {

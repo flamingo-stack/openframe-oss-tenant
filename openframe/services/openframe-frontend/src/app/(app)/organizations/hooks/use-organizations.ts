@@ -144,7 +144,7 @@ export function useOrganizations(search = '', status?: string) {
   useEffect(() => {
     if (query.error) {
       toast({
-        title: 'Error fetching organizations',
+        title: 'Error fetching customers',
         description: query.error.message,
         variant: 'destructive',
       });

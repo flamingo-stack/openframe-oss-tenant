@@ -127,7 +127,7 @@ export function OrganizationTicketsTab({ organizationId }: OrganizationTicketsTa
         <DataTable.Body
           loading={isLoading}
           skeletonRows={8}
-          emptyMessage="No tickets found for this organization."
+          emptyMessage="No tickets found for this customer."
           rowHref={ticketRowHref}
           rowClassName="mb-1"
         />

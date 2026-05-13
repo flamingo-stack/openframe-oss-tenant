@@ -175,7 +175,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         set({ imageUrl: uploadedUrl });
         toast({
           title: 'Upload successful',
-          description: 'Organization image has been updated',
+          description: 'Customer image has been updated',
           variant: 'success',
         });
       } catch (err) {
@@ -197,7 +197,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         set({ imageUrl: undefined });
         toast({
           title: 'Delete successful',
-          description: 'Organization image has been deleted',
+          description: 'Customer image has been deleted',
           variant: 'success',
         });
       } catch (err) {
@@ -251,7 +251,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
         } catch {
           toast({
             title: 'Warning',
-            description: 'Organization was created but logo upload failed',
+            description: 'Customer was created but logo upload failed',
             variant: 'warning',
           });
         }
@@ -260,12 +260,12 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
       await queryClient.invalidateQueries({ queryKey: ['organizations'] });
 
       toast({
-        title: organizationId ? 'Organization updated' : 'Organization created',
+        title: organizationId ? 'Customer updated' : 'Customer created',
         description: `${form.name} has been ${organizationId ? 'updated' : 'created'}`,
       });
       router.push('/organizations');
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to save organization';
+      const msg = e instanceof Error ? e.message : 'Failed to save customer';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
@@ -277,14 +277,14 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
   return (
     <PageLayout
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      title={organizationId ? 'Edit Organization' : 'New Organization'}
+      title={organizationId ? 'Edit Customer' : 'New Customer'}
       backButton={{
         label: organizationId ? 'Back' : 'Back',
         onClick: () => router.push(organizationId ? `/organizations/details/${organizationId}` : '/organizations'),
       }}
       actions={[
         {
-          label: isSubmitting ? 'Saving...' : 'Save Organization',
+          label: isSubmitting ? 'Saving...' : 'Save Customer',
           variant: 'accent',
           onClick: handleSave,
           disabled: saveDisabled,
@@ -298,8 +298,8 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
           <div className="flex-1 min-w-0 flex flex-col gap-6 md:flex-row md:gap-6 lg:flex-col">
             <div className="flex-1 min-w-0">
               <Input
-                label="Organization Name"
-                placeholder="Company Name"
+                label="Customer Name"
+                placeholder="Customer Name"
                 value={form.name}
                 onChange={e => set({ name: e.target.value })}
               />
@@ -321,7 +321,7 @@ export function NewOrganizationPage({ organizationId }: NewOrganizationPageProps
                 onChange={handleImageChange}
                 onRemove={handleImageRemove}
                 objectFit="contain"
-                label="Organization Logo"
+                label="Customer Logo"
                 description="(Click here or drag and drop)"
               />
             </div>

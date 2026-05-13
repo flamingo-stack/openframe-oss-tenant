@@ -43,7 +43,7 @@ export function useOrganizationsMin(limit: number = 10) {
         setItems(mapped);
         return mapped;
       } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Failed to fetch organizations';
+        const msg = e instanceof Error ? e.message : 'Failed to fetch customers';
         setError(msg);
         throw e;
       } finally {
