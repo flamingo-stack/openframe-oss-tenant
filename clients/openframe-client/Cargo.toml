@@ -28,14 +28,11 @@ openframe-chat-version     = []
 meshcentral-agent-version  = []
 fleetmdm-agent-version     = []
 tacticalrmm-agent-version  = []
+openframe-client-updater-version = []
 
 # Asset-level version overrides. Keyed by Asset.id inside a ToolInstallationMessage.
 # These binaries ship as assets under another tool and can be pinned independently.
 osquery-version            = []
-
-# Pins the version of openframe-client-updater installed on managed machines.
-# When enabled, overrides whatever version the backend requests via TOOL_UPDATE.
-openframe-client-updater-version = []
 
 # Umbrella — enables every override above.
 all-tool-versions = [

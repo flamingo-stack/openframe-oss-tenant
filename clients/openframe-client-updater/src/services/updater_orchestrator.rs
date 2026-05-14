@@ -67,7 +67,7 @@ impl UpdaterOrchestrator {
         let nats_manager = NatsConnectionManager::new(
             ws_url,
             agent_config_service.clone(),
-            initial_config_service,
+            initial_config_service.clone(),
             token,
             tls_config_provider,
         );
@@ -87,14 +87,19 @@ impl UpdaterOrchestrator {
 
         match nats_manager.get_client().await {
             Ok(nats_client) => {
-                let manager = LogStreamingRunManager::new(
+                match LogStreamingRunManager::new(
                     nats_client,
                     agent_config_service.clone(),
+                    &initial_config_service,
                     log_file_path,
                     offset_file_path,
-                );
-                manager.start();
-                info!("Log streaming started");
+                ) {
+                    Ok(manager) => {
+                        manager.start();
+                        info!("Log streaming started");
+                    }
+                    Err(e) => error!("Failed to init log streaming: {:#}", e),
+                }
             }
             Err(e) => {
                 error!("Failed to get NATS client for log streaming: {:#}", e);

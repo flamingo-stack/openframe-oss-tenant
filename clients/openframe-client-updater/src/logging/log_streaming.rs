@@ -10,6 +10,7 @@ use tokio::time::interval;
 use tracing::{debug, error, info};
 
 use crate::services::agent_configuration_service::AgentConfigurationService;
+use crate::services::initial_configuration_service::InitialConfigurationService;
 
 const BATCH_INTERVAL_SECS: u64 = 60;
 const MAX_LOGS_PER_BATCH: usize = 50;
@@ -30,6 +31,7 @@ struct LogBatchMessage {
     #[serde(skip_serializing_if = "Option::is_none")]
     machine_id: Option<String>,
     hostname: String,
+    tenant_domain: String,
     logs: Vec<LogEntry>,
 }
 
@@ -145,22 +147,31 @@ pub struct LogStreamingRunManager {
     log_file_path: PathBuf,
     offset_file_path: PathBuf,
     hostname: String,
+    tenant_domain: String,
 }
 
 impl LogStreamingRunManager {
     pub fn new(
         nats_client: Arc<async_nats::Client>,
         agent_config_service: AgentConfigurationService,
+        initial_config_service: &InitialConfigurationService,
         log_file_path: PathBuf,
         offset_file_path: PathBuf,
-    ) -> Self {
-        Self {
+    ) -> anyhow::Result<Self> {
+        let server_host = initial_config_service.get_server_url()?;
+        let tenant_domain = server_host
+            .strip_prefix("api.")
+            .unwrap_or(&server_host)
+            .to_string();
+
+        Ok(Self {
             nats_client,
             agent_config_service,
             log_file_path,
             offset_file_path,
             hostname: get_hostname(),
-        }
+            tenant_domain,
+        })
     }
 
     pub fn start(self) {
@@ -197,6 +208,7 @@ impl LogStreamingRunManager {
                 let batch = LogBatchMessage {
                     machine_id,
                     hostname: self.hostname.clone(),
+                    tenant_domain: self.tenant_domain.clone(),
                     logs,
                 };
 
