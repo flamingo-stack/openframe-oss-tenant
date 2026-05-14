@@ -121,7 +121,8 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
     />
   );
 
-  const rowClass = 'flex items-center gap-4 px-4 min-h-20 border-b border-ods-border';
+  const rowClass =
+    'flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20 border-b border-ods-border';
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-md flex flex-col">
@@ -137,7 +138,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
 
         {(customerInner || assignedInner) && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4 px-4 border-b border-ods-border">
+          <div className="flex flex-col md:flex-row md:items-center md:gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] border-b border-ods-border">
             {customerInner && (
               <div className="flex items-center gap-2 flex-1 min-w-0 min-h-20 py-2 md:py-0 border-b md:border-b-0 border-ods-border last:border-b-0">
                 {customerInner}
@@ -153,7 +154,9 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           {registeredCell}
           {updatedCell}
         </div>
-        <div className="flex items-center gap-4 px-4 min-h-20">{uuidCell}</div>
+        <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20">
+          {uuidCell}
+        </div>
       </div>
 
       {/* ===== Desktop (lg+) — 4 cells per row ===== */}
@@ -170,7 +173,9 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           {registeredCell}
           {updatedCell}
         </div>
-        <div className="flex items-center gap-4 px-4 min-h-20">{uuidCell}</div>
+        <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20">
+          {uuidCell}
+        </div>
       </div>
     </div>
   );
