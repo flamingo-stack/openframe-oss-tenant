@@ -161,7 +161,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       buildDeviceMenuItems({
         deviceId,
         availability: actionAvailability,
-        iconSize: 'w-6 h-6',
+        iconSize: 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]',
         isWindows,
         withNewTabAction: true,
       }),
