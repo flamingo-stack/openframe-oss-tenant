@@ -9,6 +9,7 @@ import { useCallback, useMemo } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { dialogGraphQlService } from '../services/dialogGraphQLService';
+import { applyToolTitleToMessage } from '../utils/applyToolTitle';
 
 interface UseDialogMessagesOptions {
   enabled?: boolean;
@@ -59,7 +60,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     for (const page of reversedPages) {
       const reversedEdges = [...page.edges].reverse();
       for (const edge of reversedEdges) {
-        allNodes.push(edge.node);
+        allNodes.push(applyToolTitleToMessage(edge.node));
       }
     }
 
@@ -69,7 +70,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       approvalStatuses,
       assistantAvatar: faeAvatar,
       displayApprovalTypes: ['CLIENT'],
-      batchApprovalsEnabled: flags['batch-approvals'],
+      batchApprovalsEnabled: flags['batch-approval'],
     });
 
     return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };

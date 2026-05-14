@@ -161,6 +161,7 @@ function getDialogMessagesQuery({ includeThinking = false } = {}) {
               type
               integratedToolType
               toolFunction
+              title
               parameters
               requiresApproval
               approvalStatus

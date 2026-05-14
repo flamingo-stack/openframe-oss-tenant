@@ -16,6 +16,7 @@ import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
 import { tokenService } from '../services/tokenService';
+import { overrideToolTitle } from '../utils/applyToolTitle';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
@@ -295,12 +296,12 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     approvalStatuses: approvals.approvalStatuses,
     initialState: enhancedInitialState,
     enableThinking: flags.thinking,
-    batchApprovalsEnabled: flags['batch-approvals'],
+    batchApprovalsEnabled: flags['batch-approval'],
   });
 
   const handleRealtimeEvent = useCallback(
     (chunk: any) => {
-      processRealtimeChunk(chunk);
+      processRealtimeChunk(overrideToolTitle(chunk));
     },
     [processRealtimeChunk],
   );
