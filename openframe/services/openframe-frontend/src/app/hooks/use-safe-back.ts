@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 
+type AppRouter = ReturnType<typeof useRouter>;
+
 /**
  * Probes `window.navigation.canGoBack` (Navigation API: Chrome 102+, Edge
  * 102+, Safari 16.4+). The API surface is not present in every TS `lib.dom`
@@ -12,7 +14,7 @@ import { useCallback } from 'react';
  * Returns `false` for unsupported browsers and for `canGoBack === false`,
  * which both mean `router.back()` is unsafe.
  */
-function navCanGoBack(): boolean {
+export function navCanGoBack(): boolean {
   if (typeof window === 'undefined') return false;
   const probed = window as unknown as {
     navigation?: { canGoBack?: boolean };
@@ -38,4 +40,20 @@ export function useSafeBack(fallback: string): () => void {
       router.push(fallback);
     }
   }, [router, fallback]);
+}
+
+/**
+ * After a save/edit submit, navigate back when safe so the form entry is
+ * popped from history (the form is then "forward", not in the back stack).
+ * This lets browser back from the resulting page return to wherever the
+ * user was before the form. Falls back to `router.replace(fallback)` when
+ * back is unsafe (direct URL paste, missing Navigation API), which keeps
+ * the form out of history without risking a no-op or leaving the origin.
+ */
+export function safeBackOrReplace(router: AppRouter, fallback: string): void {
+  if (navCanGoBack()) {
+    router.back();
+  } else {
+    router.replace(fallback);
+  }
 }

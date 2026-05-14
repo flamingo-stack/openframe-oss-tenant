@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -149,7 +149,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             } catch {
               // Policy saved but hosts failed — error toast shown by mutation hook
             }
-            router.push(`/monitoring/policy/${numericId}`);
+            safeBackOrReplace(router, `/monitoring/policy/${numericId}`);
           },
         });
       } else {
@@ -162,7 +162,7 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
             } catch {
               // Policy created but hosts failed — error toast shown by mutation hook
             }
-            router.push('/monitoring?tab=policies');
+            router.replace('/monitoring?tab=policies');
           },
         });
       }

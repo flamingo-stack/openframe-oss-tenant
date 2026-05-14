@@ -1,6 +1,10 @@
 'use client';
 
-import { type HistoricalMessage, processHistoricalMessagesWithErrors } from '@flamingo-stack/openframe-frontend-core';
+import {
+  type HistoricalMessage,
+  type MessageSegment,
+  processHistoricalMessagesWithErrors,
+} from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,13 +21,13 @@ import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../
 export function useMingoDialogSelection() {
   const { toast } = useToast();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
-
   const {
     activeDialogId,
     setActiveDialogId,
     setMessages,
     prependWithBoundaryMerge,
     getMessages,
+    getStreamingMessage,
     setLoadingDialog,
     setLoadingMessages,
     setPagination,
@@ -218,6 +222,7 @@ export function useMingoDialogSelection() {
       onApprove: handleApproveRef.current,
       onReject: handleRejectRef.current,
       approvalStatuses: Object.fromEntries(Object.entries(approvalStatusesRef.current).map(([k, v]) => [k, v as any])),
+      batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
     });
     const allProcessedMessages = foldPendingApprovalsEnvelope(rawProcessedMessages as Message[]);
 
@@ -231,15 +236,82 @@ export function useMingoDialogSelection() {
     const processedMessageIds = new Set(allProcessedMessages.map(m => m.id));
 
     if (previouslyProcessedCount === 0) {
-      const realtimeMessages = existingMessages.filter(m => {
+      const isStreaming = getStreamingMessage(activeDialogId) !== null;
+      const historyEndsWithAssistant = allProcessedMessages[allProcessedMessages.length - 1]?.role === 'assistant';
+
+      // Realtime synthetic ids (`assistant-<timestamp>-...`) never match Mongo
+      // ObjectIds from history. Without dedup we render the same turn twice.
+      // Bek persistence is asynchronous per-chunk: an assistant turn ending in
+      // an approval can have its APPROVAL_REQUEST document persisted before
+      // the leading THINKING/TEXT documents, so GraphQL can return a partial
+      // trailing assistant (just `[approval_batch]`) while the realtime store
+      // already has the full `[thinking, text, approval_batch]` synthetic.
+      // Resolve by `approval_batch.approvalRequestId`:
+      //   - if history's trailing assistant shares a batch id with an existing
+      //     synthetic AND the synthetic has more segments — drop the history
+      //     assistant (synthetic is more complete).
+      //   - else (history is at least as complete) — drop the synthetic.
+      //   - if no batch overlap — fall back to the legacy "trim trailing
+      //     synthetic when stream is idle" behavior.
+      const historyTrailingAssistant = historyEndsWithAssistant
+        ? allProcessedMessages[allProcessedMessages.length - 1]
+        : null;
+      const historyBatchId =
+        historyTrailingAssistant && Array.isArray(historyTrailingAssistant.content)
+          ? ((
+              historyTrailingAssistant.content.find(s => s.type === 'approval_batch') as
+                | Extract<MessageSegment, { type: 'approval_batch' }>
+                | undefined
+            )?.data?.approvalRequestId ?? null)
+          : null;
+
+      let processedToUse = allProcessedMessages;
+      let trimmedExisting = existingMessages;
+
+      if (historyBatchId) {
+        const existingWithSameBatch = existingMessages.find(
+          m =>
+            m.role === 'assistant' &&
+            Array.isArray(m.content) &&
+            m.content.some(
+              s =>
+                s.type === 'approval_batch' &&
+                (s as Extract<MessageSegment, { type: 'approval_batch' }>).data?.approvalRequestId === historyBatchId,
+            ),
+        );
+        if (existingWithSameBatch && Array.isArray(existingWithSameBatch.content)) {
+          const histSize = Array.isArray(historyTrailingAssistant?.content)
+            ? historyTrailingAssistant.content.length
+            : 0;
+          const realtimeSize = existingWithSameBatch.content.length;
+          if (realtimeSize > histSize) {
+            processedToUse = allProcessedMessages.slice(0, -1);
+          } else {
+            trimmedExisting = existingMessages.filter(m => m.id !== existingWithSameBatch.id);
+          }
+        }
+      } else if (!isStreaming && historyEndsWithAssistant) {
+        let cutIndex = existingMessages.length;
+        for (let i = existingMessages.length - 1; i >= 0; i--) {
+          const m = existingMessages[i];
+          if (m.role === 'assistant' && m.id.startsWith('assistant-')) {
+            cutIndex = i;
+          } else {
+            break;
+          }
+        }
+        trimmedExisting = existingMessages.slice(0, cutIndex);
+      }
+
+      const realtimeMessages = trimmedExisting.filter(m => {
         if (processedMessageIds.has(m.id)) return false;
         if (rawPageMessageIds.has(m.id)) return false;
         if (m.role === 'user' && m.id.startsWith('optimistic-') && typeof m.content === 'string') {
-          return !allProcessedMessages.some(pm => pm.role === 'user' && pm.content === m.content);
+          return !processedToUse.some(pm => pm.role === 'user' && pm.content === m.content);
         }
         return true;
       });
-      setMessages(activeDialogId, [...allProcessedMessages, ...realtimeMessages]);
+      setMessages(activeDialogId, [...processedToUse, ...realtimeMessages]);
     } else {
       const existingIds = new Set(existingMessages.map(m => m.id));
       const newMessages: Message[] = [];
@@ -291,6 +363,7 @@ export function useMingoDialogSelection() {
     activeDialogId,
     messagesQuery.isFetched,
     getMessages,
+    getStreamingMessage,
     setMessages,
     prependWithBoundaryMerge,
     setPagination,

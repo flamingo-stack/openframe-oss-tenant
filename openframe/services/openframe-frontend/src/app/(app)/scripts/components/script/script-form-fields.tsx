@@ -68,7 +68,6 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
                 onCheckedChange={checked => field.onChange(checked)}
                 label="Run as User"
                 description="Windows Only"
-                className="col-span-2 lg:col-span-1"
               />
             )}
           />

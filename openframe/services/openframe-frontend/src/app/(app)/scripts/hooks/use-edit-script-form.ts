@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { EDIT_SCRIPT_DEFAULT_VALUES, type EditScriptFormData, editScriptSchema } from '../types/edit-script.types';
 import type { ScriptDetails } from './use-script-details';
@@ -95,7 +96,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
       queryClient.invalidateQueries({ queryKey: scriptsQueryKeys.all });
       toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
       const newScriptId = data?.id;
-      router.push(newScriptId ? `/scripts/details/${newScriptId}` : '/scripts');
+      router.replace(newScriptId ? `/scripts/details/${newScriptId}` : '/scripts');
     },
     onError: err => {
       toast({
@@ -114,7 +115,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         queryClient.invalidateQueries({ queryKey: scriptDetailsQueryKeys.detail(scriptId) });
       }
       toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
-      router.push(`/scripts/details/${scriptId}`);
+      safeBackOrReplace(router, `/scripts/details/${scriptId}`);
     },
     onError: err => {
       toast({

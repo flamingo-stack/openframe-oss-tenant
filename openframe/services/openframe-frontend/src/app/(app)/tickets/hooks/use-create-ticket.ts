@@ -39,9 +39,9 @@ export function useCreateTicket() {
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket created successfully', variant: 'success' });
       if (ticket?.id) {
-        router.push(`/tickets/dialog?id=${ticket.id}`);
+        router.replace(`/tickets/dialog?id=${ticket.id}`);
       } else {
-        router.push('/tickets');
+        router.replace('/tickets');
       }
     },
     onError: err => {

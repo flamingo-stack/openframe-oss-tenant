@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
@@ -140,7 +140,7 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
         description: `${agentIds.length} device(s) assigned to schedule.`,
         variant: 'success',
       });
-      router.push(`/scripts/schedules/${scheduleId}?tab=schedule-devices`);
+      safeBackOrReplace(router, `/scripts/schedules/${scheduleId}?tab=schedule-devices`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save devices';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });

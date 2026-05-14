@@ -63,6 +63,7 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
               parameters
               requiresApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ExecutedToolData {
@@ -73,6 +74,7 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
               success
               requiredApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ApprovalRequestData {
@@ -81,6 +83,16 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
               approvalType
               command
               explanation
+              toolCalls {
+                toolExecutionRequestId
+                toolName
+                toolTitle
+                toolExplanation
+                toolType
+                requiresApproval
+                approvalType
+                toolCallArguments
+              }
             }
 
             ... on ApprovalResultData {

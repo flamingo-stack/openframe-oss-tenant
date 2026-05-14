@@ -4,6 +4,7 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
+  type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
   useNatsDialogSubscription,
@@ -51,9 +52,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     resolve: () => void;
     reject: (error: Error) => void;
   } | null>(null);
-  const escalatedApprovalsRef = useRef<Map<string, { command: string; explanation?: string; approvalType: string }>>(
-    new Map(),
-  );
+  const escalatedApprovalsRef = useRef<
+    Map<string, { command: string; explanation?: string; approvalType: string; toolCalls?: PendingToolCallData[] }>
+  >(new Map());
 
   const { debugMode } = useDebugMode();
   const { quickActions } = useChatConfig();
@@ -294,6 +295,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     approvalStatuses: approvals.approvalStatuses,
     initialState: enhancedInitialState,
     enableThinking: flags.thinking,
+    batchApprovalsEnabled: flags['batch-approvals'],
   });
 
   const handleRealtimeEvent = useCallback(

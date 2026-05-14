@@ -11,6 +11,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
+import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
@@ -263,7 +264,11 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         title: organizationId ? 'Customer updated' : 'Customer created',
         description: `${form.name} has been ${organizationId ? 'updated' : 'created'}`,
       });
-      router.push('/customers');
+      if (organizationId) {
+        safeBackOrReplace(router, `/customers/details/${organizationId}`);
+      } else {
+        router.replace('/customers');
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to save customer';
       toast({ title: 'Save failed', description: msg, variant: 'destructive' });

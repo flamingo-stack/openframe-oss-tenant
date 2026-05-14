@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
@@ -166,7 +167,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               }
 
               toast({ title: 'Success', description: 'Article updated', variant: 'success' });
-              router.push(`/knowledge-base/details/${articleId}`);
+              safeBackOrReplace(router, `/knowledge-base/details/${articleId}`);
             } else {
               const targetConnectionId = getKnowledgeBaseItemsConnectionId({
                 parentId: folderId,
@@ -192,7 +193,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 });
               }
               toast({ title: 'Success', description: 'Article created', variant: 'success' });
-              router.push(`/knowledge-base/details/${result.id}`);
+              router.replace(`/knowledge-base/details/${result.id}`);
             }
           } catch {
           } finally {

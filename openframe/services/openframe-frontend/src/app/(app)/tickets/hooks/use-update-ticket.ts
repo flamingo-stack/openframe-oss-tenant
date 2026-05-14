@@ -3,6 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS } from '../constants';
 import {
@@ -85,11 +86,7 @@ export function useUpdateTicket() {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.all });
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket updated successfully', variant: 'success' });
-      if (ticket?.id) {
-        router.push(`/tickets/dialog?id=${ticket.id}`);
-      } else {
-        router.push('/tickets');
-      }
+      safeBackOrReplace(router, ticket?.id ? `/tickets/dialog?id=${ticket.id}` : '/tickets');
     },
     onError: err => {
       toast({
