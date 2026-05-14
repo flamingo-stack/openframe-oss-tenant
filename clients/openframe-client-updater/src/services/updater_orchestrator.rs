@@ -1,19 +1,18 @@
 use anyhow::{Context, Result};
 use std::path::PathBuf;
-use tokio::time::Duration;
+use std::time::Duration;
 use tracing::{error, info, warn};
 
-use crate::clients::AuthClient;
 use crate::config::updater_config::{CLIENT_SERVICE_FULL_NAME, SERVICE_START_VERIFY_WAIT_SECS};
 use crate::listener::ClientUpdateListener;
 use crate::models::UpdaterPhase;
 use crate::platform::{atomic_replace, DirectoryManager};
 use crate::services::{
-    AgentAuthService, AgentConfigurationService, ClientUpdateService, EncryptionService,
-    GithubDownloadService, InitialConfigurationService, LocalTlsConfigProvider,
-    NatsConnectionManager, NatsMessagePublisher, ServiceManagerService, SharedTokenService,
-    UpdateProgressPublisher, UpdaterStateService,
+    AgentConfigurationService, ClientUpdateService, GithubDownloadService,
+    InitialConfigurationService, LocalTlsConfigProvider, NatsConnectionManager,
+    NatsMessagePublisher, ServiceManagerService, UpdateProgressPublisher, UpdaterStateService,
 };
+use crate::services::token_watcher::TokenWatcher;
 
 pub struct UpdaterOrchestrator {
     dir_manager: DirectoryManager,
@@ -35,7 +34,6 @@ impl UpdaterOrchestrator {
             .get_server_url()
             .context("Failed to read server_host from initial_config.json")?;
 
-        let http_url = format!("https://{}", server_host);
         let ws_url = format!("wss://{}", server_host);
 
         let http_client = reqwest::Client::builder()
@@ -46,36 +44,34 @@ impl UpdaterOrchestrator {
             .build()
             .context("Failed to build HTTP client")?;
 
-        let encryption_service = EncryptionService::new();
-        let shared_token_service =
-            SharedTokenService::new(self.dir_manager.clone(), encryption_service);
+        // Start watching the shared token file written by the main openframe-client.
+        // The watcher polls every 5 seconds and updates the shared state on change.
+        let token_file_path = self.dir_manager.secured_dir().join("shared_token.enc");
+        info!("Starting token watcher for: {}", token_file_path.display());
+        let token = TokenWatcher::start(token_file_path);
 
-        let auth_client = AuthClient::new(http_url, http_client.clone());
-        let auth_service = AgentAuthService::new(
-            auth_client,
-            agent_config_service.clone(),
-            shared_token_service,
-        );
+        // Wait for the initial token before connecting to NATS.
+        info!("Waiting for shared token to become available");
+        loop {
+            if token.read().await.is_some() {
+                info!("Shared token available");
+                break;
+            }
+            warn!("Shared token not yet available — retrying in 10 seconds");
+            tokio::time::sleep(Duration::from_secs(10)).await;
+        }
 
-        let tls_config_provider =
-            LocalTlsConfigProvider::new(initial_config_service.clone());
+        let tls_config_provider = LocalTlsConfigProvider::new(initial_config_service.clone());
 
         let nats_manager = NatsConnectionManager::new(
             ws_url,
             agent_config_service.clone(),
             initial_config_service,
-            auth_service.clone(),
+            token,
             tls_config_provider,
         );
 
         let state_service = UpdaterStateService::new(&self.dir_manager);
-
-        info!("Authenticating");
-        auth_service
-            .authenticate_initial()
-            .await
-            .context("Initial authentication failed")?;
-        info!("Authentication successful");
 
         nats_manager.connect().await.context("Failed to connect to NATS")?;
         info!("NATS connected");

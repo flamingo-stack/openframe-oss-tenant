@@ -32,4 +32,27 @@ impl EncryptionService {
 
         Ok(general_purpose::STANDARD.encode(combined))
     }
+
+    pub fn decrypt(&self, encrypted_data: &str) -> Result<String> {
+        let combined = general_purpose::STANDARD
+            .decode(encrypted_data)
+            .map_err(|e| anyhow::anyhow!("Failed to decode base64: {}", e))?;
+
+        if combined.len() < 12 {
+            anyhow::bail!("Encrypted data too short");
+        }
+
+        let (nonce_bytes, ciphertext) = combined.split_at(12);
+        let nonce = GenericArray::from_slice(nonce_bytes);
+
+        let cipher = Aes256Gcm::new_from_slice(Self::KEY.as_bytes())
+            .map_err(|e| anyhow::anyhow!("Failed to create cipher: {}", e))?;
+
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext)
+            .map_err(|e| anyhow::anyhow!("Failed to decrypt: {}", e))?;
+
+        String::from_utf8(plaintext)
+            .map_err(|e| anyhow::anyhow!("Failed to convert to UTF-8: {}", e))
+    }
 }
