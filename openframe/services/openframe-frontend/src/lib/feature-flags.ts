@@ -60,6 +60,11 @@ export const featureFlags = {
       return getFlagValue('tickets-board', () => false);
     },
   },
+  batchApprovals: {
+    enabled(): boolean {
+      return getFlagValue('batch-approvals', () => false);
+    },
+  },
 } as const;
 
 /**

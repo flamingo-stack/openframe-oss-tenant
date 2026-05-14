@@ -22,7 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { useScriptSchedule } from '../../hooks/use-script-schedule';
 import { useCreateScriptSchedule, useUpdateScriptSchedule } from '../../hooks/use-script-schedule-mutations';
 import {
@@ -137,7 +137,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
           });
-          router.push(`/scripts/schedules/${scheduleId}`);
+          safeBackOrReplace(router, `/scripts/schedules/${scheduleId}`);
         } else {
           const result = await createMutation.mutateAsync(payload);
           toast({
@@ -145,7 +145,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" created successfully.`,
             variant: 'success',
           });
-          router.push(`/scripts/schedules/${result.id}`);
+          router.replace(`/scripts/schedules/${result.id}`);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`;

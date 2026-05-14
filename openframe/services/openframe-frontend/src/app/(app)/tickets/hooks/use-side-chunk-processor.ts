@@ -216,6 +216,7 @@ export function useSideChunkProcessor(
     initialState: incompleteState,
     approvalStatuses,
     enableThinking: featureFlags.thinking.enabled(),
+    batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
   });
 
   return useCallback(

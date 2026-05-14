@@ -367,6 +367,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
     enableThinking: featureFlags.thinking.enabled(),
+    batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
   });
 
   return { processChunk: processorProcessChunk };

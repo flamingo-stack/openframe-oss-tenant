@@ -222,6 +222,7 @@ export function useMingoDialogSelection() {
       onApprove: handleApproveRef.current,
       onReject: handleRejectRef.current,
       approvalStatuses: Object.fromEntries(Object.entries(approvalStatusesRef.current).map(([k, v]) => [k, v as any])),
+      batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
     });
     const allProcessedMessages = foldPendingApprovalsEnvelope(rawProcessedMessages as Message[]);
 
