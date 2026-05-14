@@ -120,6 +120,8 @@ interface KnowledgeBaseTableBodyProps {
   stickyHeaderOffset?: string;
   footerSlot?: ReactNode;
   actionsColumn?: ColumnDef<KnowledgeBaseRow>;
+  // Server-side total. Without it, RowCount shows only currently-loaded rows.
+  totalCount?: number;
 }
 
 export function KnowledgeBaseTableBody({
@@ -131,6 +133,7 @@ export function KnowledgeBaseTableBody({
   stickyHeaderOffset,
   footerSlot,
   actionsColumn,
+  totalCount,
 }: KnowledgeBaseTableBodyProps) {
   const columns = useMemo<ColumnDef<KnowledgeBaseRow>[]>(() => {
     const base = getKnowledgeBaseColumns(mode);
@@ -149,7 +152,7 @@ export function KnowledgeBaseTableBody({
       <DataTable.Header
         stickyHeader={!!stickyHeaderOffset}
         stickyHeaderOffset={stickyHeaderOffset}
-        rightSlot={<DataTable.RowCount />}
+        rightSlot={<DataTable.RowCount itemName={mode === 'archive' ? 'article' : 'item'} totalCount={totalCount} />}
       />
       <DataTable.Body
         loading={isLoading}

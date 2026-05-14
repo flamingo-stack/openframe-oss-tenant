@@ -82,33 +82,38 @@ const archivedArticlesTableRelayFragment = graphql`
         hasNextPage
         endCursor
       }
+      filteredCount
     }
   }
 `;
 
-type Mode = 'standard' | 'archive';
-
-export interface ListViewProps {
+interface BaseListViewProps {
   items: ItemNode[];
-  connectionId: string;
+  filteredCount: number;
   hasNext: boolean;
   isLoadingNext: boolean;
   onLoadMore: () => void;
-  mode: Mode;
   emptyMessage: string;
 }
 
-export function KnowledgeBaseItemsListView({
-  items,
-  connectionId,
-  hasNext,
-  isLoadingNext,
-  onLoadMore,
-  mode,
-  emptyMessage,
-}: ListViewProps) {
+interface StandardListViewProps extends BaseListViewProps {
+  mode: 'standard';
+  foldersConnectionId: string | null;
+  articlesConnectionId: string;
+}
+
+interface ArchiveListViewProps extends BaseListViewProps {
+  mode: 'archive';
+  archivedConnectionId: string;
+}
+
+export type ListViewProps = StandardListViewProps | ArchiveListViewProps;
+
+export function KnowledgeBaseItemsListView(props: ListViewProps) {
+  const { items, filteredCount, hasNext, isLoadingNext, onLoadMore, emptyMessage, mode } = props;
   const [renameTarget, setRenameTarget] = useState<RenameFolderTarget | null>(null);
   const [moveTarget, setMoveTarget] = useState<MoveToFolderItem | null>(null);
+  const [moveSourceConnectionId, setMoveSourceConnectionId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteFolderTarget | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<ArchiveArticleTarget | null>(null);
   const [unarchiveTarget, setUnarchiveTarget] = useState<UnarchiveArticleTarget | null>(null);
@@ -124,7 +129,7 @@ export function KnowledgeBaseItemsListView({
                   {
                     id: 'unarchive',
                     label: 'Unarchive',
-                    icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+                    icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
                     onClick: () => setUnarchiveTarget({ id: item.id, name: item.name }),
                   },
                 ],
@@ -134,60 +139,69 @@ export function KnowledgeBaseItemsListView({
         );
       }
 
-      const groups: ActionsMenuGroup[] =
-        item.type === 'FOLDER'
-          ? [
-              {
-                items: [
-                  {
-                    id: 'rename',
-                    label: 'Rename',
-                    icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    onClick: () => setRenameTarget({ id: item.id, name: item.name }),
+      const standard = props as StandardListViewProps;
+      const isFolder = item.type === 'FOLDER';
+      const sourceConnectionId = isFolder ? standard.foldersConnectionId : standard.articlesConnectionId;
+
+      const groups: ActionsMenuGroup[] = isFolder
+        ? [
+            {
+              items: [
+                {
+                  id: 'rename',
+                  label: 'Rename',
+                  icon: <PenEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  onClick: () => setRenameTarget({ id: item.id, name: item.name }),
+                },
+                {
+                  id: 'move',
+                  label: 'Move folder',
+                  icon: <FolderEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  onClick: () => {
+                    setMoveTarget({ id: item.id, name: item.name, type: 'folder' });
+                    setMoveSourceConnectionId(sourceConnectionId);
                   },
-                  {
-                    id: 'move',
-                    label: 'Move folder',
-                    icon: <FolderEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    onClick: () => setMoveTarget({ id: item.id, name: item.name, type: 'folder' }),
+                },
+                {
+                  id: 'delete',
+                  label: 'Delete',
+                  icon: <TrashIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  onClick: () => setDeleteTarget({ id: item.id, name: item.name }),
+                },
+              ],
+            },
+          ]
+        : [
+            {
+              items: [
+                {
+                  id: 'edit',
+                  label: 'Edit',
+                  icon: <PenEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  href: `/knowledge-base/edit/${item.id}`,
+                },
+                {
+                  id: 'move',
+                  label: 'Move to folder',
+                  icon: <FolderEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  onClick: () => {
+                    setMoveTarget({ id: item.id, name: item.name, type: 'article' });
+                    setMoveSourceConnectionId(sourceConnectionId);
                   },
-                  {
-                    id: 'delete',
-                    label: 'Delete',
-                    icon: <TrashIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    onClick: () => setDeleteTarget({ id: item.id, name: item.name }),
-                  },
-                ],
-              },
-            ]
-          : [
-              {
-                items: [
-                  {
-                    id: 'edit',
-                    label: 'Edit',
-                    icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    href: `/knowledge-base/edit/${item.id}`,
-                  },
-                  {
-                    id: 'move',
-                    label: 'Move to folder',
-                    icon: <FolderEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    onClick: () => setMoveTarget({ id: item.id, name: item.name, type: 'article' }),
-                  },
-                  {
-                    id: 'archive',
-                    label: 'Archive',
-                    icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
-                    onClick: () => setArchiveTarget({ id: item.id, name: item.name }),
-                  },
-                ],
-              },
-            ];
+                },
+                {
+                  id: 'archive',
+                  label: 'Archive',
+                  icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+                  onClick: () => setArchiveTarget({ id: item.id, name: item.name }),
+                },
+              ],
+            },
+          ];
 
       return <ActionsMenuDropdown groups={groups} />;
     },
-    [mode],
+    [mode, props],
   );
 
   const actionsColumn = useMemo<ColumnDef<KnowledgeBaseRow>>(
@@ -204,6 +218,10 @@ export function KnowledgeBaseItemsListView({
     [renderRowActions],
   );
 
+  const isStandard = mode === 'standard';
+  const standardProps = isStandard ? (props as StandardListViewProps) : null;
+  const archivedConnectionId = !isStandard ? (props as ArchiveListViewProps).archivedConnectionId : null;
+
   return (
     <>
       <KnowledgeBaseTableBody
@@ -211,6 +229,7 @@ export function KnowledgeBaseItemsListView({
         mode={mode}
         emptyMessage={emptyMessage}
         actionsColumn={actionsColumn}
+        totalCount={filteredCount}
         footerSlot={
           <DataTable.InfiniteFooter
             hasNextPage={hasNext}
@@ -221,7 +240,7 @@ export function KnowledgeBaseItemsListView({
         }
       />
 
-      {mode === 'standard' && (
+      {isStandard && standardProps && (
         <>
           <RenameFolderModal
             isOpen={renameTarget !== null}
@@ -230,31 +249,36 @@ export function KnowledgeBaseItemsListView({
           />
           <MoveToFolderModal
             isOpen={moveTarget !== null}
-            onClose={() => setMoveTarget(null)}
+            onClose={() => {
+              setMoveTarget(null);
+              setMoveSourceConnectionId(null);
+            }}
             item={moveTarget}
-            sourceConnectionId={connectionId}
+            sourceConnectionId={moveSourceConnectionId ?? ''}
           />
-          <DeleteFolderModal
-            isOpen={deleteTarget !== null}
-            onClose={() => setDeleteTarget(null)}
-            folder={deleteTarget}
-            sourceConnectionId={connectionId}
-          />
+          {standardProps.foldersConnectionId !== null && (
+            <DeleteFolderModal
+              isOpen={deleteTarget !== null}
+              onClose={() => setDeleteTarget(null)}
+              folder={deleteTarget}
+              sourceConnectionId={standardProps.foldersConnectionId}
+            />
+          )}
           <ArchiveArticleModal
             isOpen={archiveTarget !== null}
             onClose={() => setArchiveTarget(null)}
             article={archiveTarget}
-            sourceConnectionId={connectionId}
+            sourceConnectionId={standardProps.articlesConnectionId}
           />
         </>
       )}
 
-      {mode === 'archive' && (
+      {!isStandard && archivedConnectionId && (
         <UnarchiveArticleModal
           isOpen={unarchiveTarget !== null}
           onClose={() => setUnarchiveTarget(null)}
           article={unarchiveTarget}
-          sourceConnectionId={connectionId}
+          sourceConnectionId={archivedConnectionId}
         />
       )}
     </>
@@ -303,6 +327,7 @@ function ArchivedArticlesTableContent({ search, emptyMessage = 'No archived arti
   >(archivedArticlesTableRelayFragment, queryData);
 
   const items = useMemo(() => readKnowledgeBaseItems(data.archivedArticles.edges), [data.archivedArticles.edges]);
+  const filteredCount = data.archivedArticles.filteredCount;
 
   const onLoadMore = useCallback(() => {
     if (!hasNext || isLoadingNext) return;
@@ -315,16 +340,17 @@ function ArchivedArticlesTableContent({ search, emptyMessage = 'No archived arti
     });
   }, [hasNext, isLoadingNext, loadNext, toast]);
 
-  const connectionId = getArchivedArticlesConnectionId({ search: search || null, tagIds: null });
+  const archivedConnectionId = getArchivedArticlesConnectionId({ search: search || null, tagIds: null });
 
   return (
     <KnowledgeBaseItemsListView
+      mode="archive"
       items={items}
-      connectionId={connectionId}
+      filteredCount={filteredCount}
+      archivedConnectionId={archivedConnectionId}
       hasNext={hasNext}
       isLoadingNext={isLoadingNext}
       onLoadMore={onLoadMore}
-      mode="archive"
       emptyMessage={emptyMessage}
     />
   );
