@@ -7,7 +7,7 @@ import {
   type TagSearchOption,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { graphql, useFragment, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { knowledgeBaseBodyArticlesRelay_query$key as ArticlesFragmentKey } from '@/__generated__/knowledgeBaseBodyArticlesRelay_query.graphql';
@@ -18,6 +18,7 @@ import type { knowledgeBaseBodyFoldersRelayQuery as FoldersQueryType } from '@/_
 import type { knowledgeBaseBodySubtreeRelay_query$key as SubtreeFragmentKey } from '@/__generated__/knowledgeBaseBodySubtreeRelay_query.graphql';
 import type { knowledgeBaseBodySubtreeRelayPaginationQuery as SubtreePaginationQueryType } from '@/__generated__/knowledgeBaseBodySubtreeRelayPaginationQuery.graphql';
 import type { knowledgeBaseBodySubtreeRelayQuery as SubtreeQueryType } from '@/__generated__/knowledgeBaseBodySubtreeRelayQuery.graphql';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import {
   getKnowledgeBaseArticlesConnectionId,
@@ -415,26 +416,24 @@ function RootBodyContent() {
 }
 
 function FolderBodyContent({ parentId }: { parentId: string }) {
-  const router = useRouter();
   const folder = useKnowledgeBaseItem(parentId);
+  const parentUrl = folder?.parentId ? `/knowledge-base/folders/${folder.parentId}` : '/knowledge-base';
+  const handleBack = useSafeBack(parentUrl);
 
   if (!folder || folder.type !== 'FOLDER') {
     notFound();
   }
 
-  const backButton: KnowledgeBaseBackButton = {
-    label: 'Back',
-    onClick: () => router.push(folder.parentId ? `/knowledge-base/folders/${folder.parentId}` : '/knowledge-base'),
-  };
+  const backButton: KnowledgeBaseBackButton = { label: 'Back', onClick: handleBack };
 
   return <KnowledgeBaseBodyShell parentId={parentId} title={folder.name} backButton={backButton} />;
 }
 
 function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
-  const router = useRouter();
+  const handleBack = useSafeBack('/knowledge-base');
   const title = parentId === null ? ROOT_TITLE : ' ';
   const backButton: KnowledgeBaseBackButton | undefined =
-    parentId === null ? undefined : { label: 'Back', onClick: () => router.back() };
+    parentId === null ? undefined : { label: 'Back', onClick: handleBack };
 
   return (
     <PageLayout

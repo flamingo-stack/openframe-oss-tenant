@@ -70,7 +70,7 @@ export function AssignmentRow({ targetType, value, onChange, onRemoveRow, disabl
           onClick={onRemoveRow}
           disabled={disabled}
           className="shrink-0"
-          leftIcon={<TrashIcon className="text-ods-attention-red-error" />}
+          leftIcon={<TrashIcon className="text-ods-error" />}
         />
       </div>
     </FieldWrapper>
