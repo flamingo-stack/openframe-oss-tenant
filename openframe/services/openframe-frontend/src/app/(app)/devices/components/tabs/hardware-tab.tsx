@@ -275,9 +275,9 @@ export function HardwareTab({ device }: HardwareTabProps) {
       <div className="mt-6">
         {/* Disk Info Section */}
         <div>
-          <h3 className="text-h5 text-ods-text-secondary mb-4">DISK INFO</h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-1">DISK INFO</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
             {diskData.map((disk, index) => (
               <InfoCard
                 key={index}
@@ -329,9 +329,9 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
         {/* RAM Info Section */}
         <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">RAM INFO</h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-1">RAM INFO</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             <InfoCard
               data={{
                 title: 'System Memory',
@@ -362,9 +362,9 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
         {/* CPU Section */}
         <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">CPU</h3>
+          <h3 className="text-h5 text-ods-text-secondary mb-1">CPU</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
             {cpuModels.slice(0, 4).map((cpu, index) => (
               <InfoCard
                 key={index}
@@ -402,9 +402,9 @@ export function HardwareTab({ device }: HardwareTabProps) {
         {/* Battery Health Section (macOS) */}
         {batteries.length > 0 && (
           <div className="pt-6">
-            <h3 className="text-h5 text-ods-text-secondary mb-4">BATTERY HEALTH</h3>
+            <h3 className="text-h5 text-ods-text-secondary mb-1">BATTERY HEALTH</h3>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
               {batteries.map((battery, index) => {
                 const healthStatus = battery.health || 'Unknown';
                 const cycleCount = battery.cycle_count || 0;
