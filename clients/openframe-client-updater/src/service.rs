@@ -248,13 +248,21 @@ impl UpdaterService {
             name: SERVICE_NAME.to_string(),
             display_name: DISPLAY_NAME.to_string(),
             description: DESCRIPTION.to_string(),
-            exec_path: install_path,
+            exec_path: install_path.clone(),
             ..ServiceConfig::default()
         };
 
         CrossPlatformServiceManager::with_config(config)
             .uninstall()
             .context("Failed to unregister OS service")?;
+
+        if install_path.exists() {
+            std::fs::remove_file(&install_path)
+                .with_context(|| format!("Failed to remove updater binary at {}", install_path.display()))?;
+            info!("Removed updater binary at {}", install_path.display());
+        } else {
+            warn!("Updater binary not found at {}, skipping removal", install_path.display());
+        }
 
         info!("OpenFrame Client Updater service uninstalled");
         Ok(())
