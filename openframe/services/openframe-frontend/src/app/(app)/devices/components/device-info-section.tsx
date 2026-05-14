@@ -34,7 +34,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
 
   if (!device) {
     return (
-      <div className="bg-ods-card border border-ods-border rounded-[6px] p-6">
+      <div className="bg-ods-card border border-ods-border rounded-md p-6">
         <div className="text-center text-ods-text-secondary">No device data available</div>
       </div>
     );
@@ -124,7 +124,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   const rowClass = 'flex items-center gap-4 px-4 min-h-20 border-b border-ods-border';
 
   return (
-    <div className="bg-ods-card border border-ods-border rounded-[6px] flex flex-col">
+    <div className="bg-ods-card border border-ods-border rounded-md flex flex-col">
       {/* ===== Mobile + Tablet (< lg) ===== */}
       <div className="lg:hidden flex flex-col">
         <div className={rowClass}>

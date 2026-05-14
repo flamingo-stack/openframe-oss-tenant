@@ -328,10 +328,10 @@ export function HardwareTab({ device }: HardwareTabProps) {
         </div>
 
         {/* RAM Info Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-1">RAM INFO</h3>
+        <div className="pt-[var(--spacing-system-lf)]">
+          <h3 className="text-h5 text-ods-text-secondary mb-[var(--spacing-system-xxs)]">RAM INFO</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--spacing-system-l)]">
             <InfoCard
               data={{
                 title: 'System Memory',
@@ -361,10 +361,10 @@ export function HardwareTab({ device }: HardwareTabProps) {
         </div>
 
         {/* CPU Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-1">CPU</h3>
+        <div className="pt-[var(--spacing-system-lf)]">
+          <h3 className="text-h5 text-ods-text-secondary mb-[var(--spacing-system-xxs)]">CPU</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-[var(--spacing-system-l)]">
             {cpuModels.slice(0, 4).map((cpu, index) => (
               <InfoCard
                 key={index}
@@ -401,10 +401,10 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
         {/* Battery Health Section (macOS) */}
         {batteries.length > 0 && (
-          <div className="pt-6">
-            <h3 className="text-h5 text-ods-text-secondary mb-1">BATTERY HEALTH</h3>
+          <div className="pt-[var(--spacing-system-lf)]">
+            <h3 className="text-h5 text-ods-text-secondary mb-[var(--spacing-system-xxs)]">BATTERY HEALTH</h3>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-[var(--spacing-system-l)]">
               {batteries.map((battery, index) => {
                 const healthStatus = battery.health || 'Unknown';
                 const cycleCount = battery.cycle_count || 0;
