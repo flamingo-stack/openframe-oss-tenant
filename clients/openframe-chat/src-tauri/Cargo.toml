@@ -31,6 +31,7 @@ notify = "6.1"
 
 [target.'cfg(windows)'.dependencies]
 dirs = "5"
+winreg = "0.52"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"
