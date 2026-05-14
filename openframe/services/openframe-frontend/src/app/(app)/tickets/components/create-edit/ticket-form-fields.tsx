@@ -165,7 +165,7 @@ export function TicketFormFields({
         />
       </div>
 
-      {/* <Controller
+      <Controller
         name="assignments"
         control={control}
         render={({ field }) => (
@@ -175,7 +175,7 @@ export function TicketFormFields({
             enabledTypes={['ORGANIZATION', 'DEVICE', 'KNOWLEDGE_ARTICLE']}
           />
         )}
-      /> */}
+      />
 
       {/* Labels / Tags */}
       <Controller

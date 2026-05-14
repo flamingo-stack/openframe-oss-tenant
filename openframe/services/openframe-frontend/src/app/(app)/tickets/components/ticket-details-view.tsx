@@ -596,7 +596,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      {/* <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" /> */}
+      <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" />
 
       {/* Chat Section */}
       <div className="flex-1 flex flex-col min-h-[500px]">
