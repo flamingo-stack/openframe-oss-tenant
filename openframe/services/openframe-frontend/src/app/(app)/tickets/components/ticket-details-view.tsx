@@ -37,6 +37,7 @@ import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
+import { overrideToolTitle } from '@/lib/apply-tool-title';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -205,8 +206,9 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const dispatchChunk = useCallback(
     (chunk: unknown, messageType: NatsMessageType) => {
-      if (messageType === 'admin-message') processAdminChunk(chunk);
-      else processClientChunk(chunk);
+      const patched = overrideToolTitle(chunk as Record<string, unknown>);
+      if (messageType === 'admin-message') processAdminChunk(patched);
+      else processClientChunk(patched);
     },
     [processClientChunk, processAdminChunk],
   );

@@ -2,6 +2,21 @@ import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
 import { runtimeEnv } from './runtime-config';
 
 /**
+ * Server-known flag names. Must be passed to `feFeatureFlags(names: ...)`;
+ * the backend only returns flags that are explicitly requested.
+ */
+export const FEATURE_FLAG_NAMES = [
+  'organizationImages',
+  'ssoAutoAllow',
+  'billings',
+  'thinking',
+  'knowledge-base',
+  'notifications',
+  'tickets-board',
+  'batch-approval',
+] as const;
+
+/**
  * Read a feature flag value from the server-loaded store,
  * falling back to the env-var default if the store hasn't loaded
  * or doesn't contain the flag.
@@ -60,9 +75,9 @@ export const featureFlags = {
       return getFlagValue('tickets-board', () => false);
     },
   },
-  batchApprovals: {
+  batchApproval: {
     enabled(): boolean {
-      return getFlagValue('batch-approvals', () => false);
+      return getFlagValue('batch-approval', () => false);
     },
   },
 } as const;

@@ -9,6 +9,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { applyToolTitleToMessage } from '@/lib/apply-tool-title';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ApprovalStatus } from '../../tickets/constants';
@@ -205,14 +206,16 @@ export function useMingoDialogSelection() {
 
     const historicalMessages: HistoricalMessage[] = allGraphQlMessages
       .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
-      .map(msg => ({
-        id: msg.id,
-        dialogId: msg.dialogId,
-        chatType: msg.chatType,
-        createdAt: msg.createdAt,
-        owner: msg.owner,
-        messageData: msg.messageData,
-      }));
+      .map(msg =>
+        applyToolTitleToMessage({
+          id: msg.id,
+          dialogId: msg.dialogId,
+          chatType: msg.chatType,
+          createdAt: msg.createdAt,
+          owner: msg.owner,
+          messageData: msg.messageData,
+        }),
+      );
 
     const assistantConfig = ASSISTANT_CONFIG.MINGO;
     const { messages: rawProcessedMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
@@ -222,7 +225,7 @@ export function useMingoDialogSelection() {
       onApprove: handleApproveRef.current,
       onReject: handleRejectRef.current,
       approvalStatuses: Object.fromEntries(Object.entries(approvalStatusesRef.current).map(([k, v]) => [k, v as any])),
-      batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
+      batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
     });
     const allProcessedMessages = foldPendingApprovalsEnvelope(rawProcessedMessages as Message[]);
 
