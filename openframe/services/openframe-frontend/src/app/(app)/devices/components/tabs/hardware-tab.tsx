@@ -277,7 +277,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
         <div>
           <h3 className="text-h5 text-ods-text-secondary mb-1">DISK INFO</h3>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-[var(--spacing-system-mf)] lg:gap-[var(--spacing-system-lf)]">
             {diskData.map((disk, index) => (
               <InfoCard
                 key={index}
