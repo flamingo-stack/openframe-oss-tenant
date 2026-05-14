@@ -22,7 +22,7 @@ export interface InfoCellProps {
 export function InfoCell({ value, label, icon, href, className }: InfoCellProps) {
   const content = (
     <div className={`flex flex-col justify-center min-w-0 flex-1 ${className ?? ''}`}>
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="flex items-center gap-[var(--spacing-system-xxs)] min-w-0">
         {icon && <span className="shrink-0">{icon}</span>}
         <p className="text-ods-text-primary text-h4 truncate">{value}</p>
       </div>

@@ -34,7 +34,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
 
   if (!device) {
     return (
-      <div className="bg-ods-card border border-ods-border rounded-md p-6">
+      <div className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-lf)]">
         <div className="text-center text-ods-text-secondary">No device data available</div>
       </div>
     );
@@ -140,12 +140,14 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         {(customerInner || assignedInner) && (
           <div className="flex flex-col md:flex-row md:items-center md:gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] border-b border-ods-border">
             {customerInner && (
-              <div className="flex items-center gap-2 flex-1 min-w-0 min-h-20 py-2 md:py-0 border-b md:border-b-0 border-ods-border last:border-b-0">
+              <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0 min-h-20 py-[var(--spacing-system-xsf)] md:py-0 border-b md:border-b-0 border-ods-border last:border-b-0">
                 {customerInner}
               </div>
             )}
             {assignedInner && (
-              <div className="flex items-center gap-2 flex-1 min-w-0 min-h-20 py-2 md:py-0">{assignedInner}</div>
+              <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0 min-h-20 py-[var(--spacing-system-xsf)] md:py-0">
+                {assignedInner}
+              </div>
             )}
           </div>
         )}
@@ -168,8 +170,12 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           {serialCell}
         </div>
         <div className={rowClass}>
-          {customerInner && <div className="flex items-center gap-2 flex-1 min-w-0">{customerInner}</div>}
-          {assignedInner && <div className="flex items-center gap-2 flex-1 min-w-0">{assignedInner}</div>}
+          {customerInner && (
+            <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0">{customerInner}</div>
+          )}
+          {assignedInner && (
+            <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0">{assignedInner}</div>
+          )}
           {registeredCell}
           {updatedCell}
         </div>
