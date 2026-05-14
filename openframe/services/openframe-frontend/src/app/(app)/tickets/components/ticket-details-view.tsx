@@ -583,7 +583,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         description={dialog.description || dialog.title || ''}
         attachments={uiAttachments}
         tags={(dialog.labels || []).map(l => l.key)}
-        knowledgeBaseArticles={[]}
         notes={uiNotes}
         isAddingNote={addNoteMutation.isPending}
         onAddNote={text => {
@@ -596,7 +595,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" />
+      {isTicketInfoExpanded && (
+        <AssignedItemsView
+          itemId={dialog.id}
+          itemType="TICKET"
+          className="hidden lg:block shrink-0 mt-[var(--spacing-system-mf)]"
+        />
+      )}
 
       {/* Chat Section */}
       <div className="flex-1 flex flex-col min-h-[500px]">
@@ -661,7 +666,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
               tags={(dialog.labels || []).map(l => l.key)}
-              knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
                 if (dialog?.id) addNoteMutation.mutate({ content: text });
@@ -673,6 +677,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 deleteNoteMutation.mutate(id);
               }}
             />
+            <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="mt-[var(--spacing-system-mf)]" />
           </div>
         )}
 

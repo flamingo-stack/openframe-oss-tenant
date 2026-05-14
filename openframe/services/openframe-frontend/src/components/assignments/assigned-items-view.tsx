@@ -50,7 +50,7 @@ export function AssignedItemsView({ itemId, itemType, className }: AssignedItems
   if (isLoading && activeTypes.length === 0) {
     return (
       <section className={className}>
-        <h3 className="text-h3 text-ods-text-primary mb-[var(--spacing-system-mf)]">Assigned Items</h3>
+        <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>
         <Skeleton className="h-12 w-full" />
       </section>
     );
@@ -60,17 +60,19 @@ export function AssignedItemsView({ itemId, itemType, className }: AssignedItems
 
   return (
     <section className={className}>
-      <h3 className="text-h3 text-ods-text-primary mb-[var(--spacing-system-mf)]">Assigned Items</h3>
+      <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>
 
-      {activeTypes.length === 1 ? (
-        renderTabBody(activeTypes[0])
-      ) : (
-        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={id => setPinnedTab(id as AssignmentTargetType)}>
-          {active => (
-            <div className="mt-[var(--spacing-system-mf)]">{renderTabBody(active as AssignmentTargetType)}</div>
-          )}
-        </TabNavigation>
-      )}
+      <div className="rounded-md border border-ods-border overflow-hidden">
+        {activeTypes.length === 1 ? (
+          <div className="p-[var(--spacing-system-mf)]">{renderTabBody(activeTypes[0])}</div>
+        ) : (
+          <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={id => setPinnedTab(id as AssignmentTargetType)}>
+            {active => (
+              <div className="p-[var(--spacing-system-mf)]">{renderTabBody(active as AssignmentTargetType)}</div>
+            )}
+          </TabNavigation>
+        )}
+      </div>
     </section>
   );
 }
