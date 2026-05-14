@@ -15,7 +15,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Suspense, useMemo, useState } from 'react';
 import {
   buildFolderTree,
-  getKnowledgeBaseItemsConnectionId,
+  getKnowledgeBaseArticlesConnectionId,
   KNOWLEDGE_BASE_ROOT_LABEL,
   useKnowledgeBaseFolders,
 } from '../hooks/use-knowledge-base-items';
@@ -53,7 +53,9 @@ function UnarchiveContent({ onClose, article, sourceConnectionId }: UnarchiveCon
   const handleConfirm = async () => {
     if (!selected || isPending) return;
     const targetConnectionId =
-      selected.id === null ? null : getKnowledgeBaseItemsConnectionId({ parentId: selected.id, search: null });
+      selected.id === null
+        ? null
+        : getKnowledgeBaseArticlesConnectionId({ parentId: selected.id, search: null, tagIds: [] });
     try {
       await unarchiveArticle({
         id: article.id,

@@ -17,7 +17,7 @@ import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
-import { getKnowledgeBaseItemsConnectionId } from '../hooks/use-knowledge-base-items';
+import { getKnowledgeBaseArticlesConnectionId } from '../hooks/use-knowledge-base-items';
 import { usePublishArticle } from '../hooks/use-publish-article';
 import { useUnpublishArticle } from '../hooks/use-unpublish-article';
 import { ArchiveArticleModal } from './archive-article-modal';
@@ -54,12 +54,13 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
 
   const status = (article.status ?? 'DRAFT') as ArticleStatus;
   const updatedAt = article.updatedAt ?? article.createdAt;
-  const folderConnectionId = getKnowledgeBaseItemsConnectionId({
+  const articlesConnectionId = getKnowledgeBaseArticlesConnectionId({
     parentId: article.parentId ?? null,
     search: null,
+    tagIds: [],
   });
   const archiveConnectionId = getArchivedArticlesConnectionId({ search: null, tagIds: null });
-  const sourceConnectionId = status === 'ARCHIVED' ? archiveConnectionId : folderConnectionId;
+  const sourceConnectionId = status === 'ARCHIVED' ? archiveConnectionId : articlesConnectionId;
 
   const authorName = useMemo(() => {
     if (!article.author) return null;

@@ -69,8 +69,8 @@ export function AssignmentRow({ targetType, value, onChange, onRemoveRow, disabl
           aria-label={`Remove ${meta.menuLabel} assignments`}
           onClick={onRemoveRow}
           disabled={disabled}
-          className="shrink-0 text-ods-attention-red-error"
-          leftIcon={<TrashIcon />}
+          className="shrink-0"
+          leftIcon={<TrashIcon className="text-ods-error" />}
         />
       </div>
     </FieldWrapper>

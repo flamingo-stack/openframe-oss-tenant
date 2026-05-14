@@ -19,10 +19,6 @@ import {
   ArrowRightUpIcon,
   BoxArchiveIcon,
   BracketCurlyIcon,
-  ComputerMouseIcon,
-  FolderIcon,
-  PowershellLogoGreyIcon,
-  TerminalIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -32,6 +28,7 @@ import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-d
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
 import { getDeviceActionAvailability } from '../utils/device-action-utils';
+import { buildDeviceMenuItems } from '../utils/device-menu-items';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
@@ -151,42 +148,50 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     onDeleted: () => router.push('/devices'),
   });
 
+  // Windows OS detection — used by Remote Shell submenu in `buildDeviceMenuItems`.
+  const isWindows = useMemo(() => {
+    if (!normalizedDevice) return undefined;
+    const osType = normalizedDevice.platform || normalizedDevice.osType || normalizedDevice.operating_system;
+    return normalizeOSType(osType) === 'WINDOWS';
+  }, [normalizedDevice]);
+
+  // Shared device menu items registry (same builder used by table dropdown and Tickets view).
+  const deviceMenuItems = useMemo(
+    () =>
+      buildDeviceMenuItems({
+        deviceId,
+        availability: actionAvailability,
+        iconSize: 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]',
+        isWindows,
+        withNewTabAction: true,
+      }),
+    [deviceId, actionAvailability, isWindows],
+  );
+
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     const groups: ActionsMenuGroup[] = [];
     const primaryItems: ActionsMenuGroup['items'] = [];
     const destructiveItems: ActionsMenuGroup['items'] = [];
 
-    const remoteDesktopHref = `/devices/details/${deviceId}/remote-desktop`;
-    const fileManagerHref = `/devices/details/${deviceId}/file-manager`;
-    const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
-
-    if (actionAvailability?.remoteControlEnabled) {
+    // Run Script is intentionally not in the shared builder — it opens a
+    // React-stateful modal owned by this component.
+    if (actionAvailability?.runScriptEnabled) {
+      const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
       primaryItems.push({
-        id: 'remote-control',
-        label: 'Remote Control',
-        icon: <ComputerMouseIcon className="w-6 h-6 text-ods-text-secondary" />,
-        href: remoteDesktopHref,
+        id: 'run-script',
+        label: 'Run Script',
+        icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
+        onClick: () => setIsScriptsModalOpen(true),
         iconAction: {
-          icon: newTabIcon,
-          'aria-label': 'Open Remote Control in new tab',
-          href: remoteDesktopHref,
+          icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
+          'aria-label': 'Open Run Script in new tab',
+          href: runScriptHref,
           openInNewTab: true,
         },
       });
     }
     if (actionAvailability?.manageFilesEnabled) {
-      primaryItems.push({
-        id: 'file-manager',
-        label: 'File Manager',
-        icon: <FolderIcon className="w-6 h-6 text-ods-text-secondary" />,
-        href: fileManagerHref,
-        iconAction: {
-          icon: newTabIcon,
-          'aria-label': 'Open File Manager in new tab',
-          href: fileManagerHref,
-          openInNewTab: true,
-        },
-      });
+      primaryItems.push(deviceMenuItems.manageFiles);
     }
     if (actionAvailability?.archiveEnabled) {
       destructiveItems.push({
@@ -212,7 +217,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       groups.push({ items: destructiveItems });
     }
     return groups;
-  }, [actionAvailability, deviceId, openArchive, openDelete]);
+  }, [actionAvailability, deviceId, deviceMenuItems, openArchive, openDelete]);
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId);
@@ -238,68 +243,11 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     return <NotFoundError message="Device not found" />;
   }
 
-  // Check if Windows for shell type selection
-  const isWindows = (() => {
-    const osType = normalizedDevice.platform || normalizedDevice.osType || normalizedDevice.operating_system;
-    return normalizeOSType(osType) === 'WINDOWS';
-  })();
-
-  const newTabIconAction = (href: string, label: string, disabled?: boolean) => ({
-    icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
-    'aria-label': `Open ${label} in new tab`,
-    href,
-    openInNewTab: true,
-    disabled,
-  });
-
-  const cmdHref = `/devices/details/${deviceId}/remote-shell?shellType=cmd`;
-  const psHref = `/devices/details/${deviceId}/remote-shell?shellType=powershell`;
-  const bashHref = `/devices/details/${deviceId}/remote-shell?shellType=bash`;
-  const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
-
-  const remoteShellAction: PageActionButton = isWindows
-    ? {
-        label: 'Remote Shell',
-        variant: 'outline',
-        icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
-        disabled: !actionAvailability?.remoteShellEnabled,
-        submenu: [
-          {
-            id: 'cmd',
-            label: 'CMD',
-            icon: <TerminalIcon className="w-6 h-6 text-ods-text-secondary" />,
-            href: cmdHref,
-            iconAction: newTabIconAction(cmdHref, 'CMD'),
-          },
-          {
-            id: 'powershell',
-            label: 'PowerShell',
-            icon: <PowershellLogoGreyIcon className="w-6 h-6" />,
-            href: psHref,
-            iconAction: newTabIconAction(psHref, 'PowerShell'),
-          },
-        ],
-      }
-    : {
-        label: 'Remote Shell',
-        variant: 'outline',
-        icon: <TerminalIcon className="h-6 w-6 text-ods-text-secondary" />,
-        href: bashHref,
-        prefetch: false,
-        disabled: !actionAvailability?.remoteShellEnabled,
-        iconAction: newTabIconAction(bashHref, 'Remote Shell', !actionAvailability?.remoteShellEnabled),
-      };
-
+  // Top-level header buttons reuse the shared menu items registry — only the
+  // `variant` field is appended to turn them into `PageActionButton`s.
   const actions: PageActionButton[] = [
-    {
-      label: 'Run Script',
-      variant: 'outline',
-      icon: <BracketCurlyIcon className="h-6 w-6 text-ods-text-secondary" />,
-      onClick: () => setIsScriptsModalOpen(true),
-      disabled: !actionAvailability?.runScriptEnabled,
-      iconAction: newTabIconAction(runScriptHref, 'Run Script', !actionAvailability?.runScriptEnabled),
-    },
-    remoteShellAction,
+    { ...deviceMenuItems.remoteControl, variant: 'outline' },
+    { ...deviceMenuItems.remoteShell, variant: 'outline' },
   ];
 
   return (

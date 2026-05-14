@@ -82,6 +82,7 @@ export function AssignmentsField({
                 type="button"
                 variant="transparent"
                 disabled={disabled}
+                noPaddingX
                 leftIcon={<PlusCircleIcon />}
                 className="self-start text-ods-text-secondary"
               >

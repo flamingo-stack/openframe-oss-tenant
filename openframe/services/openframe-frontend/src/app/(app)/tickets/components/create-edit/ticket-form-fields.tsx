@@ -165,18 +165,6 @@ export function TicketFormFields({
         />
       </div>
 
-      {/* <Controller
-        name="assignments"
-        control={control}
-        render={({ field }) => (
-          <AssignmentsField
-            value={field.value ?? {}}
-            onChange={field.onChange}
-            enabledTypes={['ORGANIZATION', 'DEVICE', 'KNOWLEDGE_ARTICLE']}
-          />
-        )}
-      /> */}
-
       {/* Labels / Tags */}
       <Controller
         name="labelIds"
@@ -206,6 +194,18 @@ export function TicketFormFields({
             height={500}
             renderPreview={renderPreview}
             disabled={isFaeForm}
+          />
+        )}
+      />
+
+      <Controller
+        name="assignments"
+        control={control}
+        render={({ field }) => (
+          <AssignmentsField
+            value={field.value ?? {}}
+            onChange={field.onChange}
+            enabledTypes={['ORGANIZATION', 'DEVICE', 'KNOWLEDGE_ARTICLE']}
           />
         )}
       />

@@ -11,7 +11,7 @@ import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '
 import { useAddTag } from './use-add-tag';
 import { useCreateArticle } from './use-create-article';
 import type { KnowledgeBaseItemNode } from './use-knowledge-base-item';
-import { getKnowledgeBaseItemsConnectionId } from './use-knowledge-base-items';
+import { getKnowledgeBaseArticlesConnectionId } from './use-knowledge-base-items';
 import { useCreateKnowledgeBaseTag } from './use-knowledge-base-tags';
 import { usePublishArticle } from './use-publish-article';
 import { useRemoveTag } from './use-remove-tag';
@@ -169,9 +169,10 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
               toast({ title: 'Success', description: 'Article updated', variant: 'success' });
               safeBackOrReplace(router, `/knowledge-base/details/${articleId}`);
             } else {
-              const targetConnectionId = getKnowledgeBaseItemsConnectionId({
+              const targetConnectionId = getKnowledgeBaseArticlesConnectionId({
                 parentId: folderId,
                 search: null,
+                tagIds: [],
               });
               const result = await createArticle({
                 input: {
