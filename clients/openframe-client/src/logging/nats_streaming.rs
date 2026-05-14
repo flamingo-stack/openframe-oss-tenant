@@ -236,20 +236,44 @@ fn spawn_source_discovery(
     directory_manager: DirectoryManager,
 ) {
     tokio::spawn(async move {
+        let mut meshcentral_registered = false;
+        let mut updater_registered = false;
+
         loop {
             tokio::time::sleep(Duration::from_secs(SOURCE_DISCOVERY_INTERVAL_SECS)).await;
 
-            match create_meshcentral_source(&installed_tools_service, &directory_manager).await {
-                Some(source) => {
-                    info!("Meshcentral log source discovered, registering");
-                    if tx.send(source).await.is_err() {
-                        return;
+            if !meshcentral_registered {
+                match create_meshcentral_source(&installed_tools_service, &directory_manager).await {
+                    Some(source) => {
+                        info!("Meshcentral log source discovered, registering");
+                        if tx.send(source).await.is_err() {
+                            return;
+                        }
+                        meshcentral_registered = true;
                     }
-                    return;
+                    None => {
+                        debug!("Meshcentral not installed yet, will retry in {}s", SOURCE_DISCOVERY_INTERVAL_SECS);
+                    }
                 }
-                None => {
-                    debug!("Meshcentral not installed yet, will retry in {}s", SOURCE_DISCOVERY_INTERVAL_SECS);
+            }
+
+            if !updater_registered {
+                match create_updater_source(&installed_tools_service, &directory_manager).await {
+                    Some(source) => {
+                        info!("Updater log source discovered, registering");
+                        if tx.send(source).await.is_err() {
+                            return;
+                        }
+                        updater_registered = true;
+                    }
+                    None => {
+                        debug!("Updater not installed yet, will retry in {}s", SOURCE_DISCOVERY_INTERVAL_SECS);
+                    }
                 }
+            }
+
+            if meshcentral_registered && updater_registered {
+                return;
             }
         }
     });
@@ -270,6 +294,25 @@ async fn create_meshcentral_source(
     let offset_path = directory_manager.secured_dir().join("meshcentral_log_offset");
 
     let source = FileLogSource::new(LogSourceKind::Meshcentral, log_path, offset_path);
+    Some(Box::new(source))
+}
+
+async fn create_updater_source(
+    installed_tools_service: &InstalledToolsService,
+    directory_manager: &DirectoryManager,
+) -> Option<Box<dyn LogSource>> {
+    let updater_id = LogSourceKind::Updater.to_string();
+
+    let tools = installed_tools_service.get_all().await.ok()?;
+    tools.into_iter().find(|t| t.tool_agent_id == updater_id)?;
+
+    // {app_support_dir}/openframe-client-updater/openframe-client-updater.log
+    // mirrors the mesh pattern and the path the updater binary writes to
+    let tool_dir = directory_manager.app_support_dir().join(&updater_id);
+    let log_path = tool_dir.join(format!("{}.log", updater_id));
+    let offset_path = directory_manager.secured_dir().join("updater_log_offset");
+
+    let source = FileLogSource::new(LogSourceKind::Updater, log_path, offset_path);
     Some(Box::new(source))
 }
 

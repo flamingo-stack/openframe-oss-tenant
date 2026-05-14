@@ -12,6 +12,7 @@ use crate::services::{
     InitialConfigurationService, LocalTlsConfigProvider, NatsConnectionManager,
     NatsMessagePublisher, ServiceManagerService, UpdateProgressPublisher, UpdaterStateService,
 };
+use crate::logging::log_streaming::LogStreamingRunManager;
 use crate::services::token_watcher::TokenWatcher;
 
 pub struct UpdaterOrchestrator {
@@ -75,6 +76,30 @@ impl UpdaterOrchestrator {
 
         nats_manager.connect().await.context("Failed to connect to NATS")?;
         info!("NATS connected");
+
+        // Start the self-contained log streaming pipeline — same pattern as meshagent:
+        // the updater owns its pipeline (write → read → stream to NATS) independently.
+        let log_file_path = self.dir_manager.app_support_dir()
+            .join("openframe-client-updater")
+            .join("openframe-client-updater.log");
+        let offset_file_path = self.dir_manager.secured_dir()
+            .join("updater_log_offset");
+
+        match nats_manager.get_client().await {
+            Ok(nats_client) => {
+                let manager = LogStreamingRunManager::new(
+                    nats_client,
+                    agent_config_service.clone(),
+                    log_file_path,
+                    offset_file_path,
+                );
+                manager.start();
+                info!("Log streaming started");
+            }
+            Err(e) => {
+                error!("Failed to get NATS client for log streaming: {:#}", e);
+            }
+        }
 
         let nats_publisher = NatsMessagePublisher::new(nats_manager.clone());
 

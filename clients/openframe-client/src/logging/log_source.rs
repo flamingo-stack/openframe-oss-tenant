@@ -13,6 +13,7 @@ use super::log_parser::{parse_log_line, LogDeduplicator, LogEntry};
 pub enum LogSourceKind {
     Openframe,
     Meshcentral,
+    Updater,
 }
 
 impl fmt::Display for LogSourceKind {
@@ -20,6 +21,7 @@ impl fmt::Display for LogSourceKind {
         match self {
             LogSourceKind::Openframe => write!(f, "openframe"),
             LogSourceKind::Meshcentral => write!(f, "meshcentral-agent"),
+            LogSourceKind::Updater => write!(f, "openframe-client-updater"),
         }
     }
 }

@@ -25,6 +25,10 @@ impl InitialConfigurationService {
         Ok(self.read_config()?.server_host)
     }
 
+    pub fn get_initial_key(&self) -> Result<String> {
+        Ok(self.read_config()?.initial_key)
+    }
+
     pub fn is_local_mode(&self) -> Result<bool> {
         Ok(self.read_config()?.local_mode)
     }
