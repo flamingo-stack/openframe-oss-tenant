@@ -13,7 +13,6 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
-import { overrideToolTitle } from '@/lib/apply-tool-title';
 import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
@@ -436,7 +435,7 @@ export function DialogSubscription({
   } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: useCallback((chunk: ChunkData, _messageType: NatsMessageType) => {
-      processorRef.current(overrideToolTitle(chunk));
+      processorRef.current(chunk);
     }, []),
   });
 

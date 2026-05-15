@@ -22,13 +22,27 @@ async function fetchAiConfiguration(): Promise<AiModel | null> {
   return { provider: response.data.provider, displayName: response.data.displayName };
 }
 
+const AI_MODEL_QUERY_OPTIONS = {
+  queryKey: ['ai-configuration-model'],
+  queryFn: fetchAiConfiguration,
+  staleTime: 5 * 60 * 1000,
+  refetchOnWindowFocus: false,
+} as const;
+
 export function useAiModel() {
-  const { data: aiModel = null } = useQuery({
-    queryKey: ['ai-configuration-model'],
-    queryFn: fetchAiConfiguration,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
+  const { data: aiModel = null } = useQuery(AI_MODEL_QUERY_OPTIONS);
 
   return aiModel;
+}
+
+/**
+ * Same query as {@link useAiModel} (shared cache key — no extra request) but
+ * also exposes `isLoading`, so consumers can render a size-matched skeleton
+ * while the model config is still in flight instead of shifting the layout
+ * when it pops in.
+ */
+export function useAiModelStatus() {
+  const { data: aiModel = null, isLoading } = useQuery(AI_MODEL_QUERY_OPTIONS);
+
+  return { aiModel, isLoading };
 }

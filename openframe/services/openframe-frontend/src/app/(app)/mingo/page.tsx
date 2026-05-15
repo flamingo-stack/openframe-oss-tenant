@@ -2,17 +2,18 @@
 
 export const dynamic = 'force-dynamic';
 
+import type { ChatInputRef } from '@flamingo-stack/openframe-frontend-core';
 import {
   ChatInput,
   ChatMessageList,
   ChatSidebar,
   ContentPageContainer,
-  MingoIcon,
   ModelDisplay,
+  Skeleton,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useAiModel } from '@/app/hooks/use-ai-model';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAiModelStatus } from '@/app/hooks/use-ai-model';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
@@ -24,13 +25,15 @@ import { useMingoMessagesStore } from './stores/mingo-messages-store';
 export default function Mingo() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialAiModel = useAiModel();
+  const { aiModel: initialAiModel, isLoading: isAiModelLoading } = useAiModelStatus();
 
   const [isDraftChat, setIsDraftChat] = useState(false);
   const [currentModel, setCurrentModel] = useState<{
     displayName: string;
     provider: string;
   } | null>(null);
+
+  const chatInputRef = useRef<ChatInputRef>(null);
 
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
 
@@ -84,13 +87,47 @@ export default function Mingo() {
     }
   }, [activeDialogId, dialogData?.tokenUsage, setTokenUsage]);
 
-  const tokenUsage = activeDialogId ? (tokenUsageByDialog.get(activeDialogId) ?? null) : null;
+  // Resolve token usage synchronously: the store (kept live by realtime
+  // `onTokenUsage` frames) is the source of truth, but on the first frame
+  // after switching to a freshly fetched dialog the store hasn't been seeded
+  // yet (the effect above runs post-paint), so fall back to the dialog query
+  // result. Both hold identical numbers, so the store→query handoff is
+  // invisible — this is what stops the "X/Y tokens used" tail from blinking
+  // in and out on every dialog switch.
+  const tokenUsage = useMemo(() => {
+    if (!activeDialogId) return null;
+    const cached = tokenUsageByDialog.get(activeDialogId);
+    if (cached) return cached;
+    const u = dialogData?.tokenUsage?.find(t => t.chatType === 'ADMIN_AI_CHAT');
+    if (!u) return null;
+    return {
+      inputTokensSize: u.inputTokensSize ?? 0,
+      outputTokensSize: u.outputTokensSize ?? 0,
+      totalTokensSize: u.totalTokensSize ?? 0,
+      contextSize: u.contextSize ?? 0,
+    };
+  }, [activeDialogId, tokenUsageByDialog, dialogData?.tokenUsage]);
+
+  // Clear any unsent text when the active dialog changes. `activeDialogId`
+  // only changes on a real switch (both selection paths guard against
+  // re-selecting the same id), so a typed-but-unsent draft doesn't leak from
+  // one conversation into another. Imperative `clear()` instead of a `key`
+  // remount so we don't reintroduce the input flicker.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeDialogId is the trigger, not used in the body — clearing must run precisely when it changes.
+  useEffect(() => {
+    chatInputRef.current?.clear();
+  }, [activeDialogId]);
 
   useEffect(() => {
     if (initialAiModel && !currentModel) {
       setCurrentModel(initialAiModel);
     }
   }, [initialAiModel, currentModel]);
+
+  // The model is global config; per-dialog metadata only refines it. Falling
+  // back to `initialAiModel` means we never have to null `currentModel` on
+  // switch (which previously caused a 1-frame skeleton/empty flash).
+  const displayModel = currentModel ?? initialAiModel;
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelDisplayName: string; modelName: string; providerName: string; contextWindow: number }) => {
@@ -118,15 +155,46 @@ export default function Mingo() {
 
   const isAnyLoading = isLoadingDialog || isLoadingMessages || isSelectingDialog;
 
+  // Drives the composer's `sending` (which disables the textarea). It tracks
+  // the message lifecycle only. `isSelectingDialog` is intentionally excluded:
+  // it flips true→false for one tick on every dialog switch, and feeding that
+  // into the textarea's `disabled` made the placeholder visibly jerk on each
+  // switch. The message list still shows its own loader via `isAnyLoading`.
+  const isComposerBusy = isTyping || isCompacting || isCreatingDialog || pendingApprovals.length > 0;
+
+  // The store's `activeDialogId` is only populated by an effect after the first
+  // render. Reading the dialog id from the URL synchronously during render lets
+  // us decide what to show without waiting a frame, which is what previously
+  // caused the empty-state logo to flash on navigation.
+  const urlDialogId = searchParams.get('dialogId');
+
+  // A dialog id is in the URL but the store hasn't caught up yet — show the
+  // message list in its loading state instead of anything else.
+  const isResolvingDialog = !activeDialogId && !isDraftChat && Boolean(urlDialogId);
+
+  // There is no empty state anymore: with no dialog selected and none resolving
+  // from the URL, `/mingo` defaults to a fresh "new chat" draft (welcome message
+  // + focused input) instead of the standalone logo screen.
+  const effectiveDraft = isDraftChat || (!activeDialogId && !urlDialogId);
+
+  // Show the size-matched skeleton for the whole model/token row until the
+  // active dialog's data has settled, so the row appears exactly once with the
+  // correct model + token numbers instead of stepping through skeleton →
+  // default model → tokens-pop-in on every switch. Gated on the react-query
+  // `isLoading` (false for cached dialogs → instant, no flash), not the
+  // one-tick `isSelectingDialog`.
+  const isModelRowLoading =
+    isResolvingDialog || (Boolean(activeDialogId) && isLoadingDialog) || (!displayModel && isAiModelLoading);
+
   const displayMessages = useMemo(() => {
-    if (isDraftChat) return draftWelcomeMessages;
+    if (effectiveDraft) return draftWelcomeMessages;
 
     if (activeDialogId && processedMessages.length === 0 && !isAnyLoading) {
       return draftWelcomeMessages;
     }
 
     return processedMessages;
-  }, [isDraftChat, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages]);
+  }, [effectiveDraft, activeDialogId, processedMessages, isAnyLoading, draftWelcomeMessages]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -157,7 +225,6 @@ export default function Mingo() {
       if (dialogId === activeDialogId) return;
 
       setIsDraftChat(false);
-      setCurrentModel(null);
 
       const currentUrl = new URL(window.location.href);
       currentUrl.searchParams.set('dialogId', dialogId);
@@ -177,39 +244,23 @@ export default function Mingo() {
 
     const urlDialogId = searchParams.get('dialogId');
 
-    if (urlDialogId === activeDialogId) return;
-
-    if (urlDialogId) {
-      setIsDraftChat(false);
-      setActiveDialogId(urlDialogId);
-      resetUnread(urlDialogId);
-      subscribeToDialog(urlDialogId);
-      selectDialog(urlDialogId);
-      return;
-    }
-
-    // URL has no dialogId but `activeDialogId` is set. This can be a real
-    // navigation (user cleared the dialog) OR a transient race during a
-    // draft→dialog transition: `setActiveDialogId(newId)` runs synchronously
-    // but Next.js's `useSearchParams` lags by a tick, so this effect briefly
-    // sees `urlDialogId=null` while `activeDialogId` is the new id, and the
-    // immediate `setActiveDialogId(null)` caused a one-frame flash of the
-    // empty state (Mingo logo) between draft and the new dialog.
-    // Defer the clear; if URL really stays empty, it fires; if URL catches
-    // up, the cleanup cancels it.
-    const timeoutId = window.setTimeout(() => {
-      if (!searchParams.get('dialogId')) {
+    if (urlDialogId !== activeDialogId) {
+      if (urlDialogId) {
+        setIsDraftChat(false);
+        setActiveDialogId(urlDialogId);
+        resetUnread(urlDialogId);
+        subscribeToDialog(urlDialogId);
+        selectDialog(urlDialogId);
+      } else {
         setActiveDialogId(null);
       }
-    }, 50);
-    return () => window.clearTimeout(timeoutId);
+    }
   }, [searchParams, activeDialogId, isDraftChat, resetUnread, selectDialog, setActiveDialogId, subscribeToDialog]);
 
   const handleNewChat = useCallback(() => {
     resetDialog();
     setActiveDialogId(null);
     setIsDraftChat(true);
-    setCurrentModel(null);
 
     const currentUrl = new URL(window.location.href);
     currentUrl.searchParams.delete('dialogId');
@@ -220,7 +271,7 @@ export default function Mingo() {
     async (message: string) => {
       if (!message.trim()) return;
 
-      if (isDraftChat) {
+      if (effectiveDraft) {
         const newDialogId = await createDialog();
         if (!newDialogId) return;
 
@@ -257,7 +308,7 @@ export default function Mingo() {
       }
     },
     [
-      isDraftChat,
+      effectiveDraft,
       activeDialogId,
       createDialog,
       sendMessage,
@@ -310,68 +361,57 @@ export default function Mingo() {
         {/* Main Chat Area */}
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
-            {activeDialogId || isDraftChat ? (
-              <ChatMessageList
-                messages={displayMessages}
-                dialogId={activeDialogId || 'draft'}
-                isTyping={isDraftChat ? false : isTyping}
-                isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
-                assistantType={assistantType}
-                pendingApprovals={isDraftChat ? [] : pendingApprovals}
-                showAvatars={false}
-                autoScroll={true}
-                hasNextPage={isDraftChat ? false : hasNextMessagePage}
-                isFetchingNextPage={isDraftChat ? false : isFetchingNextMessagePage}
-                onLoadMore={isDraftChat ? undefined : fetchNextMessagePage}
-              />
-            ) : (
-              /* Empty state when no dialog is selected */
-              <div className="flex-1 flex flex-col items-center justify-center p-8">
-                <div className="text-center space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <MingoIcon
-                        className="w-10 h-10"
-                        eyesColor="var(--ods-flamingo-cyan-base)"
-                        cornerColor="var(--ods-flamingo-cyan-base)"
-                      />
-                    </div>
-                    <h1 className="font-['DM_Sans'] font-bold text-2xl text-ods-text-primary">Hi! I'm Mingo AI</h1>
-                    <p className="font-['DM_Sans'] font-medium text-base text-ods-text-secondary leading-relaxed">
-                      Ready to help with your technical tasks. Start a new conversation to get started.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
+            <ChatMessageList
+              messages={displayMessages}
+              dialogId={activeDialogId || urlDialogId || 'draft'}
+              isTyping={effectiveDraft ? false : isTyping}
+              isLoading={isResolvingDialog || (!effectiveDraft && isAnyLoading && processedMessages.length === 0)}
+              assistantType={assistantType}
+              pendingApprovals={effectiveDraft ? [] : pendingApprovals}
+              showAvatars={false}
+              autoScroll={true}
+              hasNextPage={effectiveDraft ? false : hasNextMessagePage}
+              isFetchingNextPage={effectiveDraft ? false : isFetchingNextMessagePage}
+              onLoadMore={effectiveDraft ? undefined : fetchNextMessagePage}
+            />
           </div>
 
           {/* Message Input */}
-          {(activeDialogId || isDraftChat) && (
-            <div className="flex-shrink-0 px-6 pb-4">
-              <ChatInput
-                reserveAvatarOffset={false}
-                placeholder="Enter your Request..."
-                onSend={handleSendMessage}
-                onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
-                sending={
-                  isTyping || isCompacting || isCreatingDialog || isSelectingDialog || pendingApprovals.length > 0
-                }
-                autoFocus={isDraftChat}
-                className="bg-ods-card rounded-lg"
-              />
-              {currentModel && (
-                <div className="mx-auto w-full max-w-3xl mt-3">
+          <div className="flex-shrink-0 px-6 pb-4">
+            <ChatInput
+              ref={chatInputRef}
+              reserveAvatarOffset={false}
+              placeholder="Enter your Request..."
+              onSend={handleSendMessage}
+              onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
+              sending={isComposerBusy}
+              autoFocus={effectiveDraft}
+              className="bg-ods-card rounded-lg"
+            />
+            {(displayModel || isModelRowLoading) && (
+              <div className="mx-auto w-full max-w-3xl mt-3">
+                {displayModel && !isModelRowLoading ? (
                   <ModelDisplay
-                    provider={currentModel.provider}
-                    modelName={currentModel.displayName}
+                    provider={displayModel.provider}
+                    modelName={displayModel.displayName}
                     usedTokens={tokenUsage?.totalTokensSize}
                     contextWindow={tokenUsage?.contextSize}
                   />
-                </div>
-              )}
-            </div>
-          )}
+                ) : (
+                  // Mirrors ModelDisplay's inline row at the exact same height
+                  // (h-5 == text-sm line box) so there is zero layout shift
+                  // when the real row pops in: icon + model name on the left,
+                  // and — only when a dialog is in play (so it matches the
+                  // final "X/Y tokens used" tail) — a right-aligned token bar.
+                  <div className="flex items-center gap-1 h-5" aria-hidden="true">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-3.5 w-36" />
+                    {(activeDialogId || urlDialogId) && <Skeleton className="h-3 w-32 ml-auto" />}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </ContentPageContainer>
