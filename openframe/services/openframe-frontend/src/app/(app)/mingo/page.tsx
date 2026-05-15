@@ -193,8 +193,8 @@ export default function Mingo() {
     // draft→dialog transition: `setActiveDialogId(newId)` runs synchronously
     // but Next.js's `useSearchParams` lags by a tick, so this effect briefly
     // sees `urlDialogId=null` while `activeDialogId` is the new id, and the
-    // immediate `setActiveDialogId(null)` previously caused a one-frame
-    // flash of the empty state between draft and the new dialog.
+    // immediate `setActiveDialogId(null)` caused a one-frame flash of the
+    // empty state (Mingo logo) between draft and the new dialog.
     // Defer the clear; if URL really stays empty, it fires; if URL catches
     // up, the cleanup cancels it.
     const timeoutId = window.setTimeout(() => {
@@ -311,24 +311,22 @@ export default function Mingo() {
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
             {activeDialogId || isDraftChat ? (
-              <div key={activeDialogId || 'draft'} className="flex-1 flex flex-col min-h-0">
-                <ChatMessageList
-                  messages={displayMessages}
-                  dialogId={activeDialogId || 'draft'}
-                  isTyping={isDraftChat ? false : isTyping}
-                  isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
-                  assistantType={assistantType}
-                  pendingApprovals={isDraftChat ? [] : pendingApprovals}
-                  showAvatars={false}
-                  autoScroll={true}
-                  hasNextPage={isDraftChat ? false : hasNextMessagePage}
-                  isFetchingNextPage={isDraftChat ? false : isFetchingNextMessagePage}
-                  onLoadMore={isDraftChat ? undefined : fetchNextMessagePage}
-                />
-              </div>
+              <ChatMessageList
+                messages={displayMessages}
+                dialogId={activeDialogId || 'draft'}
+                isTyping={isDraftChat ? false : isTyping}
+                isLoading={!isDraftChat && isAnyLoading && processedMessages.length === 0}
+                assistantType={assistantType}
+                pendingApprovals={isDraftChat ? [] : pendingApprovals}
+                showAvatars={false}
+                autoScroll={true}
+                hasNextPage={isDraftChat ? false : hasNextMessagePage}
+                isFetchingNextPage={isDraftChat ? false : isFetchingNextMessagePage}
+                onLoadMore={isDraftChat ? undefined : fetchNextMessagePage}
+              />
             ) : (
               /* Empty state when no dialog is selected */
-              <div className="flex-1 flex flex-col items-center justify-center p-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex-1 flex flex-col items-center justify-center p-8">
                 <div className="text-center space-y-6">
                   <div className="space-y-4">
                     <div className="flex justify-center">
@@ -350,7 +348,7 @@ export default function Mingo() {
 
           {/* Message Input */}
           {(activeDialogId || isDraftChat) && (
-            <div className="flex-shrink-0 px-6 pb-4 animate-in fade-in slide-in-from-bottom-8 duration-500 ease-out">
+            <div className="flex-shrink-0 px-6 pb-4">
               <ChatInput
                 reserveAvatarOffset={false}
                 placeholder="Enter your Request..."

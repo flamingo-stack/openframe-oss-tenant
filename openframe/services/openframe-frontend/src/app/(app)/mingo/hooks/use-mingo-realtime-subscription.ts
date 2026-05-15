@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { overrideToolTitle } from '@/lib/apply-tool-title';
 import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
@@ -367,7 +368,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
     enableThinking: featureFlags.thinking.enabled(),
-    batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
+    batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
   });
 
   return { processChunk: processorProcessChunk };
@@ -435,7 +436,7 @@ export function DialogSubscription({
   } = useMingoChunkCatchup({
     dialogId,
     onChunkReceived: useCallback((chunk: ChunkData, _messageType: NatsMessageType) => {
-      processorRef.current(chunk);
+      processorRef.current(overrideToolTitle(chunk));
     }, []),
   });
 

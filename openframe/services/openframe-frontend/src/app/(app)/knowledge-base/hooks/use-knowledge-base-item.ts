@@ -28,6 +28,13 @@ export const knowledgeBaseItemQuery = graphql`
         key
         color
       }
+      attachments {
+        id
+        fileName
+        fileSize
+        contentType
+        createdAt
+      }
     }
   }
 `;

@@ -37,6 +37,7 @@ import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
+import { overrideToolTitle } from '@/lib/apply-tool-title';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -205,8 +206,9 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const dispatchChunk = useCallback(
     (chunk: unknown, messageType: NatsMessageType) => {
-      if (messageType === 'admin-message') processAdminChunk(chunk);
-      else processClientChunk(chunk);
+      const patched = overrideToolTitle(chunk as Record<string, unknown>);
+      if (messageType === 'admin-message') processAdminChunk(patched);
+      else processClientChunk(patched);
     },
     [processClientChunk, processAdminChunk],
   );
@@ -583,7 +585,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         description={dialog.description || dialog.title || ''}
         attachments={uiAttachments}
         tags={(dialog.labels || []).map(l => l.key)}
-        knowledgeBaseArticles={[]}
         notes={uiNotes}
         isAddingNote={addNoteMutation.isPending}
         onAddNote={text => {
@@ -596,7 +597,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      {/* <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" /> */}
+      {isTicketInfoExpanded && (
+        <AssignedItemsView
+          itemId={dialog.id}
+          itemType="TICKET"
+          className="hidden lg:block shrink-0 mt-[var(--spacing-system-mf)]"
+        />
+      )}
 
       {/* Chat Section */}
       <div className="flex-1 flex flex-col min-h-[500px]">
@@ -661,7 +668,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
               tags={(dialog.labels || []).map(l => l.key)}
-              knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
                 if (dialog?.id) addNoteMutation.mutate({ content: text });
@@ -673,6 +679,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 deleteNoteMutation.mutate(id);
               }}
             />
+            <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="mt-[var(--spacing-system-mf)]" />
           </div>
         )}
 

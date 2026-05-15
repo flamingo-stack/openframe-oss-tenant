@@ -3,11 +3,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { FEATURE_FLAG_NAMES } from '@/lib/feature-flags';
 import { type FeatureFlag, useFeatureFlagsStore } from '@/stores/feature-flags-store';
 
 const FE_FEATURE_FLAGS_QUERY = `
-  query FeFeatureFlags {
-    feFeatureFlags {
+  query FeFeatureFlags($names: [String!]) {
+    feFeatureFlags(names: $names) {
       name
       enabled
     }
@@ -32,6 +33,7 @@ export function useFeatureFlagsQuery({ enabled }: { enabled: boolean }) {
     queryFn: async () => {
       const response = await apiClient.post<FeFeatureFlagsResponse>('/api/graphql', {
         query: FE_FEATURE_FLAGS_QUERY,
+        variables: { names: [...FEATURE_FLAG_NAMES] },
       });
 
       if (!response.ok || response.data?.errors?.length) {

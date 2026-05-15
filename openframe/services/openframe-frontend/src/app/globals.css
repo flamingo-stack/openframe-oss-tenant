@@ -16,3 +16,16 @@ input[type="number"]::-webkit-inner-spin-button {
 input[type="number"] {
   -moz-appearance: textfield; /* Firefox */
 }
+
+/*
+ * Core-library accordion fix (ToolExecutionDisplay / ApprovalBatch ToolCallRow):
+ * core renders an expand chevron and makes the row clickable even when there
+ * is no body to show. Detect empty body via `:has` and hide the chevron +
+ * remove the pointer cursor. TODO: drop when core-library handles this.
+ */
+.bg-ods-card > button:has(+ div.w-full > div:empty) {
+  cursor: default;
+}
+.bg-ods-card > button:has(+ div.w-full > div:empty) > div:last-child {
+  visibility: hidden;
+}

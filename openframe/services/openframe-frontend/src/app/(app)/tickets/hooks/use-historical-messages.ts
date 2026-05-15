@@ -8,6 +8,7 @@ import {
   processHistoricalMessagesWithErrors,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useRef } from 'react';
+import { applyToolTitleToMessage } from '@/lib/apply-tool-title';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
@@ -68,14 +69,16 @@ export function useHistoricalMessages({
 
     const historical: HistoricalMessage[] = flatMessages
       .filter(msg => msg.chatType === chatType)
-      .map(msg => ({
-        id: msg.id,
-        dialogId: msg.dialogId,
-        chatType: msg.chatType,
-        createdAt: msg.createdAt,
-        owner: msg.owner,
-        messageData: msg.messageData,
-      }));
+      .map(msg =>
+        applyToolTitleToMessage({
+          id: msg.id,
+          dialogId: msg.dialogId,
+          chatType: msg.chatType,
+          createdAt: msg.createdAt,
+          owner: msg.owner,
+          messageData: msg.messageData,
+        }),
+      );
 
     const historicalResolutions: Record<string, 'approved' | 'rejected'> = {};
     for (const msg of historical) {
@@ -98,7 +101,7 @@ export function useHistoricalMessages({
       onApprove: onApproveRef.current,
       onReject: onRejectRef.current,
       approvalStatuses: { ...approvalStatusesRef.current, ...historicalResolutions },
-      batchApprovalsEnabled: featureFlags.batchApprovals.enabled(),
+      batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
     });
 
     const storeMessages: ChatMessage[] = foldPendingApprovalsEnvelope(
