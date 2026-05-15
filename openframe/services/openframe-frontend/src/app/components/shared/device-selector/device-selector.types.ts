@@ -1,4 +1,3 @@
-import type { TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 import type { Device } from '@/app/(app)/devices/types/device.types';
 
@@ -38,27 +37,4 @@ export interface DeviceSelectorProps {
   singleSelect?: boolean;
   /** Return a tooltip string if the device should be disabled, or undefined if enabled. */
   isDeviceDisabled?: (device: Device) => string | undefined;
-}
-
-export interface DeviceTabContentProps {
-  mode: SubTab;
-  devices: Device[];
-  columns: TableColumn<Device>[];
-  loading: boolean;
-  renderRowActions: (device: Device) => ReactNode;
-  onAddAll: () => void;
-  onRemoveAll: () => void;
-  selectedCount: number;
-  disabled?: boolean;
-  infiniteScroll?: InfiniteScrollConfig;
-  /** Hide Add All / Remove All buttons (single-select mode). */
-  singleSelect?: boolean;
-  /** Return a tooltip string if the device should be disabled, or undefined if enabled. */
-  isDeviceDisabled?: (device: Device) => string | undefined;
-  /**
-   * Per-row className. The DataTable row is React.memo'd on this string, so
-   * varying it by selection state is what invalidates only the changed row's
-   * memo (and therefore re-renders its action button icon).
-   */
-  rowClassName?: (device: Device) => string;
 }

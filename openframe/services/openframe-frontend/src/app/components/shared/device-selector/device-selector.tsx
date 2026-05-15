@@ -6,27 +6,31 @@ import {
   CheckCircleIcon,
   MonitorIcon,
   PlusCircleIcon,
-  SearchIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
-  getTabComponent,
-  Input,
-  TabContent,
+  type ColumnDef,
+  type ColumnFiltersState,
+  DataTable,
+  type Row,
   type TabItem,
-  type TableColumn,
   TabNavigation,
   Tag,
+  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useCallback, useMemo, useRef } from 'react';
-import type { Device } from '@/app/(app)/devices/types/device.types';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { getDeviceFilterColumns } from '@/app/(app)/devices/components/devices-table-columns';
+import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '@/app/(app)/devices/constants/device-statuses';
+import { useTagFilterModal } from '@/app/(app)/devices/hooks/use-tag-filter-modal';
+import type { Device, DeviceFilters } from '@/app/(app)/devices/types/device.types';
 import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
+import { DevicesFilterToolbar } from '@/app/components/shared';
 import { featureFlags } from '@/lib/feature-flags';
+import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { DeviceSelectorProps } from './device-selector.types';
-import { DeviceTabContent } from './device-tab-content';
 import { useDeviceSelector } from './use-device-selector';
 
 export function DeviceSelector({
@@ -52,6 +56,9 @@ export function DeviceSelector({
   // selectedIds would corrupt the set on the next click.
   const selectedIdsRef = useRef(selectedIds);
   selectedIdsRef.current = selectedIds;
+
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const toggleDevice = useCallback(
     (device: Device) => {
@@ -95,15 +102,188 @@ export function DeviceSelector({
     onSelectionChange(new Set());
   }, [disabled, onSelectionChange]);
 
-  const columns: TableColumn<Device>[] = useMemo(
+  // Filter options are derived client-side from the `devices` prop. We don't
+  // hit the backend here — DeviceSelector is given a pre-fetched list, so the
+  // only sensible options are the ones actually present.
+  const statusFilterOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const d of devices) {
+      if (d.status && (DEFAULT_VISIBLE_STATUSES as readonly string[]).includes(d.status)) seen.add(d.status);
+    }
+    return Array.from(seen)
+      .map(s => ({ id: s, label: getDeviceStatusConfig(s).label, value: s }))
+      .sort((a, b) => {
+        if (a.value === DEVICE_STATUS.ARCHIVED) return 1;
+        if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
+        return 0;
+      });
+  }, [devices]);
+
+  const osFilterOptions = useMemo(() => {
+    const seen = new Set<string>();
+    for (const d of devices) {
+      if (d.osType) seen.add(d.osType);
+    }
+    return Array.from(seen).map(o => ({ id: o, label: o, value: o }));
+  }, [devices]);
+
+  const orgFilterOptions = useMemo(() => {
+    const opts: Array<{ id: string; label: string; value: string }> = [];
+    for (const d of devices) {
+      if (d.organization) opts.push({ id: d.organization, label: d.organization, value: d.organization });
+    }
+    return deduplicateFilterOptions(opts);
+  }, [devices]);
+
+  // Tag chips in the search bar take "key:value" form (e.g. "env:prod").
+  // Plain text chips are kept visually but don't filter (matches DevicesPanel behavior).
+  const selectedTagValues = useMemo(
+    () =>
+      selectedTags.flatMap(t => {
+        const i = t.indexOf(':');
+        return i > 0 ? [t.substring(i + 1)] : [];
+      }),
+    [selectedTags],
+  );
+
+  // Apply column filters + tag filters client-side on top of the search/tab-filtered list.
+  // singleSelect mode skips the tab split and shows all matching devices.
+  const baseDevices = singleSelect ? filteredDevices : displayDevices;
+  const devicesForTable = useMemo(() => {
+    if (columnFilters.length === 0 && selectedTagValues.length === 0) return baseDevices;
+    return baseDevices.filter(d => {
+      for (const f of columnFilters) {
+        const values = f.value as string[];
+        if (!values || values.length === 0) continue;
+        const cell =
+          f.id === 'status'
+            ? d.status
+            : f.id === 'os'
+              ? d.osType
+              : f.id === 'organization'
+                ? d.organization
+                : undefined;
+        if (cell === undefined || !values.includes(cell)) return false;
+      }
+      if (selectedTagValues.length > 0) {
+        const hasMatchingTag = (d.tags ?? []).some(tag => tag.values.some(v => selectedTagValues.includes(v)));
+        if (!hasMatchingTag) return false;
+      }
+      return true;
+    });
+  }, [baseDevices, columnFilters, selectedTagValues]);
+
+  // Client-side `DeviceFilters`-shaped object — built from the prop list so
+  // `useTagFilterModal` and `getDeviceFilterColumns` can drive the FilterModal
+  // without a network round-trip.
+  const clientDeviceFilters = useMemo<DeviceFilters>(() => {
+    const statusCounts = new Map<string, number>();
+    const osCounts = new Map<string, number>();
+    const orgCounts = new Map<string, { label: string; count: number }>();
+    const tagSeen = new Map<string, Map<string, number>>();
+
+    for (const d of devices) {
+      if (d.status) statusCounts.set(d.status, (statusCounts.get(d.status) ?? 0) + 1);
+      if (d.osType) osCounts.set(d.osType, (osCounts.get(d.osType) ?? 0) + 1);
+      if (d.organization) {
+        const existing = orgCounts.get(d.organization);
+        orgCounts.set(d.organization, { label: d.organization, count: (existing?.count ?? 0) + 1 });
+      }
+      for (const tag of d.tags ?? []) {
+        if (!tagSeen.has(tag.key)) tagSeen.set(tag.key, new Map());
+        const vc = tagSeen.get(tag.key)!;
+        for (const v of tag.values) vc.set(v, (vc.get(v) ?? 0) + 1);
+      }
+    }
+
+    const tagKeys: Array<{ key: string; value: string; count: number }> = [];
+    for (const [key, vc] of tagSeen) {
+      for (const [value, count] of vc) {
+        tagKeys.push({ key, value, count });
+      }
+    }
+
+    return {
+      statuses: Array.from(statusCounts, ([value, count]) => ({ value, count })),
+      deviceTypes: [],
+      osTypes: Array.from(osCounts, ([value, count]) => ({ value, count })),
+      organizationIds: Array.from(orgCounts, ([value, { label, count }]) => ({ value, label, count })),
+      tagKeys,
+      filteredCount: devices.length,
+    };
+  }, [devices]);
+
+  const filterColumns = useMemo(() => getDeviceFilterColumns(clientDeviceFilters), [clientDeviceFilters]);
+
+  // Adapter: useTagFilterModal expects a single `setParams({ statuses, osTypes, organizationIds, tags })`
+  // call. We split it back into our local state.
+  const handleSetParams = useCallback((params: Record<string, any>) => {
+    setColumnFilters([
+      ...(params.statuses?.length ? [{ id: 'status', value: params.statuses }] : []),
+      ...(params.osTypes?.length ? [{ id: 'os', value: params.osTypes }] : []),
+      ...(params.organizationIds?.length ? [{ id: 'organization', value: params.organizationIds }] : []),
+    ]);
+    setSelectedTags(params.tags ?? []);
+  }, []);
+
+  const {
+    isOpen: tagsModalOpen,
+    open: openTagsModal,
+    close: closeTagsModal,
+    isMdUp,
+    filterGroups,
+    tagFilterKeys,
+    handleFilterChange: handleModalFilterChange,
+    handleTagsChange: handleModalTagsChange,
+  } = useTagFilterModal({
+    tags: selectedTags,
+    deviceFilters: clientDeviceFilters,
+    columns: filterColumns,
+    setParams: handleSetParams,
+  });
+
+  const tagOptions = useMemo(() => selectedTags.map(t => ({ label: t, value: t })), [selectedTags]);
+
+  // Map column filters → `{ status, os, organization }` shape that FilterModal expects on mobile.
+  const tableFilters = useMemo(
+    () => ({
+      status: (columnFilters.find(f => f.id === 'status')?.value as string[]) ?? [],
+      os: (columnFilters.find(f => f.id === 'os')?.value as string[]) ?? [],
+      organization: (columnFilters.find(f => f.id === 'organization')?.value as string[]) ?? [],
+    }),
+    [columnFilters],
+  );
+
+  const handleTagRemove = useCallback((value: string) => {
+    setSelectedTags(prev => prev.filter(t => t !== value));
+  }, []);
+
+  const handleClearAll = useCallback(() => {
+    setSearchTerm('');
+    setSelectedTags([]);
+  }, [setSearchTerm]);
+
+  const handleTagSubmit = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      setSelectedTags(prev => (prev.includes(trimmed) ? prev : [...prev, trimmed]));
+      setSearchTerm('');
+    },
+    [setSearchTerm],
+  );
+
+  const columns = useMemo<ColumnDef<Device>[]>(
     () => [
       {
-        key: 'device',
-        label: 'DEVICE',
-        renderCell: (device: Device) => {
+        id: 'device',
+        accessorKey: 'device',
+        header: 'DEVICE',
+        cell: ({ row }: { row: Row<Device> }) => {
+          const device = row.original;
           const lastSeen = device.last_seen || device.lastSeen;
           return (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 h-20">
               <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
                 {device.type &&
                   getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
@@ -119,22 +299,26 @@ export function DeviceSelector({
             </div>
           );
         },
+        enableSorting: false,
       },
       {
-        key: 'details',
-        label: 'DETAILS',
-        width: 'w-[100px] md:flex-1',
-        hideAt: 'md',
-        renderCell: (device: Device) => {
-          return <OSTypeBadge osType={device.osType} />;
+        id: 'os',
+        accessorKey: 'os',
+        header: 'DETAILS',
+        cell: ({ row }: { row: Row<Device> }) => <OSTypeBadge osType={row.original.osType} />,
+        enableSorting: false,
+        meta: {
+          width: 'w-[100px] md:flex-1',
+          hideAt: 'md',
+          filter: osFilterOptions.length > 0 ? { options: osFilterOptions } : undefined,
         },
       },
       {
-        key: 'organization',
-        label: 'CUSTOMER',
-        width: 'w-1/4',
-        hideAt: 'lg',
-        renderCell: (device: Device) => {
+        id: 'organization',
+        accessorKey: 'organization',
+        header: 'CUSTOMER',
+        cell: ({ row }: { row: Row<Device> }) => {
+          const device = row.original;
           const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
           return (
             <div className="flex items-center gap-3">
@@ -149,102 +333,111 @@ export function DeviceSelector({
             </div>
           );
         },
-      },
-      {
-        key: 'status',
-        label: 'STATUS',
-        width: 'w-[90px]',
-        renderCell: (device: Device) => {
-          const config = getDeviceStatusConfig(device.status);
-          return <Tag label={config.label} variant={config.variant} className="w-min" />;
+        enableSorting: false,
+        meta: {
+          width: 'w-1/4',
+          hideAt: 'lg',
+          filter: orgFilterOptions.length > 0 ? { options: orgFilterOptions, placement: 'bottom-end' } : undefined,
         },
       },
-    ],
-    [],
-  );
-
-  const renderRowActions = useMemo(
-    () => (device: Device) => {
-      const disabledReason = isDeviceDisabled?.(device);
-
-      if (disabledReason) {
-        return (
-          <div className="flex items-center justify-end gap-2 w-[130px]">
-            <span className="text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
-              {disabledReason}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              leftIcon={<PlusCircleIcon size={24} />}
-              className="text-ods-text-secondary shrink-0"
-              disabled
-            />
-          </div>
-        );
-      }
-
-      const key = getDeviceKey(device);
-      if (key === undefined) return null;
-
-      const isSelected = selectedIds.has(key);
-
-      if (activeSubTab === 'selected') {
-        return (
-          <div className="flex items-center justify-end w-[130px]">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => toggleDevice(device)}
-              leftIcon={<TrashIcon size={24} />}
-              className="text-ods-error hover:opacity-80"
-              disabled={disabled}
-            />
-          </div>
-        );
-      }
-
-      return (
-        <div className="flex items-center justify-end w-[130px]">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => toggleDevice(device)}
-            leftIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
-            className={
-              isSelected
-                ? 'text-ods-accent border-ods-accent bg-[var(--ods-open-yellow-secondary)] hover:bg-[var(--ods-open-yellow-secondary-hover)]'
-                : 'text-ods-text-secondary hover:text-ods-text-primary'
-            }
-            disabled={disabled}
-          />
-        </div>
-      );
-    },
-    [selectedIds, getDeviceKey, isDeviceDisabled, toggleDevice, activeSubTab, disabled],
-  );
-
-  const assignTabs: TabItem[] = useMemo(
-    () => [
       {
-        id: 'available',
-        label: 'Available Devices',
-        icon: MonitorIcon,
-        component: DeviceTabContent,
+        id: 'status',
+        accessorKey: 'status',
+        header: 'STATUS',
+        cell: ({ row }: { row: Row<Device> }) => {
+          const config = getDeviceStatusConfig(row.original.status);
+          return <Tag label={config.label} variant={config.variant} className="w-min" />;
+        },
+        enableSorting: false,
+        meta: {
+          width: 'w-[90px]',
+          filter: statusFilterOptions.length > 0 ? { options: statusFilterOptions } : undefined,
+        },
       },
       {
-        id: 'selected',
-        label: singleSelect ? `Selected Device (${selectedIds.size})` : `Selected Devices (${selectedIds.size})`,
-        icon: CheckCircleIcon,
-        component: DeviceTabContent,
+        id: 'actions',
+        cell: ({ row }: { row: Row<Device> }) => {
+          const device = row.original;
+          const disabledReason = isDeviceDisabled?.(device);
+
+          if (disabledReason) {
+            return (
+              <div data-no-row-click className="flex items-center justify-end gap-2 w-[130px] pointer-events-auto">
+                <span className="text-xs text-ods-text-secondary text-right leading-tight whitespace-pre-line">
+                  {disabledReason}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  leftIcon={<PlusCircleIcon size={24} />}
+                  className="text-ods-text-secondary shrink-0"
+                  disabled
+                />
+              </div>
+            );
+          }
+
+          const key = getDeviceKey(device);
+          if (key === undefined) return null;
+          const isSelected = selectedIds.has(key);
+
+          if (activeSubTab === 'selected') {
+            return (
+              <div data-no-row-click className="flex items-center justify-end w-[130px] pointer-events-auto">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => toggleDevice(device)}
+                  leftIcon={<TrashIcon size={24} />}
+                  className="text-ods-error hover:opacity-80"
+                  disabled={disabled}
+                />
+              </div>
+            );
+          }
+
+          return (
+            <div data-no-row-click className="flex items-center justify-end w-[130px] pointer-events-auto">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => toggleDevice(device)}
+                leftIcon={isSelected ? <CheckCircleIcon size={24} /> : <PlusCircleIcon size={24} />}
+                className={
+                  isSelected
+                    ? 'text-ods-accent border-ods-accent bg-[var(--ods-open-yellow-secondary)] hover:bg-[var(--ods-open-yellow-secondary-hover)]'
+                    : 'text-ods-text-secondary hover:text-ods-text-primary'
+                }
+                disabled={disabled}
+              />
+            </div>
+          );
+        },
+        enableSorting: false,
+        meta: { width: 'min-w-[130px] w-auto shrink-0 flex-none', align: 'right' },
       },
     ],
-    [selectedIds.size, singleSelect],
+    [
+      statusFilterOptions,
+      osFilterOptions,
+      orgFilterOptions,
+      isDeviceDisabled,
+      getDeviceKey,
+      selectedIds,
+      activeSubTab,
+      toggleDevice,
+      disabled,
+    ],
   );
 
-  const ActiveTabComponent = getTabComponent(assignTabs, activeSubTab);
-
-  const availableInfiniteScroll = activeSubTab === 'available' ? infiniteScroll : undefined;
+  const table = useDataTable<Device>({
+    data: devicesForTable,
+    columns,
+    getRowId: row => String(getDeviceKey(row) ?? row.id),
+    enableSorting: false,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
+  });
 
   // Per-row className whose value differs by selection state. DataTableRow is
   // React.memo'd on `className`, so only rows whose selection actually flipped
@@ -257,6 +450,28 @@ export function DeviceSelector({
     },
     [selectedIds, getDeviceKey],
   );
+
+  const assignTabs: TabItem[] = useMemo(
+    () => [
+      {
+        id: 'available',
+        label: 'Available Devices',
+        icon: MonitorIcon,
+        // The table is rendered outside TabContent now — these `component` slots
+        // exist only because TabNavigation/TabItem require them. Render nothing.
+        component: () => null,
+      },
+      {
+        id: 'selected',
+        label: singleSelect ? `Selected Device (${selectedIds.size})` : `Selected Devices (${selectedIds.size})`,
+        icon: CheckCircleIcon,
+        component: () => null,
+      },
+    ],
+    [selectedIds.size, singleSelect],
+  );
+
+  const availableInfiniteScroll = activeSubTab === 'available' ? infiniteScroll : undefined;
 
   return (
     <div className="flex flex-col gap-4">
@@ -299,37 +514,67 @@ export function DeviceSelector({
         <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} showRightGradient />
       )}
 
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
-          <Input
-            startAdornment={<SearchIcon />}
-            placeholder="Search for Devices"
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      <TabContent
-        activeTab={singleSelect ? 'available' : activeSubTab}
-        TabComponent={ActiveTabComponent}
-        componentProps={{
-          mode: singleSelect ? 'available' : activeSubTab,
-          devices: singleSelect ? filteredDevices : displayDevices,
-          columns,
-          loading,
-          renderRowActions,
-          onAddAll: addAllDevices,
-          onRemoveAll: removeAllSelected,
-          selectedCount: selectedIds.size,
-          disabled,
-          infiniteScroll: availableInfiniteScroll,
-          singleSelect,
-          isDeviceDisabled,
-          rowClassName,
-        }}
+      <DevicesFilterToolbar
+        sticky={false}
+        searchValue={searchTerm}
+        onSearchChange={setSearchTerm}
+        tags={tagOptions}
+        onTagRemove={handleTagRemove}
+        onClearAll={handleClearAll}
+        onSubmit={handleTagSubmit}
+        isMdUp={isMdUp}
+        onOpenFilterModal={openTagsModal}
+        isFilterModalOpen={tagsModalOpen}
+        onCloseFilterModal={closeTagsModal}
+        filterGroups={filterGroups}
+        onFilterChange={handleModalFilterChange}
+        currentFilters={!isMdUp ? tableFilters : undefined}
+        tagFilterKeys={tagFilterKeys}
+        selectedTags={selectedTags}
+        onTagsChange={handleModalTagsChange}
       />
+
+      {!singleSelect && (
+        <div className="flex justify-end -mb-2">
+          {activeSubTab === 'available' ? (
+            <button
+              type="button"
+              onClick={addAllDevices}
+              disabled={disabled}
+              className="text-heading-4 font-medium text-ods-accent hover:text-ods-accent-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add All Devices
+            </button>
+          ) : selectedIds.size > 0 ? (
+            <button
+              type="button"
+              onClick={removeAllSelected}
+              disabled={disabled}
+              className="text-heading-4 font-medium text-ods-error hover:text-ods-error-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Remove {selectedIds.size} Devices
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount itemName="device" />} />
+        <DataTable.Body
+          loading={loading}
+          skeletonRows={8}
+          emptyMessage={activeSubTab === 'selected' ? 'No devices selected' : 'No devices found'}
+          rowClassName={rowClassName}
+        />
+        {availableInfiniteScroll && (
+          <DataTable.InfiniteFooter
+            hasNextPage={availableInfiniteScroll.hasNextPage}
+            isFetchingNextPage={availableInfiniteScroll.isFetchingNextPage}
+            onLoadMore={availableInfiniteScroll.onLoadMore}
+            skeletonRows={availableInfiniteScroll.skeletonRows}
+          />
+        )}
+      </DataTable>
     </div>
   );
 }
