@@ -2,6 +2,7 @@
 
 import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  type PageActionButton,
   PageLayout,
   TagSearchInput,
   type TagSearchOption,
@@ -25,6 +26,7 @@ import {
   getKnowledgeBaseArticlesSubtreeConnectionId,
   getKnowledgeBaseFoldersConnectionId,
 } from '../hooks/use-knowledge-base-items';
+import { useFolderRowActions } from './folder-row-actions';
 import {
   KNOWLEDGE_BASE_PAGE_SIZE,
   KnowledgeBaseItemsListView,
@@ -43,10 +45,18 @@ interface KnowledgeBaseBodyProps {
   parentId: string | null;
 }
 
+interface CurrentFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+}
+
 interface KnowledgeBaseBodyShellProps {
   parentId: string | null;
   title: string;
   backButton?: KnowledgeBaseBackButton;
+  currentFolder?: CurrentFolder;
+  onCurrentFolderDeleted?: () => void;
 }
 
 const ROOT_TITLE = 'Knowledge Base';
@@ -54,28 +64,31 @@ const ROOT_TITLE = 'Knowledge Base';
 // so this is a safe ceiling rather than a real page size.
 const FOLDERS_PAGE_SIZE = 100;
 
-function buildActions(parentId: string | null, onNewFolder: () => void) {
+function buildActions(parentId: string | null, onNewFolder: () => void): PageActionButton[] {
   const newArticleHref = parentId ? `/knowledge-base/new?folderId=${parentId}` : '/knowledge-base/new';
-  return [
-    {
-      label: 'Archive',
-      href: '/knowledge-base/archive',
-      icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-      variant: 'outline' as const,
-    },
+  const actions: PageActionButton[] = [
     {
       label: 'New Folder',
       onClick: onNewFolder,
       icon: <PlusCircleIcon size={24} className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-      variant: 'outline' as const,
+      variant: 'outline',
     },
     {
       label: 'Add Article',
       href: newArticleHref,
       icon: <PlusCircleIcon size={24} className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-      variant: 'outline' as const,
+      variant: 'outline',
     },
   ];
+  if (parentId === null) {
+    actions.unshift({
+      label: 'Archive',
+      href: '/knowledge-base/archive',
+      icon: <BoxArchiveIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
+      variant: 'outline',
+    });
+  }
+  return actions;
 }
 
 const knowledgeBaseBodyFoldersRelayQuery = graphql`
@@ -338,7 +351,13 @@ function SubtreeArticlesContent({ parentId, search, tagIds }: ContentProps) {
   );
 }
 
-function KnowledgeBaseBodyShell({ parentId, title, backButton }: KnowledgeBaseBodyShellProps) {
+function KnowledgeBaseBodyShell({
+  parentId,
+  title,
+  backButton,
+  currentFolder,
+  onCurrentFolderDeleted,
+}: KnowledgeBaseBodyShellProps) {
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
   const [selectedTags, setSelectedTags] = useState<SelectedKnowledgeBaseTag[]>([]);
@@ -352,6 +371,19 @@ function KnowledgeBaseBodyShell({ parentId, title, backButton }: KnowledgeBaseBo
     search: null,
     tagIds: [],
   });
+
+  const currentFolderParentConnectionId = getKnowledgeBaseFoldersConnectionId({
+    parentId: currentFolder?.parentId ?? null,
+    search: null,
+    tagIds: [],
+  });
+  const folderActions = useFolderRowActions({
+    sourceConnectionId: currentFolderParentConnectionId,
+    onDeleted: onCurrentFolderDeleted,
+  });
+  const menuActions = currentFolder
+    ? folderActions.buildMenuGroups({ id: currentFolder.id, name: currentFolder.name })
+    : undefined;
 
   const tagSearchOptions = useMemo<TagSearchOption<string>[]>(
     () => selectedTags.map(t => ({ label: t.key, value: t.id })),
@@ -375,9 +407,10 @@ function KnowledgeBaseBodyShell({ parentId, title, backButton }: KnowledgeBaseBo
     <PageLayout
       title={title}
       backButton={backButton}
-      actionsVariant="primary-buttons"
+      actionsVariant="menu-primary"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       actions={buildActions(parentId, () => setIsNewFolderOpen(true))}
+      menuActions={menuActions}
     >
       <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
         <TagSearchInput<string>
@@ -407,6 +440,8 @@ function KnowledgeBaseBodyShell({ parentId, title, backButton }: KnowledgeBaseBo
         parentFolderId={parentId}
         parentConnectionId={newFolderConnectionId}
       />
+
+      {currentFolder && folderActions.modals}
     </PageLayout>
   );
 }
@@ -425,8 +460,21 @@ function FolderBodyContent({ parentId }: { parentId: string }) {
   }
 
   const backButton: KnowledgeBaseBackButton = { label: 'Back', onClick: handleBack };
+  const currentFolder: CurrentFolder = {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId ?? null,
+  };
 
-  return <KnowledgeBaseBodyShell parentId={parentId} title={folder.name} backButton={backButton} />;
+  return (
+    <KnowledgeBaseBodyShell
+      parentId={parentId}
+      title={folder.name}
+      backButton={backButton}
+      currentFolder={currentFolder}
+      onCurrentFolderDeleted={handleBack}
+    />
+  );
 }
 
 function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
@@ -439,7 +487,7 @@ function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
     <PageLayout
       title={title}
       backButton={backButton}
-      actionsVariant="primary-buttons"
+      actionsVariant="menu-primary"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       actions={buildActions(parentId, () => {})}
     >

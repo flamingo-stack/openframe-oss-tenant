@@ -5,14 +5,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { fetchQuery } from 'relay-runtime';
 import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
+import { getRelayEnvironment } from '@/lib/relay/environment';
 import { ARTICLE_FORM_DEFAULTS, type ArticleFormData, articleFormSchema } from '../types/article.types';
 import { useAddTag } from './use-add-tag';
+import { useArticleTempAttachments } from './use-article-temp-attachments';
 import { useCreateArticle } from './use-create-article';
 import type { KnowledgeBaseItemNode } from './use-knowledge-base-item';
+import { knowledgeBaseItemQuery } from './use-knowledge-base-item';
 import { getKnowledgeBaseArticlesConnectionId } from './use-knowledge-base-items';
 import { useCreateKnowledgeBaseTag } from './use-knowledge-base-tags';
+import { useLinkArticleAttachments } from './use-link-article-attachments';
 import { usePublishArticle } from './use-publish-article';
 import { useRemoveTag } from './use-remove-tag';
 import { useUnarchiveArticle } from './use-unarchive-article';
@@ -58,6 +63,8 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
   const { removeTag } = useRemoveTag();
   const { createTag } = useCreateKnowledgeBaseTag();
   const { mutateAsync: applyAssignmentsDiff } = useApplyAssignmentsDiff();
+  const tempAttachments = useArticleTempAttachments();
+  const { linkAttachments } = useLinkArticleAttachments();
 
   const initialTagRefs = useMemo<ArticleTagRef[]>(() => {
     if (!initialArticle?.tags) return [];
@@ -79,13 +86,25 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
         body: initialArticle.content ?? '',
         assignments: assignedItems.value,
       });
+      if (initialArticle.attachments?.length) {
+        tempAttachments.initializeExisting(initialArticle.attachments);
+      }
     } else if (!isEditMode) {
       form.reset({
         ...ARTICLE_FORM_DEFAULTS,
         folderId: initialFolderId ?? null,
       });
     }
-  }, [isEditMode, initialArticle, initialFolderId, initialTagRefs, form, assignedItems.isReady, assignedItems.value]);
+  }, [
+    isEditMode,
+    initialArticle,
+    initialFolderId,
+    initialTagRefs,
+    form,
+    assignedItems.isReady,
+    assignedItems.value,
+    tempAttachments.initializeExisting,
+  ]);
 
   const resolveTagIds = useCallback(
     async (keys: ReadonlyArray<string>, availableTags: ReadonlyArray<ArticleTagRef>): Promise<string[]> => {
@@ -142,6 +161,23 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 }),
               ]);
 
+              const hadPendingDeletes = tempAttachments.hasPendingDeletes;
+              await tempAttachments.deleteRemovedAttachments();
+              const tempIds = tempAttachments.getTempAttachmentIds();
+              if (tempIds.length) {
+                await linkAttachments({ articleId, tempIds });
+              }
+              if (tempIds.length || hadPendingDeletes) {
+                await fetchQuery(
+                  getRelayEnvironment(),
+                  knowledgeBaseItemQuery,
+                  { id: articleId },
+                  {
+                    fetchPolicy: 'network-only',
+                  },
+                ).toPromise();
+              }
+
               const currentStatus = (initialArticle.status ?? 'DRAFT') as 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
               if (currentStatus !== targetStatus) {
                 if (targetStatus === 'PUBLISHED') {
@@ -185,6 +221,18 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                 },
                 connections: [targetConnectionId],
               });
+              const tempIds = tempAttachments.getTempAttachmentIds();
+              if (tempIds.length) {
+                await linkAttachments({ articleId: result.id, tempIds });
+                await fetchQuery(
+                  getRelayEnvironment(),
+                  knowledgeBaseItemQuery,
+                  { id: result.id },
+                  {
+                    fetchPolicy: 'network-only',
+                  },
+                ).toPromise();
+              }
               if (data.assignments && Object.keys(data.assignments).length > 0) {
                 await applyAssignmentsDiff({
                   itemId: result.id,
@@ -224,10 +272,12 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
       initialArticle,
       initialTagRefs,
       isEditMode,
+      linkAttachments,
       publishArticle,
       removeTag,
       resolveTagIds,
       router,
+      tempAttachments,
       toast,
       unarchiveArticle,
       unpublishArticle,
@@ -240,5 +290,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     isEditMode,
     isSubmitting,
     handleSave,
+    tempAttachments,
   };
 }

@@ -8,14 +8,23 @@ import {
   PenEditIcon,
   Refresh01LeftIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Card, PageLayout, SquareAvatar, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  Card,
+  PageLayout,
+  SquareAvatar,
+  Tag,
+  TicketAttachmentsList,
+  TicketDetailSection,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
+import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
+import { useDownloadArticleAttachment } from '../hooks/use-download-article-attachment';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import { getKnowledgeBaseArticlesConnectionId } from '../hooks/use-knowledge-base-items';
 import { usePublishArticle } from '../hooks/use-publish-article';
@@ -43,6 +52,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
   const { unpublishArticle, isPending: isUnpublishing } = useUnpublishArticle();
+  const { download: downloadAttachment } = useDownloadArticleAttachment();
 
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
@@ -67,6 +77,16 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
     const parts = [article.author.firstName, article.author.lastName].filter(Boolean);
     return parts.length ? parts.join(' ') : (article.author.email ?? null);
   }, [article.author]);
+
+  const uiAttachments = useMemo(() => {
+    if (!article.attachments) return [];
+    return article.attachments.map(att => ({
+      id: att.id,
+      fileName: att.fileName,
+      fileSize: att.fileSize ? formatFileSize(att.fileSize) : '',
+      onDownload: () => downloadAttachment(att.id, att.fileName),
+    }));
+  }, [article.attachments, downloadAttachment]);
 
   const handlePublish = useCallback(async () => {
     try {
@@ -186,6 +206,12 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       </Card>
 
       <SimpleMarkdownRenderer content={article.content ?? ''} textSize="compact" />
+
+      {uiAttachments.length > 0 && (
+        <TicketDetailSection label="Attachments">
+          <TicketAttachmentsList attachments={uiAttachments} />
+        </TicketDetailSection>
+      )}
 
       <AssignedItemsView itemId={article.id} itemType="KNOWLEDGE_ARTICLE" />
 
