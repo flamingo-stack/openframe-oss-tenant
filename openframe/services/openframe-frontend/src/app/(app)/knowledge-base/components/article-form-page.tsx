@@ -24,7 +24,7 @@ interface FormShellProps {
 function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProps) {
   const availableTags = useKnowledgeBaseTags(initialFolderId ?? null);
 
-  const { form, isEditMode, isSubmitting, handleSave } = useEditArticleForm({
+  const { form, isEditMode, isSubmitting, handleSave, tempAttachments } = useEditArticleForm({
     articleId,
     initialFolderId,
     initialArticle,
@@ -64,7 +64,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
       actions={actions}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <ArticleFormFields form={form} availableTags={availableTags} />
+      <ArticleFormFields form={form} availableTags={availableTags} tempAttachments={tempAttachments} />
     </PageLayout>
   );
 }

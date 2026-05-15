@@ -4,12 +4,14 @@ import { Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/compo
 import {
   ActionsMenuDropdown,
   FieldWrapper,
+  FileUpload,
   Input,
   InputTrigger,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { AssignmentsField } from '@/components/assignments';
+import type { useArticleTempAttachments } from '../hooks/use-article-temp-attachments';
 import { buildFolderTree, KNOWLEDGE_BASE_ROOT_LABEL, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
 import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 import type { ArticleFormData } from '../types/article.types';
@@ -20,12 +22,34 @@ import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
 interface ArticleFormFieldsProps {
   form: UseFormReturn<ArticleFormData>;
   availableTags: ReadonlyArray<KnowledgeBaseTag>;
+  tempAttachments: ReturnType<typeof useArticleTempAttachments>;
 }
 
-export function ArticleFormFields({ form, availableTags }: ArticleFormFieldsProps) {
+export function ArticleFormFields({ form, availableTags, tempAttachments }: ArticleFormFieldsProps) {
   const { control } = form;
   const folders = useKnowledgeBaseFolders();
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
+
+  const handleFilesAdded = (incoming: File | File[] | undefined) => {
+    if (!incoming) return;
+    const fileArray = Array.isArray(incoming) ? incoming : [incoming];
+    for (const file of fileArray) {
+      tempAttachments.uploadFile(file);
+    }
+  };
+
+  const managedFiles = useMemo(
+    () =>
+      tempAttachments.files.map(f => ({
+        id: f.id,
+        fileName: f.fileName,
+        fileSize: f.fileSize,
+        contentType: f.contentType,
+        status: (f.status === 'existing' ? 'uploaded' : f.status) as 'uploading' | 'uploaded' | 'error',
+        error: f.error,
+      })),
+    [tempAttachments.files],
+  );
 
   const renderPreview = useCallback(
     (source: string) => (
@@ -111,6 +135,15 @@ export function ArticleFormFields({ form, availableTags }: ArticleFormFieldsProp
             renderPreview={renderPreview}
           />
         )}
+      />
+
+      <FileUpload
+        onChange={handleFilesAdded}
+        managedFiles={managedFiles}
+        onRemoveManagedFile={tempAttachments.removeFile}
+        multiple
+        label="Attachments"
+        description="(Click Here or Drag and Drop)"
       />
 
       <Controller
