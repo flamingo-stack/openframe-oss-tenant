@@ -122,7 +122,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   );
 
   const rowClass =
-    'flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20 border-b border-ods-border';
+    'flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-14 lg:min-h-20 border-b border-ods-border';
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-md flex flex-col">
@@ -137,17 +137,28 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           {serialCell}
         </div>
 
+        {/* Mobile (< md): customer and assigned each as a full-width row so their
+            dividers reach the card edges (no horizontal padding constraining
+            the border). */}
+        {customerInner && (
+          <div className="md:hidden flex items-center gap-[var(--spacing-system-xs)] px-[var(--spacing-system-m)] min-h-14 border-b border-ods-border">
+            {customerInner}
+          </div>
+        )}
+        {assignedInner && (
+          <div className="md:hidden flex items-center gap-[var(--spacing-system-xs)] px-[var(--spacing-system-m)] min-h-14 border-b border-ods-border">
+            {assignedInner}
+          </div>
+        )}
+
+        {/* Tablet (md to lg): customer + assigned in one horizontal row. */}
         {(customerInner || assignedInner) && (
-          <div className="flex flex-col md:flex-row md:items-center md:gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] border-b border-ods-border">
+          <div className="hidden md:flex md:items-center md:gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-14 border-b border-ods-border">
             {customerInner && (
-              <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0 min-h-20 py-[var(--spacing-system-xsf)] md:py-0 border-b md:border-b-0 border-ods-border last:border-b-0">
-                {customerInner}
-              </div>
+              <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{customerInner}</div>
             )}
             {assignedInner && (
-              <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0 min-h-20 py-[var(--spacing-system-xsf)] md:py-0">
-                {assignedInner}
-              </div>
+              <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{assignedInner}</div>
             )}
           </div>
         )}
@@ -156,7 +167,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           {registeredCell}
           {updatedCell}
         </div>
-        <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20">
+        <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-14">
           {uuidCell}
         </div>
       </div>
@@ -171,10 +182,10 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
         <div className={rowClass}>
           {customerInner && (
-            <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0">{customerInner}</div>
+            <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{customerInner}</div>
           )}
           {assignedInner && (
-            <div className="flex items-center gap-[var(--spacing-system-xsf)] flex-1 min-w-0">{assignedInner}</div>
+            <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{assignedInner}</div>
           )}
           {registeredCell}
           {updatedCell}
