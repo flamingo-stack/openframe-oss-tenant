@@ -56,7 +56,7 @@ function useBoardColumnQuery(status: BoardStatus, params: UseTicketsBoardQueryPa
     gcTime: 5 * 60_000,
     retry: 2,
     retryDelay: 1000,
-    refetchInterval: 30_000,
+    refetchInterval: 5_000,
   });
 }
 
