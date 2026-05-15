@@ -4,6 +4,7 @@ import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-fr
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   CheckCircleIcon,
+  Filter02Icon,
   MonitorIcon,
   PlusCircleIcon,
   SearchIcon,
@@ -11,21 +12,23 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
+  type ColumnFiltersState,
+  FilterModal,
   getTabComponent,
   Input,
   TabContent,
   type TabItem,
-  type TableColumn,
   TabNavigation,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { useDeviceFilters } from '@/app/(app)/devices/hooks/use-device-filters';
 import type { Device } from '@/app/(app)/devices/types/device.types';
 import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
-import type { DeviceSelectorProps } from './device-selector.types';
+import type { DeviceSelectorColumn, DeviceSelectorProps } from './device-selector.types';
 import { DeviceTabContent } from './device-tab-content';
 import { useDeviceSelector } from './use-device-selector';
 
@@ -43,8 +46,29 @@ export function DeviceSelector({
   singleSelect = false,
   isDeviceDisabled,
 }: DeviceSelectorProps) {
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagFilterModalOpen, setTagFilterModalOpen] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
-    useDeviceSelector({ devices, selectedIds, getDeviceKey });
+    useDeviceSelector({ devices, selectedIds, getDeviceKey, selectedTags, columnFilters });
+
+  // Tag universe for the FilterModal. Global taxonomy (`useDeviceFilters({})`)
+  // so the modal works regardless of the consumer's custom device fetch scope.
+  const { data: deviceFilters, isLoading: isDeviceFiltersLoading } = useDeviceFilters({});
+
+  const tagFilterKeys = useMemo(() => {
+    if (!deviceFilters?.tagKeys) return [];
+    const grouped = new Map<string, { id: string; label: string; count?: number }[]>();
+    for (const tag of deviceFilters.tagKeys) {
+      if (tag.key === 'null') continue;
+      if (!grouped.has(tag.key)) grouped.set(tag.key, []);
+      if (tag.value !== 'null') {
+        grouped.get(tag.key)!.push({ id: tag.value, label: tag.value, count: tag.count });
+      }
+    }
+    return Array.from(grouped, ([key, values]) => ({ key, label: key, values }));
+  }, [deviceFilters?.tagKeys]);
 
   // Read latest selectedIds via ref so toggleDevice can stay reference-stable.
   // The DataTable rows are React.memo'd; rows that don't re-render keep an old
@@ -95,7 +119,54 @@ export function DeviceSelector({
     onSelectionChange(new Set());
   }, [disabled, onSelectionChange]);
 
-  const columns: TableColumn<Device>[] = useMemo(
+  // Column filter options computed from the input devices set (distinct values).
+  // Client-side filtering applies the selected values via useDeviceSelector.
+  const typeFilterOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const d of devices) {
+      if (d.type && !seen.has(d.type)) {
+        seen.set(d.type, { id: d.type, label: d.type, value: d.type });
+      }
+    }
+    return Array.from(seen.values());
+  }, [devices]);
+
+  const statusFilterOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const d of devices) {
+      if (d.status && !seen.has(d.status)) {
+        seen.set(d.status, {
+          id: d.status,
+          label: getDeviceStatusConfig(d.status).label,
+          value: d.status,
+        });
+      }
+    }
+    return Array.from(seen.values());
+  }, [devices]);
+
+  const osFilterOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const d of devices) {
+      if (d.osType && !seen.has(d.osType)) {
+        seen.set(d.osType, { id: d.osType, label: d.osType, value: d.osType });
+      }
+    }
+    return Array.from(seen.values());
+  }, [devices]);
+
+  const orgFilterOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const d of devices) {
+      const id = d.organizationId;
+      if (id && !seen.has(id)) {
+        seen.set(id, { id, label: d.organization || id, value: id });
+      }
+    }
+    return Array.from(seen.values());
+  }, [devices]);
+
+  const columns: DeviceSelectorColumn[] = useMemo(
     () => [
       {
         key: 'device',
@@ -119,6 +190,7 @@ export function DeviceSelector({
             </div>
           );
         },
+        filter: typeFilterOptions.length > 0 ? { options: typeFilterOptions } : undefined,
       },
       {
         key: 'details',
@@ -128,6 +200,7 @@ export function DeviceSelector({
         renderCell: (device: Device) => {
           return <OSTypeBadge osType={device.osType} />;
         },
+        filter: osFilterOptions.length > 0 ? { options: osFilterOptions } : undefined,
       },
       {
         key: 'organization',
@@ -149,6 +222,7 @@ export function DeviceSelector({
             </div>
           );
         },
+        filter: orgFilterOptions.length > 0 ? { options: orgFilterOptions, placement: 'bottom-end' } : undefined,
       },
       {
         key: 'status',
@@ -158,9 +232,10 @@ export function DeviceSelector({
           const config = getDeviceStatusConfig(device.status);
           return <Tag label={config.label} variant={config.variant} className="w-min" />;
         },
+        filter: statusFilterOptions.length > 0 ? { options: statusFilterOptions } : undefined,
       },
     ],
-    [],
+    [typeFilterOptions, statusFilterOptions, osFilterOptions, orgFilterOptions],
   );
 
   const renderRowActions = useMemo(
@@ -299,8 +374,8 @@ export function DeviceSelector({
         <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} showRightGradient />
       )}
 
-      <div className="flex items-center gap-4">
-        <div className="flex-1">
+      <div className="flex items-center gap-[var(--spacing-system-m)]">
+        <div className="flex-1 min-w-0">
           <Input
             startAdornment={<SearchIcon />}
             placeholder="Search for Devices"
@@ -309,7 +384,35 @@ export function DeviceSelector({
             className="w-full"
           />
         </div>
+        <Button
+          variant="outline"
+          onClick={() => setTagFilterModalOpen(true)}
+          leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+          className="shrink-0 hidden md:inline-flex"
+        >
+          Device Tags
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => setTagFilterModalOpen(true)}
+          leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+          aria-label="Device Tags"
+          className="shrink-0 md:hidden"
+        />
       </div>
+
+      <FilterModal
+        isOpen={tagFilterModalOpen}
+        onClose={() => setTagFilterModalOpen(false)}
+        filterGroups={[]}
+        onFilterChange={() => {}}
+        tagFilterKeys={tagFilterKeys}
+        selectedTags={selectedTags}
+        onTagsChange={newTags => setSelectedTags(newTags.filter(t => t.includes(':') && t.indexOf(':') < t.length - 1))}
+        isLoading={isDeviceFiltersLoading}
+        className="max-w-[600px]"
+      />
 
       <TabContent
         activeTab={singleSelect ? 'available' : activeSubTab}
@@ -328,6 +431,8 @@ export function DeviceSelector({
           singleSelect,
           isDeviceDisabled,
           rowClassName,
+          columnFilters,
+          onColumnFiltersChange: setColumnFilters,
         }}
       />
     </div>

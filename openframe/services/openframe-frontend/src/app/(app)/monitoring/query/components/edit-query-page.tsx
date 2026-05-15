@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { DevicesList } from '@/app/components/shared/devices-list';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
@@ -391,15 +391,17 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
         {/* Devices */}
         <div className="space-y-1">
           <h2 className="text-h2 tracking-[-0.64px] text-ods-text-primary">Devices</h2>
-          <DeviceSelector
-            devices={queryDevices}
-            loading={isLoadingDevices}
-            selectedIds={stringSelectedIds}
-            getDeviceKey={getDeviceKey}
-            onSelectionChange={handleDeviceSelectionChange}
-            disabled={isSaving}
-            addAllBehavior="merge"
-            isDeviceDisabled={d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined)}
+          <DevicesList
+            externalData={{ devices: queryDevices, isLoading: isLoadingDevices }}
+            selection={{
+              selectedIds: stringSelectedIds,
+              onSelectionChange: handleDeviceSelectionChange,
+              getDeviceKey,
+              addAllBehavior: 'merge',
+              disabled: isSaving,
+              isDeviceDisabled: d => (getFleetHostId(d) === undefined ? 'Fleet agent is\nnot installed' : undefined),
+            }}
+            selectorShowSelectionModeRadio
           />
         </div>
       </div>

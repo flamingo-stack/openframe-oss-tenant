@@ -21,6 +21,8 @@ export function DeviceTabContent({
   infiniteScroll,
   singleSelect,
   rowClassName,
+  columnFilters,
+  onColumnFiltersChange,
 }: DeviceTabContentProps) {
   // Convert legacy TableColumn<Device>[] to ColumnDef<Device>[] so this component
   // can keep its external contract (DeviceSelector still passes TableColumn[]).
@@ -35,6 +37,7 @@ export function DeviceTabContent({
         width: col.width,
         align: col.align,
         hideAt: col.hideAt,
+        filter: col.filter,
       },
     }));
 
@@ -57,6 +60,8 @@ export function DeviceTabContent({
     columns: dataTableColumns,
     getRowId: (row: Device) => String(row.id),
     enableSorting: false,
+    state: columnFilters !== undefined ? { columnFilters } : undefined,
+    onColumnFiltersChange,
   });
 
   return (

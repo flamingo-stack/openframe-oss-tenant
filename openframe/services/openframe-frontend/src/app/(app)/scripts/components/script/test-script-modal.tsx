@@ -6,7 +6,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { DevicesList } from '@/app/components/shared/devices-list';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
@@ -158,16 +158,16 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
             <p className="text-ods-text-secondary">Select at least one supported platform to see available devices.</p>
           </div>
         ) : (
-          <DeviceSelector
-            devices={devices}
-            loading={devicesQuery.isLoading}
-            selectedIds={selectedIds}
-            getDeviceKey={getDevicePrimaryId}
-            onSelectionChange={setSelectedIds}
-            showSelectionModeRadio={false}
-            addAllBehavior="replace"
-            singleSelect
-            isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
+          <DevicesList
+            externalData={{ devices, isLoading: devicesQuery.isLoading }}
+            selection={{
+              selectedIds,
+              onSelectionChange: setSelectedIds,
+              getDeviceKey: getDevicePrimaryId,
+              singleSelect: true,
+              addAllBehavior: 'replace',
+              isDeviceDisabled: d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined),
+            }}
           />
         )}
       </div>

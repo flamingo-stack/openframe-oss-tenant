@@ -6,16 +6,23 @@ import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/compon
 import {
   Button,
   type ColumnDef,
+  type ColumnFiltersState,
   DataTable,
   type Row,
   Tag,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { usePolicyDevicesTable } from '../hooks/use-policy-devices-table';
 import type { PolicyDeviceRow } from '../types/policy-device-row';
+
+const COMPLIANCE_STATUS_LABEL: Record<string, string> = {
+  'non-compliant': 'Non-Compliant',
+  passing: 'Passing',
+  pending: 'Pending',
+};
 
 interface PolicyDevicesTableProps {
   policyId: number;
@@ -24,6 +31,72 @@ interface PolicyDevicesTableProps {
 
 export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesTableProps) {
   const { rows, isLoading } = usePolicyDevicesTable(policyId, assignedHostIds);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  // Filter option universes — distinct values from the current rows set.
+  const deviceTypeOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const r of rows) {
+      if (r.deviceType && !seen.has(r.deviceType)) {
+        seen.set(r.deviceType, { id: r.deviceType, label: r.deviceType, value: r.deviceType });
+      }
+    }
+    return Array.from(seen.values());
+  }, [rows]);
+
+  const organizationOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const r of rows) {
+      if (r.organization && !seen.has(r.organization)) {
+        seen.set(r.organization, { id: r.organization, label: r.organization, value: r.organization });
+      }
+    }
+    return Array.from(seen.values());
+  }, [rows]);
+
+  const osOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const r of rows) {
+      if (r.osType && !seen.has(r.osType)) {
+        seen.set(r.osType, { id: r.osType, label: r.osType, value: r.osType });
+      }
+    }
+    return Array.from(seen.values());
+  }, [rows]);
+
+  const complianceOptions = useMemo(() => {
+    const seen = new Map<string, { id: string; label: string; value: string }>();
+    for (const r of rows) {
+      if (r.complianceStatus && !seen.has(r.complianceStatus)) {
+        seen.set(r.complianceStatus, {
+          id: r.complianceStatus,
+          label: COMPLIANCE_STATUS_LABEL[r.complianceStatus] ?? r.complianceStatus,
+          value: r.complianceStatus,
+        });
+      }
+    }
+    return Array.from(seen.values());
+  }, [rows]);
+
+  // Client-side filter application: each active filter narrows the rows.
+  const filteredRows = useMemo(() => {
+    let result = rows;
+    for (const f of columnFilters) {
+      const values = (f.value as string[] | undefined) ?? [];
+      if (values.length === 0) continue;
+      const set = new Set(values);
+      if (f.id === 'device') {
+        result = result.filter(r => r.deviceType && set.has(r.deviceType));
+      } else if (f.id === 'organization') {
+        result = result.filter(r => r.organization && set.has(r.organization));
+      } else if (f.id === 'os') {
+        result = result.filter(r => r.osType && set.has(r.osType));
+      } else if (f.id === 'compliance') {
+        result = result.filter(r => r.complianceStatus && set.has(r.complianceStatus));
+      }
+    }
+    return result;
+  }, [rows, columnFilters]);
 
   const columns = useMemo<ColumnDef<PolicyDeviceRow>[]>(
     () => [
@@ -49,7 +122,10 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
             </div>
           );
         },
-        meta: { width: 'flex-1 md:w-1/3' },
+        meta: {
+          width: 'flex-1 md:w-1/3',
+          filter: deviceTypeOptions.length > 0 ? { options: deviceTypeOptions } : undefined,
+        },
       },
       {
         id: 'organization',
@@ -71,7 +147,14 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
             </div>
           );
         },
-        meta: { width: 'w-1/6', hideAt: 'lg' as const },
+        meta: {
+          width: 'w-1/6',
+          hideAt: 'lg' as const,
+          filter:
+            organizationOptions.length > 0
+              ? { options: organizationOptions, placement: 'bottom-end' as const }
+              : undefined,
+        },
       },
       {
         id: 'os',
@@ -82,7 +165,11 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
             <OSTypeBadge osType={row.original.osType} />
           </div>
         ),
-        meta: { width: 'w-[120px] md:w-1/6', hideAt: 'md' as const },
+        meta: {
+          width: 'w-[120px] md:w-1/6',
+          hideAt: 'md' as const,
+          filter: osOptions.length > 0 ? { options: osOptions } : undefined,
+        },
       },
       {
         id: 'compliance',
@@ -98,7 +185,10 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
             />
           );
         },
-        meta: { width: 'w-[140px]' },
+        meta: {
+          width: 'w-[140px]',
+          filter: complianceOptions.length > 0 ? { options: complianceOptions } : undefined,
+        },
       },
       {
         id: 'open',
@@ -121,14 +211,16 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [],
+    [deviceTypeOptions, organizationOptions, osOptions, complianceOptions],
   );
 
   const table = useDataTable<PolicyDeviceRow>({
-    data: rows,
+    data: filteredRows,
     columns,
     getRowId: (row: PolicyDeviceRow) => String(row.id),
     enableSorting: false,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
   });
 
   const policyDeviceRowHref = useCallback(

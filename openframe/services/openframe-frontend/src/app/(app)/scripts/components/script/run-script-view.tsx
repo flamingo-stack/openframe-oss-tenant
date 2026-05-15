@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { DevicesList } from '@/app/components/shared/devices-list';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
@@ -249,15 +249,15 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         </div>
 
         <div className="pt-6 space-y-1">
-          <DeviceSelector
-            devices={allDevices}
-            loading={isLoadingDevices}
-            selectedIds={selectedIds}
-            getDeviceKey={getDevicePrimaryId}
-            onSelectionChange={setSelectedIds}
-            showSelectionModeRadio={false}
-            addAllBehavior="replace"
-            isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
+          <DevicesList
+            externalData={{ devices: allDevices, isLoading: isLoadingDevices }}
+            selection={{
+              selectedIds,
+              onSelectionChange: setSelectedIds,
+              getDeviceKey: getDevicePrimaryId,
+              addAllBehavior: 'replace',
+              isDeviceDisabled: d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined),
+            }}
           />
         </div>
       </div>

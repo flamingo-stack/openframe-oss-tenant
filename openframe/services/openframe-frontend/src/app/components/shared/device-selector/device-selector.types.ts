@@ -1,8 +1,23 @@
-import type { TableColumn } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type {
+  ColumnFiltersState,
+  OnChangeFn,
+  TableColumn,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 import type { Device } from '@/app/(app)/devices/types/device.types';
 
 export type SubTab = 'available' | 'selected';
+
+export interface ColumnFilterOption {
+  id: string;
+  label: string;
+  value: string;
+}
+
+/** TableColumn extended with optional filter dropdown options. */
+export type DeviceSelectorColumn = TableColumn<Device> & {
+  filter?: { options: ColumnFilterOption[]; placement?: 'bottom-start' | 'bottom-end' | 'bottom' };
+};
 
 export interface InfiniteScrollConfig {
   hasNextPage: boolean;
@@ -43,7 +58,7 @@ export interface DeviceSelectorProps {
 export interface DeviceTabContentProps {
   mode: SubTab;
   devices: Device[];
-  columns: TableColumn<Device>[];
+  columns: DeviceSelectorColumn[];
   loading: boolean;
   renderRowActions: (device: Device) => ReactNode;
   onAddAll: () => void;
@@ -61,4 +76,8 @@ export interface DeviceTabContentProps {
    * memo (and therefore re-renders its action button icon).
    */
   rowClassName?: (device: Device) => string;
+  /** Controlled column filters (status/os/customer). */
+  columnFilters?: ColumnFiltersState;
+  /** Called when a column filter dropdown selection changes. */
+  onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
 }

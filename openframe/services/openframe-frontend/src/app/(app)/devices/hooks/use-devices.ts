@@ -4,6 +4,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../queries/devices-queries';
 import type { Device, DeviceFilterInput, DevicesGraphQlNode, GraphQlResponse } from '../types/device.types';
 import { createDeviceListItem } from '../utils/device-transform';
@@ -29,8 +30,19 @@ export const devicesQueryKeys = {
 export function useDevices(filters: DeviceFilterInput = {}, search = '') {
   const { toast } = useToast();
 
+  // Apply default visible statuses when caller doesn't specify any. Keeps
+  // PENDING/DELETED hidden across every screen unless an explicit override
+  // is passed (e.g. archived devices view sets statuses: [ARCHIVED]).
+  const effectiveFilters = useMemo<DeviceFilterInput>(
+    () =>
+      filters.statuses && filters.statuses.length > 0
+        ? filters
+        : { ...filters, statuses: [...DEFAULT_DEVICES_LIST_STATUSES] },
+    [filters],
+  );
+
   const query = useInfiniteQuery<DevicesPage, Error>({
-    queryKey: devicesQueryKeys.list(filters, search),
+    queryKey: devicesQueryKeys.list(effectiveFilters, search),
     queryFn: async ({ pageParam }) => {
       const response = await apiClient.post<
         GraphQlResponse<{
@@ -48,7 +60,7 @@ export function useDevices(filters: DeviceFilterInput = {}, search = '') {
       >('/api/graphql', {
         query: GET_DEVICES_QUERY,
         variables: {
-          filter: filters,
+          filter: effectiveFilters,
           first: DEVICES_PAGE_SIZE,
           after: (pageParam as string) || null,
           search: search || '',
