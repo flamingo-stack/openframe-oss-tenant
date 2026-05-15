@@ -32,12 +32,14 @@ unsafe extern "C" fn on_application_should_terminate(
 
 #[cfg(target_os = "macos")]
 fn restore_dock_icon() {
-    use objc2_app_kit::NSApplication;
-    use objc2_foundation::MainThreadMarker;
+    use objc2_app_kit::{NSApplication, NSWorkspace};
+    use objc2_foundation::{MainThreadMarker, NSBundle};
     if let Some(mtm) = MainThreadMarker::new() {
         unsafe {
+            let bundle_path = NSBundle::mainBundle().bundlePath();
+            let icon = NSWorkspace::sharedWorkspace().iconForFile(&bundle_path);
             NSApplication::sharedApplication(mtm)
-                .setApplicationIconImage(None);
+                .setApplicationIconImage(Some(&icon));
         }
     }
 }
