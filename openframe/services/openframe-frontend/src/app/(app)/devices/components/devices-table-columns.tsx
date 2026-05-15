@@ -65,6 +65,8 @@ interface DevicesTableBodyProps {
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   /** Optional extra column inserted before the open-in-new-tab column (e.g. row actions on the dedicated page). */
   actionsColumn?: ColumnDef<Device>;
+  /** Column ids to omit from the rendered table (e.g. 'organization' inside customer-scoped views). */
+  hideColumns?: string[];
 }
 
 export function DevicesTableBody({
@@ -78,11 +80,13 @@ export function DevicesTableBody({
   columnFilters,
   onColumnFiltersChange,
   actionsColumn,
+  hideColumns,
 }: DevicesTableBodyProps) {
   const columns = useMemo<ColumnDef<Device>[]>(() => {
     const base = getDeviceTableColumns(deviceFilters ?? null);
-    return actionsColumn ? [...base, actionsColumn, DEVICE_OPEN_COLUMN] : [...base, DEVICE_OPEN_COLUMN];
-  }, [deviceFilters, actionsColumn]);
+    const visible = hideColumns?.length ? base.filter(c => !hideColumns.includes(String(c.id))) : base;
+    return actionsColumn ? [...visible, actionsColumn, DEVICE_OPEN_COLUMN] : [...visible, DEVICE_OPEN_COLUMN];
+  }, [deviceFilters, actionsColumn, hideColumns]);
 
   const table = useDataTable<Device>({
     data: devices,

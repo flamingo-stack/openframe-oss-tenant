@@ -5,7 +5,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
-import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { DevicesList } from '@/app/components/shared/devices-list';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
@@ -188,15 +188,17 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
       className="p-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 overflow-auto">
-        <DeviceSelector
-          devices={allDevices}
-          loading={devicesQuery.isLoading}
-          selectedIds={selectedAgentIds}
-          getDeviceKey={getDeviceKey}
-          onSelectionChange={setSelectedAgentIds}
-          addAllBehavior="replace"
-          isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
-          headerContent={
+        <DevicesList
+          externalData={{ devices: allDevices, isLoading: devicesQuery.isLoading }}
+          selection={{
+            selectedIds: selectedAgentIds,
+            onSelectionChange: setSelectedAgentIds,
+            getDeviceKey,
+            addAllBehavior: 'replace',
+            isDeviceDisabled: d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined),
+          }}
+          selectorShowSelectionModeRadio
+          selectorHeaderContent={
             <ScheduleInfoBarFromData
               name={schedule.name}
               note=""
