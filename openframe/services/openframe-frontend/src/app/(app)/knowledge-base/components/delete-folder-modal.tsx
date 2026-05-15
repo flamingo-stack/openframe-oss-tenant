@@ -30,12 +30,14 @@ interface DeleteFolderModalProps {
   onClose: () => void;
   folder: DeleteFolderTarget | null;
   sourceConnectionId: string;
+  onDeleted?: () => void;
 }
 
 interface DeleteFolderContentProps {
   onClose: () => void;
   folder: DeleteFolderTarget;
   sourceConnectionId: string;
+  onDeleted?: () => void;
 }
 
 type DeleteSelection = { kind: 'archive' } | { kind: 'move'; target: FolderMenuTarget };
@@ -46,7 +48,7 @@ function selectionLabel(selection: DeleteSelection): string {
   return selection.kind === 'archive' ? ARCHIVE_LABEL : selection.target.name;
 }
 
-function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFolderContentProps) {
+function DeleteFolderContent({ onClose, folder, sourceConnectionId, onDeleted }: DeleteFolderContentProps) {
   const { toast } = useToast();
   const { deleteFolder, isPending } = useDeleteFolder();
   const folders = useKnowledgeBaseFolders();
@@ -81,6 +83,7 @@ function DeleteFolderContent({ onClose, folder, sourceConnectionId }: DeleteFold
       connections: [sourceConnectionId],
       onCompleted: () => {
         toast({ title: 'Folder deleted', description: folder.name, variant: 'success' });
+        onDeleted?.();
         onClose();
       },
     });
@@ -150,7 +153,7 @@ function DeleteFolderContentSkeleton({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId }: DeleteFolderModalProps) {
+export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId, onDeleted }: DeleteFolderModalProps) {
   return (
     <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
       <ModalV2Header>
@@ -158,7 +161,12 @@ export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId 
       </ModalV2Header>
       {isOpen && folder ? (
         <Suspense fallback={<DeleteFolderContentSkeleton onClose={onClose} />}>
-          <DeleteFolderContent onClose={onClose} folder={folder} sourceConnectionId={sourceConnectionId} />
+          <DeleteFolderContent
+            onClose={onClose}
+            folder={folder}
+            sourceConnectionId={sourceConnectionId}
+            onDeleted={onDeleted}
+          />
         </Suspense>
       ) : (
         <DeleteFolderContentSkeleton onClose={onClose} />

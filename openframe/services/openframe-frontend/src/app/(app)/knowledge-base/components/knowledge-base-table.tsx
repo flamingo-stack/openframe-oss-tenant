@@ -4,7 +4,6 @@ import {
   BoxArchiveIcon,
   FolderEditIcon,
   PenEditIcon,
-  TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   ActionsMenuDropdown,
@@ -26,10 +25,9 @@ import type {
 } from '@/__generated__/knowledgeBaseTableRow_node.graphql';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { ArchiveArticleModal, type ArchiveArticleTarget } from './archive-article-modal';
-import { DeleteFolderModal, type DeleteFolderTarget } from './delete-folder-modal';
+import { useFolderRowActions } from './folder-row-actions';
 import { type KnowledgeBaseRow, KnowledgeBaseTableBody } from './knowledge-base-table-columns';
 import { type MoveToFolderItem, MoveToFolderModal } from './move-to-folder-modal';
-import { RenameFolderModal, type RenameFolderTarget } from './rename-folder-modal';
 import { UnarchiveArticleModal, type UnarchiveArticleTarget } from './unarchive-article-modal';
 
 const knowledgeBaseTableRowFragment = graphql`
@@ -111,10 +109,11 @@ export type ListViewProps = StandardListViewProps | ArchiveListViewProps;
 
 export function KnowledgeBaseItemsListView(props: ListViewProps) {
   const { items, filteredCount, hasNext, isLoadingNext, onLoadMore, emptyMessage, mode } = props;
-  const [renameTarget, setRenameTarget] = useState<RenameFolderTarget | null>(null);
-  const [moveTarget, setMoveTarget] = useState<MoveToFolderItem | null>(null);
-  const [moveSourceConnectionId, setMoveSourceConnectionId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteFolderTarget | null>(null);
+  const standardProps = mode === 'standard' ? (props as StandardListViewProps) : null;
+  const folderActions = useFolderRowActions({
+    sourceConnectionId: standardProps?.foldersConnectionId ?? '',
+  });
+  const [moveArticleTarget, setMoveArticleTarget] = useState<MoveToFolderItem | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<ArchiveArticleTarget | null>(null);
   const [unarchiveTarget, setUnarchiveTarget] = useState<UnarchiveArticleTarget | null>(null);
 
@@ -139,38 +138,10 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
         );
       }
 
-      const standard = props as StandardListViewProps;
       const isFolder = item.type === 'FOLDER';
-      const sourceConnectionId = isFolder ? standard.foldersConnectionId : standard.articlesConnectionId;
 
       const groups: ActionsMenuGroup[] = isFolder
-        ? [
-            {
-              items: [
-                {
-                  id: 'rename',
-                  label: 'Rename',
-                  icon: <PenEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  onClick: () => setRenameTarget({ id: item.id, name: item.name }),
-                },
-                {
-                  id: 'move',
-                  label: 'Move folder',
-                  icon: <FolderEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  onClick: () => {
-                    setMoveTarget({ id: item.id, name: item.name, type: 'folder' });
-                    setMoveSourceConnectionId(sourceConnectionId);
-                  },
-                },
-                {
-                  id: 'delete',
-                  label: 'Delete',
-                  icon: <TrashIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  onClick: () => setDeleteTarget({ id: item.id, name: item.name }),
-                },
-              ],
-            },
-          ]
+        ? folderActions.buildMenuGroups({ id: item.id, name: item.name })
         : [
             {
               items: [
@@ -184,10 +155,7 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
                   id: 'move',
                   label: 'Move to folder',
                   icon: <FolderEditIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-                  onClick: () => {
-                    setMoveTarget({ id: item.id, name: item.name, type: 'article' });
-                    setMoveSourceConnectionId(sourceConnectionId);
-                  },
+                  onClick: () => setMoveArticleTarget({ id: item.id, name: item.name, type: 'article' }),
                 },
                 {
                   id: 'archive',
@@ -201,7 +169,7 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
 
       return <ActionsMenuDropdown groups={groups} />;
     },
-    [mode, props],
+    [mode, folderActions.buildMenuGroups],
   );
 
   const actionsColumn = useMemo<ColumnDef<KnowledgeBaseRow>>(
@@ -219,7 +187,6 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
   );
 
   const isStandard = mode === 'standard';
-  const standardProps = isStandard ? (props as StandardListViewProps) : null;
   const archivedConnectionId = !isStandard ? (props as ArchiveListViewProps).archivedConnectionId : null;
 
   return (
@@ -242,28 +209,13 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
 
       {isStandard && standardProps && (
         <>
-          <RenameFolderModal
-            isOpen={renameTarget !== null}
-            onClose={() => setRenameTarget(null)}
-            folder={renameTarget}
-          />
+          {folderActions.modals}
           <MoveToFolderModal
-            isOpen={moveTarget !== null}
-            onClose={() => {
-              setMoveTarget(null);
-              setMoveSourceConnectionId(null);
-            }}
-            item={moveTarget}
-            sourceConnectionId={moveSourceConnectionId ?? ''}
+            isOpen={moveArticleTarget !== null}
+            onClose={() => setMoveArticleTarget(null)}
+            item={moveArticleTarget}
+            sourceConnectionId={standardProps.articlesConnectionId}
           />
-          {standardProps.foldersConnectionId !== null && (
-            <DeleteFolderModal
-              isOpen={deleteTarget !== null}
-              onClose={() => setDeleteTarget(null)}
-              folder={deleteTarget}
-              sourceConnectionId={standardProps.foldersConnectionId}
-            />
-          )}
           <ArchiveArticleModal
             isOpen={archiveTarget !== null}
             onClose={() => setArchiveTarget(null)}
