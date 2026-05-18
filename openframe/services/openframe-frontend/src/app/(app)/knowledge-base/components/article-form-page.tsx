@@ -37,14 +37,20 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
     [isEditMode, articleId, backToArticle, backToKb],
   );
 
+  const isPublished = initialArticle?.status === 'PUBLISHED';
+
   const actions = useMemo(
     () => [
-      {
-        label: 'Save as Draft',
-        onClick: () => handleSave('DRAFT', { availableTags }),
-        variant: 'outline' as const,
-        disabled: isSubmitting,
-      },
+      ...(isPublished
+        ? []
+        : [
+            {
+              label: 'Save as Draft',
+              onClick: () => handleSave('DRAFT', { availableTags }),
+              variant: 'outline' as const,
+              disabled: isSubmitting,
+            },
+          ]),
       {
         label: 'Save and Publish',
         onClick: () => handleSave('PUBLISHED', { availableTags }),
@@ -52,7 +58,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
         disabled: isSubmitting,
       },
     ],
-    [handleSave, isSubmitting, availableTags],
+    [handleSave, isSubmitting, availableTags, isPublished],
   );
 
   return (
