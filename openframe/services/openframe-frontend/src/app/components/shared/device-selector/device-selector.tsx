@@ -1,6 +1,5 @@
 'use client';
 
-import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
 import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   CheckCircleIcon,
@@ -27,6 +26,7 @@ import { useTagFilterModal } from '@/app/(app)/devices/hooks/use-tag-filter-moda
 import type { Device, DeviceFilters } from '@/app/(app)/devices/types/device.types';
 import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 import { DevicesFilterToolbar } from '@/app/components/shared';
+import { renderDeviceTypeIcon } from '@/app/components/shared/device-type-icon';
 import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -290,10 +290,9 @@ export function DeviceSelector({
           return (
             <div className="flex items-center gap-3 h-20">
               <div className="flex h-8 w-8 items-center justify-center shrink-0 rounded-[6px] border border-ods-border">
-                {device.type &&
-                  getDeviceTypeIcon(device.type.toLowerCase() as DeviceType, {
-                    className: 'w-5 h-5 text-ods-text-secondary',
-                  })}
+                {renderDeviceTypeIcon(device.type, 'w-5 h-5 text-ods-text-secondary') ?? (
+                  <MonitorIcon className="w-5 h-5 text-ods-text-secondary" />
+                )}
               </div>
               <div className="flex flex-col truncate">
                 <span className="text-h4 text-ods-text-primary truncate">{device.displayName || device.hostname}</span>
