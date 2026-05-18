@@ -33,20 +33,33 @@ import { getFullImageUrl } from '@/lib/image-url';
 import type { DeviceSelectorProps } from './device-selector.types';
 import { useDeviceSelector } from './use-device-selector';
 
+const EMPTY_SET: ReadonlySet<string> = new Set();
+const NOOP = () => {};
+const DEFAULT_GET_DEVICE_KEY = (d: Device): string | undefined => d.machineId || d.id;
+
 export function DeviceSelector({
   devices,
   loading,
-  selectedIds,
-  onSelectionChange,
-  getDeviceKey,
+  selectedIds: selectedIdsProp,
+  onSelectionChange: onSelectionChangeProp,
+  getDeviceKey: getDeviceKeyProp,
   infiniteScroll,
-  disabled = false,
-  showSelectionModeRadio = true,
+  disabled: disabledProp = false,
+  showSelectionModeRadio: showSelectionModeRadioProp = true,
   headerContent,
   addAllBehavior = 'merge',
-  singleSelect = false,
+  singleSelect: singleSelectProp = false,
   isDeviceDisabled,
+  hideColumns,
+  readOnly = false,
 }: DeviceSelectorProps) {
+  // In readOnly mode, force-disable interactions and hide the selection UI.
+  const selectedIds = (selectedIdsProp ?? EMPTY_SET) as Set<string>;
+  const onSelectionChange = onSelectionChangeProp ?? NOOP;
+  const getDeviceKey = getDeviceKeyProp ?? DEFAULT_GET_DEVICE_KEY;
+  const disabled = readOnly || disabledProp;
+  const showSelectionModeRadio = readOnly ? false : showSelectionModeRadioProp;
+  const singleSelect = readOnly ? true : singleSelectProp;
   const { searchTerm, setSearchTerm, activeSubTab, handleTabChange, filteredDevices, displayDevices } =
     useDeviceSelector({ devices, selectedIds, getDeviceKey });
 
@@ -117,14 +130,6 @@ export function DeviceSelector({
         if (b.value === DEVICE_STATUS.ARCHIVED) return -1;
         return 0;
       });
-  }, [devices]);
-
-  const osFilterOptions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const d of devices) {
-      if (d.osType) seen.add(d.osType);
-    }
-    return Array.from(seen).map(o => ({ id: o, label: o, value: o }));
   }, [devices]);
 
   const orgFilterOptions = useMemo(() => {
@@ -302,18 +307,6 @@ export function DeviceSelector({
         enableSorting: false,
       },
       {
-        id: 'os',
-        accessorKey: 'os',
-        header: 'DETAILS',
-        cell: ({ row }: { row: Row<Device> }) => <OSTypeBadge osType={row.original.osType} />,
-        enableSorting: false,
-        meta: {
-          width: 'w-[100px] md:flex-1',
-          hideAt: 'md',
-          filter: osFilterOptions.length > 0 ? { options: osFilterOptions } : undefined,
-        },
-      },
-      {
         id: 'organization',
         accessorKey: 'organization',
         header: 'CUSTOMER',
@@ -338,6 +331,19 @@ export function DeviceSelector({
           width: 'w-1/4',
           hideAt: 'lg',
           filter: orgFilterOptions.length > 0 ? { options: orgFilterOptions, placement: 'bottom-end' } : undefined,
+        },
+      },
+      {
+        id: 'os',
+        accessorKey: 'os',
+        header: 'OS',
+        cell: ({ row }: { row: Row<Device> }) => (
+          <OSTypeBadge osType={row.original.osType} iconSize="w-4 h-4 md:w-6 md:h-6" />
+        ),
+        enableSorting: false,
+        meta: {
+          width: 'w-[200px] md:w-1/6',
+          hideAt: 'md',
         },
       },
       {
@@ -419,7 +425,6 @@ export function DeviceSelector({
     ],
     [
       statusFilterOptions,
-      osFilterOptions,
       orgFilterOptions,
       isDeviceDisabled,
       getDeviceKey,
@@ -430,9 +435,15 @@ export function DeviceSelector({
     ],
   );
 
+  const visibleColumns = useMemo(() => {
+    if (!hideColumns?.length) return columns;
+    const hidden = new Set(hideColumns);
+    return columns.filter(c => !c.id || !hidden.has(c.id));
+  }, [columns, hideColumns]);
+
   const table = useDataTable<Device>({
     data: devicesForTable,
-    columns,
+    columns: visibleColumns,
     getRowId: row => String(getDeviceKey(row) ?? row.id),
     enableSorting: false,
     state: { columnFilters },
@@ -541,7 +552,7 @@ export function DeviceSelector({
               type="button"
               onClick={addAllDevices}
               disabled={disabled}
-              className="text-heading-4 font-medium text-ods-accent hover:text-ods-accent-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-h6 font-medium underline text-ods-accent hover:text-ods-accent-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add All Devices
             </button>
@@ -550,7 +561,7 @@ export function DeviceSelector({
               type="button"
               onClick={removeAllSelected}
               disabled={disabled}
-              className="text-heading-4 font-medium text-ods-error hover:text-ods-error-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-h6 font-medium underline text-ods-error hover:text-ods-error-hover bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Remove {selectedIds.size} Devices
             </button>
