@@ -31,7 +31,7 @@ impl TokenWatcher {
         let decryption_service = match TokenDecryptionService::new(secret) {
             Ok(service) => service,
             Err(e) => {
-                eprintln!("[ERROR] Failed to create decryption service: {}", e);
+                log::error!("token watcher: failed to create decryption service: {}", e);
                 // Return empty state on error
                 return TokenState {
                     current_token: Arc::new(Mutex::new(None)),
@@ -72,7 +72,7 @@ impl TokenWatcher {
                 match self.decryption_service.decrypt(encrypted_content.trim()) {
                     Ok(decrypted) => Some(decrypted),
                     Err(e) => {
-                        eprintln!("[ERROR] Failed to decrypt token: {}", e);
+                        log::error!("token watcher: failed to decrypt token: {}", e);
                         None
                     }
                 }
@@ -90,11 +90,11 @@ impl TokenWatcher {
         if *current != new_token {
             match (&*current, &new_token) {
                 (None, Some(token)) => {
-                    println!("[INFO] Token received");
+                    log::info!("token watcher: first token received");
                     self.emit_token_to_frontend(token);
                 }
                 (Some(_), Some(token)) => {
-                    println!("[INFO] Token updated");
+                    log::info!("token watcher: token refreshed");
                     self.emit_token_to_frontend(token);
                 }
                 _ => {}
@@ -110,8 +110,8 @@ impl TokenWatcher {
         };
         
         match self.app_handle.emit("token-update", event) {
-            Ok(_) => println!("[INFO] Token emitted to frontend"),
-            Err(e) => eprintln!("[ERROR] Failed to emit token to frontend: {}", e),
+            Ok(_) => log::debug!("token watcher: token emitted to frontend"),
+            Err(e) => log::error!("token watcher: failed to emit token-update event: {}", e),
         }
     }
 }
