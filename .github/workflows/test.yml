@@ -280,7 +280,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         run: |
-          if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
+          if [[ "${{ matrix.name }}" == openframe-client* && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
             for RUST_TARGET in "${ARCHITECTURES[@]}"; do
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
@@ -317,7 +317,7 @@ jobs:
           compression-level: 9
 
       - name: Create macOS universal package
-        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && matrix.name == 'openframe-client'
+        if: steps.should_run.outputs.run == 'true' && runner.os == 'macOS' && startsWith(matrix.name, 'openframe-client')
         shell: bash
         run: |
           mkdir -p artifacts

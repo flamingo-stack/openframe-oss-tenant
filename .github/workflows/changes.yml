@@ -25,6 +25,8 @@ on:
         value: ${{ jobs.changes.outputs.openframe-frontend }}
       client:
         value: ${{ jobs.changes.outputs.client }}
+      openframe-client-updater:
+        value: ${{ jobs.changes.outputs.openframe-client-updater }}
       openframe-chat:
         value: ${{ jobs.changes.outputs.openframe-chat }}
       helm:
@@ -55,6 +57,7 @@ jobs:
       openframe-frontend: ${{ steps.filter.outputs.openframe-frontend }}
       openframe-chat: ${{ steps.filter.outputs.openframe-chat }}
       client: ${{ steps.filter.outputs.client }}
+      openframe-client-updater: ${{ steps.filter.outputs.openframe-client-updater }}
       helm: ${{ steps.filter.outputs.helm }}
       timestamp: ${{ steps.setup_env.outputs.timestamp }}
       timestamp_tag: ${{ steps.setup_env.outputs.timestamp_tag }}
@@ -110,5 +113,7 @@ jobs:
               - './clients/openframe-chat/**'
             client:
               - './clients/openframe-client/**'
+            openframe-client-updater:
+              - './clients/openframe-client-updater/**'
             helm:
               - './manifests/app-of-apps/**'
