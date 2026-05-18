@@ -35,17 +35,12 @@ function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
 
 const TICKET_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
-interface UseTicketsOptions {
-  enabled?: boolean;
-}
-
-export function useTickets({ enabled = true }: UseTicketsOptions = {}) {
+export function useTickets() {
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: ['tickets'],
-    enabled,
     queryFn: async ({ pageParam }) => {
       const connection = await ticketGraphQlService.getTickets({
         statuses: TICKET_STATUSES,
