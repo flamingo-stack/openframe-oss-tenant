@@ -8,19 +8,37 @@ import {
   type NatsMessageType,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  useJetStreamDialogSubscription,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { CoreMessage } from '../types/message.types';
+import type { CoreMessage, GraphQlMessage, MessagePage } from '../types/message.types';
 import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
 
 const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const;
+const MINGO_JETSTREAM_TOPIC: NatsMessageType = 'admin-message';
+const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
+
+function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
+  if (!pages) return null;
+  let max: number | null = null;
+  for (const page of pages) {
+    for (const msg of page.messages as GraphQlMessage[]) {
+      const seq = msg.lastChunkStreamSeq;
+      if (typeof seq === 'number' && (max == null || seq > max)) {
+        max = seq;
+      }
+    }
+  }
+  return max;
+}
 
 function isInProgress(segments: MessageSegment[]): boolean {
   return segments.some(seg => {
@@ -403,6 +421,12 @@ export function DialogSubscription({
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
   const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
+  // Resolved once per mount: switching transports mid-stream would require
+  // tearing down one subscription and recreating the other with the right
+  // offset, which complicates state ownership. Picking up a flag change on
+  // the next page load is acceptable for a runtime rollout.
+  const [useJetstream] = useState(() => featureFlags.aiStreamingJetstream.enabled());
+
   useEffect(() => {
     if (!isDevTicketEnabled) return;
     const handler = (e: StorageEvent) => {
@@ -439,6 +463,13 @@ export function DialogSubscription({
     }, []),
   });
 
+  const queryClient = useQueryClient();
+  const initialOptStartSeq = useMemo<number | null>(() => {
+    if (!useJetstream) return null;
+    const data = queryClient.getQueryData<{ pages?: MessagePage[] }>(['mingo-dialog-messages', dialogId]);
+    return computeInitialStartSeq(data?.pages);
+  }, [useJetstream, queryClient, dialogId]);
+
   // NATS WebSocket URL
   const getNatsWsUrl = useMemo(() => {
     return (): string | null => {
@@ -473,6 +504,7 @@ export function DialogSubscription({
   );
 
   useEffect(() => {
+    if (useJetstream) return;
     resetChunkTracking();
     startInitialBuffering();
     setHasCaughtUp(false);
@@ -480,7 +512,7 @@ export function DialogSubscription({
     return () => {
       resetChunkTracking();
     };
-  }, [resetChunkTracking, startInitialBuffering]);
+  }, [useJetstream, resetChunkTracking, startInitialBuffering]);
 
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
@@ -489,7 +521,11 @@ export function DialogSubscription({
     [coreProcessChunk],
   );
 
-  const handleSubscribed = useCallback(async () => {
+  const handleJetStreamEvent = useCallback((payload: unknown, _messageType: NatsMessageType) => {
+    processorRef.current(payload as ChunkData);
+  }, []);
+
+  const handleLegacySubscribed = useCallback(async () => {
     if (!hasCaughtUp) {
       setHasCaughtUp(true);
       await catchUpChunks();
@@ -516,25 +552,41 @@ export function DialogSubscription({
     }
   }, [isDevTicketEnabled]);
 
-  const { reconnectionCount } = useNatsDialogSubscription({
-    enabled: true,
+  const { reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
+    enabled: !useJetstream,
     dialogId,
     topics: MINGO_TOPICS,
     onEvent: handleNatsEvent,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
     onBeforeReconnect: handleBeforeReconnect,
-    onSubscribed: handleSubscribed,
+    onSubscribed: handleLegacySubscribed,
+    getNatsWsUrl,
+    clientConfig,
+    reconnectionBackoff,
+  });
+
+  useJetStreamDialogSubscription({
+    enabled: useJetstream,
+    dialogId,
+    streamName: CHAT_CHUNKS_STREAM,
+    topic: MINGO_JETSTREAM_TOPIC,
+    optStartSeq: initialOptStartSeq,
+    onEvent: handleJetStreamEvent,
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    onBeforeReconnect: handleBeforeReconnect,
     getNatsWsUrl,
     clientConfig,
     reconnectionBackoff,
   });
 
   useEffect(() => {
-    if (reconnectionCount > 0 && dialogId) {
+    if (useJetstream) return;
+    if (legacyReconnectionCount > 0 && dialogId) {
       resetAndCatchUp();
     }
-  }, [reconnectionCount, dialogId, resetAndCatchUp]);
+  }, [useJetstream, legacyReconnectionCount, dialogId, resetAndCatchUp]);
 
   return null;
 }
