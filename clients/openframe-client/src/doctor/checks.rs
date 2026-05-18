@@ -166,7 +166,7 @@ pub fn check_tcp_connect(server_url: &str) -> CheckResult {
                     &format!("Network: TCP {}:{} reachable", strip_port(host), port_display),
                 )
             } else {
-                CheckResult::fail(
+                CheckResult::warn(
                     CheckCategory::Network,
                     &format!("Network: TCP {}:{}", strip_port(host), port_display),
                     format!(
@@ -176,7 +176,7 @@ pub fn check_tcp_connect(server_url: &str) -> CheckResult {
                 )
             }
         }
-        Err(_) => CheckResult::fail(
+        Err(_) => CheckResult::warn(
             CheckCategory::Network,
             &format!("Network: TCP {}:{}", strip_port(host), port_display),
             format!("Cannot resolve '{}' for TCP connection.", host),
@@ -193,7 +193,7 @@ pub async fn check_tls_handshake(server_url: &str) -> CheckResult {
     {
         Ok(c) => c,
         Err(_) => {
-            return CheckResult::fail(
+            return CheckResult::warn(
                 CheckCategory::Network,
                 "Network: TLS handshake",
                 "Failed to create HTTP client for TLS check.",
@@ -203,7 +203,7 @@ pub async fn check_tls_handshake(server_url: &str) -> CheckResult {
 
     match client.get(&url).send().await {
         Ok(_) => CheckResult::pass(CheckCategory::Network, "Network: TLS handshake ok"),
-        Err(e) if e.is_connect() => CheckResult::fail(
+        Err(e) if e.is_connect() => CheckResult::warn(
             CheckCategory::Network,
             "Network: TLS handshake",
             format!(
@@ -211,7 +211,7 @@ pub async fn check_tls_handshake(server_url: &str) -> CheckResult {
                 strip_scheme(server_url)
             ),
         ),
-        Err(_) => CheckResult::fail(
+        Err(_) => CheckResult::warn(
             CheckCategory::Network,
             "Network: TLS handshake",
             format!(
@@ -235,7 +235,7 @@ pub async fn check_websocket_upgrade(server_url: &str) -> CheckResult {
     {
         Ok(c) => c,
         Err(_) => {
-            return CheckResult::fail(
+            return CheckResult::warn(
                 CheckCategory::Network,
                 "Network: WebSocket upgrade",
                 "Failed to create HTTP client for WebSocket check.",

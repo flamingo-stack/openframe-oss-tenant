@@ -17,6 +17,7 @@ pub enum CheckCategory {
 pub enum CheckStatus {
     Pass,
     Fail,
+    Warn,
     Info,
 }
 
@@ -37,6 +38,10 @@ impl CheckResult {
         Self { category, status: CheckStatus::Fail, name: name.to_string(), hint: Some(hint.into()) }
     }
 
+    pub fn warn(category: CheckCategory, name: &str, hint: impl Into<String>) -> Self {
+        Self { category, status: CheckStatus::Warn, name: name.to_string(), hint: Some(hint.into()) }
+    }
+
     pub fn info(category: CheckCategory, name: &str) -> Self {
         Self { category, status: CheckStatus::Info, name: name.to_string(), hint: None }
     }
@@ -44,6 +49,7 @@ impl CheckResult {
 
 pub struct DoctorReport {
     pub results: Vec<CheckResult>,
+    title: &'static str,
 }
 
 impl DoctorReport {
@@ -55,12 +61,17 @@ impl DoctorReport {
         self.results.iter().filter(|r| r.status == CheckStatus::Fail).count()
     }
 
+    pub fn warn_count(&self) -> usize {
+        self.results.iter().filter(|r| r.status == CheckStatus::Warn).count()
+    }
+
     pub fn print(&self) {
-        println!("\nOpenFrame Doctor \u{2014} pre-install diagnostics\n");
+        println!("\nOpenFrame Doctor \u{2014} {}\n", self.title);
         for r in &self.results {
             let icon = match r.status {
                 CheckStatus::Pass => "\u{2713}",
                 CheckStatus::Fail => "\u{2717}",
+                CheckStatus::Warn => "!",
                 CheckStatus::Info => "i",
             };
             println!("  [{}] {}", icon, r.name);
@@ -71,17 +82,18 @@ impl DoctorReport {
     }
 }
 
-pub async fn run_doctor(params: &InstallConfigParams) -> DoctorReport {
+/// Pre-install diagnostics. Validates CLI args, admin, disk, network.
+pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
     let mut results = Vec::new();
 
     results.push(check_required_args(params));
     if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results };
+        return DoctorReport { results, title: "pre-install diagnostics" };
     }
 
     results.push(check_admin_privileges());
     if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results };
+        return DoctorReport { results, title: "pre-install diagnostics" };
     }
 
     let dir_manager = DirectoryManager::new();
@@ -103,7 +115,64 @@ pub async fn run_doctor(params: &InstallConfigParams) -> DoctorReport {
     results.push(check_service_config_writable());
 
     let server_url = params.server_url.as_deref().unwrap_or_default();
+    run_network_checks(&mut results, server_url).await;
+
+    DoctorReport { results, title: "pre-install diagnostics" }
+}
+
+/// Post-install health check. Reads config from disk, checks admin + network.
+pub async fn run_healthcheck() -> DoctorReport {
+    let mut results = Vec::new();
+
+    results.push(check_admin_privileges());
+    if results.last().unwrap().status == CheckStatus::Fail {
+        return DoctorReport { results, title: "health check" };
+    }
+
+    let dir_manager = DirectoryManager::new();
+    let config_path = dir_manager.secured_dir().join("initial_config.json");
+
+    let server_url = match std::fs::read_to_string(&config_path) {
+        Ok(json) => {
+            match serde_json::from_str::<serde_json::Value>(&json) {
+                Ok(val) => {
+                    results.push(CheckResult::pass(CheckCategory::Command, "Config: initial_config.json loaded"));
+                    val["server_host"].as_str().unwrap_or_default().to_string()
+                }
+                Err(_) => {
+                    results.push(CheckResult::fail(
+                        CheckCategory::Command,
+                        "Config: initial_config.json",
+                        format!("Config file is corrupted: {}", config_path.display()),
+                    ));
+                    return DoctorReport { results, title: "health check" };
+                }
+            }
+        }
+        Err(_) => {
+            results.push(CheckResult::fail(
+                CheckCategory::Command,
+                "Config: initial_config.json",
+                format!(
+                    "Config not found at {}. Is the agent installed?",
+                    config_path.display()
+                ),
+            ));
+            return DoctorReport { results, title: "health check" };
+        }
+    };
+
+    run_network_checks(&mut results, &server_url).await;
+
+    DoctorReport { results, title: "health check" }
+}
+
+async fn run_network_checks(results: &mut Vec<CheckResult>, server_url: &str) {
     results.push(check_dns_resolve(server_url));
+    if results.last().unwrap().status == CheckStatus::Fail {
+        return;
+    }
+
     results.push(check_tcp_connect(server_url));
     results.push(check_tls_handshake(server_url).await);
     results.push(check_websocket_upgrade(server_url).await);
@@ -111,6 +180,4 @@ pub async fn run_doctor(params: &InstallConfigParams) -> DoctorReport {
     if let Some(proxy) = check_proxy_env() {
         results.push(proxy);
     }
-
-    DoctorReport { results }
 }

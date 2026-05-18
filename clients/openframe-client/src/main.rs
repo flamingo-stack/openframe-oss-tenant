@@ -59,8 +59,8 @@ enum Commands {
     /// Check if the current process has the required permissions
     #[command(hide = true)]
     CheckPermissions,
-    /// Run pre-install diagnostics without installing
-    Doctor(InstallArgs),
+    /// Run environment health check (reads config from installed agent)
+    Doctor,
 }
 
 fn main() -> Result<()> {
@@ -69,14 +69,9 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::Install(args)) => {
-            if let Err(e) = openframe::logging::init_file_only(None, None) {
-                eprintln!("Failed to initialize logging: {}", e);
-                process::exit(1);
-            }
-
             let params = args.to_params();
 
-            let report = rt.block_on(openframe::doctor::run_doctor(&params));
+            let report = rt.block_on(openframe::doctor::run_preinstall(&params));
             report.print();
 
             if report.has_failures() {
@@ -87,7 +82,17 @@ fn main() -> Result<()> {
                 process::exit(1);
             }
 
-            println!("\nAll checks passed. Starting installation...\n");
+            let warns = report.warn_count();
+            if warns > 0 {
+                println!("\n{} warning(s). Installation will proceed, but the agent may have connectivity issues.", warns);
+            }
+
+            println!("\nStarting installation...\n");
+
+            if let Err(e) = openframe::logging::init_file_only(None, None) {
+                eprintln!("Failed to initialize logging: {}", e);
+                process::exit(1);
+            }
 
             rt.block_on(async {
                 match Service::install(params).await {
@@ -103,9 +108,8 @@ fn main() -> Result<()> {
                 }
             });
         }
-        Some(Commands::Doctor(args)) => {
-            let params = args.to_params();
-            let report = rt.block_on(openframe::doctor::run_doctor(&params));
+        Some(Commands::Doctor) => {
+            let report = rt.block_on(openframe::doctor::run_healthcheck());
             report.print();
 
             if report.has_failures() {
@@ -114,10 +118,16 @@ fn main() -> Result<()> {
                     report.failure_count()
                 );
                 process::exit(1);
-            } else {
-                println!("\nAll checks passed. Ready to install.");
-                process::exit(0);
             }
+
+            let warns = report.warn_count();
+            if warns > 0 {
+                println!("\n{} warning(s). The agent may have connectivity issues.", warns);
+                process::exit(1);
+            }
+
+            println!("\nAll checks passed.");
+            process::exit(0);
         }
         Some(Commands::Uninstall) => {
             PermissionUtils::require_admin();
