@@ -36,6 +36,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
+import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
@@ -76,6 +77,26 @@ interface TicketDetailsViewProps {
   ticketId: string;
 }
 
+/**
+ * Wrap a device-menu item so opening it also fires a dashboard-activity event.
+ * `href` navigation is preserved. For a submenu parent the click only expands
+ * the submenu, so tracking is attached to the leaf items that actually
+ * navigate, not the parent.
+ */
+function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): ActionsMenuItem {
+  if (item.submenu && item.submenu.length > 0) {
+    return { ...item, submenu: item.submenu.map(child => withActivityTracking(child, subtype)) };
+  }
+  const originalOnClick = item.onClick;
+  return {
+    ...item,
+    onClick: () => {
+      trackDashboardActivity(subtype);
+      originalOnClick?.();
+    },
+  };
+}
+
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
   const handleBackToTickets = useSafeBack('/tickets');
@@ -104,6 +125,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
     useTicketDetailsStore();
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
   const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
@@ -312,7 +334,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await resolve(ticketId);
-    if (nextStatus) applyStatus(nextStatus);
+    if (nextStatus) {
+      trackDashboardActivity(EVENT_SUBTYPE.RESOLVE_TICKET);
+      applyStatus(nextStatus);
+    }
   }, [dialog, isUpdating, resolve, ticketId, applyStatus]);
 
   const handleArchive = useCallback(async () => {
@@ -390,8 +415,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     onReject: handleReject,
   });
 
-  const clientPendingApprovals = useMemo(() => extractPendingApprovals(clientMessages), [clientMessages]);
-  const adminPendingApprovals = useMemo(() => extractPendingApprovals(adminMessages), [adminMessages]);
+  const clientPendingApprovals = useMemo(
+    () => extractPendingApprovals(clientMessages, approvalStatuses),
+    [clientMessages, approvalStatuses],
+  );
+  const adminPendingApprovals = useMemo(
+    () => extractPendingApprovals(adminMessages, approvalStatuses),
+    [adminMessages, approvalStatuses],
+  );
 
   const remapClientUserName = useCallback(
     (msg: ChatMessage): ChatMessage =>
@@ -445,7 +476,12 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
     if (machineId) {
       const items = buildDeviceMenuItems({ deviceId: machineId, availability: actionAvailability });
-      deviceItems.push(items.deviceDetails, items.remoteShell, items.remoteControl, items.deviceLogs);
+      deviceItems.push(
+        items.deviceDetails,
+        withActivityTracking(items.remoteShell, EVENT_SUBTYPE.OPEN_REMOTE_SHELL),
+        withActivityTracking(items.remoteControl, EVENT_SUBTYPE.OPEN_REMOTE_CONTROL),
+        items.deviceLogs,
+      );
     }
 
     const groups: ActionsMenuGroup[] = [];

@@ -11,6 +11,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { useOnboardingCompletion } from '../hooks/use-onboarding-completion';
 
 /**
@@ -26,6 +27,7 @@ export function OnboardingSection() {
   }, [router]);
 
   const handleDeviceAction = React.useCallback(async () => {
+    trackDashboardActivity(EVENT_SUBTYPE.ADD_DEVICE);
     router.push('/devices/new');
   }, [router]);
 
@@ -34,6 +36,7 @@ export function OnboardingSection() {
   }, [router]);
 
   const handleSsoAction = React.useCallback(async () => {
+    trackDashboardActivity(EVENT_SUBTYPE.ADD_SSO_IDP);
     router.push('/settings/sso');
   }, [router]);
 
@@ -97,6 +100,7 @@ export function OnboardingSection() {
       spacing="space-y-4"
       completionStatus={completionStatus}
       isLoadingCompletion={isLoading}
+      onDismiss={() => trackDashboardActivity(EVENT_SUBTYPE.SKIP_ONBOARDING)}
     />
   );
 }
