@@ -37,6 +37,31 @@ const EMPTY_SET: ReadonlySet<string> = new Set();
 const NOOP = () => {};
 const DEFAULT_GET_DEVICE_KEY = (d: Device): string | undefined => d.machineId || d.id;
 
+/**
+ * Selection-oriented devices list. Sits next to `DevicesPanel` (the listing
+ * page), but the data model is different and intentional:
+ *
+ * - **Data is owned by the parent.** The consumer passes a pre-fetched
+ *   `devices: Device[]` and (optionally) an `infiniteScroll` config. This is
+ *   because consumers fetch from different backends — GraphQL `devices` query
+ *   (TestScriptModal, ScheduleAssignDevicesView), Tactical RMM REST
+ *   (RunScriptView), Fleet MDM (monitoring queries/policies). A single
+ *   internal `useDevices` wouldn't fit all of them.
+ *
+ * - **Filtering is client-side.** Column filter funnels (status/customer) and
+ *   tag chips operate on the `devices` array via `Array.filter`. Filter
+ *   options shown in the dropdowns are derived from the same array (no extra
+ *   network call). Trade-off: if the parent passes a partial page, the
+ *   filters see only that page — not the full dataset on the server.
+ *
+ * - **Pagination is parent-driven via `infiniteScroll`.** The component just
+ *   renders `DataTable.InfiniteFooter` and calls `onLoadMore`. The consumer
+ *   owns the fetching strategy. In practice all current consumers fetch the
+ *   full list (≤100 devices) and don't pass `infiniteScroll` at all.
+ *
+ * For a server-driven listing with URL state, GraphQL pagination and filter
+ * counts coming from the backend, use `DevicesPanel` instead.
+ */
 export function DeviceSelector({
   devices,
   loading,
