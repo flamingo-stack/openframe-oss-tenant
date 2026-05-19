@@ -2,9 +2,9 @@
 
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { ChatsOverviewSection } from './chats-overview';
+import { CustomersOverviewSection } from './customers-overview';
 import { DevicesOverviewSection } from './devices-overview';
 import { OnboardingSection } from './onboarding-section';
-import { OrganizationsOverviewSection } from './organizations-overview';
 
 /**
  * Dashboard content component - extracted for dynamic import with loading skeleton
@@ -18,7 +18,7 @@ export default function DashboardContent() {
       <OnboardingSection />
       <DevicesOverviewSection />
       {showChats && <ChatsOverviewSection />}
-      <OrganizationsOverviewSection />
+      <CustomersOverviewSection />
     </div>
   );
 }

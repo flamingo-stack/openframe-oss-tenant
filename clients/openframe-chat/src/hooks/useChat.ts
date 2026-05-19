@@ -4,6 +4,7 @@ import {
   type Message,
   type MessageSegment,
   type NatsMessageType,
+  type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
   useNatsDialogSubscription,
@@ -15,6 +16,8 @@ import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
 import { tokenService } from '../services/tokenService';
+import { overrideToolTitle } from '../utils/applyToolTitle';
+import { log, maskToken } from '../utils/log';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
@@ -51,9 +54,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     resolve: () => void;
     reject: (error: Error) => void;
   } | null>(null);
-  const escalatedApprovalsRef = useRef<Map<string, { command: string; explanation?: string; approvalType: string }>>(
-    new Map(),
-  );
+  const escalatedApprovalsRef = useRef<
+    Map<string, { command: string; explanation?: string; approvalType: string; toolCalls?: PendingToolCallData[] }>
+  >(new Map());
 
   const { debugMode } = useDebugMode();
   const { quickActions } = useChatConfig();
@@ -294,11 +297,12 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     approvalStatuses: approvals.approvalStatuses,
     initialState: enhancedInitialState,
     enableThinking: flags.thinking,
+    batchApprovalsEnabled: flags['batch-approval'],
   });
 
   const handleRealtimeEvent = useCallback(
     (chunk: any) => {
-      processRealtimeChunk(chunk);
+      processRealtimeChunk(overrideToolTitle(chunk));
     },
     [processRealtimeChunk],
   );
@@ -332,7 +336,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       hasCaughtUp.current = true;
       try {
         await catchUpChunks();
-      } catch (_error) {
+      } catch (error) {
+        log.warn('chat', 'catch-up after NATS subscribe failed', String(error));
         hasCaughtUp.current = false;
       }
     }
@@ -341,6 +346,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
       if (!apiBaseUrl || !token) return '';
+      log.info('nats:chat', `building WS URL (token: ${maskToken(token)})`);
       return buildNatsWsUrl(apiBaseUrl, {
         token,
         includeAuthParam: true,
@@ -372,7 +378,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   );
 
   const handleBeforeReconnect = useCallback(async () => {
-    console.log('[CHAT] NATS disconnected, refreshing token before reconnect...');
+    log.info('nats:chat', 'disconnected — refreshing token before reconnect');
     await tokenService.refreshToken();
   }, []);
 
@@ -390,9 +396,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
 
   useEffect(() => {
     if (reconnectionCount > 0 && natsDialogId) {
-      console.log(`[CHAT] NATS reconnected (count: ${reconnectionCount}), catching up missed messages...`);
+      log.info('nats:chat', `reconnected (count: ${reconnectionCount}) — catching up missed messages`);
       resetAndCatchUp().catch((error: unknown) => {
-        console.error('[CHAT] Failed to catch up after reconnection:', error);
+        log.error('nats:chat', 'failed to catch up after reconnection', String(error));
       });
     }
   }, [reconnectionCount, natsDialogId, resetAndCatchUp]);

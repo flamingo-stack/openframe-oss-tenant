@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useRef } from 'react';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
+import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import type { MessagePage } from '../services/ticket-service.types';
 import { type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
@@ -97,6 +98,7 @@ export function useHistoricalMessages({
       onApprove: onApproveRef.current,
       onReject: onRejectRef.current,
       approvalStatuses: { ...approvalStatusesRef.current, ...historicalResolutions },
+      batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
     });
 
     const storeMessages: ChatMessage[] = foldPendingApprovalsEnvelope(

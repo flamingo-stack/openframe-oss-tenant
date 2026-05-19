@@ -22,12 +22,11 @@ import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
-import { type DialogTokenUsage, dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
+import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
 
@@ -42,7 +41,6 @@ function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsag
 }
 
 export function ChatView() {
-  const { flags } = useFeatureFlags();
   const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
@@ -51,7 +49,6 @@ export function ChatView() {
     contextWindow: number;
   } | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-  const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null);
   const [tokenUsage, setTokenUsage] = useState<TokenUsageData | null>(null);
   const [faeFormTicket, setFaeFormTicket] = useState<{
     id: string;
@@ -131,21 +128,6 @@ export function ChatView() {
     [messages],
   );
 
-  const fetchResumableDialog = useCallback(() => {
-    dialogGraphQlService.getResumableDialog().then(dialog => {
-      setResumableDialog(dialog);
-      if (dialog?.tokenUsage) {
-        setTokenUsage(toTokenUsageData(dialog.tokenUsage));
-      }
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!flags.tickets) {
-      fetchResumableDialog();
-    }
-  }, [flags.tickets, fetchResumableDialog]);
-
   const handleNewChat = useCallback(() => {
     setFaeFormTicket(null);
     setPreviewTicketId(null);
@@ -153,14 +135,11 @@ export function ChatView() {
     clearMessages();
     queryClient.invalidateQueries({ queryKey: ['tickets'] });
     setTokenUsage(null);
-    if (!flags.tickets) {
-      fetchResumableDialog();
-    }
-  }, [clearMessages, queryClient, flags.tickets, fetchResumableDialog]);
+  }, [clearMessages, queryClient]);
 
-  const ticketsHook = useTickets({ enabled: flags.tickets });
+  const ticketsHook = useTickets();
 
-  const displayTickets = flags.tickets ? ticketsHook.tickets : [];
+  const displayTickets = ticketsHook.tickets;
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
@@ -168,58 +147,43 @@ export function ChatView() {
       setPreviewTicketId(null);
       setActiveTicket(null);
 
-      if (flags.tickets) {
-        const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-        if (!ticketDetails) {
-          toast({
-            title: 'Error',
-            description: 'Failed to load ticket details',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        setActiveTicket({
-          title: ticketDetails.title,
-          ticketNumber: ticketDetails.ticketNumber,
-          category: ticketDetails.category,
-          timeAgo: ticketDetails.timeAgo,
-          status: ticketDetails.status,
+      const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+      if (!ticketDetails) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load ticket details',
+          variant: 'destructive',
         });
-
-        const dialogId = ticketsHook.getDialogId(ticketId);
-        if (!dialogId) {
-          setPreviewTicketId(ticketId);
-          showTicketPreview(ticketDetails);
-          return;
-        }
-
-        if (ticketDetails.creationSource === 'FAE_FORM') {
-          setFaeFormTicket({
-            id: ticketId,
-            title: ticketDetails.title,
-            description: ticketDetails.description,
-            createdAt: ticketDetails.createdAt || new Date().toISOString(),
-          });
-        }
-
-        await resumeDialog(dialogId);
-      } else {
-        await resumeDialog(ticketId);
+        return;
       }
-    },
-    [ticketsHook, resumeDialog, showTicketPreview, toast, flags],
-  );
 
-  const handleResumeDialog = useCallback(
-    async (dialog: ResumableDialog) => {
-      const success = await resumeDialog(dialog.id);
-      if (success) {
-        setTokenUsage(toTokenUsageData(dialog.tokenUsage));
-        setResumableDialog(null);
+      setActiveTicket({
+        title: ticketDetails.title,
+        ticketNumber: ticketDetails.ticketNumber,
+        category: ticketDetails.category,
+        timeAgo: ticketDetails.timeAgo,
+        status: ticketDetails.status,
+      });
+
+      const dialogId = ticketsHook.getDialogId(ticketId);
+      if (!dialogId) {
+        setPreviewTicketId(ticketId);
+        showTicketPreview(ticketDetails);
+        return;
       }
+
+      if (ticketDetails.creationSource === 'FAE_FORM') {
+        setFaeFormTicket({
+          id: ticketId,
+          title: ticketDetails.title,
+          description: ticketDetails.description,
+          createdAt: ticketDetails.createdAt || new Date().toISOString(),
+        });
+      }
+
+      await resumeDialog(dialogId);
     },
-    [resumeDialog],
+    [ticketsHook, resumeDialog, showTicketPreview, toast],
   );
 
   useEffect(() => {
@@ -320,7 +284,7 @@ export function ChatView() {
         ticketInfo={ticketInfo}
         headerActions={
           <>
-            {flags.tickets && !hasMessages && (
+            {!hasMessages && (
               <Button
                 onClick={() => setIsTicketModalOpen(true)}
                 variant="outline"
@@ -376,11 +340,8 @@ export function ChatView() {
           />
         ) : (
           <ChatInitialScreen
-            ticketsEnabled={flags.tickets}
             tickets={displayTickets}
             onTicketClick={handleTicketClick}
-            resumableDialog={resumableDialog}
-            onResumeDialog={handleResumeDialog}
             quickActions={quickActions}
             onQuickAction={handleQuickAction}
             isDisconnected={isDisconnected}

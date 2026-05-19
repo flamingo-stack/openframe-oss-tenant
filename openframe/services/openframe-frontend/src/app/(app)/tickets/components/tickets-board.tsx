@@ -10,14 +10,13 @@ import {
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { useReorderTicket } from '../hooks/use-reorder-ticket';
-import { useTicketStatus } from '../hooks/use-ticket-status';
+import { type ReactNode, useCallback, useMemo } from 'react';
+import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { BOARD_STATUSES, useTicketsBoardQuery } from '../hooks/use-tickets-board-query';
 import type { BoardStatus } from '../services/ticket-service.types';
-import type { Dialog, DialogStatus } from '../types/dialog.types';
+import type { Dialog } from '../types/dialog.types';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { OrganizationFilter } from './organization-filter';
@@ -28,6 +27,8 @@ interface TicketsBoardProps {
   onOrganizationIdsChange?: (ids: string[]) => void;
   assigneeIds?: string[];
   onAssigneeIdsChange?: (ids: string[]) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
 }
 
 function initialsOf(name?: string): string | undefined {
@@ -64,8 +65,9 @@ export function TicketsBoard({
   onOrganizationIdsChange,
   assigneeIds,
   onAssigneeIdsChange,
+  search,
+  onSearchChange,
 }: TicketsBoardProps) {
-  const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
 
   const { columns, loadMore, isLoading, error } = useTicketsBoardQuery({
@@ -73,8 +75,8 @@ export function TicketsBoard({
     organizationIds,
     assigneeIds,
   });
-  const { mutate: reorderTicket, isPending: isReordering } = useReorderTicket();
-  const { updateTicketStatus, isUpdating } = useTicketStatus();
+  const { mutate: moveTicket } = useMoveTicket();
+  const movingIds = useMovingTicketIds();
   const { data: statusTransitions } = useTicketStatusTransitions();
   const { actions, menuActions } = useTicketsActions({ isLoading });
 
@@ -111,23 +113,15 @@ export function TicketsBoard({
 
   const handleChange = useCallback(
     (change: BoardChange) => {
-      const targetStatus = change.toColumnId as BoardStatus;
-      const isCrossColumn = change.fromColumnId !== change.toColumnId;
-      if (targetStatus === 'TECH_REQUIRED' && isCrossColumn) return;
-
-      if (isCrossColumn && change.afterTicketId === null && change.beforeTicketId === null) {
-        updateTicketStatus(change.ticketId, targetStatus as DialogStatus);
-        return;
-      }
-
-      reorderTicket({
-        id: change.ticketId,
+      moveTicket({
+        ticketId: change.ticketId,
+        sourceStatus: change.fromColumnId as BoardStatus,
+        targetStatus: change.toColumnId as BoardStatus,
         afterTicketId: change.afterTicketId,
         beforeTicketId: change.beforeTicketId,
-        status: isCrossColumn ? targetStatus : undefined,
       });
     },
-    [reorderTicket, updateTicketStatus],
+    [moveTicket],
   );
 
   if (error) {
@@ -148,7 +142,7 @@ export function TicketsBoard({
         <Input
           placeholder="Search for Ticket"
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={e => onSearchChange(e.target.value)}
           startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
         />
         <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
@@ -165,7 +159,7 @@ export function TicketsBoard({
         </div>
       </div>
 
-      <div aria-busy={isLoading || isReordering || isUpdating} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+      <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
         <Board
           columns={boardColumns}
           onChange={handleChange}

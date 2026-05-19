@@ -28,6 +28,13 @@ export const knowledgeBaseItemQuery = graphql`
         key
         color
       }
+      attachments {
+        id
+        fileName
+        fileSize
+        contentType
+        createdAt
+      }
     }
   }
 `;
@@ -38,7 +45,7 @@ export function useKnowledgeBaseItem(id: string) {
   const data = useLazyLoadQuery<UseKnowledgeBaseItemQueryType>(
     knowledgeBaseItemQuery,
     { id },
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   return data.knowledgeBaseItem;
 }

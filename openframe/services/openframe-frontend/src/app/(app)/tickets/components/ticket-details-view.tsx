@@ -16,12 +16,9 @@ import {
   BoxArchiveIcon,
   ChatsIcon,
   CheckCircleIcon,
-  ClipboardListIcon,
-  ComputerMouseIcon,
   HourglassClockIcon,
   MonitorIcon,
   PenEditIcon,
-  TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type ActionsMenuGroup,
@@ -39,11 +36,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
+import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
+import { useDeviceDetails } from '../../devices/hooks/use-device-details';
+import { getDeviceActionAvailability } from '../../devices/utils/device-action-utils';
+import { buildDeviceMenuItems } from '../../devices/utils/device-menu-items';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
   APPROVAL_STATUS,
@@ -76,6 +77,26 @@ interface TicketDetailsViewProps {
   ticketId: string;
 }
 
+/**
+ * Wrap a device-menu item so opening it also fires a dashboard-activity event.
+ * `href` navigation is preserved. For a submenu parent the click only expands
+ * the submenu, so tracking is attached to the leaf items that actually
+ * navigate, not the parent.
+ */
+function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): ActionsMenuItem {
+  if (item.submenu && item.submenu.length > 0) {
+    return { ...item, submenu: item.submenu.map(child => withActivityTracking(child, subtype)) };
+  }
+  const originalOnClick = item.onClick;
+  return {
+    ...item,
+    onClick: () => {
+      trackDashboardActivity(subtype);
+      originalOnClick?.();
+    },
+  };
+}
+
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
   const handleBackToTickets = useSafeBack('/tickets');
@@ -90,8 +111,21 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const queryClient = useQueryClient();
   const { ticket: dialog, isPending: isLoading, error: dialogError } = useTicketDetail(ticketId);
 
+  // Device referenced by the ticket. Same hook & availability utility used by
+  // the Devices view, so remote-action gating stays in sync across views.
+  const machineId = useMemo(() => {
+    if (!dialog) return undefined;
+    return dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+  }, [dialog, isClientOwner]);
+  const { deviceDetails } = useDeviceDetails(machineId);
+  const actionAvailability = useMemo(
+    () => (deviceDetails ? getDeviceActionAvailability(deviceDetails) : null),
+    [deviceDetails],
+  );
+
   const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
     useTicketDetailsStore();
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
   const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
@@ -300,7 +334,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await resolve(ticketId);
-    if (nextStatus) applyStatus(nextStatus);
+    if (nextStatus) {
+      trackDashboardActivity(EVENT_SUBTYPE.RESOLVE_TICKET);
+      applyStatus(nextStatus);
+    }
   }, [dialog, isUpdating, resolve, ticketId, applyStatus]);
 
   const handleArchive = useCallback(async () => {
@@ -378,8 +415,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     onReject: handleReject,
   });
 
-  const clientPendingApprovals = useMemo(() => extractPendingApprovals(clientMessages), [clientMessages]);
-  const adminPendingApprovals = useMemo(() => extractPendingApprovals(adminMessages), [adminMessages]);
+  const clientPendingApprovals = useMemo(
+    () => extractPendingApprovals(clientMessages, approvalStatuses),
+    [clientMessages, approvalStatuses],
+  );
+  const adminPendingApprovals = useMemo(
+    () => extractPendingApprovals(adminMessages, approvalStatuses),
+    [adminMessages, approvalStatuses],
+  );
 
   const remapClientUserName = useCallback(
     (msg: ChatMessage): ChatMessage =>
@@ -418,7 +461,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (!dialog) return [];
 
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
-    const machineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
 
     const ticketItems: ActionsMenuItem[] = [];
     const deviceItems: ActionsMenuItem[] = [];
@@ -433,31 +475,12 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
 
     if (machineId) {
+      const items = buildDeviceMenuItems({ deviceId: machineId, availability: actionAvailability });
       deviceItems.push(
-        {
-          id: 'device-details',
-          label: 'Device Details',
-          icon: <MonitorIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}`,
-        },
-        {
-          id: 'remote-shell',
-          label: 'Remote Shell',
-          icon: <TerminalIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}/remote-shell`,
-        },
-        {
-          id: 'remote-control',
-          label: 'Remote Control',
-          icon: <ComputerMouseIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}/remote-desktop`,
-        },
-        {
-          id: 'device-logs',
-          label: 'Device Logs',
-          icon: <ClipboardListIcon className="text-ods-text-secondary" />,
-          href: `/devices/details/${machineId}?tab=logs`,
-        },
+        items.deviceDetails,
+        withActivityTracking(items.remoteShell, EVENT_SUBTYPE.OPEN_REMOTE_SHELL),
+        withActivityTracking(items.remoteControl, EVENT_SUBTYPE.OPEN_REMOTE_CONTROL),
+        items.deviceLogs,
       );
     }
 
@@ -465,7 +488,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (ticketItems.length > 0) groups.push({ items: ticketItems, separator: deviceItems.length > 0 });
     if (deviceItems.length > 0) groups.push({ items: deviceItems });
     return groups;
-  }, [dialog, isClientOwner, router]);
+  }, [dialog, machineId, actionAvailability, router]);
 
   const pageActions = useMemo<PageActionButton[]>(() => {
     if (!dialog) return [];
@@ -596,7 +619,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         description={dialog.description || dialog.title || ''}
         attachments={uiAttachments}
         tags={(dialog.labels || []).map(l => l.key)}
-        knowledgeBaseArticles={[]}
         notes={uiNotes}
         isAddingNote={addNoteMutation.isPending}
         onAddNote={text => {
@@ -609,7 +631,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      {/* <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="hidden lg:block shrink-0" /> */}
+      {isTicketInfoExpanded && (
+        <AssignedItemsView
+          itemId={dialog.id}
+          itemType="TICKET"
+          className="hidden lg:block shrink-0 mt-[var(--spacing-system-mf)]"
+        />
+      )}
 
       {/* Chat Section */}
       <div className="flex-1 flex flex-col min-h-[500px]">
@@ -674,7 +702,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               description={dialog.description || dialog.title || ''}
               attachments={uiAttachments}
               tags={(dialog.labels || []).map(l => l.key)}
-              knowledgeBaseArticles={[]}
               notes={uiNotes}
               onAddNote={text => {
                 if (dialog?.id) addNoteMutation.mutate({ content: text });
@@ -686,6 +713,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 deleteNoteMutation.mutate(id);
               }}
             />
+            <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="mt-[var(--spacing-system-mf)]" />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useCustomersMin } from '../../customers/hooks/use-customers-min';
 import type { Device } from '../../devices/types/device.types';
-import { useOrganizationsMin } from '../../organizations/hooks/use-organizations-min';
 
 interface UseDeviceFilterOptions {
   devices: Device[];
@@ -12,7 +12,7 @@ export function useDeviceFilter({ devices, enabled = true }: UseDeviceFilterOpti
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
 
-  const { items: allOrganizations, fetch: fetchOrgs } = useOrganizationsMin();
+  const { items: allOrganizations, fetch: fetchOrgs } = useCustomersMin();
 
   useEffect(() => {
     if (enabled) {

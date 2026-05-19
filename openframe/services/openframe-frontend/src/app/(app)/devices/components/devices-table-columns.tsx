@@ -65,6 +65,10 @@ interface DevicesTableBodyProps {
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   /** Optional extra column inserted before the open-in-new-tab column (e.g. row actions on the dedicated page). */
   actionsColumn?: ColumnDef<Device>;
+  /** Column ids to drop from the base table columns (e.g. ['organization'] when scoped to a single org). */
+  hideColumns?: string[];
+  /** Server-side total (for paginated lists). Falls back to loaded-row count when omitted. */
+  totalCount?: number;
 }
 
 export function DevicesTableBody({
@@ -78,11 +82,14 @@ export function DevicesTableBody({
   columnFilters,
   onColumnFiltersChange,
   actionsColumn,
+  hideColumns,
+  totalCount,
 }: DevicesTableBodyProps) {
   const columns = useMemo<ColumnDef<Device>[]>(() => {
-    const base = getDeviceTableColumns(deviceFilters ?? null);
+    const hidden = new Set(hideColumns ?? []);
+    const base = getDeviceTableColumns(deviceFilters ?? null).filter(c => !c.id || !hidden.has(c.id));
     return actionsColumn ? [...base, actionsColumn, DEVICE_OPEN_COLUMN] : [...base, DEVICE_OPEN_COLUMN];
-  }, [deviceFilters, actionsColumn]);
+  }, [deviceFilters, actionsColumn, hideColumns]);
 
   const table = useDataTable<Device>({
     data: devices,
@@ -98,7 +105,7 @@ export function DevicesTableBody({
       <DataTable.Header
         stickyHeader={!!stickyHeaderOffset}
         stickyHeaderOffset={stickyHeaderOffset}
-        rightSlot={<DataTable.RowCount />}
+        rightSlot={<DataTable.RowCount itemName="device" totalCount={totalCount} />}
       />
       <DataTable.Body
         loading={isLoading}
@@ -118,7 +125,7 @@ function OrganizationCell({ device }: { device: Device }) {
   return (
     <div className="flex items-center gap-3">
       {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Organization'} size="sm" />
+        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Customer'} size="sm" />
       )}
       <div className="flex flex-col justify-center flex-1 min-w-0">
         <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
@@ -180,7 +187,7 @@ export function getDeviceFilterColumns(deviceFilters?: DeviceFilters | null): De
     },
     {
       key: 'organization',
-      label: 'ORGANIZATION',
+      label: 'CUSTOMER',
       filterable: true,
       filterOptions: deduplicateFilterOptions(
         deviceFilters?.organizationIds?.map(org => ({
@@ -276,7 +283,7 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
     {
       accessorKey: 'organization',
       id: 'organization',
-      header: 'ORGANIZATION',
+      header: 'CUSTOMER',
       cell: ({ row }: { row: Row<Device> }) => <OrganizationCell device={row.original} />,
       meta: {
         width: 'w-1/6',

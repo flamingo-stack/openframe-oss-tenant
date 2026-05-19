@@ -3,23 +3,30 @@
 import type { ActionsMenuGroup, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
 import {
   BoxArchiveIcon,
-  FileEditIcon,
   FolderEditIcon,
   PenEditIcon,
   Refresh01LeftIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Card, PageLayout, SquareAvatar, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  Card,
+  PageLayout,
+  SquareAvatar,
+  Tag,
+  TicketAttachmentsList,
+  TicketDetailSection,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
+import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
+import { useDownloadArticleAttachment } from '../hooks/use-download-article-attachment';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
-import { getKnowledgeBaseItemsConnectionId } from '../hooks/use-knowledge-base-items';
+import { getKnowledgeBaseArticlesConnectionId } from '../hooks/use-knowledge-base-items';
 import { usePublishArticle } from '../hooks/use-publish-article';
-import { useUnpublishArticle } from '../hooks/use-unpublish-article';
 import { ArchiveArticleModal } from './archive-article-modal';
 import { SimpleMarkdownRenderer } from './lazy-markdown';
 import { MoveToFolderModal } from './move-to-folder-modal';
@@ -42,7 +49,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   const { toast } = useToast();
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
-  const { unpublishArticle, isPending: isUnpublishing } = useUnpublishArticle();
+  const { download: downloadAttachment } = useDownloadArticleAttachment();
 
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
@@ -54,12 +61,13 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
 
   const status = (article.status ?? 'DRAFT') as ArticleStatus;
   const updatedAt = article.updatedAt ?? article.createdAt;
-  const folderConnectionId = getKnowledgeBaseItemsConnectionId({
+  const articlesConnectionId = getKnowledgeBaseArticlesConnectionId({
     parentId: article.parentId ?? null,
     search: null,
+    tagIds: [],
   });
   const archiveConnectionId = getArchivedArticlesConnectionId({ search: null, tagIds: null });
-  const sourceConnectionId = status === 'ARCHIVED' ? archiveConnectionId : folderConnectionId;
+  const sourceConnectionId = status === 'ARCHIVED' ? archiveConnectionId : articlesConnectionId;
 
   const authorName = useMemo(() => {
     if (!article.author) return null;
@@ -67,19 +75,22 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
     return parts.length ? parts.join(' ') : (article.author.email ?? null);
   }, [article.author]);
 
+  const uiAttachments = useMemo(() => {
+    if (!article.attachments) return [];
+    return article.attachments.map(att => ({
+      id: att.id,
+      fileName: att.fileName,
+      fileSize: att.fileSize ? formatFileSize(att.fileSize) : '',
+      onDownload: () => downloadAttachment(att.id, att.fileName),
+    }));
+  }, [article.attachments, downloadAttachment]);
+
   const handlePublish = useCallback(async () => {
     try {
       await publishArticle(article.id);
       toast({ title: 'Published', description: article.name, variant: 'success' });
     } catch {}
   }, [publishArticle, article.id, article.name, toast]);
-
-  const handleUnpublish = useCallback(async () => {
-    try {
-      await unpublishArticle(article.id);
-      toast({ title: 'Moved to draft', description: article.name, variant: 'success' });
-    } catch {}
-  }, [unpublishArticle, article.id, article.name, toast]);
 
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     if (status === 'ARCHIVED') return [];
@@ -98,21 +109,10 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
             icon: <FolderEditIcon className="w-6 h-6 text-ods-text-secondary" />,
             onClick: () => setMoveOpen(true),
           },
-          ...(status === 'PUBLISHED'
-            ? [
-                {
-                  id: 'move-to-draft',
-                  label: isUnpublishing ? 'Saving...' : 'Move to Draft',
-                  icon: <FileEditIcon className="w-6 h-6 text-ods-text-secondary" />,
-                  onClick: handleUnpublish,
-                  disabled: isUnpublishing,
-                },
-              ]
-            : []),
         ],
       },
     ];
-  }, [status, isUnpublishing, handleUnpublish]);
+  }, [status]);
 
   const actions: PageActionButton[] =
     status === 'ARCHIVED'
@@ -185,6 +185,12 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       </Card>
 
       <SimpleMarkdownRenderer content={article.content ?? ''} textSize="compact" />
+
+      {uiAttachments.length > 0 && (
+        <TicketDetailSection label="Attachments">
+          <TicketAttachmentsList attachments={uiAttachments} />
+        </TicketDetailSection>
+      )}
 
       <AssignedItemsView itemId={article.id} itemType="KNOWLEDGE_ARTICLE" />
 

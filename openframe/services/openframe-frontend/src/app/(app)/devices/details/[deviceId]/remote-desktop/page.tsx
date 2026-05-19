@@ -564,7 +564,7 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
           {/* Device Info */}
           <div className="flex flex-col">
             <h1 className="text-ods-text-primary text-lg font-medium">{hostname || `Device ${deviceId}`}</h1>
-            <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Organization'}</p>
+            <p className="text-ods-text-secondary text-sm">Desktop • {organizationName || 'Unknown Customer'}</p>
           </div>
         </div>
 

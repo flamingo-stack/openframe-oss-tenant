@@ -11,6 +11,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useRouter } from 'next/navigation';
 import React from 'react';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { useOnboardingCompletion } from '../hooks/use-onboarding-completion';
 
 /**
@@ -22,10 +23,11 @@ export function OnboardingSection() {
   const { completionStatus, isLoading } = useOnboardingCompletion();
 
   const handleOrganizationAction = React.useCallback(async () => {
-    router.push('/organizations/edit/new');
+    router.push('/customers/edit/new');
   }, [router]);
 
   const handleDeviceAction = React.useCallback(async () => {
+    trackDashboardActivity(EVENT_SUBTYPE.ADD_DEVICE);
     router.push('/devices/new');
   }, [router]);
 
@@ -34,6 +36,7 @@ export function OnboardingSection() {
   }, [router]);
 
   const handleSsoAction = React.useCallback(async () => {
+    trackDashboardActivity(EVENT_SUBTYPE.ADD_SSO_IDP);
     router.push('/settings/sso');
   }, [router]);
 
@@ -44,11 +47,11 @@ export function OnboardingSection() {
   const onboardingSteps: OnboardingStepConfig[] = [
     {
       id: 'organizations-setup',
-      title: 'Organizations Setup',
-      description: 'Create and configure your organizational structure',
+      title: 'Customers Setup',
+      description: 'Create and configure your customer structure',
       actionIcon: (color = 'black') => <OrganizationsIcon color={color} className="w-6 h-6" />,
-      actionText: 'Add Organization',
-      completedText: 'Add Organization',
+      actionText: 'Add Customer',
+      completedText: 'Add Customer',
       onAction: handleOrganizationAction,
     },
     {
@@ -97,6 +100,7 @@ export function OnboardingSection() {
       spacing="space-y-4"
       completionStatus={completionStatus}
       isLoadingCompletion={isLoading}
+      onDismiss={() => trackDashboardActivity(EVENT_SUBTYPE.SKIP_ONBOARDING)}
     />
   );
 }

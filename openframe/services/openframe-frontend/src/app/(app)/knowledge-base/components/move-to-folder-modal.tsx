@@ -16,7 +16,8 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Suspense, useMemo, useState } from 'react';
 import {
   buildFolderTree,
-  getKnowledgeBaseItemsConnectionId,
+  getKnowledgeBaseArticlesConnectionId,
+  getKnowledgeBaseFoldersConnectionId,
   useKnowledgeBaseFolders,
 } from '../hooks/use-knowledge-base-items';
 import { useMoveToFolder } from '../hooks/use-move-to-folder';
@@ -58,7 +59,10 @@ function MoveToFolderContent({ onClose, itemNonNull, sourceConnectionId }: MoveT
 
   const handleConfirm = async () => {
     if (!selected || isPending) return;
-    const targetConnectionId = getKnowledgeBaseItemsConnectionId({ parentId: selected.id, search: null });
+    const targetConnectionId =
+      itemNonNull.type === 'folder'
+        ? getKnowledgeBaseFoldersConnectionId({ parentId: selected.id, search: null, tagIds: [] })
+        : getKnowledgeBaseArticlesConnectionId({ parentId: selected.id, search: null, tagIds: [] });
     try {
       await moveToFolder({
         id: itemNonNull.id,

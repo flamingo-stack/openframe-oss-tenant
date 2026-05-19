@@ -78,9 +78,9 @@ fn get_token(token_state: State<TokenState>) -> Option<String> {
     let token = token_state.current_token.lock().unwrap();
 
     if token.is_some() {
-        println!("[INFO] Token requested from frontend");
+        log::info!("get_token: returning token to frontend");
     } else {
-        println!("[ERROR] Token requested but not available");
+        log::warn!("get_token: token not yet available");
     }
     token.clone()
 }
@@ -89,9 +89,9 @@ fn get_token(token_state: State<TokenState>) -> Option<String> {
 fn get_server_url(server_url_state: State<ServerUrlState>) -> Option<String> {
     let url = server_url_state.url.lock().unwrap();
     if url.is_some() {
-        println!("[INFO] Server URL requested from frontend");
+        log::debug!("get_server_url: requested");
     } else {
-        println!("[WARN] Server URL requested but not available");
+        log::warn!("get_server_url: not yet available");
     }
     url.clone()
 }
@@ -99,21 +99,32 @@ fn get_server_url(server_url_state: State<ServerUrlState>) -> Option<String> {
 #[tauri::command]
 fn get_debug_mode(debug_mode_state: State<DebugModeState>) -> bool {
     let enabled = debug_mode_state.enabled.lock().unwrap();
-    println!("[INFO] Debug mode requested from frontend: {}", *enabled);
+    log::debug!("get_debug_mode: {}", *enabled);
     *enabled
+}
+
+#[tauri::command]
+fn log_from_js(level: String, scope: String, message: String) {
+    let line = format!("[js:{}] {}", scope, message);
+    match level.as_str() {
+        "error" => log::error!("{}", line),
+        "warn"  => log::warn!("{}", line),
+        "debug" => log::debug!("{}", line),
+        _       => log::info!("{}", line),
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    println!("[INFO] OpenFrame Chat starting...");
+    println!("[startup] openframe-chat starting (version {})", env!("CARGO_PKG_VERSION"));
 
     // Read configuration from CFPreferences (written by openframe-client daemon)
     let config = config_reader::AppConfig::from_preferences();
 
     if config.is_valid() {
-        println!("[INFO] Configuration loaded from preferences");
+        println!("[startup] config loaded from CFPreferences");
     } else {
-        eprintln!("[WARN] Configuration incomplete - please ensure OpenFrame Agent is running");
+        eprintln!("[startup] config incomplete — openframe-client agent may not be running");
     }
 
     // --background is the only CLI argument (indicates launch mode from daemon)
@@ -137,7 +148,7 @@ pub fn run() {
                 if let Some(real_home) = dirs::home_dir() {
                     let real_str = real_home.to_string_lossy();
                     if !real_str.to_lowercase().contains("systemprofile") {
-                        println!("[INFO] Correcting USERPROFILE: {} -> {}", current, real_str);
+                        println!("[startup] USERPROFILE corrected: {} -> {}", current, real_str);
                         unsafe { std::env::set_var("USERPROFILE", real_home.as_os_str()) };
                     }
                 }
@@ -161,14 +172,37 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(move |app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
+            if std::env::var("OPENFRAME_DISABLE_LOG").is_err() {
+                use tauri_plugin_log::{
+                    Builder as LogBuilder, RotationStrategy, Target, TargetKind, TimezoneStrategy,
+                };
+
+                let log_plugin = LogBuilder::new()
+                    .clear_targets()
+                    .targets([
+                        Target::new(TargetKind::Stdout),
+                        Target::new(TargetKind::LogDir {
+                            file_name: Some("openframe-chat".into()),
+                        }),
+                    ])
+                    .level(if cfg!(debug_assertions) {
+                        log::LevelFilter::Debug
+                    } else {
+                        log::LevelFilter::Info
+                    })
+                    .max_file_size(5_000_000)
+                    .rotation_strategy(RotationStrategy::KeepSome(5))
+                    .timezone_strategy(TimezoneStrategy::UseLocal)
+                    .build();
+
+                if let Err(e) = app.handle().plugin(log_plugin) {
+                    eprintln!(
+                        "[startup] tauri-plugin-log init failed, continuing without file logging: {}",
+                        e
+                    );
+                }
             }
-            
+
             // Manage server URL state
             let url_state = ServerUrlState {
                 url: Arc::new(Mutex::new(server_url_clone.clone()))
@@ -176,9 +210,9 @@ pub fn run() {
             app.manage(url_state);
 
             if let Some(url) = &server_url_clone {
-                println!("[INFO] Server URL configured: {}", url);
+                log::info!("server URL configured: {}", url);
             } else {
-                println!("[WARN] No server URL provided");
+                log::warn!("no server URL provided at startup");
             }
 
             // Manage debug mode state
@@ -186,13 +220,13 @@ pub fn run() {
                 enabled: Arc::new(Mutex::new(debug_mode_clone))
             };
             app.manage(debug_state);
-            println!("[INFO] Debug mode: {}", debug_mode_clone);
+            log::info!("debug mode: {}", debug_mode_clone);
 
             // Start token watcher with app handle if parameters were provided
             if let Some((token_path, secret_key)) = token_params {
                 let state = TokenWatcher::start(token_path, secret_key, app.handle().clone());
                 app.manage(state);
-                println!("[INFO] Token watcher initialized");
+                log::info!("token watcher initialized");
             } else {
                 // Still create and manage empty state so commands don't fail
                 let empty_state = TokenState {
@@ -370,7 +404,7 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.show();
                     let _ = window.set_focus();
-                    println!("[INFO] Main window shown on startup");
+                    log::info!("main window shown");
                 }
             } else {
                 if let Some(window) = app.get_webview_window("main") {
@@ -379,7 +413,7 @@ pub fn run() {
                 // Accessory: no Dock icon on --background launch.
                 #[cfg(target_os = "macos")]
                 let _ = app.handle().set_activation_policy(ActivationPolicy::Accessory);
-                println!("[INFO] Starting in background mode (tray only)");
+                log::info!("starting in background mode (tray only)");
             }
 
             Ok(())
@@ -393,18 +427,18 @@ pub fn run() {
                 _ => {}
             }
         })
-        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url, get_debug_mode]);
+        .invoke_handler(tauri::generate_handler![greet, get_token, get_server_url, get_debug_mode, log_from_js]);
     
     builder.build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             match event {
                 RunEvent::Ready => {
-                    println!("[INFO] Application ready");
+                    log::info!("application ready");
                 }
                 #[cfg(target_os = "macos")]
                 RunEvent::Reopen { .. } => {
-                    println!("[INFO] App reopen requested - showing main window");
+                    log::info!("app reopen requested");
                     let handle = app_handle.clone();
                     let _ = app_handle.run_on_main_thread(move || {
                         let _ = handle.set_activation_policy(ActivationPolicy::Regular);

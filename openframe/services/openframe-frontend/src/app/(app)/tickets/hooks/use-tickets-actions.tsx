@@ -1,6 +1,10 @@
 'use client';
 
-import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  BoxArchiveIcon,
+  CheckCircleIcon,
+  PlusCircleIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type {
   ActionsMenuGroup,
   ActionsMenuItem,
@@ -54,8 +58,8 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
     if (resolvedCount > 0) {
       items.push({
         id: 'archive-resolved',
-        label: 'Archive Resolved',
-        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
+        label: 'Archive Resolved Tickets',
+        icon: <CheckCircleIcon className="text-ods-text-secondary" />,
         onClick: handleArchiveResolved,
         disabled: archiveResolvedMutation.isPending || isLoading,
       });

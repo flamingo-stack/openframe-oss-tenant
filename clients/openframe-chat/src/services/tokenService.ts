@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { log, maskToken } from '../utils/log';
 
 interface TokenUpdatePayload {
   token: string;
@@ -64,7 +65,7 @@ class TokenService {
     try {
       await listen<TokenUpdatePayload>('token-update', event => {
         const { token } = event.payload;
-        console.log('[TOKEN SERVICE] Token received from Rust event:', this.maskToken(token));
+        console.log('[TOKEN SERVICE] Token received from Rust event:', maskToken(token));
 
         this.setToken(token);
       });
@@ -82,17 +83,18 @@ class TokenService {
     if (this.currentToken) return this.currentToken;
 
     try {
-      console.log('[TOKEN SERVICE] Requesting token from Rust...');
       const token = await invoke<string | null>('get_token');
 
       if (token) {
-        console.log('[TOKEN SERVICE] Token received from Rust command:', this.maskToken(token));
+        log.info('token', `requestToken success (${maskToken(token)})`);
         this.setToken(token);
         return token;
       } else {
+        log.warn('token', 'requestToken returned null — falling back to cached value');
         return this.currentToken;
       }
-    } catch (_error) {
+    } catch (error) {
+      log.warn('token', 'requestToken threw — falling back to cached value', String(error));
       return this.currentToken;
     }
   }
@@ -103,16 +105,16 @@ class TokenService {
    */
   async refreshToken(): Promise<string | null> {
     try {
-      console.log('[TOKEN SERVICE] Refreshing token from Rust...');
       const token = await invoke<string | null>('get_token');
       if (token) {
-        console.log('[TOKEN SERVICE] Token refreshed:', this.maskToken(token));
+        log.info('token', `refreshToken success (${maskToken(token)})`);
         this.setToken(token);
         return token;
       }
+      log.warn('token', 'refreshToken returned null — keeping cached value');
       return this.currentToken;
     } catch (error) {
-      console.error('[TOKEN SERVICE] Failed to refresh token:', error);
+      log.error('token', 'refreshToken failed', String(error));
       return this.currentToken;
     }
   }
@@ -189,19 +191,6 @@ class TokenService {
     return () => {
       this.apiUrlListeners.delete(callback);
     };
-  }
-
-  /**
-   * Mask token for logging (show first and last 4 characters)
-   */
-  private maskToken(token: string): string {
-    if (token.length <= 8) {
-      return '****';
-    }
-
-    const first = token.substring(0, 4);
-    const last = token.substring(token.length - 4);
-    return `${first}...${last}`;
   }
 
   async ensureTokenReady(): Promise<void> {

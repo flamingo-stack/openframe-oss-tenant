@@ -15,9 +15,17 @@ import { featureFlags } from '@/lib/feature-flags';
 import { type ApprovalStatus, type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
 
 function isInProgress(segments: MessageSegment[]): boolean {
-  return segments.some(
-    seg => (seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL') || seg.type === 'approval_request',
-  );
+  return segments.some(seg => {
+    if (seg.type === 'tool_execution' && seg.data.type === 'EXECUTING_TOOL') return true;
+    if (seg.type === 'approval_request') return true;
+    if (seg.type === 'approval_batch') {
+      const allDone =
+        !!seg.data.executions &&
+        seg.data.toolCalls.every(c => seg.data.executions?.[c.toolExecutionRequestId]?.status === 'done');
+      return seg.status !== 'rejected' && !allDone;
+    }
+    return false;
+  });
 }
 
 interface UseSideChunkProcessorOptions {
@@ -208,6 +216,7 @@ export function useSideChunkProcessor(
     initialState: incompleteState,
     approvalStatuses,
     enableThinking: featureFlags.thinking.enabled(),
+    batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
   });
 
   return useCallback(

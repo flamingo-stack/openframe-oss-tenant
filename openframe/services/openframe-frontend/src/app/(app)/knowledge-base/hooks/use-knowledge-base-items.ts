@@ -4,7 +4,9 @@ import { graphql, useLazyLoadQuery } from 'react-relay';
 import { ConnectionHandler } from 'relay-runtime';
 import type { useKnowledgeBaseItemsFoldersQuery as UseKnowledgeBaseFoldersQueryType } from '@/__generated__/useKnowledgeBaseItemsFoldersQuery.graphql';
 
-export const KNOWLEDGE_BASE_BODY_CONNECTION_KEY = 'knowledgeBaseBody_knowledgeBaseItems';
+export const KNOWLEDGE_BASE_FOLDERS_CONNECTION_KEY = 'knowledgeBaseBodyFolders__knowledgeBaseItems';
+export const KNOWLEDGE_BASE_ARTICLES_CONNECTION_KEY = 'knowledgeBaseBodyArticles__knowledgeBaseItems';
+export const KNOWLEDGE_BASE_ARTICLES_SUBTREE_CONNECTION_KEY = 'knowledgeBaseBodyArticlesSubtree__knowledgeBaseItems';
 
 export interface KnowledgeBaseItemsConnectionFilter {
   parentId: string | null;
@@ -12,14 +14,39 @@ export interface KnowledgeBaseItemsConnectionFilter {
   tagIds?: ReadonlyArray<string>;
 }
 
-export function getKnowledgeBaseItemsConnectionId({
+function normalizeTagIds(tagIds: ReadonlyArray<string> | undefined): string[] | null {
+  return tagIds && tagIds.length > 0 ? [...tagIds] : null;
+}
+
+export function getKnowledgeBaseFoldersConnectionId({
   parentId,
   search,
   tagIds,
 }: KnowledgeBaseItemsConnectionFilter): string {
-  const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds] : null;
-  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_BODY_CONNECTION_KEY, {
-    filter: { parentId, tagIds: normalizedTagIds },
+  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_FOLDERS_CONNECTION_KEY, {
+    filter: { parentId, type: 'FOLDER', tagIds: normalizeTagIds(tagIds) },
+    search: search ?? null,
+  });
+}
+
+export function getKnowledgeBaseArticlesConnectionId({
+  parentId,
+  search,
+  tagIds,
+}: KnowledgeBaseItemsConnectionFilter): string {
+  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_ARTICLES_CONNECTION_KEY, {
+    filter: { parentId, type: 'ARTICLE', tagIds: normalizeTagIds(tagIds) },
+    search: search ?? null,
+  });
+}
+
+export function getKnowledgeBaseArticlesSubtreeConnectionId({
+  parentId,
+  search,
+  tagIds,
+}: KnowledgeBaseItemsConnectionFilter): string {
+  return ConnectionHandler.getConnectionID('client:root', KNOWLEDGE_BASE_ARTICLES_SUBTREE_CONNECTION_KEY, {
+    filter: { parentId, type: null, tagIds: normalizeTagIds(tagIds) },
     search: search ?? null,
   });
 }

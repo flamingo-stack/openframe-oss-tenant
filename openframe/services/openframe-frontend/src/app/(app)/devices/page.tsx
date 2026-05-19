@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { DevicesView } from './components/devices-view';
+import { DevicesPanel } from '@/app/components/shared';
 
 export default function Devices() {
-  return <DevicesView />;
+  return <DevicesPanel />;
 }

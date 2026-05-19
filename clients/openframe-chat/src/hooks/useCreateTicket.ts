@@ -2,7 +2,6 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 
 interface CreateTicketForm {
   subject: string;
@@ -43,7 +42,6 @@ async function uploadAttachments(files: File[]): Promise<string[]> {
 }
 
 export function useCreateTicket(onSuccess?: () => void) {
-  const { flags } = useFeatureFlags();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [form, setForm] = useState<CreateTicketForm>({
@@ -71,9 +69,7 @@ export function useCreateTicket(onSuccess?: () => void) {
       });
     },
     onSuccess: () => {
-      if (flags.tickets) {
-        queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      }
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
       toast({ title: 'Success', description: 'Ticket created successfully', variant: 'success' });
       resetForm();
       onSuccess?.();

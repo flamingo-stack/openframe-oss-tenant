@@ -6,7 +6,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import type { DeviceFilterInput } from '../types/device.types';
 
-export function useDevicesUrlParams() {
+interface UseDevicesUrlParamsOptions {
+  /**
+   * Default statuses applied when the user hasn't picked any.
+   * - omitted → `DEFAULT_DEVICES_LIST_STATUSES` (hides PENDING/etc — main devices page behavior).
+   * - `[]` → no default, all statuses returned (e.g. customer scope).
+   */
+  defaultStatuses?: string[];
+}
+
+export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
+  const defaultStatuses = options.defaultStatuses ?? DEFAULT_DEVICES_LIST_STATUSES;
+
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
     statuses: { type: 'array', default: [] },
@@ -38,15 +49,15 @@ export function useDevicesUrlParams() {
     [params.tags],
   );
 
-  const filters: DeviceFilterInput = useMemo(
-    () => ({
-      statuses: params.statuses.length > 0 ? params.statuses : DEFAULT_DEVICES_LIST_STATUSES,
+  const filters: DeviceFilterInput = useMemo(() => {
+    const effectiveStatuses = params.statuses.length > 0 ? params.statuses : defaultStatuses;
+    return {
+      ...(effectiveStatuses.length > 0 && { statuses: effectiveStatuses }),
       osTypes: params.osTypes,
       organizationIds: params.organizationIds,
       ...(tagValues.length > 0 && { tagValues }),
-    }),
-    [params.statuses, params.osTypes, params.organizationIds, tagValues],
-  );
+    };
+  }, [params.statuses, params.osTypes, params.organizationIds, tagValues, defaultStatuses]);
 
   const tableFilters = useMemo(
     () => ({

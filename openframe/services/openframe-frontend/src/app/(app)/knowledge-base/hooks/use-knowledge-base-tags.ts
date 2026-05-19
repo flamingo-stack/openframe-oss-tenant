@@ -36,7 +36,7 @@ export function useKnowledgeBaseTags(folderId?: string | null) {
   const data = useLazyLoadQuery<UseKnowledgeBaseTagsQueryType>(
     knowledgeBaseTagsQuery,
     { folderId: folderId ?? null },
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   return data.knowledgeBaseTags;
 }

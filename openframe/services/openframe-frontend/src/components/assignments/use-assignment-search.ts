@@ -2,6 +2,7 @@
 
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { ticketService } from '@/app/(app)/tickets/services';
 import { postGraphQl } from './graphql';
 import type { AssignmentTargetType } from './types';
@@ -29,13 +30,13 @@ const DEVICES_SEARCH_QUERY = `#graphql
   }
 `;
 
-const KNOWLEDGE_ARTICLES_SEARCH_QUERY = `#graphql
-  query AssignmentsKnowledgeArticlesSearch($search: String, $first: Int, $filter: KnowledgeBaseFilterInput) {
-    knowledgeBaseItems(search: $search, first: $first, filter: $filter) { edges { node { id name } } }
+const KNOWLEDGE_ARTICLES_TREE_QUERY = `#graphql
+  query AssignmentsKnowledgeArticleTree {
+    knowledgeBaseArticleTree { id name }
   }
 `;
 
-const fetchOrganizations = async (search: string): Promise<AssignmentSearchOption[]> => {
+const fetchCustomers = async (search: string): Promise<AssignmentSearchOption[]> => {
   const data = await postGraphQl<{ organizations: ConnectionEdges<{ id: string; name: string }> }>(
     ORGANIZATIONS_SEARCH_QUERY,
     { search, first: PAGE_SIZE },
@@ -65,32 +66,60 @@ const fetchTickets = async (search: string): Promise<AssignmentSearchOption[]> =
   }));
 };
 
-const fetchKnowledgeArticles = async (search: string): Promise<AssignmentSearchOption[]> => {
-  const data = await postGraphQl<{ knowledgeBaseItems: ConnectionEdges<{ id: string; name: string }> }>(
-    KNOWLEDGE_ARTICLES_SEARCH_QUERY,
-    { search, first: PAGE_SIZE, filter: { type: 'ARTICLE' } },
+const fetchKnowledgeArticles = async (): Promise<AssignmentSearchOption[]> => {
+  const data = await postGraphQl<{ knowledgeBaseArticleTree: Array<{ id: string; name: string }> }>(
+    KNOWLEDGE_ARTICLES_TREE_QUERY,
+    {},
   );
-  return data.knowledgeBaseItems.edges.map(({ node }) => ({ value: node.id, label: node.name }));
+  return data.knowledgeBaseArticleTree.map(node => ({ value: node.id, label: node.name }));
 };
 
-const FETCHERS: Record<AssignmentTargetType, (search: string) => Promise<AssignmentSearchOption[]>> = {
-  ORGANIZATION: fetchOrganizations,
+const SERVER_SEARCH_FETCHERS: Partial<
+  Record<AssignmentTargetType, (search: string) => Promise<AssignmentSearchOption[]>>
+> = {
+  ORGANIZATION: fetchCustomers,
   DEVICE: fetchDevices,
   TICKET: fetchTickets,
-  KNOWLEDGE_ARTICLE: fetchKnowledgeArticles,
 };
 
 const EMPTY_OPTIONS: AssignmentSearchOption[] = [];
+
+function useServerSearchOptions(
+  targetType: AssignmentTargetType,
+  search: string,
+): { options: AssignmentSearchOption[]; isLoading: boolean } {
+  const debouncedSearch = useDebounce(search, 300);
+  const fetcher = SERVER_SEARCH_FETCHERS[targetType];
+  const query = useQuery({
+    queryKey: ['assignments', 'search', targetType, debouncedSearch],
+    queryFn: () => (fetcher ? fetcher(debouncedSearch) : Promise.resolve(EMPTY_OPTIONS)),
+    enabled: !!fetcher,
+    staleTime: 30_000,
+  });
+  return { options: query.data ?? EMPTY_OPTIONS, isLoading: query.isLoading };
+}
+
+function useKnowledgeArticleOptions(search: string): { options: AssignmentSearchOption[]; isLoading: boolean } {
+  const query = useQuery({
+    queryKey: ['assignments', 'search', 'KNOWLEDGE_ARTICLE'],
+    queryFn: fetchKnowledgeArticles,
+    staleTime: 30_000,
+  });
+  const debouncedSearch = useDebounce(search, 300);
+  const options = useMemo(() => {
+    const all = query.data ?? EMPTY_OPTIONS;
+    const needle = debouncedSearch.trim().toLowerCase();
+    if (!needle) return all;
+    return all.filter(opt => opt.label.toLowerCase().includes(needle));
+  }, [query.data, debouncedSearch]);
+  return { options, isLoading: query.isLoading };
+}
 
 export function useAssignmentSearch(
   targetType: AssignmentTargetType,
   search: string,
 ): { options: AssignmentSearchOption[]; isLoading: boolean } {
-  const debouncedSearch = useDebounce(search, 300);
-  const query = useQuery({
-    queryKey: ['assignments', 'search', targetType, debouncedSearch],
-    queryFn: () => FETCHERS[targetType](debouncedSearch),
-    staleTime: 30_000,
-  });
-  return { options: query.data ?? EMPTY_OPTIONS, isLoading: query.isLoading };
+  const articleResult = useKnowledgeArticleOptions(search);
+  const serverResult = useServerSearchOptions(targetType, search);
+  return targetType === 'KNOWLEDGE_ARTICLE' ? articleResult : serverResult;
 }

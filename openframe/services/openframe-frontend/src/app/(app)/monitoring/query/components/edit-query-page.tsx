@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import type { Device } from '../../../devices/types/device.types';
 import { getFleetHostId } from '../../../devices/utils/device-action-utils';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
@@ -188,7 +188,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             } catch {
               // Query saved but hosts failed — error toast shown by mutation hook
             }
-            router.push(`/monitoring/query/${numericId}`);
+            safeBackOrReplace(router, `/monitoring/query/${numericId}`);
           },
         });
       } else {
@@ -201,7 +201,7 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
             } catch {
               // Query created but hosts failed — error toast shown by mutation hook
             }
-            router.push('/monitoring?tab=queries');
+            router.replace('/monitoring?tab=queries');
           },
         });
       }

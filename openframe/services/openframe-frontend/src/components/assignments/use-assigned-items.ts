@@ -1,14 +1,10 @@
 'use client';
 
 import { type UseQueryResult, useQueries } from '@tanstack/react-query';
+import { type Customer, mapOrganizationNode, type OrganizationNode } from '@/app/(app)/customers/hooks/use-customers';
 import type { Device, DevicesGraphQlNode } from '@/app/(app)/devices/types/device.types';
 import { createDeviceListItem } from '@/app/(app)/devices/utils/device-transform';
 import type { KnowledgeBaseRow } from '@/app/(app)/knowledge-base/components/knowledge-base-table-columns';
-import {
-  mapOrganizationNode,
-  type Organization,
-  type OrganizationNode,
-} from '@/app/(app)/organizations/hooks/use-organizations';
 import type { Dialog, DialogStatus } from '@/app/(app)/tickets/types/dialog.types';
 import { postGraphQl } from './graphql';
 import { ensureGlobalId } from './relay-id';
@@ -150,7 +146,7 @@ function toDialog(target: AssignedTargetNode): Dialog {
 
 interface AssignedItemsPayload {
   refs: AssignmentRef[];
-  organizations?: Organization[];
+  customers?: Customer[];
   devices?: Device[];
   articles?: KnowledgeBaseRow[];
   tickets?: Dialog[];
@@ -164,7 +160,7 @@ async function fetchAssignedItems(itemId: string, targetType: AssignmentTargetTy
   });
 
   const refs: AssignmentRef[] = [];
-  const organizations: Organization[] = [];
+  const customers: Customer[] = [];
   const devices: Device[] = [];
   const articles: KnowledgeBaseRow[] = [];
   const tickets: Dialog[] = [];
@@ -175,7 +171,7 @@ async function fetchAssignedItems(itemId: string, targetType: AssignmentTargetTy
     refs.push({ id: target.id, label: node.displayName });
     switch (target.__typename) {
       case 'Organization':
-        organizations.push(mapOrganizationNode(unaliasFields(target) as unknown as OrganizationNode));
+        customers.push(mapOrganizationNode(unaliasFields(target) as unknown as OrganizationNode));
         break;
       case 'Machine':
         devices.push(createDeviceListItem(unaliasFields(target) as unknown as DevicesGraphQlNode));
@@ -191,7 +187,7 @@ async function fetchAssignedItems(itemId: string, targetType: AssignmentTargetTy
 
   switch (targetType) {
     case 'ORGANIZATION':
-      return { refs, organizations };
+      return { refs, customers };
     case 'DEVICE':
       return { refs, devices };
     case 'KNOWLEDGE_ARTICLE':
@@ -209,7 +205,7 @@ interface UseAssignedItemsOptions {
 
 export interface AssignedItemsResult {
   value: AssignmentsValue;
-  organizations?: Organization[];
+  customers?: Customer[];
   devices?: Device[];
   articles?: KnowledgeBaseRow[];
   tickets?: Dialog[];
@@ -229,7 +225,7 @@ function combineAssignedItems(results: UseQueryResult<AssignedItemsPayload, Erro
     const payload = result.data;
     if (!payload) return;
     if (payload.refs.length) value[type] = payload.refs;
-    if (payload.organizations?.length) out.organizations = payload.organizations;
+    if (payload.customers?.length) out.customers = payload.customers;
     if (payload.devices?.length) out.devices = payload.devices;
     if (payload.articles?.length) out.articles = payload.articles;
     if (payload.tickets?.length) out.tickets = payload.tickets;

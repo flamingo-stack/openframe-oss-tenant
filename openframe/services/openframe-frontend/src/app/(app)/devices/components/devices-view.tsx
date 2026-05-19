@@ -31,6 +31,7 @@ import type { Device } from '../types/device.types';
 import { DevicesGrid } from './devices-grid';
 import { DevicesTableBody, getDeviceFilterColumns, getDeviceTableRowActions } from './devices-table-columns';
 
+// TODO: Delete after successful testing of the DevicePanel component
 export function DevicesView() {
   const router = useRouter();
 
@@ -173,7 +174,7 @@ export function DevicesView() {
                 leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
                 className="shrink-0"
               >
-                Filter Tags
+                Device Tags
               </Button>
             ) : (
               <Button

@@ -5,8 +5,8 @@ import { useMemo } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { dashboardQueryKeys } from '../utils/query-keys';
+import { useCustomersOverview } from './use-customers-overview';
 import { useDevicesOverview } from './use-dashboard-stats';
-import { useOrganizationsOverview } from './use-organizations-overview';
 
 // SSO providers query
 function useActiveSsoProviderCount() {
@@ -73,7 +73,7 @@ function useUsersCount() {
  */
 export function useOnboardingCompletion() {
   const { total: deviceCount, isLoading: devicesLoading } = useDevicesOverview();
-  const { totalOrganizations, loading: orgsLoading } = useOrganizationsOverview();
+  const { totalOrganizations, loading: orgsLoading } = useCustomersOverview();
   const { count: ssoProvidersCount, isLoading: ssoLoading } = useActiveSsoProviderCount();
   const { totalElements, isLoading: usersLoading } = useUsersCount();
 
