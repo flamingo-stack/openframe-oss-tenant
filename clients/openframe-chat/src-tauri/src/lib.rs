@@ -140,6 +140,28 @@ fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn register_app_id() {
+    use winreg::{enums::*, RegKey};
+
+    extern "system" {
+        fn SetCurrentProcessExplicitAppUserModelID(app_id: *const u16) -> i32;
+    }
+    let aumid: Vec<u16> = "com.openframe.chat\0".encode_utf16().collect();
+    unsafe { SetCurrentProcessExplicitAppUserModelID(aumid.as_ptr()); }
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    if let Ok((key, _)) =
+        hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
+    {
+        let _ = key.set_value("DisplayName", &"Fae Chat");
+        if let Ok(exe) = std::env::current_exe() {
+            let icon = exe.to_string_lossy().into_owned();
+            let _ = key.set_value("IconUri", &icon.as_str());
+        }
+    }
+}
+
 #[tauri::command]
 async fn nats_status(bridge: State<'_, NatsBridge>) -> Result<NatsStatus, String> {
     Ok(bridge.status().await)
