@@ -69,6 +69,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::Install(args)) => {
+            openframe::banner::print();
             let params = args.to_params();
 
             let report = rt.block_on(openframe::doctor::run_preinstall(&params));
