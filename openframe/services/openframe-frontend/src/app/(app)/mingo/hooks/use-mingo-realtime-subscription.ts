@@ -23,8 +23,8 @@ import type { DialogNode } from '../types/dialog.types';
 import type { CoreMessage } from '../types/message.types';
 import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
 
-const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const;
 const MINGO_JETSTREAM_TOPIC: NatsMessageType = 'admin-message';
+const MINGO_TOPICS: NatsMessageType[] = [MINGO_JETSTREAM_TOPIC];
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 
 function isInProgress(segments: MessageSegment[]): boolean {
@@ -521,33 +521,19 @@ export function DialogSubscription({
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
       const chunk = payload as ChunkData;
-      // TEMP-DEBUG: nats chunks
-      console.log('[mingo-nats] chunk received', {
-        dialogId,
-        messageType,
-        type: (chunk as { type?: string }).type,
-        payload: chunk,
-      });
       syncStreamStateFromChunk(chunk);
       coreProcessChunk(chunk, messageType);
     },
-    [coreProcessChunk, syncStreamStateFromChunk, dialogId],
+    [coreProcessChunk, syncStreamStateFromChunk],
   );
 
   const handleJetStreamEvent = useCallback(
     (payload: unknown, _messageType: NatsMessageType) => {
       const chunk = payload as ChunkData;
-      // TEMP-DEBUG: nats jetstream chunks
-      console.log('[mingo-js] chunk received', {
-        dialogId,
-        streamSeq: (chunk as { streamSeq?: number }).streamSeq,
-        type: (chunk as { type?: string }).type,
-        payload: chunk,
-      });
       syncStreamStateFromChunk(chunk);
       processorRef.current(chunk);
     },
-    [syncStreamStateFromChunk, dialogId],
+    [syncStreamStateFromChunk],
   );
 
   const handleLegacySubscribed = useCallback(async () => {

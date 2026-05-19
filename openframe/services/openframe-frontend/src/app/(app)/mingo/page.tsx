@@ -333,9 +333,6 @@ export default function Mingo() {
 
   return (
     <ContentPageContainer padding="none" showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
-      {/* 
-          NATS Subscriptions and per-dialog message processor
-        */}
       {Array.from(subscribedDialogs).map(dialogId => {
         const isActive = dialogId === activeDialogId;
         return (

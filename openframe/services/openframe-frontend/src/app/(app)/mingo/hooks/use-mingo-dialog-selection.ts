@@ -17,13 +17,13 @@ import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../.
 import { GET_MINGO_DIALOG_QUERY, getMingoDialogMessagesQuery } from '../queries/dialogs-queries';
 import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { DialogResponse, GraphQlMessage, Message, MessagePage, MessagesResponse } from '../types';
+import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
 
 function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
   if (!pages) return null;
   let max: number | null = null;
   for (const page of pages) {
-    for (const msg of page.messages as GraphQlMessage[]) {
+    for (const msg of page.messages) {
       const seq = msg.lastChunkStreamSeq;
       if (typeof seq === 'number' && (max == null || seq > max)) {
         max = seq;
@@ -409,11 +409,9 @@ export function useMingoDialogSelection() {
     handleApprove,
     handleReject,
     approvalStatuses,
-    // Pagination state for infinite scroll
     hasNextPage: messagesQuery.hasNextPage ?? false,
     fetchNextPage: messagesQuery.fetchNextPage,
     isFetchingNextPage: messagesQuery.isFetchingNextPage,
-    // JetStream resume offset, derived from the active dialog's loaded messages.
     initialOptStartSeq,
     isMessagesFetched: messagesQuery.isFetched,
   };

@@ -83,7 +83,7 @@ export const featureFlags = {
   },
   aiStreamingJetstream: {
     enabled(): boolean {
-      return true; //getFlagValue('ai-streaming-jetstream', () => false);
+      return getFlagValue('ai-streaming-jetstream', () => false);
     },
   },
 } as const;
