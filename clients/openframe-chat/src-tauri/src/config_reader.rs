@@ -10,19 +10,25 @@ impl AppConfig {
     /// Reads configuration from system preferences (macOS) or CLI arguments (other platforms).
     pub fn from_preferences() -> Self {
         #[cfg(target_os = "macos")]
-        {
-            Self {
-                token_path: macos::read_string("openframe-token-path"),
-                secret: macos::read_string("openframe-secret"),
-                server_url: macos::read_string("serverUrl"),
-                debug_mode: macos::read_bool("devMode"),
-            }
-        }
+        let cfg = Self {
+            token_path: macos::read_string("openframe-token-path"),
+            secret: macos::read_string("openframe-secret"),
+            server_url: macos::read_string("serverUrl"),
+            debug_mode: macos::read_bool("devMode"),
+        };
 
         #[cfg(not(target_os = "macos"))]
-        {
-            Self::from_cli_args()
-        }
+        let cfg = Self::from_cli_args();
+
+        println!(
+            "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, debug: {})",
+            cfg.token_path.is_some(),
+            cfg.secret.is_some(),
+            cfg.server_url.is_some(),
+            cfg.debug_mode,
+        );
+
+        cfg
     }
 
     /// Parses configuration from command line arguments (for Windows/Linux).
@@ -68,12 +74,25 @@ mod macos {
     const BUNDLE_ID: &str = "com.openframe.chat";
 
     pub fn read_string(key: &str) -> Option<String> {
-        let output = Command::new("defaults")
+        let output = match Command::new("defaults")
             .args(["read", BUNDLE_ID, key])
             .output()
-            .ok()?;
+        {
+            Ok(out) => out,
+            Err(e) => {
+                eprintln!(
+                    "[startup] config_reader: spawning 'defaults read {} {}' failed: {}",
+                    BUNDLE_ID, key, e
+                );
+                return None;
+            }
+        };
 
         if !output.status.success() {
+            eprintln!(
+                "[startup] config_reader: 'defaults read {} {}' returned non-zero exit",
+                BUNDLE_ID, key
+            );
             return None;
         }
 

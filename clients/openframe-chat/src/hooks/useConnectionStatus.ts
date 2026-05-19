@@ -2,6 +2,7 @@ import { buildNatsWsUrl, useNatsDialogSubscription } from '@flamingo-stack/openf
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { tokenService } from '../services/tokenService';
+import { log, maskToken } from '../utils/log';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
 
@@ -44,6 +45,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           setToken(tokenService.getCurrentToken());
         }
       } catch (error) {
+        log.error('startup', 'failed to initialize credentials', String(error));
         console.error('Failed to initialize credentials:', error);
       }
     };
@@ -90,6 +92,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           setIsFullyLoaded(true);
         }
       } catch (error) {
+        log.error('ai-config', 'failed to load AI configuration', String(error));
         console.error('Failed to load AI configuration:', error);
       }
     };
@@ -100,7 +103,8 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
       if (!apiBaseUrl || !token) return '';
-      return buildNatsWsUrl(apiBaseUrl, { 
+      log.info('nats:status', `building WS URL (token: ${maskToken(token)})`);
+      return buildNatsWsUrl(apiBaseUrl, {
         token,
         includeAuthParam: true,
         source: 'dashboard',
@@ -118,7 +122,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   );
 
   const handleBeforeReconnect = useCallback(async () => {
-    console.log('[CONNECTION STATUS] NATS disconnected, refreshing token before reconnect...');
+    log.info('nats:status', 'disconnected — refreshing token before reconnect');
     await tokenService.refreshToken();
   }, []);
 
@@ -127,9 +131,11 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     dialogId: null, // No dialog subscription, just connection monitoring
     topics: [],
     onConnect: () => {
+      log.info('nats:status', 'connected');
       setStatus('connected');
     },
     onDisconnect: () => {
+      log.warn('nats:status', 'disconnected');
       setStatus('disconnected');
     },
     onBeforeReconnect: handleBeforeReconnect,

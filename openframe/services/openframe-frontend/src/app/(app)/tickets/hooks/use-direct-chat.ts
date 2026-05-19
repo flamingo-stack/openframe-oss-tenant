@@ -3,6 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS, CHAT_TYPE, DIALOG_MODE } from '../constants';
 import { ticketService } from '../services';
@@ -61,6 +62,7 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
       return response.data;
     },
     onSuccess: data => {
+      trackDashboardActivity(EVENT_SUBTYPE.START_DIRECT_CHAT);
       setMode(DIALOG_MODE.DIRECT, data.id);
       onDialogCreated?.();
     },
@@ -88,6 +90,7 @@ export function useDirectChat({ ticketId, dialogId, currentMode, onDialogCreated
       return response.data;
     },
     onSuccess: () => {
+      trackDashboardActivity(EVENT_SUBTYPE.START_DIRECT_CHAT);
       setMode(DIALOG_MODE.DIRECT);
     },
     onError: (error: Error) => {

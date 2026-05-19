@@ -22,7 +22,36 @@ export function foldPendingApprovalsEnvelope<M extends ChatMessage>(messages: M[
   return result;
 }
 
-export function extractPendingApprovals<M extends ChatMessage>(messages: M[]): MessageSegment[] {
+export function extractPendingApprovals<M extends ChatMessage>(
+  messages: M[],
+  resolvedStatuses?: Record<string, string | undefined>,
+): MessageSegment[] {
+  // A request that is resolved anywhere — in the consumer's approval-status
+  // map (realtime flipped it) or as a resolved segment in any copy — must
+  // not surface as a sticky pending card, even when a stale duplicate copy
+  // is still `pending` (history re-process can resurrect one before the
+  // resolved realtime copy in `[...storeMessages, ...realtimeOnly]`).
+  const resolved = new Set<string>();
+  if (resolvedStatuses) {
+    for (const [id, status] of Object.entries(resolvedStatuses)) {
+      if (status === 'approved' || status === 'rejected') resolved.add(id);
+    }
+  }
+  for (const msg of messages) {
+    if (!Array.isArray(msg.content)) continue;
+    for (const segment of msg.content) {
+      if (segment.type === 'approval_request') {
+        if ((segment.status === 'approved' || segment.status === 'rejected') && segment.data?.requestId) {
+          resolved.add(segment.data.requestId);
+        }
+      } else if (segment.type === 'approval_batch') {
+        if ((segment.status === 'approved' || segment.status === 'rejected') && segment.data?.approvalRequestId) {
+          resolved.add(segment.data.approvalRequestId);
+        }
+      }
+    }
+  }
+
   const seen = new Set<string>();
   const pending: MessageSegment[] = [];
   for (const msg of messages) {
@@ -31,7 +60,7 @@ export function extractPendingApprovals<M extends ChatMessage>(messages: M[]): M
       if (segment.type !== 'approval_request' || segment.status !== 'pending') continue;
       const requestId = segment.data?.requestId;
       if (requestId) {
-        if (seen.has(requestId)) continue;
+        if (resolved.has(requestId) || seen.has(requestId)) continue;
         seen.add(requestId);
       }
       pending.push(segment);

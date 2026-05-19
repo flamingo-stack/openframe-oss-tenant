@@ -8,6 +8,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
@@ -43,6 +44,7 @@ export function useMingoDialogSelection() {
 
       try {
         await approveRequestMutation.mutateAsync(requestId);
+        trackDashboardActivity(EVENT_SUBTYPE.APPROVE_MINGO_COMMAND);
         setApprovalStatuses(prev => ({
           ...prev,
           [requestId]: APPROVAL_STATUS.APPROVED,
@@ -66,6 +68,7 @@ export function useMingoDialogSelection() {
 
       try {
         await rejectRequestMutation.mutateAsync(requestId);
+        trackDashboardActivity(EVENT_SUBTYPE.REJECT_MINGO_COMMAND);
         setApprovalStatuses(prev => ({
           ...prev,
           [requestId]: APPROVAL_STATUS.REJECTED,

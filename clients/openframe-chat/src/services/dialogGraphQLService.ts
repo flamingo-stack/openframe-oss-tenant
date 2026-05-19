@@ -27,26 +27,6 @@ function pickClientChatTokenUsage(entries: DialogTokenUsageEntry[] | null | unde
   return usage;
 }
 
-export interface ResumableDialog {
-  id: string;
-  title: string;
-  status: string;
-  createdAt: string;
-  statusUpdatedAt: string | null;
-  resolvedAt: string | null;
-  aiResolutionSuggestedAt: string | null;
-  rating: {
-    id: string;
-    dialogId: string;
-    createdAt: string;
-  } | null;
-  tokenUsage: DialogTokenUsage | null;
-}
-
-interface RawResumableDialog extends Omit<ResumableDialog, 'tokenUsage'> {
-  tokenUsage: DialogTokenUsageEntry[] | null;
-}
-
 export type DialogOwner = MessageOwner;
 
 export type MessageData = CoreMessageData;
@@ -71,32 +51,6 @@ export interface MessagesConnection {
   edges: MessageEdge[];
   pageInfo: PageInfo;
 }
-
-const RESUMABLE_DIALOG_QUERY = `
-  query GetDialog {
-    resumableDialog {
-      id
-      title
-      status
-      createdAt
-      statusUpdatedAt
-      resolvedAt
-      aiResolutionSuggestedAt
-      rating {
-        id
-        dialogId
-        createdAt
-      }
-      tokenUsage {
-        chatType
-        inputTokensSize
-        outputTokensSize
-        totalTokensSize
-        contextSize
-      }
-    }
-  }
-`;
 
 const DIALOG_TOKEN_USAGE_QUERY = `
   query GetDialogById($id: ID!) {
@@ -271,19 +225,6 @@ export class DialogGraphQlService {
   private async request<T>(document: RequestDocument, variables?: Variables): Promise<T> {
     const client = await this.initializeClient();
     return client.request<T>(document, variables);
-  }
-
-  async getResumableDialog(): Promise<ResumableDialog | null> {
-    try {
-      await tokenService.ensureTokenReady();
-      const data = await this.request<{ resumableDialog: RawResumableDialog | null }>(RESUMABLE_DIALOG_QUERY);
-      if (!data.resumableDialog) return null;
-      const { tokenUsage, ...rest } = data.resumableDialog;
-      return { ...rest, tokenUsage: pickClientChatTokenUsage(tokenUsage) };
-    } catch (error) {
-      console.error('Failed to fetch resumable dialog:', error);
-      return null;
-    }
   }
 
   async getDialogMessagesPage(

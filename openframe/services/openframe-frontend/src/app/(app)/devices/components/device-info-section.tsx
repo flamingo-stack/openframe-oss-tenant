@@ -43,8 +43,9 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   const deviceLabel = [device.manufacturer, device.model].filter(Boolean).join(', ') || 'Unknown';
   const serialNumber = device.serialNumber || device.serial_number || 'Unknown';
   const uuid = device.osUuid || device.machineId || device.id || 'Unknown';
-  const assignedUser = device.users?.find(u => u.isLoggedIn) ?? device.users?.[0];
-  const assignedUserImageUrl = getFullImageUrl((assignedUser as { imageUrl?: string | null } | undefined)?.imageUrl);
+  // TEMP: assigned-user block is hidden until the backend returns a user entity
+  const assignedUser = { username: null, imageUrl: null };
+  const assignedUserImageUrl = getFullImageUrl(assignedUser?.imageUrl);
   const customerImageUrl = getFullImageUrl(device.organizationImageUrl);
   const customerHref = device.organizationId ? `/customers/details/${device.organizationId}` : undefined;
 
@@ -72,7 +73,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         imageUrl={customerImageUrl}
         organizationName={device.organization}
         size="md"
-        className="rounded-full overflow-hidden"
+        className="rounded-full overflow-hidden [&_img]:object-cover [&_img]:p-0 [&_img]:w-full [&_img]:h-full"
       />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         {customerHref ? (
@@ -93,7 +94,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         imageUrl={assignedUserImageUrl}
         organizationName={assignedUser.username}
         size="md"
-        className="rounded-full overflow-hidden"
+        className="rounded-full overflow-hidden [&_img]:object-cover [&_img]:p-0 [&_img]:w-full [&_img]:h-full"
       />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         <p className="text-ods-accent underline text-h4 truncate">{assignedUser.username}</p>
