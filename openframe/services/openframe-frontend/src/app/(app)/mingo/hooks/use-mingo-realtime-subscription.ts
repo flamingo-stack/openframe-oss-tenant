@@ -521,19 +521,25 @@ export function DialogSubscription({
   const handleNatsEvent = useCallback(
     (payload: unknown, messageType: NatsMessageType) => {
       const chunk = payload as ChunkData;
+      if (featureFlags.debugNatsChunks.enabled()) {
+        console.log('[mingo-nats] chunk received', { dialogId, messageType, chunk });
+      }
       syncStreamStateFromChunk(chunk);
       coreProcessChunk(chunk, messageType);
     },
-    [coreProcessChunk, syncStreamStateFromChunk],
+    [coreProcessChunk, syncStreamStateFromChunk, dialogId],
   );
 
   const handleJetStreamEvent = useCallback(
     (payload: unknown, _messageType: NatsMessageType) => {
       const chunk = payload as ChunkData;
+      if (featureFlags.debugNatsChunks.enabled()) {
+        console.log('[mingo-js] chunk received', { dialogId, streamSeq: chunk.streamSeq, chunk });
+      }
       syncStreamStateFromChunk(chunk);
       processorRef.current(chunk);
     },
-    [syncStreamStateFromChunk],
+    [syncStreamStateFromChunk, dialogId],
   );
 
   const handleLegacySubscribed = useCallback(async () => {
