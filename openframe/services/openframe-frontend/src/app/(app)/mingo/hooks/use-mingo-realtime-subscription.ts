@@ -19,26 +19,13 @@ import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { STORAGE_KEYS } from '../../tickets/constants';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { CoreMessage, GraphQlMessage, MessagePage } from '../types/message.types';
+import type { DialogNode } from '../types/dialog.types';
+import type { CoreMessage } from '../types/message.types';
 import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
 
 const MINGO_TOPICS: NatsMessageType[] = ['admin-message'] as const;
 const MINGO_JETSTREAM_TOPIC: NatsMessageType = 'admin-message';
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
-
-function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
-  if (!pages) return null;
-  let max: number | null = null;
-  for (const page of pages) {
-    for (const msg of page.messages as GraphQlMessage[]) {
-      const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && (max == null || seq > max)) {
-        max = seq;
-      }
-    }
-  }
-  return max;
-}
 
 function isInProgress(segments: MessageSegment[]): boolean {
   return segments.some(seg => {
@@ -406,6 +393,8 @@ interface DialogSubscriptionProps {
     providerName: string;
     contextWindow: number;
   }) => void;
+  initialOptStartSeq: number | null;
+  isInitialOptStartSeqReady: boolean;
 }
 
 export function DialogSubscription({
@@ -416,6 +405,8 @@ export function DialogSubscription({
   isDevTicketEnabled,
   onConnectionChange,
   onMetadata,
+  initialOptStartSeq,
+  isInitialOptStartSeqReady,
 }: DialogSubscriptionProps) {
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
@@ -464,11 +455,6 @@ export function DialogSubscription({
   });
 
   const queryClient = useQueryClient();
-  const initialOptStartSeq = useMemo<number | null>(() => {
-    if (!useJetstream) return null;
-    const data = queryClient.getQueryData<{ pages?: MessagePage[] }>(['mingo-dialog-messages', dialogId]);
-    return computeInitialStartSeq(data?.pages);
-  }, [useJetstream, queryClient, dialogId]);
 
   // NATS WebSocket URL
   const getNatsWsUrl = useMemo(() => {
@@ -514,22 +500,60 @@ export function DialogSubscription({
     };
   }, [useJetstream, resetChunkTracking, startInitialBuffering]);
 
-  const handleNatsEvent = useCallback(
-    (payload: unknown, messageType: NatsMessageType) => {
-      coreProcessChunk(payload as ChunkData, messageType);
+  // Rejects out-of-order JetStream redeliveries; legacy NATS chunks lack streamSeq and bypass it.
+  const lastAppliedStreamSeqRef = useRef<number>(-1);
+
+  const syncStreamStateFromChunk = useCallback(
+    (chunk: ChunkData) => {
+      const next = chunk.streamState;
+      if (!next) return;
+      if (typeof chunk.streamSeq === 'number') {
+        if (chunk.streamSeq < lastAppliedStreamSeqRef.current) return;
+        lastAppliedStreamSeqRef.current = chunk.streamSeq;
+      }
+      queryClient.setQueryData<DialogNode | null | undefined>(['mingo-dialog', dialogId], prev =>
+        prev ? { ...prev, streamState: next } : prev,
+      );
     },
-    [coreProcessChunk],
+    [queryClient, dialogId],
   );
 
-  const handleJetStreamEvent = useCallback((payload: unknown, _messageType: NatsMessageType) => {
-    processorRef.current(payload as ChunkData);
-  }, []);
+  const handleNatsEvent = useCallback(
+    (payload: unknown, messageType: NatsMessageType) => {
+      const chunk = payload as ChunkData;
+      // TEMP-DEBUG: nats chunks
+      console.log('[mingo-nats] chunk received', {
+        dialogId,
+        messageType,
+        type: (chunk as { type?: string }).type,
+        payload: chunk,
+      });
+      syncStreamStateFromChunk(chunk);
+      coreProcessChunk(chunk, messageType);
+    },
+    [coreProcessChunk, syncStreamStateFromChunk, dialogId],
+  );
+
+  const handleJetStreamEvent = useCallback(
+    (payload: unknown, _messageType: NatsMessageType) => {
+      const chunk = payload as ChunkData;
+      // TEMP-DEBUG: nats jetstream chunks
+      console.log('[mingo-js] chunk received', {
+        dialogId,
+        streamSeq: (chunk as { streamSeq?: number }).streamSeq,
+        type: (chunk as { type?: string }).type,
+        payload: chunk,
+      });
+      syncStreamStateFromChunk(chunk);
+      processorRef.current(chunk);
+    },
+    [syncStreamStateFromChunk, dialogId],
+  );
 
   const handleLegacySubscribed = useCallback(async () => {
-    if (!hasCaughtUp) {
-      setHasCaughtUp(true);
-      await catchUpChunks();
-    }
+    if (hasCaughtUp) return;
+    setHasCaughtUp(true);
+    await catchUpChunks();
   }, [hasCaughtUp, catchUpChunks]);
 
   const handleConnect = useCallback(() => {
@@ -567,7 +591,7 @@ export function DialogSubscription({
   });
 
   useJetStreamDialogSubscription({
-    enabled: useJetstream,
+    enabled: useJetstream && isInitialOptStartSeqReady,
     dialogId,
     streamName: CHAT_CHUNKS_STREAM,
     topic: MINGO_JETSTREAM_TOPIC,

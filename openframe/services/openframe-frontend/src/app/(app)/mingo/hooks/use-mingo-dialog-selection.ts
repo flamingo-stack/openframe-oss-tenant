@@ -7,7 +7,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { foldPendingApprovalsEnvelope } from '@/lib/chat-history';
@@ -17,7 +17,21 @@ import { APPROVAL_STATUS, ASSISTANT_CONFIG, CHAT_TYPE, MESSAGE_TYPE } from '../.
 import { GET_MINGO_DIALOG_QUERY, getMingoDialogMessagesQuery } from '../queries/dialogs-queries';
 import { useApproveRequestMutation, useRejectRequestMutation } from '../services/mingo-api-service';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
+import type { DialogResponse, GraphQlMessage, Message, MessagePage, MessagesResponse } from '../types';
+
+function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
+  if (!pages) return null;
+  let max: number | null = null;
+  for (const page of pages) {
+    for (const msg of page.messages as GraphQlMessage[]) {
+      const seq = msg.lastChunkStreamSeq;
+      if (typeof seq === 'number' && (max == null || seq > max)) {
+        max = seq;
+      }
+    }
+  }
+  return max;
+}
 
 export function useMingoDialogSelection() {
   const { toast } = useToast();
@@ -111,6 +125,8 @@ export function useMingoDialogSelection() {
     },
     enabled: !!activeDialogId,
     staleTime: 30 * 1000,
+    // Self-heals if every chunk carrying streamState=IDLE is dropped; off while idle.
+    refetchInterval: query => (query.state.data?.streamState === 'STREAMING' ? 15_000 : false),
   });
 
   const messagesQuery = useInfiniteQuery({
@@ -147,6 +163,11 @@ export function useMingoDialogSelection() {
     enabled: !!activeDialogId,
     staleTime: 30 * 1000,
   });
+
+  const initialOptStartSeq = useMemo(
+    () => computeInitialStartSeq(messagesQuery.data?.pages),
+    [messagesQuery.data?.pages],
+  );
 
   const selectDialogMutation = useMutation({
     mutationFn: async (dialogId: string) => {
@@ -239,6 +260,7 @@ export function useMingoDialogSelection() {
     const processedMessageIds = new Set(allProcessedMessages.map(m => m.id));
 
     if (previouslyProcessedCount === 0) {
+      // Local store, not dialog.streamState: the question here is "does the realtime processor have an in-flight synthetic to dedupe against," not "what does the backend say."
       const isStreaming = getStreamingMessage(activeDialogId) !== null;
       const historyEndsWithAssistant = allProcessedMessages[allProcessedMessages.length - 1]?.role === 'assistant';
 
@@ -391,5 +413,8 @@ export function useMingoDialogSelection() {
     hasNextPage: messagesQuery.hasNextPage ?? false,
     fetchNextPage: messagesQuery.fetchNextPage,
     isFetchingNextPage: messagesQuery.isFetchingNextPage,
+    // JetStream resume offset, derived from the active dialog's loaded messages.
+    initialOptStartSeq,
+    isMessagesFetched: messagesQuery.isFetched,
   };
 }

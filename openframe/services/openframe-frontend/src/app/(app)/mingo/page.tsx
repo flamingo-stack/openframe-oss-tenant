@@ -54,6 +54,8 @@ export default function Mingo() {
     hasNextPage: hasNextMessagePage,
     fetchNextPage: fetchNextMessagePage,
     isFetchingNextPage: isFetchingNextMessagePage,
+    initialOptStartSeq,
+    isMessagesFetched,
   } = useMingoDialogSelection();
 
   const setTokenUsage = useMingoMessagesStore(state => state.setTokenUsage);
@@ -334,19 +336,24 @@ export default function Mingo() {
       {/* 
           NATS Subscriptions and per-dialog message processor
         */}
-      {Array.from(subscribedDialogs).map(dialogId => (
-        <DialogSubscription
-          key={dialogId}
-          dialogId={dialogId}
-          isActive={dialogId === activeDialogId}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          approvalStatuses={approvalStatuses}
-          isDevTicketEnabled={isDevTicketEnabled}
-          onConnectionChange={onConnectionChange}
-          onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
-        />
-      ))}
+      {Array.from(subscribedDialogs).map(dialogId => {
+        const isActive = dialogId === activeDialogId;
+        return (
+          <DialogSubscription
+            key={dialogId}
+            dialogId={dialogId}
+            isActive={isActive}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            approvalStatuses={approvalStatuses}
+            isDevTicketEnabled={isDevTicketEnabled}
+            onConnectionChange={onConnectionChange}
+            onMetadata={isActive ? handleMetadataUpdate : undefined}
+            initialOptStartSeq={isActive ? initialOptStartSeq : null}
+            isInitialOptStartSeqReady={isActive ? isMessagesFetched : true}
+          />
+        );
+      })}
 
       <div className="flex h-full w-full">
         {/* Sidebar with dialog list */}

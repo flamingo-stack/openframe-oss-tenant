@@ -7,10 +7,13 @@ export interface DialogTokenUsage {
   contextSize: number | null;
 }
 
+export type DialogStreamState = 'IDLE' | 'STREAMING';
+
 export interface DialogNode {
   id: string;
   title: string;
   status: string;
+  streamState: DialogStreamState;
   owner?: {
     machineId?: string;
     machine?: {

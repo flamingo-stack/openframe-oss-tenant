@@ -27,6 +27,7 @@ export const GET_MINGO_DIALOG_QUERY = `
     id
     title
     status
+    streamState
     owner {
       ... on ClientDialogOwner {
       machineId
