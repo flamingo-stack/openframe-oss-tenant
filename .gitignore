@@ -73,6 +73,9 @@ openframe/services/openframe-frontend/next-env.d.ts
 # Relay compiler generated artifacts
 **/__generated__/*.ts
 
+# Schema-derived generated types (scripts/generate-schema-enums.mjs)
+**/src/generated/
+
 # Yalc
 .yalc
 yalc.lock

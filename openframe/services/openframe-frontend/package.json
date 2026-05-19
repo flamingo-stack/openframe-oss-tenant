@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p ${PORT:-3000}",
-    "build": "relay-compiler && next build",
+    "build": "npm run generate-enums && relay-compiler && next build",
+    "generate-enums": "node scripts/generate-schema-enums.mjs",
     "build:local": "next build --webpack",
     "start": "next start -p ${PORT:-3000}",
     "start:standalone": "cp -R public dist/standalone/ && mkdir -p dist/standalone/dist && cp -R dist/static dist/standalone/dist/ && PORT=${PORT:-3000} HOSTNAME=0.0.0.0 NODE_ENV=production node dist/standalone/server.js",
