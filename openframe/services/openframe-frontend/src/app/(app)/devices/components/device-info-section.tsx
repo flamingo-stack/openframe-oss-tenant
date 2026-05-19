@@ -190,6 +190,8 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
           )}
           {registeredCell}
           {updatedCell}
+          {!customerInner && <div className="flex-1" aria-hidden="true" />}
+          {!assignedInner && <div className="flex-1" aria-hidden="true" />}
         </div>
         <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20">
           {uuidCell}
