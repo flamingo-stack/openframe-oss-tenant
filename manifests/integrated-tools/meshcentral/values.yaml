@@ -1,6 +1,6 @@
 global:
   image:
-    tag: latest
+    tag: dev
 
 registerJob:
   enabled: true
@@ -14,7 +14,7 @@ server:
   image:
     registry: ghcr.io/flamingo-stack/openframe-oss-tenant
     repository: meshcentral
-    tag: latest
+    tag: dev
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"

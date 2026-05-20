@@ -188,7 +188,7 @@ jobs:
         working-directory: ${{ matrix.path }}
         if: steps.should_run.outputs.run == 'true'
         env:
-          VERSION: ${{ inputs.version || 'latest' }}
+          VERSION: ${{ inputs.version || 'dev' }}
         run: |
           if [[ "${{ matrix.name }}" == "openframe-client" && "${{ matrix.os }}" == "macos" ]]; then
             IFS=',' read -ra ARCHITECTURES <<< "${{ matrix.target }}"
@@ -314,7 +314,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e && mkdir -p final-artifacts/clients
-          gh release download latest --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
+          gh release download dev --pattern "*.tar.gz" --pattern "*.zip" --pattern "*.dmg" --dir final-artifacts/clients || true
           for client in $(echo '${{ needs.matrix.outputs.clients_matrix }}' | jq -r '.[].name' | sort -u); do
             # macOS
             if [ -d "release-artifacts/${client}-macos" ]; then
@@ -336,7 +336,7 @@ jobs:
 
       - name: Generate release header
         run: |
-          VERSION="${{ inputs.version || 'latest' }}"
+          VERSION="${{ inputs.version || 'dev' }}"
           IMAGES=$(echo '${{ needs.matrix.outputs.images_matrix }}' | jq -r '.[] | "- `${{ env.REGISTRY }}/${{ env.ORGANISATION }}/${{ env.REPOSITORY }}/\(.name):'"${VERSION}"'`"')
 
           cat > RELEASE_HEADER.md <<EOF
@@ -356,17 +356,17 @@ jobs:
           ---
           EOF
 
-      - name: Delete existing latest release
+      - name: Delete existing dev release
         if: ${{ github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release delete latest --yes --cleanup-tag || true
+        run: gh release delete dev --yes --cleanup-tag || true
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.version || 'latest' }}
-          name: "🦩 ${{ inputs.version || 'latest' }}"
+          tag_name: ${{ inputs.version || 'dev' }}
+          name: "🦩 ${{ inputs.version || 'dev' }}"
           draft: false
           prerelease: ${{ github.event_name == 'push' }}
           token: ${{ secrets.GITHUB_TOKEN }}

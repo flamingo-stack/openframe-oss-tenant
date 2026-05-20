@@ -1,6 +1,6 @@
 global:
   image:
-    tag: latest
+    tag: dev
 
 registerJob:
   enabled: true
@@ -34,7 +34,7 @@ tactical:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-nginx
-      tag: latest
+      tag: dev
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"
@@ -46,7 +46,7 @@ tactical:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-base
-      tag: latest
+      tag: dev
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"
