@@ -7,7 +7,7 @@ import { isSaasTenantMode } from '@/lib/app-mode';
  * Dashboard loading skeleton that matches the actual dashboard layout EXACTLY:
  * - OnboardingWalkthrough: Header + 5 VERTICAL step cards
  * - DevicesOverviewSection: title + subtitle + 2 info cards
- * - ChatsOverviewSection: title + subtitle + 4 info cards (SaaS tenant only)
+ * - TicketsOverviewSection: title + subtitle + 4 info cards (SaaS tenant only)
  * - CustomersOverviewSection: title + subtitle + rows of [OrgCard, 2 InfoCards]
  *
  * Used as Next.js route-level loading state for /dashboard
@@ -103,10 +103,10 @@ function DevicesSkeleton() {
 }
 
 /**
- * Chats skeleton - matches ChatsOverviewSection exactly
+ * Tickets skeleton - matches TicketsOverviewSection exactly
  * Structure: h2 title + p subtitle + grid of 4 InfoCards
  */
-function ChatsSkeleton() {
+function TicketsSkeleton() {
   return (
     <div className="space-y-4">
       {/* h2 title */}
@@ -167,13 +167,13 @@ function CustomersSkeleton() {
 }
 
 export default function DashboardLoading() {
-  const showChats = isSaasTenantMode();
+  const showTickets = isSaasTenantMode();
 
   return (
     <div className="space-y-10 pt-6" role="status" aria-label="Loading dashboard">
       <OnboardingSkeleton />
       <DevicesSkeleton />
-      {showChats && <ChatsSkeleton />}
+      {showTickets && <TicketsSkeleton />}
       <CustomersSkeleton />
     </div>
   );
