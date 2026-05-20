@@ -1,11 +1,10 @@
 'use client';
 
-import type { ActionsMenuGroup, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
+import type { ActionsMenuGroup, ActionsMenuItem, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
 import {
   getTabComponent,
   LoadError,
   NotFoundError,
-  normalizeOSType,
   PageLayout,
   TabContent,
   TabNavigation,
@@ -15,25 +14,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
-import {
-  ArrowRightUpIcon,
-  BoxArchiveIcon,
-  BracketCurlyIcon,
-  TrashIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
+import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
-import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { buildDeviceMenuItems } from '../utils/device-menu-items';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
 import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
+
+const DETAIL_ICON_SIZE = 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]';
 
 function DeviceStatusAndTags({ device }: { device: Device }) {
   const statusConfig = getDeviceStatusConfig(device.status);
@@ -131,84 +124,28 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const normalizedDevice = deviceDetails;
 
-  // Get action availability for passing agent IDs to modals
-  const actionAvailability = useMemo(
-    () => (normalizedDevice ? getDeviceActionAvailability(normalizedDevice) : null),
-    [normalizedDevice],
-  );
-
   const handleBack = useSafeBack('/devices');
 
   const {
-    openArchive,
-    openDelete,
+    items: deviceMenuItems,
     dialogs: confirmationDialogs,
-  } = useDeviceConfirmationDialogs(normalizedDevice, {
-    onArchived: () => router.push('/devices'),
-    onDeleted: () => router.push('/devices'),
+    actionAvailability,
+  } = useDeviceActionsMenu(normalizedDevice, {
+    deviceId,
+    iconSize: DETAIL_ICON_SIZE,
+    onRunScript: () => setIsScriptsModalOpen(true),
+    navigateOnDestructive: true,
   });
-
-  // Windows OS detection — used by Remote Shell submenu in `buildDeviceMenuItems`.
-  const isWindows = useMemo(() => {
-    if (!normalizedDevice) return undefined;
-    const osType = normalizedDevice.platform || normalizedDevice.osType || normalizedDevice.operating_system;
-    return normalizeOSType(osType) === 'WINDOWS';
-  }, [normalizedDevice]);
-
-  // Shared device menu items registry (same builder used by table dropdown and Tickets view).
-  const deviceMenuItems = useMemo(
-    () =>
-      buildDeviceMenuItems({
-        deviceId,
-        availability: actionAvailability,
-        iconSize: 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]',
-        isWindows,
-        withNewTabAction: true,
-      }),
-    [deviceId, actionAvailability, isWindows],
-  );
 
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     const groups: ActionsMenuGroup[] = [];
-    const primaryItems: ActionsMenuGroup['items'] = [];
-    const destructiveItems: ActionsMenuGroup['items'] = [];
+    const primaryItems: ActionsMenuItem[] = [];
+    const destructiveItems: ActionsMenuItem[] = [];
 
-    // Run Script is intentionally not in the shared builder — it opens a
-    // React-stateful modal owned by this component.
-    if (actionAvailability?.runScriptEnabled) {
-      const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
-      primaryItems.push({
-        id: 'run-script',
-        label: 'Run Script',
-        icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
-        onClick: () => setIsScriptsModalOpen(true),
-        iconAction: {
-          icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
-          'aria-label': 'Open Run Script in new tab',
-          href: runScriptHref,
-          openInNewTab: true,
-        },
-      });
-    }
-    if (actionAvailability?.manageFilesEnabled) {
-      primaryItems.push(deviceMenuItems.manageFiles);
-    }
-    if (actionAvailability?.archiveEnabled) {
-      destructiveItems.push({
-        id: 'archive',
-        label: 'Archive Device',
-        icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
-        onClick: openArchive,
-      });
-    }
-    if (actionAvailability?.deleteEnabled) {
-      destructiveItems.push({
-        id: 'delete',
-        label: 'Delete Device',
-        icon: <TrashIcon className="w-6 h-6 text-ods-error" />,
-        onClick: openDelete,
-      });
-    }
+    if (actionAvailability?.runScriptEnabled) primaryItems.push(deviceMenuItems.runScript);
+    if (actionAvailability?.manageFilesEnabled) primaryItems.push(deviceMenuItems.manageFiles);
+    if (deviceMenuItems.archive) destructiveItems.push(deviceMenuItems.archive);
+    if (deviceMenuItems.delete) destructiveItems.push(deviceMenuItems.delete);
 
     if (primaryItems.length > 0) {
       groups.push({ items: primaryItems, separator: destructiveItems.length > 0 });
@@ -217,7 +154,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       groups.push({ items: destructiveItems });
     }
     return groups;
-  }, [actionAvailability, deviceId, deviceMenuItems, openArchive, openDelete]);
+  }, [actionAvailability, deviceMenuItems]);
 
   const handleRunScripts = (scriptIds: string[]) => {
     console.log('Running scripts:', scriptIds, 'on device:', deviceId);
