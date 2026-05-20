@@ -42,9 +42,8 @@ import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-histo
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
+import { useDeviceActionsMenu } from '../../devices/hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
-import { getDeviceActionAvailability } from '../../devices/utils/device-action-utils';
-import { buildDeviceMenuItems } from '../../devices/utils/device-menu-items';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
   APPROVAL_STATUS,
@@ -115,13 +114,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   // the Devices view, so remote-action gating stays in sync across views.
   const machineId = useMemo(() => {
     if (!dialog) return undefined;
-    return dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+    // owner.machineId is the canonical machineId; dialog.deviceId is a backend passthrough
+    // that may contain a Mongo ObjectId, so prefer the owner field when available.
+    const ownerMachineId = isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined;
+    return ownerMachineId || dialog.deviceId;
   }, [dialog, isClientOwner]);
-  const { deviceDetails } = useDeviceDetails(machineId);
-  const actionAvailability = useMemo(
-    () => (deviceDetails ? getDeviceActionAvailability(deviceDetails) : null),
-    [deviceDetails],
-  );
+  const { deviceDetails, isLoading: isDeviceLoading } = useDeviceDetails(machineId);
+  const { items: deviceMenuItems } = useDeviceActionsMenu(deviceDetails, { deviceId: machineId });
 
   const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
     useTicketDetailsStore();
@@ -463,7 +462,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
 
     const ticketItems: ActionsMenuItem[] = [];
-    const deviceItems: ActionsMenuItem[] = [];
+    const infoItems: ActionsMenuItem[] = [];
+    const remoteItems: ActionsMenuItem[] = [];
 
     if (!isArchived) {
       ticketItems.push({
@@ -474,21 +474,25 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       });
     }
 
-    if (machineId) {
-      const items = buildDeviceMenuItems({ deviceId: machineId, availability: actionAvailability });
-      deviceItems.push(
-        items.deviceDetails,
-        withActivityTracking(items.remoteShell, EVENT_SUBTYPE.OPEN_REMOTE_SHELL),
-        withActivityTracking(items.remoteControl, EVENT_SUBTYPE.OPEN_REMOTE_CONTROL),
-        items.deviceLogs,
+    if (deviceDetails || isDeviceLoading) {
+      infoItems.push(deviceMenuItems.deviceDetails, deviceMenuItems.deviceLogs);
+      remoteItems.push(
+        withActivityTracking(deviceMenuItems.remoteShell, EVENT_SUBTYPE.OPEN_REMOTE_SHELL),
+        withActivityTracking(deviceMenuItems.remoteControl, EVENT_SUBTYPE.OPEN_REMOTE_CONTROL),
+        deviceMenuItems.manageFiles,
+        deviceMenuItems.runScript,
       );
     }
 
     const groups: ActionsMenuGroup[] = [];
-    if (ticketItems.length > 0) groups.push({ items: ticketItems, separator: deviceItems.length > 0 });
-    if (deviceItems.length > 0) groups.push({ items: deviceItems });
+    const candidates = [ticketItems, infoItems, remoteItems];
+    candidates.forEach((items, idx) => {
+      if (items.length === 0) return;
+      const hasMore = candidates.slice(idx + 1).some(g => g.length > 0);
+      groups.push({ items, separator: hasMore });
+    });
     return groups;
-  }, [dialog, machineId, actionAvailability, router]);
+  }, [dialog, deviceDetails, isDeviceLoading, deviceMenuItems, router]);
 
   const pageActions = useMemo<PageActionButton[]>(() => {
     if (!dialog) return [];
@@ -558,7 +562,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
   const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
   const isClosed = isResolved || isArchived;
-  const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
   const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
   const showTokenMemory = !isClosed;
@@ -594,7 +597,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               : undefined) ||
             'Unassigned',
           icon: <MonitorIcon className="size-4" />,
-          onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+          onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
         }}
         status={dialog.status}
         onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
@@ -678,7 +681,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                     : undefined) ||
                   'Unassigned',
                 icon: <MonitorIcon className="size-4" />,
-                onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+                onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
               }}
               status={dialog.status}
               expanded={true}

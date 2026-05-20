@@ -86,20 +86,18 @@ export interface DeviceActionAvailability {
  * Single source of truth for all action enabled/disabled states
  */
 export function getDeviceActionAvailability(device: Device): DeviceActionAvailability {
-  const meshcentralAgentId = getMeshCentralAgentId(device);
+  const meshcentralConnection = getToolConnection(device.toolConnections, 'MESHCENTRAL');
+  const meshcentralAgentId = meshcentralConnection?.agentToolId;
+  const meshcentralOffline = meshcentralConnection?.status?.toLowerCase() === 'offline';
   const tacticalAgentId = getTacticalAgentId(device);
   const isOnline = isDeviceOnline(device.status);
 
+  const meshcentralReady = Boolean(meshcentralAgentId) && isOnline && !meshcentralOffline;
+
   return {
-    // Remote Shell: requires MeshCentral agent AND device must be online
-    remoteShellEnabled: Boolean(meshcentralAgentId) && isOnline,
-
-    // Remote Control: requires MeshCentral agent AND device must be online
-    remoteControlEnabled: Boolean(meshcentralAgentId) && isOnline,
-
-    // Manage Files: requires MeshCentral agent AND device must be online
-    // (Currently same as remoteControlEnabled, but separate for future flexibility)
-    manageFilesEnabled: Boolean(meshcentralAgentId) && isOnline,
+    remoteShellEnabled: meshcentralReady,
+    remoteControlEnabled: meshcentralReady,
+    manageFilesEnabled: meshcentralReady,
 
     // Run Script: requires Tactical RMM agent AND device must be online
     runScriptEnabled: Boolean(tacticalAgentId) && isOnline,

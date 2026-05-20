@@ -1,150 +1,58 @@
 'use client';
 
-import type { ActionsMenuGroup } from '@flamingo-stack/openframe-frontend-core';
-import { ActionsMenuDropdown, normalizeOSType } from '@flamingo-stack/openframe-frontend-core';
-import {
-  ArrowRightUpIcon,
-  BoxArchiveIcon,
-  BracketCurlyIcon,
-  TrashIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
-import { useDeviceConfirmationDialogs } from '../hooks/use-device-confirmation-dialogs';
+import type { ActionsMenuGroup, ActionsMenuItem } from '@flamingo-stack/openframe-frontend-core';
+import { ActionsMenuDropdown } from '@flamingo-stack/openframe-frontend-core';
+import { useMemo } from 'react';
+import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import type { Device } from '../types/device.types';
-import { getDeviceActionAvailability } from '../utils/device-action-utils';
-import { buildDeviceMenuItems } from '../utils/device-menu-items';
 
 interface DeviceActionsDropdownProps {
   device: Device;
   context: 'table' | 'detail';
   onActionComplete?: () => void;
-  // Handlers for actions (used to integrate with parent component modals)
   onRunScript?: () => void;
 }
 
 export function DeviceActionsDropdown({ device, context, onActionComplete, onRunScript }: DeviceActionsDropdownProps) {
-  const router = useRouter();
-
-  const deviceId = device.machineId || device.id;
-
-  // Archive/Delete confirmation dialogs (state + JSX) are encapsulated in the hook.
-  const {
-    openArchive,
-    openDelete,
-    dialogs: confirmationDialogs,
-  } = useDeviceConfirmationDialogs(device, {
-    onArchived: context === 'detail' ? () => router.push('/devices') : onActionComplete,
-    onDeleted: context === 'detail' ? () => router.push('/devices') : onActionComplete,
+  const { items, dialogs } = useDeviceActionsMenu(device, {
+    onRunScript,
+    onActionComplete,
+    navigateOnDestructive: context === 'detail',
   });
 
-  // Get unified action availability
-  const actionAvailability = useMemo(() => getDeviceActionAvailability(device), [device]);
-
-  // Check if Windows for shell type selection
-  const isWindows = useMemo(() => {
-    const osType = device.platform || device.osType || device.operating_system;
-    return normalizeOSType(osType) === 'WINDOWS';
-  }, [device.platform, device.osType, device.operating_system]);
-
-  const handleRunScript = useCallback(() => {
-    if (onRunScript) {
-      onRunScript();
-    } else {
-      // Navigate to device details with action param to auto-open scripts modal
-      router.push(`/devices/details/${deviceId}?action=runScript`);
-    }
-  }, [deviceId, onRunScript, router]);
-
-  // Shared registry of device menu items — same source used by Tickets view.
-  const menuItems = useMemo(
-    () =>
-      buildDeviceMenuItems({
-        deviceId,
-        availability: actionAvailability,
-        iconSize: 'w-6 h-6',
-        isWindows,
-        withNewTabAction: true,
-      }),
-    [deviceId, actionAvailability, isWindows],
-  );
-
-  // Build menu groups - different items for table vs detail context
   const menuGroups = useMemo((): ActionsMenuGroup[] => {
     const groups: ActionsMenuGroup[] = [];
-    const actionItems = [];
+    const actionItems: ActionsMenuItem[] = [];
 
-    // In table context, include all remote actions
-    // In detail context, Remote Shell and Remote Control are separate buttons, so exclude them
+    // In detail context, Remote Shell/Control/Files are exposed as separate buttons elsewhere.
     if (context === 'table') {
-      actionItems.push(menuItems.remoteShell);
-      actionItems.push(menuItems.remoteControl);
-      actionItems.push(menuItems.manageFiles);
+      actionItems.push(items.remoteShell, items.remoteControl, items.manageFiles);
     }
-
-    // Run Script is always in the dropdown
-    const runScriptHref = `/devices/details/${deviceId}?action=runScript`;
-    actionItems.push({
-      id: 'run-script',
-      label: 'Run Script',
-      icon: <BracketCurlyIcon className="w-6 h-6 text-ods-text-secondary" />,
-      disabled: !actionAvailability.runScriptEnabled,
-      onClick: handleRunScript,
-      iconAction: {
-        icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
-        'aria-label': 'Open Run Script in new tab',
-        href: runScriptHref,
-        openInNewTab: true,
-        disabled: !actionAvailability.runScriptEnabled,
-      },
-    });
+    actionItems.push(items.runScript);
 
     if (actionItems.length > 0) {
-      groups.push({
-        items: actionItems,
-        separator: true,
-      });
+      groups.push({ items: actionItems, separator: true });
     }
 
-    // Destructive actions
-    const destructiveItems = [];
-
-    if (actionAvailability.archiveEnabled) {
-      destructiveItems.push({
-        id: 'archive',
-        label: 'Archive Device',
-        icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
-        onClick: openArchive,
-      });
-    }
-
-    if (actionAvailability.deleteEnabled) {
-      destructiveItems.push({
-        id: 'delete',
-        label: 'Delete Device',
-        icon: <TrashIcon className="w-6 h-6 text-ods-error" />,
-        onClick: openDelete,
-      });
-    }
+    const destructiveItems: ActionsMenuItem[] = [];
+    if (items.archive) destructiveItems.push(items.archive);
+    if (items.delete) destructiveItems.push(items.delete);
 
     if (destructiveItems.length > 0) {
-      groups.push({
-        items: destructiveItems,
-      });
+      groups.push({ items: destructiveItems });
     }
 
     return groups;
-  }, [context, actionAvailability, menuItems, deviceId, handleRunScript, openArchive, openDelete]);
+  }, [context, items]);
 
-  // Don't render if no actions available
-  if (menuGroups.length === 0 || menuGroups.every(g => g.items.length === 0)) {
+  if (menuGroups.length === 0) {
     return null;
   }
 
   return (
     <div data-no-row-click onClick={e => e.stopPropagation()}>
       <ActionsMenuDropdown groups={menuGroups} />
-      {confirmationDialogs}
+      {dialogs}
     </div>
   );
 }
