@@ -20,8 +20,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { featureFlags } from '@/lib/feature-flags';
-import { formatDate, formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomerArchive } from '../hooks/use-customer-archive';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
@@ -171,7 +169,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
   const subtitleParts = [organization.website, organization.industry].filter(p => p && p !== '-');
   const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' • ') : undefined;
 
-  const logoSrc = featureFlags.organizationImages.displayEnabled() ? getFullImageUrl(organization.imageUrl) : undefined;
+  const logoSrc = getFullImageUrl(organization.imageUrl);
 
   return (
     <>

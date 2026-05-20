@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  CardLoader,
   DeviceCard,
   Drawer,
   DrawerBody,
@@ -15,6 +14,7 @@ import type React from 'react';
 import { DeviceDetailsButton } from '@/app/(app)/devices/components/device-details-button';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
+import { DeviceInfoSectionSkeleton } from './device-info-section-skeleton';
 
 export interface LogDrawerInfoField {
   label: string;
@@ -40,7 +40,7 @@ function DrawerDeviceCard({ deviceId }: { deviceId: string }) {
   const { deviceDetails, isLoading } = useDeviceDetails(deviceId, { polling: false });
 
   if (isLoading) {
-    return <CardLoader items={2} containerClassName="p-0" />;
+    return <DeviceInfoSectionSkeleton />;
   }
 
   if (!deviceDetails) return null;

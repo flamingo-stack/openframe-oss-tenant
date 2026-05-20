@@ -52,10 +52,4 @@ export const runtimeEnv = {
   authLoginUrl(): string {
     return getEnvVar('NEXT_PUBLIC_SHARED_HOST_URL') || '';
   },
-  featureOrganizationImages(): boolean {
-    return (getEnvVar('NEXT_PUBLIC_FEATURE_ORG_IMAGES') || 'true') === 'true';
-  },
-  featureSsoAllowDomain(): boolean {
-    return (getEnvVar('NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST') || 'true') === 'true';
-  },
 };

@@ -126,10 +126,11 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
           ))}
 
           <Button
-            variant="transparent"
+            type="button"
+            variant="outline"
+            size="small"
             className="self-start"
             onClick={addRow}
-            noPaddingX
             leftIcon={<PlusCircleIcon size={24} className="text-ods-text-primary" />}
           >
             Add More Users
