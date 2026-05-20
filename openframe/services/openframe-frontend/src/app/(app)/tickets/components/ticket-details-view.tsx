@@ -198,7 +198,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const { putOnHold, resolve, activate, archive, isUpdating } = useTicketStatus();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
-  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState(false);
+  const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState<boolean | null>(null);
+  const defaultTicketInfoExpanded =
+    dialog?.creationSource === CREATION_SOURCE.FAE_FORM || dialog?.creationSource === CREATION_SOURCE.ADMIN_DASHBOARD;
+  const ticketInfoExpanded = isTicketInfoExpanded ?? defaultTicketInfoExpanded;
   const [activeChatTab, setActiveChatTab] = useState('client');
   const hasCaughtUp = useRef(false);
 
@@ -600,8 +603,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
         }}
         status={dialog.status}
-        onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
-        expanded={isTicketInfoExpanded}
+        onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
+        expanded={ticketInfoExpanded}
         assigned={{
           currentAssignee: dialog.assignedName
             ? {
@@ -634,7 +637,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           deleteNoteMutation.mutate(id);
         }}
       />
-      {isTicketInfoExpanded && (
+      {ticketInfoExpanded && (
         <AssignedItemsView
           itemId={dialog.id}
           itemType="TICKET"
