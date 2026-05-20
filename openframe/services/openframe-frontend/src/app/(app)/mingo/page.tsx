@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import type { ChatInputRef } from '@flamingo-stack/openframe-frontend-core';
 import {
+  Button,
   ChatInput,
   ChatMessageList,
   ChatSidebar,
@@ -11,6 +12,8 @@ import {
   ModelDisplay,
   Skeleton,
 } from '@flamingo-stack/openframe-frontend-core';
+import { Menu01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModelStatus } from '@/app/hooks/use-ai-model';
@@ -29,6 +32,7 @@ export default function Mingo() {
   const { aiModel: initialAiModel, isLoading: isAiModelLoading } = useAiModelStatus();
 
   const [isDraftChat, setIsDraftChat] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentModel, setCurrentModel] = useState<{
     displayName: string;
     provider: string;
@@ -202,7 +206,9 @@ export default function Mingo() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (isDraftChat) {
+        if (sidebarOpen) {
+          setSidebarOpen(false);
+        } else if (isDraftChat) {
           setIsDraftChat(false);
         } else if (activeDialogId) {
           const currentUrl = new URL(window.location.href);
@@ -214,7 +220,7 @@ export default function Mingo() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeDialogId, isDraftChat, router]);
+  }, [activeDialogId, isDraftChat, sidebarOpen, router]);
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -225,6 +231,7 @@ export default function Mingo() {
 
   const handleDialogSelect = useCallback(
     async (dialogId: string) => {
+      setSidebarOpen(false);
       if (dialogId === activeDialogId) return;
 
       setIsDraftChat(false);
@@ -261,6 +268,7 @@ export default function Mingo() {
   }, [searchParams, activeDialogId, isDraftChat, resetUnread, selectDialog, setActiveDialogId, subscribeToDialog]);
 
   const handleNewChat = useCallback(() => {
+    setSidebarOpen(false);
     resetDialog();
     setActiveDialogId(null);
     setIsDraftChat(true);
@@ -353,7 +361,16 @@ export default function Mingo() {
       })}
 
       <div className="flex h-full w-full">
-        {/* Sidebar with dialog list */}
+        {sidebarOpen && (
+          <Button
+            type="button"
+            variant="transparent"
+            aria-label="Close sidebar"
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden fixed inset-0 z-40 h-auto w-auto p-0 rounded-none bg-ods-overlay hover:bg-ods-overlay active:bg-ods-overlay"
+          />
+        )}
+
         <ChatSidebar
           onNewChat={handleNewChat}
           isCreatingDialog={isCreatingDialog}
@@ -364,12 +381,21 @@ export default function Mingo() {
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
           onLoadMore={fetchNextPage}
-          className="flex-shrink-0"
+          className={cn(
+            'flex-shrink-0 transition-transform duration-300',
+            'fixed inset-y-0 left-0 z-50',
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+            'md:relative md:translate-x-0 md:transition-none',
+          )}
         />
 
-        {/* Main Chat Area */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 m-4 mb-2 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 min-w-0">
+          <div className="md:hidden flex items-center px-[var(--spacing-system-s)] py-[var(--spacing-system-xs)] border-b border-ods-border">
+            <Button onClick={() => setSidebarOpen(true)} variant="transparent" size="icon" aria-label="Open sidebar">
+              <Menu01Icon className="w-5 h-5 text-ods-text-primary" />
+            </Button>
+          </div>
+          <div className="flex-1 m-[var(--spacing-system-mf)] mb-[var(--spacing-system-xsf)] flex flex-col min-h-0">
             <ChatMessageList
               messages={displayMessages}
               dialogId={activeDialogId || urlDialogId || 'draft'}
@@ -382,23 +408,23 @@ export default function Mingo() {
               hasNextPage={effectiveDraft ? false : hasNextMessagePage}
               isFetchingNextPage={effectiveDraft ? false : isFetchingNextMessagePage}
               onLoadMore={effectiveDraft ? undefined : fetchNextMessagePage}
+              contentClassName="!max-w-3xl px-[var(--spacing-system-mf)]"
             />
           </div>
 
           {/* Message Input */}
-          <div className="flex-shrink-0 px-6 pb-4">
+          <div className="flex-shrink-0 px-[var(--spacing-system-lf)] pb-[var(--spacing-system-mf)]">
             <ChatInput
               ref={chatInputRef}
-              reserveAvatarOffset={false}
               placeholder="Enter your Request..."
               onSend={handleSendMessage}
               onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
               sending={isComposerBusy}
               autoFocus={effectiveDraft}
-              className="bg-ods-card rounded-lg"
+              className="bg-ods-card rounded-lg !max-w-3xl"
             />
             {(displayModel || isModelRowLoading) && (
-              <div className="mx-auto w-full max-w-3xl mt-3">
+              <div className="mx-auto w-full max-w-3xl mt-[var(--spacing-system-sf)]">
                 {displayModel && !isModelRowLoading ? (
                   <ModelDisplay
                     provider={displayModel.provider}
@@ -412,7 +438,7 @@ export default function Mingo() {
                   // when the real row pops in: icon + model name on the left,
                   // and — only when a dialog is in play (so it matches the
                   // final "X/Y tokens used" tail) — a right-aligned token bar.
-                  <div className="flex items-center gap-1 h-5" aria-hidden="true">
+                  <div className="flex items-center gap-[var(--spacing-system-xxs)] h-5" aria-hidden="true">
                     <Skeleton className="h-4 w-4" />
                     <Skeleton className="h-3.5 w-36" />
                     {(activeDialogId || urlDialogId) && <Skeleton className="h-3 w-32 ml-auto" />}

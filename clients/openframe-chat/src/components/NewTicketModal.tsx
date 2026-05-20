@@ -25,15 +25,13 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[600px] w-full">
-      <ModalHeader className="flex items-center gap-4 border-b-0 px-10 pt-10 pb-0">
-        <ModalTitle className="flex-1 font-['Azeret_Mono'] text-[32px] leading-10 tracking-[-0.64px]">
-          New Ticket
-        </ModalTitle>
+    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-ods-content-narrow w-full">
+      <ModalHeader className="flex items-center gap-[var(--spacing-system-mf)] border-b-0 px-[var(--spacing-system-xlf)] pt-[var(--spacing-system-xlf)] pb-0">
+        <ModalTitle className="flex-1 text-h2">New Ticket</ModalTitle>
       </ModalHeader>
 
-      <ModalContent className="px-10 py-6">
-        <div className="flex flex-col gap-6">
+      <ModalContent className="px-[var(--spacing-system-xlf)] py-[var(--spacing-system-lf)]">
+        <div className="flex flex-col gap-[var(--spacing-system-lf)]">
           <Input
             label="Subject"
             placeholder="Ticket Subject"
@@ -63,7 +61,7 @@ export function NewTicketModal({ isOpen, onClose }: NewTicketModalProps) {
         </div>
       </ModalContent>
 
-      <ModalFooter className="px-10 pb-10 pt-0 border-t-0 gap-6">
+      <ModalFooter className="px-[var(--spacing-system-xlf)] pb-[var(--spacing-system-xlf)] pt-0 border-t-0 gap-[var(--spacing-system-lf)]">
         <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
           Cancel
         </Button>
