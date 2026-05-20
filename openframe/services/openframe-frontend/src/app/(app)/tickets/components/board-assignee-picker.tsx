@@ -2,6 +2,7 @@
 
 import type { BoardTicket } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { AssigneeDropdown } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { getFullImageUrl } from '@/lib/image-url';
 import { useAssignTicket } from '../hooks/use-assign-ticket';
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 
@@ -22,7 +23,7 @@ export function BoardAssigneePicker({ ticket }: BoardAssigneePickerProps) {
           ? {
               id: assignee.id,
               name: assignee.name ?? assignee.initials ?? assignee.id,
-              avatarSrc: assignee.avatarUrl,
+              avatarSrc: getFullImageUrl(assignee.avatarUrl),
             }
           : undefined
       }

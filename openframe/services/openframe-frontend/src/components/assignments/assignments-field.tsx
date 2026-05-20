@@ -80,11 +80,11 @@ export function AssignmentsField({
             customTrigger={
               <Button
                 type="button"
-                variant="transparent"
+                variant="outline"
+                size="small"
                 disabled={disabled}
-                noPaddingX
-                leftIcon={<PlusCircleIcon />}
-                className="self-start text-ods-text-secondary"
+                leftIcon={<PlusCircleIcon className="text-ods-text-secondary" />}
+                className="self-start"
               >
                 Assign Item
               </Button>

@@ -60,7 +60,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **openframe-stream**: Stream processing service using Kafka for real-time data processing (NOT NiFi)
 - **openframe-config**: Spring Cloud Config Server for centralized configuration management
 - **openframe-client** (Java): Agent management and authentication service
-- **openframe-frontend**: Vue 3 + TypeScript frontend with PrimeVue components
+- **openframe-frontend**: Next.js 16 + React 19 + TypeScript frontend (consumes the external `@flamingo-stack/openframe-frontend-core` design system)
 
 ### Client Agent
 - **client/** (Rust): Cross-platform system agent for monitoring and management
@@ -81,11 +81,14 @@ OpenFrame is a distributed microservices platform with the following core archit
 - **Processing**: OpenFrame Stream Service (custom data processing components)
 
 #### Frontend
-- **Framework**: Vue 3 with Composition API and TypeScript
-- **UI**: PrimeVue 3.45.0 components, custom design system
-- **State**: Pinia for state management
-- **GraphQL**: Apollo Client for data fetching
-- **Build**: Vite 5.0.10 with TypeScript support
+- **Framework**: Next.js 16 + React 19 with TypeScript 5.8 (App Router)
+- **UI Library**: `@flamingo-stack/openframe-frontend-core` — external shared design system. No custom UI primitives.
+- **Data Fetching**: `@tanstack/react-query` (no Apollo Client)
+- **State**: Zustand with immer
+- **Forms**: react-hook-form + zod
+- **Code Quality**: Biome (primary linter + formatter), Husky pre-commit
+- **Build**: Next.js (webpack or Turbopack)
+- See `openframe/services/openframe-frontend/CLAUDE.md` for the full conventions.
 
 #### Infrastructure
 - **Containerization**: Docker and Docker Compose
@@ -127,8 +130,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 │   │   ├── openframe-client/           # Agent management service
 │   │   ├── openframe-external-api/     # External API integrations
 │   │   ├── openframe-authorization-server/ # Authorization server
-│   │   ├── openframe-frontend/               # Vue.js frontend (primary)
-│   │   └── openframe-frontend/         # Alternative frontend (React/Next.js)
+│   │   └── openframe-frontend/         # Next.js 16 + React 19 frontend
 │   └── libs/                           # Shared libraries
 │       ├── openframe-core/             # Core models and utilities
 │       ├── openframe-data/             # Data access layer
@@ -176,12 +178,15 @@ The documentation has been restructured into a comprehensive, flat hierarchy:
 - Implement proper exception handling with `@ControllerAdvice`
 - GraphQL DataFetchers in `openframe-api` for data access
 
-### Vue.js/TypeScript
-- Use Vue 3 Composition API with `<script setup>`
-- TypeScript for all new code with strict mode
-- PrimeVue components for UI consistency
-- Apollo Client composables for GraphQL operations
-- Pinia stores for state management
+### React/TypeScript (openframe-frontend)
+- React 19 functional components; hooks at the top of the component, unconditionally (no hooks after early returns, no hooks inside try/catch)
+- TypeScript strict mode for all new code
+- Use components from `@flamingo-stack/openframe-frontend-core` — never create custom UI primitives
+- `@tanstack/react-query` for all server-state fetching; `useToast` (from core lib) is mandatory for API feedback
+- `react-hook-form` + `zod` for forms
+- Zustand stores for client state
+- ODS design tokens only — no hardcoded colors, hex values, or raw font sizes
+- See `openframe/services/openframe-frontend/CLAUDE.md` for the full set of conventions.
 
 ### Rust
 - Use Tokio async runtime for I/O operations
@@ -205,8 +210,9 @@ mvn test -Dtest=ClassName#methodName    # Run specific test method
 ### Frontend
 ```bash
 cd openframe/services/openframe-frontend
-npm run test:unit                       # Unit tests (if configured)
 npm run type-check                      # TypeScript validation
+npm run lint:biome                      # Biome lint + format check (pre-commit gate)
+npm run build                           # Production build verification
 ```
 
 ### Rust

@@ -14,6 +14,8 @@ export const FEATURE_FLAG_NAMES = [
   'notifications',
   'tickets-board',
   'batch-approval',
+  'ai-streaming-jetstream',
+  'debug-nats-chunks',
 ] as const;
 
 /**
@@ -78,6 +80,16 @@ export const featureFlags = {
   batchApproval: {
     enabled(): boolean {
       return getFlagValue('batch-approval', () => false);
+    },
+  },
+  aiStreamingJetstream: {
+    enabled(): boolean {
+      return getFlagValue('ai-streaming-jetstream', () => false);
+    },
+  },
+  debugNatsChunks: {
+    enabled(): boolean {
+      return getFlagValue('debug-nats-chunks', () => false);
     },
   },
 } as const;

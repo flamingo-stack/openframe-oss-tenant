@@ -1,5 +1,6 @@
 import type { BillingPeriod } from '@/__generated__/productSubscriptionCardProductFragment.graphql';
-import type { PackageUpdateInput, PaygUpdateInput } from '../hooks/use-update-subscription';
+import type { ProductCheckoutInput } from '../hooks/use-create-checkout-session';
+import type { PackageUpdateInput } from '../hooks/use-update-subscription';
 
 export type { BillingPeriod } from '@/__generated__/productSubscriptionCardProductFragment.graphql';
 export type { SubscriptionProductStatus } from '@/__generated__/productSubscriptionCardSubscriptionFragment.graphql';
@@ -15,6 +16,10 @@ export interface ProductSelectionState {
 }
 
 export interface ProductUpdates {
+  /** ADD/CANCEL diff for `updateSubscription` (active paid subscriptions). */
   packageUpdates: PackageUpdateInput[];
-  paygUpdates: PaygUpdateInput[];
+  /** Desired end-state for `createCheckoutSession` (TRIAL / TRIAL_EXPIRED / CANCELED). */
+  checkout: ProductCheckoutInput;
+  /** False when Custom Amount is selected with an empty/invalid quantity. */
+  valid: boolean;
 }

@@ -13,6 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useEffect, useId, useState } from 'react';
@@ -28,30 +29,19 @@ const REASON_OPTIONS: ReadonlyArray<{ value: CancelReason; label: string }> = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-interface DataLossStats {
-  scripts: number;
-  activeSchedules: number;
-  events: number;
-  monitoringPolicies: number;
+export interface DataLossStats {
+  activeDevices: number;
   tickets: number;
   kbArticles: number;
-  kbFolders: number;
+  monitoringPolicies: number;
+  savedQueries: number;
 }
-
-const DEFAULT_STATS: DataLossStats = {
-  scripts: 47,
-  activeSchedules: 12,
-  events: 3200,
-  monitoringPolicies: 8,
-  tickets: 142,
-  kbArticles: 38,
-  kbFolders: 6,
-};
 
 interface CancelSubscriptionModalProps {
   isOpen: boolean;
   endDate: string | null;
   stats?: DataLossStats;
+  isStatsLoading?: boolean;
   isPending?: boolean;
   onClose: () => void;
   onConfirm: (reason: CancelReason, comment: string) => void;
@@ -77,7 +67,8 @@ function formatCount(value: number): string {
 export function CancelSubscriptionModal({
   isOpen,
   endDate,
-  stats = DEFAULT_STATS,
+  stats,
+  isStatsLoading = false,
   isPending = false,
   onClose,
   onConfirm,
@@ -115,38 +106,7 @@ export function CancelSubscriptionModal({
           billing period.
         </p>
 
-        <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
-          <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
-            <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
-            <p className="text-h6 flex-1 text-ods-warning">
-              Once your subscription ends, this data will no longer be accessible.
-            </p>
-          </div>
-          <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.scripts)}</span>
-              {` scripts, including `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.activeSchedules)}</span>
-              {` active schedules`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.events)}</span>
-              {` events across `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.monitoringPolicies)}</span>
-              {` monitoring policies`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.tickets)}</span>
-              {` tickets and all client communication`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.kbArticles)}</span>
-              {` KB articles across `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.kbFolders)}</span>
-              {` folders`}
-            </DataLossItem>
-          </ul>
-        </div>
+        {isStatsLoading || !stats ? <DataLossSkeleton /> : <DataLossBox stats={stats} />}
 
         <div className="flex flex-col gap-1">
           <label className="text-h3 text-ods-text-primary" htmlFor={reasonId}>
@@ -206,5 +166,93 @@ function DataLossItem({ children }: { children: React.ReactNode }) {
       <DotIcon aria-hidden className="size-6 shrink-0 text-ods-warning" />
       <span className="flex-1">{children}</span>
     </li>
+  );
+}
+
+function Stat({ value }: { value: number }) {
+  return <span className="text-h4 text-ods-warning">{formatCount(value)}</span>;
+}
+
+// Rows with a zero metric are hidden. The policies/queries row is dropped only
+// when both are zero; otherwise it shows just the non-zero parts. If nothing is
+// left to warn about, the whole box is omitted.
+function DataLossBox({ stats }: { stats: DataLossStats }) {
+  const showPolicies = stats.monitoringPolicies > 0;
+  const showQueries = stats.savedQueries > 0;
+  const rows = [
+    stats.activeDevices > 0 && (
+      <DataLossItem key="devices">
+        <Stat value={stats.activeDevices} />
+        {` active devices monitored`}
+      </DataLossItem>
+    ),
+    stats.tickets > 0 && (
+      <DataLossItem key="tickets">
+        <Stat value={stats.tickets} />
+        {` tickets and all client communication`}
+      </DataLossItem>
+    ),
+    stats.kbArticles > 0 && (
+      <DataLossItem key="kb">
+        <Stat value={stats.kbArticles} />
+        {` knowledge base articles`}
+      </DataLossItem>
+    ),
+    (showPolicies || showQueries) && (
+      <DataLossItem key="fleet">
+        {showPolicies && (
+          <>
+            <Stat value={stats.monitoringPolicies} />
+            {` monitoring policies`}
+          </>
+        )}
+        {showPolicies && showQueries && ` and `}
+        {showQueries && (
+          <>
+            <Stat value={stats.savedQueries} />
+            {` saved queries`}
+          </>
+        )}
+      </DataLossItem>
+    ),
+  ].filter(Boolean);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
+      <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
+        <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
+        <p className="text-h6 flex-1 text-ods-warning">
+          Once your subscription ends, this data will no longer be accessible.
+        </p>
+      </div>
+      <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">{rows}</ul>
+    </div>
+  );
+}
+
+// Mirrors the data-loss box structure (header chrome + 4 bulleted rows) so the
+// loading state keeps the same shape instead of a flat rectangle.
+const SKELETON_ROW_WIDTHS = ['w-1/2', 'w-3/4', 'w-2/5', 'w-3/4'] as const;
+
+function DataLossSkeleton() {
+  return (
+    <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
+      <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
+        <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
+        <p className="text-h6 flex-1 text-ods-warning">
+          Once your subscription ends, this data will no longer be accessible.
+        </p>
+      </div>
+      <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">
+        {SKELETON_ROW_WIDTHS.map((width, i) => (
+          <li key={i} className="flex items-center h-6">
+            <DotIcon aria-hidden className="size-6 shrink-0 text-ods-warning" />
+            <Skeleton className={`h-4 ${width}`} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

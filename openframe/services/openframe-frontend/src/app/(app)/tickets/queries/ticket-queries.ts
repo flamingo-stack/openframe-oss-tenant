@@ -556,10 +556,13 @@ export const GET_TICKET_STATUS_TRANSITIONS_QUERY = `
 export const GET_TICKET_STATISTICS_QUERY = `
   query GetTicketStatistics {
     ticketStatistics {
+      totalCount
       statusCounts {
         status
         count
       }
+      averageResolutionTimeFormatted
+      averageRating
     }
   }
 `;

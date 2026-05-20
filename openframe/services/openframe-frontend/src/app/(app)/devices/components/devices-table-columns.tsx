@@ -65,6 +65,10 @@ interface DevicesTableBodyProps {
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   /** Optional extra column inserted before the open-in-new-tab column (e.g. row actions on the dedicated page). */
   actionsColumn?: ColumnDef<Device>;
+  /** Column ids to drop from the base table columns (e.g. ['organization'] when scoped to a single org). */
+  hideColumns?: string[];
+  /** Server-side total (for paginated lists). Falls back to loaded-row count when omitted. */
+  totalCount?: number;
 }
 
 export function DevicesTableBody({
@@ -78,11 +82,14 @@ export function DevicesTableBody({
   columnFilters,
   onColumnFiltersChange,
   actionsColumn,
+  hideColumns,
+  totalCount,
 }: DevicesTableBodyProps) {
   const columns = useMemo<ColumnDef<Device>[]>(() => {
-    const base = getDeviceTableColumns(deviceFilters ?? null);
+    const hidden = new Set(hideColumns ?? []);
+    const base = getDeviceTableColumns(deviceFilters ?? null).filter(c => !c.id || !hidden.has(c.id));
     return actionsColumn ? [...base, actionsColumn, DEVICE_OPEN_COLUMN] : [...base, DEVICE_OPEN_COLUMN];
-  }, [deviceFilters, actionsColumn]);
+  }, [deviceFilters, actionsColumn, hideColumns]);
 
   const table = useDataTable<Device>({
     data: devices,
@@ -98,7 +105,7 @@ export function DevicesTableBody({
       <DataTable.Header
         stickyHeader={!!stickyHeaderOffset}
         stickyHeaderOffset={stickyHeaderOffset}
-        rightSlot={<DataTable.RowCount />}
+        rightSlot={<DataTable.RowCount itemName="device" totalCount={totalCount} />}
       />
       <DataTable.Body
         loading={isLoading}

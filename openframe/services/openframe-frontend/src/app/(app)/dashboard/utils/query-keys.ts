@@ -11,8 +11,8 @@ export const dashboardQueryKeys = {
   // Device statistics
   deviceStats: () => [...dashboardQueryKeys.all, 'device-stats'] as const,
 
-  // Chat statistics (SaaS mode only)
-  chatStats: () => [...dashboardQueryKeys.all, 'chat-stats'] as const,
+  // Ticket statistics (SaaS mode only)
+  ticketStats: () => [...dashboardQueryKeys.all, 'ticket-stats'] as const,
 
   // Organization statistics
   orgStats: (limit: number) => [...dashboardQueryKeys.all, 'org-stats', { limit }] as const,

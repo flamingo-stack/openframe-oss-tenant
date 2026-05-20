@@ -12,7 +12,6 @@ const subscriptionGuardQuery = graphql`
     subscription {
       id
       status
-      trialExpirationDate
     }
   }
 `;
@@ -46,6 +45,6 @@ function SubscriptionGuardInner({ children }: { children: ReactNode }) {
     {},
     { fetchPolicy: 'store-or-network' },
   );
-  const status = resolveSubscriptionStatus(data.subscription?.status, data.subscription?.trialExpirationDate);
+  const status = resolveSubscriptionStatus(data.subscription?.status);
   return <SubscriptionLockProvider status={status}>{children}</SubscriptionLockProvider>;
 }

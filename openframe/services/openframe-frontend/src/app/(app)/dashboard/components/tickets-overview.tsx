@@ -1,16 +1,16 @@
 'use client';
 
 import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
-import { useChatsOverview } from '../hooks/use-dashboard-stats';
+import { useTicketsOverview } from '../hooks/use-dashboard-stats';
 
-export function ChatsOverviewSection() {
-  const chats = useChatsOverview();
+export function TicketsOverviewSection() {
+  const tickets = useTicketsOverview();
 
-  if (chats.isLoading) {
+  if (tickets.isLoading) {
     return (
       <div className="space-y-4">
         <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-          Chats Overview
+          Tickets Overview
         </h2>
         <Skeleton className="h-5 w-48" />
 
@@ -27,32 +27,32 @@ export function ChatsOverviewSection() {
   return (
     <div className="space-y-4">
       <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-        Chats Overview
+        Tickets Overview
       </h2>
       <p className="text-ods-text-secondary font-['DM_Sans'] font-medium text-[14px]">
-        {chats.total.toLocaleString()} Chats in Total
+        {tickets.total.toLocaleString()} Tickets in Total
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardInfoCard
-          title="Active Chats"
-          value={chats.active}
-          percentage={chats.activePercentage}
+          title="Active Tickets"
+          value={tickets.active}
+          percentage={tickets.activePercentage}
           showProgress
           href="/tickets?status=ACTIVE&status=TECH_REQUIRED&status=ON_HOLD"
         />
         <DashboardInfoCard
-          title="Resolved Chats"
-          value={chats.resolved}
-          percentage={chats.resolvedPercentage}
+          title="Resolved Tickets"
+          value={tickets.resolved}
+          percentage={tickets.resolvedPercentage}
           showProgress
           href="/tickets?status=RESOLVED"
         />
-        <DashboardInfoCard title="Avg. Resolve Time" value={chats.avgResolveTime} />
-        <DashboardInfoCard title="Avg. Fae Rate" value={`${chats.avgFaeRate}/5`} />
+        <DashboardInfoCard title="Avg. Resolve Time" value={tickets.avgResolveTime} />
+        <DashboardInfoCard title="Avg. Fae Rate" value={`${tickets.avgFaeRate}/5`} />
       </div>
     </div>
   );
 }
 
-export default ChatsOverviewSection;
+export default TicketsOverviewSection;

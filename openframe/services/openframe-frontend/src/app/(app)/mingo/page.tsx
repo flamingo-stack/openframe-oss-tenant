@@ -14,6 +14,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModelStatus } from '@/app/hooks/use-ai-model';
+import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
@@ -53,6 +54,8 @@ export default function Mingo() {
     hasNextPage: hasNextMessagePage,
     fetchNextPage: fetchNextMessagePage,
     isFetchingNextPage: isFetchingNextMessagePage,
+    initialOptStartSeq,
+    isMessagesFetched,
   } = useMingoDialogSelection();
 
   const setTokenUsage = useMingoMessagesStore(state => state.setTokenUsage);
@@ -294,7 +297,9 @@ export default function Mingo() {
         router.replace(currentUrl.pathname + currentUrl.search, { scroll: false });
 
         const success = await sendMessage(message.trim(), newDialogId);
-        if (!success) {
+        if (success) {
+          trackDashboardActivity(EVENT_SUBTYPE.SEND_MINGO_MESSAGE);
+        } else {
           console.warn('[Mingo] Failed to send message');
         }
         return;
@@ -303,7 +308,9 @@ export default function Mingo() {
       if (!activeDialogId) return;
 
       const success = await sendMessage(message.trim());
-      if (!success) {
+      if (success) {
+        trackDashboardActivity(EVENT_SUBTYPE.SEND_MINGO_MESSAGE);
+      } else {
         console.warn('[Mingo] Failed to send message');
       }
     },
@@ -326,22 +333,24 @@ export default function Mingo() {
 
   return (
     <ContentPageContainer padding="none" showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
-      {/* 
-          NATS Subscriptions and per-dialog message processor
-        */}
-      {Array.from(subscribedDialogs).map(dialogId => (
-        <DialogSubscription
-          key={dialogId}
-          dialogId={dialogId}
-          isActive={dialogId === activeDialogId}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          approvalStatuses={approvalStatuses}
-          isDevTicketEnabled={isDevTicketEnabled}
-          onConnectionChange={onConnectionChange}
-          onMetadata={dialogId === activeDialogId ? handleMetadataUpdate : undefined}
-        />
-      ))}
+      {Array.from(subscribedDialogs).map(dialogId => {
+        const isActive = dialogId === activeDialogId;
+        return (
+          <DialogSubscription
+            key={dialogId}
+            dialogId={dialogId}
+            isActive={isActive}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            approvalStatuses={approvalStatuses}
+            isDevTicketEnabled={isDevTicketEnabled}
+            onConnectionChange={onConnectionChange}
+            onMetadata={isActive ? handleMetadataUpdate : undefined}
+            initialOptStartSeq={isActive ? initialOptStartSeq : null}
+            isInitialOptStartSeqReady={isActive ? isMessagesFetched : true}
+          />
+        );
+      })}
 
       <div className="flex h-full w-full">
         {/* Sidebar with dialog list */}

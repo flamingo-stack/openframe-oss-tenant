@@ -36,14 +36,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
+import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { apiClient } from '@/lib/api-client';
 import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
+import { useDeviceActionsMenu } from '../../devices/hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
-import { getDeviceActionAvailability } from '../../devices/utils/device-action-utils';
-import { buildDeviceMenuItems } from '../../devices/utils/device-menu-items';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import {
   APPROVAL_STATUS,
@@ -76,6 +76,26 @@ interface TicketDetailsViewProps {
   ticketId: string;
 }
 
+/**
+ * Wrap a device-menu item so opening it also fires a dashboard-activity event.
+ * `href` navigation is preserved. For a submenu parent the click only expands
+ * the submenu, so tracking is attached to the leaf items that actually
+ * navigate, not the parent.
+ */
+function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): ActionsMenuItem {
+  if (item.submenu && item.submenu.length > 0) {
+    return { ...item, submenu: item.submenu.map(child => withActivityTracking(child, subtype)) };
+  }
+  const originalOnClick = item.onClick;
+  return {
+    ...item,
+    onClick: () => {
+      trackDashboardActivity(subtype);
+      originalOnClick?.();
+    },
+  };
+}
+
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
   const handleBackToTickets = useSafeBack('/tickets');
@@ -94,16 +114,17 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   // the Devices view, so remote-action gating stays in sync across views.
   const machineId = useMemo(() => {
     if (!dialog) return undefined;
-    return dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
+    // owner.machineId is the canonical machineId; dialog.deviceId is a backend passthrough
+    // that may contain a Mongo ObjectId, so prefer the owner field when available.
+    const ownerMachineId = isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined;
+    return ownerMachineId || dialog.deviceId;
   }, [dialog, isClientOwner]);
-  const { deviceDetails } = useDeviceDetails(machineId);
-  const actionAvailability = useMemo(
-    () => (deviceDetails ? getDeviceActionAvailability(deviceDetails) : null),
-    [deviceDetails],
-  );
+  const { deviceDetails, isLoading: isDeviceLoading } = useDeviceDetails(machineId);
+  const { items: deviceMenuItems } = useDeviceActionsMenu(deviceDetails, { deviceId: machineId });
 
   const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
     useTicketDetailsStore();
+  const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
   const { messages: adminMessages, isTyping: isAdminChatTyping } = admin;
@@ -312,7 +333,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     if (!dialog || isUpdating) return;
 
     const nextStatus = await resolve(ticketId);
-    if (nextStatus) applyStatus(nextStatus);
+    if (nextStatus) {
+      trackDashboardActivity(EVENT_SUBTYPE.RESOLVE_TICKET);
+      applyStatus(nextStatus);
+    }
   }, [dialog, isUpdating, resolve, ticketId, applyStatus]);
 
   const handleArchive = useCallback(async () => {
@@ -390,8 +414,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     onReject: handleReject,
   });
 
-  const clientPendingApprovals = useMemo(() => extractPendingApprovals(clientMessages), [clientMessages]);
-  const adminPendingApprovals = useMemo(() => extractPendingApprovals(adminMessages), [adminMessages]);
+  const clientPendingApprovals = useMemo(
+    () => extractPendingApprovals(clientMessages, approvalStatuses),
+    [clientMessages, approvalStatuses],
+  );
+  const adminPendingApprovals = useMemo(
+    () => extractPendingApprovals(adminMessages, approvalStatuses),
+    [adminMessages, approvalStatuses],
+  );
 
   const remapClientUserName = useCallback(
     (msg: ChatMessage): ChatMessage =>
@@ -432,7 +462,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
 
     const ticketItems: ActionsMenuItem[] = [];
-    const deviceItems: ActionsMenuItem[] = [];
+    const infoItems: ActionsMenuItem[] = [];
+    const remoteItems: ActionsMenuItem[] = [];
 
     if (!isArchived) {
       ticketItems.push({
@@ -443,16 +474,25 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       });
     }
 
-    if (machineId) {
-      const items = buildDeviceMenuItems({ deviceId: machineId, availability: actionAvailability });
-      deviceItems.push(items.deviceDetails, items.remoteShell, items.remoteControl, items.deviceLogs);
+    if (deviceDetails || isDeviceLoading) {
+      infoItems.push(deviceMenuItems.deviceDetails, deviceMenuItems.deviceLogs);
+      remoteItems.push(
+        withActivityTracking(deviceMenuItems.remoteShell, EVENT_SUBTYPE.OPEN_REMOTE_SHELL),
+        withActivityTracking(deviceMenuItems.remoteControl, EVENT_SUBTYPE.OPEN_REMOTE_CONTROL),
+        deviceMenuItems.manageFiles,
+        deviceMenuItems.runScript,
+      );
     }
 
     const groups: ActionsMenuGroup[] = [];
-    if (ticketItems.length > 0) groups.push({ items: ticketItems, separator: deviceItems.length > 0 });
-    if (deviceItems.length > 0) groups.push({ items: deviceItems });
+    const candidates = [ticketItems, infoItems, remoteItems];
+    candidates.forEach((items, idx) => {
+      if (items.length === 0) return;
+      const hasMore = candidates.slice(idx + 1).some(g => g.length > 0);
+      groups.push({ items, separator: hasMore });
+    });
     return groups;
-  }, [dialog, machineId, actionAvailability, router]);
+  }, [dialog, deviceDetails, isDeviceLoading, deviceMenuItems, router]);
 
   const pageActions = useMemo<PageActionButton[]>(() => {
     if (!dialog) return [];
@@ -522,7 +562,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
   const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
   const isClosed = isResolved || isArchived;
-  const deviceMachineId = dialog.deviceId || (isClientOwner(dialog.owner) ? dialog.owner.machineId : undefined);
   const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
   const showTokenMemory = !isClosed;
@@ -558,7 +597,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               : undefined) ||
             'Unassigned',
           icon: <MonitorIcon className="size-4" />,
-          onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+          onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
         }}
         status={dialog.status}
         onExpand={() => setIsTicketInfoExpanded(prev => !prev)}
@@ -642,7 +681,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                     : undefined) ||
                   'Unassigned',
                 icon: <MonitorIcon className="size-4" />,
-                onClick: deviceMachineId ? () => router.push(`/devices/details/${deviceMachineId}`) : undefined,
+                onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
               }}
               status={dialog.status}
               expanded={true}
