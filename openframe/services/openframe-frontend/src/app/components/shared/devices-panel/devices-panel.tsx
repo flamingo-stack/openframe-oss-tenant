@@ -43,6 +43,12 @@ export interface DevicesPanelProps {
    * the default and return devices of all statuses (e.g. when scoped to one customer).
    */
   defaultStatuses?: string[];
+  /**
+   * Overrides the PageLayout wrapper className. Pass an empty string to disable
+   * the default side/bottom padding (e.g. when embedded inside a tab whose parent
+   * already provides padding).
+   */
+  className?: string;
 }
 
 export function DevicesPanel({
@@ -52,6 +58,7 @@ export function DevicesPanel({
   hideColumns,
   hideFilters,
   defaultStatuses,
+  className = '',
 }: DevicesPanelProps) {
   const router = useRouter();
 
@@ -150,7 +157,7 @@ export function DevicesPanel({
       <PageLayout
         title={title}
         actionsVariant="icon-buttons"
-        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+        className={className}
         selector={
           <TabSelector
             value={params.viewMode}

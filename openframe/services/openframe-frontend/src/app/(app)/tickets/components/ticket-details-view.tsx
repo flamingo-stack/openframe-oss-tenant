@@ -747,7 +747,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   hasNextPage={clientChat.hasNextPage}
                   isFetchingNextPage={clientChat.isFetchingNextPage}
                   onLoadMore={clientChat.fetchNextPage}
-                  contentClassName="px-4 max-w-full"
+                  contentClassName="px-[var(--spacing-system-mf)] !max-w-full"
                 />
               </div>
 
@@ -757,7 +757,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   type="button"
                   onClick={startDirectChat}
                   disabled={isStartingDirectChat}
-                  className="w-full flex items-center justify-center gap-2 rounded-md bg-ods-card border border-ods-border px-3 py-3 transition-colors hover:bg-ods-bg-hover disabled:opacity-50 disabled:cursor-not-allowed mt-1 text-ods-text-primary"
+                  className="w-full flex items-center justify-center gap-[var(--spacing-system-xsf)] rounded-lg bg-ods-card border border-ods-border px-[var(--spacing-system-sf)] py-[var(--spacing-system-sf)] transition-colors hover:bg-ods-bg-hover disabled:opacity-50 disabled:cursor-not-allowed mt-[var(--spacing-system-xsf)] text-ods-text-primary"
                 >
                   <ChatsIcon size={24} className="shrink-0 text-ods-text-secondary" />
                   <span className="text-h4">{isStartingDirectChat ? 'Starting...' : 'Start Direct Chat'}</span>
@@ -765,7 +765,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               )}
               {!isClosed && isDirectMode && (
                 <ChatInput
-                  reserveAvatarOffset={false}
                   placeholder="Enter your Message..."
                   onSend={sendClientMessage}
                   sending={
@@ -775,11 +774,11 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                     clientPendingApprovals.length > 0
                   }
                   autoFocus={false}
-                  className="mt-1 bg-ods-card rounded-lg max-w-full"
+                  className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
                 />
               )}
               {showTokenMemory && (currentClientModel || clientTokenUsage) && (
-                <div className="mt-2">
+                <div className="mt-[var(--spacing-system-xsf)]">
                   <ModelDisplay
                     provider={currentClientModel?.provider}
                     modelName={currentClientModel?.displayName}
@@ -829,39 +828,37 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   hasNextPage={adminChat.hasNextPage}
                   isFetchingNextPage={adminChat.isFetchingNextPage}
                   onLoadMore={adminChat.fetchNextPage}
-                  contentClassName="px-4 max-w-full"
+                  contentClassName="px-[var(--spacing-system-mf)] !max-w-full"
                 />
-              )}
-
-              {/* Message Input */}
-              {!isClosed && (
-                <ChatInput
-                  reserveAvatarOffset={false}
-                  placeholder="Enter your Request..."
-                  onSend={handleSendAdminMessage}
-                  onStop={isAdminChatTyping && adminPendingApprovals.length === 0 ? handleStopGeneration : undefined}
-                  sending={
-                    isSendingAdminMessage ||
-                    isAdminChatTyping ||
-                    isCompacting ||
-                    isClientChatTyping ||
-                    adminPendingApprovals.length > 0
-                  }
-                  autoFocus={false}
-                  className="mt-2 bg-ods-card rounded-lg max-w-full"
-                />
-              )}
-              {showTokenMemory && (currentAdminModel || adminTokenUsage) && (
-                <div className="mt-2">
-                  <ModelDisplay
-                    provider={currentAdminModel?.provider}
-                    modelName={currentAdminModel?.displayName}
-                    usedTokens={adminTokenUsage?.totalTokensSize ?? undefined}
-                    contextWindow={adminTokenUsage?.contextSize ?? undefined}
-                  />
-                </div>
               )}
             </div>
+
+            {!isClosed && (
+              <ChatInput
+                placeholder="Enter your Request..."
+                onSend={handleSendAdminMessage}
+                onStop={isAdminChatTyping && adminPendingApprovals.length === 0 ? handleStopGeneration : undefined}
+                sending={
+                  isSendingAdminMessage ||
+                  isAdminChatTyping ||
+                  isCompacting ||
+                  isClientChatTyping ||
+                  adminPendingApprovals.length > 0
+                }
+                autoFocus={false}
+                className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
+              />
+            )}
+            {showTokenMemory && (currentAdminModel || adminTokenUsage) && (
+              <div className="mt-[var(--spacing-system-xsf)]">
+                <ModelDisplay
+                  provider={currentAdminModel?.provider}
+                  modelName={currentAdminModel?.displayName}
+                  usedTokens={adminTokenUsage?.totalTokensSize ?? undefined}
+                  contextWindow={adminTokenUsage?.contextSize ?? undefined}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>
