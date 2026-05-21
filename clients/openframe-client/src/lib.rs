@@ -342,6 +342,7 @@ impl Client {
             openframe_client_info_service.clone(),
             github_download_service.clone(),
             update_state_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize tool agent update service
