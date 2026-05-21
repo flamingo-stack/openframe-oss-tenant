@@ -320,8 +320,13 @@ export function DeviceSelector({
                 )}
               </div>
               <div className="flex flex-col truncate">
-                <span className="text-h4 text-ods-text-primary truncate">{device.displayName || device.hostname}</span>
-                <span className="text-h6 text-ods-text-secondary truncate">
+                <span className="text-h4 text-ods-text-primary truncate" title={device.displayName || device.hostname}>
+                  {device.displayName || device.hostname}
+                </span>
+                <span
+                  className="text-h6 text-ods-text-secondary truncate"
+                  title={`Last Online: ${lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}`}
+                >
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
               </div>
@@ -340,7 +345,9 @@ export function DeviceSelector({
           return (
             <div className="flex items-center gap-3">
               <EntityImage src={fullImageUrl} alt={device.organization || 'Customer'} className="size-12 md:size-12" />
-              <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
+              <span className="text-h4 text-ods-text-primary truncate" title={device.organization || ''}>
+                {device.organization || ''}
+              </span>
             </div>
           );
         },

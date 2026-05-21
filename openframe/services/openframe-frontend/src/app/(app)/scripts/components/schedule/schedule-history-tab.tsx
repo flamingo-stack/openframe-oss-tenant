@@ -6,6 +6,7 @@ import {
   type ColumnDef,
   DataTable,
   type Row,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo, useState } from 'react';
@@ -162,12 +163,10 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
           const entry = row.original;
           return (
             <div className="flex flex-col min-w-0">
-              <span className="text-h4 text-ods-text-primary truncate">
-                {entry.stdout || entry.stderr || 'No output'}
-              </span>
-              <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
+              <TruncateText>{entry.stdout || entry.stderr || 'No output'}</TruncateText>
+              <TruncateText variant="h6" tone="secondary">
                 {entry.stderr ? `stderr: ${entry.stderr}` : `Execution time: ${entry.execution_time}s`}
-              </span>
+              </TruncateText>
             </div>
           );
         },

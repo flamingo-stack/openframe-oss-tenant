@@ -21,9 +21,13 @@ function InfoCell({ value, label, icon, href }: InfoCellProps) {
     <div className="flex flex-col justify-center min-w-0 flex-1">
       <div className="flex items-center gap-1 min-w-0">
         {icon}
-        <span className="text-h4 text-ods-text-primary truncate">{display}</span>
+        <span className="text-h4 text-ods-text-primary truncate" title={display}>
+          {display}
+        </span>
       </div>
-      <span className="text-h6 text-ods-text-secondary truncate">{label}</span>
+      <span className="text-h6 text-ods-text-secondary truncate" title={label}>
+        {label}
+      </span>
     </div>
   );
 

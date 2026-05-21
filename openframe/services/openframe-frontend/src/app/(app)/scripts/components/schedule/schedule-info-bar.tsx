@@ -15,15 +15,21 @@ export function ScheduleInfoBar({ schedule }: ScheduleInfoBarProps) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 bg-ods-card border border-ods-border rounded-[6px] overflow-clip w-full">
       <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px] border-b md:border-b-0 border-ods-border">
-        <span className="text-h4 text-ods-text-primary truncate">{date}</span>
+        <span className="text-h4 text-ods-text-primary truncate" title={date}>
+          {date}
+        </span>
         <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Date</span>
       </div>
       <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px] border-b md:border-b-0 border-ods-border">
-        <span className="text-h4 text-ods-text-primary truncate">{time}</span>
+        <span className="text-h4 text-ods-text-primary truncate" title={time}>
+          {time}
+        </span>
         <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Time</span>
       </div>
       <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
-        <span className="text-h4 text-ods-text-primary truncate">{repeat}</span>
+        <span className="text-h4 text-ods-text-primary truncate" title={repeat}>
+          {repeat}
+        </span>
         <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Repeat</span>
       </div>
       <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
@@ -48,25 +54,35 @@ export function ScheduleInfoBarFromData({ name, note, date, time, repeat, platfo
     <div className="flex flex-col gap-0 bg-ods-card border border-ods-border rounded-[6px] overflow-clip w-full">
       <div className="grid grid-cols-2 border-b border-ods-border">
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
-          <span className="text-h4 text-ods-text-primary truncate">{name}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={name}>
+            {name}
+          </span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Schedule Name</span>
         </div>
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
-          <span className="text-h4 text-ods-text-primary truncate">{note || '—'}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={note || '—'}>
+            {note || '—'}
+          </span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Note</span>
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4">
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px] border-b md:border-b-0 border-ods-border">
-          <span className="text-h4 text-ods-text-primary truncate">{date}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={date}>
+            {date}
+          </span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Date</span>
         </div>
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px] border-b md:border-b-0 border-ods-border">
-          <span className="text-h4 text-ods-text-primary truncate">{time}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={time}>
+            {time}
+          </span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Time</span>
         </div>
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">
-          <span className="text-h4 text-ods-text-primary truncate">{repeat}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={repeat}>
+            {repeat}
+          </span>
           <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">Repeat</span>
         </div>
         <div className="flex flex-col items-start justify-center min-w-0 px-4 py-3 md:py-0 md:h-[80px]">

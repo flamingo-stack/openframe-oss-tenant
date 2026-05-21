@@ -189,7 +189,9 @@ export function SsoConfigModal({
             <div className="bg-ods-card border border-ods-border rounded-lg p-4 space-y-3">
               <Label>Authorized redirect URL for your SSO provider settings:</Label>
               <div className="bg-ods-bg border border-ods-border rounded-lg p-3 flex items-center gap-3">
-                <code className="flex-1 text-sm text-ods-text-primary font-mono truncate">{redirectUrl}</code>
+                <code className="flex-1 text-sm text-ods-text-primary font-mono truncate" title={redirectUrl}>
+                  {redirectUrl}
+                </code>
                 <Button
                   variant="transparent"
                   size="small-legacy"

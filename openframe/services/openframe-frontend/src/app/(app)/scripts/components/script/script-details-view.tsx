@@ -40,12 +40,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
               icon: <PlayIcon size={20} />,
               href: runHref,
               variant: 'accent' as const,
-              iconAction: {
-                icon: <ArrowRightUpIcon className="w-5 h-5" />,
-                'aria-label': 'Open Run Script in new tab',
-                href: runHref,
-                openInNewTab: true,
-              },
             },
           ]
         : []),

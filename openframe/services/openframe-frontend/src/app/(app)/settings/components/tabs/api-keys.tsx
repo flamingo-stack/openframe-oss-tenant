@@ -9,6 +9,7 @@ import {
   MoreActionsMenu,
   type Row,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useEffect, useMemo, useState } from 'react';
@@ -45,12 +46,10 @@ export function ApiKeysTab() {
         header: 'NAME',
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
           <div className="flex flex-col min-w-0">
-            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-              {row.original.name}
-            </span>
-            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+            <TruncateText>{row.original.name}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
               {row.original.description || '—'}
-            </span>
+            </TruncateText>
           </div>
         ),
         meta: { width: 'w-1/3' },
@@ -71,18 +70,14 @@ export function ApiKeysTab() {
       {
         accessorKey: 'id',
         header: 'KEY ID',
-        cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
-          <div className="truncate font-['Azeret_Mono'] text-[16px] text-ods-text-primary">{row.original.id}</div>
-        ),
+        cell: ({ row }: { row: Row<ApiKeyRecord> }) => <TruncateText mono>{row.original.id}</TruncateText>,
         meta: { width: 'w-1/3' },
       },
       {
         accessorKey: 'totalRequests',
         header: 'USAGE',
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
-          <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
-            {row.original.totalRequests.toLocaleString()}
-          </div>
+          <TruncateText>{row.original.totalRequests.toLocaleString()}</TruncateText>
         ),
         meta: { width: 'w-28' },
       },
@@ -91,12 +86,10 @@ export function ApiKeysTab() {
         header: 'CREATED',
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
           <div className="flex flex-col min-w-0">
-            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-              {formatDate(row.original.createdAt)}
-            </span>
-            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+            <TruncateText>{formatDate(row.original.createdAt)}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
               {formatTime(row.original.createdAt)}
-            </span>
+            </TruncateText>
           </div>
         ),
         meta: { width: 'w-40' },
@@ -106,12 +99,10 @@ export function ApiKeysTab() {
         header: 'EXPIRES',
         cell: ({ row }: { row: Row<ApiKeyRecord> }) => (
           <div className="flex flex-col min-w-0">
-            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
-              {row.original.expiresAt ? formatDate(row.original.expiresAt) : '—'}
-            </span>
-            <span className="font-['DM_Sans'] text-[14px] text-ods-text-secondary truncate">
+            <TruncateText>{row.original.expiresAt ? formatDate(row.original.expiresAt) : '—'}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
               {row.original.expiresAt ? formatTime(row.original.expiresAt) : '—'}
-            </span>
+            </TruncateText>
           </div>
         ),
         meta: { width: 'w-40' },
