@@ -1,13 +1,10 @@
 import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
-import { runtimeEnv } from './runtime-config';
 
 /**
  * Server-known flag names. Must be passed to `feFeatureFlags(names: ...)`;
  * the backend only returns flags that are explicitly requested.
  */
 export const FEATURE_FLAG_NAMES = [
-  'organizationImages',
-  'ssoAutoAllow',
   'billings',
   'thinking',
   'knowledge-base',
@@ -36,22 +33,6 @@ function getFlagValue(flagName: string, envFallback: () => boolean): boolean {
  * Server-loaded via feFeatureFlags GraphQL query with env-var fallbacks
  */
 export const featureFlags = {
-  organizationImages: {
-    enabled(): boolean {
-      return getFlagValue('organizationImages', () => runtimeEnv.featureOrganizationImages());
-    },
-    uploadEnabled(): boolean {
-      return this.enabled();
-    },
-    displayEnabled(): boolean {
-      return this.enabled();
-    },
-  },
-  ssoAutoAllow: {
-    enabled(): boolean {
-      return getFlagValue('ssoAutoAllow', () => runtimeEnv.featureSsoAllowDomain());
-    },
-  },
   subscription: {
     enabled(): boolean {
       return getFlagValue('billings', () => false);

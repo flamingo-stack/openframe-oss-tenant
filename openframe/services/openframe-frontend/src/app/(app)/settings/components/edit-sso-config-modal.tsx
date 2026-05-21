@@ -17,7 +17,6 @@ import { validateEmailDomain } from '@flamingo-stack/openframe-frontend-core/uti
 import { Eye, EyeOff } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
-import { featureFlags } from '@/lib/feature-flags';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { getProviderIcon } from '../utils/get-provider-icon';
 
@@ -56,7 +55,6 @@ export function SsoConfigModal({
   onSubmit,
   onDisable,
 }: SsoConfigModalProps) {
-  const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
   const { copy: copyToClipboard, copied } = useCopyToClipboard({
     successDescription: 'Redirect URL copied to clipboard',
     errorDescription: 'Unable to copy redirect URL',
@@ -108,20 +106,11 @@ export function SsoConfigModal({
     }
     if (!hasBasicFields) return false;
     // If auto-provision is enabled, require at least one domain
-    if (isDomainAllowlistEnabled && autoProvisionUsers && allowedDomains.length === 0) {
+    if (autoProvisionUsers && allowedDomains.length === 0) {
       return false;
     }
     return true;
-  }, [
-    clientId,
-    clientSecret,
-    isMicrosoft,
-    isSingleTenant,
-    msTenantId,
-    isDomainAllowlistEnabled,
-    autoProvisionUsers,
-    allowedDomains,
-  ]);
+  }, [clientId, clientSecret, isMicrosoft, isSingleTenant, msTenantId, autoProvisionUsers, allowedDomains]);
 
   const handleSubmit = async () => {
     if (!canSubmit || !onSubmit) return;
@@ -140,10 +129,8 @@ export function SsoConfigModal({
       if (isMicrosoft) {
         data.msTenantId = isSingleTenant && msTenantId.trim() ? msTenantId.trim() : null;
       }
-      if (isDomainAllowlistEnabled) {
-        data.autoProvisionUsers = autoProvisionUsers;
-        data.allowedDomains = autoProvisionUsers ? allowedDomains : [];
-      }
+      data.autoProvisionUsers = autoProvisionUsers;
+      data.allowedDomains = autoProvisionUsers ? allowedDomains : [];
       await onSubmit(data);
       toast({
         title: 'SSO Enabled',
@@ -185,11 +172,7 @@ export function SsoConfigModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      className={isDomainAllowlistEnabled ? 'max-w-5xl w-full' : 'max-w-2xl w-full'}
-    >
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl w-full">
       <ModalHeader>
         <div className="flex items-center gap-3">
           {getProviderIcon(providerKey)}
@@ -198,9 +181,8 @@ export function SsoConfigModal({
         <p className="text-ods-text-secondary text-sm mt-1">Configure OAuth credentials for {providerDisplayName}</p>
       </ModalHeader>
 
-      {/* 2-Column Layout when domain allowlist is enabled, single column otherwise */}
       <div className="px-6 py-4">
-        <div className={isDomainAllowlistEnabled ? 'grid grid-cols-1 lg:grid-cols-2 gap-8' : ''}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column: SSO Configuration */}
           <div className="space-y-6">
             {/* Redirect URL Section */}
@@ -289,39 +271,37 @@ export function SsoConfigModal({
           </div>
 
           {/* Right Column: Domain Allowlist */}
-          {isDomainAllowlistEnabled && (
-            <div className="space-y-4 lg:border-l lg:border-ods-border lg:pl-8">
-              <h3 className="font-['DM_Sans'] font-semibold text-lg text-ods-text-primary">Domain Allowlist</h3>
+          <div className="space-y-4 lg:border-l lg:border-ods-border lg:pl-8">
+            <h3 className="font-['DM_Sans'] font-semibold text-lg text-ods-text-primary">Domain Allowlist</h3>
 
-              <CheckboxWithDescription
-                id="auto-provision-users"
-                checked={autoProvisionUsers}
-                onCheckedChange={setAutoProvisionUsers}
-                title="Auto-provision accounts from domain"
-                description="Automatically create user accounts when signing in via this SSO provider."
+            <CheckboxWithDescription
+              id="auto-provision-users"
+              checked={autoProvisionUsers}
+              onCheckedChange={setAutoProvisionUsers}
+              title="Auto-provision accounts from domain"
+              description="Automatically create user accounts when signing in via this SSO provider."
+            />
+
+            {autoProvisionUsers && (
+              <AllowedDomainsInput
+                value={allowedDomains}
+                onChange={setAllowedDomains}
+                onValidate={domain => {
+                  const validation = validateEmailDomain(domain);
+                  return {
+                    valid: validation.valid,
+                    error: validation.error,
+                    cleanedDomain: validation.cleanedDomain,
+                  };
+                }}
+                label="Allowed Domains"
+                placeholder="openframe.com"
+                disabled={isSubmitting}
+                error={domainError}
+                helperText="Users with email addresses from these domains can log in via SSO without registration."
               />
-
-              {autoProvisionUsers && (
-                <AllowedDomainsInput
-                  value={allowedDomains}
-                  onChange={setAllowedDomains}
-                  onValidate={domain => {
-                    const validation = validateEmailDomain(domain);
-                    return {
-                      valid: validation.valid,
-                      error: validation.error,
-                      cleanedDomain: validation.cleanedDomain,
-                    };
-                  }}
-                  label="Allowed Domains"
-                  placeholder="openframe.com"
-                  disabled={isSubmitting}
-                  error={domainError}
-                  helperText="Users with email addresses from these domains can log in via SSO without registration."
-                />
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 

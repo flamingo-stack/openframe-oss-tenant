@@ -1,11 +1,12 @@
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
+  EntityImage,
   type OnChangeFn,
   type Row,
   Tag,
@@ -13,7 +14,6 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
 import { type ReactNode, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -124,13 +124,9 @@ function OrganizationCell({ device }: { device: Device }) {
 
   return (
     <div className="flex items-center gap-3">
-      {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Customer'} size="sm" />
-      )}
+      <EntityImage src={fullImageUrl} alt={device.organization || 'Customer'} className="size-12 md:size-12" />
       <div className="flex flex-col justify-center flex-1 min-w-0">
-        <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
-          {device.organization || ''}
-        </span>
+        <span className="text-h4 text-ods-text-primary break-words">{device.organization || ''}</span>
       </div>
     </div>
   );

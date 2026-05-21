@@ -19,7 +19,6 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { featureFlags } from '@/lib/feature-flags';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
 import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
 import { getProviderIcon } from '../../utils/get-provider-icon';
@@ -37,7 +36,6 @@ type UiProviderRow = {
 };
 
 export function SsoConfigurationTab() {
-  const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
   const [searchTerm, setSearchTerm] = useState('');
   const [providers, setProviders] = useState<UiProviderRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -196,19 +194,16 @@ export function SsoConfigurationTab() {
       },
     ];
 
-    // Only add allowed domains column if feature is enabled
-    if (isDomainAllowlistEnabled) {
-      baseColumns.push({
-        accessorKey: 'allowedDomains',
-        header: 'ALLOWED DOMAINS',
-        cell: ({ row }: { row: Row<UiProviderRow> }) => (
-          <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
-            {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
-          </span>
-        ),
-        meta: { width: 'flex-[1.5] min-w-0' },
-      });
-    }
+    baseColumns.push({
+      accessorKey: 'allowedDomains',
+      header: 'ALLOWED DOMAINS',
+      cell: ({ row }: { row: Row<UiProviderRow> }) => (
+        <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
+          {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
+        </span>
+      ),
+      meta: { width: 'flex-[1.5] min-w-0' },
+    });
 
     baseColumns.push({
       accessorKey: 'hasConfig',
@@ -251,7 +246,7 @@ export function SsoConfigurationTab() {
     });
 
     return baseColumns;
-  }, [isDomainAllowlistEnabled]);
+  }, []);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

@@ -22,6 +22,10 @@ export const knowledgeBaseItemQuery = graphql`
         firstName
         lastName
         email
+        image {
+          imageUrl
+          hash
+        }
       }
       tags {
         id

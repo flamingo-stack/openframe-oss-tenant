@@ -64,8 +64,6 @@ NEXT_PUBLIC_GTM_CONTAINER_ID=GTM-XXXXXXX                # Google Tag Manager
 **Feature flags:**
 ```bash
 NEXT_PUBLIC_ENABLE_DEV_TICKET_OBSERVER=true   # Dev ticket auth mode
-NEXT_PUBLIC_FEATURE_ORG_IMAGES=true            # Organization images (default: true)
-NEXT_PUBLIC_ENABLE_SSO_DOMAIN_ALLOWLIST=true   # SSO domain allowlist (default: true)
 NEXT_PUBLIC_FEATURE_SCRIPT_SCHEDULE=false       # Script scheduling (default: false)
 NEXT_PUBLIC_FEATURE_MONITORING=false            # Monitoring pages (default: false)
 ```
@@ -139,8 +137,6 @@ Helper functions: `isOssTenantMode()`, `isSaasTenantMode()`, `isSaasSharedMode()
 ### Feature Flags
 
 Defined in `src/lib/feature-flags.ts`:
-- `featureFlags.organizationImages.enabled()` — org image upload/display
-- `featureFlags.ssoAutoAllow.enabled()` — SSO domain allowlist
 - `featureFlags.monitoring.enabled()` — monitoring pages visibility
 
 ### Application Modules
