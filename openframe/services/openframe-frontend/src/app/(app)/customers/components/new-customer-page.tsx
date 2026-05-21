@@ -11,8 +11,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
-import { featureFlags } from '@/lib/feature-flags';
+import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
@@ -88,6 +87,8 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const { updateOrganization } = useUpdateCustomer();
   const { organization } = useCustomerDetails(organizationId);
 
+  const handleBack = useSafeBack(organizationId ? `/customers/details/${organizationId}` : '/customers');
+
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [preserved, setPreserved] = useState<PreservedFields>(DEFAULT_PRESERVED);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,7 +100,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const previewUrlRef = useRef<string | undefined>(undefined);
 
   const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
-  const showImageUploader = isSaasTenant && featureFlags.organizationImages.uploadEnabled();
+  const showImageUploader = isSaasTenant;
   const displayedImage = pendingPreviewUrl || getFullImageUrl(form.imageUrl);
 
   const set = (partial: Partial<FormState>) => setForm(prev => ({ ...prev, ...partial }));
@@ -284,8 +285,8 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       title={organizationId ? 'Edit Customer' : 'New Customer'}
       backButton={{
-        label: organizationId ? 'Back' : 'Back',
-        onClick: () => router.push(organizationId ? `/customers/details/${organizationId}` : '/customers'),
+        label: 'Back',
+        onClick: handleBack,
       }}
       actions={[
         {

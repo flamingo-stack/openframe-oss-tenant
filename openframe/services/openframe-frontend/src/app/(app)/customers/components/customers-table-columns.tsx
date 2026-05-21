@@ -5,13 +5,13 @@ import {
   Button,
   type ColumnDef,
   DataTable,
+  EntityImage,
   Input,
   type Row,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { type ReactNode, useMemo, useState } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
+import { type ReactNode, useMemo } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomerDeviceCounts } from '../hooks/use-customer-device-counts';
 import type { Customer } from '../hooks/use-customers';
@@ -29,46 +29,12 @@ export interface UiCustomerEntry {
   imageUrl?: string | null;
 }
 
-function AvatarInitials({ initials }: { initials: string }) {
-  return (
-    <span className="flex size-full items-center justify-center text-xs font-medium uppercase text-ods-text-secondary">
-      {initials}
-    </span>
-  );
-}
-
-function AvatarImage({ src, initials }: { src: string; initials: string }) {
-  const [errored, setErrored] = useState(false);
-
-  if (errored) {
-    return <AvatarInitials initials={initials} />;
-  }
-
-  return (
-    <img src={src} alt="" onError={() => setErrored(true)} className="block size-full rounded-none object-cover" />
-  );
-}
-
-export function CustomerAvatar({ imageUrl, name }: { imageUrl?: string; name: string }) {
-  const initials = (name?.substring(0, 2) || '??').toUpperCase();
-
-  return (
-    <div className="size-12 shrink-0 overflow-hidden rounded-sm border border-ods-border bg-ods-bg">
-      {imageUrl ? (
-        <AvatarImage key={imageUrl} src={imageUrl} initials={initials} />
-      ) : (
-        <AvatarInitials initials={initials} />
-      )}
-    </div>
-  );
-}
-
 export function CustomerNameCell({ org }: { org: UiCustomerEntry }) {
   const fullImageUrl = getFullImageUrl(org.imageUrl);
 
   return (
     <div className="flex items-center gap-4 min-w-0">
-      {featureFlags.organizationImages.displayEnabled() && <CustomerAvatar imageUrl={fullImageUrl} name={org.name} />}
+      <EntityImage src={fullImageUrl} alt={org.name} className="size-12 md:size-12" />
       <div className="flex flex-col justify-center min-w-0">
         <span className="text-h4 text-ods-text-primary truncate">{org.name}</span>
         {org.email && (

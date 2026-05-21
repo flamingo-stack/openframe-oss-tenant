@@ -5,6 +5,7 @@ import { GET_ORGANIZATIONS_MIN_QUERY } from '@/app/(app)/customers/queries/custo
 import { GET_DEVICES_QUERY } from '@/app/(app)/devices/queries/devices-queries';
 import type { Tag } from '@/app/components/shared/tags';
 import { apiClient } from '@/lib/api-client';
+import { getFullImageUrl } from '@/lib/image-url';
 import { API_ENDPOINTS } from '../constants';
 import { GET_TICKET_LABELS_QUERY } from '../queries/ticket-queries';
 import type { GraphQlResponse } from '../utils/graphql';
@@ -36,7 +37,7 @@ async function fetchCustomerOptions(search: string): Promise<AvatarOption[]> {
   return edges.map(({ node }: any) => ({
     label: node.name,
     value: node.organizationId,
-    imageUrl: node.image?.imageUrl,
+    imageUrl: getFullImageUrl(node.image?.imageUrl),
   }));
 }
 
@@ -86,7 +87,7 @@ async function fetchAssigneeOptions(): Promise<AvatarOption[]> {
   return items.map((user: any) => ({
     label: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
     value: user.id,
-    imageUrl: user.image?.imageUrl,
+    imageUrl: getFullImageUrl(user.image?.imageUrl),
   }));
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
-import { OrganizationIcon, OSTypeIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeIcon } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { EntityImage } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import Link from 'next/link';
 import type React from 'react';
 import { renderDeviceTypeIcon } from '@/app/components/shared/device-type-icon';
@@ -69,12 +70,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
 
   const customerInner = device.organization && (
     <>
-      <OrganizationIcon
-        imageUrl={customerImageUrl}
-        organizationName={device.organization}
-        size="md"
-        className="rounded-full overflow-hidden [&_img]:object-cover [&_img]:p-0 [&_img]:w-full [&_img]:h-full"
-      />
+      <EntityImage src={customerImageUrl} alt={device.organization} className="size-10 md:size-10 rounded-full" />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         {customerHref ? (
           <Link href={customerHref} className="text-ods-accent underline hover:opacity-80 text-h4 truncate">
@@ -90,12 +86,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
 
   const assignedInner = assignedUser?.username && (
     <>
-      <OrganizationIcon
-        imageUrl={assignedUserImageUrl}
-        organizationName={assignedUser.username}
-        size="md"
-        className="rounded-full overflow-hidden [&_img]:object-cover [&_img]:p-0 [&_img]:w-full [&_img]:h-full"
-      />
+      <EntityImage src={assignedUserImageUrl} alt={assignedUser.username} className="size-10 md:size-10 rounded-full" />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         <p className="text-ods-accent underline text-h4 truncate">{assignedUser.username}</p>
         <p className="text-ods-text-secondary text-h6 truncate">Assigned User</p>

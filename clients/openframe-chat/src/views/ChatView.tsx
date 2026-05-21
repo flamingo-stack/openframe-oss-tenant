@@ -361,40 +361,19 @@ export function ChatView() {
             sending={isStreaming || isCompacting || hasPendingApproval}
             awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
             placeholder="Enter your request here..."
-            className={hasMessages ? '' : 'max-w-2xl mx-auto'}
-            reserveAvatarOffset={hasMessages}
             disabled={isDisconnected}
           />
         )}
         {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
-          <div className={hasMessages ? 'mx-auto w-full max-w-3xl px-4' : 'mx-auto w-full max-w-2xl'}>
-            {hasMessages ? (
-              <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
-                <div className="invisible h-8 w-8" aria-hidden />
-                <div>
-                  {displayModel && isFullyLoaded && (
-                    <ModelDisplay
-                      provider={displayModel.provider}
-                      modelName={displayModel.modelName}
-                      displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                      usedTokens={tokenUsage?.totalTokensSize}
-                      contextWindow={tokenUsage?.contextSize}
-                    />
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="mt-3">
-                {displayModel && isFullyLoaded && (
-                  <ModelDisplay
-                    provider={displayModel.provider}
-                    modelName={displayModel.modelName}
-                    displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                    usedTokens={tokenUsage?.totalTokensSize}
-                    contextWindow={tokenUsage?.contextSize}
-                  />
-                )}
-              </div>
+          <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-sf)]">
+            {displayModel && isFullyLoaded && (
+              <ModelDisplay
+                provider={displayModel.provider}
+                modelName={displayModel.modelName}
+                displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                usedTokens={tokenUsage?.totalTokensSize}
+                contextWindow={tokenUsage?.contextSize}
+              />
             )}
           </div>
         )}

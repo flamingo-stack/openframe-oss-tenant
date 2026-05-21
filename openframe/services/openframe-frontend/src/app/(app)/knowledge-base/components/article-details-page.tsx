@@ -21,6 +21,7 @@ import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
+import { getFullImageUrl } from '@/lib/image-url';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { useDownloadArticleAttachment } from '../hooks/use-download-article-attachment';
@@ -74,6 +75,11 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
     const parts = [article.author.firstName, article.author.lastName].filter(Boolean);
     return parts.length ? parts.join(' ') : (article.author.email ?? null);
   }, [article.author]);
+
+  const authorImageUrl = useMemo(
+    () => getFullImageUrl(article.author?.image?.imageUrl),
+    [article.author?.image?.imageUrl],
+  );
 
   const uiAttachments = useMemo(() => {
     if (!article.attachments) return [];
@@ -163,7 +169,13 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       <Card className="px-[var(--spacing-system-mf)] py-0 border-ods-border">
         <div className="grid grid-cols-2 gap-x-[var(--spacing-system-mf)] lg:grid-cols-3">
           <div className="flex min-w-0 items-center gap-[var(--spacing-system-xsf)] h-20">
-            <SquareAvatar fallback={authorName ?? 'A'} alt={authorName ?? 'Author'} size="md" variant="round" />
+            <SquareAvatar
+              src={authorImageUrl}
+              fallback={authorName ?? 'A'}
+              alt={authorName ?? 'Author'}
+              size="md"
+              variant="round"
+            />
             <div className="flex flex-col min-w-0 flex-1">
               <p className="text-h4 text-ods-text-primary truncate">{authorName ?? 'Unknown'}</p>
               <p className="text-heading-5 text-ods-text-secondary truncate">Author</p>

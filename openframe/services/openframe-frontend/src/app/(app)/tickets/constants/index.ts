@@ -80,6 +80,8 @@ export type AssistantType = (typeof ASSISTANT_CONFIG)[keyof typeof ASSISTANT_CON
 
 export const CREATION_SOURCE = {
   FAE_FORM: 'FAE_FORM',
+  FAE_DIALOG: 'FAE_DIALOG',
+  ADMIN_DASHBOARD: 'ADMIN_DASHBOARD',
 } as const;
 
 export type CreationSource = (typeof CREATION_SOURCE)[keyof typeof CREATION_SOURCE];

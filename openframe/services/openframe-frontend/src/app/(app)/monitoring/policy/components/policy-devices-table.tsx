@@ -1,18 +1,18 @@
 'use client';
 
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   DataTable,
+  EntityImage,
   type Row,
   Tag,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { usePolicyDevicesTable } from '../hooks/use-policy-devices-table';
 import type { PolicyDeviceRow } from '../types/policy-device-row';
@@ -60,9 +60,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           const fullImageUrl = getFullImageUrl(r.organizationImageUrl);
           return (
             <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon imageUrl={fullImageUrl} organizationName={r.organization || 'Customer'} size="sm" />
-              )}
+              <EntityImage src={fullImageUrl} alt={r.organization || 'Customer'} className="size-12 md:size-12" />
               <div className="flex flex-col justify-center flex-1 min-w-0">
                 <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
                   {r.organization || ''}

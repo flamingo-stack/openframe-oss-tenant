@@ -2,7 +2,7 @@
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
 import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, DetailLoader, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,7 @@ import { formatDateTime } from '@/lib/format-date';
 import { useLogDetails } from '../hooks/use-log-details';
 import { DetailsSection } from './details-section';
 import { FullInformationSection } from './full-information-section';
+import { LogDetailsSkeleton } from './log-details-skeleton';
 
 interface LogDetailsViewProps {
   logId: string;
@@ -66,7 +67,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
 
   // Loading state
   if (isLoading) {
-    return <DetailLoader />;
+    return <LogDetailsSkeleton onBack={handleBackToLogs} />;
   }
 
   // Error state
