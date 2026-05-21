@@ -343,11 +343,7 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
                           >
                             <div className="flex flex-col flex-1">
                               <div className="text-h4 text-ods-text-primary mb-1">{script.name}</div>
-                              <div
-                                className={`font-['DM_Sans'] font-medium text-[14px] leading-[20px] ${
-                                  isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'
-                                }`}
-                              >
+                              <div className={`text-h6 ${isSelected ? 'text-ods-accent' : 'text-ods-text-secondary'}`}>
                                 {script.description}
                               </div>
                             </div>

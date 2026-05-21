@@ -23,12 +23,14 @@ import {
   ListPageLayout,
   multiSelectFilterFn,
   type Row,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { getOSLabel, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScripts } from '../hooks/use-scripts';
 
 interface UiScriptEntry {
@@ -204,11 +206,7 @@ export function ScriptsTable() {
       {
         accessorKey: 'name',
         header: 'Name',
-        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
-          <span className="text-h4 text-ods-text-primary overflow-x-hidden whitespace-nowrap text-ellipsis">
-            {row.original.name}
-          </span>
-        ),
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => <TruncateText>{row.original.name}</TruncateText>,
         enableSorting: false,
         meta: { width: 'flex-1 min-w-0' },
       },
@@ -254,9 +252,7 @@ export function ScriptsTable() {
       {
         accessorKey: 'category',
         header: 'Category',
-        cell: ({ row }: { row: Row<UiScriptEntry> }) => (
-          <span className="text-h4 text-ods-text-primary line-clamp-2">{row.original.category}</span>
-        ),
+        cell: ({ row }: { row: Row<UiScriptEntry> }) => <TruncateText lines={2}>{row.original.category}</TruncateText>,
         enableSorting: false,
         filterFn: multiSelectFilterFn,
         meta: {
@@ -269,7 +265,9 @@ export function ScriptsTable() {
         accessorKey: 'description',
         header: 'Description',
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
-          <span className="text-h4 text-ods-text-secondary line-clamp-2">{row.original.description || '—'}</span>
+          <TruncateText lines={2} tone="secondary">
+            {row.original.description || '—'}
+          </TruncateText>
         ),
         enableSorting: false,
         meta: { width: 'flex-1', hideAt: 'lg' },
@@ -289,9 +287,7 @@ export function ScriptsTable() {
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={`/scripts/details/${row.original.id}`}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(`/scripts/details/${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

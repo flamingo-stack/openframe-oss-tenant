@@ -14,6 +14,7 @@ import {
   type Row,
   Skeleton,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -171,12 +172,10 @@ export function SsoConfigurationTab() {
           <div className="flex items-center gap-3">
             {getProviderIcon(row.original.provider)}
             <div className="flex flex-col justify-center min-w-0">
-              <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-                {row.original.displayName}
-              </span>
-              <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">
+              <TruncateText>{row.original.displayName}</TruncateText>
+              <TruncateText variant="h5" tone="secondary">
                 {row.original.provider}
-              </span>
+              </TruncateText>
             </div>
           </div>
         ),
@@ -198,9 +197,9 @@ export function SsoConfigurationTab() {
       accessorKey: 'allowedDomains',
       header: 'ALLOWED DOMAINS',
       cell: ({ row }: { row: Row<UiProviderRow> }) => (
-        <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
+        <TruncateText variant="h6" tone="secondary">
           {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
-        </span>
+        </TruncateText>
       ),
       meta: { width: 'flex-[1.5] min-w-0' },
     });

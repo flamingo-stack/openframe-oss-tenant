@@ -10,6 +10,7 @@ import {
   type OnChangeFn,
   type Row,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
@@ -17,6 +18,7 @@ import { type ReactNode, useMemo } from 'react';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../constants/device-statuses';
 import type { Device, DeviceFilters } from '../types/device.types';
 import { getDeviceStatusConfig } from '../utils/device-status';
@@ -38,9 +40,7 @@ export const DEVICE_OPEN_COLUMN: ColumnDef<Device> = {
   cell: ({ row }: { row: Row<Device> }) => (
     <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
       <Button
-        href={deviceRowHref(row.original)}
-        prefetch={false}
-        openInNewTab
+        onClick={openInNewTab(deviceRowHref(row.original))}
         variant="outline"
         size="icon"
         leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -230,10 +230,8 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
                   className: 'w-5 h-5 text-ods-text-secondary',
                 })}
             </div>
-            <div className="text-h4 text-ods-text-primary truncate">
-              <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
-                {device.displayName || device.hostname}
-              </p>
+            <div className="flex-1 min-w-0">
+              <TruncateText>{device.displayName || device.hostname}</TruncateText>
             </div>
           </div>
         );

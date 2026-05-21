@@ -165,13 +165,17 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
           <div className="flex min-w-0 items-center gap-[var(--spacing-system-xsf)] h-20">
             <SquareAvatar fallback={authorName ?? 'A'} alt={authorName ?? 'Author'} size="md" variant="round" />
             <div className="flex flex-col min-w-0 flex-1">
-              <p className="text-h4 text-ods-text-primary truncate">{authorName ?? 'Unknown'}</p>
+              <p className="text-h4 text-ods-text-primary truncate" title={authorName ?? 'Unknown'}>
+                {authorName ?? 'Unknown'}
+              </p>
               <p className="text-heading-5 text-ods-text-secondary truncate">Author</p>
             </div>
           </div>
 
           <div className="flex flex-col min-w-0 h-20 justify-center">
-            <p className="text-h4 text-ods-text-primary truncate">{updatedAt ? formatDate(updatedAt) : '-'}</p>
+            <p className="text-h4 text-ods-text-primary truncate" title={updatedAt ? formatDate(updatedAt) : '-'}>
+              {updatedAt ? formatDate(updatedAt) : '-'}
+            </p>
             <p className="text-heading-5 text-ods-text-secondary truncate">Updated</p>
           </div>
 
