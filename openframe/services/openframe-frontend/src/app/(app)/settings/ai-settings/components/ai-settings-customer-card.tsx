@@ -49,10 +49,7 @@ export function AiSettingsCustomerCard({
   return (
     <div className="bg-ods-card border border-ods-border rounded-md grid grid-cols-2 md:grid-cols-4">
       {cells.map((cell, idx) => (
-        <div
-          key={idx}
-          className={cn(CELL, idx < cells.length - 2 && 'border-b border-ods-border')}
-        >
+        <div key={idx} className={cn(CELL, idx < cells.length - 2 && 'border-b border-ods-border')}>
           {cell}
         </div>
       ))}

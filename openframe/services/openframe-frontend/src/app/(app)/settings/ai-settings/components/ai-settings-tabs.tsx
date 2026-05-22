@@ -2,7 +2,7 @@
 
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { ChatsIcon, ShieldCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { TabNavigation, type TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 
 export const AI_SETTINGS_TAB_IDS = ['customer', 'mingo', 'guardrails'] as const;

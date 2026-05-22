@@ -1,6 +1,6 @@
 'use client';
 
-import { PageLayout, type PageActionButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type PageActionButton, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 
