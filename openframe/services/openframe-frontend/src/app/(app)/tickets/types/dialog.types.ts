@@ -199,6 +199,7 @@ export interface Message {
   chatType: ChatType;
   dialogMode: DialogMode;
   createdAt: string;
+  lastChunkStreamSeq?: number | null;
   owner: ClientOwner | AssistantOwner | AdminOwner | MessageOwner;
   messageData:
     | TextData
