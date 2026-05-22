@@ -51,7 +51,11 @@ export function SimpleModal({
     <ModalV2 isOpen={isOpen} onClose={onClose} className={className}>
       {headerContent && <ModalV2Header>{headerContent}</ModalV2Header>}
       {children !== undefined &&
-        (contentClassName !== undefined ? <ModalV2Content className={contentClassName}>{children}</ModalV2Content> : children)}
+        (contentClassName !== undefined ? (
+          <ModalV2Content className={contentClassName}>{children}</ModalV2Content>
+        ) : (
+          children
+        ))}
       {footer && <ModalV2Footer>{footer}</ModalV2Footer>}
     </ModalV2>
   );
