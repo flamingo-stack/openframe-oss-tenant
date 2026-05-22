@@ -52,7 +52,7 @@ export function TicketsTable({
     statusFilters,
   });
 
-  const { actions, menuActions } = useTicketsActions({ isLoading, enabled: !isArchived });
+  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading, enabled: !isArchived });
 
   const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
@@ -105,67 +105,70 @@ export function TicketsTable({
   }
 
   return (
-    <PageLayout
-      title={title}
-      backButton={backButton}
-      actions={actions.length > 0 ? actions : undefined}
-      menuActions={menuActions.length > 0 ? menuActions : undefined}
-      actionsVariant="menu-primary"
-      selector={selector}
-      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      contentClassName="flex flex-col"
-    >
-      <div>
-        <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
-          <Input
-            placeholder="Search for Ticket"
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            className="flex-1"
-            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-          />
+    <>
+      <PageLayout
+        title={title}
+        backButton={backButton}
+        actions={actions.length > 0 ? actions : undefined}
+        menuActions={menuActions.length > 0 ? menuActions : undefined}
+        actionsVariant="menu-primary"
+        selector={selector}
+        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+        contentClassName="flex flex-col"
+      >
+        <div>
+          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+            <Input
+              placeholder="Search for Ticket"
+              value={search}
+              onChange={e => onSearchChange(e.target.value)}
+              className="flex-1"
+              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+            />
+            {hasMobileFilter && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileFilterOpen(true)}
+                aria-label="Open filters"
+                leftIcon={<Filter02Icon />}
+              />
+            )}
+          </div>
+
           {hasMobileFilter && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileFilterOpen(true)}
-              aria-label="Open filters"
-              leftIcon={<Filter02Icon />}
+            <FilterModal
+              isOpen={mobileFilterOpen}
+              onClose={() => setMobileFilterOpen(false)}
+              filterGroups={filterGroups}
+              onFilterChange={handleMobileFilterChange}
+              currentFilters={{ status: statusFilters || [] }}
             />
           )}
-        </div>
 
-        {hasMobileFilter && (
-          <FilterModal
-            isOpen={mobileFilterOpen}
-            onClose={() => setMobileFilterOpen(false)}
-            filterGroups={filterGroups}
-            onFilterChange={handleMobileFilterChange}
-            currentFilters={{ status: statusFilters || [] }}
+          <TicketTableBody
+            tickets={tickets}
+            isLoading={isLoading}
+            emptyMessage={emptyMessage}
+            skeletonRows={10}
+            stickyHeaderOffset="top-[96px]"
+            isArchived={isArchived}
+            columnFilters={isArchived ? undefined : columnFilters}
+            onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
+            footerSlot={
+              <DataTable.InfiniteFooter
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                onLoadMore={handleFetchNextPage}
+                skeletonRows={2}
+              />
+            }
           />
-        )}
-
-        <TicketTableBody
-          tickets={tickets}
-          isLoading={isLoading}
-          emptyMessage={emptyMessage}
-          skeletonRows={10}
-          stickyHeaderOffset="top-[96px]"
-          isArchived={isArchived}
-          columnFilters={isArchived ? undefined : columnFilters}
-          onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
-          footerSlot={
-            <DataTable.InfiniteFooter
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-              onLoadMore={handleFetchNextPage}
-              skeletonRows={2}
-            />
-          }
-        />
-      </div>
-    </PageLayout>
+        </div>
+      </PageLayout>
+      {ticketsActionsDialog}
+    </>
   );
 }
 

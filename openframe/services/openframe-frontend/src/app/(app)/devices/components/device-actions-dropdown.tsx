@@ -50,7 +50,7 @@ export function DeviceActionsDropdown({ device, context, onActionComplete, onRun
   }
 
   return (
-    <div data-no-row-click onClick={e => e.stopPropagation()}>
+    <div data-no-row-click>
       <ActionsMenuDropdown groups={menuGroups} />
       {dialogs}
     </div>
