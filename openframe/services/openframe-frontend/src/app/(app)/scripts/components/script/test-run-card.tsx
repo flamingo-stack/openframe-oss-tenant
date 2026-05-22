@@ -70,13 +70,17 @@ export function TestRunCard({ run, onStop, onTestAgain, onClose }: TestRunCardPr
         <div className="flex-1 flex flex-col justify-center overflow-hidden">
           <div className="flex gap-1 items-center">
             <Monitor className="size-4 text-ods-text-secondary flex-shrink-0" />
-            <span className="text-lg font-medium text-ods-text-primary truncate">{run.deviceName}</span>
+            <span className="text-lg font-medium text-ods-text-primary truncate" title={run.deviceName}>
+              {run.deviceName}
+            </span>
           </div>
           <span className="text-sm font-medium text-ods-text-secondary truncate">Device</span>
         </div>
 
         <div className="flex-1 flex flex-col justify-center overflow-hidden">
-          <span className="text-lg font-medium text-ods-text-primary truncate">{run.startedAt}</span>
+          <span className="text-lg font-medium text-ods-text-primary truncate" title={run.startedAt}>
+            {run.startedAt}
+          </span>
           <span className="text-sm font-medium text-ods-text-secondary">Started</span>
         </div>
 

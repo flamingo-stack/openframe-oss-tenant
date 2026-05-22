@@ -31,13 +31,17 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
 
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-center gap-2">
-          <span className="text-h4 text-ods-text-primary truncate">{displayName}</span>
+          <span className="text-h4 text-ods-text-primary truncate" title={displayName}>
+            {displayName}
+          </span>
           {user.roles?.map(role => (
             <Tag key={role} variant="outline" label={role} />
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-h6 text-ods-text-secondary truncate">{user.email}</p>
+          <p className="text-h6 text-ods-text-secondary truncate" title={user.email}>
+            {user.email}
+          </p>
           {user.emailVerified === false && (
             <button
               type="button"

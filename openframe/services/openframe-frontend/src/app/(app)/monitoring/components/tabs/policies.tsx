@@ -7,7 +7,6 @@ import {
   type ColumnDef,
   DashboardInfoCard,
   DataTable,
-  DeviceCardCompact,
   MoreActionsMenu,
   PageError,
   PageLayout,
@@ -15,12 +14,14 @@ import {
   SearchInput,
   Skeleton,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import type { Policy } from '../../types/policies.types';
@@ -113,7 +114,12 @@ export function Policies() {
         accessorKey: 'name',
         header: 'Name',
         cell: ({ row }: { row: Row<Policy> }) => (
-          <DeviceCardCompact deviceName={row.original.name} organization={row.original.description} />
+          <div className="flex flex-col justify-center gap-1 py-2 min-h-[60px]">
+            <TruncateText>{row.original.name}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
+              {row.original.description}
+            </TruncateText>
+          </div>
         ),
       },
       {
@@ -134,7 +140,7 @@ export function Policies() {
           return platforms.length > 0 ? (
             <OSTypeBadgeGroup osTypes={platforms} iconSize="w-4 h-4" />
           ) : (
-            <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">All</span>
+            <span className="text-h6 text-ods-text-secondary">All</span>
           );
         },
         meta: { width: 'w-[140px]', hideAt: 'lg' },
@@ -160,9 +166,7 @@ export function Policies() {
         cell: ({ row }: { row: Row<Policy> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={`/monitoring/policy/${row.original.id}`}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(`/monitoring/policy/${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

@@ -1,5 +1,6 @@
 import {
   buildNatsWsUrl,
+  type ChunkData,
   extractIncompleteMessageState,
   type Message,
   type MessageSegment,
@@ -7,6 +8,7 @@ import {
   type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  useJetStreamDialogSubscription,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -24,6 +26,8 @@ import { useChatMessages } from './useChatMessages';
 import { useChunkCatchup } from './useChunkCatchup';
 import { useDialogMessages } from './useDialogMessages';
 
+const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
+
 interface UseChatOptions {
   useApi?: boolean;
   apiToken?: string;
@@ -36,6 +40,7 @@ interface UseChatOptions {
 
 export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage, onDialogClosed }: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
+  const [useJetstream] = useState(() => !!flags['ai-streaming-jetstream']);
 
   // Core state
   const [isTyping, setIsTyping] = useState(false);
@@ -94,6 +99,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     hasNextPage,
     isFetchingNextPage,
     isLoading: isLoadingHistoricalMessages,
+    isFetched: isHistoryFetched,
+    initialOptStartSeq,
     fetchNextPage,
     escalatedApprovals,
     reset: resetDialogMessages,
@@ -319,12 +326,13 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   }, [natsDialogId]);
 
   useEffect(() => {
+    if (useJetstream) return;
     if (!natsDialogId) return;
 
     resetChunkTracking();
     startInitialBuffering();
     hasCaughtUp.current = false;
-  }, [natsDialogId, resetChunkTracking, startInitialBuffering]);
+  }, [useJetstream, natsDialogId, resetChunkTracking, startInitialBuffering]);
 
   const handleNatsSubscribed = useCallback(async () => {
     if (subscriptionPromiseRef.current) {
@@ -332,6 +340,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       subscriptionPromiseRef.current = null;
     }
 
+    if (useJetstream) return;
     if (!hasCaughtUp.current && natsDialogId) {
       hasCaughtUp.current = true;
       try {
@@ -341,7 +350,35 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
         hasCaughtUp.current = false;
       }
     }
-  }, [natsDialogId, catchUpChunks]);
+  }, [useJetstream, natsDialogId, catchUpChunks]);
+
+  // JetStream may redeliver an already-applied streamSeq during reconnect; drop dupes.
+  const lastAppliedStreamSeqRef = useRef<number>(-1);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialog change is the reset trigger
+  useEffect(() => {
+    if (!useJetstream) return;
+    lastAppliedStreamSeqRef.current = -1;
+  }, [useJetstream, natsDialogId]);
+
+  const handleJetStreamEvent = useCallback(
+    (payload: unknown) => {
+      const chunk = payload as ChunkData;
+      if (typeof chunk.streamSeq === 'number') {
+        if (chunk.streamSeq <= lastAppliedStreamSeqRef.current) return;
+        lastAppliedStreamSeqRef.current = chunk.streamSeq;
+      }
+      processRealtimeChunk(overrideToolTitle(chunk));
+    },
+    [processRealtimeChunk],
+  );
+
+  const handleJetStreamSubscribed = useCallback(() => {
+    if (subscriptionPromiseRef.current) {
+      subscriptionPromiseRef.current.resolve();
+      subscriptionPromiseRef.current = null;
+    }
+  }, []);
 
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
@@ -382,8 +419,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     await tokenService.refreshToken();
   }, []);
 
-  const { isSubscribed, reconnectionCount } = useNatsDialogSubscription({
-    enabled: useNats && !!natsDialogId,
+  const { isSubscribed: legacyIsSubscribed, reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
+    enabled: useNats && !useJetstream && !!natsDialogId,
     dialogId: natsDialogId,
     topics,
     onEvent: handleRealtimeEvent,
@@ -394,14 +431,33 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     reconnectionBackoff,
   });
 
+  const isInitialOptStartSeqReady = !isResumedDialog || isHistoryFetched;
+
+  const { isSubscribed: jetstreamIsSubscribed } = useJetStreamDialogSubscription({
+    enabled: useNats && useJetstream && !!natsDialogId && isInitialOptStartSeqReady,
+    dialogId: natsDialogId,
+    streamName: CHAT_CHUNKS_STREAM,
+    topic: 'message',
+    optStartSeq: initialOptStartSeq,
+    onEvent: handleJetStreamEvent,
+    onSubscribed: handleJetStreamSubscribed,
+    onBeforeReconnect: handleBeforeReconnect,
+    getNatsWsUrl,
+    clientConfig,
+    reconnectionBackoff,
+  });
+
+  const isSubscribed = useJetstream ? jetstreamIsSubscribed : legacyIsSubscribed;
+
   useEffect(() => {
-    if (reconnectionCount > 0 && natsDialogId) {
-      log.info('nats:chat', `reconnected (count: ${reconnectionCount}) — catching up missed messages`);
+    if (useJetstream) return;
+    if (legacyReconnectionCount > 0 && natsDialogId) {
+      log.info('nats:chat', `reconnected (count: ${legacyReconnectionCount}) — catching up missed messages`);
       resetAndCatchUp().catch((error: unknown) => {
         log.error('nats:chat', 'failed to catch up after reconnection', String(error));
       });
     }
-  }, [reconnectionCount, natsDialogId, resetAndCatchUp]);
+  }, [useJetstream, legacyReconnectionCount, natsDialogId, resetAndCatchUp]);
 
   const waitForNatsSubscription = useCallback(
     async (expectedDialogId: string): Promise<void> => {

@@ -23,7 +23,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
   const { flags } = useFeatureFlags();
   const { onApprove, onReject, approvalStatuses } = options;
 
-  const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
+  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
       const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
@@ -43,6 +43,18 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     },
     enabled: !!dialogId && (options.enabled ?? false),
   });
+
+  const initialOptStartSeq = useMemo(() => {
+    if (!data?.pages) return null;
+    let max: number | null = null;
+    for (const page of data.pages) {
+      for (const edge of page.edges) {
+        const seq = edge.node.lastChunkStreamSeq;
+        if (typeof seq === 'number' && (max == null || seq > max)) max = seq;
+      }
+    }
+    return max;
+  }, [data?.pages]);
 
   const { historicalMessages, escalatedApprovals } = useMemo(() => {
     if (!data?.pages) {
@@ -85,8 +97,10 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     isLoading,
+    isFetched,
     fetchNextPage,
     escalatedApprovals,
+    initialOptStartSeq,
     reset,
   };
 }
