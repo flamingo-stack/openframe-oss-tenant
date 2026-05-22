@@ -1,18 +1,11 @@
 'use client';
 
-import {
-  Button,
-  getOSPlatformId,
-  Modal,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-  OS_TYPES,
-} from '@flamingo-stack/openframe-frontend-core';
-import { ListLoader, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, getOSPlatformId, OS_TYPES } from '@flamingo-stack/openframe-frontend-core';
+import { ListLoader, ModalV2Title, PageError } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { Check, Search } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { useScripts } from '../../scripts/hooks/use-scripts';
 import { ScriptEntry } from '../../scripts/stores/scripts-store';
@@ -237,14 +230,29 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-3xl h-[90vh] max-h-[800px] flex flex-col">
-      <ModalHeader>
-        <ModalTitle>{isRedirecting ? 'Scripts Running' : 'Select Script'}</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">
-          {isRedirecting ? 'Redirecting to device logs...' : 'Choose scripts to execute on this device'}
-        </p>
-      </ModalHeader>
-
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-3xl h-[90vh] max-h-[800px]"
+      header={
+        <>
+          <ModalV2Title>{isRedirecting ? 'Scripts Running' : 'Select Script'}</ModalV2Title>
+          <p className="text-ods-text-secondary text-h6 mt-1">
+            {isRedirecting ? 'Redirecting to device logs...' : 'Choose scripts to execute on this device'}
+          </p>
+        </>
+      }
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} disabled={isRedirecting}>
+            Cancel
+          </Button>
+          <Button onClick={handleRunScripts} disabled={selectedScripts.length === 0 || isRedirecting}>
+            {isRedirecting ? 'Redirecting...' : `Run Script${selectedScripts.length !== 1 ? 's' : ''}`}
+          </Button>
+        </>
+      }
+    >
       <div className="flex-1 min-h-0 overflow-hidden">
         {isRedirecting ? (
           /* Loading State with Skeletons */
@@ -361,15 +369,6 @@ export function ScriptsModal({ isOpen, onClose, deviceId, device, onRunScripts, 
           </div>
         )}
       </div>
-
-      <ModalFooter>
-        <Button variant="outline" onClick={onClose} disabled={isRedirecting}>
-          Cancel
-        </Button>
-        <Button onClick={handleRunScripts} disabled={selectedScripts.length === 0 || isRedirecting}>
-          {isRedirecting ? 'Redirecting...' : `Run Script${selectedScripts.length !== 1 ? 's' : ''}`}
-        </Button>
-      </ModalFooter>
-    </Modal>
+    </SimpleModal>
   );
 }

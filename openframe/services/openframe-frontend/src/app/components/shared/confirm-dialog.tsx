@@ -1,20 +1,16 @@
 'use client';
 
 import { Loading01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import {
-  ModalV2,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
+import { SimpleModal } from './simple-modal';
 
 /**
  * ConfirmDialog — shared confirmation dialog for destructive and reversible
- * actions. Built on top of `ModalV2*` primitives so it shares the responsive
- * layout (centered desktop / bottom-anchored mobile), backdrop, scroll lock,
- * and Escape handling with every other ModalV2-based modal in the app.
+ * actions. Built on top of `SimpleModal` so it shares the responsive layout
+ * (centered desktop / bottom-anchored mobile) with every other modal in the
+ * app. Adds three confirm-button variants, pending state, and an
+ * `extraContent` slot for small accompanying bits (CommandBox, picker, etc.).
  *
  * Parent owns the `open` state. The dialog does NOT auto-close on confirm —
  * the parent decides when to flip `open` to false (typically after the
@@ -66,26 +62,30 @@ export function ConfirmDialog({
   const handleClose = () => onOpenChange(false);
 
   return (
-    <ModalV2 isOpen={open} onClose={handleClose} className="md:max-w-[600px] text-left">
-      <ModalV2Header>
-        <ModalV2Title>{title}</ModalV2Title>
-      </ModalV2Header>
+    <SimpleModal
+      isOpen={open}
+      onClose={handleClose}
+      className="md:max-w-[600px] text-left"
+      title={title}
+      footer={
+        <>
+          <button type="button" onClick={handleClose} disabled={isPending} className={CANCEL_BUTTON}>
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            className={cn(CONFIRM_BUTTON_BASE, CONFIRM_BUTTON_VARIANT[variant])}
+          >
+            {isPending && <Loading01Icon size={20} className="animate-spin" />}
+            {confirmText}
+          </button>
+        </>
+      }
+    >
       <p className="text-h4 text-ods-text-primary">{description}</p>
       {extraContent}
-      <ModalV2Footer>
-        <button type="button" onClick={handleClose} disabled={isPending} className={CANCEL_BUTTON}>
-          {cancelLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={isPending}
-          className={cn(CONFIRM_BUTTON_BASE, CONFIRM_BUTTON_VARIANT[variant])}
-        >
-          {isPending && <Loading01Icon size={20} className="animate-spin" />}
-          {confirmText}
-        </button>
-      </ModalV2Footer>
-    </ModalV2>
+    </SimpleModal>
   );
 }
