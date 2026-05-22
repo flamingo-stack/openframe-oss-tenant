@@ -1,9 +1,9 @@
 'use client';
 
+import { AiSettings } from '@/app/(app)/settings/ai-settings/components/ai-settings-view';
+
 export const dynamic = 'force-dynamic';
 
-import { AiSettingsTab } from '../components/tabs/ai-settings';
-
 export default function AiSettingsPage() {
-  return <AiSettingsTab />;
+  return <AiSettings />;
 }

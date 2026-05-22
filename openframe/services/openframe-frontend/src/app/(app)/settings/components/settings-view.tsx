@@ -9,7 +9,7 @@ type TabId = 'ai-settings' | 'architecture' | 'company-and-users' | 'api-keys' |
 
 const DEFAULT_TAB: TabId = 'ai-settings';
 const TAB_PARAM = 'tab';
-
+//TODO: delete if component is redundant
 export function SettingsView() {
   const router = useRouter();
   const pathname = usePathname();
