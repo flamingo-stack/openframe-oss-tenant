@@ -4,6 +4,7 @@ import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-front
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+import { findLatestPendingApprovalId } from '@/lib/chat-history';
 import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
@@ -54,6 +55,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
     typingStates,
     setTyping,
     removeWelcomeMessages,
+    updateApprovalStatusInMessages,
     isCreatingDialog,
     setCreatingDialog,
   } = useMingoMessagesStore();
@@ -186,6 +188,15 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         setTyping(effectiveDialogId, true);
         removeWelcomeMessages(effectiveDialogId);
 
+        // Sending while an approval pends is an interrupt — backend will
+        // cancel it and emit APPROVAL_RESULT (rejected) shortly. Flip the
+        // latest pending one now so the card resolves in the same frame as
+        // the user-message bubble (no layout jump between the two updates).
+        const pendingId = findLatestPendingApprovalId(messagesByDialog.get(effectiveDialogId) || []);
+        if (pendingId) {
+          updateApprovalStatusInMessages(effectiveDialogId, pendingId, 'rejected');
+        }
+
         const optimisticMessage: CoreMessage = {
           id: `optimistic-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -214,7 +225,18 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         return false;
       }
     },
-    [dialogId, isTyping, setTyping, removeWelcomeMessages, addMessage, sendMessageMutation, toast, user],
+    [
+      dialogId,
+      isTyping,
+      setTyping,
+      removeWelcomeMessages,
+      addMessage,
+      messagesByDialog,
+      updateApprovalStatusInMessages,
+      sendMessageMutation,
+      toast,
+      user,
+    ],
   );
 
   const stopGeneration = useCallback(async () => {

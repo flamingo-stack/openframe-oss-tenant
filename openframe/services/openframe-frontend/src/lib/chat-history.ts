@@ -1,5 +1,27 @@
 import type { Message as ChatMessage, MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 
+// Newest-to-oldest scan for the latest pending approval (single or batch).
+// Returns its requestId / approvalRequestId, or undefined if none. Used by
+// send-message handlers to optimistically flip the active approval gate to
+// `rejected` when the user interrupts, so the card resolves in the same
+// frame as the user-message bubble (no flicker between the two updates).
+export function findLatestPendingApprovalId<M extends ChatMessage>(messages: M[]): string | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (!Array.isArray(msg.content)) continue;
+    for (let j = msg.content.length - 1; j >= 0; j--) {
+      const seg = msg.content[j] as MessageSegment;
+      if (seg.type === 'approval_request' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.requestId;
+      }
+      if (seg.type === 'approval_batch' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.approvalRequestId;
+      }
+    }
+  }
+  return undefined;
+}
+
 // The core lib lifts approval segments out of the original assistant turn into
 // a separate `pending-approvals-*` envelope. Fold them back so the trailing
 // message stays a normal in-progress turn that streaming chunks can resume.

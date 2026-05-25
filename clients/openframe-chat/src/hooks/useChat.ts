@@ -30,6 +30,27 @@ import { useDialogMessages } from './useDialogMessages';
 
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 
+// Scan messages newest-to-oldest for the most recent pending approval
+// (single or batch). Returns its requestId / approvalRequestId, or
+// undefined if none. Used by sendMessage to optimistically cancel the
+// active gate when the user interrupts with a new message.
+function findLatestPendingApprovalId(msgs: Message[]): string | undefined {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const msg = msgs[i];
+    if (!Array.isArray(msg.content)) continue;
+    for (let j = msg.content.length - 1; j >= 0; j--) {
+      const seg = msg.content[j];
+      if (seg.type === 'approval_request' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.requestId;
+      }
+      if (seg.type === 'approval_batch' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.approvalRequestId;
+      }
+    }
+  }
+  return undefined;
+}
+
 interface UseChatOptions {
   useApi?: boolean;
   apiToken?: string;
@@ -139,6 +160,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
 
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
+  const allMessagesRef = useRef(allMessages);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -147,6 +169,10 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   useEffect(() => {
     approvalsRef.current = approvals;
   }, [approvals]);
+
+  useEffect(() => {
+    allMessagesRef.current = allMessages;
+  }, [allMessages]);
 
   const realtimeCallbacks = useMemo(
     () => ({
@@ -522,6 +548,17 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const sendMessage = useCallback(
     async (text: string) => {
       setError(null);
+
+      // Sending a message while an approval is pending is an interrupt —
+      // backend will cancel that approval and emit APPROVAL_RESULT (rejected)
+      // a moment later. Flip the latest pending one optimistically so the
+      // card resolves at the same instant the user-message bubble appears,
+      // avoiding a layout jump between the two updates.
+      const pendingId = findLatestPendingApprovalId(allMessagesRef.current);
+      if (pendingId) {
+        messagesRef.current.updateApprovalStatusById(pendingId, 'rejected');
+        approvalsRef.current.applyResolvedStatus(pendingId, 'rejected');
+      }
 
       const userMessage: Message = {
         id: `user-${Date.now()}`,

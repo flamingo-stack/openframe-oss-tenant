@@ -38,7 +38,7 @@ import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
-import { extractPendingApprovals, stripPendingApprovals } from '@/lib/chat-history';
+import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingApprovals } from '@/lib/chat-history';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -263,7 +263,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const { stopGeneration: handleStopGeneration } = useStopGeneration(messageDialogId);
 
-  const { sendAdminMessage: handleSendAdminMessage, isSendingAdminMessage } = useSendAdminMessage({
+  const { sendAdminMessage: rawSendAdminMessage, isSendingAdminMessage } = useSendAdminMessage({
     ticketId,
     messageDialogId,
     onBeforeDialogCreated: () => {
@@ -272,6 +272,29 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       hasCaughtUp.current = false;
     },
   });
+
+  // Sending while an approval is pending is an interrupt — backend cancels
+  // it and emits APPROVAL_RESULT (rejected) shortly. Flipping the latest
+  // pending approval on the same side optimistically resolves the card in
+  // the same frame as the user-message bubble, eliminating the flicker
+  // between the user's send and the backend's resolution chunk.
+  const sendClientMessageWithReject = useCallback(
+    (text: string) => {
+      const pendingId = findLatestPendingApprovalId(clientMessages);
+      if (pendingId) updateApprovalStatusInMessages('client', pendingId, 'rejected');
+      return sendClientMessage(text);
+    },
+    [sendClientMessage, clientMessages, updateApprovalStatusInMessages],
+  );
+
+  const handleSendAdminMessage = useCallback(
+    (text: string) => {
+      const pendingId = findLatestPendingApprovalId(adminMessages);
+      if (pendingId) updateApprovalStatusInMessages('admin', pendingId, 'rejected');
+      return rawSendAdminMessage(text);
+    },
+    [rawSendAdminMessage, adminMessages, updateApprovalStatusInMessages],
+  );
 
   useEffect(() => {
     if (!ticketId) return;
@@ -771,7 +794,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 {!isClosed && isDirectMode && (
                   <ChatInput
                     placeholder="Enter your Message..."
-                    onSend={sendClientMessage}
+                    onSend={sendClientMessageWithReject}
                     sending={isSendingClientMessage || isClientChatTyping || isClientCompacting}
                     autoFocus={false}
                     className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
