@@ -3,6 +3,7 @@
 import {
   BoxArchiveIcon,
   CheckCircleIcon,
+  PenEditIcon,
   PlusCircleIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type {
@@ -51,6 +52,12 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     if (!enabled) return [];
     const items: ActionsMenuItem[] = [
+      {
+        id: 'edit-statuses',
+        label: 'Edit Statuses',
+        icon: <PenEditIcon className="text-ods-text-secondary" />,
+        href: '/tickets/statuses',
+      },
       {
         id: 'tickets-archive',
         label: 'Tickets Archive',
