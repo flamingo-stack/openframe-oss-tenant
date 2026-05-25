@@ -1,6 +1,15 @@
 'use client';
 
-import { type NavigationImpl, registerNavigation } from '@flamingo-stack/openframe-frontend-core/embed-shims';
+import {
+  type NavigationImpl,
+  registerDynamic,
+  registerImage,
+  registerLink,
+  registerNavigation,
+} from '@flamingo-stack/openframe-frontend-core/embed-shims';
+import nextDynamic from 'next/dynamic';
+import NextImage from 'next/image';
+import NextLink from 'next/link';
 import {
   notFound,
   permanentRedirect,
@@ -25,6 +34,9 @@ export function registerEmbedShims() {
     permanentRedirect,
     notFound,
   } as NavigationImpl);
+  registerLink(NextLink);
+  registerImage(NextImage);
+  registerDynamic(nextDynamic);
 }
 
 registerEmbedShims();
