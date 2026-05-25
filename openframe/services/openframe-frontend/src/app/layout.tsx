@@ -15,6 +15,7 @@ import { QueryClientProvider } from '../lib/query-client-provider';
 import { RelayProvider } from '../lib/relay';
 import { AppShellSkeleton } from './components/app-shell-skeleton';
 import { DeploymentInitializer } from './components/deployment-initializer';
+import { EmbedShimRegistration } from './components/embed-shim-registration';
 import { GoogleTagManager } from './components/google-tag-manager';
 
 // Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
@@ -91,6 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning className="min-h-screen antialiased font-body" data-app-type="openframe">
         <GoogleTagManager />
+        <EmbedShimRegistration />
         <DeploymentInitializer />
         <RelayProvider>
           <QueryClientProvider>
