@@ -111,22 +111,18 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
           const entry = row.original;
           return (
             <div className="flex flex-col">
-              <span className="font-['Azeret_Mono'] font-medium text-[18px] leading-[24px] text-ods-text-primary">
-                LOG-{String(entry.id).padStart(3, '0')}
-              </span>
-              <span className="font-medium text-[14px] leading-[20px] text-ods-text-secondary">
+              <span className="text-h4 text-ods-text-primary">LOG-{String(entry.id).padStart(3, '0')}</span>
+              <span className="text-h6 text-ods-text-secondary">
                 {entry.last_run
                   ? new Date(entry.last_run).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: '2-digit',
                       day: '2-digit',
-                      timeZone: 'UTC',
                     }) +
                     ',' +
                     new Date(entry.last_run).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit',
-                      timeZone: 'UTC',
                     })
                   : '—'}
               </span>
