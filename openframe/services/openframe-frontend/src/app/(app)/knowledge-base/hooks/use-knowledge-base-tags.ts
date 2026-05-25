@@ -7,8 +7,8 @@ import type { useKnowledgeBaseTagsCreateMutation as UseKnowledgeBaseTagsCreateMu
 import type { useKnowledgeBaseTagsQuery as UseKnowledgeBaseTagsQueryType } from '@/__generated__/useKnowledgeBaseTagsQuery.graphql';
 
 export const knowledgeBaseTagsQuery = graphql`
-  query useKnowledgeBaseTagsQuery($folderId: ID) {
-    knowledgeBaseTags(folderId: $folderId) {
+  query useKnowledgeBaseTagsQuery($folderId: ID, $archived: Boolean) {
+    knowledgeBaseTags(folderId: $folderId, archived: $archived) {
       id
       key
       color
@@ -32,10 +32,15 @@ const createKnowledgeBaseTagMutation = graphql`
 
 export type KnowledgeBaseTag = UseKnowledgeBaseTagsQueryType['response']['knowledgeBaseTags'][number];
 
-export function useKnowledgeBaseTags(folderId?: string | null) {
+interface UseKnowledgeBaseTagsOptions {
+  folderId?: string | null;
+  archived?: boolean;
+}
+
+export function useKnowledgeBaseTags({ folderId, archived }: UseKnowledgeBaseTagsOptions = {}) {
   const data = useLazyLoadQuery<UseKnowledgeBaseTagsQueryType>(
     knowledgeBaseTagsQuery,
-    { folderId: folderId ?? null },
+    { folderId: folderId ?? null, archived: archived ?? null },
     { fetchPolicy: 'store-and-network' },
   );
   return data.knowledgeBaseTags;
