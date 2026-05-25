@@ -1,9 +1,12 @@
 import {
+  type ApprovalBatchExecutionState,
+  type ApprovalBatchSegment,
   type Message as ChatMessage,
   createMessageSegmentAccumulator,
   type MessageSegment,
   type MessageSegmentAccumulator,
   type TokenUsageData,
+  type ToolExecutionSegment,
 } from '@flamingo-stack/openframe-frontend-core';
 import { create } from 'zustand';
 
@@ -62,6 +65,11 @@ interface TicketDetailsStore {
 
   // Approvals
   updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
+  updateToolExecutionInMessages: (
+    side: ChatSide,
+    executionRequestId: string,
+    executedData: ToolExecutionSegment['data'],
+  ) => void;
   setApprovalStatus: (requestId: string, status: ApprovalStatus) => void;
   mergeApprovalStatuses: (entries: ApprovalStatusMap) => void;
 
@@ -221,16 +229,25 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
 
   updateApprovalStatusInMessages: (side, requestId, status) =>
     set(state => {
+      let matched = false;
       const nextSides = produceSide(state, side, s => {
         const updatedMessages = s.messages.map(message => {
           if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+          let changed = false;
           const updatedContent = message.content.map(segment => {
             if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
+              matched = true;
+              changed = true;
               return { ...segment, status };
+            }
+            if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
+              matched = true;
+              changed = true;
+              return { ...segment, status } as ApprovalBatchSegment;
             }
             return segment;
           });
-          return { ...message, content: updatedContent };
+          return changed ? { ...message, content: updatedContent } : message;
         });
 
         const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status);
@@ -241,13 +258,88 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
 
         return { ...s, messages: updatedMessages, streaming: updatedStreaming };
       });
+      const approvalStatusChanged = state.approvalStatuses[requestId] !== status;
+      if (!matched && !approvalStatusChanged) return state;
       return {
         ...nextSides,
-        approvalStatuses:
-          state.approvalStatuses[requestId] === status
-            ? state.approvalStatuses
-            : { ...state.approvalStatuses, [requestId]: status },
+        approvalStatuses: approvalStatusChanged
+          ? { ...state.approvalStatuses, [requestId]: status }
+          : state.approvalStatuses,
       };
+    }),
+
+  updateToolExecutionInMessages: (side, executionRequestId, executedData) =>
+    set(state => {
+      let matched = false;
+      const nextSides = produceSide(state, side, s => {
+        const updatedMessages = s.messages.map(message => {
+          if (matched) return message;
+          if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+
+          let changed = false;
+          const updatedContent = message.content.map(segment => {
+            if (matched) return segment;
+
+            if (
+              segment.type === 'tool_execution' &&
+              segment.data.type === 'EXECUTING_TOOL' &&
+              segment.data.toolExecutionRequestId === executionRequestId
+            ) {
+              matched = true;
+              changed = true;
+              const merged: ToolExecutionSegment = {
+                type: 'tool_execution',
+                data: {
+                  ...executedData,
+                  toolTitle: executedData.toolTitle ?? segment.data.toolTitle,
+                  parameters: executedData.parameters ?? segment.data.parameters,
+                },
+              };
+              return merged;
+            }
+
+            if (
+              segment.type === 'approval_batch' &&
+              segment.data.toolCalls.some(c => c.toolExecutionRequestId === executionRequestId)
+            ) {
+              matched = true;
+              changed = true;
+              const prev: ApprovalBatchExecutionState | undefined = segment.data.executions?.[executionRequestId];
+              const next: ApprovalBatchExecutionState =
+                executedData.type === 'EXECUTED_TOOL'
+                  ? { status: 'done', result: executedData.result, success: executedData.success }
+                  : { status: 'executing', result: prev?.result, success: prev?.success };
+              return {
+                ...segment,
+                data: {
+                  ...segment.data,
+                  executions: { ...(segment.data.executions ?? {}), [executionRequestId]: next },
+                },
+              } as ApprovalBatchSegment;
+            }
+
+            return segment;
+          });
+
+          return changed ? { ...message, content: updatedContent } : message;
+        });
+
+        if (!matched) return s;
+
+        const updatedStreaming = s.streaming
+          ? (updatedMessages.find(m => m.id === s.streaming?.id) ?? s.streaming)
+          : s.streaming;
+        return {
+          ...s,
+          messages: updatedMessages,
+          streaming: updatedStreaming,
+        };
+      });
+      // Outer short-circuit: produceSide always builds a new {client, admin}
+      // wrapper even when its updater returned `s` unchanged, so without
+      // this guard zustand notifies every subscriber on every no-match.
+      if (!matched) return state;
+      return nextSides;
     }),
 
   setApprovalStatus: (requestId, status) =>

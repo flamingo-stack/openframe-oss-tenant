@@ -2,12 +2,14 @@
 
 import {
   buildNatsWsUrl,
+  type ChatApprovalStatus,
   type ChunkData,
   extractIncompleteMessageState,
   type MessageSegment,
   type NatsMessageType,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  type ToolExecutionSegment,
   useJetStreamDialogSubscription,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
@@ -33,10 +35,7 @@ function isInProgress(segments: MessageSegment[]): boolean {
     if (seg.type === 'approval_request') return true;
     if (seg.type === 'approval_batch') {
       // Treat batch as in-progress unless it was rejected OR every tool call
-      // has a `done` execution. While in-progress, post-stream chunks
-      // (THINKING/TEXT/tool executions from `continueChain`) should reuse
-      // this existing assistant message as streaming rather than spawn a
-      // duplicate.
+      // has a `done` execution.
       const allDone =
         !!seg.data.executions &&
         seg.data.toolCalls.every(c => seg.data.executions?.[c.toolExecutionRequestId]?.status === 'done');
@@ -212,6 +211,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     getStreamingMessage,
     updateStreamingMessageSegments,
     appendSegmentsToLastAssistant,
+    updateApprovalStatusInMessages,
+    updateToolExecutionInMessages,
     getOrCreateAccumulator,
     setTokenUsage,
   } = useMingoMessagesStore();
@@ -347,6 +348,17 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTokenUsage(dialogId, data);
       },
 
+      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+        if (status === 'approved' || status === 'rejected') {
+          updateApprovalStatusInMessages(dialogId, requestId, status);
+        }
+      },
+
+      onToolExecuted: (segment: ToolExecutionSegment) => {
+        const execId = segment.data.toolExecutionRequestId;
+        if (execId) updateToolExecutionInMessages(dialogId, execId, segment.data);
+      },
+
       onMetadata,
       onApprove,
       onReject,
@@ -358,6 +370,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       setTyping,
       setStreamingMessage,
       updateStreamingMessageSegments,
+      updateApprovalStatusInMessages,
+      updateToolExecutionInMessages,
       addErrorMessage,
       setTokenUsage,
       onMetadata,

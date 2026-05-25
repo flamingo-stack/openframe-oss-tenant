@@ -167,7 +167,7 @@ export default function Mingo() {
   // it flips true→false for one tick on every dialog switch, and feeding that
   // into the textarea's `disabled` made the placeholder visibly jerk on each
   // switch. The message list still shows its own loader via `isAnyLoading`.
-  const isComposerBusy = isTyping || isCompacting || isCreatingDialog || pendingApprovals.length > 0;
+  const isComposerBusy = isTyping || isCompacting || isCreatingDialog;
 
   // The store's `activeDialogId` is only populated by an effect after the first
   // render. Reading the dialog id from the URL synchronously during render lets
@@ -418,7 +418,7 @@ export default function Mingo() {
               ref={chatInputRef}
               placeholder="Enter your Request..."
               onSend={handleSendMessage}
-              onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
+              onStop={isTyping && !isCompacting ? stopGeneration : undefined}
               sending={isComposerBusy}
               autoFocus={effectiveDraft}
               className="bg-ods-card rounded-lg !max-w-3xl"

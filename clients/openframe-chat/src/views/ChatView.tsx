@@ -10,6 +10,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  type Message,
+  type MessageSegment,
   ModelDisplay,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -115,18 +117,43 @@ export function ChatView() {
 
   const { toast } = useToast();
 
-  const hasPendingApproval = useMemo(
-    () =>
-      messages.some(
-        (msg: { content: unknown }) =>
-          Array.isArray(msg.content) &&
-          msg.content.some(
-            (seg: { type: string; status?: string }) =>
-              seg.type === 'approval_request' && (!seg.status || seg.status === 'pending'),
-          ),
-      ),
-    [messages],
-  );
+  // Pre-process messages for rendering: filter pending approvals (they
+  // render in the sticky footer), dedupe approval_request/approval_batch
+  // segments across bubbles by requestId (first occurrence wins — agent
+  // retries reuse the same id), and drop empty assistant bubbles that
+  // held only filtered/deduped segments.
+  const processedMessages = useMemo<Message[]>(() => {
+    const seenApprovalIds = new Set<string>();
+    const out: Message[] = [];
+    for (const msg of messages) {
+      if (!Array.isArray(msg.content)) {
+        out.push(msg);
+        continue;
+      }
+      const filtered = (msg.content as MessageSegment[]).filter(segment => {
+        if (segment.type === 'approval_request' && segment.status === 'pending') return false;
+
+        if (segment.type === 'approval_request') {
+          const id = segment.data?.requestId;
+          if (id) {
+            if (seenApprovalIds.has(id)) return false;
+            seenApprovalIds.add(id);
+          }
+        } else if (segment.type === 'approval_batch') {
+          const id = segment.data?.approvalRequestId;
+          if (id) {
+            if (seenApprovalIds.has(id)) return false;
+            seenApprovalIds.add(id);
+          }
+        }
+        return true;
+      });
+
+      if (msg.role === 'assistant' && filtered.length === 0) continue;
+      out.push(filtered.length === msg.content.length ? msg : { ...msg, content: filtered });
+    }
+    return out;
+  }, [messages]);
 
   const handleNewChat = useCallback(() => {
     setFaeFormTicket(null);
@@ -220,7 +247,7 @@ export function ChatView() {
       : null);
 
   const displayMessages = useMemo(() => {
-    if (!faeFormTicket || hasNextPage) return messages;
+    if (!faeFormTicket || hasNextPage) return processedMessages;
     const faeMessage = {
       id: `synthetic-fae-form-${faeFormTicket.id}`,
       role: 'assistant' as const,
@@ -237,8 +264,8 @@ export function ChatView() {
       timestamp: new Date(faeFormTicket.createdAt),
       avatar: faeAvatar,
     };
-    return [faeMessage, ...messages];
-  }, [messages, faeFormTicket, hasNextPage]);
+    return [faeMessage, ...processedMessages];
+  }, [processedMessages, faeFormTicket, hasNextPage]);
 
   useEffect(() => {
     if (!isTicketPreview || !previewTicketId) return;
@@ -357,8 +384,8 @@ export function ChatView() {
         ) : (
           <ChatInput
             onSend={sendMessage}
-            onStop={isStreaming && !hasPendingApproval ? stopGeneration : undefined}
-            sending={isStreaming || isCompacting || hasPendingApproval}
+            onStop={isStreaming ? stopGeneration : undefined}
+            sending={isStreaming || isCompacting}
             awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
             placeholder="Enter your request here..."
             disabled={isDisconnected}

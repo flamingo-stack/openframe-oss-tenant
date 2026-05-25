@@ -349,10 +349,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       if (!requestId) return;
       const mutate = approving ? handleApproveRequest : handleRejectRequest;
       const status = approving ? APPROVAL_STATUS.APPROVED : APPROVAL_STATUS.REJECTED;
+      // Optimistic flip *before* the network round-trip. Backend starts
+      // streaming continuation chunks immediately on approval; if we wait
+      // for the mutation, the incoming MESSAGE_START adopts the still-
+      // pending bubble and text chunks overwrite the approval card.
+      updateApprovalStatusInMessages('client', requestId, status);
+      updateApprovalStatusInMessages('admin', requestId, status);
       try {
         await mutate(requestId);
-        updateApprovalStatusInMessages('client', requestId, status);
-        updateApprovalStatusInMessages('admin', requestId, status);
       } catch (error) {
         toast({
           title: approving ? 'Approval Failed' : 'Rejection Failed',
@@ -768,12 +772,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   <ChatInput
                     placeholder="Enter your Message..."
                     onSend={sendClientMessage}
-                    sending={
-                      isSendingClientMessage ||
-                      isClientChatTyping ||
-                      isClientCompacting ||
-                      clientPendingApprovals.length > 0
-                    }
+                    sending={isSendingClientMessage || isClientChatTyping || isClientCompacting}
                     autoFocus={false}
                     className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
                   />
@@ -838,14 +837,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 <ChatInput
                   placeholder="Enter your Request..."
                   onSend={handleSendAdminMessage}
-                  onStop={isAdminChatTyping && adminPendingApprovals.length === 0 ? handleStopGeneration : undefined}
-                  sending={
-                    isSendingAdminMessage ||
-                    isAdminChatTyping ||
-                    isCompacting ||
-                    isClientChatTyping ||
-                    adminPendingApprovals.length > 0
-                  }
+                  onStop={isAdminChatTyping ? handleStopGeneration : undefined}
+                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting || isClientChatTyping}
                   autoFocus={false}
                   className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
                 />

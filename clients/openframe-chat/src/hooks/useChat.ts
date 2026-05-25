@@ -1,5 +1,6 @@
 import {
   buildNatsWsUrl,
+  type ChatApprovalStatus,
   type ChunkData,
   extractIncompleteMessageState,
   type Message,
@@ -8,6 +9,7 @@ import {
   type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  type ToolExecutionSegment,
   useJetStreamDialogSubscription,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
@@ -186,6 +188,21 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       },
       onApprove: (requestId?: string) => approvalsRef.current.handleApproveRequest(requestId),
       onReject: (requestId?: string) => approvalsRef.current.handleRejectRequest(requestId),
+      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+        if (status === 'approved' || status === 'rejected') {
+          // Live messages — covers approvals in the current session bubble.
+          messagesRef.current.updateApprovalStatusById(requestId, status);
+          // Historical messages — when the originating approval lives in a
+          // resumed-dialog bubble owned by React Query, the live-state
+          // updater above misses it. The approvalStatuses map drives
+          // `processHistoricalMessages` to overlay the new status.
+          approvalsRef.current.applyResolvedStatus(requestId, status);
+        }
+      },
+      onToolExecuted: (segment: ToolExecutionSegment) => {
+        const execId = segment.data.toolExecutionRequestId;
+        if (execId) messagesRef.current.updateToolExecutionById(execId, segment.data);
+      },
       onEscalatedApproval: (
         requestId: string,
         data: { command: string; explanation?: string; approvalType: string },

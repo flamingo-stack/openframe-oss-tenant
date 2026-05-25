@@ -3,7 +3,7 @@
 import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
@@ -67,27 +67,52 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   const sendMessageMutation = useSendMessageMutation();
   const stopGenerationMutation = useStopGenerationMutation();
 
-  const messageCacheRef = useRef(new WeakMap<CoreMessage, ProcessedMessage>());
-
   const messages = useMemo((): ProcessedMessage[] => {
     if (!dialogId) return [];
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
-    const cache = messageCacheRef.current;
+    // Dedupe approval cards across bubbles: the agent re-asks for the same
+    // approval (same requestId) when the user interrupts. After MESSAGE_START
+    // resets the accumulator, the retry pushes a fresh segment into a new
+    // bubble, and the cross-message status updater flips *every* matching
+    // segment — so a single rejected approval would render twice. First
+    // occurrence wins; later duplicates are hidden.
+    const seenApprovalIds = new Set<string>();
+    const processed: ProcessedMessage[] = [];
 
-    return currentMessages.map(msg => {
-      const cached = cache.get(msg);
-      if (cached) return cached;
-
+    for (const msg of currentMessages) {
       let filteredContent = msg.content;
 
       if (Array.isArray(msg.content)) {
-        filteredContent = (msg.content as MessageSegment[]).filter(
-          segment => !(segment.type === 'approval_request' && segment.status === 'pending'),
-        );
+        filteredContent = (msg.content as MessageSegment[]).filter(segment => {
+          if (segment.type === 'approval_request' && segment.status === 'pending') return false;
+
+          if (segment.type === 'approval_request') {
+            const id = segment.data?.requestId;
+            if (id) {
+              if (seenApprovalIds.has(id)) return false;
+              seenApprovalIds.add(id);
+            }
+          } else if (segment.type === 'approval_batch') {
+            const id = segment.data?.approvalRequestId;
+            if (id) {
+              if (seenApprovalIds.has(id)) return false;
+              seenApprovalIds.add(id);
+            }
+          }
+
+          return true;
+        });
       }
 
-      const processed: ProcessedMessage = {
+      // Skip assistant bubbles that are empty after filtering (only held
+      // pending/duplicate approval segments). User and error messages render
+      // even when content is empty — that's their own concern.
+      if (msg.role === 'assistant' && Array.isArray(filteredContent) && filteredContent.length === 0) {
+        continue;
+      }
+
+      processed.push({
         id: msg.id,
         content: filteredContent,
         role: msg.role,
@@ -95,11 +120,10 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         name: msg.name || 'Unknown',
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
-      };
+      });
+    }
 
-      cache.set(msg, processed);
-      return processed;
-    });
+    return processed;
   }, [dialogId, messagesByDialog]);
 
   // Extract pending approvals from messages, deduplicated by requestId
