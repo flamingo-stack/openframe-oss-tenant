@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
+import { DevicesGridFilters } from '@/app/(app)/devices/components/devices-grid-filters';
 import {
   DevicesTableBody,
   getDeviceFilterColumns,
@@ -221,14 +222,21 @@ export function DevicesPanel({
               }
             />
           ) : (
-            <DevicesGrid
-              devices={devices}
-              isLoading={isLoading}
-              filters={filters}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-              sentinelRef={gridSentinelRef}
-            />
+            <>
+              <DevicesGridFilters
+                filterColumns={filterColumns}
+                currentFilters={tableFilters}
+                onFilterChange={handleFilterChange}
+                totalCount={filteredCount}
+              />
+              <DevicesGrid
+                devices={devices}
+                isLoading={isLoading}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                sentinelRef={gridSentinelRef}
+              />
+            </>
           )}
         </div>
       </PageLayout>

@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  Button,
-  Modal,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;
@@ -45,21 +38,18 @@ export function DeleteConfirmationModal({
   }, [isOpen, submitting, onConfirm]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalHeader>
-        <ModalTitle>{title}</ModalTitle>
-      </ModalHeader>
-      <ModalContent className="px-6 py-4 space-y-3">
-        <p className="text-sm text-ods-text-primary">{description}</p>
-      </ModalContent>
-      <ModalFooter>
-        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button size="small-legacy" onClick={onConfirm} disabled={submitting}>
-          Delete
-        </Button>
-      </ModalFooter>
-    </Modal>
+    <ConfirmDialog
+      open={isOpen}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+      title={title}
+      description={description}
+      confirmLabel="Delete"
+      pendingLabel="Deleting..."
+      variant="destructive"
+      isPending={submitting}
+      onConfirm={onConfirm}
+    />
   );
 }

@@ -1,15 +1,8 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  Modal,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useEffect } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 
 interface RenameItemModalProps {
   isOpen: boolean;
@@ -35,28 +28,30 @@ export function RenameItemModal({ isOpen, value, submitting, onChange, onSubmit,
   }, [isOpen, submitting, value, onSubmit]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalHeader>
-        <ModalTitle>Rename Item</ModalTitle>
-      </ModalHeader>
-      <ModalContent className="px-6 py-4 space-y-3">
-        <p className="text-sm text-ods-text-secondary">Update the name for the selected item.</p>
-        <Input
-          value={value}
-          onChange={event => onChange(event.target.value)}
-          placeholder="New name"
-          autoFocus
-          disabled={submitting}
-        />
-      </ModalContent>
-      <ModalFooter>
-        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button size="small-legacy" onClick={onSubmit} disabled={!value.trim() || submitting}>
-          {submitting ? 'Renaming...' : 'Rename'}
-        </Button>
-      </ModalFooter>
-    </Modal>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Rename Item"
+      contentClassName="flex flex-col gap-[var(--spacing-system-xs)]"
+      footer={
+        <>
+          <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="small-legacy" onClick={onSubmit} disabled={!value.trim() || submitting}>
+            {submitting ? 'Renaming...' : 'Rename'}
+          </Button>
+        </>
+      }
+    >
+      <p className="text-h6 text-ods-text-secondary">Update the name for the selected item.</p>
+      <Input
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder="New name"
+        autoFocus
+        disabled={submitting}
+      />
+    </SimpleModal>
   );
 }

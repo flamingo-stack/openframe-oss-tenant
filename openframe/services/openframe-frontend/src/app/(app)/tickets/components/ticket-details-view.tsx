@@ -33,6 +33,7 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
@@ -165,6 +166,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const addNoteMutation = useAddTicketNote(ticketId);
   const updateNoteMutation = useUpdateTicketNote(ticketId);
   const deleteNoteMutation = useDeleteTicketNote(ticketId);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+
+  const handleConfirmDeleteNote = useCallback(() => {
+    if (!noteToDelete) return;
+    deleteNoteMutation.mutate(noteToDelete, {
+      onSuccess: () => setNoteToDelete(null),
+    });
+  }, [deleteNoteMutation, noteToDelete]);
 
   const { download: downloadAttachment } = useDownloadTicketAttachment();
   const assignTicketMutation = useAssignTicket();
@@ -623,9 +632,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           onEditNote={(id, text) => {
             updateNoteMutation.mutate({ id, content: text });
           }}
-          onDeleteNote={id => {
-            deleteNoteMutation.mutate(id);
-          }}
+          onDeleteNote={setNoteToDelete}
         />
         {ticketInfoExpanded && (
           <AssignedItemsView
@@ -705,9 +712,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                 onEditNote={(id, text) => {
                   updateNoteMutation.mutate({ id, content: text });
                 }}
-                onDeleteNote={id => {
-                  deleteNoteMutation.mutate(id);
-                }}
+                onDeleteNote={setNoteToDelete}
               />
               <AssignedItemsView itemId={dialog.id} itemType="TICKET" className="mt-[var(--spacing-system-mf)]" />
             </div>
@@ -859,6 +864,20 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
           </div>
         </div>
       </PageLayout>
+
+      <ConfirmDialog
+        open={noteToDelete !== null}
+        onOpenChange={open => {
+          if (!open) setNoteToDelete(null);
+        }}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmLabel="Delete Note"
+        pendingLabel="Deleting..."
+        variant="destructive"
+        isPending={deleteNoteMutation.isPending}
+        onConfirm={handleConfirmDeleteNote}
+      />
     </>
   );
 }

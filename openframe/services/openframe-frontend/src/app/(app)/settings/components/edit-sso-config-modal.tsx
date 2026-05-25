@@ -1,21 +1,13 @@
 'use client';
 
-import {
-  AllowedDomainsInput,
-  Button,
-  CheckboxWithDescription,
-  Label,
-  Modal,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core';
+import { AllowedDomainsInput, Button, CheckboxWithDescription, Label } from '@flamingo-stack/openframe-frontend-core';
 import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Input, ModalV2Title } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { validateEmailDomain } from '@flamingo-stack/openframe-frontend-core/utils';
 import { Eye, EyeOff } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { getProviderIcon } from '../utils/get-provider-icon';
@@ -172,164 +164,168 @@ export function SsoConfigModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl w-full">
-      <ModalHeader>
-        <div className="flex items-center gap-3">
-          {getProviderIcon(providerKey)}
-          <ModalTitle>Edit SSO Configuration</ModalTitle>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-5xl w-full"
+      header={
+        <>
+          <div className="flex items-center gap-3">
+            {getProviderIcon(providerKey)}
+            <ModalV2Title>Edit SSO Configuration</ModalV2Title>
+          </div>
+          <p className="text-ods-text-secondary text-h6 mt-1">Configure OAuth credentials for {providerDisplayName}</p>
+        </>
+      }
+      footer={
+        <div className="flex w-full justify-between">
+          {isEnabled && onDisable ? (
+            <Button
+              onClick={handleDisable}
+              variant="outline"
+              className="border-ods-error text-ods-error"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Disabling...' : 'Disable'}
+            </Button>
+          ) : (
+            <div />
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save & Enable'}
+            </Button>
+          </div>
         </div>
-        <p className="text-ods-text-secondary text-sm mt-1">Configure OAuth credentials for {providerDisplayName}</p>
-      </ModalHeader>
-
-      <div className="px-6 py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column: SSO Configuration */}
-          <div className="space-y-6">
-            {/* Redirect URL Section */}
-            <div className="bg-ods-card border border-ods-border rounded-lg p-4 space-y-3">
-              <Label>Authorized redirect URL for your SSO provider settings:</Label>
-              <div className="bg-ods-bg border border-ods-border rounded-lg p-3 flex items-center gap-3">
-                <code className="flex-1 text-sm text-ods-text-primary font-mono truncate" title={redirectUrl}>
-                  {redirectUrl}
-                </code>
-                <Button
-                  variant="transparent"
-                  size="small-legacy"
-                  leftIcon={
-                    copied ? (
-                      <CheckIcon className="h-4 w-4 text-[var(--ods-attention-green-success)]" />
-                    ) : (
-                      <Copy02Icon className="h-4 w-4" />
-                    )
-                  }
-                  onClick={handleCopyRedirectUrl}
-                />
-              </div>
-              <p className="text-sm text-ods-text-secondary">
-                The callback URL must match exactly. Authentication will fail if not properly configured in your SSO
-                provider.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label>OAuth Client ID *</Label>
-              <Input
-                placeholder="Enter OAuth Client ID"
-                value={clientId}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientId(e.target.value)}
-                className="bg-ods-card"
+      }
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Column: SSO Configuration */}
+        <div className="space-y-6">
+          {/* Redirect URL Section */}
+          <div className="bg-ods-card border border-ods-border rounded-lg p-4 space-y-3">
+            <Label>Authorized redirect URL for your SSO provider settings:</Label>
+            <div className="bg-ods-bg border border-ods-border rounded-lg p-3 flex items-center gap-3">
+              <code className="flex-1 text-sm text-ods-text-primary font-mono truncate" title={redirectUrl}>
+                {redirectUrl}
+              </code>
+              <Button
+                variant="transparent"
+                size="small-legacy"
+                leftIcon={
+                  copied ? (
+                    <CheckIcon className="h-4 w-4 text-[var(--ods-attention-green-success)]" />
+                  ) : (
+                    <Copy02Icon className="h-4 w-4" />
+                  )
+                }
+                onClick={handleCopyRedirectUrl}
               />
             </div>
-
-            <div className="space-y-2">
-              <Label>Client Secret *</Label>
-              <div className="relative">
-                <Input
-                  type={showSecret ? 'text' : 'password'}
-                  placeholder="Enter OAuth Client Secret"
-                  value={clientSecret}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
-                  className="bg-ods-card pr-10"
-                />
-                <Button
-                  variant="transparent"
-                  size="small-legacy"
-                  leftIcon={showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20"
-                />
-              </div>
-            </div>
-
-            {/* Microsoft-specific: Single Tenant Configuration */}
-            {isMicrosoft && (
-              <div className="space-y-4">
-                <CheckboxWithDescription
-                  id="single-tenant"
-                  checked={isSingleTenant}
-                  onCheckedChange={checked => {
-                    setIsSingleTenant(checked);
-                    if (!checked) {
-                      setMsTenantId('');
-                    }
-                  }}
-                  title="Single Tenant"
-                  description="Use single-tenant authentication for this provider"
-                />
-
-                {isSingleTenant && (
-                  <div className="space-y-2">
-                    <Label>Tenant ID *</Label>
-                    <Input
-                      placeholder="Enter Tenant ID"
-                      value={msTenantId}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsTenantId(e.target.value)}
-                      className="bg-ods-card"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+            <p className="text-sm text-ods-text-secondary">
+              The callback URL must match exactly. Authentication will fail if not properly configured in your SSO
+              provider.
+            </p>
           </div>
 
-          {/* Right Column: Domain Allowlist */}
-          <div className="space-y-4 lg:border-l lg:border-ods-border lg:pl-8">
-            <h3 className="font-['DM_Sans'] font-semibold text-lg text-ods-text-primary">Domain Allowlist</h3>
-
-            <CheckboxWithDescription
-              id="auto-provision-users"
-              checked={autoProvisionUsers}
-              onCheckedChange={setAutoProvisionUsers}
-              title="Auto-provision accounts from domain"
-              description="Automatically create user accounts when signing in via this SSO provider."
+          <div className="space-y-2">
+            <Label>OAuth Client ID *</Label>
+            <Input
+              placeholder="Enter OAuth Client ID"
+              value={clientId}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientId(e.target.value)}
+              className="bg-ods-card"
             />
-
-            {autoProvisionUsers && (
-              <AllowedDomainsInput
-                value={allowedDomains}
-                onChange={setAllowedDomains}
-                onValidate={domain => {
-                  const validation = validateEmailDomain(domain);
-                  return {
-                    valid: validation.valid,
-                    error: validation.error,
-                    cleanedDomain: validation.cleanedDomain,
-                  };
-                }}
-                label="Allowed Domains"
-                placeholder="openframe.com"
-                disabled={isSubmitting}
-                error={domainError}
-                helperText="Users with email addresses from these domains can log in via SSO without registration."
-              />
-            )}
           </div>
+
+          <div className="space-y-2">
+            <Label>Client Secret *</Label>
+            <div className="relative">
+              <Input
+                type={showSecret ? 'text' : 'password'}
+                placeholder="Enter OAuth Client Secret"
+                value={clientSecret}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setClientSecret(e.target.value)}
+                className="bg-ods-card pr-10"
+              />
+              <Button
+                variant="transparent"
+                size="small-legacy"
+                leftIcon={showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                onClick={() => setShowSecret(!showSecret)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-20"
+              />
+            </div>
+          </div>
+
+          {/* Microsoft-specific: Single Tenant Configuration */}
+          {isMicrosoft && (
+            <div className="space-y-4">
+              <CheckboxWithDescription
+                id="single-tenant"
+                checked={isSingleTenant}
+                onCheckedChange={checked => {
+                  setIsSingleTenant(checked);
+                  if (!checked) {
+                    setMsTenantId('');
+                  }
+                }}
+                title="Single Tenant"
+                description="Use single-tenant authentication for this provider"
+              />
+
+              {isSingleTenant && (
+                <div className="space-y-2">
+                  <Label>Tenant ID *</Label>
+                  <Input
+                    placeholder="Enter Tenant ID"
+                    value={msTenantId}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMsTenantId(e.target.value)}
+                    className="bg-ods-card"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: Domain Allowlist */}
+        <div className="space-y-4 lg:border-l lg:border-ods-border lg:pl-8">
+          <h3 className="font-['DM_Sans'] font-semibold text-lg text-ods-text-primary">Domain Allowlist</h3>
+
+          <CheckboxWithDescription
+            id="auto-provision-users"
+            checked={autoProvisionUsers}
+            onCheckedChange={setAutoProvisionUsers}
+            title="Auto-provision accounts from domain"
+            description="Automatically create user accounts when signing in via this SSO provider."
+          />
+
+          {autoProvisionUsers && (
+            <AllowedDomainsInput
+              value={allowedDomains}
+              onChange={setAllowedDomains}
+              onValidate={domain => {
+                const validation = validateEmailDomain(domain);
+                return {
+                  valid: validation.valid,
+                  error: validation.error,
+                  cleanedDomain: validation.cleanedDomain,
+                };
+              }}
+              label="Allowed Domains"
+              placeholder="openframe.com"
+              disabled={isSubmitting}
+              error={domainError}
+              helperText="Users with email addresses from these domains can log in via SSO without registration."
+            />
+          )}
         </div>
       </div>
-
-      <ModalFooter className="justify-between">
-        {isEnabled && onDisable ? (
-          <Button
-            onClick={handleDisable}
-            variant="outline"
-            className="border-ods-error text-ods-error"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Disabling...' : 'Disable'}
-          </Button>
-        ) : (
-          <div />
-        )}
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save & Enable'}
-          </Button>
-        </div>
-      </ModalFooter>
-    </Modal>
+    </SimpleModal>
   );
 }
 

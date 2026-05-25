@@ -1,15 +1,8 @@
 'use client';
 
-import {
-  Button,
-  Input,
-  Modal,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useEffect } from 'react';
+import { Button, Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useEffect } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 
 interface NewFolderModalProps {
   isOpen: boolean;
@@ -35,28 +28,30 @@ export function NewFolderModal({ isOpen, folderName, submitting, onChange, onSub
   }, [isOpen, submitting, folderName, onSubmit]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <ModalHeader>
-        <ModalTitle>Create New Folder</ModalTitle>
-      </ModalHeader>
-      <ModalContent className="px-6 py-4 space-y-3">
-        <p className="text-sm text-ods-text-secondary">Enter a name for the new folder.</p>
-        <Input
-          value={folderName}
-          onChange={event => onChange(event.target.value)}
-          placeholder="Folder name"
-          autoFocus
-          disabled={submitting}
-        />
-      </ModalContent>
-      <ModalFooter>
-        <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
-          Cancel
-        </Button>
-        <Button size="small-legacy" onClick={onSubmit} disabled={!folderName.trim() || submitting}>
-          {submitting ? 'Creating...' : 'Create'}
-        </Button>
-      </ModalFooter>
-    </Modal>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Create New Folder"
+      contentClassName="flex flex-col gap-[var(--spacing-system-xs)]"
+      footer={
+        <>
+          <Button variant="transparent" size="small-legacy" onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button size="small-legacy" onClick={onSubmit} disabled={!folderName.trim() || submitting}>
+            {submitting ? 'Creating...' : 'Create'}
+          </Button>
+        </>
+      }
+    >
+      <p className="text-h6 text-ods-text-secondary">Enter a name for the new folder.</p>
+      <Input
+        value={folderName}
+        onChange={event => onChange(event.target.value)}
+        placeholder="Folder name"
+        autoFocus
+        disabled={submitting}
+      />
+    </SimpleModal>
   );
 }
