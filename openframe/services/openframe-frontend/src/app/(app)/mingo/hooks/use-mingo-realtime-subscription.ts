@@ -61,10 +61,6 @@ interface UseMingoRealtimeSubscription {
   onConnectionChange: (dialogId: string, connected: boolean) => void;
 }
 
-/**
- * Unified realtime subscription hook for Mingo chat
- * Manages NATS subscriptions for multiple dialogs with multi-topic support
- */
 export function useMingoRealtimeSubscription(
   activeDialogId: string | null,
   options: UseMingoRealtimeSubscriptionOptions = {},
@@ -163,7 +159,6 @@ export function useMingoRealtimeSubscription(
   };
 }
 
-// Per-dialog chunk processing hook
 interface UseDialogChunkProcessorOptions {
   onApprove?: (requestId?: string) => void | Promise<void>;
   onReject?: (requestId?: string) => void | Promise<void>;
@@ -375,7 +370,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
   return { processChunk: processorProcessChunk };
 }
 
-// Individual dialog subscription component
 interface DialogSubscriptionProps {
   dialogId: string;
   isActive: boolean;
