@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  buildNatsWsUrl,
   type ChatApprovalStatus,
   type ChunkData,
   extractIncompleteMessageState,
@@ -16,10 +15,8 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiClient } from '@/lib/api-client';
 import { featureFlags } from '@/lib/feature-flags';
-import { runtimeEnv } from '@/lib/runtime-config';
-import { STORAGE_KEYS } from '../../tickets/constants';
+import { useNatsAppConfig } from '@/lib/nats/nats-app-config';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogNode } from '../types/dialog.types';
 import type { CoreMessage } from '../types/message.types';
@@ -61,24 +58,7 @@ interface UseMingoRealtimeSubscription {
   getSubscriptionState: (dialogId: string) => DialogSubscriptionState;
   subscribedDialogs: Set<string>;
   connectionState: 'connected' | 'disconnected' | 'connecting';
-  isDevTicketEnabled: boolean;
   onConnectionChange: (dialogId: string, connected: boolean) => void;
-}
-
-function getApiBaseUrl(): string | null {
-  const envBase = runtimeEnv.tenantHostUrl();
-  if (envBase) return envBase;
-  if (typeof window !== 'undefined' && window.location?.origin) return window.location.origin;
-  return null;
-}
-
-function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || null;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -97,8 +77,6 @@ export function useMingoRealtimeSubscription(
 
   const onChunkReceivedRef = useRef(onChunkReceived);
   const catchupRefs = useRef<Map<string, any>>(new Map());
-
-  const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
 
   const { resetUnread } = useMingoMessagesStore();
 
@@ -181,7 +159,6 @@ export function useMingoRealtimeSubscription(
     getSubscriptionState,
     subscribedDialogs,
     connectionState,
-    isDevTicketEnabled,
     onConnectionChange,
   };
 }
@@ -405,7 +382,6 @@ interface DialogSubscriptionProps {
   onApprove?: (requestId?: string) => void;
   onReject?: (requestId?: string) => void;
   approvalStatuses?: Record<string, any>;
-  isDevTicketEnabled: boolean;
   onConnectionChange?: (dialogId: string, connected: boolean) => void;
   onMetadata?: (metadata: {
     modelDisplayName: string;
@@ -422,15 +398,13 @@ export function DialogSubscription({
   onApprove,
   onReject,
   approvalStatuses,
-  isDevTicketEnabled,
   onConnectionChange,
   onMetadata,
   initialOptStartSeq,
   isInitialOptStartSeqReady,
 }: DialogSubscriptionProps) {
-  const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
+  const { getWsUrl, onBeforeReconnect } = useNatsAppConfig();
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
-  const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
   const recordHighestStreamSeq = useMingoMessagesStore(s => s.recordHighestStreamSeq);
   const storedHighestSeq = useMingoMessagesStore(s => s.highestStreamSeqByDialog.get(dialogId) ?? 0);
@@ -441,17 +415,6 @@ export function DialogSubscription({
   // offset, which complicates state ownership. Picking up a flag change on
   // the next page load is acceptable for a runtime rollout.
   const [useJetstream] = useState(() => featureFlags.aiStreamingJetstream.enabled());
-
-  useEffect(() => {
-    if (!isDevTicketEnabled) return;
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.ACCESS_TOKEN) {
-        setToken(getAccessToken());
-      }
-    };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
-  }, [isDevTicketEnabled]);
 
   const { processChunk: processorProcessChunk } = useDialogChunkProcessor(dialogId, {
     onApprove,
@@ -479,39 +442,6 @@ export function DialogSubscription({
   });
 
   const queryClient = useQueryClient();
-
-  // NATS WebSocket URL
-  const getNatsWsUrl = useMemo(() => {
-    return (): string | null => {
-      if (!apiBaseUrl) return null;
-      if (isDevTicketEnabled && !token) return null;
-      return buildNatsWsUrl(apiBaseUrl, {
-        token: token || undefined,
-        includeAuthParam: isDevTicketEnabled,
-        source: 'dashboard',
-      });
-    };
-  }, [apiBaseUrl, token, isDevTicketEnabled]);
-
-  const clientConfig = useMemo(
-    () => ({
-      name: `openframe-frontend-mingo-${dialogId}`,
-      user: 'machine',
-      pass: '',
-    }),
-    [dialogId],
-  );
-
-  const reconnectionBackoff = useMemo(
-    () => ({
-      fastRetries: 3,
-      fastRetryDelayMs: 200,
-      initialDelayMs: 1000,
-      multiplier: 2,
-      maxDelayMs: 30_000,
-    }),
-    [],
-  );
 
   useEffect(() => {
     if (useJetstream) return;
@@ -583,18 +513,6 @@ export function DialogSubscription({
     onConnectionChange?.(dialogId, false);
   }, [dialogId, onConnectionChange]);
 
-  const handleBeforeReconnect = useCallback(async () => {
-    try {
-      await apiClient.get('/api/me');
-    } catch {
-      // If refresh fails, apiClient will force-logout
-    } finally {
-      if (isDevTicketEnabled) {
-        setToken(getAccessToken());
-      }
-    }
-  }, [isDevTicketEnabled]);
-
   const { reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
     enabled: !useJetstream,
     dialogId,
@@ -602,11 +520,9 @@ export function DialogSubscription({
     onEvent: handleNatsEvent,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
-    onBeforeReconnect: handleBeforeReconnect,
+    onBeforeReconnect,
     onSubscribed: handleLegacySubscribed,
-    getNatsWsUrl,
-    clientConfig,
-    reconnectionBackoff,
+    getNatsWsUrl: getWsUrl,
   });
 
   useJetStreamDialogSubscription({
@@ -618,10 +534,8 @@ export function DialogSubscription({
     onEvent: handleJetStreamEvent,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
-    onBeforeReconnect: handleBeforeReconnect,
-    getNatsWsUrl,
-    clientConfig,
-    reconnectionBackoff,
+    onBeforeReconnect,
+    getNatsWsUrl: getWsUrl,
   });
 
   useEffect(() => {
