@@ -12,7 +12,7 @@ import {
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
 import { DevicesGridFilters } from '@/app/(app)/devices/components/devices-grid-filters';
 import {
@@ -139,6 +139,14 @@ export function DevicesPanel({
     columns: filterColumns,
     setParams,
   });
+
+  // Grid layout is desktop-only — force-collapse to table on mobile so the
+  // user always gets a usable list at narrow widths.
+  useEffect(() => {
+    if (!isMdUp && params.viewMode === 'grid') {
+      setParam('viewMode', 'table');
+    }
+  }, [isMdUp, params.viewMode, setParam]);
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 

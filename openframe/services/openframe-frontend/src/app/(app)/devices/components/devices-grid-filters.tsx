@@ -11,17 +11,8 @@ interface DevicesGridFiltersProps {
   currentFilters: Record<string, string[]>;
   /** Called with the next filters Record on apply/reset. Should write to URL params. */
   onFilterChange: (filters: Record<string, string[]>) => void;
-  /** Server-side count for the "Showing N results" tail. */
+  /** Server-side count for the "N results" tail. */
   totalCount?: number;
-}
-
-function getDisplay(selected: string[], options: { label: string; value: string }[]): string {
-  if (selected.length === 0) return 'SHOW ALL';
-  if (selected.length === 1) {
-    const found = options.find(o => o.value === selected[0]);
-    return (found?.label ?? selected[0]).toUpperCase();
-  }
-  return `${selected.length} SELECTED`;
 }
 
 /**
@@ -42,10 +33,9 @@ export function DevicesGridFilters({
   }
 
   return (
-    <div className="flex items-center flex-wrap gap-[var(--spacing-system-l)] py-[var(--spacing-system-sf)]">
+    <div className="sticky top-[96px] z-10 bg-ods-bg flex items-start flex-wrap gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)]">
       {filterableColumns.map(column => {
         const selected = currentFilters[column.key] ?? [];
-        const display = getDisplay(selected, column.filterOptions ?? []);
         const active = selected.length > 0;
 
         return (
@@ -57,16 +47,8 @@ export function DevicesGridFilters({
                 className="group inline-flex items-center gap-[var(--spacing-system-xsf)] py-[var(--spacing-system-sf)] cursor-pointer select-none"
                 aria-label={`Filter by ${column.label}`}
               >
-                <span className="text-h5 text-ods-text-secondary whitespace-nowrap transition-colors group-hover:text-ods-text-primary">
-                  {column.label}:
-                </span>
-                <span
-                  className={cn(
-                    'text-h5 whitespace-nowrap transition-colors',
-                    active ? 'text-ods-accent' : 'text-ods-text-primary',
-                  )}
-                >
-                  {display}
+                <span className="text-h5 text-ods-text-secondary uppercase whitespace-nowrap transition-colors group-hover:text-ods-text-primary">
+                  {column.label}
                 </span>
                 <Filter02Icon
                   className={cn(
@@ -97,7 +79,9 @@ export function DevicesGridFilters({
         );
       })}
       {totalCount !== undefined && (
-        <span className="ml-auto text-h5 text-ods-text-secondary whitespace-nowrap">Showing {totalCount} results</span>
+        <span className="absolute right-0 top-[14px] text-h6 text-ods-text-secondary whitespace-nowrap">
+          {totalCount} results
+        </span>
       )}
     </div>
   );
