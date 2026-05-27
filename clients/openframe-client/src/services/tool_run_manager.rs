@@ -14,10 +14,6 @@ use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
 
 #[cfg(windows)]
-use std::ffi::OsStr;
-#[cfg(windows)]
-use std::os::windows::ffi::OsStrExt;
-#[cfg(windows)]
 use windows::{
     core::{PCWSTR, PWSTR},
     Win32::Foundation::*,
@@ -26,14 +22,12 @@ use windows::{
     Win32::UI::WindowsAndMessaging::SW_SHOW,
     Win32::Security::*,
 };
+#[cfg(target_os = "windows")]
+use crate::services::windows_session_manager::WindowsSessionManager;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_helpers::{build_command_line, to_wide, wcslen};
 
 const RETRY_DELAY_SECONDS: u64 = 5;
-
-#[cfg(windows)]
-fn to_wide(s: &str) -> Vec<u16> {
-    use std::iter::once;
-    OsStr::new(s).encode_wide().chain(once(0)).collect()
-}
 
 #[cfg(windows)]
 fn get_active_user_session() -> Option<u32> {
@@ -144,17 +138,6 @@ fn get_active_user_session() -> Option<u32> {
 }
 
 #[cfg(windows)]
-fn wcslen(ptr: *const u16) -> usize {
-    let mut len = 0;
-    unsafe {
-        while *ptr.add(len) != 0 {
-            len += 1;
-        }
-    }
-    len
-}
-
-#[cfg(windows)]
 fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
     unsafe {
         let session_id = WTSGetActiveConsoleSessionId();
@@ -224,17 +207,14 @@ fn launch_process_in_console_session(command_path: &str, args: &[String]) -> Res
 
 #[cfg(windows)]
 pub(crate) fn launch_process_in_user_session(command_path: &str, args: &[String]) -> Result<(u32, HANDLE)> {
-    unsafe {
-        let session_id = match get_active_user_session() {
-            Some(id) => {
-                info!("Successfully obtained active user session ID: {}", id);
-                id
-            }
-            None => {
-                anyhow::bail!("No active user session found");
-            }
-        };
+    let session_id = get_active_user_session()
+        .context("No active user session found")?;
+    launch_process_in_target_session(command_path, args, session_id)
+}
 
+#[cfg(target_os = "windows")]
+pub(crate) fn launch_process_in_target_session(command_path: &str, args: &[String], session_id: u32) -> Result<(u32, HANDLE)> {
+    unsafe {
         info!("Step 1: Querying user token for session {}", session_id);
         let mut user_token = HANDLE(0);
         if let Err(e) = WTSQueryUserToken(session_id, &mut user_token) {
@@ -265,18 +245,7 @@ pub(crate) fn launch_process_in_user_session(command_path: &str, args: &[String]
 
         // Build command line with full path in quotes + arguments
         info!("Step 3: Building command line");
-        let mut cmdline = format!("\"{}\"", command_path);
-        for arg in args {
-            cmdline.push(' ');
-            // Quote argument if it contains spaces
-            if arg.contains(' ') {
-                cmdline.push('"');
-                cmdline.push_str(arg);
-                cmdline.push('"');
-            } else {
-                cmdline.push_str(arg);
-            }
-        }
+        let cmdline = build_command_line(command_path, args);
         info!("Command line: {}", cmdline);
 
         info!("Step 4: Setting up STARTUPINFOW structure");
@@ -382,6 +351,8 @@ pub struct ToolRunManager {
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
     updating_tools: Arc<RwLock<HashSet<String>>>,
+    #[cfg(target_os = "windows")]
+    session_manager: Option<Arc<WindowsSessionManager>>,
 }
 
 impl ToolRunManager {
@@ -389,6 +360,7 @@ impl ToolRunManager {
         installed_tools_service: InstalledToolsService,
         params_processor: ToolCommandParamsResolver,
         tool_kill_service: ToolKillService,
+        #[cfg(target_os = "windows")] session_manager: Option<Arc<WindowsSessionManager>>,
     ) -> Self {
         Self {
             installed_tools_service,
@@ -396,6 +368,8 @@ impl ToolRunManager {
             tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
             updating_tools: Arc::new(RwLock::new(HashSet::new())),
+            #[cfg(target_os = "windows")]
+            session_manager,
         }
     }
 
@@ -477,6 +451,8 @@ impl ToolRunManager {
         let params_processor = self.params_processor.clone();
         let running_tools = self.running_tools.clone();
         let installation = tool.installation.clone();
+        #[cfg(target_os = "windows")]
+        let session_manager = self.session_manager.clone();
 
         tokio::spawn(async move {
             loop {
@@ -509,47 +485,15 @@ impl ToolRunManager {
                     Installation::GuiApp { executable_path: _, bundle_id } => {
                         #[cfg(windows)]
                         {
-                            // For openframe-chat, add --background flag to start in tray
-                            let mut launch_args = processed_args.clone();
-                            if tool.tool_agent_id == "openframe-chat" {
-                                launch_args.push("--background".to_string());
-                            }
-
-                            info!("Launching {} as GuiApp in USER session", tool.tool_agent_id);
-                            match launch_process_in_user_session(&command_path, &launch_args) {
-                                Ok((pid, process_handle)) => {
-                                    info!("{} launched successfully in USER session with PID: {}", tool.tool_agent_id, pid);
-
-                                    // Wait for process to exit in blocking thread to avoid blocking async runtime
-                                    let exit_code = tokio::task::spawn_blocking(move || {
-                                        use windows::Win32::System::Threading::{WaitForSingleObject, INFINITE};
-
-                                        unsafe {
-                                            let _ = WaitForSingleObject(process_handle, INFINITE);
-
-                                            // Get exit code
-                                            let mut exit_code: u32 = 0;
-                                            let _ = GetExitCodeProcess(process_handle, &mut exit_code);
-                                            let _ = CloseHandle(process_handle);
-
-                                            exit_code
-                                        }
-                                    }).await.unwrap_or(1);
-
-                                    warn!(tool_id = %tool.tool_agent_id,
-                                          "{} process exited with code {} - restarting in {} seconds",
-                                          tool.tool_agent_id, exit_code, RETRY_DELAY_SECONDS);
-
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
-                                Err(e) => {
-                                    error!(tool_id = %tool.tool_agent_id, error = %e,
-                                           "Failed to launch {} as GuiApp - retrying in {} seconds",
-                                           tool.tool_agent_id, RETRY_DELAY_SECONDS);
-                                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
-                                    continue;
-                                }
+                            // Register tool in the WindowsSessionManager,
+                            // so its lifetime will be managed by it
+                            if let Some(mgr) = &session_manager {
+                                mgr.register_tool(
+                                    tool.tool_agent_id.clone(),
+                                    command_path.clone(),
+                                    processed_args.clone(),
+                                ).await;
+                                return;
                             }
                         }
 

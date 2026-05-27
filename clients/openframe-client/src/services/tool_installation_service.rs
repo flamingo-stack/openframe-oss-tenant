@@ -88,7 +88,10 @@ impl ToolInstallationService {
 
         let version_clone = tool_installation_message.version.clone();
         let effective_version = tool_installation_message.effective_version().to_string();
-        let run_args_clone = tool_installation_message.run_command_args.clone();
+        let mut run_args_clone = tool_installation_message.run_command_args.clone();
+        if tool_agent_id == "openframe-chat" && !run_args_clone.iter().any(|a| a == "--background") {
+            run_args_clone.push("--background".to_string());
+        }
         let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
@@ -331,6 +334,25 @@ impl ToolInstallationService {
 
         self.installed_tools_service.save(installed_tool.clone()).await
             .context("Failed to save installed tool")?;
+
+        // For GuiApp installations on Windows, register the HKLM autorun entry so Windows
+        // launches the app at every user's logon. WindowsSessionManager picks up the existing
+        // process via find_pid and attaches a waiter, so we don't double-launch on the active session.
+        #[cfg(target_os = "windows")]
+        if let Installation::GuiApp { .. } = &installed_tool.installation {
+            let launch_args = self.command_params_resolver
+                .process(tool_agent_id, installed_tool.run_command_args.clone())
+                .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            let command_path = self.directory_manager
+                .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
+                .to_string_lossy()
+                .to_string();
+            if let Err(e) = crate::utils::windows_helpers::register_autorun(
+                tool_agent_id, &command_path, &launch_args,
+            ) {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to register GuiApp autorun");
+            }
+        }
 
         // Run the tool after successful installation
         info!("Running tool {} after successful installation", tool_agent_id);

@@ -154,7 +154,7 @@ fn main() -> Result<()> {
             check_capabilities_and_warn();
 
             // Run directly without service wrapper
-            match Client::new() {
+            match Client::new(None) {
                 Ok(client) => {
                     info!("Starting OpenFrame client in direct mode");
                     if let Err(e) = rt.block_on(client.start()) {
@@ -211,7 +211,7 @@ fn main() -> Result<()> {
         None => {
             info!("No command specified, running as service (legacy mode)");
             // Run as service by default for backward compatibility
-            if let Err(e) = rt.block_on(Service::run()) {
+            if let Err(e) = rt.block_on(Service::run(None)) {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
             }

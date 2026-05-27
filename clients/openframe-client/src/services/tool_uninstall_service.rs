@@ -149,6 +149,9 @@ impl ToolUninstallService {
         // Cleanup GUI app bundle if applicable
         self.cleanup_gui_app_bundle(tool).await;
 
+        // Remove the GuiApp from autorun if applicable
+        self.cleanup_gui_app_autorun(tool);
+
         Ok(())
     }
 
@@ -184,6 +187,19 @@ impl ToolUninstallService {
         #[cfg(not(target_os = "macos"))]
         {
             let _ = executable_path;
+        }
+    }
+
+    fn cleanup_gui_app_autorun(&self, tool: &InstalledTool) {
+        let Installation::GuiApp { .. } = &tool.installation else {
+            return;
+        };
+
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = crate::utils::windows_helpers::unregister_autorun(&tool.tool_agent_id) {
+                warn!(tool_id = %tool.tool_agent_id, error = %e, "Failed to cleanup GuiApp autorun");
+            }
         }
     }
 }
