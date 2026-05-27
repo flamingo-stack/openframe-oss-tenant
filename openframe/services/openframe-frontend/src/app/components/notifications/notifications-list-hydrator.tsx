@@ -4,8 +4,8 @@ import { useNotifications } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useMemo } from 'react';
 import { type PreloadedQuery, usePreloadedQuery } from 'react-relay';
 import type { notificationsListQuery as NotificationsListQueryType } from '@/__generated__/notificationsListQuery.graphql';
+import { mapNotificationNode } from '@/graphql/notifications/notifications-helpers';
 import { notificationsListQuery } from '@/graphql/notifications/notifications-list-query';
-import { mapNotificationNode } from './notifications-data-provider';
 
 interface NotificationsListHydratorProps {
   queryRef: PreloadedQuery<NotificationsListQueryType> | null | undefined;

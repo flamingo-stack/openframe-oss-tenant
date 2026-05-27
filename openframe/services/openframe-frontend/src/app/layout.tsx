@@ -104,15 +104,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Suspense>
             )}
             <NatsAppProvider>
-              <NotificationsDataProvider>
-                <FeatureFlagsGate>
+              <FeatureFlagsGate>
+                <NotificationsDataProvider>
                   <RouteGuard>
                     <div className="relative flex min-h-screen flex-col">
                       <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
                     </div>
                   </RouteGuard>
-                </FeatureFlagsGate>
-              </NotificationsDataProvider>
+                </NotificationsDataProvider>
+              </FeatureFlagsGate>
             </NatsAppProvider>
           </QueryClientProvider>
         </RelayProvider>
