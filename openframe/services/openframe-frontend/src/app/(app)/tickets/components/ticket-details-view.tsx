@@ -73,13 +73,13 @@ import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.typ
 import { ticketsQueryKeys } from '../utils/query-keys';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
 
-function maxLastChunkStreamSeq(pages: MessagePage[] | undefined): number | null {
-  if (!pages) return null;
-  let max: number | null = null;
+function maxLastChunkStreamSeq(pages: MessagePage[] | undefined): number {
+  let max = 0;
+  if (!pages) return max;
   for (const page of pages) {
     for (const msg of page.messages) {
       const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && (max == null || seq > max)) max = seq;
+      if (typeof seq === 'number' && seq > max) max = seq;
     }
   }
   return max;

@@ -341,24 +341,21 @@ export default function Mingo() {
 
   return (
     <ContentPageContainer padding="none" showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
-      {Array.from(subscribedDialogs).map(dialogId => {
-        const isActive = dialogId === activeDialogId;
-        return (
-          <DialogSubscription
-            key={dialogId}
-            dialogId={dialogId}
-            isActive={isActive}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            approvalStatuses={approvalStatuses}
-            isDevTicketEnabled={isDevTicketEnabled}
-            onConnectionChange={onConnectionChange}
-            onMetadata={isActive ? handleMetadataUpdate : undefined}
-            initialOptStartSeq={isActive ? initialOptStartSeq : null}
-            isInitialOptStartSeqReady={isActive ? isMessagesFetched : true}
-          />
-        );
-      })}
+      {activeDialogId && subscribedDialogs.has(activeDialogId) && (
+        <DialogSubscription
+          key={activeDialogId}
+          dialogId={activeDialogId}
+          isActive
+          onApprove={handleApprove}
+          onReject={handleReject}
+          approvalStatuses={approvalStatuses}
+          isDevTicketEnabled={isDevTicketEnabled}
+          onConnectionChange={onConnectionChange}
+          onMetadata={handleMetadataUpdate}
+          initialOptStartSeq={initialOptStartSeq}
+          isInitialOptStartSeqReady={isMessagesFetched}
+        />
+      )}
 
       <div className="flex h-full w-full">
         {sidebarOpen && (

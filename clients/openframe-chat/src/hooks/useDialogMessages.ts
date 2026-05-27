@@ -45,12 +45,12 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
   });
 
   const initialOptStartSeq = useMemo(() => {
-    if (!data?.pages) return null;
-    let max: number | null = null;
+    let max = 0;
+    if (!data?.pages) return max;
     for (const page of data.pages) {
       for (const edge of page.edges) {
         const seq = edge.node.lastChunkStreamSeq;
-        if (typeof seq === 'number' && (max == null || seq > max)) max = seq;
+        if (typeof seq === 'number' && seq > max) max = seq;
       }
     }
     return max;

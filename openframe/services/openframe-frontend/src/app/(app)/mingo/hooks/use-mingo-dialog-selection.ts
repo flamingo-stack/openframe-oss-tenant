@@ -19,13 +19,13 @@ import { useApproveRequestMutation, useRejectRequestMutation } from '../services
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
 
-function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
-  if (!pages) return null;
-  let max: number | null = null;
+function computeInitialStartSeq(pages: MessagePage[] | undefined): number {
+  let max = 0;
+  if (!pages) return max;
   for (const page of pages) {
     for (const msg of page.messages) {
       const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && (max == null || seq > max)) {
+      if (typeof seq === 'number' && seq > max) {
         max = seq;
       }
     }

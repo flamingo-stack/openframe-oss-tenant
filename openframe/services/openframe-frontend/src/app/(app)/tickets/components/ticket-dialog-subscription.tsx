@@ -26,10 +26,10 @@ interface TicketDialogSubscriptionProps {
   catchUpChunks: () => Promise<void>;
   /** Re-run catch-up after a legacy NATS reconnect. */
   resetAndCatchUp: () => Promise<void>;
-  /** Resume sequence for the CLIENT topic; null = live-tail. */
-  clientInitialOptStartSeq: number | null;
-  /** Resume sequence for the ADMIN topic; null = live-tail. */
-  adminInitialOptStartSeq: number | null;
+  /** Resume sequence for the CLIENT topic; 0 = replay from stream start (per-dialog filter). */
+  clientInitialOptStartSeq: number;
+  /** Resume sequence for the ADMIN topic; 0 = replay from stream start (per-dialog filter). */
+  adminInitialOptStartSeq: number;
   /** Gates JetStream consumer creation until both sides' history has loaded. */
   isInitialOptStartSeqReady: boolean;
 }
