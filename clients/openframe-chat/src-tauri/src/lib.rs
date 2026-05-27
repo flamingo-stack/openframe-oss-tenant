@@ -128,7 +128,7 @@ fn register_app_id() {
     if let Ok((key, _)) =
         hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
     {
-        let _ = key.set_value("DisplayName", &"Fae Chat");
+        let _ = key.set_value("DisplayName", &"OpenFrame Chat");
         if let Ok(exe) = std::env::current_exe() {
             let icon = exe.to_string_lossy().into_owned();
             let _ = key.set_value("IconUri", &icon.as_str());
