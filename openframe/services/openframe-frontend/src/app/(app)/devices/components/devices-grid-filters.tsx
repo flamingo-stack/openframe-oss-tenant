@@ -79,9 +79,9 @@ export function DevicesGridFilters({
         );
       })}
       {totalCount !== undefined && (
-        <span className="absolute right-0 top-[14px] text-h6 text-ods-text-secondary whitespace-nowrap">
-          {totalCount} results
-        </span>
+        <div className="absolute right-0 inset-y-0 flex items-center">
+          <span className="text-h6 text-ods-text-secondary whitespace-nowrap">{totalCount} results</span>
+        </div>
       )}
     </div>
   );
