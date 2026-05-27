@@ -35,15 +35,24 @@ export function ChatInitialScreen({
     </div>
   );
 
+  const hasTickets = tickets.length > 0;
+
   return (
-    <div className="flex-1 flex flex-col justify-center items-center px-[var(--spacing-system-mf)] min-h-0">
-      <div className="text-center mb-[var(--spacing-system-lf)]">
+    <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-[var(--spacing-system-mf)] py-[var(--spacing-system-l)]">
+      <div className="w-full max-w-ods-content-narrow text-center mb-[var(--spacing-system-lf)] shrink-0">
         <h1 className="text-h2 mb-[var(--spacing-system-xsf)]">Hey! How can I help?</h1>
         <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
       </div>
 
-      <ChatTicketList className="w-full max-w-ods-content-narrow" tickets={tickets} onTicketClick={onTicketClick} />
-      {tickets.length === 0 && quickHelp}
+      {hasTickets ? (
+        <ChatTicketList
+          className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
+          tickets={tickets}
+          onTicketClick={onTicketClick}
+        />
+      ) : (
+        quickHelp
+      )}
     </div>
   );
 }

@@ -302,7 +302,7 @@ export function ChatView() {
   const isDialogActive = displayMessages.length > 0 || hasMessages || Boolean(dialogId && isLoadingHistory);
 
   return (
-    <ChatContainer>
+    <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
         userAvatar={faeAvatar}
         connectionStatus={status}
