@@ -25,6 +25,9 @@ interface MingoMessagesStore {
   streamingMessages: Map<string, Message | null>;
   segmentAccumulators: Map<string, MessageSegmentAccumulator>;
   tokenUsageByDialog: Map<string, TokenUsageData>;
+  // Highest JetStream streamSeq observed per dialog. Persists across
+  // DialogSubscription remounts.
+  highestStreamSeqByDialog: Map<string, number>;
 
   // Loading states
   isLoadingDialog: boolean;
@@ -90,6 +93,10 @@ interface MingoMessagesStore {
   setTokenUsage: (dialogId: string, data: TokenUsageData) => void;
   getTokenUsage: (dialogId: string) => TokenUsageData | null;
 
+  // Stream sequence tracking
+  recordHighestStreamSeq: (dialogId: string, seq: number) => void;
+  getHighestStreamSeq: (dialogId: string) => number;
+
   // Utility Actions
   removeWelcomeMessages: (dialogId: string) => void;
   clearDialog: (dialogId: string) => void;
@@ -120,6 +127,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       streamingMessages: new Map(),
       segmentAccumulators: new Map(),
       tokenUsageByDialog: new Map(),
+      highestStreamSeqByDialog: new Map(),
 
       isLoadingDialog: false,
       isLoadingMessages: false,
@@ -565,6 +573,20 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return get().tokenUsageByDialog.get(dialogId) || null;
       },
 
+      recordHighestStreamSeq: (dialogId: string, seq: number) => {
+        set(state => {
+          const current = state.highestStreamSeqByDialog.get(dialogId) ?? 0;
+          if (seq <= current) return state;
+          const newMap = new Map(state.highestStreamSeqByDialog);
+          newMap.set(dialogId, seq);
+          return { highestStreamSeqByDialog: newMap };
+        });
+      },
+
+      getHighestStreamSeq: (dialogId: string) => {
+        return get().highestStreamSeqByDialog.get(dialogId) ?? 0;
+      },
+
       removeWelcomeMessages: (dialogId: string) => {
         set(state => {
           const newMap = new Map(state.messagesByDialog);
@@ -583,6 +605,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const newStreamingMap = new Map(state.streamingMessages);
           const newAccumulatorsMap = new Map(state.segmentAccumulators);
           const newTokenUsageMap = new Map(state.tokenUsageByDialog);
+          const newHighestSeqMap = new Map(state.highestStreamSeqByDialog);
 
           newMessagesMap.delete(dialogId);
           newTypingMap.delete(dialogId);
@@ -590,6 +613,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           newStreamingMap.delete(dialogId);
           newAccumulatorsMap.delete(dialogId);
           newTokenUsageMap.delete(dialogId);
+          newHighestSeqMap.delete(dialogId);
 
           return {
             messagesByDialog: newMessagesMap,
@@ -598,6 +622,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             streamingMessages: newStreamingMap,
             segmentAccumulators: newAccumulatorsMap,
             tokenUsageByDialog: newTokenUsageMap,
+            highestStreamSeqByDialog: newHighestSeqMap,
           };
         });
       },
@@ -612,6 +637,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           streamingMessages: new Map(),
           segmentAccumulators: new Map(),
           tokenUsageByDialog: new Map(),
+          highestStreamSeqByDialog: new Map(),
           isLoadingDialog: false,
           isLoadingMessages: false,
           isCreatingDialog: false,

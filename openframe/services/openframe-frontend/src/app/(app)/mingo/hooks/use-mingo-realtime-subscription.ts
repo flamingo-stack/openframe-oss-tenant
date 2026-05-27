@@ -203,6 +203,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
   const { onApprove, onReject, approvalStatuses, onMetadata } = options;
   const {
     messagesByDialog,
+    streamingMessages,
     getMessages,
     addMessage,
     updateMessage,
@@ -309,11 +310,16 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         timestamp: lastAssistantTimestamp,
       };
 
-      return extractIncompleteMessageState(completeAssistantMessage);
+      const libState = extractIncompleteMessageState(completeAssistantMessage);
+      if (libState) return libState;
+
+      if (streamingMessages.get(dialogId)) {
+        return { existingSegments: assistantSegments };
+      }
     }
 
     return undefined;
-  }, [dialogId, messagesByDialog]);
+  }, [dialogId, messagesByDialog, streamingMessages]);
 
   const realtimeCallbacks = useMemo(
     () => ({
@@ -426,6 +432,10 @@ export function DialogSubscription({
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
   const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
+  const recordHighestStreamSeq = useMingoMessagesStore(s => s.recordHighestStreamSeq);
+  const storedHighestSeq = useMingoMessagesStore(s => s.highestStreamSeqByDialog.get(dialogId) ?? 0);
+  const effectiveOptStartSeq = Math.max(initialOptStartSeq ?? 0, storedHighestSeq);
+
   // Resolved once per mount: switching transports mid-stream would require
   // tearing down one subscription and recreating the other with the right
   // offset, which complicates state ownership. Picking up a flag change on
@@ -519,6 +529,9 @@ export function DialogSubscription({
 
   const syncStreamStateFromChunk = useCallback(
     (chunk: ChunkData) => {
+      if (typeof chunk.streamSeq === 'number') {
+        recordHighestStreamSeq(dialogId, chunk.streamSeq);
+      }
       const next = chunk.streamState;
       if (!next) return;
       if (typeof chunk.streamSeq === 'number') {
@@ -529,7 +542,7 @@ export function DialogSubscription({
         prev ? { ...prev, streamState: next } : prev,
       );
     },
-    [queryClient, dialogId],
+    [queryClient, dialogId, recordHighestStreamSeq],
   );
 
   const handleNatsEvent = useCallback(
@@ -601,7 +614,7 @@ export function DialogSubscription({
     dialogId,
     streamName: CHAT_CHUNKS_STREAM,
     topic: MINGO_JETSTREAM_TOPIC,
-    optStartSeq: initialOptStartSeq,
+    optStartSeq: effectiveOptStartSeq,
     onEvent: handleJetStreamEvent,
     onConnect: handleConnect,
     onDisconnect: handleDisconnect,
