@@ -4,18 +4,16 @@ import {
   Button,
   Checkbox,
   Label,
-  Modal,
-  ModalFooter,
-  ModalHeader,
-  ModalTitle,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@flamingo-stack/openframe-frontend-core';
+import { ModalV2Title } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import React, { useEffect, useState } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
 import { MeshTunnel } from '@/lib/meshcentral/meshcentral-tunnel';
 import {
@@ -98,13 +96,27 @@ export function RemoteSettingsModal({
   };
 
   return (
-    <Modal isOpen={open} onClose={handleClose} className="max-w-2xl">
-      <ModalHeader>
-        <ModalTitle>Remote Control Settings</ModalTitle>
-        <p className="text-ods-text-secondary text-sm mt-1">Configure quality, scaling, and keyboard preferences</p>
-      </ModalHeader>
-
-      <div className="px-6 py-4 space-y-4">
+    <SimpleModal
+      isOpen={open}
+      onClose={handleClose}
+      className="max-w-2xl"
+      header={
+        <>
+          <ModalV2Title>Remote Control Settings</ModalV2Title>
+          <p className="text-ods-text-secondary text-h6 mt-1">Configure quality, scaling, and keyboard preferences</p>
+        </>
+      }
+      contentClassName="flex flex-col gap-[var(--spacing-system-l)]"
+      footer={
+        <>
+          <Button variant="outline" onClick={handleClose}>
+            Close
+          </Button>
+          <Button onClick={handleSaveSettings}>Save Settings</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
         {/* Quality and Scaling Row */}
         <div className="grid grid-cols-2 gap-4">
           {/* Quality Selector */}
@@ -215,13 +227,6 @@ export function RemoteSettingsModal({
           </div>
         </div>
       </div>
-
-      <ModalFooter>
-        <Button variant="outline" onClick={handleClose}>
-          Close
-        </Button>
-        <Button onClick={handleSaveSettings}>Save Settings</Button>
-      </ModalFooter>
-    </Modal>
+    </SimpleModal>
   );
 }

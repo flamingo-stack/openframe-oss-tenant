@@ -3,7 +3,6 @@
 import { QuestionCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Card,
-  CheckboxBlock,
   Input,
   RadioGroupBlock,
   TabSelector,
@@ -20,17 +19,13 @@ import type { productSubscriptionCardSubscriptionFragment$key } from '@/__genera
 import { useProductSelection } from '../hooks/use-product-selection';
 import type { ProductUpdates } from '../types/subscription.types';
 import { buildPackageRadioOptions } from '../utils/build-package-radio-options';
-import {
-  CUSTOM_OPTION_ID,
-  calculateCustomQuantityPrice,
-  formatMoney,
-  formatPaygSubtitle,
-} from '../utils/subscription.utils';
+import { CUSTOM_OPTION_ID, calculateCustomQuantityPrice, formatMoney } from '../utils/subscription.utils';
 
 export const productSubscriptionCardProductFragment = graphql`
   fragment productSubscriptionCardProductFragment on Product {
     id
     name
+    unitSize
     packageOptions {
       id
       billingPeriod
@@ -48,13 +43,15 @@ export const productSubscriptionCardProductFragment = graphql`
 
 export const productSubscriptionCardSubscriptionFragment = graphql`
   fragment productSubscriptionCardSubscriptionFragment on SubscriptionProductDetail {
+    paygOnly
     packageOptions {
       id
+      packageOptionId
       billingPeriod
       quantity
       status
     }
-    payAsYouGoOption { id }
+    payAsYouGoOption { id packageOptionId }
   }
 `;
 
@@ -114,17 +111,24 @@ export function ProductSubscriptionCard({
     allTiers,
     tiers,
     baselineUnitPrice,
+    unitSize,
     months,
     periodSuffix,
-    setPayAsYouGo,
     setBillingPeriod,
     setSelectedPackage,
     setCustomQuantity,
   } = useProductSelection({ product, subscriptionProduct, onUpdatesChange });
 
+  // customQuantity is the real product count the user typed; it must be a whole
+  // multiple of unitSize. Tier pricing works in units, so divide before pricing.
+  const isCustom = selection.selectedPackageId === CUSTOM_OPTION_ID;
+  const customQty = selection.customQuantity;
+  const customNotDivisible = isCustom && customQty != null && customQty > 0 && customQty % unitSize !== 0;
+  const customUnits = customQty != null && customQty > 0 && customQty % unitSize === 0 ? customQty / unitSize : null;
+
   const customPrice =
-    selection.selectedPackageId === CUSTOM_OPTION_ID && selection.customQuantity != null
-      ? calculateCustomQuantityPrice(selection.customQuantity, allTiers, baselineUnitPrice, months)
+    isCustom && customUnits != null
+      ? calculateCustomQuantityPrice(customUnits, allTiers, baselineUnitPrice, months)
       : null;
 
   const radioOptions = buildPackageRadioOptions({
@@ -135,7 +139,9 @@ export function ProductSubscriptionCard({
     packageUnitLabel,
     customLabel,
     customSubtitle,
-    payAsYouGoEnabled: selection.payAsYouGoEnabled,
+    payAsYouGoOption: product.payAsYouGoOption ?? null,
+    unitSize,
+    showPayg: selection.billingPeriod === 'MONTHLY',
   });
 
   return (
@@ -153,20 +159,14 @@ export function ProductSubscriptionCard({
 
       <p className="text-h4 text-ods-text-primary">{description}</p>
 
-      <CheckboxBlock
-        checked={selection.payAsYouGoEnabled}
-        onCheckedChange={setPayAsYouGo}
-        label="Pay as you go"
-        description={formatPaygSubtitle(product.payAsYouGoOption)}
-      />
-
-      <TabSelector
-        value={selection.billingPeriod}
-        onValueChange={setBillingPeriod}
-        variant="primary"
-        items={billingPeriodItems}
-        disabled={selection.payAsYouGoEnabled}
-      />
+      {billingPeriodItems.length > 1 && (
+        <TabSelector
+          value={selection.billingPeriod}
+          onValueChange={setBillingPeriod}
+          variant="primary"
+          items={billingPeriodItems}
+        />
+      )}
 
       <div className="flex flex-col gap-2 w-full">
         <p className="text-h5 text-ods-text-secondary">Packages</p>
@@ -174,17 +174,16 @@ export function ProductSubscriptionCard({
           <RadioGroupBlock
             name={`packages-${product.id}`}
             variant="grouped"
-            value={selection.selectedPackageId ?? ''}
+            value={disabled ? '' : (selection.selectedPackageId ?? '')}
             onValueChange={setSelectedPackage}
-            disabled={selection.payAsYouGoEnabled}
             options={radioOptions}
             className="[&>div]:!rounded-none [&>div]:!border-0"
           />
           <div
-            aria-hidden={selection.selectedPackageId !== CUSTOM_OPTION_ID}
+            aria-hidden={disabled || selection.selectedPackageId !== CUSTOM_OPTION_ID}
             className={cn(
               'grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none',
-              selection.selectedPackageId === CUSTOM_OPTION_ID
+              !disabled && selection.selectedPackageId === CUSTOM_OPTION_ID
                 ? 'grid-rows-[1fr] opacity-100'
                 : 'grid-rows-[0fr] opacity-0 pointer-events-none',
             )}
@@ -192,21 +191,27 @@ export function ProductSubscriptionCard({
             <div className="overflow-hidden">
               <div className="flex flex-col gap-1 pl-12 pr-3 pb-2">
                 <Input
-                  type="number"
-                  min={1}
+                  type="text"
+                  inputMode="numeric"
                   aria-label={`Number of ${packageUnitLabel}`}
                   value={selection.customQuantity ?? ''}
-                  onChange={event => setCustomQuantity(event.target.value)}
+                  onChange={event => setCustomQuantity(event.target.value.replace(/\D/g, ''))}
                   endAdornment={packageUnitLabel}
-                  tabIndex={selection.selectedPackageId === CUSTOM_OPTION_ID ? undefined : -1}
+                  tabIndex={!disabled && selection.selectedPackageId === CUSTOM_OPTION_ID ? undefined : -1}
                 />
-                {customPrice && (
-                  <p className="text-h6 text-ods-text-secondary">
-                    {`$${formatMoney(customPrice.total)}${periodSuffix}`}
-                    {customPrice.discountPercent > 0 && (
-                      <span className="text-ods-success"> (-{customPrice.discountPercent}%)</span>
-                    )}
+                {customNotDivisible ? (
+                  <p className="text-h6 text-ods-error">
+                    {`Must be a multiple of ${formatMoney(unitSize)} ${packageUnitLabel}`}
                   </p>
+                ) : (
+                  customPrice && (
+                    <p className="text-h6 text-ods-text-secondary">
+                      {`$${formatMoney(customPrice.total)}${periodSuffix}`}
+                      {customPrice.discountPercent > 0 && (
+                        <span className="text-ods-success"> (-{customPrice.discountPercent}%)</span>
+                      )}
+                    </p>
+                  )
                 )}
               </div>
             </div>

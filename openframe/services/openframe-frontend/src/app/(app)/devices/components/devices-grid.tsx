@@ -7,24 +7,12 @@ import { getDeviceOperatingSystem, getDeviceStatusConfig } from '../utils/device
 interface DevicesGridProps {
   devices: Device[];
   isLoading: boolean;
-  filters: {
-    statuses?: string[];
-    deviceTypes?: string[];
-    osTypes?: string[];
-  };
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
   sentinelRef?: React.RefObject<HTMLDivElement | null>;
 }
 
-export function DevicesGrid({
-  devices,
-  isLoading,
-  filters,
-  hasNextPage,
-  isFetchingNextPage,
-  sentinelRef,
-}: DevicesGridProps) {
+export function DevicesGrid({ devices, isLoading, hasNextPage, isFetchingNextPage, sentinelRef }: DevicesGridProps) {
   const router = useRouter();
 
   const handleDeviceClick = (device: Device) => {
@@ -35,36 +23,7 @@ export function DevicesGrid({
   };
 
   return (
-    <div className="space-y-4 pt-4">
-      {filters.statuses?.length || filters.deviceTypes?.length || filters.osTypes?.length ? (
-        <div className="flex flex-wrap gap-2">
-          {filters.statuses?.map(status => (
-            <span
-              key={status}
-              className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary"
-            >
-              Status: {status}
-            </span>
-          ))}
-          {filters.deviceTypes?.map(type => (
-            <span
-              key={type}
-              className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary"
-            >
-              Type: {type}
-            </span>
-          ))}
-          {filters.osTypes?.map(os => (
-            <span
-              key={os}
-              className="px-3 py-1 bg-ods-card border border-ods-border rounded-[6px] text-[14px] text-ods-text-primary"
-            >
-              OS: {os}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
+    <div className="space-y-4">
       {isLoading && devices.length === 0 ? (
         <DeviceCardSkeletonGrid count={12} />
       ) : devices.length === 0 ? (

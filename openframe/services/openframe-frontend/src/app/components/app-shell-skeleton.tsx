@@ -93,10 +93,10 @@ function DevicesSkeleton() {
 }
 
 /**
- * Chats skeleton - matches ChatsOverviewSection exactly
+ * Tickets skeleton - matches TicketsOverviewSection exactly
  * Structure: h2 title + p subtitle + grid of 4 InfoCards
  */
-function ChatsSkeleton() {
+function TicketsSkeleton() {
   return (
     <div className="space-y-4">
       {/* h2 title */}
@@ -225,7 +225,7 @@ export function AppShellSkeleton() {
               <div className="space-y-10 pt-6">
                 <OnboardingSkeleton />
                 <DevicesSkeleton />
-                <ChatsSkeleton />
+                <TicketsSkeleton />
                 <CustomersSkeleton />
               </div>
             </div>

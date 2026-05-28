@@ -21,6 +21,7 @@ import { useLinkArticleAttachments } from './use-link-article-attachments';
 import { usePublishArticle } from './use-publish-article';
 import { useRemoveTag } from './use-remove-tag';
 import { useUnarchiveArticle } from './use-unarchive-article';
+import { useUnpublishArticle } from './use-unpublish-article';
 import { useUpdateArticle } from './use-update-article';
 
 export type SaveStatus = 'DRAFT' | 'PUBLISHED';
@@ -56,6 +57,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
   const { createArticle } = useCreateArticle();
   const { updateArticle } = useUpdateArticle();
   const { publishArticle } = usePublishArticle();
+  const { unpublishArticle } = useUnpublishArticle();
   const { unarchiveArticle } = useUnarchiveArticle();
   const { addTag } = useAddTag();
   const { removeTag } = useRemoveTag();
@@ -187,12 +189,16 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
                     });
                   }
                   await publishArticle(articleId);
-                } else if (currentStatus === 'ARCHIVED') {
-                  await unarchiveArticle({
-                    id: articleId,
-                    parentId: folderId,
-                    removeFromConnections: [],
-                  });
+                } else {
+                  if (currentStatus === 'ARCHIVED') {
+                    await unarchiveArticle({
+                      id: articleId,
+                      parentId: folderId,
+                      removeFromConnections: [],
+                    });
+                  } else {
+                    await unpublishArticle(articleId);
+                  }
                 }
               }
 
@@ -274,6 +280,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
       tempAttachments,
       toast,
       unarchiveArticle,
+      unpublishArticle,
       updateArticle,
     ],
   );

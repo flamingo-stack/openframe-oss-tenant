@@ -12,8 +12,9 @@ import {
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
+import { DevicesGridFilters } from '@/app/(app)/devices/components/devices-grid-filters';
 import {
   DevicesTableBody,
   getDeviceFilterColumns,
@@ -43,6 +44,12 @@ export interface DevicesPanelProps {
    * the default and return devices of all statuses (e.g. when scoped to one customer).
    */
   defaultStatuses?: string[];
+  /**
+   * Overrides the PageLayout wrapper className. Pass an empty string to disable
+   * the default side/bottom padding (e.g. when embedded inside a tab whose parent
+   * already provides padding).
+   */
+  className?: string;
 }
 
 export function DevicesPanel({
@@ -52,6 +59,7 @@ export function DevicesPanel({
   hideColumns,
   hideFilters,
   defaultStatuses,
+  className = '',
 }: DevicesPanelProps) {
   const router = useRouter();
 
@@ -132,6 +140,14 @@ export function DevicesPanel({
     setParams,
   });
 
+  // Grid layout is desktop-only — force-collapse to table on mobile so the
+  // user always gets a usable list at narrow widths.
+  useEffect(() => {
+    if (!isMdUp && params.viewMode === 'grid') {
+      setParam('viewMode', 'table');
+    }
+  }, [isMdUp, params.viewMode, setParam]);
+
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const gridSentinelRef = useGridInfiniteScroll({
@@ -150,7 +166,7 @@ export function DevicesPanel({
       <PageLayout
         title={title}
         actionsVariant="icon-buttons"
-        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+        className={className}
         selector={
           <TabSelector
             value={params.viewMode}
@@ -214,14 +230,21 @@ export function DevicesPanel({
               }
             />
           ) : (
-            <DevicesGrid
-              devices={devices}
-              isLoading={isLoading}
-              filters={filters}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-              sentinelRef={gridSentinelRef}
-            />
+            <>
+              <DevicesGridFilters
+                filterColumns={filterColumns}
+                currentFilters={tableFilters}
+                onFilterChange={handleFilterChange}
+                totalCount={filteredCount}
+              />
+              <DevicesGrid
+                devices={devices}
+                isLoading={isLoading}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                sentinelRef={gridSentinelRef}
+              />
+            </>
           )}
         </div>
       </PageLayout>

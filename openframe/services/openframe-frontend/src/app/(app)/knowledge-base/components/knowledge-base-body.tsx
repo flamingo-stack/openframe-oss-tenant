@@ -5,9 +5,8 @@ import {
   type PageActionButton,
   PageLayout,
   TagSearchInput,
-  type TagSearchOption,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { graphql, useFragment, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
@@ -26,6 +25,7 @@ import {
   getKnowledgeBaseArticlesSubtreeConnectionId,
   getKnowledgeBaseFoldersConnectionId,
 } from '../hooks/use-knowledge-base-items';
+import { useTagSearchState } from '../hooks/use-tag-search-state';
 import { useFolderRowActions } from './folder-row-actions';
 import {
   KNOWLEDGE_BASE_PAGE_SIZE,
@@ -33,7 +33,7 @@ import {
   KnowledgeBaseTableSkeleton,
   readKnowledgeBaseItems,
 } from './knowledge-base-table';
-import { KnowledgeBaseTagsRow, type SelectedKnowledgeBaseTag } from './knowledge-base-tags-row';
+import { KnowledgeBaseTagsRow } from './knowledge-base-tags-row';
 import { NewFolderModal } from './new-folder-modal';
 
 interface KnowledgeBaseBackButton {
@@ -358,12 +358,10 @@ function KnowledgeBaseBodyShell({
   currentFolder,
   onCurrentFolderDeleted,
 }: KnowledgeBaseBodyShellProps) {
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebounce(search, 300);
-  const [selectedTags, setSelectedTags] = useState<SelectedKnowledgeBaseTag[]>([]);
+  const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
+    useTagSearchState();
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
 
-  const tagIds = useMemo(() => selectedTags.map(t => t.id), [selectedTags]);
   const isSubtreeMode = parentId !== null && tagIds.length > 0;
 
   const newFolderConnectionId = getKnowledgeBaseFoldersConnectionId({
@@ -384,24 +382,6 @@ function KnowledgeBaseBodyShell({
   const menuActions = currentFolder
     ? folderActions.buildMenuGroups({ id: currentFolder.id, name: currentFolder.name })
     : undefined;
-
-  const tagSearchOptions = useMemo<TagSearchOption<string>[]>(
-    () => selectedTags.map(t => ({ label: t.key, value: t.id })),
-    [selectedTags],
-  );
-
-  const addTag = useCallback((tag: SelectedKnowledgeBaseTag) => {
-    setSelectedTags(prev => (prev.some(t => t.id === tag.id) ? prev : [...prev, tag]));
-  }, []);
-
-  const removeTag = useCallback((id: string) => {
-    setSelectedTags(prev => prev.filter(t => t.id !== id));
-  }, []);
-
-  const clearAll = useCallback(() => {
-    setSearch('');
-    setSelectedTags([]);
-  }, []);
 
   return (
     <PageLayout

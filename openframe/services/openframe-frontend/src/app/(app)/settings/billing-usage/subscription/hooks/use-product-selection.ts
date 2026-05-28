@@ -5,10 +5,12 @@ import type { productSubscriptionCardProductFragment$data } from '@/__generated_
 import type { productSubscriptionCardSubscriptionFragment$data } from '@/__generated__/productSubscriptionCardSubscriptionFragment.graphql';
 import type { BillingPeriod, ProductUpdates } from '../types/subscription.types';
 import {
+  buildCheckoutProduct,
   buildInitialSelection,
   CUSTOM_OPTION_ID,
   diffPackageUpdates,
-  diffPaygUpdates,
+  PAYG_OPTION_ID,
+  topmostSelectionId,
 } from '../utils/subscription.utils';
 
 type ProductData = productSubscriptionCardProductFragment$data;
@@ -31,9 +33,16 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
   onUpdatesChangeRef.current = onUpdatesChange;
 
   useEffect(() => {
+    // customQuantity is the real product count; it must be a positive multiple
+    // of unitSize (devices: 1, AI tokens: 100_000).
+    const unitSize = Number(product.unitSize ?? 1) || 1;
+    const valid =
+      selection.selectedPackageId !== CUSTOM_OPTION_ID ||
+      (selection.customQuantity != null && selection.customQuantity > 0 && selection.customQuantity % unitSize === 0);
     onUpdatesChangeRef.current({
       packageUpdates: diffPackageUpdates(product, selection, subscriptionProduct),
-      paygUpdates: diffPaygUpdates(product, selection, subscriptionProduct),
+      checkout: buildCheckoutProduct(product, selection),
+      valid,
     });
   }, [product, subscriptionProduct, selection]);
 
@@ -54,6 +63,10 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
   const baselineUnitPrice = allTiers[0]?.unitPrice ?? product.payAsYouGoOption?.price ?? null;
   const tiers = allTiers.slice(1);
   const isYearly = selection.billingPeriod === 'YEARLY';
+  // Products per billable unit (devices: 1, AI tokens: 100_000). tier.from and
+  // mutation quantity are in units; the Custom input holds the real product
+  // count and must be a whole multiple of unitSize.
+  const unitSize = Number(product.unitSize ?? 1) || 1;
 
   return {
     selection,
@@ -61,23 +74,30 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
     allTiers,
     tiers,
     baselineUnitPrice,
+    unitSize,
     months: isYearly ? 12 : 1,
     periodSuffix: isYearly ? '/year' : '/month',
-    setPayAsYouGo: (payAsYouGoEnabled: boolean) =>
-      setSelection(prev => ({
-        ...prev,
-        payAsYouGoEnabled,
-        selectedPackageId: payAsYouGoEnabled ? null : prev.selectedPackageId,
-        customQuantity: payAsYouGoEnabled ? null : prev.customQuantity,
-      })),
     setBillingPeriod: (period: string) =>
-      setSelection(prev => ({ ...prev, billingPeriod: period as BillingPeriod, selectedPackageId: null })),
-    setSelectedPackage: (packageId: string) =>
+      setSelection(prev => {
+        const nextPeriod = period as BillingPeriod;
+        const topmost = topmostSelectionId(product, nextPeriod);
+        return {
+          ...prev,
+          billingPeriod: nextPeriod,
+          selectedPackageId: topmost,
+          payAsYouGoEnabled: topmost === PAYG_OPTION_ID,
+          customQuantity: topmost === CUSTOM_OPTION_ID ? (prev.customQuantity ?? unitSize) : null,
+        };
+      }),
+    setSelectedPackage: (packageId: string) => {
+      const isPayg = packageId === PAYG_OPTION_ID;
       setSelection(prev => ({
         ...prev,
+        payAsYouGoEnabled: isPayg,
         selectedPackageId: packageId,
-        customQuantity: packageId === CUSTOM_OPTION_ID ? (prev.customQuantity ?? 1) : null,
-      })),
+        customQuantity: packageId === CUSTOM_OPTION_ID ? (prev.customQuantity ?? unitSize) : null,
+      }));
+    },
     setCustomQuantity: (value: string) => {
       const parsed = Number.parseInt(value, 10);
       setSelection(prev => ({

@@ -9,6 +9,7 @@ import {
   MoreActionsMenu,
   type Row,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo, useState } from 'react';
@@ -147,14 +148,14 @@ export function CompanyAndUsersTab() {
         header: 'USER',
         cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
           <div className="flex flex-col min-w-0">
-            <span className="font-['DM_Sans'] font-medium text-[16px] text-ods-text-primary truncate">
+            <TruncateText>
               {row.original.firstName || row.original.lastName
                 ? `${row.original.firstName || ''} ${row.original.lastName || ''}`.trim()
                 : row.original.email}
-            </span>
-            <span className="font-['Azeret_Mono'] text-[12px] text-ods-text-secondary truncate">
+            </TruncateText>
+            <TruncateText variant="h6" tone="secondary" mono>
               {row.original.email}
-            </span>
+            </TruncateText>
           </div>
         ),
         meta: { width: 'w-1/3' },
@@ -163,9 +164,7 @@ export function CompanyAndUsersTab() {
         accessorKey: 'roles',
         header: 'ROLE',
         cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
-          <div className="truncate font-['DM_Sans'] text-[16px] text-ods-text-primary">
-            {(row.original.roles || []).join(', ') || '—'}
-          </div>
+          <TruncateText>{(row.original.roles || []).join(', ') || '—'}</TruncateText>
         ),
         meta: { width: 'w-1/3' },
       },

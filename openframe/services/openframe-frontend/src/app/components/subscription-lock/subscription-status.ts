@@ -1,23 +1,15 @@
+import { SubscriptionStatus } from '@/generated/schema-enums';
+
 /**
- * Mirrors the backend `SubscriptionStatus` enum (schema.graphql) plus a single
- * synthetic FE-only value `TRIAL_EXPIRED`, derived in `resolveSubscriptionStatus`
- * from `NOT_ACTIVATED` + a `trialExpirationDate` in the past.
+ * `SubscriptionStatus` mirrors the backend enum (schema.graphql via
+ * `npm run generate-enums`). `TRIAL` and `TRIAL_EXPIRED` are now first-class
+ * backend values — the FE no longer derives them from a date.
  *
- * `PENDING_CANCELLATION` and live `NOT_ACTIVATED` (trial in progress) deliberately
- * don't lock — the user retains access until `endDate` / trial-end.
+ * `TRIAL_EXPIRED` and `CANCELED` lock the app (full subscribe screen).
+ * `PAST_DUE` and `SUSPENDED` are rendered inline on the billing page with a
+ * "Pay Overage" CTA — the user keeps access to the rest of the app.
  */
-
-export const SUBSCRIPTION_STATUSES = [
-  'ACTIVE',
-  'NOT_ACTIVATED',
-  'PAST_DUE',
-  'SUSPENDED',
-  'PENDING_CANCELLATION',
-  'CANCELED',
-  'TRIAL_EXPIRED',
-] as const;
-
-export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
+export { SubscriptionStatus };
 
 export interface SubscriptionLockCopy {
   title: string;
@@ -26,47 +18,24 @@ export interface SubscriptionLockCopy {
 }
 
 const LOCK_COPY: Partial<Record<SubscriptionStatus, SubscriptionLockCopy>> = {
-  TRIAL_EXPIRED: {
+  [SubscriptionStatus.TRIAL_EXPIRED]: {
     title: 'Your free trial has ended.',
     description: 'Pick a plan to keep using OpenFrame.',
     ctaLabel: 'Choose a Plan',
   },
-  PAST_DUE: {
-    title: "We couldn't process your last payment.",
-    description: 'Update your payment method to keep using OpenFrame without interruption.',
-    ctaLabel: 'Update Payment',
-  },
-  SUSPENDED: {
-    title: 'Your subscription is suspended.',
-    description: 'Reactivate your plan to regain access to your OpenFrame workspace.',
-    ctaLabel: 'Reactivate Subscription',
-  },
-  CANCELED: {
-    title: 'Your subscription has been canceled.',
-    description: 'Reactivate your plan to continue using OpenFrame.',
-    ctaLabel: 'Reactivate Subscription',
+  [SubscriptionStatus.CANCELED]: {
+    title: 'Subscribe to OpenFrame',
+    description: 'Choose a plan to pick up where you left off.',
+    ctaLabel: 'Choose a Plan',
   },
 };
 
 function isKnownStatus(value: string): value is SubscriptionStatus {
-  return (SUBSCRIPTION_STATUSES as readonly string[]).includes(value);
+  return Object.hasOwn(SubscriptionStatus, value);
 }
 
-function isTrialExpired(trialExpirationDate: string | null | undefined): boolean {
-  if (!trialExpirationDate) return false;
-  const expiry = new Date(trialExpirationDate).getTime();
-  return Number.isFinite(expiry) && expiry < Date.now();
-}
-
-export function resolveSubscriptionStatus(
-  rawStatus: string | null | undefined,
-  trialExpirationDate?: string | null,
-): SubscriptionStatus {
-  if (!rawStatus || !isKnownStatus(rawStatus)) return 'ACTIVE';
-  if (rawStatus === 'NOT_ACTIVATED' && isTrialExpired(trialExpirationDate)) {
-    return 'TRIAL_EXPIRED';
-  }
-  return rawStatus;
+export function resolveSubscriptionStatus(rawStatus: string | null | undefined): SubscriptionStatus {
+  return rawStatus && isKnownStatus(rawStatus) ? rawStatus : SubscriptionStatus.ACTIVE;
 }
 
 export function getLockCopy(status: SubscriptionStatus): SubscriptionLockCopy | null {

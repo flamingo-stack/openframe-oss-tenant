@@ -12,6 +12,7 @@
       "!**/.yalc",
       "!**/next-env.d.ts",
       "!**/__generated__/**",
+      "!**/src/generated/**",
       "!**/schema.graphql"
     ]
   },

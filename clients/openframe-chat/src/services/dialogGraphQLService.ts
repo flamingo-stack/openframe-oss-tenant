@@ -33,6 +33,7 @@ export type MessageData = CoreMessageData;
 
 export interface Message extends HistoricalMessage {
   dialogMode: string;
+  lastChunkStreamSeq?: number | null;
 }
 
 export interface MessageEdge {
@@ -89,6 +90,7 @@ function getDialogMessagesQuery({ includeThinking = false } = {}) {
           chatType
           dialogMode
           createdAt
+          lastChunkStreamSeq
           owner {
             type
             ... on AdminOwner {

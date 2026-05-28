@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  CardLoader,
   DeviceCard,
   Drawer,
   DrawerBody,
@@ -15,6 +14,7 @@ import type React from 'react';
 import { DeviceDetailsButton } from '@/app/(app)/devices/components/device-details-button';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
+import { DeviceInfoSectionSkeleton } from './device-info-section-skeleton';
 
 export interface LogDrawerInfoField {
   label: string;
@@ -40,7 +40,7 @@ function DrawerDeviceCard({ deviceId }: { deviceId: string }) {
   const { deviceDetails, isLoading } = useDeviceDetails(deviceId, { polling: false });
 
   if (isLoading) {
-    return <CardLoader items={2} containerClassName="p-0" />;
+    return <DeviceInfoSectionSkeleton />;
   }
 
   if (!deviceDetails) return null;
@@ -104,11 +104,7 @@ export function LogDrawer({
           {(statusTag || timestamp) && (
             <div className="flex items-center gap-2">
               {statusTag && <Tag label={statusTag.label} variant={statusTag.variant} />}
-              {timestamp && (
-                <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
-                  {timestamp}
-                </span>
-              )}
+              {timestamp && <span className="text-h6 text-ods-text-secondary">{timestamp}</span>}
             </div>
           )}
         </DrawerHeader>
@@ -121,10 +117,13 @@ export function LogDrawer({
               <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] flex flex-col gap-3">
                 {infoFields.map(field => (
                   <div key={typeof field.label === 'string' ? field.label : ''} className="flex flex-col gap-0.5">
-                    <span className="text-h4 text-ods-text-primary truncate">{field.value || '—'}</span>
-                    <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-                      {field.label}
+                    <span
+                      className="text-h4 text-ods-text-primary truncate"
+                      title={typeof field.value === 'string' ? field.value : undefined}
+                    >
+                      {field.value || '—'}
                     </span>
+                    <span className="text-h6 text-ods-text-secondary truncate">{field.label}</span>
                   </div>
                 ))}
               </div>

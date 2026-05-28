@@ -14,12 +14,12 @@ import {
   type Row,
   Skeleton,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { featureFlags } from '@/lib/feature-flags';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
 import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
 import { getProviderIcon } from '../../utils/get-provider-icon';
@@ -37,7 +37,6 @@ type UiProviderRow = {
 };
 
 export function SsoConfigurationTab() {
-  const isDomainAllowlistEnabled = featureFlags.ssoAutoAllow.enabled();
   const [searchTerm, setSearchTerm] = useState('');
   const [providers, setProviders] = useState<UiProviderRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -173,12 +172,10 @@ export function SsoConfigurationTab() {
           <div className="flex items-center gap-3">
             {getProviderIcon(row.original.provider)}
             <div className="flex flex-col justify-center min-w-0">
-              <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary truncate">
-                {row.original.displayName}
-              </span>
-              <span className="font-['Azeret_Mono'] font-normal text-[12px] leading-[16px] text-ods-text-secondary truncate uppercase">
+              <TruncateText>{row.original.displayName}</TruncateText>
+              <TruncateText variant="h5" tone="secondary">
                 {row.original.provider}
-              </span>
+              </TruncateText>
             </div>
           </div>
         ),
@@ -196,19 +193,16 @@ export function SsoConfigurationTab() {
       },
     ];
 
-    // Only add allowed domains column if feature is enabled
-    if (isDomainAllowlistEnabled) {
-      baseColumns.push({
-        accessorKey: 'allowedDomains',
-        header: 'ALLOWED DOMAINS',
-        cell: ({ row }: { row: Row<UiProviderRow> }) => (
-          <span className="font-['DM_Sans'] text-[14px] leading-[18px] text-ods-text-secondary truncate block">
-            {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
-          </span>
-        ),
-        meta: { width: 'flex-[1.5] min-w-0' },
-      });
-    }
+    baseColumns.push({
+      accessorKey: 'allowedDomains',
+      header: 'ALLOWED DOMAINS',
+      cell: ({ row }: { row: Row<UiProviderRow> }) => (
+        <TruncateText variant="h6" tone="secondary">
+          {row.original.allowedDomains.length > 0 ? row.original.allowedDomains.join(', ') : 'None'}
+        </TruncateText>
+      ),
+      meta: { width: 'flex-[1.5] min-w-0' },
+    });
 
     baseColumns.push({
       accessorKey: 'hasConfig',
@@ -251,7 +245,7 @@ export function SsoConfigurationTab() {
     });
 
     return baseColumns;
-  }, [isDomainAllowlistEnabled]);
+  }, []);
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();

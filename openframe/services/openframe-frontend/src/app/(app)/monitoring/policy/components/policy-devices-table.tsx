@@ -1,19 +1,21 @@
 'use client';
 
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   DataTable,
+  EntityImage,
   type Row,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { usePolicyDevicesTable } from '../hooks/use-policy-devices-table';
 import type { PolicyDeviceRow } from '../types/policy-device-row';
 
@@ -41,10 +43,8 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
                     className: 'w-5 h-5 text-ods-text-secondary',
                   })}
               </div>
-              <div className="text-h4 text-ods-text-primary truncate">
-                <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
-                  {r.displayName || r.hostname}
-                </p>
+              <div className="flex-1 min-w-0">
+                <TruncateText>{r.displayName || r.hostname}</TruncateText>
               </div>
             </div>
           );
@@ -60,13 +60,9 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           const fullImageUrl = getFullImageUrl(r.organizationImageUrl);
           return (
             <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon imageUrl={fullImageUrl} organizationName={r.organization || 'Customer'} size="sm" />
-              )}
+              <EntityImage src={fullImageUrl} alt={r.organization || 'Customer'} className="size-12 md:size-12" />
               <div className="flex flex-col justify-center flex-1 min-w-0">
-                <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
-                  {r.organization || ''}
-                </span>
+                <span className="text-h4 text-ods-text-primary break-words">{r.organization || ''}</span>
               </div>
             </div>
           );
@@ -106,9 +102,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
           row.original.machineId ? (
             <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
               <Button
-                href={`/devices/details/${row.original.machineId}`}
-                prefetch={false}
-                openInNewTab
+                onClick={openInNewTab(`/devices/details/${row.original.machineId}`)}
                 variant="outline"
                 size="icon"
                 leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

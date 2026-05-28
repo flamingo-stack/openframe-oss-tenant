@@ -5,12 +5,11 @@ import { useCallback } from 'react';
 import { graphql, useMutation } from 'react-relay';
 import type {
   PackageUpdateInput,
-  PaygUpdateInput,
   UpdateSubscriptionInput,
   useUpdateSubscriptionMutation as UseUpdateSubscriptionMutationType,
 } from '@/__generated__/useUpdateSubscriptionMutation.graphql';
 
-export type { PackageUpdateInput, PaygUpdateInput, UpdateSubscriptionInput };
+export type { PackageUpdateInput, UpdateSubscriptionInput };
 
 const updateSubscriptionMutation = graphql`
   mutation useUpdateSubscriptionMutation($input: UpdateSubscriptionInput!) {

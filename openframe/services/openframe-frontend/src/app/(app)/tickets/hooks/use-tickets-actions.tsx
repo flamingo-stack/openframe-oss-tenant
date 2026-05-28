@@ -11,7 +11,8 @@ import type {
   PageActionButton,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useArchiveResolvedMutation } from './use-archive-resolved-mutation';
 import { useTicketStatistics } from './use-ticket-statistics';
 
@@ -24,13 +25,15 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
   const router = useRouter();
   const archiveResolvedMutation = useArchiveResolvedMutation();
   const { resolvedCount } = useTicketStatistics({ enabled });
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
   const handleNewTicket = useCallback(() => {
     router.push('/tickets/new');
   }, [router]);
 
-  const handleArchiveResolved = useCallback(async () => {
+  const handleArchiveConfirm = useCallback(async () => {
     await archiveResolvedMutation.mutateAsync();
+    setIsArchiveConfirmOpen(false);
   }, [archiveResolvedMutation]);
 
   const actions = useMemo<PageActionButton[]>(() => {
@@ -60,12 +63,32 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
         id: 'archive-resolved',
         label: 'Archive Resolved Tickets',
         icon: <CheckCircleIcon className="text-ods-text-secondary" />,
-        onClick: handleArchiveResolved,
+        onClick: () => setIsArchiveConfirmOpen(true),
         disabled: archiveResolvedMutation.isPending || isLoading,
       });
     }
     return [{ items }];
-  }, [enabled, resolvedCount, handleArchiveResolved, archiveResolvedMutation.isPending, isLoading]);
+  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading]);
 
-  return { actions, menuActions };
+  const dialog: ReactNode = (
+    <ConfirmDialog
+      open={isArchiveConfirmOpen}
+      onOpenChange={open => {
+        if (!open) setIsArchiveConfirmOpen(false);
+      }}
+      title="Archive Resolved Tickets"
+      description={
+        resolvedCount === 1
+          ? 'This will archive 1 resolved ticket. It will be moved to the Tickets Archive but can be restored later.'
+          : `This will archive ${resolvedCount} resolved tickets. They will be moved to the Tickets Archive but can be restored later.`
+      }
+      confirmLabel="Archive Tickets"
+      pendingLabel="Archiving..."
+      variant="destructive"
+      isPending={archiveResolvedMutation.isPending}
+      onConfirm={handleArchiveConfirm}
+    />
+  );
+
+  return { actions, menuActions, dialog };
 }

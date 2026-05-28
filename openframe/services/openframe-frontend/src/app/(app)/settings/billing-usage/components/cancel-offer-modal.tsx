@@ -6,15 +6,9 @@ import {
   LayersMinusIcon,
   LifeBuoyIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import {
-  Button,
-  ModalV2,
-  ModalV2Content,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ComponentType } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import type { CancelReason } from './cancel-subscription-modal';
 
 interface OfferPreset {
@@ -102,40 +96,41 @@ export function CancelOfferModal({
   };
 
   return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>{preset.title}</ModalV2Title>
-      </ModalV2Header>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-[600px]"
+      title={preset.title}
+      contentClassName="flex flex-col gap-[var(--spacing-system-l)]"
+      footer={
+        <>
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
+            Keep Subscription
+          </Button>
+          <Button variant="destructive" className="flex-1" onClick={onConfirm} disabled={isPending} loading={isPending}>
+            Cancel Subscription
+          </Button>
+        </>
+      }
+    >
+      <p className="text-h4 text-ods-text-primary">{preset.description}</p>
 
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
-        <p className="text-h4 text-ods-text-primary">{preset.description}</p>
-
-        <button
-          type="button"
-          onClick={handleCtaClick}
-          className="flex items-center gap-[var(--spacing-system-s)] h-20 px-[var(--spacing-system-m)] py-[var(--spacing-system-sf)] rounded-md border border-ods-border bg-ods-bg hover:bg-ods-card transition-colors text-left w-full"
-        >
-          <div className="flex items-center justify-center size-12 rounded-sm border border-ods-border bg-ods-bg shrink-0">
-            <CtaIcon className="size-6 text-ods-text-primary" />
-          </div>
-          <div className="flex flex-col flex-1 min-w-0">
-            <span className="text-h3 font-bold text-ods-text-primary">{preset.ctaTitle}</span>
-            <span className="text-h6 text-ods-text-secondary">{preset.ctaDescription}</span>
-          </div>
-          <div className="flex items-center justify-center p-[var(--spacing-system-sf)] rounded-md border border-ods-border bg-ods-card shrink-0">
-            <Chevron02RightIcon className="size-6 text-ods-text-primary" />
-          </div>
-        </button>
-      </ModalV2Content>
-
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Keep Subscription
-        </Button>
-        <Button variant="destructive" className="flex-1" onClick={onConfirm} disabled={isPending} loading={isPending}>
-          Cancel Subscription
-        </Button>
-      </ModalV2Footer>
-    </ModalV2>
+      <button
+        type="button"
+        onClick={handleCtaClick}
+        className="flex items-center gap-[var(--spacing-system-s)] h-20 px-[var(--spacing-system-m)] py-[var(--spacing-system-sf)] rounded-md border border-ods-border bg-ods-bg hover:bg-ods-card transition-colors text-left w-full"
+      >
+        <div className="flex items-center justify-center size-12 rounded-sm border border-ods-border bg-ods-bg shrink-0">
+          <CtaIcon className="size-6 text-ods-text-primary" />
+        </div>
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="text-h3 font-bold text-ods-text-primary">{preset.ctaTitle}</span>
+          <span className="text-h6 text-ods-text-secondary">{preset.ctaDescription}</span>
+        </div>
+        <div className="flex items-center justify-center p-[var(--spacing-system-sf)] rounded-md border border-ods-border bg-ods-card shrink-0">
+          <Chevron02RightIcon className="size-6 text-ods-text-primary" />
+        </div>
+      </button>
+    </SimpleModal>
   );
 }

@@ -1,7 +1,11 @@
-import type { MessageSegment, TokenUsageData } from '@flamingo-stack/openframe-frontend-core';
 import {
+  type ApprovalBatchExecutionState,
+  type ApprovalBatchSegment,
   createMessageSegmentAccumulator,
+  type MessageSegment,
   type MessageSegmentAccumulator,
+  type TokenUsageData,
+  type ToolExecutionSegment,
 } from '@flamingo-stack/openframe-frontend-core';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
@@ -21,6 +25,9 @@ interface MingoMessagesStore {
   streamingMessages: Map<string, Message | null>;
   segmentAccumulators: Map<string, MessageSegmentAccumulator>;
   tokenUsageByDialog: Map<string, TokenUsageData>;
+  // Highest JetStream streamSeq observed per dialog. Persists across
+  // DialogSubscription remounts.
+  highestStreamSeqByDialog: Map<string, number>;
 
   // Loading states
   isLoadingDialog: boolean;
@@ -53,6 +60,11 @@ interface MingoMessagesStore {
   updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (dialogId: string, messageId: string) => void;
   updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
+  updateToolExecutionInMessages: (
+    dialogId: string,
+    executionRequestId: string,
+    executedData: ToolExecutionSegment['data'],
+  ) => void;
   getMessages: (dialogId: string) => Message[];
 
   // Real-time State Management
@@ -80,6 +92,10 @@ interface MingoMessagesStore {
   // Token Usage
   setTokenUsage: (dialogId: string, data: TokenUsageData) => void;
   getTokenUsage: (dialogId: string) => TokenUsageData | null;
+
+  // Stream sequence tracking
+  recordHighestStreamSeq: (dialogId: string, seq: number) => void;
+  getHighestStreamSeq: (dialogId: string) => number;
 
   // Utility Actions
   removeWelcomeMessages: (dialogId: string) => void;
@@ -111,6 +127,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
       streamingMessages: new Map(),
       segmentAccumulators: new Map(),
       tokenUsageByDialog: new Map(),
+      highestStreamSeqByDialog: new Map(),
 
       isLoadingDialog: false,
       isLoadingMessages: false,
@@ -218,24 +235,118 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
 
       updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
         set(state => {
+          const currentMessages = state.messagesByDialog.get(dialogId) || [];
+          let matched = false;
+
+          const updatedMessages = currentMessages.map(message => {
+            if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+            let changed = false;
+            const updatedContent = message.content.map(segment => {
+              if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
+                matched = true;
+                changed = true;
+                return { ...segment, status };
+              }
+              if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
+                matched = true;
+                changed = true;
+                return { ...segment, status } as ApprovalBatchSegment;
+              }
+              return segment;
+            });
+            return changed ? { ...message, content: updatedContent } : message;
+          });
+
+          if (!matched) return state;
+
+          const newMap = new Map(state.messagesByDialog);
+          newMap.set(dialogId, updatedMessages);
+
+          const newStreamingMap = new Map(state.streamingMessages);
+          const streaming = newStreamingMap.get(dialogId);
+          if (streaming) {
+            const synced = updatedMessages.find(m => m.id === streaming.id);
+            if (synced) newStreamingMap.set(dialogId, synced);
+          }
+
+          return { messagesByDialog: newMap, streamingMessages: newStreamingMap };
+        });
+      },
+
+      updateToolExecutionInMessages: (
+        dialogId: string,
+        executionRequestId: string,
+        executedData: ToolExecutionSegment['data'],
+      ) => {
+        set(state => {
           const newMap = new Map(state.messagesByDialog);
           const currentMessages = newMap.get(dialogId) || [];
 
+          let matched = false;
           const updatedMessages = currentMessages.map(message => {
-            if (message.role === 'assistant' && Array.isArray(message.content)) {
-              const updatedContent = message.content.map(segment => {
-                if (segment.type === 'approval_request' && segment.data?.requestId === requestId) {
-                  return { ...segment, status };
-                }
-                return segment;
-              });
-              return { ...message, content: updatedContent };
-            }
-            return message;
+            if (matched) return message;
+            if (message.role !== 'assistant' || !Array.isArray(message.content)) return message;
+
+            let messageChanged = false;
+            const updatedContent = message.content.map(segment => {
+              if (matched) return segment;
+
+              if (
+                segment.type === 'tool_execution' &&
+                segment.data.type === 'EXECUTING_TOOL' &&
+                segment.data.toolExecutionRequestId === executionRequestId
+              ) {
+                matched = true;
+                messageChanged = true;
+                const merged: ToolExecutionSegment = {
+                  type: 'tool_execution',
+                  data: {
+                    ...executedData,
+                    toolTitle: executedData.toolTitle ?? segment.data.toolTitle,
+                    parameters: executedData.parameters ?? segment.data.parameters,
+                  },
+                };
+                return merged;
+              }
+
+              if (
+                segment.type === 'approval_batch' &&
+                segment.data.toolCalls.some(c => c.toolExecutionRequestId === executionRequestId)
+              ) {
+                matched = true;
+                messageChanged = true;
+                const prev: ApprovalBatchExecutionState | undefined = segment.data.executions?.[executionRequestId];
+                const next: ApprovalBatchExecutionState =
+                  executedData.type === 'EXECUTED_TOOL'
+                    ? { status: 'done', result: executedData.result, success: executedData.success }
+                    : { status: 'executing', result: prev?.result, success: prev?.success };
+                return {
+                  ...segment,
+                  data: {
+                    ...segment.data,
+                    executions: { ...(segment.data.executions ?? {}), [executionRequestId]: next },
+                  },
+                } as ApprovalBatchSegment;
+              }
+
+              return segment;
+            });
+
+            return messageChanged ? { ...message, content: updatedContent } : message;
           });
 
+          if (!matched) return state;
+
           newMap.set(dialogId, updatedMessages);
-          return { messagesByDialog: newMap };
+
+          const newStreamingMap = new Map(state.streamingMessages);
+          const streaming = newStreamingMap.get(dialogId);
+          if (streaming) {
+            const synced = updatedMessages.find(m => m.id === streaming.id);
+            if (synced) newStreamingMap.set(dialogId, synced);
+          }
+
+          return { messagesByDialog: newMap, streamingMessages: newStreamingMap };
         });
       },
 
@@ -462,6 +573,20 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return get().tokenUsageByDialog.get(dialogId) || null;
       },
 
+      recordHighestStreamSeq: (dialogId: string, seq: number) => {
+        set(state => {
+          const current = state.highestStreamSeqByDialog.get(dialogId) ?? 0;
+          if (seq <= current) return state;
+          const newMap = new Map(state.highestStreamSeqByDialog);
+          newMap.set(dialogId, seq);
+          return { highestStreamSeqByDialog: newMap };
+        });
+      },
+
+      getHighestStreamSeq: (dialogId: string) => {
+        return get().highestStreamSeqByDialog.get(dialogId) ?? 0;
+      },
+
       removeWelcomeMessages: (dialogId: string) => {
         set(state => {
           const newMap = new Map(state.messagesByDialog);
@@ -480,6 +605,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const newStreamingMap = new Map(state.streamingMessages);
           const newAccumulatorsMap = new Map(state.segmentAccumulators);
           const newTokenUsageMap = new Map(state.tokenUsageByDialog);
+          const newHighestSeqMap = new Map(state.highestStreamSeqByDialog);
 
           newMessagesMap.delete(dialogId);
           newTypingMap.delete(dialogId);
@@ -487,6 +613,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           newStreamingMap.delete(dialogId);
           newAccumulatorsMap.delete(dialogId);
           newTokenUsageMap.delete(dialogId);
+          newHighestSeqMap.delete(dialogId);
 
           return {
             messagesByDialog: newMessagesMap,
@@ -495,6 +622,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
             streamingMessages: newStreamingMap,
             segmentAccumulators: newAccumulatorsMap,
             tokenUsageByDialog: newTokenUsageMap,
+            highestStreamSeqByDialog: newHighestSeqMap,
           };
         });
       },
@@ -509,6 +637,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           streamingMessages: new Map(),
           segmentAccumulators: new Map(),
           tokenUsageByDialog: new Map(),
+          highestStreamSeqByDialog: new Map(),
           isLoadingDialog: false,
           isLoadingMessages: false,
           isCreatingDialog: false,

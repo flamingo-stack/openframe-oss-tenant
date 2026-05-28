@@ -17,9 +17,11 @@ export function ChatInitialScreen({
   isDisconnected,
 }: ChatInitialScreenProps) {
   const quickHelp = quickActions.length > 0 && (
-    <div className="w-full max-w-2xl">
-      <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
-      <div className="space-y-1">
+    <div className="w-full max-w-ods-content-narrow">
+      <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-[var(--spacing-system-sf)]">
+        Quick Help
+      </h3>
+      <div className="space-y-[var(--spacing-system-xxs)]">
         {quickActions.map(action => (
           <ChatQuickAction
             className="bg-ods-card"
@@ -33,15 +35,24 @@ export function ChatInitialScreen({
     </div>
   );
 
+  const hasTickets = tickets.length > 0;
+
   return (
-    <div className="flex-1 flex flex-col justify-center items-center px-4 min-h-0">
-      <div className="text-center mb-8">
-        <h1 className="text-h2 mb-2">Hey! How can I help?</h1>
+    <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-[var(--spacing-system-mf)] py-[var(--spacing-system-l)]">
+      <div className="w-full max-w-ods-content-narrow text-center mb-[var(--spacing-system-lf)] shrink-0">
+        <h1 className="text-h2 mb-[var(--spacing-system-xsf)]">Hey! How can I help?</h1>
         <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
       </div>
 
-      <ChatTicketList className="w-full max-w-2xl" tickets={tickets} onTicketClick={onTicketClick} />
-      {tickets.length === 0 && quickHelp}
+      {hasTickets ? (
+        <ChatTicketList
+          className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
+          tickets={tickets}
+          onTicketClick={onTicketClick}
+        />
+      ) : (
+        quickHelp
+      )}
     </div>
   );
 }

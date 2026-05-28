@@ -3,19 +3,16 @@
 import { AlertCircleIcon, DotIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
-  ModalV2,
-  ModalV2Content,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Skeleton,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useEffect, useId, useState } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { formatDate } from '@/lib/format-date';
 
 export type CancelReason = 'TOO_EXPENSIVE' | 'NOT_USING_ENOUGH' | 'MISSING_FEATURE' | 'TECHNICAL_ISSUES' | 'OTHER';
@@ -28,30 +25,19 @@ const REASON_OPTIONS: ReadonlyArray<{ value: CancelReason; label: string }> = [
   { value: 'OTHER', label: 'Other' },
 ];
 
-interface DataLossStats {
-  scripts: number;
-  activeSchedules: number;
-  events: number;
-  monitoringPolicies: number;
+export interface DataLossStats {
+  activeDevices: number;
   tickets: number;
   kbArticles: number;
-  kbFolders: number;
+  monitoringPolicies: number;
+  savedQueries: number;
 }
-
-const DEFAULT_STATS: DataLossStats = {
-  scripts: 47,
-  activeSchedules: 12,
-  events: 3200,
-  monitoringPolicies: 8,
-  tickets: 142,
-  kbArticles: 38,
-  kbFolders: 6,
-};
 
 interface CancelSubscriptionModalProps {
   isOpen: boolean;
   endDate: string | null;
   stats?: DataLossStats;
+  isStatsLoading?: boolean;
   isPending?: boolean;
   onClose: () => void;
   onConfirm: (reason: CancelReason, comment: string) => void;
@@ -77,7 +63,8 @@ function formatCount(value: number): string {
 export function CancelSubscriptionModal({
   isOpen,
   endDate,
-  stats = DEFAULT_STATS,
+  stats,
+  isStatsLoading = false,
   isPending = false,
   onClose,
   onConfirm,
@@ -100,103 +87,73 @@ export function CancelSubscriptionModal({
   };
 
   return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>Cancel Subscription</ModalV2Title>
-      </ModalV2Header>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-[600px]"
+      title="Cancel Subscription"
+      contentClassName="flex flex-col gap-[var(--spacing-system-l)]"
+      footer={
+        <>
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
+            Keep Subscription
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex-1"
+            onClick={handleConfirm}
+            disabled={!reason || isPending}
+            loading={isPending}
+          >
+            Continue
+          </Button>
+        </>
+      }
+    >
+      <div className="text-h4 text-ods-text-primary gap-[var(--spacing-system-xs)] flex">
+        <span>Your subscription will remain active until:</span>
+        <span className="text-ods-warning">{formatEndDate(endDate)}</span>
+      </div>
+      <p className="text-h4 text-ods-text-primary">
+        Pay-as-you-go top-ups are disabled immediately. Any usage already accrued will be charged at the end of the
+        billing period.
+      </p>
 
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
-        <div className="text-h4 text-ods-text-primary gap-[var(--spacing-system-xs)] flex">
-          <span>Your subscription will remain active until:</span>
-          <span className="text-ods-warning">{formatEndDate(endDate)}</span>
-        </div>
-        <p className="text-h4 text-ods-text-primary">
-          Pay-as-you-go top-ups are disabled immediately. Any usage already accrued will be charged at the end of the
-          billing period.
-        </p>
+      {isStatsLoading || !stats ? <DataLossSkeleton /> : <DataLossBox stats={stats} />}
 
-        <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
-          <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
-            <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
-            <p className="text-h6 flex-1 text-ods-warning">
-              Once your subscription ends, this data will no longer be accessible.
-            </p>
-          </div>
-          <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.scripts)}</span>
-              {` scripts, including `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.activeSchedules)}</span>
-              {` active schedules`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.events)}</span>
-              {` events across `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.monitoringPolicies)}</span>
-              {` monitoring policies`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.tickets)}</span>
-              {` tickets and all client communication`}
-            </DataLossItem>
-            <DataLossItem>
-              <span className="text-h4 text-ods-warning">{formatCount(stats.kbArticles)}</span>
-              {` KB articles across `}
-              <span className="text-h4 text-ods-warning">{formatCount(stats.kbFolders)}</span>
-              {` folders`}
-            </DataLossItem>
-          </ul>
-        </div>
+      <div className="flex flex-col gap-1">
+        <label className="text-h3 text-ods-text-primary" htmlFor={reasonId}>
+          {`What's the main reason you're cancelling?`}
+        </label>
+        <Select value={reason} onValueChange={v => setReason(v as CancelReason)}>
+          <SelectTrigger id={reasonId} className="bg-ods-card w-full">
+            <SelectValue placeholder="Select the Reason" />
+          </SelectTrigger>
+          <SelectContent>
+            {REASON_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      {reason === 'OTHER' && (
         <div className="flex flex-col gap-1">
-          <label className="text-h3 text-ods-text-primary" htmlFor={reasonId}>
-            {`What's the main reason you're cancelling?`}
+          <label className="text-h3 text-ods-text-primary" htmlFor={commentId}>
+            {`What's on your mind?`}
           </label>
-          <Select value={reason} onValueChange={v => setReason(v as CancelReason)}>
-            <SelectTrigger id={reasonId} className="bg-ods-card w-full">
-              <SelectValue placeholder="Select the Reason" />
-            </SelectTrigger>
-            <SelectContent>
-              {REASON_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Textarea
+            id={commentId}
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Tell us what's not working for you."
+            rows={3}
+          />
         </div>
-
-        {reason === 'OTHER' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-h3 text-ods-text-primary" htmlFor={commentId}>
-              {`What's on your mind?`}
-            </label>
-            <Textarea
-              id={commentId}
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Tell us what's not working for you."
-              rows={3}
-            />
-          </div>
-        )}
-      </ModalV2Content>
-
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Keep Subscription
-        </Button>
-        <Button
-          variant="destructive"
-          className="flex-1"
-          onClick={handleConfirm}
-          disabled={!reason || isPending}
-          loading={isPending}
-        >
-          Continue
-        </Button>
-      </ModalV2Footer>
-    </ModalV2>
+      )}
+    </SimpleModal>
   );
 }
 
@@ -206,5 +163,93 @@ function DataLossItem({ children }: { children: React.ReactNode }) {
       <DotIcon aria-hidden className="size-6 shrink-0 text-ods-warning" />
       <span className="flex-1">{children}</span>
     </li>
+  );
+}
+
+function Stat({ value }: { value: number }) {
+  return <span className="text-h4 text-ods-warning">{formatCount(value)}</span>;
+}
+
+// Rows with a zero metric are hidden. The policies/queries row is dropped only
+// when both are zero; otherwise it shows just the non-zero parts. If nothing is
+// left to warn about, the whole box is omitted.
+function DataLossBox({ stats }: { stats: DataLossStats }) {
+  const showPolicies = stats.monitoringPolicies > 0;
+  const showQueries = stats.savedQueries > 0;
+  const rows = [
+    stats.activeDevices > 0 && (
+      <DataLossItem key="devices">
+        <Stat value={stats.activeDevices} />
+        {` active devices monitored`}
+      </DataLossItem>
+    ),
+    stats.tickets > 0 && (
+      <DataLossItem key="tickets">
+        <Stat value={stats.tickets} />
+        {` tickets and all client communication`}
+      </DataLossItem>
+    ),
+    stats.kbArticles > 0 && (
+      <DataLossItem key="kb">
+        <Stat value={stats.kbArticles} />
+        {` knowledge base articles`}
+      </DataLossItem>
+    ),
+    (showPolicies || showQueries) && (
+      <DataLossItem key="fleet">
+        {showPolicies && (
+          <>
+            <Stat value={stats.monitoringPolicies} />
+            {` monitoring policies`}
+          </>
+        )}
+        {showPolicies && showQueries && ` and `}
+        {showQueries && (
+          <>
+            <Stat value={stats.savedQueries} />
+            {` saved queries`}
+          </>
+        )}
+      </DataLossItem>
+    ),
+  ].filter(Boolean);
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
+      <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
+        <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
+        <p className="text-h6 flex-1 text-ods-warning">
+          Once your subscription ends, this data will no longer be accessible.
+        </p>
+      </div>
+      <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">{rows}</ul>
+    </div>
+  );
+}
+
+// Mirrors the data-loss box structure (header chrome + 4 bulleted rows) so the
+// loading state keeps the same shape instead of a flat rectangle.
+const SKELETON_ROW_WIDTHS = ['w-1/2', 'w-3/4', 'w-2/5', 'w-3/4'] as const;
+
+function DataLossSkeleton() {
+  return (
+    <div className="rounded-md border border-ods-warning overflow-hidden bg-ods-bg">
+      <div className="flex items-center gap-[var(--spacing-system-xs)] p-[var(--spacing-system-xsf)] bg-[var(--ods-open-yellow-secondary)] border-b border-ods-warning">
+        <AlertCircleIcon className="size-6 text-ods-warning shrink-0" />
+        <p className="text-h6 flex-1 text-ods-warning">
+          Once your subscription ends, this data will no longer be accessible.
+        </p>
+      </div>
+      <ul className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-s)]">
+        {SKELETON_ROW_WIDTHS.map((width, i) => (
+          <li key={i} className="flex items-center h-6">
+            <DotIcon aria-hidden className="size-6 shrink-0 text-ods-warning" />
+            <Skeleton className={`h-4 ${width}`} />
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

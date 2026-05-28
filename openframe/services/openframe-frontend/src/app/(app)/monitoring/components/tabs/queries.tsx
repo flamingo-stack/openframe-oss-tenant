@@ -5,15 +5,16 @@ import {
   Button,
   type ColumnDef,
   DataTable,
-  DeviceCardCompact,
   ListPageLayout,
   MoreActionsMenu,
   type Row,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
@@ -82,7 +83,12 @@ export function Queries() {
         accessorKey: 'name',
         header: 'Name',
         cell: ({ row }: { row: Row<Query> }) => (
-          <DeviceCardCompact deviceName={row.original.name} organization={row.original.description} />
+          <div className="flex flex-col justify-center gap-1 py-2 min-h-[60px]">
+            <TruncateText>{row.original.name}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
+              {row.original.description}
+            </TruncateText>
+          </div>
         ),
       },
       {
@@ -110,9 +116,7 @@ export function Queries() {
         cell: ({ row }: { row: Row<Query> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={`/monitoring/query/${row.original.id}`}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(`/monitoring/query/${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

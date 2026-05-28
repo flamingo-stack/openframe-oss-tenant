@@ -13,10 +13,11 @@ interface KnowledgeBaseTagsRowProps {
   parentId: string | null;
   selectedIds: ReadonlyArray<string>;
   onAdd: (tag: SelectedKnowledgeBaseTag) => void;
+  archived?: boolean;
 }
 
-function KnowledgeBaseTagsRowContent({ parentId, selectedIds, onAdd }: KnowledgeBaseTagsRowProps) {
-  const tags = useKnowledgeBaseTags(parentId);
+function KnowledgeBaseTagsRowContent({ parentId, selectedIds, onAdd, archived }: KnowledgeBaseTagsRowProps) {
+  const tags = useKnowledgeBaseTags({ folderId: parentId, archived });
   const selected = new Set(selectedIds);
   const available = tags.filter(t => !selected.has(t.id));
 

@@ -1,5 +1,7 @@
 import {
   buildNatsWsUrl,
+  type ChatApprovalStatus,
+  type ChunkData,
   extractIncompleteMessageState,
   type Message,
   type MessageSegment,
@@ -7,6 +9,8 @@ import {
   type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  type ToolExecutionSegment,
+  useJetStreamDialogSubscription,
   useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -24,6 +28,29 @@ import { useChatMessages } from './useChatMessages';
 import { useChunkCatchup } from './useChunkCatchup';
 import { useDialogMessages } from './useDialogMessages';
 
+const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
+
+// Scan messages newest-to-oldest for the most recent pending approval
+// (single or batch). Returns its requestId / approvalRequestId, or
+// undefined if none. Used by sendMessage to optimistically cancel the
+// active gate when the user interrupts with a new message.
+function findLatestPendingApprovalId(msgs: Message[]): string | undefined {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const msg = msgs[i];
+    if (!Array.isArray(msg.content)) continue;
+    for (let j = msg.content.length - 1; j >= 0; j--) {
+      const seg = msg.content[j];
+      if (seg.type === 'approval_request' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.requestId;
+      }
+      if (seg.type === 'approval_batch' && (!seg.status || seg.status === 'pending')) {
+        return seg.data?.approvalRequestId;
+      }
+    }
+  }
+  return undefined;
+}
+
 interface UseChatOptions {
   useApi?: boolean;
   apiToken?: string;
@@ -36,6 +63,7 @@ interface UseChatOptions {
 
 export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage, onDialogClosed }: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
+  const [useJetstream] = useState(() => !!flags['ai-streaming-jetstream']);
 
   // Core state
   const [isTyping, setIsTyping] = useState(false);
@@ -94,6 +122,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     hasNextPage,
     isFetchingNextPage,
     isLoading: isLoadingHistoricalMessages,
+    isFetched: isHistoryFetched,
+    initialOptStartSeq,
     fetchNextPage,
     escalatedApprovals,
     reset: resetDialogMessages,
@@ -130,6 +160,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
 
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
+  const allMessagesRef = useRef(allMessages);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -138,6 +169,10 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   useEffect(() => {
     approvalsRef.current = approvals;
   }, [approvals]);
+
+  useEffect(() => {
+    allMessagesRef.current = allMessages;
+  }, [allMessages]);
 
   const realtimeCallbacks = useMemo(
     () => ({
@@ -179,6 +214,21 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       },
       onApprove: (requestId?: string) => approvalsRef.current.handleApproveRequest(requestId),
       onReject: (requestId?: string) => approvalsRef.current.handleRejectRequest(requestId),
+      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+        if (status === 'approved' || status === 'rejected') {
+          // Live messages — covers approvals in the current session bubble.
+          messagesRef.current.updateApprovalStatusById(requestId, status);
+          // Historical messages — when the originating approval lives in a
+          // resumed-dialog bubble owned by React Query, the live-state
+          // updater above misses it. The approvalStatuses map drives
+          // `processHistoricalMessages` to overlay the new status.
+          approvalsRef.current.applyResolvedStatus(requestId, status);
+        }
+      },
+      onToolExecuted: (segment: ToolExecutionSegment) => {
+        const execId = segment.data.toolExecutionRequestId;
+        if (execId) messagesRef.current.updateToolExecutionById(execId, segment.data);
+      },
       onEscalatedApproval: (
         requestId: string,
         data: { command: string; explanation?: string; approvalType: string },
@@ -319,12 +369,13 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   }, [natsDialogId]);
 
   useEffect(() => {
+    if (useJetstream) return;
     if (!natsDialogId) return;
 
     resetChunkTracking();
     startInitialBuffering();
     hasCaughtUp.current = false;
-  }, [natsDialogId, resetChunkTracking, startInitialBuffering]);
+  }, [useJetstream, natsDialogId, resetChunkTracking, startInitialBuffering]);
 
   const handleNatsSubscribed = useCallback(async () => {
     if (subscriptionPromiseRef.current) {
@@ -332,6 +383,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
       subscriptionPromiseRef.current = null;
     }
 
+    if (useJetstream) return;
     if (!hasCaughtUp.current && natsDialogId) {
       hasCaughtUp.current = true;
       try {
@@ -341,7 +393,35 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
         hasCaughtUp.current = false;
       }
     }
-  }, [natsDialogId, catchUpChunks]);
+  }, [useJetstream, natsDialogId, catchUpChunks]);
+
+  // JetStream may redeliver an already-applied streamSeq during reconnect; drop dupes.
+  const lastAppliedStreamSeqRef = useRef<number>(-1);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dialog change is the reset trigger
+  useEffect(() => {
+    if (!useJetstream) return;
+    lastAppliedStreamSeqRef.current = -1;
+  }, [useJetstream, natsDialogId]);
+
+  const handleJetStreamEvent = useCallback(
+    (payload: unknown) => {
+      const chunk = payload as ChunkData;
+      if (typeof chunk.streamSeq === 'number') {
+        if (chunk.streamSeq <= lastAppliedStreamSeqRef.current) return;
+        lastAppliedStreamSeqRef.current = chunk.streamSeq;
+      }
+      processRealtimeChunk(overrideToolTitle(chunk));
+    },
+    [processRealtimeChunk],
+  );
+
+  const handleJetStreamSubscribed = useCallback(() => {
+    if (subscriptionPromiseRef.current) {
+      subscriptionPromiseRef.current.resolve();
+      subscriptionPromiseRef.current = null;
+    }
+  }, []);
 
   const getNatsWsUrl = useMemo(() => {
     return (): string => {
@@ -382,8 +462,8 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     await tokenService.refreshToken();
   }, []);
 
-  const { isSubscribed, reconnectionCount } = useNatsDialogSubscription({
-    enabled: useNats && !!natsDialogId,
+  const { isSubscribed: legacyIsSubscribed, reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
+    enabled: useNats && !useJetstream && !!natsDialogId,
     dialogId: natsDialogId,
     topics,
     onEvent: handleRealtimeEvent,
@@ -394,14 +474,33 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     reconnectionBackoff,
   });
 
+  const isInitialOptStartSeqReady = !isResumedDialog || isHistoryFetched;
+
+  const { isSubscribed: jetstreamIsSubscribed } = useJetStreamDialogSubscription({
+    enabled: useNats && useJetstream && !!natsDialogId && isInitialOptStartSeqReady,
+    dialogId: natsDialogId,
+    streamName: CHAT_CHUNKS_STREAM,
+    topic: 'message',
+    optStartSeq: initialOptStartSeq,
+    onEvent: handleJetStreamEvent,
+    onSubscribed: handleJetStreamSubscribed,
+    onBeforeReconnect: handleBeforeReconnect,
+    getNatsWsUrl,
+    clientConfig,
+    reconnectionBackoff,
+  });
+
+  const isSubscribed = useJetstream ? jetstreamIsSubscribed : legacyIsSubscribed;
+
   useEffect(() => {
-    if (reconnectionCount > 0 && natsDialogId) {
-      log.info('nats:chat', `reconnected (count: ${reconnectionCount}) — catching up missed messages`);
+    if (useJetstream) return;
+    if (legacyReconnectionCount > 0 && natsDialogId) {
+      log.info('nats:chat', `reconnected (count: ${legacyReconnectionCount}) — catching up missed messages`);
       resetAndCatchUp().catch((error: unknown) => {
         log.error('nats:chat', 'failed to catch up after reconnection', String(error));
       });
     }
-  }, [reconnectionCount, natsDialogId, resetAndCatchUp]);
+  }, [useJetstream, legacyReconnectionCount, natsDialogId, resetAndCatchUp]);
 
   const waitForNatsSubscription = useCallback(
     async (expectedDialogId: string): Promise<void> => {
@@ -449,6 +548,17 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const sendMessage = useCallback(
     async (text: string) => {
       setError(null);
+
+      // Sending a message while an approval is pending is an interrupt —
+      // backend will cancel that approval and emit APPROVAL_RESULT (rejected)
+      // a moment later. Flip the latest pending one optimistically so the
+      // card resolves at the same instant the user-message bubble appears,
+      // avoiding a layout jump between the two updates.
+      const pendingId = findLatestPendingApprovalId(allMessagesRef.current);
+      if (pendingId) {
+        messagesRef.current.updateApprovalStatusById(pendingId, 'rejected');
+        approvalsRef.current.applyResolvedStatus(pendingId, 'rejected');
+      }
 
       const userMessage: Message = {
         id: `user-${Date.now()}`,
