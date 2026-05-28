@@ -197,9 +197,7 @@ impl ToolUninstallService {
 
         #[cfg(target_os = "windows")]
         {
-            if let Err(e) = crate::utils::windows_helpers::unregister_autorun(&tool.tool_agent_id) {
-                warn!(tool_id = %tool.tool_agent_id, error = %e, "Failed to cleanup GuiApp autorun");
-            }
+            crate::utils::windows_helpers::unregister_autorun(&tool.tool_agent_id);
         }
     }
 }

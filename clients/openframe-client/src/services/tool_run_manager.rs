@@ -488,10 +488,15 @@ impl ToolRunManager {
                             // Register tool in the WindowsSessionManager,
                             // so its lifetime will be managed by it
                             if let Some(mgr) = &session_manager {
+                                let mut launch_args = processed_args.clone();
+                                // For openframe-chat, add --background flag to start in tray
+                                if tool.tool_agent_id == "openframe-chat" {
+                                    launch_args.push("--background".to_string());
+                                }
                                 mgr.register_tool(
                                     tool.tool_agent_id.clone(),
                                     command_path.clone(),
-                                    processed_args.clone(),
+                                    launch_args,
                                 ).await;
                                 return;
                             }

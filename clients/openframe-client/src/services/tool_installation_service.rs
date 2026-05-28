@@ -88,10 +88,7 @@ impl ToolInstallationService {
 
         let version_clone = tool_installation_message.version.clone();
         let effective_version = tool_installation_message.effective_version().to_string();
-        let mut run_args_clone = tool_installation_message.run_command_args.clone();
-        if tool_agent_id == "openframe-chat" && !run_args_clone.iter().any(|a| a == "--background") {
-            run_args_clone.push("--background".to_string());
-        }
+        let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
@@ -340,9 +337,13 @@ impl ToolInstallationService {
         // process via find_pid and attaches a waiter, so we don't double-launch on the active session.
         #[cfg(target_os = "windows")]
         if let Installation::GuiApp { .. } = &installed_tool.installation {
-            let launch_args = self.command_params_resolver
+            let mut launch_args = self.command_params_resolver
                 .process(tool_agent_id, installed_tool.run_command_args.clone())
                 .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            // For openframe-chat, add --background flag to start in tray
+            if tool_agent_id == "openframe-chat" {
+                launch_args.push("--background".to_string());
+            }
             let command_path = self.directory_manager
                 .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
                 .to_string_lossy()

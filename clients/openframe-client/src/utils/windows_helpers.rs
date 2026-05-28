@@ -79,7 +79,7 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
 }
 
 /// Remove `value_name` from both HKLM Run key views
-pub(crate) fn unregister_autorun(value_name: &str) -> Result<()> {
+pub(crate) fn unregister_autorun(value_name: &str) {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
 
     for hive_path in &[AUTORUN_KEY_PATH, AUTORUN_KEY_WOW64_PATH] {
@@ -92,6 +92,4 @@ pub(crate) fn unregister_autorun(value_name: &str) -> Result<()> {
             }
         }
     }
-
-    Ok(())
 }
