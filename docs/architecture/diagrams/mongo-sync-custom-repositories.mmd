@@ -1,0 +1,5 @@
+flowchart TD
+    Controllers["API & Management Controllers"] --> Services["Service Layer"]
+    Services --> CustomRepos["Mongo Sync Custom Repositories"]
+    CustomRepos --> MongoTemplate["MongoTemplate"]
+    MongoTemplate --> MongoDB[("MongoDB")]

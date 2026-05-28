@@ -1,0 +1,5 @@
+flowchart TD
+    KafkaEvent["Kafka Event"] --> Enrichment["Data Enrichment"]
+    Enrichment --> Normalize["EventTypeMapper"]
+    Normalize --> Persist["Cassandra"]
+    Normalize --> Publish["Outbound Kafka"]

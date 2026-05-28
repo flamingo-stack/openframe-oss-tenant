@@ -1,0 +1,14 @@
+sequenceDiagram
+    participant UI as "React UI"
+    participant TokenSvc as "TokenService"
+    participant Tauri as "Tauri Rust"
+    participant Auth as "Authorization Server"
+
+    UI->>TokenSvc: ensureTokenReady()
+    TokenSvc->>Tauri: invoke get_token
+    Tauri->>Auth: Validate session
+    Auth-->>Tauri: JWT token
+    Tauri-->>TokenSvc: token
+    TokenSvc->>Tauri: invoke get_server_url
+    Tauri-->>TokenSvc: server URL
+    TokenSvc-->>UI: Ready

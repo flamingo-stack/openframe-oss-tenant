@@ -1,0 +1,7 @@
+flowchart TD
+    A["DeserializedDebeziumMessage"] --> B["MachineIdCacheService"]
+    B --> C["CachedMachineInfo"]
+    C --> D["CachedOrganizationInfo"]
+    D --> E["IntegratedToolEnrichedData"]
+    A --> F["TenantIdProvider or ClusterTenantIdResolver"]
+    F --> E

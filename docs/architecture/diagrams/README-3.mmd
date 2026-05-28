@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Auth Request"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> OAuthFlow["OAuth2 Authorization Flow"]
+    OAuthFlow --> KeyService["TenantKeyService"]
+    KeyService --> JWT["Signed JWT"]

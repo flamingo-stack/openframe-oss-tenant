@@ -1,0 +1,17 @@
+flowchart TD
+    Config["Config Server"]
+    Gateway["Gateway Service"]
+    API["API Service"]
+    Authz["Authorization Server"]
+    Management["Management Service"]
+    Stream["Stream Service"]
+    External["External API Service"]
+    Client["Client Service"]
+
+    Config --> Gateway
+    Config --> API
+    Config --> Authz
+    Config --> Management
+    Config --> Stream
+    Config --> External
+    Config --> Client

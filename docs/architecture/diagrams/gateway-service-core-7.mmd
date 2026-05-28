@@ -1,0 +1,5 @@
+flowchart TD
+    WsReq["WS Request"] --> Check{{"Contains NATS path?"}}
+    Check -->|Yes| Nats["NATS Upstream"]
+    Check -->|No| Daphne["Daphne WebSocket"]
+    RestReq["REST Request"] --> Backend["Django Backend"]

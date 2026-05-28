@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Browser"] -->|"POST /oauth/refresh"| BFF
+    BFF -->|"Validate Refresh Token"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"New Tokens"| BFF
+    BFF -->|"Set New Cookies"| Client

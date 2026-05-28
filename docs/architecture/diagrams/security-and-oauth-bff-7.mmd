@@ -1,0 +1,9 @@
+flowchart LR
+    User["User"] --> Browser["Browser Client"]
+    Browser --> BFF["Security And Oauth Bff"]
+    BFF --> Auth["Authorization Server Core"]
+    Auth --> BFF
+    BFF --> Browser
+    Browser --> Gateway["Gateway Service Core"]
+    Gateway --> Api["Api Service Core"]
+    Api --> Mongo["Mongo Domain And Repositories"]

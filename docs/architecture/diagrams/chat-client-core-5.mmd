@@ -1,0 +1,4 @@
+flowchart LR
+    Query["GetAllMessages Query"] --> Connection["MessagesConnection"]
+    Connection --> Edges["MessageEdge[]"]
+    Connection --> PageInfo["PageInfo"]

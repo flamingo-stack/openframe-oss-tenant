@@ -1,0 +1,47 @@
+flowchart TD
+    subgraph entrypoint["Service Entrypoint"]
+        App["ManagementApplication"]
+    end
+
+    subgraph management["Management Service Core"]
+        Controllers["REST Controllers"]
+        Initializers["Startup Initializers"]
+        Schedulers["Schedulers"]
+        Migrations["Mongo Change Units"]
+        Services["Management Services"]
+        Config["Spring Configuration"]
+    end
+
+    subgraph data["Mongo Domain & Repositories"]
+        Mongo[("MongoDB")]
+    end
+
+    subgraph messaging["Messaging & Streams"]
+        NATS[("NATS")]
+        Kafka[("Kafka / Debezium")]
+        Redis[("Redis")]
+    end
+
+    subgraph tools["External Tools"]
+        Tactical["Tactical RMM"]
+        Pinot["Pinot / Analytics"]
+    end
+
+    App --> Controllers
+    App --> Initializers
+    App --> Schedulers
+    App --> Migrations
+    App --> Config
+
+    Controllers --> Services
+    Services --> Mongo
+    Initializers --> Mongo
+    Initializers --> NATS
+    Initializers --> Kafka
+
+    Schedulers --> Mongo
+    Schedulers --> NATS
+    Schedulers --> Redis
+
+    Controllers --> Tactical
+    Controllers --> Pinot

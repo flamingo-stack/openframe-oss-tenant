@@ -1,0 +1,5 @@
+flowchart LR
+    Client --> IntegrationController
+    IntegrationController --> RestProxyService
+    RestProxyService --> ToolUpstreamResolver
+    ToolUpstreamResolver --> UpstreamTool

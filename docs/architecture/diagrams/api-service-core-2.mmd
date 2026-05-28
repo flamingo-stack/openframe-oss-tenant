@@ -1,0 +1,9 @@
+flowchart TD
+    Controller[REST Controllers] --> Services[Domain Services]
+    DataFetcher[GraphQL DataFetchers] --> Services
+    Services --> Repositories[(Mongo Repositories)]
+
+    DataFetcher --> DataLoader[GraphQL DataLoaders]
+    DataLoader --> Repositories
+
+    Services --> Processors[Extension Processors]

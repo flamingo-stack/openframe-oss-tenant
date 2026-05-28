@@ -1,0 +1,21 @@
+flowchart TD
+    Browser["Browser / Desktop Client"] --> BFF["Security And OAuth BFF"]
+    BFF --> Authz["Authorization Server"]
+    Browser --> Gateway["Gateway Service"]
+
+    Gateway --> Api["API Service"]
+    Gateway --> External["External API Service"]
+    Gateway --> Tools["Integrated Tools"]
+
+    Api --> Mongo["Mongo Domain & Repositories"]
+    Api --> Sync["Mongo Sync Custom Repositories"]
+    Api --> Stream["Stream Service"]
+
+    Authz --> Mongo
+    Management["Management Service"] --> Mongo
+    Management --> Stream
+
+    Stream --> Kafka["Kafka"]
+    Stream --> Cassandra["Cassandra"]
+
+    Tools --> Kafka

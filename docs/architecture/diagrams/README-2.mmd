@@ -1,0 +1,19 @@
+sequenceDiagram
+    participant User
+    participant Browser
+    participant BFF
+    participant Authz as AuthorizationServer
+    participant Gateway
+    participant API
+
+    User->>Browser: Login
+    Browser->>BFF: /oauth/login
+    BFF->>Authz: Authorization Code + PKCE
+    Authz-->>BFF: Access + Refresh Token
+    BFF-->>Browser: HTTPOnly Cookies
+
+    Browser->>Gateway: API Request
+    Gateway->>Authz: Validate JWT
+    Gateway->>API: Forward Request
+    API-->>Gateway: JSON Response
+    Gateway-->>Browser: Response

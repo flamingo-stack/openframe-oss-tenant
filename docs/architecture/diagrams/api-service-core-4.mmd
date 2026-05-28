@@ -1,0 +1,5 @@
+flowchart TD
+    GlobalID[Global ID] --> Decode[Relay Decoder]
+    Decode --> NodeType[Node Type Resolver]
+    NodeType --> ServiceLookup[Domain Service Lookup]
+    ServiceLookup --> Entity[Domain Entity]

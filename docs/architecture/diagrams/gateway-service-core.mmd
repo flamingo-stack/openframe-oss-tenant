@@ -1,0 +1,5 @@
+flowchart LR
+    Client["Client / Agent / External System"] --> Gateway["Gateway Service Core"]
+    Gateway --> Tools["Integrated Tools"]
+    Gateway --> ApiService["API Service Core"]
+    Gateway --> Nats["NATS WebSocket"]

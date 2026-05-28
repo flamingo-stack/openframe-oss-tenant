@@ -1,0 +1,4 @@
+flowchart TD
+    Provider["DebugModeProvider"] --> Invoke["invoke get_debug_mode"]
+    Invoke --> State["React useState debugMode"]
+    State --> Consumer["useDebugMode()"]

@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Callback Request"] --> CheckParam{{"redirectTo present?"}}
+    CheckParam -->|"Yes"| UseParam["Use redirectTo"]
+    CheckParam -->|"No"| CheckRef{{"Referer present?"}}
+    CheckRef -->|"Yes"| UseRef["Use Referer"]
+    CheckRef -->|"No"| Default["Use /"]

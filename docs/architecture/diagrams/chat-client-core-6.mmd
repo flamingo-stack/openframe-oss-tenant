@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant UI
+    participant TicketSvc as "TicketGraphQlService"
+    participant TokenSvc as "TokenService"
+    participant API as "API Service Core"
+
+    UI->>TicketSvc: createTicket(input)
+    TicketSvc->>TokenSvc: ensureTokenReady()
+    TicketSvc->>API: GraphQL createTicket
+    API-->>TicketSvc: ticket + userErrors
+    TicketSvc-->>UI: TicketNode

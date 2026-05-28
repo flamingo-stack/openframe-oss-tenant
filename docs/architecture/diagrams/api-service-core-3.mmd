@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Api
+    participant Issuer
+
+    Client->>Gateway: Request with JWT
+    Gateway->>Api: Forward request
+    Api->>Issuer: Resolve JWT issuer
+    Issuer-->>Api: Public keys (cached)
+    Api-->>Gateway: Authenticated request

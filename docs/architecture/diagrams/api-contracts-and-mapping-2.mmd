@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Client Request"] --> Args["ConnectionArgs"]
+    Args --> Decoder["CursorCodec.decode()"]
+    Decoder --> Repository["Repository Query"]
+    Repository --> Encoder["CursorCodec.encode()"]
+    Encoder --> Response["Connection Result"]

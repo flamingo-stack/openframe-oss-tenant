@@ -1,0 +1,4 @@
+flowchart LR
+    Scheduler["@Scheduled Job"] --> Lock["ShedLock"]
+    Lock --> Redis
+    Redis --> Execution["Single Instance Executes"]

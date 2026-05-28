@@ -1,0 +1,10 @@
+flowchart TD
+    Init["Constructor"] --> Listen["listen token-update"]
+    Init --> InitApi["initApiUrl()"]
+    Init --> Env["initFromEnv()"]
+
+    Listen --> SetToken["setToken()"]
+    SetToken --> Notify["Notify listeners"]
+
+    InitApi --> SetApi["setApiBaseUrl()"]
+    SetApi --> NotifyApi["Notify API URL listeners"]

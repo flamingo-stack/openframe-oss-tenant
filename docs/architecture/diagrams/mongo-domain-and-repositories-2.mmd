@@ -1,0 +1,17 @@
+flowchart LR
+    User["AuthUser"]
+    Org["Organization"]
+    Ticket["Ticket"]
+    Device["Device"]
+    Event["CoreEvent"]
+    Notification["Notification"]
+    ReadState["NotificationReadState"]
+    OAuthClient["MongoRegisteredClient"]
+    OAuthToken["OAuthToken"]
+
+    Ticket --> Org
+    Ticket --> Device
+    Ticket --> User
+    ReadState --> Notification
+    OAuthToken --> User
+    OAuthToken --> OAuthClient

@@ -1,0 +1,7 @@
+flowchart TD
+    WsRequest["WebSocket Request"] --> RouteLocator
+    RouteLocator --> AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    RouteLocator --> ApiFilter["ToolApiWebSocketProxyUrlFilter"]
+    AgentFilter --> Resolver
+    ApiFilter --> Resolver
+    Resolver --> UpstreamWs

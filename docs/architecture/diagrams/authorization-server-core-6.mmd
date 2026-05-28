@@ -1,0 +1,6 @@
+flowchart TD
+    User[User] --> LoginPage[Login Page]
+    LoginPage --> Provider[Google or Microsoft]
+    Provider --> Authz[Authorization Server Core]
+    Authz --> AutoProvision[Auto Provision Logic]
+    AutoProvision --> JWT[Issue JWT]

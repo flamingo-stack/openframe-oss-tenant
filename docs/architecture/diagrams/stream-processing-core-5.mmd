@@ -1,0 +1,5 @@
+flowchart LR
+    Activity["Activity Topic"] --> Join["Left Join (5s Window)"]
+    Host["HostActivity Topic"] --> Join
+    Join --> Header["HeaderAdder Processor"]
+    Header --> Output["Enriched Fleet Topic"]

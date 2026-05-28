@@ -1,0 +1,10 @@
+flowchart TD
+    A["Kafka Topic Event"] --> B["JsonKafkaListener"]
+    B --> C["GenericJsonMessageProcessor"]
+    C --> D["IntegratedToolDataEnrichmentService"]
+    D --> E{{"Valid Tenant?"}}
+    E -->|"Yes"| F["DebeziumMessageHandler"]
+    E -->|"No"| Drop["Event Dropped"]
+    F --> G{{"Operation Type?"}}
+    G -->|"CREATE / UPDATE"| H["Transform to Domain Model"]
+    H --> I["Push to Destination"]

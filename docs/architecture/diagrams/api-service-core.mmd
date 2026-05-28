@@ -1,0 +1,8 @@
+flowchart LR
+    Client[Web Client or Agent] --> Gateway[Gateway Service]
+    Gateway --> Api[Api Service Core]
+    Gateway --> Auth[Authorization Server]
+
+    Api --> Mongo[(Mongo Domain and Repositories)]
+    Api --> Sync[Mongo Sync Custom Repositories]
+    Api --> Stream[Stream Processing Core]

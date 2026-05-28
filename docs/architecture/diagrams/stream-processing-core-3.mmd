@@ -1,0 +1,14 @@
+classDiagram
+    class GenericMessageHandler {
+        +handle(message, extra)
+        +transform(message, extra)
+        +handleCreate(data)
+        +handleUpdate(data)
+        +handleDelete(data)
+    }
+
+    class DebeziumMessageHandler
+    class DebeziumCassandraMessageHandler
+
+    GenericMessageHandler <|-- DebeziumMessageHandler
+    DebeziumMessageHandler <|-- DebeziumCassandraMessageHandler
