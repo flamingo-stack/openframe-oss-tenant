@@ -1,4 +1,6 @@
 import { ChatQuickAction, type ChatTicketItemData, ChatTicketList } from '@flamingo-stack/openframe-frontend-core';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { QuickAction } from '../hooks/useChatConfig';
 
 interface ChatInitialScreenProps {
@@ -16,6 +18,35 @@ export function ChatInitialScreen({
   onQuickAction,
   isDisconnected,
 }: ChatInitialScreenProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showBottomFade, setShowBottomFade] = useState(false);
+  const [showTopFade, setShowTopFade] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hasOverflow = el.scrollHeight > el.clientHeight + 1;
+    const atBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight - 1;
+    setShowBottomFade(hasOverflow && !atBottom);
+    setShowTopFade(el.scrollTop > 0);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    for (const child of Array.from(el.children)) {
+      ro.observe(child);
+    }
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    return () => {
+      ro.disconnect();
+      el.removeEventListener('scroll', updateScrollState);
+    };
+  }, [updateScrollState]);
+
   const quickHelp = quickActions.length > 0 && (
     <div className="w-full max-w-ods-content-narrow">
       <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-[var(--spacing-system-sf)]">
@@ -38,21 +69,45 @@ export function ChatInitialScreen({
   const hasTickets = tickets.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center min-h-0 px-[var(--spacing-system-mf)] py-[var(--spacing-system-l)]">
-      <div className="w-full max-w-ods-content-narrow text-center mb-[var(--spacing-system-lf)] shrink-0">
-        <h1 className="text-h2 mb-[var(--spacing-system-xsf)]">Hey! How can I help?</h1>
-        <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
-      </div>
+    <div className="relative flex-1 flex flex-col min-h-0">
+      <div ref={scrollRef} className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+        <div className="m-auto w-full flex flex-col items-center gap-[var(--spacing-system-xl)]">
+          <div className="flex flex-col w-full max-w-ods-content-narrow text-center gap-[var(--spacing-system-xxs)] py-[var(--spacing-system-l)]">
+            <h1 className="text-h2">Hey! How can I help?</h1>
+            <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
+          </div>
 
-      {hasTickets ? (
-        <ChatTicketList
-          className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
-          tickets={tickets}
-          onTicketClick={onTicketClick}
-        />
-      ) : (
-        quickHelp
-      )}
+          {hasTickets ? (
+            <ChatTicketList
+              className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
+              tickets={tickets}
+              onTicketClick={onTicketClick}
+            />
+          ) : (
+            quickHelp
+          )}
+        </div>
+      </div>
+      <div
+        aria-hidden="true"
+        style={{
+          background: 'linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0.00) 100%)',
+        }}
+        className={cn(
+          'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
+          showTopFade ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          background: 'linear-gradient(180deg, rgba(22, 22, 22, 0.00) 0%, #161616 100%)',
+        }}
+        className={cn(
+          'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
+          showBottomFade ? 'opacity-100' : 'opacity-0',
+        )}
+      />
     </div>
   );
 }
