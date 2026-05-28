@@ -400,14 +400,25 @@ export class MeshDesktop implements DesktopInputHandlers {
       return { x: 0, y: 0 };
     }
     const rect = this.canvas.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) / Math.max(1, rect.width);
-    const cy = (e.clientY - rect.top) / Math.max(1, rect.height);
+    if (rect.width === 0 || rect.height === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    const scale = Math.min(rect.width / this.remoteWidth, rect.height / this.remoteHeight);
+    const drawnW = this.remoteWidth * scale;
+    const drawnH = this.remoteHeight * scale;
+    const offsetX = (rect.width - drawnW) / 2;
+    const offsetY = (rect.height - drawnH) / 2;
+
+    const cx = (e.clientX - rect.left - offsetX) / Math.max(1, drawnW);
+    const cy = (e.clientY - rect.top - offsetY) / Math.max(1, drawnH);
+
     let x = Math.round(cx * this.remoteWidth);
     let y = Math.round(cy * this.remoteHeight);
     if (x < 0) x = 0;
     if (y < 0) y = 0;
-    if (x > 65535) x = 65535;
-    if (y > 65535) y = 65535;
+    if (x > this.remoteWidth - 1) x = this.remoteWidth - 1;
+    if (y > this.remoteHeight - 1) y = this.remoteHeight - 1;
     return { x, y };
   }
 
