@@ -9,6 +9,7 @@ import { SubscriptionStatus } from '@/app/components/subscription-lock/subscript
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
+import { buildProductCancelUpdates } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
 import { ProductSubscriptionCard } from './product-subscription-card';
 import { SubscriptionSettingsSkeleton } from './subscription-settings-skeleton';
@@ -59,6 +60,7 @@ const subscriptionSettingsViewQuery = graphql`
       products {
         name
         payAsYouGoOption { id }
+        packageOptions { packageOptionId status }
         ...productSubscriptionCardSubscriptionFragment
       }
     }
@@ -100,7 +102,10 @@ function SubscriptionSettingsContent() {
   }, []);
 
   const considered = products.filter(p => !(p.name === 'AI_ASSISTANCE' && !aiEnabled));
-  const packageUpdates = considered.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []);
+  const aiCancelUpdates = aiEnabled
+    ? []
+    : buildProductCancelUpdates('AI_ASSISTANCE', subscriptionProducts.find(sp => sp.name === 'AI_ASSISTANCE') ?? null);
+  const packageUpdates = [...considered.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []), ...aiCancelUpdates];
   const checkoutProducts = considered.map(p => updatesMap[p.name]?.checkout).filter(c => c != null);
   const hasInvalidCustom = considered.some(p => {
     const updates = updatesMap[p.name];
