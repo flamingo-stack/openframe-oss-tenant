@@ -100,16 +100,14 @@ export function CustomersOverviewSection() {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-['Azeret_Mono'] font-semibold text-[24px] leading-[32px] tracking-[-0.48px] text-ods-text-primary">
-        Customers Overview
-      </h2>
-      {loading ? (
-        <Skeleton className="h-5 w-48" />
-      ) : (
-        <p className="text-ods-text-secondary font-['DM_Sans'] font-medium text-[14px]">
-          {totalOrganizations.toLocaleString()} Customers in Total
-        </p>
-      )}
+      <div>
+        <h2 className="text-h2 text-ods-text-primary">Customers Overview</h2>
+        {loading ? (
+          <Skeleton className="h-5 w-48" />
+        ) : (
+          <p className="text-h6 text-ods-text-secondary">{totalOrganizations.toLocaleString()} Customers in Total</p>
+        )}
+      </div>
 
       <div className="flex flex-col gap-3">{organizationRows}</div>
     </div>
