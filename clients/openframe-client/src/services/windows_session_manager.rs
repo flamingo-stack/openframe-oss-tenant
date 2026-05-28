@@ -168,7 +168,7 @@ async fn waiter_task(
     registered_tools: Arc<RwLock<HashMap<String, ToolRunInfo>>>,
     waiters: Arc<RwLock<HashSet<(String, u32)>>>,
 ) {
-    info!(tool_id = %tool_id, session_id, "Per-session GuiApp waiter starting");
+    info!(tool_id = %tool_id, session_id, "Per-session process waiter starting");
 
     loop {
         // Exit if the session is no longer active (LOGOFF removed it)
@@ -188,7 +188,7 @@ async fn waiter_task(
         // Attach if already running (e.g. by AutoRun), else launch
         let process_handle: Option<HANDLE> = match find_pid_in_target_session(&reg.command_path, session_id) {
             Some(pid) => {
-                info!(tool_id = %tool_id, session_id, pid, "GuiApp already running - attaching waiter");
+                info!(tool_id = %tool_id, session_id, pid, "Process already running - attaching waiter");
                 unsafe {
                     OpenProcess(
                         PROCESS_SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION,
@@ -202,14 +202,14 @@ async fn waiter_task(
                 }
             }
             None => {
-                info!(tool_id = %tool_id, session_id, "GuiApp not running - launching");
+                info!(tool_id = %tool_id, session_id, "Process not running - launching");
                 match launch_process_in_target_session(&reg.command_path, &reg.launch_args, session_id) {
                     Ok((pid, h)) => {
-                        info!(tool_id = %tool_id, session_id, pid, "GuiApp launched in session");
+                        info!(tool_id = %tool_id, session_id, pid, "Process launched in session");
                         Some(h)
                     }
                     Err(e) => {
-                        error!(tool_id = %tool_id, session_id, error = %e, "Failed to launch GuiApp");
+                        error!(tool_id = %tool_id, session_id, error = %e, "Failed to launch process");
                         None
                     }
                 }
@@ -237,12 +237,12 @@ async fn waiter_task(
         .unwrap_or(1);
 
         warn!(tool_id = %tool_id, session_id, exit_code,
-              "GuiApp process exited - restarting in {}s (if still applicable)", RETRY_DELAY_SECONDS);
+              "Process exited - restarting in {}s (if still applicable)", RETRY_DELAY_SECONDS);
         sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
     }
 
     waiters.write().await.remove(&(tool_id.clone(), session_id));
-    info!(tool_id = %tool_id, session_id, "Per-session GuiApp waiter exited");
+    info!(tool_id = %tool_id, session_id, "Per-session process waiter exited");
 }
 
 pub(crate) fn enumerate_active_user_sessions() -> Vec<u32> {
