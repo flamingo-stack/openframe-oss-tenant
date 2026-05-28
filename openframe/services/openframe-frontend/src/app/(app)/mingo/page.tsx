@@ -77,8 +77,7 @@ export default function Mingo() {
     assistantType,
   } = useMingoChat(activeDialogId);
 
-  const { subscribeToDialog, subscribedDialogs, isDevTicketEnabled, onConnectionChange } =
-    useMingoRealtimeSubscription(activeDialogId);
+  const { subscribeToDialog, subscribedDialogs, onConnectionChange } = useMingoRealtimeSubscription(activeDialogId);
 
   useEffect(() => {
     if (activeDialogId && dialogData?.tokenUsage) {
@@ -349,7 +348,6 @@ export default function Mingo() {
           onApprove={handleApprove}
           onReject={handleReject}
           approvalStatuses={approvalStatuses}
-          isDevTicketEnabled={isDevTicketEnabled}
           onConnectionChange={onConnectionChange}
           onMetadata={handleMetadataUpdate}
           initialOptStartSeq={initialOptStartSeq}

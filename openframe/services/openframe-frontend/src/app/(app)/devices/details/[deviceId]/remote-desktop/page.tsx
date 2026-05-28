@@ -1,25 +1,20 @@
 'use client';
 
 import {
-  ActionsMenu,
   ActionsMenuDropdown,
   type ActionsMenuGroup,
   Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
   PageLayout,
   Skeleton,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
   Collapse02Icon,
-  Ellipsis01Icon,
   Expand02Icon,
   MonitorIcon,
   Settings01Icon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Loader2, Pin, PinOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
@@ -118,12 +113,6 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   const [firstFrameReceived, setFirstFrameReceived] = useState(false);
   const [clipboardEnabled, setClipboardEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [barVisible, setBarVisible] = useState(false);
-  const [barPinned, setBarPinned] = useState(false);
-  const [actionsMenuOpen, setActionsMenuOpen] = useState(false);
-  const [displayMenuOpen, setDisplayMenuOpen] = useState(false);
-  const hideTimerRef = useRef<number | null>(null);
-  const anyOverlayOpen = actionsMenuOpen || displayMenuOpen || settingsOpen;
 
   useEffect(() => {
     currentDisplayRef.current = currentDisplay;
@@ -138,57 +127,17 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
   }, [meshcentralAgentId]);
 
   useEffect(() => {
-    if (!isFullscreen) {
-      setBarVisible(false);
-      if (hideTimerRef.current != null) {
-        window.clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
-      return;
-    }
-
-    setBarVisible(true);
-
-    const cancelHide = () => {
-      if (hideTimerRef.current != null) {
-        window.clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
     };
-
-    const scheduleHide = () => {
-      cancelHide();
-      if (barPinned || anyOverlayOpen) return;
-      hideTimerRef.current = window.setTimeout(() => setBarVisible(false), 2000);
-    };
-
-    scheduleHide();
-
-    const onMove = (e: MouseEvent) => {
-      if (e.clientY < 80) {
-        setBarVisible(true);
-        scheduleHide();
-      }
-    };
-
-    window.addEventListener('mousemove', onMove);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      cancelHide();
-    };
-  }, [isFullscreen, barPinned, anyOverlayOpen]);
+    onFullscreenChange();
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   useEffect(() => {
-    if (isFullscreen && (barPinned || anyOverlayOpen)) {
-      setBarVisible(true);
-    }
-  }, [isFullscreen, barPinned, anyOverlayOpen]);
-
-  useEffect(() => {
-    if (isFullscreen && !barVisible && !anyOverlayOpen) {
-      canvasRef.current?.focus();
-    }
-  }, [isFullscreen, barVisible, anyOverlayOpen]);
+    if (isFullscreen) canvasRef.current?.focus();
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!isPageReady) return;
@@ -382,6 +331,21 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     safeBackToDevice();
   };
 
+  const enterFullscreen = async () => {
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (e) {
+      toast({ title: 'Fullscreen failed', description: (e as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const exitFullscreen = async () => {
+    if (!document.fullscreenElement) return;
+    try {
+      await document.exitFullscreen();
+    } catch {}
+  };
+
   const sendPower = async (action: 'wake' | 'sleep' | 'reset' | 'poweroff') => {
     if (!meshcentralAgentId) return;
     try {
@@ -540,11 +504,6 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     );
   }
 
-  const preventToastClose = (e: { target: EventTarget | null; preventDefault: () => void }) => {
-    const target = e.target as HTMLElement | null;
-    if (target?.closest('.fixed.z-\\[9999\\]')) e.preventDefault();
-  };
-
   const deviceInfoBlock = (
     <div className="flex items-center gap-[var(--spacing-system-mf)] min-w-0">
       <div className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-xsf)] flex-shrink-0">
@@ -557,136 +516,72 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     </div>
   );
 
+  const controlsBar = (
+    <div
+      className={`bg-ods-card border border-ods-border flex items-center justify-between gap-[var(--spacing-system-mf)] py-[var(--spacing-system-xs)] px-[var(--spacing-system-mf)] flex-shrink-0 ${
+        isFullscreen ? '' : 'rounded-md'
+      }`}
+    >
+      {deviceInfoBlock}
+      <div className="flex items-center gap-[var(--spacing-system-xs)] flex-shrink-0">
+        {displays.length > 1 && (
+          <ActionsMenuDropdown
+            groups={displayMenuGroups}
+            customTrigger={
+              <Button variant="outline" leftIcon={<MonitorIcon className="w-4 h-4 md:w-6 md:h-6" />}>
+                Display {currentDisplay === 0 ? 'All' : currentDisplay}
+              </Button>
+            }
+          />
+        )}
+        <ActionsMenuDropdown groups={actionsMenuGroups} triggerAriaLabel="Actions" />
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Settings"
+          onClick={() => setSettingsOpen(true)}
+          leftIcon={<Settings01Icon />}
+        />
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          onClick={isFullscreen ? exitFullscreen : enterFullscreen}
+          leftIcon={isFullscreen ? <Collapse02Icon /> : <Expand02Icon />}
+        />
+      </div>
+    </div>
+  );
+
+  const canvasContainer = (
+    <div className={`flex-1 min-h-0 min-w-0 relative bg-black overflow-hidden ${isFullscreen ? '' : 'rounded-lg'}`}>
+      <canvas
+        ref={canvasRef}
+        tabIndex={0}
+        className="absolute inset-0 w-full h-full object-contain outline-none"
+        style={{ visibility: firstFrameReceived ? 'visible' : 'hidden' }}
+        onContextMenu={e => e.preventDefault()}
+      />
+      {!firstFrameReceived && state >= 1 && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[var(--spacing-system-sf)]">
+          <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
+          <span className="text-ods-text-secondary text-sm">
+            {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <PageLayout
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] h-full overflow-hidden"
       backButton={{ label: 'Back', onClick: handleBack }}
       showHeader={!isFullscreen}
     >
-      {!isFullscreen && (
-        <div className="bg-ods-card border rounded-md border-ods-border flex items-center justify-between gap-[var(--spacing-system-mf)] py-[var(--spacing-system-xs)] px-[var(--spacing-system-mf)] flex-shrink-0">
-          {deviceInfoBlock}
-          <div className="flex items-center gap-[var(--spacing-system-xs)] flex-shrink-0">
-            {displays.length > 1 && (
-              <ActionsMenuDropdown
-                groups={displayMenuGroups}
-                customTrigger={
-                  <Button variant="outline" leftIcon={<MonitorIcon className="w-4 h-4 md:w-6 md:h-6" />}>
-                    Display {currentDisplay === 0 ? 'All' : currentDisplay}
-                  </Button>
-                }
-              />
-            )}
-            <ActionsMenuDropdown groups={actionsMenuGroups} triggerAriaLabel="Actions" />
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Settings"
-              onClick={() => setSettingsOpen(true)}
-              leftIcon={<Settings01Icon />}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Enter fullscreen"
-              onClick={() => setIsFullscreen(true)}
-              leftIcon={<Expand02Icon />}
-            />
-          </div>
-        </div>
-      )}
-
-      <div
-        className={
-          isFullscreen
-            ? 'fixed inset-0 z-50 bg-black overflow-hidden'
-            : 'flex-1 min-h-0 min-w-0 relative bg-black rounded-lg overflow-hidden'
-        }
-      >
-        <canvas
-          ref={canvasRef}
-          tabIndex={0}
-          className="absolute inset-0 w-full h-full object-contain outline-none"
-          style={{ visibility: firstFrameReceived ? 'visible' : 'hidden' }}
-          onContextMenu={e => e.preventDefault()}
-        />
-        {!firstFrameReceived && state >= 1 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-[var(--spacing-system-sf)]">
-            <Loader2 className="w-8 h-8 text-ods-text-secondary animate-spin" />
-            <span className="text-ods-text-secondary text-sm">
-              {state === 3 ? 'Waiting for desktop stream...' : 'Connecting to desktop...'}
-            </span>
-          </div>
-        )}
-
-        {isFullscreen && (
-          <div
-            className={`absolute top-0 left-0 right-0 z-10 transition-transform duration-200 ${
-              barVisible ? 'translate-y-0' : '-translate-y-full'
-            } bg-ods-card/90 backdrop-blur-sm border-b border-ods-border flex items-center justify-between py-[var(--spacing-system-xs)] px-[var(--spacing-system-mf)]`}
-            onMouseEnter={() => {
-              setBarVisible(true);
-              if (hideTimerRef.current != null) {
-                window.clearTimeout(hideTimerRef.current);
-                hideTimerRef.current = null;
-              }
-            }}
-            onMouseLeave={() => {
-              if (barPinned || anyOverlayOpen) return;
-              if (hideTimerRef.current != null) window.clearTimeout(hideTimerRef.current);
-              hideTimerRef.current = window.setTimeout(() => setBarVisible(false), 1000);
-            }}
-          >
-            {deviceInfoBlock}
-            <div className="flex items-center gap-[var(--spacing-system-xs)]">
-              {displays.length > 1 && (
-                <DropdownMenu modal={false} open={displayMenuOpen} onOpenChange={setDisplayMenuOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" leftIcon={<MonitorIcon className="w-4 h-4 md:w-6 md:h-6" />}>
-                      Display {currentDisplay === 0 ? 'All' : currentDisplay}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="p-0 border-none" onInteractOutside={preventToastClose}>
-                    <ActionsMenu groups={displayMenuGroups} />
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              <DropdownMenu modal={false} open={actionsMenuOpen} onOpenChange={setActionsMenuOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label="Actions" leftIcon={<Ellipsis01Icon />} />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="p-0 border-none" onInteractOutside={preventToastClose}>
-                  <ActionsMenu groups={actionsMenuGroups} />
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Settings"
-                onClick={() => setSettingsOpen(true)}
-                leftIcon={<Settings01Icon />}
-              />
-
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Exit fullscreen"
-                onClick={() => setIsFullscreen(false)}
-                leftIcon={<Collapse02Icon />}
-              />
-
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={barPinned ? 'Unpin toolbar' : 'Pin toolbar'}
-                onClick={() => setBarPinned(v => !v)}
-                leftIcon={barPinned ? <PinOff /> : <Pin />}
-              />
-            </div>
-          </div>
-        )}
+      <div className={isFullscreen ? 'fixed inset-0 z-50 bg-black flex flex-col' : 'contents'}>
+        {controlsBar}
+        {canvasContainer}
       </div>
 
       <RemoteSettingsModal

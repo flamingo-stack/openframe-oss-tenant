@@ -1,5 +1,4 @@
 import {
-  buildNatsWsUrl,
   type ChatApprovalStatus,
   type ChunkData,
   extractIncompleteMessageState,
@@ -21,10 +20,11 @@ import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
 import { tokenService } from '../services/tokenService';
 import { overrideToolTitle } from '../utils/applyToolTitle';
-import { log, maskToken } from '../utils/log';
+import { log } from '../utils/log';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
+import { CHAT_NATS_CLIENT_CONFIG, useChatNatsConfig } from './useChatNatsConfig';
 import { useChunkCatchup } from './useChunkCatchup';
 import { useDialogMessages } from './useDialogMessages';
 
@@ -61,7 +61,13 @@ interface UseChatOptions {
   onDialogClosed?: () => void;
 }
 
-export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTokenUsage, onDialogClosed }: UseChatOptions = {}) {
+export function useChat({
+  useApi = true,
+  useNats = false,
+  onMetadataUpdate,
+  onTokenUsage,
+  onDialogClosed,
+}: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
   const [useJetstream] = useState(() => !!flags['ai-streaming-jetstream']);
 
@@ -72,8 +78,7 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
   const [error, setError] = useState<string | null>(null);
   const [isResumedDialog, setIsResumedDialog] = useState(false);
   const [isTicketPreview, setIsTicketPreview] = useState(false);
-  const [token, setToken] = useState(tokenService.getCurrentToken());
-  const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
+  const { getWsUrl, onBeforeReconnect } = useChatNatsConfig();
 
   // Refs for stream management
   const natsDoneResolverRef = useRef<null | (() => void)>(null);
@@ -88,14 +93,6 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
 
   const { debugMode } = useDebugMode();
   const { quickActions } = useChatConfig();
-
-  useEffect(() => {
-    return tokenService.onTokenUpdate(setToken);
-  }, []);
-
-  useEffect(() => {
-    return tokenService.onApiUrlUpdate(setApiBaseUrl);
-  }, []);
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
   if (!apiServiceRef.current) {
@@ -357,10 +354,23 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     [processRealtimeChunk],
   );
 
-  const { catchUpChunks, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
+  const {
+    catchUpChunks,
+    processChunk: catchupProcessChunk,
+    resetChunkTracking,
+    startInitialBuffering,
+    resetAndCatchUp,
+  } = useChunkCatchup({
     dialogId: natsDialogId,
     onChunkReceived: handleRealtimeEvent,
   });
+
+  const handleNatsEvent = useCallback(
+    (chunk: any, messageType: NatsMessageType) => {
+      catchupProcessChunk(chunk, messageType);
+    },
+    [catchupProcessChunk],
+  );
 
   const natsDialogIdRef = useRef(natsDialogId);
 
@@ -423,55 +433,17 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     }
   }, []);
 
-  const getNatsWsUrl = useMemo(() => {
-    return (): string => {
-      if (!apiBaseUrl || !token) return '';
-      log.info('nats:chat', `building WS URL (token: ${maskToken(token)})`);
-      return buildNatsWsUrl(apiBaseUrl, {
-        token,
-        includeAuthParam: true,
-        source: 'dashboard',
-      });
-    };
-  }, [apiBaseUrl, token]);
-
   const topics = useMemo((): NatsMessageType[] => ['message'], []);
-
-  const clientConfig = useMemo(
-    () => ({
-      name: 'openframe-chat',
-      user: 'machine',
-      pass: '',
-    }),
-    [],
-  );
-
-  const reconnectionBackoff = useMemo(
-    () => ({
-      fastRetries: 3,
-      fastRetryDelayMs: 200,
-      initialDelayMs: 1000,
-      multiplier: 2,
-      maxDelayMs: 30_000,
-    }),
-    [],
-  );
-
-  const handleBeforeReconnect = useCallback(async () => {
-    log.info('nats:chat', 'disconnected — refreshing token before reconnect');
-    await tokenService.refreshToken();
-  }, []);
 
   const { isSubscribed: legacyIsSubscribed, reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
     enabled: useNats && !useJetstream && !!natsDialogId,
     dialogId: natsDialogId,
     topics,
-    onEvent: handleRealtimeEvent,
+    onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
-    onBeforeReconnect: handleBeforeReconnect,
-    getNatsWsUrl,
-    clientConfig,
-    reconnectionBackoff,
+    onBeforeReconnect,
+    getNatsWsUrl: getWsUrl,
+    clientConfig: CHAT_NATS_CLIENT_CONFIG,
   });
 
   const isInitialOptStartSeqReady = !isResumedDialog || isHistoryFetched;
@@ -484,10 +456,9 @@ export function useChat({ useApi = true, useNats = false, onMetadataUpdate, onTo
     optStartSeq: initialOptStartSeq,
     onEvent: handleJetStreamEvent,
     onSubscribed: handleJetStreamSubscribed,
-    onBeforeReconnect: handleBeforeReconnect,
-    getNatsWsUrl,
-    clientConfig,
-    reconnectionBackoff,
+    onBeforeReconnect,
+    getNatsWsUrl: getWsUrl,
+    clientConfig: CHAT_NATS_CLIENT_CONFIG,
   });
 
   const isSubscribed = useJetstream ? jetstreamIsSubscribed : legacyIsSubscribed;
