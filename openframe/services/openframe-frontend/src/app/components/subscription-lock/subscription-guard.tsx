@@ -4,8 +4,9 @@ import { type ReactNode, Suspense } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionGuardQuery as SubscriptionGuardQueryType } from '@/__generated__/subscriptionGuardQuery.graphql';
 import { featureFlags } from '@/lib/feature-flags';
+import { useSubscriptionLockSignal } from '@/lib/subscription-lock-signal';
 import { SubscriptionLockProvider } from './subscription-lock-context';
-import { resolveSubscriptionStatus } from './subscription-status';
+import { resolveSubscriptionStatus, SubscriptionStatus } from './subscription-status';
 
 const subscriptionGuardQuery = graphql`
   query subscriptionGuardQuery {
@@ -40,11 +41,27 @@ export function SubscriptionGuard({ children, fallback = null }: SubscriptionGua
 }
 
 function SubscriptionGuardInner({ children }: { children: ReactNode }) {
+  const trialExpiredFromErrors = useSubscriptionLockSignal(s => s.trialExpiredFromErrors);
   const data = useLazyLoadQuery<SubscriptionGuardQueryType>(
     subscriptionGuardQuery,
     {},
     { fetchPolicy: 'store-or-network' },
   );
-  const status = resolveSubscriptionStatus(data.subscription?.status);
+  const status = resolveGuardStatus({
+    subscription: data.subscription,
+    trialExpiredFromErrors,
+  });
   return <SubscriptionLockProvider status={status}>{children}</SubscriptionLockProvider>;
+}
+
+function resolveGuardStatus({
+  subscription,
+  trialExpiredFromErrors,
+}: {
+  subscription: SubscriptionGuardQueryType['response']['subscription'];
+  trialExpiredFromErrors: boolean;
+}): SubscriptionStatus {
+  if (trialExpiredFromErrors) return SubscriptionStatus.TRIAL_EXPIRED;
+  if (subscription == null) return SubscriptionStatus.CANCELED;
+  return resolveSubscriptionStatus(subscription.status);
 }
