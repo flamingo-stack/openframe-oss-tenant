@@ -1,0 +1,6 @@
+flowchart TD
+    StreamCore["Stream Processing Core"] --> MongoSync["Mongo Sync Custom Repositories"]
+    ApiCore["API Service Core"] --> MongoSync
+    ManagementCore["Management Service Core"] --> MongoSync
+    AuthCore["Authorization Server Core"] --> MongoSync
+    MongoSync --> MongoDB[("MongoDB")]

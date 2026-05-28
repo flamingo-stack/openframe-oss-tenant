@@ -1,316 +1,180 @@
 # Prerequisites
 
-Before getting started with OpenFrame, ensure your development environment meets the following requirements.
+Before running or developing the OpenFrame OSS Tenant platform, ensure your environment meets the following requirements.
 
-## System Requirements
-
-### Minimum Hardware Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 4 cores | 8+ cores |
-| RAM | 8 GB | 16+ GB |
-| Storage | 50 GB SSD | 100+ GB SSD |
-| Network | Stable internet | High-speed broadband |
-
-### Operating System Support
-
-OpenFrame supports development on:
-
-- **Linux** (Ubuntu 20.04+, CentOS 8+, Debian 11+)
-- **macOS** (10.15+)
-- **Windows** (Windows 10/11 with WSL2 recommended)
+---
 
 ## Required Software
 
-### Java Development
+| Tool | Minimum Version | Purpose |
+|------|----------------|---------|
+| **Java (JDK)** | 21 | Backend service runtime |
+| **Maven** | 3.8+ | Build & dependency management |
+| **Node.js** | 18+ | Documentation tooling (`@voltagent/core`, Anthropic SDK) |
+| **npm** | 9+ | Node package management |
+| **Docker** | 24+ | Running infrastructure services |
+| **kubectl** | 1.28+ | Kubernetes deployment management |
+| **Git** | 2.40+ | Source control |
 
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Java JDK** | 21+ | Backend service development |
-| **Apache Maven** | 3.8+ | Build tool for Java services |
-| **Spring Boot** | 3.3.0 | Already included in dependencies |
+---
 
-**Install Java 21:**
+## Infrastructure Services
 
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install openjdk-21-jdk
+OpenFrame OSS Tenant depends on the following infrastructure services. These are typically deployed via the Kubernetes manifests in the `manifests/` directory:
 
-# macOS with Homebrew
-brew install openjdk@21
+| Service | Version | Role |
+|---------|---------|------|
+| **MongoDB** | 6.0+ | Primary persistence layer (documents, users, tenants, devices) |
+| **Redis** | 7.0+ | Caching, rate limiting, distributed locks (ShedLock) |
+| **Apache Kafka** | 3.6+ | Event streaming, CDC ingestion |
+| **NATS** | 2.10+ | Real-time device messaging & agent communication |
+| **Apache Cassandra** | 4.1+ | Unified log event storage |
+| **Apache Pinot** | 1.2+ | Analytics and device query engine |
 
-# Windows (download from Oracle or use Chocolatey)
-choco install openjdk21
-```
+> MongoDB and MeshCentral are also used together in the integrated tools setup. See `manifests/integrated-tools/mongodb-meshcentral/` for the init scripts.
 
-**Verify Java installation:**
+---
 
-```bash
-java -version
-# Should show: openjdk version "21.x.x"
+## System Requirements
 
-mvn -version
-# Should show: Apache Maven 3.8.x or higher
-```
+### Minimum (Development)
 
-### Node.js Development
+| Resource | Minimum |
+|----------|---------|
+| CPU | 4 cores |
+| RAM | 16 GB |
+| Disk | 50 GB SSD |
+| OS | Linux (Ubuntu 20.04+), macOS (12+), or Windows 11 with WSL2 |
 
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Node.js** | 18+ | VoltAgent core and tooling |
-| **npm** | 9+ | Package management |
+### Recommended (Production)
 
-**Install Node.js:**
+| Resource | Recommended |
+|----------|------------|
+| CPU | 8+ cores |
+| RAM | 32 GB+ |
+| Disk | 200 GB+ SSD |
+| OS | Linux (Ubuntu 22.04 LTS) |
 
-```bash
-# Ubuntu/Debian - via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
+---
 
-# macOS with Homebrew
-brew install node
+## Account & Access Requirements
 
-# Windows - download from nodejs.org or use Chocolatey
-choco install nodejs
-```
+| Requirement | Details |
+|------------|---------|
+| **GitHub Access** | Read access to the `openframe-oss-tenant` repository |
+| **Container Registry** | Access to pull OpenFrame Docker images |
+| **Kubernetes Cluster** | A running cluster (local like kind/minikube or cloud-managed) |
+| **SMTP / Email Service** | Required for invitation and password reset emails (optional for development) |
+| **Google/Microsoft OAuth** | Optional — only needed for SSO configuration |
 
-**Verify Node.js installation:**
-
-```bash
-node --version
-# Should show: v18.x.x or higher
-
-npm --version
-# Should show: 9.x.x or higher
-```
-
-### Database Systems
-
-OpenFrame requires several database systems for different purposes:
-
-| Database | Version | Purpose |
-|----------|---------|---------|
-| **MongoDB** | 6.0+ | Primary transactional storage |
-| **Apache Cassandra** | 4.0+ | Time-series and log persistence |
-| **Apache Pinot** | 1.2.0+ | Real-time analytics |
-| **Redis** | 7.0+ | Caching and session storage |
-
-### Message Brokers
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Apache Kafka** | 3.6+ | Event streaming backbone |
-| **NATS Server** | 2.10+ | Agent messaging |
-
-### Development Tools
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Docker** | 20.10+ | Containerization (recommended for databases) |
-| **Docker Compose** | 2.0+ | Multi-container orchestration |
-| **Git** | 2.30+ | Version control |
-| **IDE** | Latest | IntelliJ IDEA, VS Code, or Eclipse |
+---
 
 ## Environment Variables
 
-Set the following environment variables for development:
+The following environment variables are used across the platform services. Refer to your deployment configuration for the actual values:
 
-### Database Configuration
+| Variable | Service | Description |
+|---------|---------|-------------|
+| `SPRING_DATA_MONGODB_URI` | All backend services | MongoDB connection URI |
+| `SPRING_KAFKA_BOOTSTRAP_SERVERS` | Stream, Management | Kafka broker addresses |
+| `SPRING_REDIS_HOST` | Gateway, Management | Redis host |
+| `NATS_URL` | Client, Management, Stream | NATS server URL |
+| `SPRING_SECURITY_OAUTH2_ISSUER_URI` | API, Gateway | OAuth2 issuer base URL |
+| `OPENFRAME_TENANT_DOMAIN` | Authorization Server | Platform tenant domain |
+| `PINOT_BROKER_URL` | Stream, API | Apache Pinot broker URL |
 
-```bash
-# MongoDB
-export MONGODB_URI="mongodb://localhost:27017/openframe"
-export MONGODB_DATABASE="openframe"
+> These values are populated from your cluster configuration. Never hardcode secrets — use Kubernetes Secrets or a secrets management solution.
 
-# Cassandra
-export CASSANDRA_CONTACT_POINTS="localhost:9042"
-export CASSANDRA_KEYSPACE="openframe_logs"
+---
 
-# Redis
-export REDIS_HOST="localhost"
-export REDIS_PORT="6379"
+## Development Tool Recommendations
 
-# Apache Pinot
-export PINOT_CONTROLLER_URL="http://localhost:9000"
-export PINOT_BROKER_URL="http://localhost:8000"
-```
+| Tool | Recommended Version | Notes |
+|------|--------------------|----|
+| **IntelliJ IDEA** | 2024.1+ | Best Java Spring support |
+| **VS Code** | 1.85+ | Good for frontend/TypeScript |
+| **Lens / OpenLens** | Latest | Kubernetes cluster management |
+| **MongoDB Compass** | Latest | MongoDB GUI |
+| **Offset Explorer** | Latest | Kafka topic browser |
 
-### Message Brokers
-
-```bash
-# Kafka
-export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
-export KAFKA_GROUP_ID="openframe-dev"
-
-# NATS
-export NATS_SERVERS="nats://localhost:4222"
-export NATS_CLUSTER_ID="openframe-cluster"
-```
-
-### Application Configuration
-
-```bash
-# OpenFrame Configuration
-export OPENFRAME_PROFILE="development"
-export OPENFRAME_CONFIG_SERVER="http://localhost:8888"
-
-# Security
-export JWT_SECRET="your-jwt-secret-key-here"
-export OAUTH2_CLIENT_SECRET="your-oauth2-client-secret"
-
-# AI Integration
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
-export OPENAI_API_KEY="your-openai-api-key"
-```
-
-## Account Requirements
-
-### Required Accounts
-
-While OpenFrame is open-source, you may need accounts for:
-
-- **Anthropic** (for Claude AI integration) - [Get API key](https://console.anthropic.com/)
-- **OpenAI** (for GPT integration) - [Get API key](https://platform.openai.com/)
-- **GitHub** (for source code access) - [Free account](https://github.com/)
-
-### Optional Third-party Integrations
-
-Depending on your MSP needs:
-
-- **Google Workspace** (for SSO)
-- **Microsoft Azure AD** (for SSO)
-- **Slack** (for notifications)
-- **Various RMM/PSA tools** (TacticalRMM, ConnectWise, etc.)
-
-## Network Requirements
-
-### Firewall Considerations
-
-Ensure the following ports are accessible:
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 8080 | API Service | Internal REST/GraphQL API |
-| 8081 | Gateway Service | Edge routing and security |
-| 8082 | Authorization Server | OAuth2/OIDC endpoints |
-| 8083 | External API | Public API endpoints |
-| 8888 | Config Server | Centralized configuration |
-| 3000 | Frontend UI | Web dashboard (development) |
-
-### Database Ports
-
-| Port | Database | Purpose |
-|------|----------|---------|
-| 27017 | MongoDB | Document storage |
-| 9042 | Cassandra | Time-series data |
-| 6379 | Redis | Caching |
-| 9000 | Pinot Controller | Analytics coordination |
-| 8000 | Pinot Broker | Analytics queries |
-
-### Message Broker Ports
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 9092 | Kafka | Event streaming |
-| 4222 | NATS | Agent messaging |
-| 2181 | Zookeeper | Kafka coordination |
+---
 
 ## Verification Commands
 
 Run these commands to verify your environment is ready:
 
-### Check Java and Maven
-
 ```bash
+# Java version (must be 21+)
 java -version
+
+# Maven version (must be 3.8+)
 mvn -version
-```
 
-### Check Node.js
-
-```bash
+# Node.js version (must be 18+)
 node --version
+
+# npm version (must be 9+)
 npm --version
-```
 
-### Check Docker
-
-```bash
+# Docker version
 docker --version
-docker compose version
-```
 
-### Check Git
+# kubectl connectivity
+kubectl cluster-info
 
-```bash
+# Git version
 git --version
 ```
 
-### Test Database Connections
+**Expected output examples:**
 
-```bash
-# MongoDB (if running locally)
-mongosh --eval "db.runCommand('ping')"
-
-# Redis (if running locally)
-redis-cli ping
+```text
+openjdk version "21.0.x" 2024-xx-xx
+Apache Maven 3.9.x
+v20.x.x
+10.x.x
+Docker version 24.x.x
+Kubernetes control plane is running at https://...
+git version 2.xx.x
 ```
-
-## Quick Setup with Docker
-
-For development, you can start the required databases using Docker Compose:
-
-```bash
-# Create a docker-compose.yml for development dependencies
-curl -o docker-compose.dev.yml https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docker-compose.dev.yml
-
-# Start development databases
-docker compose -f docker-compose.dev.yml up -d
-```
-
-This will start MongoDB, Redis, Kafka, and other required services in development mode.
-
-## Next Steps
-
-Once your environment meets these prerequisites:
-
-1. **[Quick Start Guide](quick-start.md)** - Get OpenFrame running quickly
-2. **[First Steps Guide](first-steps.md)** - Explore the platform features
-
-## Troubleshooting
-
-### Common Issues
-
-**Java Version Conflicts:**
-```bash
-# Check all Java versions
-java -version
-javac -version
-echo `$JAVA_HOME`
-```
-
-**Port Conflicts:**
-```bash
-# Check what's running on OpenFrame ports
-netstat -tulpn | grep :8080
-lsof -i :8080  # macOS
-```
-
-**Docker Issues:**
-```bash
-# Restart Docker service
-sudo systemctl restart docker  # Linux
-# Or restart Docker Desktop on macOS/Windows
-```
-
-### Getting Help
-
-If you encounter issues:
-- Join the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- Check the platform documentation for environment-specific guides
 
 ---
 
-*Ready to proceed? Continue with the [Quick Start Guide](quick-start.md) to get OpenFrame running.*
+## MongoDB + MeshCentral Integration Setup
+
+If you're setting up the integrated MeshCentral tool, the initialization scripts are available at:
+
+```text
+manifests/integrated-tools/mongodb-meshcentral/scripts/
+  ├── mongodb-entrypoint.sh          # MongoDB container entrypoint
+  ├── meshcentral-readiness-command.sh  # Readiness probe
+  └── meshcentral-mongodb-init.sh    # MongoDB init for MeshCentral
+```
+
+And for the base MongoDB datasource:
+
+```text
+manifests/datasources/mongodb/scripts/
+  └── readiness-command.sh           # MongoDB readiness probe
+```
+
+---
+
+## OpenFrame Client Development Setup
+
+When working with the Rust-based `openframe-client` agent, an additional initialization script is available:
+
+```bash
+clients/openframe-client/scripts/setup_dev_init_config.sh
+```
+
+This script sets up the initial development configuration for the agent client. Refer to the client-specific documentation for usage details.
+
+---
+
+## OpenMSP Community Support
+
+If you run into environment setup issues, reach out to the community:
+
+- 💬 **OpenMSP Slack**: [Join here](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- 🌐 **Community Hub**: [https://www.openmsp.ai/](https://www.openmsp.ai/)

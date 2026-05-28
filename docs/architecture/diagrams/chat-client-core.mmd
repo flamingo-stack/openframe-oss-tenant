@@ -1,0 +1,16 @@
+flowchart LR
+    UI["React UI Components"] --> DebugCtx["DebugModeContext"]
+    UI --> DialogSvc["DialogGraphQlService"]
+    UI --> TicketSvc["TicketGraphQlService"]
+
+    DialogSvc --> TokenSvc["TokenService"]
+    TicketSvc --> TokenSvc
+
+    TokenSvc --> Tauri["Tauri Rust Layer"]
+    Tauri --> AuthServer["Authorization Server Core"]
+
+    DialogSvc --> GraphQL["Chat GraphQL Endpoint"]
+    TicketSvc --> GraphQL
+
+    GraphQL --> ApiService["API Service Core"]
+    ApiService --> Mongo[("Mongo Domain & Repositories")]

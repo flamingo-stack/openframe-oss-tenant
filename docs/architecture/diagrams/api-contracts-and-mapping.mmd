@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client Applications"] --> ApiService["Api Service Core"]
+    ApiService --> Contracts["Api Contracts And Mapping"]
+    Contracts --> Domain["Mongo Domain And Repositories"]
+    Management["Management Service Core"] --> Contracts
+    Auth["Authorization Server Core"] --> Contracts

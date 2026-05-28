@@ -1,0 +1,5 @@
+flowchart TD
+    Verifier["Generate Code Verifier"] --> Hash["SHA-256"]
+    Hash --> Challenge["Base64URL Encode"]
+    Challenge --> AuthReq["Send code_challenge to Auth Server"]
+    Verifier --> TokenReq["Send code_verifier during Token Exchange"]

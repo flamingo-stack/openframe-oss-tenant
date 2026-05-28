@@ -1,0 +1,5 @@
+flowchart TD
+    Startup[Application Startup] --> Init[DataInitializer]
+    Init --> Check[Check OAuth Client]
+    Check -->|Exists| UpdateSecret
+    Check -->|Missing| CreateClient

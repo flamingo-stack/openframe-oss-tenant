@@ -1,0 +1,28 @@
+flowchart TD
+    subgraph SecurityLayer["Security Layer"]
+        AddAuth["AddAuthorizationHeaderFilter"]
+        JwtConfig["JwtAuthConfig"]
+        GatewaySec["GatewaySecurityConfig"]
+        ApiKeyFilter["ApiKeyAuthenticationFilter"]
+        OriginFilter["OriginSanitizerFilter"]
+        Cors["CorsConfig"]
+    end
+
+    subgraph RoutingLayer["Routing & Proxy Layer"]
+        IntegrationCtrl["IntegrationController"]
+        WsConfig["WebSocketGatewayConfig"]
+        AgentWsFilter["ToolAgentWebSocketProxyUrlFilter"]
+        ApiWsFilter["ToolApiWebSocketProxyUrlFilter"]
+        DefaultResolver["DefaultToolUpstreamResolver"]
+        MeshResolver["MeshCentralUpstreamResolver"]
+        TacticalResolver["TacticalRmmUpstreamResolver"]
+    end
+
+    subgraph InfraLayer["Infrastructure & Networking"]
+        NettyConfig["NettySocketConfig"]
+        WebClientConfig["WebClientConfig"]
+        IssuerProvider["IssuerUrlProvider"]
+    end
+
+    SecurityLayer --> RoutingLayer
+    RoutingLayer --> InfraLayer

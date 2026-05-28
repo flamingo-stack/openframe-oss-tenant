@@ -1,0 +1,7 @@
+flowchart TD
+    Request[Incoming HTTP Request] --> Filter[TenantContextFilter]
+    Filter -->|Extract Tenant from Path or Query| Context[TenantContext]
+    Context --> Security[Security Filters]
+    Security --> Controllers[Auth Controllers]
+    Controllers --> Services[Domain Services]
+    Services --> Mongo[(MongoDB)]

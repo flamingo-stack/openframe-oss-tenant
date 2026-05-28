@@ -1,0 +1,7 @@
+flowchart TD
+    Request[JWKS or Token Request] --> TenantKeyService
+    TenantKeyService -->|Find Active Key| Repo[(TenantKeyRepository)]
+    Repo -->|None Found| Generator[RsaAuthenticationKeyPairGenerator]
+    Generator --> Encrypt[EncryptionService]
+    Encrypt --> Repo
+    TenantKeyService --> RSAKey[Nimbus RSAKey]

@@ -1,21 +1,21 @@
 flowchart TD
-    Frontend["Frontend Tenant UI"] --> Gateway["Gateway Service"]
-    ChatClient["Chat Desktop Client"] --> Gateway
+    Browser["Browser / Desktop Client"] --> BFF["Security And OAuth BFF"]
+    BFF --> Authz["Authorization Server"]
+    Browser --> Gateway["Gateway Service"]
 
-    Gateway --> ApiService["API Service"]
-    Gateway --> ExternalApi["External API Service"]
-    Gateway --> AuthServer["Authorization Server"]
+    Gateway --> Api["API Service"]
+    Gateway --> External["External API Service"]
+    Gateway --> Tools["Integrated Tools"]
 
-    ApiService --> Mongo["MongoDB"]
-    ApiService --> Pinot["Apache Pinot"]
-    ApiService --> Kafka["Kafka Cluster"]
+    Api --> Mongo["Mongo Domain & Repositories"]
+    Api --> Sync["Mongo Sync Custom Repositories"]
+    Api --> Stream["Stream Service"]
 
-    StreamService["Stream Service"] --> Kafka
-    StreamService --> Cassandra["Cassandra"]
-    StreamService --> Pinot
+    Authz --> Mongo
+    Management["Management Service"] --> Mongo
+    Management --> Stream
 
-    ClientService["Client Service"] --> Mongo
-    ClientService --> NATS["NATS / JetStream"]
+    Stream --> Kafka["Kafka"]
+    Stream --> Cassandra["Cassandra"]
 
-    AuthServer --> Mongo
-    Gateway --> AuthServer
+    Tools --> Kafka

@@ -1,0 +1,21 @@
+flowchart LR
+    Client["Client Applications"] --> Gateway["Gateway Service"]
+    Gateway --> API["API Service"]
+    Gateway --> ExternalAPI["External API Service"]
+
+    API --> Mongo["Mongo Domain & Repositories"]
+    API --> Stream["Stream Service"]
+
+    Authz["Authorization Server"] --> Mongo
+    Gateway --> Authz
+
+    Management["Management Service"] --> Mongo
+    Management --> Stream
+
+    Stream --> Kafka["Kafka Cluster"]
+
+    Config["Config Server"] --> Gateway
+    Config --> API
+    Config --> Authz
+    Config --> Management
+    Config --> Stream

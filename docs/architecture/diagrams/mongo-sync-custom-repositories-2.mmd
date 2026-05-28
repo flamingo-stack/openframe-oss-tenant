@@ -1,0 +1,13 @@
+flowchart TD
+    Config["Configuration Layer"] --> CoreMongo["MongoSyncConfig"]
+    Config --> NotificationMongo["NotificationContextMongoConfig"]
+
+    Repos["Custom Repository Implementations"] --> MachineRepo["CustomMachineRepositoryImpl"]
+    Repos --> EventRepo["CustomEventRepositoryImpl"]
+    Repos --> TicketRepo["CustomTicketRepositoryImpl"]
+    Repos --> OrgRepo["CustomOrganizationRepositoryImpl"]
+    Repos --> UserRepo["CustomUserRepositoryImpl"]
+    Repos --> ToolRepo["CustomIntegratedToolRepositoryImpl"]
+    Repos --> KBRepo["CustomKnowledgeBaseItemRepositoryImpl"]
+    Repos --> NotificationRepo["CustomNotificationRepositoryImpl"]
+    Repos --> NotificationStateRepo["CustomNotificationReadStateRepositoryImpl"]

@@ -1,0 +1,30 @@
+flowchart LR
+    subgraph tools["Integrated Tools"]
+        Mesh["MeshCentral"]
+        Tactical["Tactical RMM"]
+        Fleet["Fleet MDM"]
+    end
+
+    KafkaIn["Inbound Kafka Topics"]
+    Listener["JsonKafkaListener"]
+    Processor["GenericJsonMessageProcessor"]
+    Enrichment["IntegratedToolDataEnrichmentService"]
+    Handler["DebeziumMessageHandler"]
+    Cassandra["Cassandra (UnifiedLogEvent)"]
+    KafkaOut["Outbound Kafka Topics"]
+    Streams["ActivityEnrichmentService (Kafka Streams)"]
+
+    Mesh --> KafkaIn
+    Tactical --> KafkaIn
+    Fleet --> KafkaIn
+
+    KafkaIn --> Listener
+    Listener --> Processor
+    Processor --> Enrichment
+    Enrichment --> Handler
+
+    Handler --> Cassandra
+    Handler --> KafkaOut
+
+    Fleet --> Streams
+    Streams --> KafkaOut

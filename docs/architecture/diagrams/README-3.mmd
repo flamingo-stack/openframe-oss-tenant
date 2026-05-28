@@ -1,12 +1,5 @@
-sequenceDiagram
-    participant Browser
-    participant Gateway
-    participant AuthServer
-    participant ApiService
-
-    Browser->>AuthServer: OAuth Login (tenant-scoped)
-    AuthServer-->>Browser: JWT (tenant_id claim)
-    Browser->>Gateway: API Request with JWT
-    Gateway->>Gateway: Validate issuer + signature
-    Gateway->>ApiService: Forward with identity context
-    ApiService->>ApiService: Enforce tenant isolation
+flowchart TD
+    Request["Incoming Auth Request"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> OAuthFlow["OAuth2 Authorization Flow"]
+    OAuthFlow --> KeyService["TenantKeyService"]
+    KeyService --> JWT["Signed JWT"]

@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Authz
+    participant EmailService
+
+    User->>Authz: POST /password-reset/request
+    Authz->>Authz: Generate Secure Token
+    Authz->>EmailService: Send Reset Email
+    User->>Authz: POST /password-reset/confirm
+    Authz-->>User: Password Updated

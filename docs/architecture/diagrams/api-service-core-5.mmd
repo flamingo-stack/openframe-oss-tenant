@@ -1,0 +1,4 @@
+flowchart LR
+    Query[GraphQL Query] --> DataFetcher
+    DataFetcher --> DataLoader
+    DataLoader --> BatchQuery[Single Repository Batch Query]

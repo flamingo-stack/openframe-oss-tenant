@@ -1,0 +1,5 @@
+flowchart LR
+    CreateReq["CreateOrganizationRequest"] --> Mapper["OrganizationMapper"]
+    Mapper --> Entity["Organization Entity"]
+    Entity --> Mapper
+    Mapper --> Response["OrganizationResponse"]

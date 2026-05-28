@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantFilter["Tenant Context Resolution"]
+    TenantFilter --> TenantId["tenantId"]
+    TenantId --> AuthUser["AuthUser Query"]
+    TenantId --> OrgQuery["Organization Query"]

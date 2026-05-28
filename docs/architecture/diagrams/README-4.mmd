@@ -1,7 +1,5 @@
-flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
-    MongoCDC["Debezium CDC"] --> Kafka
-    Kafka --> Stream["Stream Service"]
-    Stream --> Cassandra
-    Stream --> KafkaOut["Outbound Kafka"]
-    Stream --> Pinot
+flowchart TD
+    KafkaEvent["Kafka Event"] --> Enrichment["Data Enrichment"]
+    Enrichment --> Normalize["EventTypeMapper"]
+    Normalize --> Persist["Cassandra"]
+    Normalize --> Publish["Outbound Kafka"]

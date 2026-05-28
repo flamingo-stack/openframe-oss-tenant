@@ -1,0 +1,35 @@
+flowchart TD
+    subgraph entrypoints["Service Entrypoints"]
+        ApiApp["API Application"]
+        AuthApp["Authorization Server Application"]
+        MgmtApp["Management Application"]
+        StreamApp["Stream Application"]
+    end
+
+    subgraph services["Service Core Modules"]
+        ApiCore["API Service Core"]
+        AuthCore["Authorization Server Core"]
+        MgmtCore["Management Service Core"]
+        StreamCore["Stream Processing Core"]
+    end
+
+    subgraph data["Mongo Domain And Repositories"]
+        Documents["Mongo Documents"]
+        Repositories["Base Repository Interfaces"]
+    end
+
+    ApiApp --> ApiCore
+    AuthApp --> AuthCore
+    MgmtApp --> MgmtCore
+    StreamApp --> StreamCore
+
+    ApiCore --> Documents
+    ApiCore --> Repositories
+
+    AuthCore --> Documents
+    AuthCore --> Repositories
+
+    MgmtCore --> Documents
+    MgmtCore --> Repositories
+
+    StreamCore --> Documents

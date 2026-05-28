@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Cursor Provided?"] -->|Yes| LoadDoc["Load Cursor Document"]
+    LoadDoc --> CompareField["Compare Sort Field Value"]
+    CompareField --> OrCriteria["Field Comparison OR Same Field & ID"]
+    OrCriteria --> QueryExec["Execute Query"]
+    Start -->|No| QueryExec

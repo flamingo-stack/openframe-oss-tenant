@@ -1,0 +1,5 @@
+flowchart TD
+    InviteLink[Invitation Link] --> Accept[InvitationRegistrationController]
+    Accept -->|SSO| InviteSsoHandler
+    Accept -->|Password| InvitationRegistrationService
+    InviteSsoHandler --> CreateUser[User Created]

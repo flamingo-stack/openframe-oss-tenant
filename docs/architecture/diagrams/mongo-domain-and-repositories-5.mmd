@@ -1,0 +1,8 @@
+flowchart TD
+    BaseUserRepo["BaseUserRepository<T,B,ID>"]
+    BaseTenantRepo["BaseTenantRepository<T,B,ID>"]
+    BaseApiKeyRepo["BaseApiKeyRepository<T,B,L,ID>"]
+    BaseToolRepo["BaseIntegratedToolRepository<T,B,ID>"]
+
+    BaseUserRepo --> Impl1["Blocking Implementation"]
+    BaseUserRepo --> Impl2["Reactive Implementation"]

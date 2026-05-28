@@ -1,610 +1,302 @@
 # Contributing Guidelines
 
-Welcome to OpenFrame! We appreciate your interest in contributing to our AI-powered MSP platform. This guide outlines our development workflow, code standards, and contribution process.
+Thank you for contributing to OpenFrame OSS Tenant! This document covers code style, the PR process, commit message format, and the review checklist.
 
-## Code Style and Conventions
+---
 
-### Java/Spring Boot Code Style
+## Community First
 
-**General Principles:**
-- Follow [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
-- Use **meaningful variable and method names**
-- Write **self-documenting code** with clear intent
-- Apply **SOLID principles** for object-oriented design
-- Maintain **consistent indentation** (4 spaces, no tabs)
+Before contributing, join the **OpenMSP Slack community** — this is where all development discussions, bug reports, and feature requests happen:
 
-**Naming Conventions:**
+- 💬 **Slack**: [Join OpenMSP](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- 🌐 **Website**: [https://www.openmsp.ai/](https://www.openmsp.ai/)
+
+> **Important:** We do not use GitHub Issues or GitHub Discussions. All coordination happens on Slack.
+
+---
+
+## Code Style & Conventions
+
+### Java
+
+The project follows standard Java conventions with some additions:
+
+**Formatting:**
+- 4-space indentation (no tabs)
+- Maximum line length: 120 characters
+- UTF-8 encoding for all files
+- Opening braces on the same line (`K&R` style)
+
+**Naming:**
+- Classes: `PascalCase` (e.g., `DeviceService`, `TenantContextFilter`)
+- Methods/variables: `camelCase` (e.g., `findDeviceById`, `tenantId`)
+- Constants: `SCREAMING_SNAKE_CASE` (e.g., `MAX_RETRY_ATTEMPTS`)
+- Packages: all lowercase (e.g., `com.openframe.api.service`)
+
+**Lombok Usage:**
+
+The project makes extensive use of Lombok annotations:
+
 ```java
-// Class names: PascalCase
-public class DeviceManagementService {
-    
-    // Constants: UPPER_SNAKE_CASE
-    private static final String DEFAULT_DEVICE_STATUS = "UNKNOWN";
-    private static final int MAX_RETRY_ATTEMPTS = 3;
-    
-    // Variables and methods: camelCase
-    private final OrganizationRepository organizationRepository;
-    private String tenantId;
-    
-    public DeviceResponse updateDeviceStatus(String deviceId, DeviceStatus status) {
-        // Implementation
-    }
-    
-    // Boolean methods: use is/has/can prefix
-    public boolean isDeviceOnline(String deviceId) {
-        return checkDeviceStatus(deviceId) == DeviceStatus.ONLINE;
-    }
-}
+@Data               // Getters, setters, equals, hashCode, toString
+@Builder            // Builder pattern
+@RequiredArgsConstructor  // Constructor for final fields
+@Slf4j              // Logger field
+@NoArgsConstructor  // No-args constructor (required for MongoDB)
+@AllArgsConstructor // All-args constructor
 ```
 
-**Spring Boot Specific Conventions:**
-```java
-// Controllers: Use @RestController and clear mappings
-@RestController
-@RequestMapping("/api/devices")
-@Validated
-public class DeviceController {
-    
-    // Constructor injection (preferred over field injection)
-    private final DeviceService deviceService;
-    private final DeviceMapper deviceMapper;
-    
-    public DeviceController(DeviceService deviceService, DeviceMapper deviceMapper) {
-        this.deviceService = deviceService;
-        this.deviceMapper = deviceMapper;
-    }
-    
-    // HTTP methods: clear, RESTful endpoints
-    @GetMapping("/{deviceId}")
-    public ResponseEntity<DeviceResponse> getDevice(
-            @PathVariable String deviceId,
-            @AuthenticationPrincipal AuthPrincipal principal) {
-        
-        DeviceResponse device = deviceService.getDevice(deviceId, principal.getTenantId());
-        return ResponseEntity.ok(device);
-    }
-}
+**Spring Conventions:**
 
-// Services: Use @Service and clear business logic separation
+```java
+// Use constructor injection (not field injection with @Autowired)
 @Service
-@Transactional
-public class DeviceService {
-    
-    // Clear method contracts with proper exception handling
-    public DeviceResponse updateDevice(String deviceId, UpdateDeviceRequest request, String tenantId) {
-        Device device = deviceRepository.findByIdAndTenantId(deviceId, tenantId)
-            .orElseThrow(() -> new DeviceNotFoundException("Device not found: " + deviceId));
-        
-        // Business logic here
-        Device updatedDevice = deviceRepository.save(device);
-        
-        return deviceMapper.toResponse(updatedDevice);
-    }
+@RequiredArgsConstructor
+public class DeviceServiceImpl implements DeviceService {
+
+    private final MachineRepository machineRepository;
+    private final OrganizationService organizationService;
 }
+
+// Use @Transactional at service layer, not repository layer
+@Transactional
+public Device createDevice(CreateDeviceRequest request) { ... }
 ```
 
-**Documentation Standards:**
+**Exception Handling:**
+
+Use the platform's exception hierarchy from `openframe-exception`:
+
 ```java
-/**
- * Updates the status of a device with proper tenant isolation.
- * 
- * @param deviceId The unique identifier of the device
- * @param status The new status to set
- * @param tenantId The tenant context for this operation
- * @return Updated device information
- * @throws DeviceNotFoundException if device doesn't exist or doesn't belong to tenant
- * @throws IllegalArgumentException if status is invalid
- */
-@Transactional
-public DeviceResponse updateDeviceStatus(String deviceId, DeviceStatus status, String tenantId) {
-    // Implementation
-}
+// Preferred over throwing RuntimeException directly
+throw new NotFoundException("Device not found: " + deviceId);
+throw new BadRequestException("Invalid device status");
+throw new ForbiddenException("Access denied to tenant resources");
 ```
 
-### Frontend Code Style (TypeScript/React)
+### TypeScript / Next.js (Frontend)
 
-**TypeScript Conventions:**
+For contributions to `openframe/services/openframe-frontend`:
+
+- **ESLint** + **Prettier** enforce style automatically
+- Use `const` over `let` where possible
+- Prefer named exports over default exports
+- Use TypeScript strict mode — no `any` types
+
 ```typescript
-// Interfaces: PascalCase with 'I' prefix (optional) or descriptive names
-interface DeviceStatusProps {
-  deviceId: string;
-  status: 'online' | 'offline' | 'maintenance';
-  onStatusChange?: (deviceId: string, newStatus: string) => void;
+// Preferred: named export with TypeScript interface
+export interface DeviceListProps {
+  organizationId: string;
+  onSelect: (deviceId: string) => void;
 }
 
-// Components: PascalCase, functional components preferred
-export const DeviceStatus: React.FC<DeviceStatusProps> = ({ 
-  deviceId, 
-  status, 
-  onStatusChange 
-}) => {
-  // Use descriptive variable names
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  
-  // Clear function names describing what they do
-  const handleStatusChange = useCallback(async (newStatus: string) => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    
-    try {
-      await deviceApi.updateStatus(deviceId, newStatus);
-      onStatusChange?.(deviceId, newStatus);
-    } catch (error) {
-      setErrorMessage('Failed to update device status');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [deviceId, onStatusChange]);
-  
-  return (
-    <div className={`device-status status-${status}`}>
-      {/* Component JSX */}
-    </div>
-  );
-};
-```
-
-**API Service Conventions:**
-```typescript
-// API services: clear, typed interfaces
-export class DeviceApiService {
-  private static readonly BASE_URL = '/api/devices';
-  
-  static async getDevices(filters?: DeviceFilters): Promise<Device[]> {
-    const response = await fetch(`${this.BASE_URL}?${new URLSearchParams(filters)}`);
-    
-    if (!response.ok) {
-      throw new ApiError('Failed to fetch devices', response.status);
-    }
-    
-    return response.json();
-  }
-  
-  static async updateDeviceStatus(deviceId: string, status: DeviceStatus): Promise<Device> {
-    const response = await fetch(`${this.BASE_URL}/${deviceId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ status }),
-    });
-    
-    if (!response.ok) {
-      throw new ApiError('Failed to update device status', response.status);
-    }
-    
-    return response.json();
-  }
+export function DeviceList({ organizationId, onSelect }: DeviceListProps) {
+  // ...
 }
 ```
 
-## Branch Naming and PR Process
+### Rust (Agent Client)
 
-### Branch Naming Convention
+For `clients/openframe-client`:
 
-**Format**: `<type>/<short-description>`
+- Follow standard `rustfmt` formatting (`cargo fmt`)
+- Use `clippy` for linting (`cargo clippy`)
+- Document public APIs with `///` doc comments
+- Prefer `Result<T, E>` over panics
 
-**Branch Types:**
-- `feature/` - New features or enhancements
-- `bugfix/` - Bug fixes  
-- `hotfix/` - Critical production fixes
-- `refactor/` - Code refactoring without functional changes
-- `docs/` - Documentation updates
-- `test/` - Test additions or improvements
-- `chore/` - Maintenance tasks, dependency updates
+---
 
-**Examples:**
-```text
-✅ Good branch names:
-feature/multi-tenant-device-filtering
-bugfix/jwt-token-validation-error
-hotfix/memory-leak-in-stream-service
-refactor/organization-service-cleanup
-docs/api-documentation-update
-test/integration-test-for-auth-flow
+## Branch Naming
 
-❌ Poor branch names:
-fix
-update
-john-work
-temp-branch
-bug
-```
+Use descriptive branch names with a type prefix:
 
-### Pull Request Process
+| Type | Pattern | Example |
+|------|---------|---------|
+| Feature | `feat/description` | `feat/add-fleet-mdm-integration` |
+| Bug fix | `fix/description` | `fix/jwt-expiry-validation` |
+| Refactor | `refactor/description` | `refactor/device-service-layer` |
+| Documentation | `docs/description` | `docs/api-authentication-guide` |
+| Hot fix | `hotfix/description` | `hotfix/critical-auth-bypass` |
+| Chore | `chore/description` | `chore/update-spring-boot-version` |
 
-**1. Before Creating a PR:**
-```bash
-# Ensure your branch is up to date
-git checkout main
-git pull origin main
-git checkout feature/your-feature-name
-git rebase main
-
-# Run tests locally
-mvn clean verify
-npm test  # For frontend changes
-
-# Run code quality checks
-mvn spotbugs:check
-npm run lint
-```
-
-**2. PR Title and Description Format:**
-
-**Title Format**: `[TYPE] Brief description of changes`
-
-**Types:**
-- `[FEATURE]` - New functionality
-- `[BUGFIX]` - Bug resolution
-- `[HOTFIX]` - Critical production fix
-- `[REFACTOR]` - Code improvement without functional changes
-- `[DOCS]` - Documentation updates
-- `[TEST]` - Test-related changes
-
-**Example PR Description:**
-```markdown
-## [FEATURE] Multi-tenant device filtering
-
-### Summary
-Implements tenant-aware device filtering to ensure users only see devices belonging to their organization and tenant.
-
-### Changes Made
-- Added tenant context validation in DeviceController
-- Implemented tenant-scoped queries in DeviceRepository
-- Updated DeviceService to enforce tenant isolation
-- Added integration tests for multi-tenant scenarios
-
-### Testing
-- [x] Unit tests pass (`mvn test`)
-- [x] Integration tests pass (`mvn verify`)
-- [x] Manual testing with multiple tenants
-- [x] Security tests for cross-tenant access prevention
-
-### Security Considerations
-- All database queries are scoped by tenant ID
-- JWT token validation includes tenant context
-- Added tests to prevent cross-tenant data access
-
-### Breaking Changes
-- None
-
-### Migration Notes
-- Database migration required for new tenant_id indexes
-
-### Related Issues
-Closes #123
-```
-
-**3. PR Review Checklist:**
-
-**For Reviewers:**
-- [ ] **Code Quality**: Clear, readable, and follows conventions
-- [ ] **Security**: Tenant isolation, input validation, no hardcoded secrets
-- [ ] **Testing**: Adequate test coverage and test quality
-- [ ] **Performance**: No obvious performance issues
-- [ ] **Documentation**: Code is self-documenting or has appropriate comments
-- [ ] **Breaking Changes**: Properly identified and documented
-- [ ] **Architecture**: Follows established patterns and principles
-
-**For Authors:**
-- [ ] **Self-Review**: Reviewed your own code before submitting
-- [ ] **Tests Pass**: All automated tests are passing
-- [ ] **Linting**: Code passes all linting and formatting checks
-- [ ] **Documentation**: Updated relevant documentation
-- [ ] **Migration**: Database migrations included if needed
-- [ ] **Security**: No sensitive information in code or commits
+---
 
 ## Commit Message Format
 
-### Conventional Commits
+Follow the **Conventional Commits** specification:
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification:
-
-**Format**: `<type>[optional scope]: <description>`
-
-**Types:**
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `style:` - Code style changes (formatting, no logic changes)
-- `refactor:` - Code refactoring
-- `test:` - Adding or updating tests
-- `chore:` - Maintenance tasks
-- `perf:` - Performance improvements
-- `ci:` - CI/CD changes
-- `build:` - Build system changes
-
-**Examples:**
 ```text
-✅ Good commit messages:
-feat(auth): implement multi-tenant JWT validation
-fix(devices): resolve null pointer in device status update
-docs(api): add authentication examples to API documentation
-refactor(services): extract common tenant validation logic
-test(integration): add tests for cross-tenant data isolation
-chore(deps): upgrade Spring Boot to 3.3.0
+<type>(<scope>): <short description>
 
-❌ Poor commit messages:
-Update code
-Fix bug
-Changes
-WIP
-Done
+[optional body]
+
+[optional footer]
 ```
 
-**Detailed Commit Message Format:**
+### Types
+
+| Type | When to Use |
+|------|------------|
+| `feat` | New feature or capability |
+| `fix` | Bug fix |
+| `refactor` | Code change that is neither a fix nor a feature |
+| `test` | Adding or updating tests |
+| `docs` | Documentation changes only |
+| `chore` | Build process, dependency updates, etc. |
+| `perf` | Performance improvement |
+| `ci` | CI/CD configuration changes |
+| `revert` | Reverts a previous commit |
+
+### Scope Examples
+
 ```text
-feat(auth): implement multi-tenant JWT validation
-
-- Add tenant_id claim validation to JWT tokens
-- Implement tenant-scoped RSA key lookup
-- Add integration tests for tenant isolation
-- Update security configuration for multi-tenancy
-
-Closes #456
+feat(api): add cursor pagination for device listings
+fix(gateway): resolve JWT issuer cache invalidation
+refactor(stream): extract enrichment logic to separate service
+test(auth): add integration tests for tenant registration
+docs(security): update OAuth BFF authentication guide
+chore(deps): upgrade spring-boot to 3.3.1
 ```
 
-### Commit Guidelines
+### Commit Message Examples
 
-**Best Practices:**
-- **Keep commits atomic** - One logical change per commit
-- **Write clear commit messages** - Future you will thank you
-- **Test before committing** - Ensure tests pass
-- **No debugging code** - Remove console.log, print statements, etc.
-- **Separate concerns** - Don't mix unrelated changes
-
-**Commit Size Guidelines:**
 ```text
-✅ Good commit practices:
-- Single logical change
-- All tests pass
-- Clear, descriptive message
-- No temporary/debugging code
+feat(api): add knowledge base tag filtering
 
-❌ Poor commit practices:
-- Multiple unrelated changes in one commit
-- Commits that break tests
-- Vague messages like "fix stuff"
-- Commented-out code or debugging statements
+Adds support for filtering knowledge base items by multiple tags
+using AND/OR logic. Updates GraphQL schema and adds DataFetcher
+with corresponding DataLoader for batch loading.
+
+Closes #openframe-slack-discussion-123
 ```
 
-## Review Checklist
-
-### Code Review Guidelines
-
-**Security Review:**
-```markdown
-## Security Checklist
-- [ ] All user inputs are validated and sanitized
-- [ ] Database queries include tenant ID scoping
-- [ ] No hardcoded secrets or credentials
-- [ ] Authentication is required for sensitive operations
-- [ ] Authorization checks are in place
-- [ ] Error messages don't leak sensitive information
-- [ ] SQL injection prevention measures are implemented
-- [ ] XSS prevention is implemented for user-generated content
-```
-
-**Architecture Review:**
-```markdown
-## Architecture Checklist
-- [ ] Follows established patterns and conventions
-- [ ] Proper separation of concerns
-- [ ] Uses dependency injection correctly
-- [ ] Transaction boundaries are appropriate
-- [ ] Error handling is consistent and comprehensive
-- [ ] Logging is appropriate and doesn't log sensitive data
-- [ ] Performance considerations are addressed
-- [ ] Scalability impact has been considered
-```
-
-**Testing Review:**
-```markdown
-## Testing Checklist
-- [ ] Unit tests cover new functionality
-- [ ] Integration tests cover service interactions
-- [ ] Edge cases and error scenarios are tested
-- [ ] Test data doesn't contain real/sensitive information
-- [ ] Tests are independent and can run in any order
-- [ ] Test names clearly describe what is being tested
-- [ ] Mocking is used appropriately
-- [ ] Test coverage meets minimum requirements (70%+)
-```
-
-### Frontend-Specific Review
-
-**React/TypeScript Review:**
-```markdown
-## Frontend Checklist
-- [ ] Components are properly typed with TypeScript
-- [ ] Props interfaces are well-defined
-- [ ] Error boundaries handle component errors
-- [ ] Loading and error states are handled
-- [ ] Accessibility attributes are included
-- [ ] Components are responsive and mobile-friendly
-- [ ] API calls handle network errors gracefully
-- [ ] State management follows established patterns
-- [ ] No unused variables or imports
-- [ ] Performance optimizations are applied where needed
-```
-
-**UI/UX Review:**
-```markdown
-## UI/UX Checklist
-- [ ] Design follows established UI patterns
-- [ ] User interactions provide appropriate feedback
-- [ ] Forms include proper validation and error messages
-- [ ] Loading states are intuitive
-- [ ] Navigation is clear and consistent
-- [ ] Color contrast meets accessibility standards
-- [ ] Touch targets are appropriately sized
-- [ ] Content is readable and well-organized
-```
-
-## Development Workflow
-
-### Feature Development Process
-
-**1. Planning and Design:**
 ```text
-1. Create or review GitHub issue
-2. Discuss architectural approach with team
-3. Design API contracts (if applicable)
-4. Consider security and multi-tenancy implications
-5. Plan testing strategy
-```
+fix(gateway): correct rate limit header format
 
-**2. Development:**
-```bash
-# Create feature branch
-git checkout -b feature/your-feature-name
-
-# Develop incrementally with frequent commits
-git add -A
-git commit -m "feat(component): implement core functionality"
-
-# Push regularly for backup and collaboration
-git push origin feature/your-feature-name
-```
-
-**3. Testing and Quality Assurance:**
-```bash
-# Run comprehensive test suite
-mvn clean verify
-npm run test:all
-
-# Check code quality
-mvn spotbugs:check
-npm run lint
-npm run type-check
-
-# Manual testing
-./scripts/start-all-services.sh
-# Test feature functionality manually
-```
-
-**4. Pull Request and Review:**
-```text
-1. Create PR with detailed description
-2. Request review from appropriate team members
-3. Address review feedback promptly
-4. Ensure all automated checks pass
-5. Squash commits if requested
-```
-
-**5. Merge and Deployment:**
-```text
-1. Merge PR using "Squash and merge" (preferred)
-2. Delete feature branch
-3. Verify deployment in staging environment
-4. Monitor for any issues in production
-```
-
-### Hotfix Process
-
-**For Critical Production Issues:**
-
-```bash
-# Create hotfix branch from main
-git checkout main
-git pull origin main
-git checkout -b hotfix/critical-security-fix
-
-# Implement minimal fix
-# Add tests to prevent regression
-# Update version number if applicable
-
-# Create PR with "HOTFIX" label
-# Require expedited review
-# Deploy immediately after merge
-```
-
-## Getting Help
-
-### Communication Channels
-
-**OpenMSP Slack Community:**
-- **General Discussion**: `#general`
-- **Development Help**: `#dev-help`
-- **Code Reviews**: `#code-review`
-- **Architecture Discussions**: `#architecture`
-
-**Join the community**: [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-
-### Mentorship and Support
-
-**For New Contributors:**
-- Join the `#new-contributors` channel in Slack
-- Read through existing code and documentation
-- Start with "good first issue" labeled tickets
-- Ask questions in appropriate channels
-- Pair with experienced contributors when possible
-
-**Code Review Support:**
-- Request specific reviewers for your expertise area
-- Use draft PRs for early feedback
-- Don't hesitate to ask for clarification on review comments
-- Share knowledge through thoughtful code reviews
-
-### Resources and Documentation
-
-**Essential Reading:**
-- [Architecture Overview](../architecture/README.md) - Understand the system design
-- [Security Best Practices](../security/README.md) - Learn security requirements
-- [Testing Guide](../testing/README.md) - Comprehensive testing practices
-
-**External Resources:**
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [React Documentation](https://reactjs.org/docs)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
-
-### Issue Reporting
-
-**Bug Reports:**
-```markdown
-**Bug Description**
-Clear description of the issue
-
-**Steps to Reproduce**
-1. Step one
-2. Step two
-3. Step three
-
-**Expected Behavior**
-What should happen
-
-**Actual Behavior**
-What actually happens
-
-**Environment**
-- OS: [e.g., Ubuntu 22.04]
-- Java Version: [e.g., 21.0.1]
-- Browser: [e.g., Chrome 119] (if applicable)
-
-**Additional Context**
-Any other relevant information
-```
-
-**Feature Requests:**
-```markdown
-**Feature Description**
-Clear description of the proposed feature
-
-**Use Case**
-Why is this feature needed?
-
-**Proposed Implementation**
-High-level approach (optional)
-
-**Acceptance Criteria**
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
+The X-RateLimit-Remaining header was returning negative values
+when the limit was exceeded. Now correctly returns 0.
 ```
 
 ---
 
-*Thank you for contributing to OpenFrame! Your efforts help build a better, more secure, and more powerful MSP platform. Together, we're creating the future of AI-powered IT operations.*
+## Pull Request Process
+
+### Before Opening a PR
+
+1. **Sync with main branch:**
+
+```bash
+git fetch origin
+git rebase origin/main
+```
+
+2. **Run tests locally:**
+
+```bash
+mvn test -pl openframe/services/openframe-api
+```
+
+3. **Ensure code builds:**
+
+```bash
+mvn clean install -DskipTests
+```
+
+4. **Check for style issues** using your IDE's code analysis tools.
+
+### PR Description Template
+
+```text
+## Summary
+Brief description of what this PR changes and why.
+
+## Changes
+- List of specific changes made
+- Component A: what changed
+- Component B: what changed
+
+## Testing
+- [ ] Unit tests added/updated
+- [ ] Integration tests pass
+- [ ] Manual testing performed
+
+## Notes
+Any additional context, breaking changes, or migration steps.
+```
+
+### PR Size Guidelines
+
+- **Small PRs** (< 300 lines changed) are preferred — they're easier to review
+- If a change is large, break it into logical, independently-reviewable commits
+- Each PR should address one concern (one feature, one fix)
+
+---
+
+## Review Checklist
+
+Before approving a PR, reviewers check:
+
+### Code Quality
+- [ ] Code follows project conventions (naming, formatting, Lombok usage)
+- [ ] No `TODO` comments left in the code (address or create a Slack discussion)
+- [ ] Logging is appropriate (not too verbose, sensitive data masked)
+- [ ] No hardcoded configuration values
+
+### Architecture
+- [ ] Changes respect the layered architecture (controller → service → repository)
+- [ ] Dependencies flow in the right direction (no circular dependencies)
+- [ ] New endpoints are secured with appropriate role checks
+- [ ] Multi-tenant isolation is maintained (tenant context not leaked)
+
+### Security
+- [ ] No secrets or credentials in code
+- [ ] Input validation using `@Valid` + domain validators
+- [ ] No SQL/NoSQL injection risks (use repository abstractions)
+- [ ] New API routes are covered by RBAC configuration
+
+### Testing
+- [ ] Unit tests cover the happy path and key edge cases
+- [ ] Integration tests cover API contract
+- [ ] Tests are deterministic (no timing dependencies)
+- [ ] Test data is cleaned up after tests
+
+### Documentation
+- [ ] Public API methods have Javadoc comments
+- [ ] Breaking changes are noted in the PR description
+- [ ] Complex logic has inline comments explaining the "why"
+
+---
+
+## Working with the OpenFrame OSS Library
+
+The platform depends on `openframe-oss-lib` (version `5.64.0` in the parent POM). This is a separate library containing shared modules:
+
+```xml
+<openframe.libs.version>5.64.0</openframe.libs.version>
+```
+
+If your contribution requires changes to shared library modules (e.g., `openframe-core`, `openframe-data-mongo-common`), coordinate with the core team on Slack before making changes. Library changes have broad impact across all services.
+
+---
+
+## Release Process
+
+Releases are coordinated by the core team and announced in the OpenMSP Slack community. Individual contributors don't need to manage versioning — focus on the code quality of your contribution.
+
+Version updates to `openframe-oss-lib` are managed centrally via the parent `pom.xml`:
+
+```xml
+<openframe.libs.version>X.Y.Z</openframe.libs.version>
+```
+
+---
+
+## Getting Help
+
+If you're unsure about any of these guidelines:
+
+1. Ask in the **#contributors** channel on OpenMSP Slack
+2. Review existing PRs and commits for reference patterns
+3. Check the architecture documentation for design guidance
+
+We prioritize being welcoming to new contributors — no question is too basic!

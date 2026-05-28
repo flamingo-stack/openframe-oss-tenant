@@ -1,0 +1,6 @@
+flowchart LR
+    ObjectMapper --> ReadConverter["NotificationContextReadConverter"]
+    ObjectMapper --> WriteConverter["NotificationContextWriteConverter"]
+    ReadConverter --> Conversions["MongoCustomConversions"]
+    WriteConverter --> Conversions
+    Conversions --> MappingConverter["MappingMongoConverter"]

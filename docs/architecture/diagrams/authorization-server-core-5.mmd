@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant Client
+    participant Authz
+    participant Mongo
+
+    Client->>Authz: /oauth2/authorize (with PKCE)
+    Authz->>Mongo: Save OAuth2Authorization
+    Client->>Authz: /oauth2/token (with code_verifier)
+    Authz->>Mongo: Load Authorization
+    Authz-->>Client: Access Token + Refresh Token

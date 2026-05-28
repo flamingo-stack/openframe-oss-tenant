@@ -1,0 +1,3 @@
+flowchart TD
+    CheckContract["Has Active Contract?"] -->|True| ActiveRange["Start <= Today AND End >= Today"]
+    CheckContract -->|False| InactiveRange["Start/End Null OR Outside Range"]

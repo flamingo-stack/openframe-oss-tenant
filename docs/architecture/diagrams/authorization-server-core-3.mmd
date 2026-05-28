@@ -1,0 +1,7 @@
+flowchart LR
+    Config[AuthorizationServerConfig] --> AS[OAuth2AuthorizationServerConfigurer]
+    Config --> JWK[JWK Source per Tenant]
+    Config --> Encoder[JwtEncoder]
+    Config --> Decoder[JwtDecoder]
+    Config --> Customizer[Token Customizer]
+    Config --> AuthManager[AuthenticationManager]

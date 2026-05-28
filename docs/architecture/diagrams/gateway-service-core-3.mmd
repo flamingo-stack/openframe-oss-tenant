@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request with JWT"] --> Resolver["JwtIssuerReactiveAuthenticationManagerResolver"]
+    Resolver --> Cache["Caffeine Issuer Cache"]
+    Cache --> Manager["ReactiveAuthenticationManager"]
+    Manager --> Validator["Strict Issuer Validator"]
+    Validator --> Success["Authenticated Principal"]

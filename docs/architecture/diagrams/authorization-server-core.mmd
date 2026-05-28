@@ -1,0 +1,10 @@
+flowchart TD
+    Client[Web Client or BFF] --> Authz[Authorization Server Core]
+    Authz --> Mongo[(MongoDB)]
+    Authz --> Keys[Tenant Key Service]
+    Authz --> SSO[External OIDC Providers]
+    Authz --> API[API Service Core]
+
+    SSO -->|OIDC Login| Authz
+    Authz -->|JWT Access Token| Client
+    Client -->|Bearer Token| API

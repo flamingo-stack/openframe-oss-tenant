@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Admin
+    participant Controller
+    participant Mongo
+    participant EventService
+    participant Pinot
+
+    Admin->>Controller: POST /pinot-resync
+    Controller->>Mongo: findAll Machines
+    Controller->>EventService: processMachineSaveAll()
+    EventService->>Pinot: Emit reindex events
+    Controller-->>Admin: status=completed

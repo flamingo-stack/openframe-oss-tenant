@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Authz as AuthorizationServer
+    participant API
+    participant Stream
+
+    Client->>Gateway: HTTPS Request
+    Gateway->>Authz: Validate JWT
+    Authz->>Gateway: Token Valid
+    Gateway->>API: Forward Request
+    API->>Stream: Publish Event
+    Stream->>API: Enriched Response
+    API->>Gateway: JSON Response
+    Gateway->>Client: HTTP Response

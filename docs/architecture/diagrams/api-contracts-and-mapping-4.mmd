@@ -1,0 +1,5 @@
+flowchart TD
+    DataFetchers["GraphQL DataFetchers"] --> DTOs["Api Contracts And Mapping DTOs"]
+    Controllers["REST Controllers"] --> DTOs
+    DTOs --> Repositories["Mongo Repositories"]
+    DTOs --> DomainEntities["Mongo Documents"]
