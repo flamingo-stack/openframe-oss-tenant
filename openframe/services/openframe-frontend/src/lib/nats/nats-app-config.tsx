@@ -24,15 +24,8 @@ function getAccessToken(): string | null {
 }
 
 export interface NatsAppConfig {
-  /** Resolves the current NATS WS URL or returns null when not yet available. */
   getWsUrl: () => string | null;
-  /** Refreshes the auth token (via /api/me) before each reconnect attempt. */
   onBeforeReconnect: () => Promise<void>;
-  /**
-   * Opaque revision string that changes whenever the resolved URL would change.
-   * Pass to <NatsProvider urlRevision={...}> or any equivalent dependency surface
-   * so the connection effect re-runs at the right moments.
-   */
   urlRevision: string;
   isAuthenticated: boolean;
   userId: string | null;
@@ -40,12 +33,6 @@ export interface NatsAppConfig {
 
 const NatsAppConfigContext = createContext<NatsAppConfig | null>(null);
 
-/**
- * Computes the live NATS app config state. Single instance per app so token state
- * (which is updated via in-tab onBeforeReconnect, NOT via storage events) is not
- * duplicated across consumers — duplication would let provider and chat hooks
- * drift into different tokens after a silent refresh.
- */
 function useNatsAppConfigState(): NatsAppConfig {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const userId = useAuthStore(s => s.user?.id) ?? null;
@@ -88,10 +75,6 @@ function useNatsAppConfigState(): NatsAppConfig {
     }
   }, [isDevTicketEnabled]);
 
-  // In cookie mode the WS URL is stable across silent token rotations, so the token
-  // is omitted from the revision. In dev-ticket mode the token IS in the URL query
-  // string, so it must be in the revision or the captured wsUrl goes stale and
-  // reconnect's `freshUrl === wsUrl` guard short-circuits forever.
   const tokenForRevision = isDevTicketEnabled ? (token ?? '') : '';
   const urlRevision = useMemo(
     () =>
@@ -105,11 +88,6 @@ function useNatsAppConfigState(): NatsAppConfig {
   );
 }
 
-/**
- * Owns the single NatsAppConfig state and exposes it via context. Must wrap any
- * consumer of useNatsAppConfig — mount once at the root (NatsAppProvider does this
- * internally).
- */
 export function NatsAppConfigProvider({ children }: { children: ReactNode }) {
   const value = useNatsAppConfigState();
   return <NatsAppConfigContext.Provider value={value}>{children}</NatsAppConfigContext.Provider>;
