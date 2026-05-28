@@ -48,6 +48,10 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   }, [router]);
 
   const { isLocked } = useSubscriptionLock();
+  // Checkout result pages render their own success/cancel UI; they're the only
+  // place a paying user lands before the webhook flips the subscription to ACTIVE.
+  const isCheckoutResultPage = pathname?.startsWith('/checkout') ?? false;
+  const showLockContent = isLocked && !isCheckoutResultPage;
   const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -101,9 +105,9 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       loadingFallback={<ContentLoading />}
       mobileBurgerMenuProps={mobileBurgerMenuProps}
       headerProps={headerProps}
-      disabled={isLocked}
+      disabled={showLockContent}
     >
-      {isLocked ? <SubscriptionLockContent /> : children}
+      {showLockContent ? <SubscriptionLockContent /> : children}
     </CoreAppLayout>
   );
 }
