@@ -494,7 +494,7 @@ impl Service {
         #[cfg(not(windows))]
         {
             let rt = Runtime::new().context("Failed to create Tokio runtime")?;
-            rt.block_on(Self::run())
+            rt.block_on(Self::run(None))
         }
     }
 
