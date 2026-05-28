@@ -85,8 +85,7 @@ export function buildInitialSelection(
     selectedPackageId = String(matchedTier.from);
   } else if (activeQuantity != null) {
     selectedPackageId = CUSTOM_OPTION_ID;
-    // Backend quantity is in units; the Custom input shows the real product count.
-    customQuantity = activeQuantity * (Number(product.unitSize ?? 1) || 1);
+    customQuantity = toDisplayQuantity(activeQuantity, product.unitSize);
   } else {
     // No active tier/custom package: default to PAYG (current PAYG state, or soft-default for trial/no-plan users).
     selectedPackageId = PAYG_OPTION_ID;
@@ -114,6 +113,17 @@ function toCatalogOptionId(globalId: string): string {
   } catch {
     return globalId;
   }
+}
+
+/**
+ * Backend `quantity` (and catalog `priceTier.from`) is stored in billable units
+ * (devices: 1, AI tokens: 100_000). Multiply by `unitSize` to get the value the
+ * user actually sees in the UI (real device count, real token count).
+ */
+export function toDisplayQuantity(rawUnits: number | null | undefined, unitSize: number | null | undefined): number {
+  if (rawUnits == null) return 0;
+  const size = Number(unitSize ?? 1) || 1;
+  return rawUnits * size;
 }
 
 /**
