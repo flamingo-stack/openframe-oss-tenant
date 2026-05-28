@@ -354,10 +354,23 @@ export function useChat({
     [processRealtimeChunk],
   );
 
-  const { catchUpChunks, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
+  const {
+    catchUpChunks,
+    processChunk: catchupProcessChunk,
+    resetChunkTracking,
+    startInitialBuffering,
+    resetAndCatchUp,
+  } = useChunkCatchup({
     dialogId: natsDialogId,
     onChunkReceived: handleRealtimeEvent,
   });
+
+  const handleNatsEvent = useCallback(
+    (chunk: any, messageType: NatsMessageType) => {
+      catchupProcessChunk(chunk, messageType);
+    },
+    [catchupProcessChunk],
+  );
 
   const natsDialogIdRef = useRef(natsDialogId);
 
@@ -426,7 +439,7 @@ export function useChat({
     enabled: useNats && !useJetstream && !!natsDialogId,
     dialogId: natsDialogId,
     topics,
-    onEvent: handleRealtimeEvent,
+    onEvent: handleNatsEvent,
     onSubscribed: handleNatsSubscribed,
     onBeforeReconnect,
     getNatsWsUrl: getWsUrl,
