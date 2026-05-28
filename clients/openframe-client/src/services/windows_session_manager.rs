@@ -114,11 +114,14 @@ impl WindowsSessionManager {
     }
 
     /// Register a tool for per-session lifecycle management
+    /// 
+    /// if `new_tool` is false, waits SESSION_STARTUP_DELAY_SECONDS on Windows for AutoRun
     pub async fn register_tool(
         self: &Arc<Self>,
         tool_id: String,
         command_path: String,
         launch_args: Vec<String>,
+        new_tool: bool,
     ) {
         let reg = ToolRunInfo {
             command_path,
@@ -132,11 +135,11 @@ impl WindowsSessionManager {
         let sids: Vec<u32> = self.active_sessions.read().await.iter().copied().collect();
         info!(tool_id = %tool_id, sessions = ?sids, "Registered tool; ensuring waiters");
         for sid in sids {
-            self.ensure_waiter(tool_id.clone(), sid, false).await;
+            self.ensure_waiter(tool_id.clone(), sid, !new_tool).await;
         }
     }
 
-    async fn ensure_waiter(self: &Arc<Self>, tool_id: String, session_id: u32, on_new_session: bool) {
+    async fn ensure_waiter(self: &Arc<Self>, tool_id: String, session_id: u32, wait_for_autorun: bool) {
         let key = (tool_id.clone(), session_id);
         let mut waiters = self.waiters.write().await;
         if waiters.contains(&key) {
@@ -150,7 +153,7 @@ impl WindowsSessionManager {
         let registered_tools = self.registered_tools.clone();
         let waiters_set = self.waiters.clone();
         tokio::spawn(async move {
-            if on_new_session {
+            if wait_for_autorun {
                 // Wait for AutoRun to kick in
                 sleep(Duration::from_secs(SESSION_STARTUP_DELAY_SECONDS)).await;
             }

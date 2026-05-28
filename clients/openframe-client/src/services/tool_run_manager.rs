@@ -404,7 +404,7 @@ impl ToolRunManager {
         for tool in tools {
             if self.try_mark_running(&tool.tool_agent_id).await {
                 info!("Running tool {}", tool.tool_agent_id);
-                self.run_tool(tool).await?;
+                self.run_tool(tool, false).await?;
             } else {
                 warn!("Tool {} is already running - skipping", tool.tool_agent_id);
             }
@@ -420,7 +420,7 @@ impl ToolRunManager {
         }
 
         info!("Running new single tool {}", installed_tool.tool_agent_id);
-        self.run_tool(installed_tool).await
+        self.run_tool(installed_tool, true).await
     }
 
     async fn try_mark_running(&self, tool_id: &str) -> bool {
@@ -438,7 +438,7 @@ impl ToolRunManager {
         set.remove(tool_id);
     }
 
-    async fn run_tool(&self, tool: InstalledTool) -> Result<()> {
+    async fn run_tool(&self, tool: InstalledTool, new_tool: bool) -> Result<()> {
         if tool.installation.is_service() {
             info!(tool_id = %tool.tool_agent_id, "Installation::Service - self-managed, skipping launch");
             self.clear_running_tool(&tool.tool_agent_id).await;
@@ -497,6 +497,7 @@ impl ToolRunManager {
                                     tool.tool_agent_id.clone(),
                                     command_path.clone(),
                                     launch_args,
+                                    new_tool,
                                 ).await;
                                 return;
                             }
