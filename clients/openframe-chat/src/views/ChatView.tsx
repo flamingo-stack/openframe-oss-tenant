@@ -354,7 +354,7 @@ export function ChatView() {
       />
       <NewTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
 
-      <ChatContent>
+      <ChatContent className="pt-6 pb-4">
         {isDialogActive ? (
           <ChatDialogScreen
             messages={displayMessages}
