@@ -18,7 +18,7 @@ const MOCK_FAE_SETTINGS: FaeSettings = {
   id: 'fs_mock_1',
   organizationId: null,
   assistantName: 'Grace “Fae” Meadows',
-  assistantAvatar: null,
+  assistantAvatar: { imageUrl: '/assets/ai-settings/fae-avatar.png' },
   llmProvider: 'ANTHROPIC',
   providerModel: 'Claude Opus 4.1',
   applicationTheme: 'DARK',

@@ -28,7 +28,7 @@ export function AiSettingsTabs({ activeTab, onTabChange, children }: AiSettingsT
       onTabChange={tabId => onTabChange(tabId as AiSettingsTabId)}
       showRightGradient
     >
-      {activeId => children(activeId as AiSettingsTabId)}
+      {activeId => <div className="pt-[var(--spacing-system-l)]">{children(activeId as AiSettingsTabId)}</div>}
     </TabNavigation>
   );
 }
