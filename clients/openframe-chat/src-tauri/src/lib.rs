@@ -173,11 +173,30 @@ fn nats_unread_count(bridge: State<'_, NatsBridge>) -> u32 {
 }
 
 #[tauri::command]
-async fn nats_set_tracked_dialogs(
+async fn nats_set_machine_id(
     bridge: State<'_, NatsBridge>,
-    dialog_ids: Vec<String>,
+    machine_id: String,
 ) -> Result<(), String> {
-    bridge.set_tracked_dialogs(dialog_ids).await;
+    bridge.set_machine_id(machine_id).await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn nats_subscribe_dialog(
+    bridge: State<'_, NatsBridge>,
+    dialog_id: String,
+    opt_start_seq: Option<u64>,
+) -> Result<(), String> {
+    bridge.subscribe_dialog(dialog_id, opt_start_seq).await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn nats_unsubscribe_dialog(
+    bridge: State<'_, NatsBridge>,
+    dialog_id: String,
+) -> Result<(), String> {
+    bridge.unsubscribe_dialog(&dialog_id).await;
     Ok(())
 }
 
@@ -551,7 +570,9 @@ pub fn run() {
             log_from_js,
             nats_status,
             nats_unread_count,
-            nats_set_tracked_dialogs,
+            nats_set_machine_id,
+            nats_subscribe_dialog,
+            nats_unsubscribe_dialog,
             nats_register_event_channel,
             nats_unregister_event_channel,
         ]);

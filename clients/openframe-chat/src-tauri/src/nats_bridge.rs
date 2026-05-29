@@ -1,17 +1,23 @@
 // NATS bridge — owns the user-scoped NATS WebSocket connection on behalf of
-// the WebView. Mirrors the connection style used by `openframe-client`
-// (see openframe-client/src/services/nats_connection_manager.rs) but with:
-//   - user-scoped path (`/ws/nats-api`) instead of machine-scoped (`/ws/nats`)
-//   - no `X-MACHINE-ID` header
-//   - no in-process OAuth refresh: token rotation is delegated to the
-//     openframe-client daemon; reconnects pick up the latest token from
-//     `TokenState` whenever async-nats invokes the auth-url callback.
+// the WebView. Two responsibilities:
+//   1. A core NATS subscription on `machine.<machineId>.notification` for OS
+//      notifications. Always on; subject is determined by machineId provided
+//      via `OPENFRAME_MACHINE_ID` env var or `nats_set_machine_id` IPC.
+//   2. On-demand JetStream OrderedConsumers on `chat.<dialogId>.message` for
+//      chat streaming. Created when the WebView calls `nats_subscribe_dialog`
+//      after the user opens a ticket; torn down on `nats_unsubscribe_dialog`.
+//
+// Resume on WS reconnect is owned entirely by the bridge: each DialogState
+// tracks `last_delivered_stream_seq` so a new OrderedConsumer can resume from
+// the right point without any ack from the WebView.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::time::{Duration, Instant};
 
+use async_nats::jetstream::consumer::{pull::OrderedConfig, DeliverPolicy};
+use async_nats::jetstream::{self, Message as JsMessage};
 use async_nats::{Client, Event};
 use futures::StreamExt;
 use serde::Serialize;
@@ -25,30 +31,17 @@ use uuid::Uuid;
 use crate::token_watcher::TokenState;
 use crate::ServerUrlState;
 
-/// NATS user that the gateway expects on the WS upgrade.
-///
-/// The actual auth happens via the JWT in the `?authorization=` query
-/// parameter; the username/password are required by the NATS protocol but
-/// carry no auth weight here. Same convention as `openframe-client`.
 const NATS_USER: &str = "machine";
 const NATS_PASS: &str = "";
-
-/// Path on the gateway that proxies user-scoped NATS over WebSocket.
 const NATS_WS_PATH: &str = "/ws/nats-api";
 
-/// Exponential-backoff schedule for reconnect attempts. Mirrors the JS
-/// hook the WebView used to use:
-///   - first `FAST_RETRIES` attempts: `FAST_DELAY_MS`
-///   - then `BASE_MS * 2^n`, capped at `MAX_MS`
-///   - jittered to 50–100% of the computed delay
 const FAST_RETRIES: usize = 3;
 const FAST_DELAY_MS: u64 = 200;
 const BASE_DELAY_MS: u64 = 1_000;
 const MAX_DELAY_MS: u64 = 30_000;
-
-/// How often async-nats sends WS pings.
 const PING_INTERVAL: Duration = Duration::from_secs(10);
 
+const CHAT_CHUNKS_STREAM: &str = "CHAT_CHUNKS";
 
 #[derive(Clone, Copy, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
@@ -64,16 +57,15 @@ pub struct NatsStatus {
     pub reconnect_count: u32,
 }
 
-/// Event payload broadcast on every registered Tauri Channel for each
-/// incoming NATS message. The `dialog_id` lets WebView consumers filter
-/// to the dialog they currently render.
 #[derive(Clone, Debug, Serialize)]
 pub struct NatsEvent {
+    #[serde(rename = "dialogId")]
     pub dialog_id: String,
+    #[serde(rename = "streamSeq")]
+    pub stream_seq: u64,
     pub payload: serde_json::Value,
 }
 
-/// Owns the NATS connection. Cloneable — internal state is shared.
 #[derive(Clone)]
 pub struct NatsBridge {
     inner: Arc<Inner>,
@@ -83,31 +75,41 @@ struct Inner {
     client: RwLock<Option<Client>>,
     state: RwLock<ConnectionState>,
     reconnect_count: AtomicU32,
-    /// Set the first time we hit `Connected`; subsequent transitions to
-    /// `Connected` then bump `reconnect_count`.
     had_connection: AtomicBool,
-    /// Guards `start()` so the connect task is only spawned once.
     started: AtomicBool,
-    /// Unread OS notifications since the user last focused the main window.
-    /// Bumped in `maybe_notify`, cleared by `on_main_window_focused`.
     unread_count: AtomicU32,
     server_url: ServerUrlState,
     token_state: TokenState,
     app: AppHandle,
 
-    /// Dialog ids the WebView currently wants subscribed. Updated by
-    /// `set_tracked_dialogs`; `reconcile_subscriptions` enforces it.
-    desired: RwLock<HashSet<String>>,
-    /// Active per-dialog router tasks. Dropping (`abort`) the JoinHandle
-    /// stops the task, drops the Subscriber, and unsubscribes server-side.
-    active: RwLock<HashMap<String, JoinHandle<()>>>,
-    /// Tauri Channels registered by WebView consumers. Each incoming NATS
-    /// message is fan-out to every channel.
+    /// machineId for the notification subject. Seeded from
+    /// `OPENFRAME_MACHINE_ID`; overridable via `nats_set_machine_id`.
+    machine_id: RwLock<Option<String>>,
+    /// Router task for `machine.<id>.notification`. async-nats re-issues
+    /// SUB frames after reconnect, so the same task survives WS drops.
+    /// Re-created only when machineId changes.
+    notification_task: RwLock<Option<JoinHandle<()>>>,
+
+    /// JetStream OrderedConsumers per open dialog. Created on
+    /// `subscribe_dialog`, recreated on every `Connected` (consumers are
+    /// ephemeral and die with the connection).
+    dialogs: RwLock<HashMap<String, DialogState>>,
+
     event_channels: RwLock<HashMap<String, Channel<NatsEvent>>>,
     /// Most recent notification's dialog id + when it was fired. Consumed
-    /// by the window-focus handler to emit `notification:click` for
-    /// "click notification → land on dialog" navigation.
+    /// by the window-focus handler to emit `notification:click`.
     pending_notification: StdMutex<Option<PendingNotification>>,
+}
+
+struct DialogState {
+    /// Initial replay point supplied by the WebView (e.g. from history fetch).
+    /// Only consulted when computing the resume seq on (re)subscribe.
+    initial_opt_start_seq: Option<u64>,
+    /// Highest stream_sequence we've handed to the channel. On reconnect,
+    /// the new consumer resumes from `max(initial, last_delivered) + 1`.
+    last_delivered_stream_seq: Option<u64>,
+    /// Router task. Aborting drops the OrderedConsumer stream.
+    task: JoinHandle<()>,
 }
 
 #[derive(Clone, Debug)]
@@ -118,6 +120,13 @@ struct PendingNotification {
 
 impl NatsBridge {
     pub fn new(app: AppHandle, server_url: ServerUrlState, token_state: TokenState) -> Self {
+        let env_machine_id = std::env::var("OPENFRAME_MACHINE_ID")
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty());
+        if let Some(id) = &env_machine_id {
+            tracing::info!("[NATS] machineId seeded from OPENFRAME_MACHINE_ID: {id}");
+        }
         Self {
             inner: Arc::new(Inner {
                 client: RwLock::new(None),
@@ -129,8 +138,9 @@ impl NatsBridge {
                 server_url,
                 token_state,
                 app,
-                desired: RwLock::new(HashSet::new()),
-                active: RwLock::new(HashMap::new()),
+                machine_id: RwLock::new(env_machine_id),
+                notification_task: RwLock::new(None),
+                dialogs: RwLock::new(HashMap::new()),
                 event_channels: RwLock::new(HashMap::new()),
                 pending_notification: StdMutex::new(None),
             }),
@@ -164,20 +174,68 @@ impl NatsBridge {
         self.inner.unread_count.load(Ordering::Relaxed)
     }
 
-    /// Replace the set of dialog ids the bridge keeps subscribed. Adds
-    /// missing subscriptions, removes ones no longer wanted. No-ops on the
-    /// network side until the connection is established; the desired set
-    /// is remembered and reconciled on each `Connected` event.
-    pub async fn set_tracked_dialogs(&self, ids: Vec<String>) {
-        let new_set: HashSet<String> = ids.into_iter().collect();
-        {
-            let mut desired = self.inner.desired.write().await;
-            if *desired == new_set {
+    /// Override the env-seeded machineId. Aborts any existing notification
+    /// subscription and lets `ensure_notification_subscription` recreate it
+    /// on the new subject.
+    pub async fn set_machine_id(&self, id: String) {
+        let trimmed = id.trim();
+        if trimmed.is_empty() {
+            return;
+        }
+        let new_id = trimmed.to_string();
+        let prev_task = {
+            let mut guard = self.inner.machine_id.write().await;
+            if guard.as_deref() == Some(trimmed) {
                 return;
             }
-            *desired = new_set;
+            *guard = Some(new_id);
+            self.inner.notification_task.write().await.take()
+        };
+        if let Some(handle) = prev_task {
+            handle.abort();
         }
-        reconcile_subscriptions(&self.inner).await;
+        ensure_notification_subscription(&self.inner).await;
+    }
+
+    /// Subscribe to `chat.<dialog_id>.message` via JetStream. Idempotent: if
+    /// already subscribed, updates the initial replay seq for the next
+    /// recreation (e.g. after reconnect) but does not tear down the live
+    /// consumer.
+    pub async fn subscribe_dialog(&self, dialog_id: String, opt_start_seq: Option<u64>) {
+        if dialog_id.is_empty() {
+            return;
+        }
+        {
+            let mut dialogs = self.inner.dialogs.write().await;
+            if let Some(state) = dialogs.get_mut(&dialog_id) {
+                state.initial_opt_start_seq = opt_start_seq;
+                return;
+            }
+        }
+        let client = self.inner.client.read().await.clone();
+        match client {
+            Some(c) => create_and_store_consumer(&self.inner, c, dialog_id, opt_start_seq, None).await,
+            None => {
+                // Connection not up — stash a placeholder; the next `Connected`
+                // event will spin up the real consumer via resubscribe_all_dialogs.
+                self.inner.dialogs.write().await.insert(
+                    dialog_id,
+                    DialogState {
+                        initial_opt_start_seq: opt_start_seq,
+                        last_delivered_stream_seq: None,
+                        task: async_runtime::spawn(async {}),
+                    },
+                );
+            }
+        }
+    }
+
+    pub async fn unsubscribe_dialog(&self, dialog_id: &str) {
+        let removed = self.inner.dialogs.write().await.remove(dialog_id);
+        if let Some(state) = removed {
+            state.task.abort();
+            tracing::info!("[NATS] unsubscribed JetStream consumer for chat.{dialog_id}.message");
+        }
     }
 
     pub async fn register_event_channel(&self, channel: Channel<NatsEvent>) -> String {
@@ -200,7 +258,6 @@ impl NatsBridge {
     pub fn on_main_window_focused(&self) {
         const MAX_PENDING_AGE: Duration = Duration::from_secs(30);
 
-        // The user is looking at the app — anything unread is now seen.
         if self.inner.unread_count.swap(0, Ordering::Relaxed) > 0 {
             set_unread_surfaces(&self.inner, 0);
         }
@@ -235,9 +292,6 @@ impl NatsBridge {
     async fn run(&self) {
         let inner = &self.inner;
 
-        // Wait for server URL + token to both be available. Both arrive
-        // asynchronously from the openframe-client daemon, polled at 5 s
-        // by `TokenWatcher`; matching that cadence here is good enough.
         loop {
             if read_server_url(inner).is_some() && read_token(inner).is_some() {
                 break;
@@ -268,11 +322,6 @@ impl NatsBridge {
                 }
             })
             .auth_url_callback(move |()| {
-                // async-nats invokes this on every (re)connect. We don't
-                // refresh tokens ourselves; the daemon polls + rotates the
-                // file every ~5 s, our `TokenWatcher` re-decrypts on the
-                // next tick, and async-nats' reconnect delay gives a fresh
-                // token a chance to arrive between attempts.
                 let token = auth_token_state
                     .current_token
                     .lock()
@@ -292,15 +341,9 @@ impl NatsBridge {
         match connect_options.connect(&connect_url).await {
             Ok(client) => {
                 *inner.client.write().await = Some(client);
-                // event_callback will fire `Connected` shortly; don't
-                // pre-emptively flip state here.
                 tracing::info!("[NATS] connect() returned Ok");
             }
             Err(err) => {
-                // `retry_on_initial_connect` means this branch is hit only
-                // for unrecoverable errors (bad URL, bad TLS, etc.). Log
-                // and stay in `Connecting` — the run-loop is single-shot,
-                // so caller must restart the app to retry from scratch.
                 tracing::error!("[NATS] connect() failed unrecoverably: {err}");
                 set_state(inner, ConnectionState::Disconnected).await;
             }
@@ -321,8 +364,6 @@ fn read_token(inner: &Inner) -> Option<String> {
         .and_then(|g| g.clone())
 }
 
-/// Set connection state and emit `nats:status` if the state actually
-/// changed. Only place that emits the event — keeps emit/state in sync.
 async fn set_state(inner: &Inner, new_state: ConnectionState) {
     let mut state = inner.state.write().await;
     if *state == new_state {
@@ -340,8 +381,6 @@ async fn handle_nats_event(event: Event, inner: &Arc<Inner>) {
     tracing::info!("[NATS] event: {:?}", event);
     match event {
         Event::Connected => {
-            // First connect: just flip state. Subsequent connects: also bump
-            // the reconnect counter so the WebView knows to run catch-up.
             let was_connected_before = inner.had_connection.swap(true, Ordering::Relaxed);
             if was_connected_before {
                 inner.reconnect_count.fetch_add(1, Ordering::Relaxed);
@@ -350,15 +389,10 @@ async fn handle_nats_event(event: Event, inner: &Arc<Inner>) {
             if was_connected_before {
                 let _ = inner.app.emit("nats:reconnected", ());
             }
-            // async-nats re-issues SUB frames for every existing
-            // subscription after a reconnect (see its handle_reconnect),
-            // so we don't need to re-subscribe known dialogs. Reconcile
-            // here only catches the case where the WebView added new
-            // tracked dialogs while we were disconnected and they
-            // weren't subscribed yet.
-            let inner = inner.clone();
+            let inner_for_spawn = inner.clone();
             async_runtime::spawn(async move {
-                reconcile_subscriptions(&inner).await;
+                ensure_notification_subscription(&inner_for_spawn).await;
+                resubscribe_all_dialogs(&inner_for_spawn).await;
             });
         }
         Event::Disconnected => {
@@ -368,74 +402,195 @@ async fn handle_nats_event(event: Event, inner: &Arc<Inner>) {
     }
 }
 
-/// Bring `active` in line with `desired`. Adds new subscriptions, aborts
-/// router tasks for removed ones. Safe to call repeatedly; idempotent.
-async fn reconcile_subscriptions(inner: &Arc<Inner>) {
+// ---------------------------- notification subject ----------------------------
+
+async fn ensure_notification_subscription(inner: &Arc<Inner>) {
+    let machine_id = match inner.machine_id.read().await.clone() {
+        Some(id) => id,
+        None => return,
+    };
     let client = match inner.client.read().await.clone() {
         Some(c) => c,
-        None => return, // not connected yet — nothing to do
+        None => return,
     };
-    let desired: HashSet<String> = inner.desired.read().await.clone();
-    let current: HashSet<String> = inner.active.read().await.keys().cloned().collect();
 
-    // Add subscriptions for newly desired dialogs.
-    for dialog_id in desired.difference(&current) {
-        let subject = format!("chat.{dialog_id}.message");
-        match client.subscribe(subject.clone()).await {
-            Ok(subscriber) => {
-                let inner_for_task = inner.clone();
-                let dialog_id_for_task = dialog_id.clone();
-                let handle = async_runtime::spawn(async move {
-                    run_subscription_router(inner_for_task, dialog_id_for_task, subscriber).await;
-                });
-                inner.active.write().await.insert(dialog_id.clone(), handle);
-                tracing::info!("[NATS] subscribed to {subject}");
-            }
-            Err(err) => {
-                tracing::warn!("[NATS] subscribe to {subject} failed: {err}");
-            }
+    {
+        let task_guard = inner.notification_task.read().await;
+        if task_guard.is_some() {
+            // Already subscribed — async-nats re-issues SUB on reconnect, so
+            // the existing router task continues to receive messages.
+            return;
         }
     }
 
-    // Remove subscriptions for dialogs no longer desired.
-    let to_remove: Vec<String> = current.difference(&desired).cloned().collect();
-    if !to_remove.is_empty() {
-        let mut active = inner.active.write().await;
-        for dialog_id in to_remove {
-            if let Some(handle) = active.remove(&dialog_id) {
-                handle.abort();
-                tracing::info!("[NATS] unsubscribed from chat.{dialog_id}.message");
-            }
+    let subject = format!("machine.{}.notification", machine_id);
+    let subscriber = match client.subscribe(subject.clone()).await {
+        Ok(s) => s,
+        Err(err) => {
+            tracing::warn!("[NATS] subscribe to {subject} failed: {err}");
+            return;
         }
-    }
+    };
+
+    let inner_for_task = inner.clone();
+    let handle = async_runtime::spawn(async move {
+        notification_router(inner_for_task, subscriber).await;
+    });
+    *inner.notification_task.write().await = Some(handle);
+    tracing::info!("[NATS] subscribed to {subject}");
 }
 
-/// Per-subscription router task. Reads messages off the Subscriber stream,
-/// parses JSON payloads, and broadcasts them on every registered channel.
-async fn run_subscription_router(
-    inner: Arc<Inner>,
-    dialog_id: String,
-    mut subscriber: async_nats::Subscriber,
-) {
+async fn notification_router(inner: Arc<Inner>, mut subscriber: async_nats::Subscriber) {
     while let Some(message) = subscriber.next().await {
         let payload: serde_json::Value = match serde_json::from_slice(&message.payload) {
             Ok(v) => v,
             Err(err) => {
-                tracing::warn!(
-                    "[NATS] dropping non-JSON payload on {subject}: {err}",
-                    subject = message.subject
-                );
+                tracing::warn!("[NATS] dropping non-JSON notification: {err}");
+                continue;
+            }
+        };
+        let dialog_id = payload
+            .get("dialogId")
+            .or_else(|| payload.get("dialog_id"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        maybe_notify(&inner, &dialog_id, &payload);
+    }
+    tracing::info!("[NATS] notification router exited (stream closed)");
+}
+
+// ---------------------------- JetStream dialog consumers ----------------------------
+
+async fn create_and_store_consumer(
+    inner: &Arc<Inner>,
+    client: Client,
+    dialog_id: String,
+    initial_opt_start_seq: Option<u64>,
+    existing_last_delivered: Option<u64>,
+) {
+    let js = jetstream::new(client);
+    let stream = match js.get_stream(CHAT_CHUNKS_STREAM).await {
+        Ok(s) => s,
+        Err(err) => {
+            tracing::warn!(
+                "[NATS] get_stream({CHAT_CHUNKS_STREAM}) failed for chat.{dialog_id}: {err}"
+            );
+            return;
+        }
+    };
+
+    let start_seq = compute_start_seq(initial_opt_start_seq, existing_last_delivered);
+    let deliver_policy = match start_seq {
+        Some(s) => DeliverPolicy::ByStartSequence { start_sequence: s },
+        None => DeliverPolicy::New,
+    };
+
+    let filter_subject = format!("chat.{}.message", dialog_id);
+    let config = OrderedConfig {
+        filter_subject: filter_subject.clone(),
+        deliver_policy,
+        ..Default::default()
+    };
+
+    let consumer = match stream.create_consumer(config).await {
+        Ok(c) => c,
+        Err(err) => {
+            tracing::warn!("[NATS] create_consumer failed for {filter_subject}: {err}");
+            return;
+        }
+    };
+
+    let messages = match consumer.messages().await {
+        Ok(m) => m,
+        Err(err) => {
+            tracing::warn!("[NATS] consumer.messages() failed for {filter_subject}: {err}");
+            return;
+        }
+    };
+
+    let inner_for_task = inner.clone();
+    let dialog_id_for_task = dialog_id.clone();
+    let handle = async_runtime::spawn(async move {
+        dialog_router(inner_for_task, dialog_id_for_task, messages).await;
+    });
+
+    inner.dialogs.write().await.insert(
+        dialog_id.clone(),
+        DialogState {
+            initial_opt_start_seq,
+            last_delivered_stream_seq: existing_last_delivered,
+            task: handle,
+        },
+    );
+
+    let _ = inner
+        .app
+        .emit("nats:subscribed", serde_json::json!({ "dialogId": dialog_id }));
+    tracing::info!(
+        "[NATS] subscribed JetStream consumer for {filter_subject} (start_seq={:?})",
+        start_seq
+    );
+}
+
+fn compute_start_seq(opt_start_seq: Option<u64>, last_delivered: Option<u64>) -> Option<u64> {
+    match (opt_start_seq, last_delivered) {
+        (Some(a), Some(b)) => Some(a.max(b) + 1),
+        (Some(a), None) => Some(a + 1),
+        (None, Some(b)) => Some(b + 1),
+        (None, None) => None,
+    }
+}
+
+async fn dialog_router<S, E>(inner: Arc<Inner>, dialog_id: String, mut messages: S)
+where
+    S: futures::Stream<Item = Result<JsMessage, E>> + Unpin,
+    E: std::fmt::Display,
+{
+    while let Some(item) = messages.next().await {
+        let msg = match item {
+            Ok(m) => m,
+            Err(err) => {
+                tracing::warn!("[NATS] JetStream stream error on chat.{dialog_id}: {err}");
+                break;
+            }
+        };
+        let stream_seq = match msg.info() {
+            Ok(info) => info.stream_sequence,
+            Err(err) => {
+                tracing::warn!("[NATS] missing stream info on chat.{dialog_id}: {err}");
+                continue;
+            }
+        };
+        let payload: serde_json::Value = match serde_json::from_slice(&msg.payload) {
+            Ok(v) => v,
+            Err(err) => {
+                tracing::warn!("[NATS] non-JSON chunk on chat.{dialog_id}: {err}");
                 continue;
             }
         };
 
+        // Track delivered seq under lock; skip duplicates.
+        {
+            let mut dialogs = inner.dialogs.write().await;
+            let state = match dialogs.get_mut(&dialog_id) {
+                Some(s) => s,
+                None => break, // unsubscribed mid-stream
+            };
+            if let Some(prev) = state.last_delivered_stream_seq {
+                if prev >= stream_seq {
+                    continue;
+                }
+            }
+            state.last_delivered_stream_seq = Some(stream_seq);
+        }
+
         let event = NatsEvent {
             dialog_id: dialog_id.clone(),
-            payload: payload.clone(),
+            stream_seq,
+            payload,
         };
 
-        // Snapshot the channel list under the read lock, then send outside
-        // the lock so a slow consumer can't block the router.
         let channels: Vec<Channel<NatsEvent>> = inner
             .event_channels
             .read()
@@ -448,24 +603,36 @@ async fn run_subscription_router(
                 tracing::warn!("[NATS] channel.send failed: {err}");
             }
         }
-
-        // OS notifications are independent of the WebView consumers — fire
-        // them whenever a notification-worthy chunk arrives and the user
-        // can't currently see the message.
-        maybe_notify(&inner, &dialog_id, &payload);
     }
-    tracing::info!(
-        "[NATS] router task for chat.{dialog_id}.message exited (stream closed)"
-    );
+    tracing::info!("[NATS] dialog router for chat.{dialog_id}.message exited");
 }
 
-/// Examine an incoming chunk payload and, if it represents a
-/// notification-worthy event AND the main window can't show it to the
-/// user right now, fire an OS notification.
-///
+async fn resubscribe_all_dialogs(inner: &Arc<Inner>) {
+    let client = match inner.client.read().await.clone() {
+        Some(c) => c,
+        None => return,
+    };
+    let snapshot: Vec<(String, Option<u64>, Option<u64>)> = {
+        let dialogs = inner.dialogs.read().await;
+        dialogs
+            .iter()
+            .map(|(id, s)| (id.clone(), s.initial_opt_start_seq, s.last_delivered_stream_seq))
+            .collect()
+    };
+    for (dialog_id, initial, last_delivered) in snapshot {
+        // Abort the old router task (its message stream is dead post-reconnect).
+        if let Some(state) = inner.dialogs.write().await.get_mut(&dialog_id) {
+            state.task.abort();
+        }
+        create_and_store_consumer(inner, client.clone(), dialog_id, initial, last_delivered).await;
+    }
+}
+
+// ---------------------------- notification dispatch ----------------------------
+
 /// Discriminator shape mirrors `chunk-parser.ts`:
-///   `DIRECT_MESSAGE` — `{ type, text, ownerType, displayName }`
-///   `DIALOG_CLOSED`  — `{ type }`
+///   `DIRECT_MESSAGE` — `{ type, text, ownerType, displayName, dialogId }`
+///   `DIALOG_CLOSED`  — `{ type, dialogId }`
 ///
 /// Echoes from the user themselves carry `ownerType == "CLIENT"`; we skip
 /// those.
@@ -485,16 +652,14 @@ fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value
                 .get("displayName")
                 .and_then(|v| v.as_str())
                 .unwrap_or("Technician");
-            let text = payload
-                .get("text")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let text = payload.get("text").and_then(|v| v.as_str()).unwrap_or("");
             let body = truncate_for_notification(text, 140);
             (format!("New message from {display_name}"), body)
         }
-        "DIALOG_CLOSED" => {
-            ("Dialog closed".to_string(), "A technician closed the conversation.".to_string())
-        }
+        "DIALOG_CLOSED" => (
+            "Dialog closed".to_string(),
+            "A technician closed the conversation.".to_string(),
+        ),
         _ => return,
     };
 
@@ -505,8 +670,6 @@ fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value
         return;
     }
 
-    // Stash before firing so the focus handler picks up the right dialog
-    // even if `show()` is delayed by the worker thread.
     if let Ok(mut guard) = inner.pending_notification.lock() {
         *guard = Some(PendingNotification {
             dialog_id: dialog_id.to_string(),
@@ -519,8 +682,6 @@ fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value
 
     let app = app.clone();
     let dialog_id = dialog_id.to_string();
-    // Notification.show() blocks; punt to a worker thread so the router
-    // task isn't held up.
     std::thread::spawn(move || {
         match app
             .notification()
@@ -539,8 +700,6 @@ fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value
     });
 }
 
-/// Notify only when the user can't already see the message — i.e. the
-/// main window is hidden or unfocused.
 fn should_notify(app: &AppHandle) -> bool {
     let main = match app.get_webview_window("main") {
         Some(w) => w,
@@ -551,9 +710,6 @@ fn should_notify(app: &AppHandle) -> bool {
     !(visible && focused)
 }
 
-/// Reflect the current unread count on every surface that displays it:
-/// the OS dock/taskbar badge, plus an `unread:count` event for the
-/// WebView (so React can render an in-app indicator).
 fn set_unread_surfaces(inner: &Inner, count: u32) {
     if let Some(window) = inner.app.get_webview_window("main") {
         let badge = if count == 0 { None } else { Some(count as i64) };
@@ -573,24 +729,21 @@ fn truncate_for_notification(text: &str, max: usize) -> String {
     out
 }
 
-/// Exponential-backoff-with-jitter for the async-nats reconnect callback.
 /// `attempt` is 0-based: 0 = first reconnect attempt after a drop.
 fn reconnect_delay(attempt: usize) -> Duration {
     let base_ms = if attempt < FAST_RETRIES {
         FAST_DELAY_MS
     } else {
-        let n = (attempt - FAST_RETRIES).min(20) as u32; // cap shift
+        let n = (attempt - FAST_RETRIES).min(20) as u32;
         BASE_DELAY_MS
             .saturating_mul(2u64.saturating_pow(n))
             .min(MAX_DELAY_MS)
     };
-    // Jitter to 50–100% of base so concurrent reconnects don't synchronize.
     let jitter = 0.5 + rand::random::<f64>() * 0.5;
     Duration::from_millis((base_ms as f64 * jitter) as u64)
 }
 
 fn build_connect_url(server_url: &str, token: &str) -> String {
-    // server_url is the API base, e.g. https://api.example.com
     let host = server_url
         .trim_start_matches("https://")
         .trim_start_matches("http://")

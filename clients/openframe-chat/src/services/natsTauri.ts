@@ -1,14 +1,18 @@
 // Tauri-side NATS bridge client.
 //
-// The Rust side owns the NATS WebSocket connection (see
-// src-tauri/src/nats_bridge.rs). On the WebView we register a single
-// `Channel<NatsEvent>` for the lifetime of the app, then fan out in JS to
-// any number of React subscribers. Status comes via the `nats:status`
-// Tauri event.
+// Owns one Tauri `Channel<NatsEvent>` for the lifetime of the app and fans out
+// to React subscribers in JS. The Rust side (`src-tauri/src/nats_bridge.rs`)
+// holds the actual NATS WS connection — on a JetStream OrderedConsumer per
+// open dialog plus one core NATS subscription for OS notifications.
+//
+// Events are flushed once per animation frame (rAF coalescing) so a burst of
+// chunks from JetStream collapses into a single React update cycle instead of
+// one re-render per chunk.
 
 import { Channel, invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
-import { useEffect, useId, useRef, useState } from 'react';
+import { listen, type Event as TauriEvent } from '@tauri-apps/api/event';
+import { useEffect, useRef, useState } from 'react';
+import { isTauri } from '../utils/runtime';
 
 export type ConnectionState = 'connecting' | 'connected' | 'disconnected';
 
@@ -18,30 +22,39 @@ export interface NatsStatus {
 }
 
 export interface NatsEvent {
-  dialog_id: string;
-  payload: unknown;
+  dialogId: string;
+  streamSeq: number;
+  payload: Record<string, unknown>;
 }
 
 type EventListener = (event: NatsEvent) => void;
 type StatusListener = (status: NatsStatus) => void;
+type SubscribedListener = (dialogId: string) => void;
 
 class NatsBridgeClient {
+  private channelId: string | null = null;
+  private initPromise: Promise<void> | null = null;
+
   private status: NatsStatus = { state: 'disconnected', reconnect_count: 0 };
   private statusListeners = new Set<StatusListener>();
   private eventListeners = new Set<EventListener>();
-  private initPromise: Promise<void> | null = null;
+  private subscribedListeners = new Set<SubscribedListener>();
 
-  // Multiple call sites can drive the tracked-dialog set independently:
-  // useTickets contributes the user's known dialogs; useChat may push the
-  // freshly-created dialog id before the ticket list refresh sees it. We
-  // merge by source id and re-send to Rust whenever any source changes.
-  private dialogSources = new Map<string, Set<string>>();
-  private currentTrackedKey = '';
-  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private pending: NatsEvent[] = [];
+  private rafScheduled = false;
+
+  /** Diagnostic — exposed for debugging from the console. */
+  getRegisteredChannelId(): string | null {
+    return this.channelId;
+  }
 
   init(): Promise<void> {
+    if (!isTauri) {
+      return Promise.resolve();
+    }
     if (!this.initPromise) {
       this.initPromise = this.doInit().catch(err => {
+        // Allow subsequent retries if init fails (e.g. Tauri not yet ready).
         this.initPromise = null;
         throw err;
       });
@@ -50,13 +63,25 @@ class NatsBridgeClient {
   }
 
   private async doInit(): Promise<void> {
-    await listen<NatsStatus>('nats:status', e => {
+    await listen<NatsStatus>('nats:status', (e: TauriEvent<NatsStatus>) => {
       this.status = e.payload;
       this.statusListeners.forEach(l => {
         try {
           l(this.status);
         } catch (err) {
           console.error('[NATS] status listener error:', err);
+        }
+      });
+    });
+
+    await listen<{ dialogId: string }>('nats:subscribed', (e: TauriEvent<{ dialogId: string }>) => {
+      const dialogId = e.payload?.dialogId;
+      if (!dialogId) return;
+      this.subscribedListeners.forEach(l => {
+        try {
+          l(dialogId);
+        } catch (err) {
+          console.error('[NATS] subscribed listener error:', err);
         }
       });
     });
@@ -68,19 +93,33 @@ class NatsBridgeClient {
     }
 
     const channel = new Channel<NatsEvent>();
-    channel.onmessage = event => {
-      this.eventListeners.forEach(l => {
-        try {
-          l(event);
-        } catch (err) {
-          console.error('[NATS] event listener error:', err);
-        }
-      });
+    channel.onmessage = (event: NatsEvent) => this.receive(event);
+    this.channelId = await invoke<string>('nats_register_event_channel', { channel });
+  }
+
+  private receive(event: NatsEvent): void {
+    this.pending.push(event);
+    if (this.rafScheduled) return;
+    this.rafScheduled = true;
+    const flush = () => {
+      this.rafScheduled = false;
+      const batch = this.pending;
+      this.pending = [];
+      for (const evt of batch) {
+        this.eventListeners.forEach(l => {
+          try {
+            l(evt);
+          } catch (err) {
+            console.error('[NATS] event listener error:', err);
+          }
+        });
+      }
     };
-    // Channel reference must outlive doInit so its onmessage stays
-    // reachable for the IPC layer; the module-scope retainer prevents GC.
-    retainedChannels.add(channel);
-    await invoke('nats_register_event_channel', { channel });
+    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(flush);
+    } else {
+      queueMicrotask(flush);
+    }
   }
 
   getStatus(): NatsStatus {
@@ -102,128 +141,154 @@ class NatsBridgeClient {
     };
   }
 
-  updateDialogSource(sourceId: string, ids: string[]): void {
-    this.dialogSources.set(sourceId, new Set(ids));
-    this.scheduleFlush();
+  onSubscribed(listener: SubscribedListener): () => void {
+    this.subscribedListeners.add(listener);
+    return () => {
+      this.subscribedListeners.delete(listener);
+    };
   }
 
-  removeDialogSource(sourceId: string): void {
-    if (this.dialogSources.delete(sourceId)) {
-      this.scheduleFlush();
+  async setMachineId(machineId: string): Promise<void> {
+    if (!isTauri) return;
+    try {
+      await this.init();
+      await invoke('nats_set_machine_id', { machineId });
+    } catch (err) {
+      console.warn('[NATS] nats_set_machine_id failed:', err);
     }
   }
 
-  private scheduleFlush(): void {
-    if (this.flushTimer !== null) return;
-    // Coalesce updates from multiple sources within the same render tick
-    // so we don't make redundant `nats_set_tracked_dialogs` IPC calls.
-    this.flushTimer = setTimeout(() => {
-      this.flushTimer = null;
-      void this.flush();
-    }, 100);
+  async subscribeDialog(dialogId: string, optStartSeq: number | null | undefined): Promise<void> {
+    if (!isTauri) return;
+    try {
+      await this.init();
+      await invoke('nats_subscribe_dialog', {
+        dialogId,
+        optStartSeq: typeof optStartSeq === 'number' ? optStartSeq : null,
+      });
+    } catch (err) {
+      console.warn('[NATS] nats_subscribe_dialog failed:', err);
+    }
   }
 
-  private async flush(): Promise<void> {
-    const merged = new Set<string>();
-    this.dialogSources.forEach(set => set.forEach(id => merged.add(id)));
-    const key = [...merged].sort().join('|');
-    if (key === this.currentTrackedKey) return;
-    this.currentTrackedKey = key;
+  async unsubscribeDialog(dialogId: string): Promise<void> {
+    if (!isTauri) return;
     try {
-      await invoke('nats_set_tracked_dialogs', { dialogIds: [...merged] });
+      await invoke('nats_unsubscribe_dialog', { dialogId });
     } catch (err) {
-      console.error('[NATS] nats_set_tracked_dialogs failed:', err);
+      console.warn('[NATS] nats_unsubscribe_dialog failed:', err);
     }
   }
 }
-
-// Module-scope retainer keeps registered Channels reachable so their
-// onmessage callbacks stay alive for Tauri's IPC layer.
-const retainedChannels = new Set<Channel<NatsEvent>>();
 
 export const natsBridge = new NatsBridgeClient();
 
 /* ----------------------------- React hooks ----------------------------- */
 
-export function useNatsBridgeLiveness(): {
+export function useTauriBridgeLiveness(): {
   isConnected: boolean;
-  isSubscribed: boolean;
   reconnectionCount: number;
 } {
   const [status, setStatus] = useState<NatsStatus>(natsBridge.getStatus());
 
   useEffect(() => {
+    if (!isTauri) return;
     void natsBridge.init();
     return natsBridge.onStatus(setStatus);
   }, []);
 
   return {
     isConnected: status.state === 'connected',
-    isSubscribed: status.state === 'connected',
     reconnectionCount: status.reconnect_count,
   };
 }
 
-export function useNatsBridgeEvents(onEvent: (event: NatsEvent) => void): void {
-  const cbRef = useRef(onEvent);
+/**
+ * Pushes the machineId to Rust whenever it changes. No-op in Vite-only mode.
+ * Idempotent — Rust short-circuits when the id is unchanged.
+ */
+export function useNatsMachineId(machineId: string | null): void {
   useEffect(() => {
-    cbRef.current = onEvent;
-  }, [onEvent]);
+    if (!isTauri || !machineId) return;
+    void natsBridge.setMachineId(machineId);
+  }, [machineId]);
+}
 
-  useEffect(() => {
-    void natsBridge.init();
-    return natsBridge.onEvent(evt => cbRef.current(evt));
-  }, []);
+interface UseTauriDialogSubscriptionOpts {
+  enabled: boolean;
+  dialogId: string | null;
+  /** Initial replay seq from the history fetch. Null/undefined = live-tail only. */
+  optStartSeq?: number | null;
+  onEvent: (chunk: Record<string, unknown> & { streamSeq?: number }) => void;
+  onSubscribed?: () => void;
 }
 
 /**
- * Subscribes to the bridge's unread counter. Initial value is read via
- * `nats_unread_count` (in case the app loaded with the counter > 0),
- * subsequent updates arrive via the `unread:count` Tauri event. Reset to 0
- * happens automatically Rust-side when the main window gains focus.
+ * Wraps the Rust JetStream consumer for one dialog. Mirrors the shape of
+ * `useJetStreamDialogSubscription` from openframe-frontend-core so the Vite
+ * fallback path in `useChat` can be swapped in/out by a runtime flag.
  */
-export function useUnreadCount(): number {
-  const [count, setCount] = useState(0);
+export function useTauriDialogSubscription({
+  enabled,
+  dialogId,
+  optStartSeq,
+  onEvent,
+  onSubscribed,
+}: UseTauriDialogSubscriptionOpts): {
+  isSubscribed: boolean;
+  currentStreamSeq: number | null;
+} {
+  const onEventRef = useRef(onEvent);
+  const onSubscribedRef = useRef(onSubscribed);
+  onEventRef.current = onEvent;
+  onSubscribedRef.current = onSubscribed;
 
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [currentStreamSeq, setCurrentStreamSeq] = useState<number | null>(null);
+  const highestSeqRef = useRef<number | null>(null);
+
+  // Manage the Rust-side subscription lifecycle. Resets seq tracking on
+  // dialog change so a fresh subscription starts with a clean dedup window.
   useEffect(() => {
-    let unlisten: (() => void) | null = null;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const initial = await invoke<number>('nats_unread_count');
-        if (!cancelled) setCount(initial);
-      } catch (err) {
-        console.warn('[NATS] nats_unread_count invoke failed:', err);
-      }
-      const handle = await listen<number>('unread:count', e => {
-        setCount(e.payload);
-      });
-      if (cancelled) {
-        handle();
-      } else {
-        unlisten = handle;
-      }
-    })();
-
+    if (!isTauri || !enabled || !dialogId) return;
+    highestSeqRef.current = null;
+    setCurrentStreamSeq(null);
+    setIsSubscribed(false);
+    void natsBridge.subscribeDialog(dialogId, optStartSeq);
     return () => {
-      cancelled = true;
-      unlisten?.();
+      void natsBridge.unsubscribeDialog(dialogId);
     };
-  }, []);
+  }, [enabled, dialogId, optStartSeq]);
 
-  return count;
-}
-
-export function useNatsBridgeTrackDialogs(dialogIds: string[]): void {
-  const sourceId = useId();
-
-  // Callers (useChat, useTickets) memoize `dialogIds`, so re-runs only
-  // happen on real changes. Even if the reference churned, the bridge
-  // dedupes redundant updates via `currentTrackedKey`.
+  // Listen for nats:subscribed events filtered by dialogId.
   useEffect(() => {
-    void natsBridge.init();
-    natsBridge.updateDialogSource(sourceId, dialogIds);
-    return () => natsBridge.removeDialogSource(sourceId);
-  }, [sourceId, dialogIds]);
+    if (!isTauri || !enabled || !dialogId) return;
+    return natsBridge.onSubscribed(id => {
+      if (id === dialogId) {
+        setIsSubscribed(true);
+        onSubscribedRef.current?.();
+      }
+    });
+  }, [enabled, dialogId]);
+
+  // Pipe channel events through to the consumer, filtered by dialogId.
+  useEffect(() => {
+    if (!isTauri || !enabled || !dialogId) return;
+    return natsBridge.onEvent(evt => {
+      if (evt.dialogId !== dialogId) return;
+      const seq = evt.streamSeq;
+      if (typeof seq === 'number') {
+        if (highestSeqRef.current == null || seq > highestSeqRef.current) {
+          highestSeqRef.current = seq;
+          setCurrentStreamSeq(seq);
+        } else {
+          return;
+        }
+      }
+      const chunk = { ...evt.payload, streamSeq: seq };
+      onEventRef.current(chunk);
+    });
+  }, [enabled, dialogId]);
+
+  return { isSubscribed, currentStreamSeq };
 }
