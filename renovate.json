@@ -69,7 +69,9 @@
       "labels": ["dependencies", "fleetmdm"],
       "prPriority": 10,
       "enabled": true,
-      "ignoreUnstable": true
+      "ignoreUnstable": true,
+      "allowedVersions": "!/^9\\.9\\.9$/",
+      "separateMajorMinor": false
     },
     {
       "description": "Updates for fleetm Helm chart",
@@ -84,7 +86,9 @@
       "labels": ["dependencies", "fleetmdm"],
       "prPriority": 10,
       "enabled": true,
-      "ignoreUnstable": true
+      "ignoreUnstable": true,
+      "allowedVersions": "!/^9\\.9\\.9$/",
+      "separateMajorMinor": false
     },
     {
       "description": "Only update fleetmdm chart",
