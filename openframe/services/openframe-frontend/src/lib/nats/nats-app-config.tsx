@@ -52,6 +52,11 @@ function useNatsAppConfigState(): NatsAppConfig {
     return () => window.removeEventListener('storage', handler);
   }, [isDevTicketEnabled]);
 
+  useEffect(() => {
+    if (!isDevTicketEnabled || !isAuthenticated) return;
+    setToken(getAccessToken());
+  }, [isDevTicketEnabled, isAuthenticated]);
+
   const getWsUrl = useCallback((): string | null => {
     if (!isAuthenticated || !userId) return null;
     if (!apiBaseUrl) return null;
