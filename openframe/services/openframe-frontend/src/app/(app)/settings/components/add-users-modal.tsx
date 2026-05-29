@@ -25,23 +25,17 @@ interface AddUsersModalProps {
 }
 
 export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersModalProps) {
-  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'Viewer' }]);
+  const [rows, setRows] = useState<InviteRow[]>([{ email: '', role: 'ADMIN' }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const emailRegex = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/, []);
   const canSubmit = useMemo(() => rows.some(r => emailRegex.test(r.email.trim())), [rows, emailRegex]);
-  const roleOptions = useMemo(
-    () => [
-      { value: 'Admin', label: 'Admin' },
-      { value: 'Viewer', label: 'Viewer' },
-    ],
-    [],
-  );
+  const roleOptions = useMemo(() => [{ value: 'ADMIN', label: 'Admin' }], []);
 
   useEffect(() => {
     if (!isOpen) {
-      setRows([{ email: '', role: 'Viewer' }]);
+      setRows([{ email: '', role: 'ADMIN' }]);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -50,7 +44,7 @@ export function AddUsersModal({ isOpen, onClose, onInvited, invite }: AddUsersMo
     setRows(prev => prev.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
-  const addRow = () => setRows(prev => [...prev, { email: '', role: 'Viewer' }]);
+  const addRow = () => setRows(prev => [...prev, { email: '', role: 'ADMIN' }]);
   const removeRow = (idx: number) => setRows(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = async () => {
