@@ -1,10 +1,11 @@
 'use client';
 
-import { CardLoader, DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { DeviceCard } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { DeviceDetailsButton } from '@/app/(app)/devices/components/device-details-button';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import type { Device } from '@/app/(app)/devices/types/device.types';
 import { getDeviceOperatingSystem, getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
+import { DeviceInfoSectionSkeleton } from './device-info-section-skeleton';
 
 interface DeviceInfoSectionProps {
   deviceId?: string;
@@ -25,7 +26,7 @@ export function DeviceInfoSection({ deviceId, userId, device: deviceFromProps }:
     return (
       <div className="flex flex-col gap-1 w-full">
         <div className="text-h5 text-ods-text-secondary w-full">Device Info</div>
-        <CardLoader items={2} containerClassName="p-0" />
+        <DeviceInfoSectionSkeleton />
       </div>
     );
   }

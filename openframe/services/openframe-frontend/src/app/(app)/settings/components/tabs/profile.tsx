@@ -116,7 +116,9 @@ export function ProfileTab() {
         {/* Name and Email */}
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium text-ods-text-primary truncate">{displayName}</span>
+            <span className="text-lg font-medium text-ods-text-primary truncate" title={displayName}>
+              {displayName}
+            </span>
             {/* Role badges */}
             {user.roles?.map(role => (
               <span
@@ -128,7 +130,9 @@ export function ProfileTab() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-sm text-ods-text-secondary truncate">{user.email}</p>
+            <p className="text-sm text-ods-text-secondary truncate" title={user.email}>
+              {user.email}
+            </p>
             {user.emailVerified === false && (
               <button
                 onClick={() => setIsVerificationModalOpen(true)}

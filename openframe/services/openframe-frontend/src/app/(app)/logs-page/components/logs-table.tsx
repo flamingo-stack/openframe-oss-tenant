@@ -10,13 +10,11 @@ import {
   Button,
   type ColumnDef,
   DataTable,
-  DeviceCardCompact,
   ListPageLayout,
   multiSelectFilterFn,
   type Row,
-  TableDescriptionCell,
-  TableTimestampCell,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -38,6 +36,7 @@ import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsT
 import { LogDrawer } from '@/app/components/shared';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import type { LogFilterInput } from '../types/log.types';
 
 // ----------------------------------------------------------------
@@ -298,7 +297,12 @@ function LogsTableContent({
         accessorKey: 'logId',
         header: 'Log ID',
         cell: ({ row }: { row: Row<UiLogEntry> }) => (
-          <TableTimestampCell timestamp={row.original.timestamp} id={row.original.logId} formatTimestamp={false} />
+          <div className="flex flex-col justify-center shrink-0">
+            <TruncateText>{row.original.timestamp}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
+              {row.original.logId}
+            </TruncateText>
+          </div>
         ),
         enableSorting: false,
         meta: { width: 'w-[200px]' },
@@ -352,12 +356,20 @@ function LogsTableContent({
       {
         accessorKey: 'source',
         header: 'SOURCE',
-        cell: ({ row }: { row: Row<UiLogEntry> }) => (
-          <DeviceCardCompact
-            deviceName={row.original.device.name === 'null' ? 'System' : row.original.device.name}
-            organization={row.original.device.organization}
-          />
-        ),
+        cell: ({ row }: { row: Row<UiLogEntry> }) => {
+          const deviceName = row.original.device.name === 'null' ? 'System' : row.original.device.name;
+          const organization = row.original.device.organization;
+          return (
+            <div className="flex flex-col justify-center gap-1 py-2 min-h-[60px]">
+              {deviceName && <TruncateText>{deviceName}</TruncateText>}
+              {organization && (
+                <TruncateText variant="h6" tone="secondary">
+                  {organization}
+                </TruncateText>
+              )}
+            </div>
+          );
+        },
         enableSorting: false,
         filterFn: multiSelectFilterFn,
         meta: {
@@ -373,7 +385,14 @@ function LogsTableContent({
       {
         accessorKey: 'description',
         header: 'Log Details',
-        cell: ({ row }: { row: Row<UiLogEntry> }) => <TableDescriptionCell text={row.original.description.title} />,
+        cell: ({ row }: { row: Row<UiLogEntry> }) => (
+          <TruncateText
+            lines={3}
+            className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-secondary"
+          >
+            {row.original.description.title}
+          </TruncateText>
+        ),
         enableSorting: false,
         meta: { width: 'flex-1', hideAt: 'lg' },
       },
@@ -399,9 +418,7 @@ function LogsTableContent({
         cell: ({ row }: { row: Row<UiLogEntry> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={getLogDetailsUrl(row.original)}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(getLogDetailsUrl(row.original))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

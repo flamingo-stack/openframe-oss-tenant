@@ -1,6 +1,6 @@
 'use client';
 
-import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   CheckCircleIcon,
   MonitorIcon,
@@ -12,6 +12,7 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
+  EntityImage,
   type Row,
   type TabItem,
   TabNavigation,
@@ -27,7 +28,6 @@ import type { Device, DeviceFilters } from '@/app/(app)/devices/types/device.typ
 import { getDeviceStatusConfig } from '@/app/(app)/devices/utils/device-status';
 import { DevicesFilterToolbar } from '@/app/components/shared';
 import { renderDeviceTypeIcon } from '@/app/components/shared/device-type-icon';
-import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { DeviceSelectorProps } from './device-selector.types';
@@ -320,8 +320,13 @@ export function DeviceSelector({
                 )}
               </div>
               <div className="flex flex-col truncate">
-                <span className="text-h4 text-ods-text-primary truncate">{device.displayName || device.hostname}</span>
-                <span className="text-h6 text-ods-text-secondary truncate">
+                <span className="text-h4 text-ods-text-primary truncate" title={device.displayName || device.hostname}>
+                  {device.displayName || device.hostname}
+                </span>
+                <span
+                  className="text-h6 text-ods-text-secondary truncate"
+                  title={`Last Online: ${lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}`}
+                >
                   Last Online: {lastSeen ? formatRelativeTime(lastSeen) : 'unknown'}
                 </span>
               </div>
@@ -339,14 +344,10 @@ export function DeviceSelector({
           const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
           return (
             <div className="flex items-center gap-3">
-              {featureFlags.organizationImages.displayEnabled() && (
-                <OrganizationIcon
-                  imageUrl={fullImageUrl}
-                  organizationName={device.organization || 'Customer'}
-                  size="sm"
-                />
-              )}
-              <span className="text-h4 text-ods-text-primary truncate">{device.organization || ''}</span>
+              <EntityImage src={fullImageUrl} alt={device.organization || 'Customer'} className="size-12 md:size-12" />
+              <span className="text-h4 text-ods-text-primary truncate" title={device.organization || ''}>
+                {device.organization || ''}
+              </span>
             </div>
           );
         },

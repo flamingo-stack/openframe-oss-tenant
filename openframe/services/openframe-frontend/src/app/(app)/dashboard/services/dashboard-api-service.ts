@@ -4,8 +4,8 @@ import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries';
 import type { GraphQlResponse } from '../../devices/types/device.types';
-import { DIALOG_STATUS } from '../../tickets/constants';
-import { GET_DIALOG_STATISTICS_QUERY } from '../../tickets/queries/dialogs-queries';
+import { API_ENDPOINTS, TICKET_STATUS } from '../../tickets/constants';
+import { GET_TICKET_STATISTICS_QUERY } from '../../tickets/queries/ticket-queries';
 
 // ============ Types ============
 
@@ -17,7 +17,7 @@ export interface DashboardDeviceStats {
   inactivePercentage: number;
 }
 
-export interface DashboardChatStats {
+export interface DashboardTicketStats {
   total: number;
   active: number;
   resolved: number;
@@ -34,8 +34,8 @@ interface DeviceFiltersResponse {
   };
 }
 
-interface ChatStatsResponse {
-  dialogStatistics: {
+interface TicketStatsResponse {
+  ticketStatistics: {
     totalCount: number;
     statusCounts: Array<{ status: string; count: number }>;
     averageResolutionTimeFormatted: string;
@@ -101,26 +101,28 @@ class DashboardApiService {
   }
 
   /**
-   * Fetch chat statistics for SaaS mode
+   * Fetch ticket statistics for SaaS mode.
+   * Previously hit the legacy `dialogStatistics` query — replaced with
+   * `ticketStatistics` after the backend split tickets out from dialogs.
    */
-  async fetchChatStats(): Promise<DashboardChatStats> {
+  async fetchTicketStats(): Promise<DashboardTicketStats> {
     try {
-      const response = await apiClient.post<GraphQlResponse<ChatStatsResponse>>('/chat/graphql', {
-        query: GET_DIALOG_STATISTICS_QUERY,
+      const response = await apiClient.post<GraphQlResponse<TicketStatsResponse>>(API_ENDPOINTS.GRAPHQL, {
+        query: GET_TICKET_STATISTICS_QUERY,
       });
 
       if (!response.ok) {
-        throw new Error(response.error || `Chat stats request failed with status ${response.status}`);
+        throw new Error(response.error || `Ticket stats request failed with status ${response.status}`);
       }
 
-      const data = response.data?.data?.dialogStatistics;
+      const data = response.data?.data?.ticketStatistics;
       if (!data) {
-        throw new Error('Invalid chat stats response structure');
+        throw new Error('Invalid ticket stats response structure');
       }
 
       const total = data.totalCount || 0;
-      const active = (data.statusCounts || []).find(s => s.status === DIALOG_STATUS.ACTIVE)?.count || 0;
-      const resolved = (data.statusCounts || []).find(s => s.status === DIALOG_STATUS.RESOLVED)?.count || 0;
+      const active = (data.statusCounts || []).find(s => s.status === TICKET_STATUS.ACTIVE)?.count || 0;
+      const resolved = (data.statusCounts || []).find(s => s.status === TICKET_STATUS.RESOLVED)?.count || 0;
 
       return {
         total,
@@ -132,7 +134,7 @@ class DashboardApiService {
         resolvedPercentage: total > 0 ? Math.round((resolved / total) * 100) : 0,
       };
     } catch (error) {
-      throw this.handleApiError(error, 'Chat stats fetch');
+      throw this.handleApiError(error, 'Ticket stats fetch');
     }
   }
 }

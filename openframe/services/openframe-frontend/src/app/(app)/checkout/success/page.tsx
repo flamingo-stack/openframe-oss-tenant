@@ -1,0 +1,19 @@
+'use client';
+
+import { CheckCircle2 } from 'lucide-react';
+import { CheckoutResultCard } from '../components/checkout-result-card';
+
+export const dynamic = 'force-dynamic';
+
+export default function CheckoutSuccessPage() {
+  return (
+    <CheckoutResultCard
+      icon={CheckCircle2}
+      iconWrapperClassName="bg-ods-success-secondary text-ods-success"
+      title="Payment Successful"
+      description="Thanks for subscribing. Your plan is activating now — it may take a moment to show up across the app."
+      primaryCta={{ label: 'Continue to Dashboard', href: '/dashboard' }}
+      secondaryCta={{ label: 'View Subscription', href: '/settings/billing-usage/subscription' }}
+    />
+  );
+}

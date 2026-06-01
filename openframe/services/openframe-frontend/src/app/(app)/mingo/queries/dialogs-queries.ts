@@ -27,6 +27,7 @@ export const GET_MINGO_DIALOG_QUERY = `
     id
     title
     status
+    streamState
     owner {
       ... on ClientDialogOwner {
       machineId
@@ -78,6 +79,7 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
           chatType
           dialogMode
           createdAt
+          lastChunkStreamSeq
           owner {
             type
             ... on AdminOwner {

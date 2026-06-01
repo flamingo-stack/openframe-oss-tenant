@@ -27,6 +27,10 @@ const createArticleMutation = graphql`
         firstName
         lastName
         email
+        image {
+          imageUrl
+          hash
+        }
       }
       tags {
         id

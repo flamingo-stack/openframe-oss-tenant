@@ -338,11 +338,12 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             ))}
 
             <Button
-              variant="transparent"
+              type="button"
+              variant="outline"
+              size="small"
               onClick={addAction}
-              className="self-start text-ods-text-primary"
-              leftIcon={<PlusCircleIcon size={20} />}
-              noPaddingX
+              className="self-start"
+              leftIcon={<PlusCircleIcon className="text-ods-text-secondary" />}
             >
               Add Script
             </Button>

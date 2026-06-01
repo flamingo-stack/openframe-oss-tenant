@@ -9,6 +9,17 @@ export const DIALOG_STATUS = {
 
 export type DialogStatus = (typeof DIALOG_STATUS)[keyof typeof DIALOG_STATUS];
 
+// Ticket statuses — mirror the backend `TicketStatus` enum.
+export const TICKET_STATUS = {
+  ACTIVE: 'ACTIVE',
+  TECH_REQUIRED: 'TECH_REQUIRED',
+  ON_HOLD: 'ON_HOLD',
+  RESOLVED: 'RESOLVED',
+  ARCHIVED: 'ARCHIVED',
+} as const;
+
+export type TicketStatusValue = (typeof TICKET_STATUS)[keyof typeof TICKET_STATUS];
+
 export const DIALOG_MODE = {
   AI: 'AI',
   DIRECT: 'DIRECT',
@@ -69,6 +80,8 @@ export type AssistantType = (typeof ASSISTANT_CONFIG)[keyof typeof ASSISTANT_CON
 
 export const CREATION_SOURCE = {
   FAE_FORM: 'FAE_FORM',
+  FAE_DIALOG: 'FAE_DIALOG',
+  ADMIN_DASHBOARD: 'ADMIN_DASHBOARD',
 } as const;
 
 export type CreationSource = (typeof CREATION_SOURCE)[keyof typeof CREATION_SOURCE];

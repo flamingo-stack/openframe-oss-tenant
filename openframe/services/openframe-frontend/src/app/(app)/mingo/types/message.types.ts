@@ -7,6 +7,7 @@ export interface GraphQlMessage {
   chatType: ChatType;
   dialogMode: string;
   createdAt: string;
+  lastChunkStreamSeq?: number | null;
   owner: {
     type: OwnerType;
     model?: string;

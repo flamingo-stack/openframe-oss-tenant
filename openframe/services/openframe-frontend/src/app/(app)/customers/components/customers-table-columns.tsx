@@ -5,14 +5,16 @@ import {
   Button,
   type ColumnDef,
   DataTable,
+  EntityImage,
   Input,
   type Row,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
-import { type ReactNode, useMemo, useState } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
+import { type ReactNode, useMemo } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useCustomerDeviceCounts } from '../hooks/use-customer-device-counts';
 import type { Customer } from '../hooks/use-customers';
 
@@ -29,52 +31,18 @@ export interface UiCustomerEntry {
   imageUrl?: string | null;
 }
 
-function AvatarInitials({ initials }: { initials: string }) {
-  return (
-    <span className="flex size-full items-center justify-center text-xs font-medium uppercase text-ods-text-secondary">
-      {initials}
-    </span>
-  );
-}
-
-function AvatarImage({ src, initials }: { src: string; initials: string }) {
-  const [errored, setErrored] = useState(false);
-
-  if (errored) {
-    return <AvatarInitials initials={initials} />;
-  }
-
-  return (
-    <img src={src} alt="" onError={() => setErrored(true)} className="block size-full rounded-none object-cover" />
-  );
-}
-
-export function CustomerAvatar({ imageUrl, name }: { imageUrl?: string; name: string }) {
-  const initials = (name?.substring(0, 2) || '??').toUpperCase();
-
-  return (
-    <div className="size-12 shrink-0 overflow-hidden rounded-sm border border-ods-border bg-ods-bg">
-      {imageUrl ? (
-        <AvatarImage key={imageUrl} src={imageUrl} initials={initials} />
-      ) : (
-        <AvatarInitials initials={initials} />
-      )}
-    </div>
-  );
-}
-
 export function CustomerNameCell({ org }: { org: UiCustomerEntry }) {
   const fullImageUrl = getFullImageUrl(org.imageUrl);
 
   return (
     <div className="flex items-center gap-4 min-w-0">
-      {featureFlags.organizationImages.displayEnabled() && <CustomerAvatar imageUrl={fullImageUrl} name={org.name} />}
+      <EntityImage src={fullImageUrl} alt={org.name} className="size-12 md:size-12" />
       <div className="flex flex-col justify-center min-w-0">
-        <span className="text-h4 text-ods-text-primary truncate">{org.name}</span>
+        <TruncateText>{org.name}</TruncateText>
         {org.email && (
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
+          <TruncateText variant="h6" tone="secondary">
             {org.email}
-          </span>
+          </TruncateText>
         )}
       </div>
     </div>
@@ -106,9 +74,7 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
   {
     accessorKey: 'tier',
     header: 'Tier',
-    cell: ({ row }: { row: Row<UiCustomerEntry> }) => (
-      <span className="text-h4 text-ods-text-primary truncate">{row.original.tier}</span>
-    ),
+    cell: ({ row }: { row: Row<UiCustomerEntry> }) => <TruncateText>{row.original.tier}</TruncateText>,
     meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
   },
   {
@@ -122,9 +88,7 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
       return (
         <div className="flex flex-col justify-center min-w-0">
           <span className="text-h4 text-ods-text-primary truncate">{devicesLabel}</span>
-          <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-            {usersLabel}
-          </span>
+          <span className="text-h6 text-ods-text-secondary truncate">{usersLabel}</span>
         </div>
       );
     },
@@ -135,10 +99,8 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
     header: 'Last Activity',
     cell: ({ row }: { row: Row<UiCustomerEntry> }) => (
       <div className="flex flex-col justify-center min-w-0">
-        <span className="text-h4 text-ods-text-primary truncate">{row.original.lastActivityDate}</span>
-        <span className="font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary truncate">
-          {row.original.lastActivityRelative}
-        </span>
+        <TruncateText>{row.original.lastActivityDate}</TruncateText>
+        <span className="text-h6 text-ods-text-secondary truncate">{row.original.lastActivityRelative}</span>
       </div>
     ),
     meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
@@ -148,9 +110,7 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
     cell: ({ row }: { row: Row<UiCustomerEntry> }) => (
       <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
         <Button
-          href={`/customers/details/${row.original.organizationId}`}
-          prefetch={false}
-          openInNewTab
+          onClick={openInNewTab(`/customers/details/${row.original.organizationId}`)}
           variant="outline"
           size="icon"
           leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

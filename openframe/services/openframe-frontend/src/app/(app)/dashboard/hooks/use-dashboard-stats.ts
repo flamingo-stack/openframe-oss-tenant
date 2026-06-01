@@ -31,13 +31,13 @@ export function useDevicesOverview() {
   };
 }
 
-export function useChatsOverview() {
+export function useTicketsOverview() {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const isSaasMode = isSaasTenantMode();
 
   const query = useQuery({
-    queryKey: dashboardQueryKeys.chatStats(),
-    queryFn: dashboardApiService.fetchChatStats,
+    queryKey: dashboardQueryKeys.ticketStats(),
+    queryFn: dashboardApiService.fetchTicketStats,
     enabled: isSaasMode && isAuthenticated,
     staleTime: 3 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -61,21 +61,21 @@ export function useChatsOverview() {
 
 export function useSharedDashboardData() {
   const devicesQuery = useDevicesOverview();
-  const chatsQuery = useChatsOverview();
+  const ticketsQuery = useTicketsOverview();
 
   return {
     devices: {
       data: devicesQuery,
       isLoading: devicesQuery.isLoading,
     },
-    chats: {
-      data: chatsQuery,
-      isLoading: chatsQuery.isLoading,
+    tickets: {
+      data: ticketsQuery,
+      isLoading: ticketsQuery.isLoading,
     },
-    isAnyLoading: devicesQuery.isLoading || chatsQuery.isLoading,
+    isAnyLoading: devicesQuery.isLoading || ticketsQuery.isLoading,
     refetchAll: () => {
       devicesQuery.refetch();
-      chatsQuery.refetch();
+      ticketsQuery.refetch();
     },
   };
 }

@@ -1,22 +1,24 @@
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { OrganizationIcon, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
+  EntityImage,
   type OnChangeFn,
   type Row,
   Tag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type React from 'react';
 import { type ReactNode, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { deduplicateFilterOptions } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { DEFAULT_VISIBLE_STATUSES, DEVICE_STATUS } from '../constants/device-statuses';
 import type { Device, DeviceFilters } from '../types/device.types';
 import { getDeviceStatusConfig } from '../utils/device-status';
@@ -38,9 +40,7 @@ export const DEVICE_OPEN_COLUMN: ColumnDef<Device> = {
   cell: ({ row }: { row: Row<Device> }) => (
     <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
       <Button
-        href={deviceRowHref(row.original)}
-        prefetch={false}
-        openInNewTab
+        onClick={openInNewTab(deviceRowHref(row.original))}
         variant="outline"
         size="icon"
         leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -124,13 +124,9 @@ function OrganizationCell({ device }: { device: Device }) {
 
   return (
     <div className="flex items-center gap-3">
-      {featureFlags.organizationImages.displayEnabled() && (
-        <OrganizationIcon imageUrl={fullImageUrl} organizationName={device.organization || 'Customer'} size="sm" />
-      )}
+      <EntityImage src={fullImageUrl} alt={device.organization || 'Customer'} className="size-12 md:size-12" />
       <div className="flex flex-col justify-center flex-1 min-w-0">
-        <span className="font-['DM_Sans'] font-medium text-[16px] leading-[20px] text-ods-text-primary break-words">
-          {device.organization || ''}
-        </span>
+        <span className="text-h4 text-ods-text-primary break-words">{device.organization || ''}</span>
       </div>
     </div>
   );
@@ -234,10 +230,8 @@ export function getDeviceTableColumns(deviceFilters?: DeviceFilters | null): Col
                   className: 'w-5 h-5 text-ods-text-secondary',
                 })}
             </div>
-            <div className="text-h4 text-ods-text-primary truncate">
-              <p className="leading-[24px] overflow-ellipsis overflow-hidden whitespace-pre">
-                {device.displayName || device.hostname}
-              </p>
+            <div className="flex-1 min-w-0">
+              <TruncateText>{device.displayName || device.hostname}</TruncateText>
             </div>
           </div>
         );

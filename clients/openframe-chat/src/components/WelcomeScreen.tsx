@@ -1,10 +1,10 @@
-import { Button, FeatureList } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
-  WrenchScrewdiverIcon,
   BrainAIIcon,
   ClockCheckIcon,
+  WrenchScrewdiverIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { Button, FeatureList } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import faeAvatar from '../assets/fae-avatar.png';
 
 const ICON_COLOR = 'var(--ods-flamingo-pink-base)';
@@ -37,16 +37,12 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
     <div className="h-screen flex flex-col items-center bg-ods-bg">
-      <div className="flex flex-col gap-6 items-center justify-center flex-1 w-full max-w-[600px] px-4">
-        <img
-          src={faeAvatar}
-          alt="Fae"
-          className="size-16 rounded-full object-cover"
-        />
+      <div className="flex flex-col gap-[var(--spacing-system-lf)] items-center justify-center flex-1 w-full max-w-ods-content-narrow px-[var(--spacing-system-mf)]">
+        <img src={faeAvatar} alt="Fae" className="size-16 rounded-full object-cover" />
 
         <p className="text-h3 text-ods-text-primary text-center max-w-[504px]">
-          Meet Fae, your AI IT assistant. She fixes what she can right away — and
-          hands off the rest to your technicians.
+          Meet Fae, your AI IT assistant. She fixes what she can right away — and hands off the rest to your
+          technicians.
         </p>
 
         <FeatureList items={features} className="w-full" />
@@ -56,14 +52,10 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
         </Button>
       </div>
 
-      <div className="flex gap-2 items-center justify-center pb-6">
-        <span className="text-h6 text-ods-text-secondary normal-case tracking-normal">
-          Powered by
-        </span>
+      <div className="flex gap-[var(--spacing-system-xsf)] items-center justify-center pb-[var(--spacing-system-lf)]">
+        <span className="text-h6 text-ods-text-secondary normal-case tracking-normal">Powered by</span>
         <FlamingoLogo className="h-5 w-5" fill="var(--color-text-secondary)" />
-        <span className="font-heading text-sm text-ods-text-secondary">
-          Flamingo
-        </span>
+        <span className="font-heading text-sm text-ods-text-secondary">Flamingo</span>
       </div>
     </div>
   );

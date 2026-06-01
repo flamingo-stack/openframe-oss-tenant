@@ -4,16 +4,11 @@ import { Chevron02DownIcon } from '@flamingo-stack/openframe-frontend-core/compo
 import {
   ActionsMenuDropdown,
   type ActionsMenuItem,
-  Button,
   InputTrigger,
-  ModalV2,
-  ModalV2Content,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { type FolderChildrenAction, useDeleteFolder } from '../hooks/use-delete-folder';
 import { buildFolderTree, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
 import { buildFolderMenuItemsWithRoot, type FolderMenuTarget } from './folder-menu-items';
@@ -33,13 +28,6 @@ interface DeleteFolderModalProps {
   onDeleted?: () => void;
 }
 
-interface DeleteFolderContentProps {
-  onClose: () => void;
-  folder: DeleteFolderTarget;
-  sourceConnectionId: string;
-  onDeleted?: () => void;
-}
-
 type DeleteSelection = { kind: 'archive' } | { kind: 'move'; target: FolderMenuTarget };
 
 const DEFAULT_SELECTION: DeleteSelection = { kind: 'archive' };
@@ -48,12 +36,15 @@ function selectionLabel(selection: DeleteSelection): string {
   return selection.kind === 'archive' ? ARCHIVE_LABEL : selection.target.name;
 }
 
-function DeleteFolderContent({ onClose, folder, sourceConnectionId, onDeleted }: DeleteFolderContentProps) {
-  const { toast } = useToast();
-  const { deleteFolder, isPending } = useDeleteFolder();
-  const folders = useKnowledgeBaseFolders();
-  const [selection, setSelection] = useState<DeleteSelection>(DEFAULT_SELECTION);
+interface FolderPickerProps {
+  selection: DeleteSelection;
+  onSelect: (selection: DeleteSelection) => void;
+  excludeFolderId: string;
+  disabled?: boolean;
+}
 
+function FolderPicker({ selection, onSelect, excludeFolderId, disabled }: FolderPickerProps) {
+  const folders = useKnowledgeBaseFolders();
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
 
   const groups = useMemo<{ items: ActionsMenuItem[] }[]>(
@@ -63,16 +54,49 @@ function DeleteFolderContent({ onClose, folder, sourceConnectionId, onDeleted }:
           {
             id: '__archive__',
             label: ARCHIVE_LABEL,
-            onClick: () => setSelection({ kind: 'archive' }),
+            onClick: () => onSelect({ kind: 'archive' }),
           },
-          ...buildFolderMenuItemsWithRoot(tree, target => setSelection({ kind: 'move', target }), {
-            excludeFolderId: folder.id,
+          ...buildFolderMenuItemsWithRoot(tree, target => onSelect({ kind: 'move', target }), {
+            excludeFolderId,
           }),
         ],
       },
     ],
-    [tree, folder.id],
+    [tree, excludeFolderId, onSelect],
   );
+
+  return (
+    <ActionsMenuDropdown
+      groups={groups}
+      align="start"
+      side="bottom"
+      sideOffset={4}
+      contentClassName="z-[1400]"
+      customTrigger={
+        <InputTrigger
+          selectedLabel={selectionLabel(selection)}
+          endIcon={<Chevron02DownIcon className="size-6" />}
+          disabled={disabled}
+        />
+      }
+    />
+  );
+}
+
+function FolderPickerSkeleton() {
+  return <div className="h-12 w-full rounded-[6px] bg-ods-card animate-pulse" />;
+}
+
+export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId, onDeleted }: DeleteFolderModalProps) {
+  const { toast } = useToast();
+  const { deleteFolder, isPending } = useDeleteFolder();
+  const [selection, setSelection] = useState<DeleteSelection>(DEFAULT_SELECTION);
+
+  useEffect(() => {
+    if (!isOpen) setSelection(DEFAULT_SELECTION);
+  }, [isOpen]);
+
+  if (!folder) return null;
 
   const handleConfirm = () => {
     const childrenAction: FolderChildrenAction = selection.kind === 'archive' ? 'ARCHIVE' : 'MOVE';
@@ -90,87 +114,36 @@ function DeleteFolderContent({ onClose, folder, sourceConnectionId, onDeleted }:
   };
 
   return (
-    <>
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)] overflow-visible">
-        <p className="text-h4 text-ods-text-primary">
+    <ConfirmDialog
+      open={isOpen}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+      title="Delete Folder"
+      description={
+        <>
           Are you sure you want to delete <span className="text-ods-error">{folder.name}</span> folder? All articles
           inside will be archived or moved.
-        </p>
-
+        </>
+      }
+      confirmLabel="Delete Folder"
+      pendingLabel="Deleting..."
+      variant="destructive"
+      isPending={isPending}
+      onConfirm={handleConfirm}
+      extraContent={
         <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
           <p className="text-h4 text-ods-text-primary">Move Articles to</p>
-          <ActionsMenuDropdown
-            groups={groups}
-            align="start"
-            side="bottom"
-            sideOffset={4}
-            contentClassName="z-[1400]"
-            customTrigger={
-              <InputTrigger
-                selectedLabel={selectionLabel(selection)}
-                endIcon={<Chevron02DownIcon className="size-6" />}
-                disabled={isPending}
-              />
-            }
-          />
+          <Suspense fallback={<FolderPickerSkeleton />}>
+            <FolderPicker
+              selection={selection}
+              onSelect={setSelection}
+              excludeFolderId={folder.id}
+              disabled={isPending}
+            />
+          </Suspense>
         </div>
-      </ModalV2Content>
-
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Cancel
-        </Button>
-        <Button
-          variant="destructive"
-          className="flex-1"
-          onClick={handleConfirm}
-          disabled={isPending}
-          loading={isPending}
-        >
-          {isPending ? 'Deleting...' : 'Delete Folder'}
-        </Button>
-      </ModalV2Footer>
-    </>
-  );
-}
-
-function DeleteFolderContentSkeleton({ onClose }: { onClose: () => void }) {
-  return (
-    <>
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
-        <div className="h-6 w-3/4 rounded bg-ods-card animate-pulse" />
-        <div className="h-12 w-full rounded-[6px] bg-ods-card animate-pulse" />
-      </ModalV2Content>
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button variant="destructive" className="flex-1" disabled>
-          Delete Folder
-        </Button>
-      </ModalV2Footer>
-    </>
-  );
-}
-
-export function DeleteFolderModal({ isOpen, onClose, folder, sourceConnectionId, onDeleted }: DeleteFolderModalProps) {
-  return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>Delete Folder</ModalV2Title>
-      </ModalV2Header>
-      {isOpen && folder ? (
-        <Suspense fallback={<DeleteFolderContentSkeleton onClose={onClose} />}>
-          <DeleteFolderContent
-            onClose={onClose}
-            folder={folder}
-            sourceConnectionId={sourceConnectionId}
-            onDeleted={onDeleted}
-          />
-        </Suspense>
-      ) : (
-        <DeleteFolderContentSkeleton onClose={onClose} />
-      )}
-    </ModalV2>
+      }
+    />
   );
 }

@@ -2,17 +2,18 @@
 
 import {
   type AssistantType,
+  type ChatApprovalStatus,
   type Message as ChatMessage,
   extractIncompleteMessageState,
   type MessageSegment,
-  parseChunkToAction,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
+  type ToolExecutionSegment,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
-import { type ApprovalStatus, type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
+import { type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
 
 function isInProgress(segments: MessageSegment[]): boolean {
   return segments.some(seg => {
@@ -61,6 +62,7 @@ export function useSideChunkProcessor(
     appendSegmentsToLastAssistant,
     setAccumulatorCallbacks,
     updateApprovalStatusInMessages,
+    updateToolExecutionInMessages,
   } = useTicketDetailsStore();
 
   const { messages } = sideState;
@@ -150,6 +152,19 @@ export function useSideChunkProcessor(
         setStreamingMessage(side, null);
       },
       onTokenUsage: (data: TokenUsageData) => setTokenUsage(side, data),
+      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+        if (status === 'approved' || status === 'rejected') {
+          updateApprovalStatusInMessages('client', requestId, status);
+          updateApprovalStatusInMessages('admin', requestId, status);
+        }
+      },
+      onToolExecuted: (segment: ToolExecutionSegment) => {
+        const execId = segment.data.toolExecutionRequestId;
+        if (execId) {
+          updateToolExecutionInMessages('client', execId, segment.data);
+          updateToolExecutionInMessages('admin', execId, segment.data);
+        }
+      },
       onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string }) => {
         if (side === 'admin' && meta?.ownerType === 'ADMIN') return;
 
@@ -205,12 +220,14 @@ export function useSideChunkProcessor(
       onMetadata,
       onApprove,
       onReject,
+      updateApprovalStatusInMessages,
+      updateToolExecutionInMessages,
     ],
   );
 
   const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
-  const { processChunk: coreProcessChunk, updateApprovalStatus: coreUpdateApprovalStatus } = useRealtimeChunkProcessor({
+  const { processChunk } = useRealtimeChunkProcessor({
     callbacks,
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     initialState: incompleteState,
@@ -219,18 +236,5 @@ export function useSideChunkProcessor(
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
   });
 
-  return useCallback(
-    (chunk: unknown) => {
-      const action = parseChunkToAction(chunk);
-      if (action?.action === 'approval_result' && action.requestId) {
-        const status: ApprovalStatus = action.approved ? 'approved' : 'rejected';
-        coreUpdateApprovalStatus(action.requestId, status);
-        updateApprovalStatusInMessages('client', action.requestId, status);
-        updateApprovalStatusInMessages('admin', action.requestId, status);
-        return;
-      }
-      coreProcessChunk(chunk);
-    },
-    [coreProcessChunk, coreUpdateApprovalStatus, updateApprovalStatusInMessages],
-  );
+  return processChunk;
 }
