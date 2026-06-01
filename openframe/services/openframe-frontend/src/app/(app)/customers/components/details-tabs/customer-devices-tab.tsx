@@ -16,7 +16,6 @@ export function CustomerDevicesTab({ organizationId }: CustomerDevicesTabProps) 
       lockedFilters={lockedFilters}
       hideColumns={['organization']}
       hideFilters={['organization']}
-      defaultStatuses={[]}
     />
   );
 }
