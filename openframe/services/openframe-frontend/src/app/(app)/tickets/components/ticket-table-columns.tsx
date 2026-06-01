@@ -10,11 +10,13 @@ import {
   type Row,
   SquareAvatar,
   TicketStatusTag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { type ReactNode, useMemo } from 'react';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
 interface TicketTableColumnsOptions {
@@ -37,10 +39,10 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
       const ticket = row.original;
       return (
         <div className="flex flex-col justify-center min-w-0">
-          <span className="text-h4 text-ods-text-primary truncate block">{ticket.title || 'Untitled Ticket'}</span>
-          <span className="text-body-sm text-ods-text-secondary truncate block">
+          <TruncateText>{ticket.title || 'Untitled Ticket'}</TruncateText>
+          <TruncateText variant="h6" tone="secondary">
             {formatTimestamp(ticket.createdAt)}
-          </span>
+          </TruncateText>
         </div>
       );
     },
@@ -77,7 +79,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
             variant="round"
             className="shrink-0"
           />
-          <span className="text-h4 text-ods-text-primary truncate">{ticket.assignedName}</span>
+          <TruncateText>{ticket.assignedName}</TruncateText>
         </div>
       ) : (
         <span className="text-h4 text-ods-text-secondary">{'—'}</span>
@@ -116,9 +118,7 @@ export const TICKET_OPEN_COLUMN: ColumnDef<Dialog> = {
   cell: ({ row }: { row: Row<Dialog> }) => (
     <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
       <Button
-        href={ticketRowHref(row.original)}
-        prefetch={false}
-        openInNewTab
+        onClick={openInNewTab(ticketRowHref(row.original))}
         variant="outline"
         size="icon"
         leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

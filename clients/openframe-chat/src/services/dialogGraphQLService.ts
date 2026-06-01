@@ -33,6 +33,7 @@ export type MessageData = CoreMessageData;
 
 export interface Message extends HistoricalMessage {
   dialogMode: string;
+  lastChunkStreamSeq?: number | null;
 }
 
 export interface MessageEdge {
@@ -89,6 +90,7 @@ function getDialogMessagesQuery({ includeThinking = false } = {}) {
           chatType
           dialogMode
           createdAt
+          lastChunkStreamSeq
           owner {
             type
             ... on AdminOwner {
@@ -236,17 +238,14 @@ export class DialogGraphQlService {
     try {
       await tokenService.ensureTokenReady();
 
-      const data = await this.request<{ messages: MessagesConnection }>(
-        getDialogMessagesQuery({ includeThinking }),
-        {
-          dialogId,
-          chatType: 'CLIENT_CHAT',
-          cursor,
-          limit,
-          sortField: 'createdAt',
-          sortDirection: 'DESC',
-        },
-      );
+      const data = await this.request<{ messages: MessagesConnection }>(getDialogMessagesQuery({ includeThinking }), {
+        dialogId,
+        chatType: 'CLIENT_CHAT',
+        cursor,
+        limit,
+        sortField: 'createdAt',
+        sortDirection: 'DESC',
+      });
 
       return data.messages || null;
     } catch (error) {

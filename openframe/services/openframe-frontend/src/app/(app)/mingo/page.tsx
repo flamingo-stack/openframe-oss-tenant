@@ -77,8 +77,7 @@ export default function Mingo() {
     assistantType,
   } = useMingoChat(activeDialogId);
 
-  const { subscribeToDialog, subscribedDialogs, isDevTicketEnabled, onConnectionChange } =
-    useMingoRealtimeSubscription(activeDialogId);
+  const { subscribeToDialog, subscribedDialogs, onConnectionChange } = useMingoRealtimeSubscription(activeDialogId);
 
   useEffect(() => {
     if (activeDialogId && dialogData?.tokenUsage) {
@@ -167,7 +166,7 @@ export default function Mingo() {
   // it flips true→false for one tick on every dialog switch, and feeding that
   // into the textarea's `disabled` made the placeholder visibly jerk on each
   // switch. The message list still shows its own loader via `isAnyLoading`.
-  const isComposerBusy = isTyping || isCompacting || isCreatingDialog || pendingApprovals.length > 0;
+  const isComposerBusy = isTyping || isCompacting || isCreatingDialog;
 
   // The store's `activeDialogId` is only populated by an effect after the first
   // render. Reading the dialog id from the URL synchronously during render lets
@@ -341,24 +340,20 @@ export default function Mingo() {
 
   return (
     <ContentPageContainer padding="none" showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
-      {Array.from(subscribedDialogs).map(dialogId => {
-        const isActive = dialogId === activeDialogId;
-        return (
-          <DialogSubscription
-            key={dialogId}
-            dialogId={dialogId}
-            isActive={isActive}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            approvalStatuses={approvalStatuses}
-            isDevTicketEnabled={isDevTicketEnabled}
-            onConnectionChange={onConnectionChange}
-            onMetadata={isActive ? handleMetadataUpdate : undefined}
-            initialOptStartSeq={isActive ? initialOptStartSeq : null}
-            isInitialOptStartSeqReady={isActive ? isMessagesFetched : true}
-          />
-        );
-      })}
+      {activeDialogId && subscribedDialogs.has(activeDialogId) && (
+        <DialogSubscription
+          key={activeDialogId}
+          dialogId={activeDialogId}
+          isActive
+          onApprove={handleApprove}
+          onReject={handleReject}
+          approvalStatuses={approvalStatuses}
+          onConnectionChange={onConnectionChange}
+          onMetadata={handleMetadataUpdate}
+          initialOptStartSeq={initialOptStartSeq}
+          isInitialOptStartSeqReady={isMessagesFetched}
+        />
+      )}
 
       <div className="flex h-full w-full">
         {sidebarOpen && (
@@ -418,7 +413,7 @@ export default function Mingo() {
               ref={chatInputRef}
               placeholder="Enter your Request..."
               onSend={handleSendMessage}
-              onStop={isTyping && !isCompacting && pendingApprovals.length === 0 ? stopGeneration : undefined}
+              onStop={isTyping && !isCompacting ? stopGeneration : undefined}
               sending={isComposerBusy}
               autoFocus={effectiveDraft}
               className="bg-ods-card rounded-lg !max-w-3xl"

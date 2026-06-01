@@ -19,13 +19,13 @@ import { useApproveRequestMutation, useRejectRequestMutation } from '../services
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
 
-function computeInitialStartSeq(pages: MessagePage[] | undefined): number | null {
-  if (!pages) return null;
-  let max: number | null = null;
+function computeInitialStartSeq(pages: MessagePage[] | undefined): number {
+  let max = 0;
+  if (!pages) return max;
   for (const page of pages) {
     for (const msg of page.messages) {
       const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && (max == null || seq > max)) {
+      if (typeof seq === 'number' && seq > max) {
         max = seq;
       }
     }
@@ -56,14 +56,21 @@ export function useMingoDialogSelection() {
     async (requestId?: string) => {
       if (!requestId || !activeDialogId) return;
 
+      // Optimistically flip *before* the network round-trip. Backend starts
+      // streaming the continuation immediately on approval; if we wait for
+      // the mutation to resolve, the incoming message_start chunk sees the
+      // bubble as still-pending and adopts it, then text chunks overwrite
+      // the approval card. Flipping first means isInProgress returns false
+      // for the resolved approval and the next chunk spawns a fresh bubble.
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.APPROVED,
+      }));
+      updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED);
+
       try {
         await approveRequestMutation.mutateAsync(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.APPROVE_MINGO_COMMAND);
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.APPROVED,
-        }));
-        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.APPROVED);
       } catch (error) {
         toast({
           title: 'Approval Failed',
@@ -80,14 +87,15 @@ export function useMingoDialogSelection() {
     async (requestId?: string) => {
       if (!requestId || !activeDialogId) return;
 
+      setApprovalStatuses(prev => ({
+        ...prev,
+        [requestId]: APPROVAL_STATUS.REJECTED,
+      }));
+      updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED);
+
       try {
         await rejectRequestMutation.mutateAsync(requestId);
         trackDashboardActivity(EVENT_SUBTYPE.REJECT_MINGO_COMMAND);
-        setApprovalStatuses(prev => ({
-          ...prev,
-          [requestId]: APPROVAL_STATUS.REJECTED,
-        }));
-        updateApprovalStatusInMessages(activeDialogId, requestId, APPROVAL_STATUS.REJECTED);
       } catch (error) {
         toast({
           title: 'Rejection Failed',

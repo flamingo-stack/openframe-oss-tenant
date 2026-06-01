@@ -13,6 +13,7 @@ import {
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { getTicketTableColumns } from '../../../tickets/components/ticket-table-columns';
 import { useTicketsQuery } from '../../../tickets/hooks/use-tickets-query';
 import type { ClientDialogOwner, Dialog } from '../../../tickets/types/dialog.types';
@@ -63,9 +64,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
         cell: ({ row }: { row: Row<Dialog> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={`/tickets/dialog?id=${row.original.id}`}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(`/tickets/dialog?id=${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}

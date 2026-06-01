@@ -12,8 +12,9 @@ import {
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
+import { DevicesGridFilters } from '@/app/(app)/devices/components/devices-grid-filters';
 import {
   DevicesTableBody,
   getDeviceFilterColumns,
@@ -139,6 +140,14 @@ export function DevicesPanel({
     setParams,
   });
 
+  // Grid layout is desktop-only — force-collapse to table on mobile so the
+  // user always gets a usable list at narrow widths.
+  useEffect(() => {
+    if (!isMdUp && params.viewMode === 'grid') {
+      setParam('viewMode', 'table');
+    }
+  }, [isMdUp, params.viewMode, setParam]);
+
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const gridSentinelRef = useGridInfiniteScroll({
@@ -221,14 +230,21 @@ export function DevicesPanel({
               }
             />
           ) : (
-            <DevicesGrid
-              devices={devices}
-              isLoading={isLoading}
-              filters={filters}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-              sentinelRef={gridSentinelRef}
-            />
+            <>
+              <DevicesGridFilters
+                filterColumns={filterColumns}
+                currentFilters={tableFilters}
+                onFilterChange={handleFilterChange}
+                totalCount={filteredCount}
+              />
+              <DevicesGrid
+                devices={devices}
+                isLoading={isLoading}
+                hasNextPage={hasNextPage}
+                isFetchingNextPage={isFetchingNextPage}
+                sentinelRef={gridSentinelRef}
+              />
+            </>
           )}
         </div>
       </PageLayout>

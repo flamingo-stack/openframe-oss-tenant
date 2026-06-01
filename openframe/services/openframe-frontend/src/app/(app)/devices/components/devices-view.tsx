@@ -211,7 +211,6 @@ export function DevicesView() {
             <DevicesGrid
               devices={devices}
               isLoading={isLoading}
-              filters={filters}
               hasNextPage={hasNextPage}
               isFetchingNextPage={isFetchingNextPage}
               sentinelRef={gridSentinelRef}

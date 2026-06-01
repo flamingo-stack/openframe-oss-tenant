@@ -34,6 +34,7 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
           chatType
           dialogMode
           createdAt
+          lastChunkStreamSeq
           owner {
             type
             ... on AdminOwner {

@@ -15,7 +15,9 @@ export function renderAvatarOption(variant: AvatarVariant) {
       <div className="flex items-center justify-between w-full min-w-0 gap-[var(--spacing-system-xs)]">
         <div className="flex items-center gap-[var(--spacing-system-xs)] min-w-0">
           <SquareAvatar src={getFullImageUrl(imageUrl)} alt={label} fallback={label} size="sm" variant={variant} />
-          <span className="truncate">{label}</span>
+          <span className="truncate" title={label}>
+            {label}
+          </span>
         </div>
         {isSelected && <CheckIcon className="text-ods-accent" size={20} />}
       </div>

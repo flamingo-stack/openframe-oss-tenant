@@ -1,12 +1,11 @@
 'use client';
 
-import { Modal, ModalHeader, ModalTitle } from '@flamingo-stack/openframe-frontend-core';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
-import { X } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { apiClient } from '@/lib/api-client';
 import { DEVICE_STATUS } from '../../../devices/constants/device-statuses';
 import { GET_DEVICES_QUERY } from '../../../devices/queries/devices-queries';
@@ -123,56 +122,41 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     onClose();
   }, [onClose]);
 
-  const footer = useMemo(
-    () => (
-      <div className="flex justify-end gap-3 px-10 py-6 border-t border-ods-border">
-        <Button variant="outline" onClick={handleClose}>
-          Cancel
-        </Button>
-        <Button variant="accent" onClick={handleConfirm} disabled={selectedIds.size === 0}>
-          Select Device
-        </Button>
-      </div>
-    ),
-    [handleClose, handleConfirm, selectedIds.size],
-  );
-
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} className="max-w-6xl h-[90vh] max-h-[900px] flex flex-col">
-      <ModalHeader>
-        <div className="flex items-center justify-between w-full">
-          <ModalTitle>Select Device</ModalTitle>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="text-ods-text-secondary hover:text-ods-text-primary transition-colors"
-          >
-            <X size={24} />
-          </button>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={handleClose}
+      className="max-w-6xl h-[90vh] max-h-[900px]"
+      title="Select Device"
+      contentClassName=""
+      footer={
+        <>
+          <Button variant="outline" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="accent" onClick={handleConfirm} disabled={selectedIds.size === 0}>
+            Select Device
+          </Button>
+        </>
+      }
+    >
+      {!hasPlatforms ? (
+        <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
+          <p className="text-ods-text-secondary">Select at least one supported platform to see available devices.</p>
         </div>
-      </ModalHeader>
-
-      <div className="flex-1 min-h-0 overflow-y-auto px-10 pt-4 pb-6">
-        {!hasPlatforms ? (
-          <div className="flex items-center justify-center h-64 bg-ods-card border border-ods-border rounded-[6px]">
-            <p className="text-ods-text-secondary">Select at least one supported platform to see available devices.</p>
-          </div>
-        ) : (
-          <DeviceSelector
-            devices={devices}
-            loading={devicesQuery.isLoading}
-            selectedIds={selectedIds}
-            getDeviceKey={getDevicePrimaryId}
-            onSelectionChange={setSelectedIds}
-            showSelectionModeRadio={false}
-            addAllBehavior="replace"
-            singleSelect
-            isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
-          />
-        )}
-      </div>
-
-      {footer}
-    </Modal>
+      ) : (
+        <DeviceSelector
+          devices={devices}
+          loading={devicesQuery.isLoading}
+          selectedIds={selectedIds}
+          getDeviceKey={getDevicePrimaryId}
+          onSelectionChange={setSelectedIds}
+          showSelectionModeRadio={false}
+          addAllBehavior="replace"
+          singleSelect
+          isDeviceDisabled={d => (!getTacticalAgentId(d) ? 'Tactical agent is\nnot installed' : undefined)}
+        />
+      )}
+    </SimpleModal>
   );
 }

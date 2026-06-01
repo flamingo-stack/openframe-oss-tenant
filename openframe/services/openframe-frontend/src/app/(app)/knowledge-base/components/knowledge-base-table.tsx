@@ -256,17 +256,23 @@ export function readKnowledgeBaseItems(
 
 interface ArchivedArticlesTableProps {
   search: string;
+  tagIds?: ReadonlyArray<string>;
   emptyMessage?: string;
 }
 
-function ArchivedArticlesTableContent({ search, emptyMessage = 'No archived articles.' }: ArchivedArticlesTableProps) {
+function ArchivedArticlesTableContent({
+  search,
+  tagIds,
+  emptyMessage = 'No archived articles.',
+}: ArchivedArticlesTableProps) {
   const { toast } = useToast();
+  const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds] : null;
 
   const queryData = useLazyLoadQuery<ArchivedQueryType>(
     archivedArticlesTableRelayQuery,
     {
       search: search || null,
-      tagIds: null,
+      tagIds: normalizedTagIds,
       first: KNOWLEDGE_BASE_PAGE_SIZE,
       after: null,
     },
@@ -292,7 +298,10 @@ function ArchivedArticlesTableContent({ search, emptyMessage = 'No archived arti
     });
   }, [hasNext, isLoadingNext, loadNext, toast]);
 
-  const archivedConnectionId = getArchivedArticlesConnectionId({ search: search || null, tagIds: null });
+  const archivedConnectionId = getArchivedArticlesConnectionId({
+    search: search || null,
+    tagIds: normalizedTagIds,
+  });
 
   return (
     <KnowledgeBaseItemsListView

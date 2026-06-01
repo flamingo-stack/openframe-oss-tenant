@@ -70,14 +70,20 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
 
   const customerInner = device.organization && (
     <>
-      <EntityImage src={customerImageUrl} alt={device.organization} className="size-10 md:size-10 rounded-full" />
+      <EntityImage src={customerImageUrl} alt={device.organization} className="size-10 md:size-10" />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         {customerHref ? (
-          <Link href={customerHref} className="text-ods-accent underline hover:opacity-80 text-h4 truncate">
+          <Link
+            href={customerHref}
+            className="text-ods-accent underline hover:opacity-80 text-h4 truncate"
+            title={device.organization}
+          >
             {device.organization}
           </Link>
         ) : (
-          <p className="text-ods-text-primary text-h4 truncate">{device.organization}</p>
+          <p className="text-ods-text-primary text-h4 truncate" title={device.organization}>
+            {device.organization}
+          </p>
         )}
         <p className="text-ods-text-secondary text-h6 truncate">Customer ID (Site)</p>
       </div>
@@ -88,7 +94,9 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
     <>
       <EntityImage src={assignedUserImageUrl} alt={assignedUser.username} className="size-10 md:size-10 rounded-full" />
       <div className="flex flex-col justify-center min-w-0 flex-1">
-        <p className="text-ods-accent underline text-h4 truncate">{assignedUser.username}</p>
+        <p className="text-ods-accent underline text-h4 truncate" title={assignedUser.username}>
+          {assignedUser.username}
+        </p>
         <p className="text-ods-text-secondary text-h6 truncate">Assigned User</p>
       </div>
     </>

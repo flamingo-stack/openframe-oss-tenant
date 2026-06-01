@@ -2,12 +2,6 @@
 
 import { AuthProvidersList } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
   Button,
   Card,
   CardContent,
@@ -19,6 +13,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useInviteProviders } from '@/app/(auth)/auth/hooks/use-invite-providers';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { authApiClient } from '@/lib/auth-api-client';
 import { AuthLayout } from '../layouts';
 
@@ -383,25 +378,15 @@ export default function InvitePage() {
         </Card>
       </div>
 
-      {/* Tenant Switch Dialog */}
-      <AlertDialog open={showTenantSwitch} onOpenChange={setShowTenantSwitch}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Switch Organization?</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are already registered in another organization. Would you like to switch to this new organization?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <Button onClick={() => setShowTenantSwitch(false)} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleTenantSwitch} variant="accent">
-              Yes, Switch Organization
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={showTenantSwitch}
+        onOpenChange={setShowTenantSwitch}
+        title="Switch Organization?"
+        description="You are already registered in another organization. Would you like to switch to this new organization?"
+        confirmLabel="Yes, Switch Organization"
+        variant="default"
+        onConfirm={handleTenantSwitch}
+      />
     </AuthLayout>
   );
 }

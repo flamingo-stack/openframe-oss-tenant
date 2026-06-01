@@ -129,7 +129,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
               <div className="font-['DM_Sans'] font-medium text-[16px] md:text-[18px] leading-[22px] md:leading-[24px] text-ods-text-primary break-words">
                 {logDetails.message || 'No message available'}
               </div>
-              <div className="flex items-center gap-2 font-['DM_Sans'] font-medium text-[14px] leading-[20px] text-ods-text-secondary">
+              <div className="flex items-center gap-2 text-h6 text-ods-text-secondary">
                 <ToolBadge toolType={normalizeToolTypeWithFallback(logDetails.toolType)} />
                 <span>•</span>
                 <span>{logDetails.eventType}</span>

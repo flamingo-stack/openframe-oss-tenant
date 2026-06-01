@@ -3,20 +3,25 @@
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
 import {
   ArrowRightUpIcon,
+  LaptopIcon,
   PenEditIcon,
   PlusCircleIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  ActionsMenuDropdown,
+  type ActionsMenuGroup,
   Button,
   type ColumnDef,
   DataTable,
   ListPageLayout,
   type Row,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
 import type { ScriptScheduleListItem, ScriptScheduleTaskType } from '../types/script-schedule.types';
 import { formatScheduleDate } from '../types/script-schedule.types';
@@ -75,16 +80,51 @@ export function ScriptSchedulesTable() {
     }
   }, [params.search]);
 
+  const renderRowActions = useCallback((schedule: ScriptScheduleListItem) => {
+    const editHref = `/scripts/schedules/${schedule.id}/edit`;
+    const devicesHref = `/scripts/schedules/${schedule.id}/devices`;
+    const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
+
+    const groups: ActionsMenuGroup[] = [
+      {
+        items: [
+          {
+            id: 'edit-schedule',
+            label: 'Edit Schedule',
+            icon: <PenEditIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: editHref,
+            iconAction: {
+              icon: newTabIcon,
+              'aria-label': 'Open Edit Schedule in new tab',
+              href: editHref,
+              openInNewTab: true,
+            },
+          },
+          {
+            id: 'edit-devices',
+            label: 'Edit Devices',
+            icon: <LaptopIcon className="w-6 h-6 text-ods-text-secondary" />,
+            href: devicesHref,
+            iconAction: {
+              icon: newTabIcon,
+              'aria-label': 'Open Edit Devices in new tab',
+              href: devicesHref,
+              openInNewTab: true,
+            },
+          },
+        ],
+      },
+    ];
+
+    return <ActionsMenuDropdown groups={groups} />;
+  }, []);
+
   const columns = useMemo<ColumnDef<ScriptScheduleListItem>[]>(
     () => [
       {
         accessorKey: 'name',
         header: 'Script',
-        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
-          <span className="text-h4 text-ods-text-primary whitespace-nowrap text-ellipsis truncate">
-            {row.original.name}
-          </span>
-        ),
+        cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => <TruncateText>{row.original.name}</TruncateText>,
         meta: { width: 'flex-1 min-w-0' },
       },
       {
@@ -129,16 +169,8 @@ export function ScriptSchedulesTable() {
       {
         id: 'actions',
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
-          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-            <Button
-              href={`/scripts/schedules/${row.original.id}/edit`}
-              prefetch={false}
-              variant="outline"
-              size="icon"
-              leftIcon={<PenEditIcon size={20} className="text-ods-text-primary" />}
-              aria-label="Edit schedule"
-              className="bg-ods-card"
-            />
+          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
+            {renderRowActions(row.original)}
           </div>
         ),
         enableSorting: false,
@@ -149,9 +181,7 @@ export function ScriptSchedulesTable() {
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              href={`/scripts/schedules/${row.original.id}`}
-              prefetch={false}
-              openInNewTab
+              onClick={openInNewTab(`/scripts/schedules/${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -164,7 +194,7 @@ export function ScriptSchedulesTable() {
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [],
+    [renderRowActions],
   );
 
   const table = useDataTable<ScriptScheduleListItem>({

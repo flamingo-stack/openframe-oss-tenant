@@ -3,6 +3,7 @@
 import type { ActionsMenuGroup, PageActionButton } from '@flamingo-stack/openframe-frontend-core';
 import {
   BoxArchiveIcon,
+  FileEditIcon,
   FolderEditIcon,
   PenEditIcon,
   Refresh01LeftIcon,
@@ -28,6 +29,7 @@ import { useDownloadArticleAttachment } from '../hooks/use-download-article-atta
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import { getKnowledgeBaseArticlesConnectionId } from '../hooks/use-knowledge-base-items';
 import { usePublishArticle } from '../hooks/use-publish-article';
+import { useUnpublishArticle } from '../hooks/use-unpublish-article';
 import { ArchiveArticleModal } from './archive-article-modal';
 import { SimpleMarkdownRenderer } from './lazy-markdown';
 import { MoveToFolderModal } from './move-to-folder-modal';
@@ -50,6 +52,7 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   const { toast } = useToast();
   const article = useKnowledgeBaseItem(articleId);
   const { publishArticle, isPending: isPublishing } = usePublishArticle();
+  const { unpublishArticle, isPending: isUnpublishing } = useUnpublishArticle();
   const { download: downloadAttachment } = useDownloadArticleAttachment();
 
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -98,6 +101,13 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
     } catch {}
   }, [publishArticle, article.id, article.name, toast]);
 
+  const handleUnpublish = useCallback(async () => {
+    try {
+      await unpublishArticle(article.id);
+      toast({ title: 'Moved to draft', description: article.name, variant: 'success' });
+    } catch {}
+  }, [unpublishArticle, article.id, article.name, toast]);
+
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     if (status === 'ARCHIVED') return [];
     return [
@@ -115,10 +125,21 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
             icon: <FolderEditIcon className="w-6 h-6 text-ods-text-secondary" />,
             onClick: () => setMoveOpen(true),
           },
+          ...(status === 'PUBLISHED'
+            ? [
+                {
+                  id: 'move-to-draft',
+                  label: isUnpublishing ? 'Saving...' : 'Move to Draft',
+                  icon: <FileEditIcon className="w-6 h-6 text-ods-text-secondary" />,
+                  onClick: handleUnpublish,
+                  disabled: isUnpublishing,
+                },
+              ]
+            : []),
         ],
       },
     ];
-  }, [status]);
+  }, [status, isUnpublishing, handleUnpublish]);
 
   const actions: PageActionButton[] =
     status === 'ARCHIVED'
@@ -177,13 +198,17 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
               variant="round"
             />
             <div className="flex flex-col min-w-0 flex-1">
-              <p className="text-h4 text-ods-text-primary truncate">{authorName ?? 'Unknown'}</p>
+              <p className="text-h4 text-ods-text-primary truncate" title={authorName ?? 'Unknown'}>
+                {authorName ?? 'Unknown'}
+              </p>
               <p className="text-heading-5 text-ods-text-secondary truncate">Author</p>
             </div>
           </div>
 
           <div className="flex flex-col min-w-0 h-20 justify-center">
-            <p className="text-h4 text-ods-text-primary truncate">{updatedAt ? formatDate(updatedAt) : '-'}</p>
+            <p className="text-h4 text-ods-text-primary truncate" title={updatedAt ? formatDate(updatedAt) : '-'}>
+              {updatedAt ? formatDate(updatedAt) : '-'}
+            </p>
             <p className="text-heading-5 text-ods-text-secondary truncate">Updated</p>
           </div>
 

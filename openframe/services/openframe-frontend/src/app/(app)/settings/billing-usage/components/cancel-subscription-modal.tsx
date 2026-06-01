@@ -3,11 +3,6 @@
 import { AlertCircleIcon, DotIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
-  ModalV2,
-  ModalV2Content,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
   Select,
   SelectContent,
   SelectItem,
@@ -17,6 +12,7 @@ import {
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useEffect, useId, useState } from 'react';
+import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { formatDate } from '@/lib/format-date';
 
 export type CancelReason = 'TOO_EXPENSIVE' | 'NOT_USING_ENOUGH' | 'MISSING_FEATURE' | 'TECHNICAL_ISSUES' | 'OTHER';
@@ -91,72 +87,73 @@ export function CancelSubscriptionModal({
   };
 
   return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>Cancel Subscription</ModalV2Title>
-      </ModalV2Header>
+    <SimpleModal
+      isOpen={isOpen}
+      onClose={onClose}
+      className="max-w-[600px]"
+      title="Cancel Subscription"
+      contentClassName="flex flex-col gap-[var(--spacing-system-l)]"
+      footer={
+        <>
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
+            Keep Subscription
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex-1"
+            onClick={handleConfirm}
+            disabled={!reason || isPending}
+            loading={isPending}
+          >
+            Continue
+          </Button>
+        </>
+      }
+    >
+      <div className="text-h4 text-ods-text-primary gap-[var(--spacing-system-xs)] flex">
+        <span>Your subscription will remain active until:</span>
+        <span className="text-ods-warning">{formatEndDate(endDate)}</span>
+      </div>
+      <p className="text-h4 text-ods-text-primary">
+        Pay-as-you-go top-ups are disabled immediately. Any usage already accrued will be charged at the end of the
+        billing period.
+      </p>
 
-      <ModalV2Content className="flex flex-col gap-[var(--spacing-system-l)]">
-        <div className="text-h4 text-ods-text-primary gap-[var(--spacing-system-xs)] flex">
-          <span>Your subscription will remain active until:</span>
-          <span className="text-ods-warning">{formatEndDate(endDate)}</span>
-        </div>
-        <p className="text-h4 text-ods-text-primary">
-          Pay-as-you-go top-ups are disabled immediately. Any usage already accrued will be charged at the end of the
-          billing period.
-        </p>
+      {isStatsLoading || !stats ? <DataLossSkeleton /> : <DataLossBox stats={stats} />}
 
-        {isStatsLoading || !stats ? <DataLossSkeleton /> : <DataLossBox stats={stats} />}
+      <div className="flex flex-col gap-1">
+        <label className="text-h3 text-ods-text-primary" htmlFor={reasonId}>
+          {`What's the main reason you're cancelling?`}
+        </label>
+        <Select value={reason} onValueChange={v => setReason(v as CancelReason)}>
+          <SelectTrigger id={reasonId} className="bg-ods-card w-full">
+            <SelectValue placeholder="Select the Reason" />
+          </SelectTrigger>
+          <SelectContent>
+            {REASON_OPTIONS.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
+      {reason === 'OTHER' && (
         <div className="flex flex-col gap-1">
-          <label className="text-h3 text-ods-text-primary" htmlFor={reasonId}>
-            {`What's the main reason you're cancelling?`}
+          <label className="text-h3 text-ods-text-primary" htmlFor={commentId}>
+            {`What's on your mind?`}
           </label>
-          <Select value={reason} onValueChange={v => setReason(v as CancelReason)}>
-            <SelectTrigger id={reasonId} className="bg-ods-card w-full">
-              <SelectValue placeholder="Select the Reason" />
-            </SelectTrigger>
-            <SelectContent>
-              {REASON_OPTIONS.map(opt => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Textarea
+            id={commentId}
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="Tell us what's not working for you."
+            rows={3}
+          />
         </div>
-
-        {reason === 'OTHER' && (
-          <div className="flex flex-col gap-1">
-            <label className="text-h3 text-ods-text-primary" htmlFor={commentId}>
-              {`What's on your mind?`}
-            </label>
-            <Textarea
-              id={commentId}
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              placeholder="Tell us what's not working for you."
-              rows={3}
-            />
-          </div>
-        )}
-      </ModalV2Content>
-
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Keep Subscription
-        </Button>
-        <Button
-          variant="destructive"
-          className="flex-1"
-          onClick={handleConfirm}
-          disabled={!reason || isPending}
-          loading={isPending}
-        >
-          Continue
-        </Button>
-      </ModalV2Footer>
-    </ModalV2>
+      )}
+    </SimpleModal>
   );
 }
 

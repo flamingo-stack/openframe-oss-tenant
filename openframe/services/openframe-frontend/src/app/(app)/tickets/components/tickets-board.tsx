@@ -78,7 +78,7 @@ export function TicketsBoard({
   const { mutate: moveTicket } = useMoveTicket();
   const movingIds = useMovingTicketIds();
   const { data: statusTransitions } = useTicketStatusTransitions();
-  const { actions, menuActions } = useTicketsActions({ isLoading });
+  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading });
 
   const allowedFromByStatus = useMemo<Partial<Record<BoardStatus, string[]>>>(() => {
     if (!statusTransitions) return {};
@@ -129,47 +129,50 @@ export function TicketsBoard({
   }
 
   return (
-    <PageLayout
-      title="Tickets"
-      actions={actions.length > 0 ? actions : undefined}
-      menuActions={menuActions.length > 0 ? menuActions : undefined}
-      actionsVariant="menu-primary"
-      selector={selector}
-      className="h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      contentClassName="flex flex-col min-h-0"
-    >
-      <div className="flex flex-col gap-[var(--spacing-system-l)]">
-        <Input
-          placeholder="Search for Ticket"
-          value={search}
-          onChange={e => onSearchChange(e.target.value)}
-          startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-        />
-        <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
-          <OrganizationFilter
-            value={organizationIds ?? []}
-            onChange={ids => onOrganizationIdsChange?.(ids)}
-            className="col-span-1"
+    <>
+      <PageLayout
+        title="Tickets"
+        actions={actions.length > 0 ? actions : undefined}
+        menuActions={menuActions.length > 0 ? menuActions : undefined}
+        actionsVariant="menu-primary"
+        selector={selector}
+        className="h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+        contentClassName="flex flex-col min-h-0"
+      >
+        <div className="flex flex-col gap-[var(--spacing-system-l)]">
+          <Input
+            placeholder="Search for Ticket"
+            value={search}
+            onChange={e => onSearchChange(e.target.value)}
+            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
           />
-          <AssigneeFilter
-            value={assigneeIds ?? []}
-            onChange={ids => onAssigneeIdsChange?.(ids)}
-            className="col-span-1"
+          <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
+            <OrganizationFilter
+              value={organizationIds ?? []}
+              onChange={ids => onOrganizationIdsChange?.(ids)}
+              className="col-span-1"
+            />
+            <AssigneeFilter
+              value={assigneeIds ?? []}
+              onChange={ids => onAssigneeIdsChange?.(ids)}
+              className="col-span-1"
+            />
+          </div>
+        </div>
+
+        <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+          <Board
+            columns={boardColumns}
+            onChange={handleChange}
+            onLoadMore={loadMore}
+            getTicketHref={getTicketHref}
+            renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+            collapseStorageKey="tickets-board"
+            className="h-full px-[var(--spacing-system-l)]"
           />
         </div>
-      </div>
-
-      <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
-        <Board
-          columns={boardColumns}
-          onChange={handleChange}
-          onLoadMore={loadMore}
-          getTicketHref={getTicketHref}
-          renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
-          collapseStorageKey="tickets-board"
-          className="h-full px-[var(--spacing-system-l)]"
-        />
-      </div>
-    </PageLayout>
+      </PageLayout>
+      {ticketsActionsDialog}
+    </>
   );
 }

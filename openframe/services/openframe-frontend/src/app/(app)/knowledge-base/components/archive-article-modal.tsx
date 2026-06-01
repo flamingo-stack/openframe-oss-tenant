@@ -1,14 +1,7 @@
 'use client';
 
-import {
-  Button,
-  ModalV2,
-  ModalV2Content,
-  ModalV2Footer,
-  ModalV2Header,
-  ModalV2Title,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useArchiveArticle } from '../hooks/use-archive-article';
 import { ARCHIVED_ARTICLES_CONNECTION_KEY, getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 
@@ -43,32 +36,23 @@ export function ArchiveArticleModal({ isOpen, onClose, article, sourceConnection
   };
 
   return (
-    <ModalV2 isOpen={isOpen} onClose={onClose} className="max-w-[600px]">
-      <ModalV2Header>
-        <ModalV2Title>Archive Article</ModalV2Title>
-      </ModalV2Header>
-
-      <ModalV2Content>
-        <p className="text-h4 text-ods-text-primary">
+    <ConfirmDialog
+      open={isOpen}
+      onOpenChange={open => {
+        if (!open) onClose();
+      }}
+      title="Archive Article"
+      description={
+        <>
           Are you sure you want to archive <span className="text-ods-error">{article?.name ?? 'this'}</span> article?
-        </p>
-      </ModalV2Content>
-
-      <ModalV2Footer>
-        <Button variant="outline" className="flex-1" onClick={onClose} disabled={isPending}>
-          Cancel
-        </Button>
-        <Button
-          variant="destructive"
-          className="flex-1"
-          onClick={handleConfirm}
-          disabled={!article || isPending}
-          loading={isPending}
-        >
-          {isPending ? 'Archiving...' : 'Archive Article'}
-        </Button>
-      </ModalV2Footer>
-    </ModalV2>
+        </>
+      }
+      confirmLabel="Archive Article"
+      pendingLabel="Archiving..."
+      variant="destructive"
+      isPending={isPending}
+      onConfirm={handleConfirm}
+    />
   );
 }
 

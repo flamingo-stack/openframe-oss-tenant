@@ -11,10 +11,12 @@ import {
   DataTable,
   type Row,
   Tag as StatusTag,
+  TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { type ReactNode, useMemo } from 'react';
 import { formatDate, formatTime } from '@/lib/format-date';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 
 export type KnowledgeBaseRowType = 'ARTICLE' | 'FOLDER' | string;
 export type KnowledgeBaseRowStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | string | null | undefined;
@@ -46,9 +48,7 @@ export const KNOWLEDGE_BASE_OPEN_COLUMN: ColumnDef<KnowledgeBaseRow> = {
   cell: ({ row }: { row: Row<KnowledgeBaseRow> }) => (
     <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
       <Button
-        href={knowledgeBaseRowHref(row.original)}
-        prefetch={false}
-        openInNewTab
+        onClick={openInNewTab(knowledgeBaseRowHref(row.original))}
         variant="outline"
         size="icon"
         leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -78,11 +78,13 @@ export function getKnowledgeBaseColumns(mode: KnowledgeBaseTableMode): ColumnDef
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <div className="flex items-center gap-[var(--spacing-system-xsf)] min-w-0">
-                <p className="text-h4 text-ods-text-primary leading-[24px] truncate">{item.name}</p>
+                <TruncateText>{item.name}</TruncateText>
                 {tagStatus && <StatusTag variant={STATUS_VARIANT[tagStatus]} label={tagStatus} className="shrink-0" />}
               </div>
               {item.type === 'ARTICLE' && item.summary && (
-                <p className="text-heading-5 text-ods-text-secondary line-clamp-1">{item.summary}</p>
+                <TruncateText variant="h6" tone="secondary">
+                  {item.summary}
+                </TruncateText>
               )}
             </div>
           </div>

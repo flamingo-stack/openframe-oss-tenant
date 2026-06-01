@@ -44,7 +44,10 @@ function BillingUsageContent() {
   const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
   const [cancelComment, setCancelComment] = useState<string>('');
 
-  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(data.subscription);
+  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(
+    data.subscription,
+    data.billingPlan,
+  );
   const { impact, isLoading: isImpactLoading } = useCancellationImpact({ enabled: cancelStep === 'reason' });
 
   const menuActions: ActionsMenuGroup[] =
@@ -281,6 +284,12 @@ function BillingUsageContent() {
 
 const billingUsageViewQuery = graphql`
   query billingUsageViewQuery {
+    billingPlan {
+      products {
+        name
+        unitSize
+      }
+    }
     subscription {
       id
       status
