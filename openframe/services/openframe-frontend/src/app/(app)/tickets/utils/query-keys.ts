@@ -62,4 +62,5 @@ export const ticketsQueryKeys = {
   detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
   statistics: () => [...ticketsQueryKeys.all, 'statistics'] as const,
   statusTransitions: () => [...ticketsQueryKeys.all, 'statusTransitions'] as const,
+  statuses: () => [...ticketsQueryKeys.all, 'statuses'] as const,
 } as const;

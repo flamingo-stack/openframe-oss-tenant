@@ -2,14 +2,21 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
 import { type TicketStatusesPayload, ticketStatusesSchema } from '../types/ticket-statuses.types';
-import { useTicketStatusesQuery, useUpdateTicketStatusesMutation } from './use-ticket-statuses-mock';
+import { useDeleteTicketStatusMutation, useSaveTicketStatusesMutation } from './use-ticket-statuses-mutations';
+import { useTicketStatusesQuery } from './use-ticket-statuses-query';
+
+export interface ReplacementOption {
+  id: string;
+  name: string;
+}
 
 export function useTicketStatusesForm() {
   const { data } = useTicketStatusesQuery();
-  const mutation = useUpdateTicketStatusesMutation();
+  const saveMutation = useSaveTicketStatusesMutation();
+  const deleteMutation = useDeleteTicketStatusMutation();
   const { toast } = useToast();
 
   const form = useForm<TicketStatusesPayload>({
@@ -23,16 +30,39 @@ export function useTicketStatusesForm() {
     keyName: '_key',
   });
 
-  const { reset } = form;
-  // keepDirtyValues protects user edits that land mid-refetch from being clobbered.
+  const { reset, formState } = form;
+  // Read isDirty through a ref so the reset effect fires only when server `data`
+  // changes — never when the dirty flag flips. Keying on isDirty would re-run
+  // this right after a save's reset() clears dirty, clobbering the just-saved
+  // order with the still-stale pre-refetch `data` (a visible flick) until the
+  // refetch lands.
+  const isDirtyRef = useRef(formState.isDirty);
+  isDirtyRef.current = formState.isDirty;
+
+  // Adopt server data only while the form is pristine — never clobber edits in
+  // progress. After a save clears dirty state, the next refetch repopulates with
+  // real ids.
   useEffect(() => {
-    if (data) reset(data, { keepDirtyValues: true });
+    if (data && !isDirtyRef.current) {
+      reset({ customStatuses: data.customStatuses });
+    }
   }, [data, reset]);
 
+  const persistedCustomIds = useMemo(
+    () => new Set((data?.snapshot ?? []).filter(d => !d.isSystem).map(d => d.id)),
+    [data],
+  );
+
+  const replacementOptions = useMemo<ReplacementOption[]>(
+    () => (data?.snapshot ?? []).map(d => ({ id: d.id, name: d.name })),
+    [data],
+  );
+
   const onValidSubmit = (payload: TicketStatusesPayload) => {
-    mutation.mutate(payload, {
-      onSuccess: saved => reset(saved, { keepDirty: false }),
-    });
+    saveMutation.mutate(
+      { customStatuses: payload.customStatuses, snapshot: data?.snapshot ?? [] },
+      { onSuccess: saved => reset({ customStatuses: saved }) },
+    );
   };
 
   const onInvalidSubmit = (errors: FieldErrors<TicketStatusesPayload>) => {
@@ -47,10 +77,14 @@ export function useTicketStatusesForm() {
   return {
     form,
     fieldArray,
-    mutation,
+    saveMutation,
+    deleteMutation,
     onValidSubmit,
     onInvalidSubmit,
     canDelete: fieldArray.fields.length > 1,
+    systemStatuses: data?.systemStatuses ?? [],
+    persistedCustomIds,
+    replacementOptions,
   };
 }
 

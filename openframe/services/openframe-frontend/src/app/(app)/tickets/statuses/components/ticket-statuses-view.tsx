@@ -7,62 +7,35 @@ import {
   DEFAULT_CUSTOM_STATUS_COLOR,
   type PageActionButton,
   PageLayout,
-  type TicketStatus,
   TicketStatusConfigRow,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useTicketStatusesForm } from '../hooks/use-ticket-statuses-form';
-import type { CustomTicketStatus } from '../types/ticket-statuses.types';
-
-interface SystemRow {
-  statusKey: TicketStatus;
-  label: string;
-  tooltip: string;
-  tagVariant: 'outline' | 'primary';
-}
-
-const SYSTEM_TOP: SystemRow[] = [
-  {
-    statusKey: 'ACTIVE',
-    label: 'AI-Assistance',
-    tooltip: 'System status for new tickets. The AI assistant manages the conversation here.',
-    tagVariant: 'outline',
-  },
-  {
-    statusKey: 'TECH_REQUIRED',
-    label: 'Tech Required',
-    tooltip: 'System status. Auto-assigned when the AI assistant needs approval to run a command.',
-    tagVariant: 'primary',
-  },
-];
-
-const SYSTEM_BOTTOM: SystemRow = {
-  statusKey: 'RESOLVED',
-  label: 'Resolved',
-  tooltip: 'System status. Marks tickets as completed and closes the conversation.',
-  tagVariant: 'outline',
-};
+import type { CustomTicketStatus, SystemTicketStatus } from '../types/ticket-statuses.types';
+import { DeleteStatusDialog } from './delete-status-dialog';
 
 const DELETE_DISABLED_REASON = 'At least one custom status is required';
+const TOP_KINDS = new Set(['AI_ASSISTANCE', 'TECH_REQUIRED']);
 
 function createCustomStatus(): CustomTicketStatus {
   return {
     kind: 'custom',
     id: crypto.randomUUID(),
-    label: 'New status',
+    name: 'New status',
     color: DEFAULT_CUSTOM_STATUS_COLOR,
     preset: undefined,
   };
 }
 
-function renderSystemRow(row: SystemRow) {
+function renderSystemRow(row: SystemTicketStatus) {
   return (
     <TicketStatusConfigRow
-      key={row.statusKey}
+      key={row.id}
       variant="system"
       statusKey={row.statusKey}
-      label={row.label}
+      name={row.name}
       systemTooltip={row.tooltip}
       systemTagVariant={row.tagVariant}
     />
@@ -71,10 +44,47 @@ function renderSystemRow(row: SystemRow) {
 
 export function TicketStatusesView() {
   const handleBack = useSafeBack('/tickets');
-  const { form, fieldArray, mutation, onValidSubmit, onInvalidSubmit, canDelete } = useTicketStatusesForm();
+  const {
+    form,
+    fieldArray,
+    saveMutation,
+    deleteMutation,
+    onValidSubmit,
+    onInvalidSubmit,
+    canDelete,
+    systemStatuses,
+    persistedCustomIds,
+    replacementOptions,
+  } = useTicketStatusesForm();
+
+  const [pendingDelete, setPendingDelete] = useState<{ index: number; custom: CustomTicketStatus } | null>(null);
+
+  const systemTop = systemStatuses.filter(s => TOP_KINDS.has(s.kind));
+  const systemBottom = systemStatuses.filter(s => !TOP_KINDS.has(s.kind));
 
   const handleAdd = () => {
     fieldArray.append(createCustomStatus(), { shouldFocus: false });
+  };
+
+  const handleDelete = (index: number, custom: CustomTicketStatus) => {
+    if (persistedCustomIds.has(custom.id)) {
+      setPendingDelete({ index, custom });
+    } else {
+      fieldArray.remove(index);
+    }
+  };
+
+  const confirmDelete = (replacementStatusId: string) => {
+    if (!pendingDelete) return;
+    deleteMutation.mutate(
+      { id: pendingDelete.custom.id, replacementStatusId },
+      {
+        onSuccess: () => {
+          fieldArray.remove(pendingDelete.index);
+          setPendingDelete(null);
+        },
+      },
+    );
   };
 
   const submit = form.handleSubmit(onValidSubmit, onInvalidSubmit);
@@ -84,8 +94,8 @@ export function TicketStatusesView() {
       label: 'Save Statuses',
       onClick: submit,
       variant: 'accent',
-      disabled: !form.formState.isDirty || mutation.isPending,
-      loading: mutation.isPending,
+      disabled: !form.formState.isDirty || saveMutation.isPending,
+      loading: saveMutation.isPending,
     },
   ];
 
@@ -100,7 +110,7 @@ export function TicketStatusesView() {
     >
       <form onSubmit={submit} className="flex w-full flex-col gap-[var(--spacing-system-l)]">
         <section aria-label="System statuses" className="flex w-full flex-col gap-[var(--spacing-system-xs)]">
-          {SYSTEM_TOP.map(renderSystemRow)}
+          {systemTop.map(renderSystemRow)}
         </section>
 
         <section aria-label="Custom statuses" className="flex w-full flex-col gap-[var(--spacing-system-xs)]">
@@ -116,12 +126,12 @@ export function TicketStatusesView() {
                   <TicketStatusConfigRow
                     variant="custom"
                     statusKey={field.value.id}
-                    label={field.value.label}
-                    onLabelChange={value => field.onChange({ ...field.value, label: value })}
+                    name={field.value.name}
+                    onNameChange={value => field.onChange({ ...field.value, name: value })}
                     color={field.value.color}
                     presetKey={field.value.preset}
                     onColorChange={next => field.onChange({ ...field.value, color: next.color, preset: next.preset })}
-                    onDelete={() => fieldArray.remove(row.index)}
+                    onDelete={() => handleDelete(row.index, field.value)}
                     deleteDisabled={!canDelete}
                     deleteDisabledReason={!canDelete ? DELETE_DISABLED_REASON : undefined}
                     dragHandleProps={dragHandleProps}
@@ -145,10 +155,19 @@ export function TicketStatusesView() {
           </Button>
         </section>
 
-        <section aria-label="Resolved status" className="w-full">
-          {renderSystemRow(SYSTEM_BOTTOM)}
+        <section aria-label="Resolved status" className="flex w-full flex-col gap-[var(--spacing-system-xs)]">
+          {systemBottom.map(renderSystemRow)}
         </section>
       </form>
+
+      <DeleteStatusDialog
+        isOpen={pendingDelete !== null}
+        onClose={() => setPendingDelete(null)}
+        statusName={pendingDelete?.custom.name ?? ''}
+        options={replacementOptions.filter(o => o.id !== pendingDelete?.custom.id)}
+        onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
+      />
     </PageLayout>
   );
 }
