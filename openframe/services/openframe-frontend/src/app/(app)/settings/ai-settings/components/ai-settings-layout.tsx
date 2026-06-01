@@ -18,12 +18,7 @@ interface AiSettingsLayoutProps {
   mobileBottomActions?: boolean;
 }
 
-export function AiSettingsLayout({
-  children,
-  actions,
-  selector,
-  mobileBottomActions = false,
-}: AiSettingsLayoutProps) {
+export function AiSettingsLayout({ children, actions, selector, mobileBottomActions = false }: AiSettingsLayoutProps) {
   const handleBack = useSafeBack('/settings');
   const hasActions = !!actions && actions.length > 0;
   const useMobileBottomBar = mobileBottomActions && hasActions;
@@ -95,13 +90,7 @@ export function AiSettingsLayout({
   );
 }
 
-function ResponsiveAction({
-  action,
-  hideMobileIcon,
-}: {
-  action: PageActionButton;
-  hideMobileIcon: boolean;
-}) {
+function ResponsiveAction({ action, hideMobileIcon }: { action: PageActionButton; hideMobileIcon: boolean }) {
   return (
     <>
       <Button
