@@ -426,6 +426,26 @@ impl PermissionUtils {
         }
     }
 
+    pub fn require_admin() {
+        if !Self::is_admin() {
+            eprintln!("Please run application with administrator/root privileges");
+            std::process::exit(1);
+        }
+    }
+
+    pub fn warn_missing_capabilities() {
+        for cap in [
+            Capability::ManageServices,
+            Capability::WriteSystemDirectories,
+            Capability::ReadSystemLogs,
+            Capability::WriteSystemLogs,
+        ] {
+            if !Self::has_capability(cap) {
+                warn!("Process doesn't have capability: {:?}", cap);
+            }
+        }
+    }
+
     /// Check if a process has capability to perform a specific operation
     pub fn has_capability(capability: Capability) -> bool {
         match capability {

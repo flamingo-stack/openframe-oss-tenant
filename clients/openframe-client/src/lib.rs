@@ -15,6 +15,8 @@ pub mod clients;
 pub mod services;
 pub mod listener;
 
+pub mod banner;
+pub mod doctor;
 pub mod logging;
 pub mod monitoring;
 pub mod service;
