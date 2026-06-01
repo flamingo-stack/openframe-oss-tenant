@@ -137,7 +137,17 @@ pub async fn run_healthcheck() -> DoctorReport {
             match serde_json::from_str::<serde_json::Value>(&json) {
                 Ok(val) => {
                     results.push(CheckResult::pass(CheckCategory::Command, "Config: initial_config.json loaded"));
-                    val["server_host"].as_str().unwrap_or_default().to_string()
+                    match val["server_host"].as_str().filter(|s| !s.trim().is_empty()) {
+                        Some(host) => host.to_string(),
+                        None => {
+                            results.push(CheckResult::fail(
+                                CheckCategory::Command,
+                                "Config: server_host",
+                                format!("'server_host' missing or empty in {}", config_path.display()),
+                            ));
+                            return DoctorReport { results, title: "health check" };
+                        }
+                    }
                 }
                 Err(_) => {
                     results.push(CheckResult::fail(

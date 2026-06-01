@@ -257,7 +257,7 @@ pub async fn check_websocket_upgrade(server_url: &str) -> CheckResult {
             if matches!(status, 101 | 400 | 401 | 403 | 426) {
                 CheckResult::pass(CheckCategory::Network, "Network: WebSocket upgrade supported")
             } else {
-                CheckResult::fail(
+                CheckResult::warn(
                     CheckCategory::Network,
                     "Network: WebSocket upgrade",
                     format!(
