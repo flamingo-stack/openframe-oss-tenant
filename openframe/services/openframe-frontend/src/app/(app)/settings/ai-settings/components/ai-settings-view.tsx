@@ -51,7 +51,7 @@ export function AiSettings() {
   });
 
   return (
-    <AiSettingsLayout actions={actions}>
+    <AiSettingsLayout actions={actions} mobileBottomActions={isEditMode}>
       <AiSettingsTabs activeTab={activeTab} onTabChange={setActiveTab}>
         {activeId => {
           if (isEditMode) {
