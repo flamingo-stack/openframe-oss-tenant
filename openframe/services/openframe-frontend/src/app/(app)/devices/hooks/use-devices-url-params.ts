@@ -3,20 +3,21 @@
 import type { TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
+import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
 import type { DeviceFilterInput } from '../types/device.types';
 
 interface UseDevicesUrlParamsOptions {
   /**
    * Default statuses applied when the user hasn't picked any.
-   * - omitted → `DEFAULT_DEVICES_LIST_STATUSES` (hides PENDING/etc — main devices page behavior).
-   * - `[]` → no default, all statuses returned (e.g. customer scope).
+   * - omitted → `DEFAULT_VISIBLE_STATUSES` (ONLINE / OFFLINE / PENDING / ARCHIVED,
+   *   hides DELETED). Used on the main Devices page and the Customer devices tab.
+   * - `[]` → no default, every status (including DELETED) returned.
    */
   defaultStatuses?: string[];
 }
 
 export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
-  const defaultStatuses = options.defaultStatuses ?? DEFAULT_DEVICES_LIST_STATUSES;
+  const defaultStatuses = options.defaultStatuses ?? DEFAULT_VISIBLE_STATUSES;
 
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
