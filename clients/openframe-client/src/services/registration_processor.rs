@@ -30,10 +30,6 @@ impl RegistrationProcessor {
             return Ok(());
         }
 
-        if let Some(id) = self.registration_service.get_persistent_machine_id() {
-            info!("Found persistent machine_id from previous install: {}", id);
-        }
-
         info!("Starting registration");
         loop {
             match self.attempt_registration().await {
