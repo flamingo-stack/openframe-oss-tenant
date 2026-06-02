@@ -13,6 +13,7 @@ export const FEATURE_FLAG_NAMES = [
   'batch-approval',
   'ai-streaming-jetstream',
   'debug-nats-chunks',
+  'mingo-sidebar',
 ] as const;
 
 /**
@@ -71,6 +72,11 @@ export const featureFlags = {
   debugNatsChunks: {
     enabled(): boolean {
       return getFlagValue('debug-nats-chunks', () => false);
+    },
+  },
+  mingoSidebar: {
+    enabled(): boolean {
+      return getFlagValue('mingo-sidebar', () => false);
     },
   },
 } as const;

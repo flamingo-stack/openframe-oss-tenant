@@ -2,33 +2,11 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 use openframe::platform::permissions::{Capability, PermissionUtils};
 use openframe::{service::Service, Client};
-use openframe::models::InitialConfiguration;
-use openframe::platform::DirectoryManager;
-use openframe::services::InitialConfigurationService;
+use openframe::installation_initial_config_service::InstallConfigParams;
 use std::process;
 
-#[cfg(unix)]
-fn ensure_admin_privileges() {
-    // On Unix-like systems check effective UID == 0
-    if unsafe { libc::geteuid() } != 0 {
-        eprintln!("Please run application with administrator/root privileges");
-        process::exit(1);
-    }
-}
-
-#[cfg(windows)]
-fn ensure_admin_privileges() {
-    // On Windows we rely on PermissionUtils which internally calls Windows APIs.
-    if !PermissionUtils::is_admin() {
-        eprintln!("Please run application with administrator privileges");
-        process::exit(1);
-    }
-}
-
-use std::process::Command;
 use tokio::runtime::Runtime;
-use tracing::{error, info, warn};
-use openframe::installation_initial_config_service::{InstallationInitialConfigService, InstallConfigParams};
+use tracing::{error, info};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -55,6 +33,18 @@ struct InstallArgs {
     tags: Vec<String>,
 }
 
+impl InstallArgs {
+    fn to_params(&self) -> InstallConfigParams {
+        InstallConfigParams {
+            server_url: self.server_url.clone(),
+            initial_key: self.initial_key.clone(),
+            org_id: self.org_id.clone(),
+            local_mode: self.local_mode,
+            tags: self.tags.clone(),
+        }
+    }
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Install the OpenFrame client as a system service
@@ -64,74 +54,86 @@ enum Commands {
     /// Run the OpenFrame client directly (not as a service)
     Run,
     /// Run as a service (used by service manager)
-    #[command(hide = true)] // Hide from help text as this is only for internal use
+    #[command(hide = true)]
     RunAsService,
     /// Check if the current process has the required permissions
-    #[command(hide = true)] // Hide from help text as this is primarily for internal use
+    #[command(hide = true)]
     CheckPermissions,
+    /// Run environment health check (reads config from installed agent)
+    Doctor,
 }
 
 fn main() -> Result<()> {
-    // Ensure the process is running with sufficient privileges (root/administrator)
-    ensure_admin_privileges();
-
-    // Initialize logging first
-    if let Err(e) = openframe::logging::init(None, None) {
-        eprintln!("Failed to initialize logging: {}", e);
-        process::exit(1);
-    }
-
-    // Add explicit startup log entry to verify logging is working
-    info!("OpenFrame agent starting up");
-
-    // Check if running with admin privileges
-    let is_admin = PermissionUtils::is_admin();
-    info!("Running with admin privileges: {}", is_admin);
-
     let cli = Cli::parse();
     let rt = Runtime::new()?;
 
     match cli.command {
         Some(Commands::Install(args)) => {
-            info!("Running install command");
-            // Check for admin privileges - this is required for installation
-            if !is_admin {
-                error!("Admin/root privileges are required for service installation");
-                // We could attempt automatic elevation here, but for now we'll just exit with an error
-                eprintln!("Please run the installation with administrator/root privileges");
+            openframe::banner::print();
+            let params = args.to_params();
+
+            let report = rt.block_on(openframe::doctor::run_preinstall(&params));
+            report.print();
+
+            if report.has_failures() {
+                println!(
+                    "\n{} check(s) failed. Please fix the issues above and try again.",
+                    report.failure_count()
+                );
                 process::exit(1);
             }
 
-            let params = InstallConfigParams {
-                server_url: args.server_url.clone(),
-                initial_key: args.initial_key.clone(),
-                org_id: args.org_id.clone(),
-                local_mode: args.local_mode.clone(),
-                tags: args.tags.clone(),
-            };
+            let warns = report.warn_count();
+            if warns > 0 {
+                println!("\n{} warning(s). Installation will proceed, but the agent may have connectivity issues.", warns);
+            }
+
+            println!("\nStarting installation...\n");
+
+            if let Err(e) = openframe::logging::init_file_only(None, None) {
+                eprintln!("Failed to initialize logging: {}", e);
+                process::exit(1);
+            }
 
             rt.block_on(async {
                 match Service::install(params).await {
                     Ok(_) => {
-                        info!("OpenFrame client service installed successfully");
+                        println!("OpenFrame agent installed successfully.");
                         process::exit(0);
                     }
                     Err(e) => {
-                        error!("Failed to install OpenFrame client service: {:#}", e);
+                        error!("Install failed: {:#}", e);
+                        println!("Installation failed. Check logs for details.");
                         process::exit(1);
                     }
                 }
             });
         }
-        Some(Commands::Uninstall) => {
-            info!("Running uninstall command");
-            // Check for admin privileges - this is required for uninstallation
-            if !is_admin {
-                error!("Admin/root privileges are required for service uninstallation");
-                // We could attempt automatic elevation here, but for now we'll just exit with an error
-                eprintln!("Please run the uninstallation with administrator/root privileges");
+        Some(Commands::Doctor) => {
+            let report = rt.block_on(openframe::doctor::run_healthcheck());
+            report.print();
+
+            if report.has_failures() {
+                println!(
+                    "\n{} check(s) failed. Please fix the issues above and try again.",
+                    report.failure_count()
+                );
                 process::exit(1);
             }
+
+            let warns = report.warn_count();
+            if warns > 0 {
+                println!("\n{} warning(s). The agent may have connectivity issues.", warns);
+                process::exit(1);
+            }
+
+            println!("\nAll checks passed.");
+            process::exit(0);
+        }
+        Some(Commands::Uninstall) => {
+            PermissionUtils::require_admin();
+            init_logging();
+            info!("Running uninstall command");
 
             rt.block_on(async {
                 match Service::uninstall().await {
@@ -147,13 +149,11 @@ fn main() -> Result<()> {
             });
         }
         Some(Commands::Run) => {
+            PermissionUtils::require_admin();
+            init_logging();
             info!("Running in direct mode (without service wrapper)");
+            PermissionUtils::warn_missing_capabilities();
 
-            // For direct mode, check capabilities but don't require admin
-            // Just warn if we don't have certain capabilities
-            check_capabilities_and_warn();
-
-            // Run directly without service wrapper
             match Client::new() {
                 Ok(client) => {
                     info!("Starting OpenFrame client in direct mode");
@@ -169,48 +169,34 @@ fn main() -> Result<()> {
             }
         }
         Some(Commands::RunAsService) => {
+            PermissionUtils::require_admin();
+            init_logging();
             info!("Running as service (called by service manager)");
-            // When running as a service, we should already have the necessary permissions
-            // But we'll still check and log any issues
-            check_capabilities_and_warn();
+            PermissionUtils::warn_missing_capabilities();
 
-            // This command is used when started by the service manager
-            // Note: run_as_service is now synchronous and handles its own runtime
             if let Err(e) = Service::run_as_service() {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
             }
         }
         Some(Commands::CheckPermissions) => {
-            // This command is used to check if we have the necessary permissions
-            // Useful for diagnostics and troubleshooting
+            let is_admin = PermissionUtils::is_admin();
             println!("Admin privileges: {}", is_admin);
-            println!(
-                "Manage services capability: {}",
-                PermissionUtils::has_capability(Capability::ManageServices)
-            );
-            println!(
-                "Write system directories capability: {}",
-                PermissionUtils::has_capability(Capability::WriteSystemDirectories)
-            );
-            println!(
-                "Read system logs capability: {}",
-                PermissionUtils::has_capability(Capability::ReadSystemLogs)
-            );
-            println!(
-                "Write system logs capability: {}",
-                PermissionUtils::has_capability(Capability::WriteSystemLogs)
-            );
-
-            if is_admin {
-                process::exit(0);
-            } else {
-                process::exit(1);
+            for cap in [
+                Capability::ManageServices,
+                Capability::WriteSystemDirectories,
+                Capability::ReadSystemLogs,
+                Capability::WriteSystemLogs,
+            ] {
+                println!("{:?}: {}", cap, PermissionUtils::has_capability(cap));
             }
+            process::exit(if is_admin { 0 } else { 1 });
         }
         None => {
+            PermissionUtils::require_admin();
+            init_logging();
             info!("No command specified, running as service (legacy mode)");
-            // Run as service by default for backward compatibility
+
             if let Err(e) = rt.block_on(Service::run()) {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
@@ -218,27 +204,12 @@ fn main() -> Result<()> {
         }
     }
 
-    // Add explicit shutdown log entry to verify logging is still working
-    info!("OpenFrame agent shutting down");
-
     Ok(())
 }
 
-/// Check for capabilities and log warnings if we don't have them
-fn check_capabilities_and_warn() {
-    if !PermissionUtils::has_capability(Capability::ManageServices) {
-        warn!("Process doesn't have capability to manage services");
-    }
-
-    if !PermissionUtils::has_capability(Capability::WriteSystemDirectories) {
-        warn!("Process doesn't have capability to write to system directories");
-    }
-
-    if !PermissionUtils::has_capability(Capability::ReadSystemLogs) {
-        warn!("Process doesn't have capability to read system logs");
-    }
-
-    if !PermissionUtils::has_capability(Capability::WriteSystemLogs) {
-        warn!("Process doesn't have capability to write system logs");
+fn init_logging() {
+    if let Err(e) = openframe::logging::init(None, None) {
+        eprintln!("Failed to initialize logging: {}", e);
+        process::exit(1);
     }
 }
