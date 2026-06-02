@@ -20,7 +20,7 @@ import { BoardAssigneePicker } from './board-assignee-picker';
 import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
 import { OrganizationFilter } from './organization-filter';
 
-interface TicketsBoardProps {
+interface TicketsBoardLifecycleProps {
   selector?: ReactNode;
   organizationIds?: string[];
   onOrganizationIdsChange?: (ids: string[]) => void;
@@ -66,7 +66,7 @@ export function TicketsBoardLifecycle({
   onAssigneeIdsChange,
   search,
   onSearchChange,
-}: TicketsBoardProps) {
+}: TicketsBoardLifecycleProps) {
   const debouncedSearch = useDebounce(search, 300);
 
   const { data: statusesData, isLoading: statusesLoading, error: statusesError } = useTicketStatusesQuery();

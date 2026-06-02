@@ -1,12 +1,12 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
-
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
 import { featureFlags } from '@/lib/feature-flags';
 import { TicketStatusesView } from './components/ticket-statuses-view';
+
+export const dynamic = 'force-dynamic';
 
 export default function TicketStatusesPage() {
   const router = useRouter();

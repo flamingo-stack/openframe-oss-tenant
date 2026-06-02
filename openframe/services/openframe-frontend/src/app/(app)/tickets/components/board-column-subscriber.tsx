@@ -56,7 +56,7 @@ export function BoardColumnSubscriber({ statusId, params, onUpdate, registerLoad
     refetchInterval: 15_000,
   });
 
-  const { data, isFetchingNextPage, isLoading, error } = query;
+  const { data, isFetchingNextPage, isLoading, error, hasNextPage, fetchNextPage } = query;
 
   useEffect(() => {
     const pages = data?.pages ?? [];
@@ -74,12 +74,11 @@ export function BoardColumnSubscriber({ statusId, params, onUpdate, registerLoad
     });
   }, [statusId, data, isFetchingNextPage, isLoading, error, onUpdate]);
 
-  const { hasNextPage, isFetchingNextPage: fetchingMore, fetchNextPage } = query;
   useEffect(() => {
     registerLoadMore(statusId, () => {
-      if (hasNextPage && !fetchingMore) fetchNextPage();
+      if (hasNextPage && !isFetchingNextPage) fetchNextPage();
     });
-  }, [statusId, hasNextPage, fetchingMore, fetchNextPage, registerLoadMore]);
+  }, [statusId, hasNextPage, isFetchingNextPage, fetchNextPage, registerLoadMore]);
 
   return null;
 }

@@ -45,7 +45,7 @@ export function useMoveTicketLifecycle() {
 
   return useMutation<void, Error, MoveTicketLifecycleParams, OptimisticMoveSnapshot>({
     mutationKey: MOVE_TICKET_LIFECYCLE_MUTATION_KEY,
-    scope: { id: 'tickets-board-move' },
+    scope: { id: 'tickets-board-move-lifecycle' },
     mutationFn: moveTicketRequest,
     onMutate: async params => {
       await queryClient.cancelQueries({ queryKey: dialogsQueryKeys.boardColumnsLifecycle() });
