@@ -99,10 +99,10 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
         info!("Wrote Run-key entry: HKLM\\{} :: {} = {}", AUTORUN_KEY_PATH, value_name, cmdline);
     }
 
-    // Delete any entry from the WOW6432Node mirror with KEY_WOW64_32KEY flag
+    // Delete any entry from the WOW6432Node mirror
     if let Ok(wow_key) = hklm.open_subkey_with_flags(
         AUTORUN_KEY_WOW64_PATH,
-        winreg::enums::KEY_READ | winreg::enums::KEY_WRITE | winreg::enums::KEY_WOW64_32KEY,
+        winreg::enums::KEY_READ | winreg::enums::KEY_WRITE,
     ) {
         if wow_key.get_value::<String, _>(value_name).is_ok() {
             if let Err(e) = wow_key.delete_value(value_name) {
@@ -133,10 +133,10 @@ pub(crate) fn unregister_autorun(value_name: &str) {
         }
     }
 
-    // Delete from WOW6432Node mirror with KEY_WOW64_32KEY flag
+    // Delete from WOW6432Node mirror
     if let Ok(key) = hklm.open_subkey_with_flags(
         AUTORUN_KEY_WOW64_PATH,
-        winreg::enums::KEY_READ | winreg::enums::KEY_WRITE | winreg::enums::KEY_WOW64_32KEY,
+        winreg::enums::KEY_READ | winreg::enums::KEY_WRITE,
     ) {
         if key.get_value::<String, _>(value_name).is_ok() {
             match key.delete_value(value_name) {
