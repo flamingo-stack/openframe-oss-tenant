@@ -455,7 +455,14 @@ impl ToolRunManager {
             return Ok(());
         }
 
+        #[cfg(not(target_os = "windows"))]
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
+
+        // On Windows, GUI apps whose lifecycle is owned by the session manager
+        #[cfg(target_os = "windows")]
+        if !(tool.installation.is_gui_app() && self.session_manager.is_some()) {
+            self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
+        }
 
         let updating_tools = self.updating_tools.clone();
         let shutting_down = self.shutting_down.clone();
