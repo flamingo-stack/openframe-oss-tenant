@@ -31,6 +31,7 @@ pub mod update_state_service;
 pub mod update_cleanup_service;
 pub mod update_handler_service;
 pub mod initial_key_service;
+pub mod script_execution_service;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;
