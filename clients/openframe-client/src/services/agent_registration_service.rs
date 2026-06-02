@@ -1,11 +1,10 @@
-use std::env;
 use anyhow::{Context, Result};
-use reqwest::Client;
-use tracing::{info, error, debug, warn};
+use tracing::warn;
 
 use crate::clients::RegistrationClient;
+use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse};
+use crate::platform::machine_id_persistence;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::models::{AgentRegistrationRequest, AgentRegistrationResponse, AgentConfiguration, InitialConfiguration};
 use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::InitialConfigurationService;
 
@@ -33,12 +32,16 @@ impl AgentRegistrationService {
         }
     }
 
+    pub fn get_persistent_machine_id(&self) -> Option<String> {
+        machine_id_persistence::read()
+    }
+
     pub async fn register_agent(&self) -> Result<AgentRegistrationResponse> {
         let initial_key = self.initial_configuration_service.get_initial_key()?;
-        let registration_request = self.build_registration_request()?;
-        
+        let request = self.build_registration_request()?;
+
         let response = self.registration_client
-            .register(&initial_key, registration_request)
+            .register(&initial_key, request)
             .await
             .context("Failed to register agent")?;
 
@@ -46,9 +49,11 @@ impl AgentRegistrationService {
             response.machine_id.clone(),
             response.client_id.clone(),
             response.client_secret.clone()
-        ).await
-        .context("Failed to save registration data")?;
+        ).await?;
 
+        if let Err(e) = machine_id_persistence::write(&response.machine_id) {
+            warn!("Failed to persist machine_id: {}", e);
+        }
 
         Ok(response)
     }
