@@ -65,6 +65,9 @@ export function ChatView() {
     category?: string;
     timeAgo?: string;
     status?: string;
+    statusName?: string;
+    statusColor?: string;
+    statusKind?: string;
   } | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
 
@@ -73,7 +76,8 @@ export function ChatView() {
   }, []);
 
   const handleDialogClosed = useCallback(() => {
-    setActiveTicket(prev => (prev ? { ...prev, status: 'RESOLVED' } : { status: 'RESOLVED' }));
+    const resolved = { status: 'RESOLVED', statusKind: 'RESOLVED', statusName: undefined, statusColor: undefined };
+    setActiveTicket(prev => (prev ? { ...prev, ...resolved } : resolved));
   }, []);
 
   const handleMetadataUpdate = useCallback(
@@ -190,6 +194,9 @@ export function ChatView() {
         category: ticketDetails.category,
         timeAgo: ticketDetails.timeAgo,
         status: ticketDetails.status,
+        statusName: ticketDetails.statusName,
+        statusColor: ticketDetails.statusColor,
+        statusKind: ticketDetails.statusKind,
       });
 
       const dialogId = ticketsHook.getDialogId(ticketId);
@@ -224,7 +231,7 @@ export function ChatView() {
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
 
-  const isActiveTicketResolved = activeTicket?.status === 'RESOLVED';
+  const isActiveTicketResolved = activeTicket?.status === 'RESOLVED' || activeTicket?.statusKind === 'RESOLVED';
 
   const ticketInfo = useMemo<ChatHeaderTicketInfo | undefined>(() => {
     if (!activeTicket?.title || !hasMessages) return undefined;
@@ -233,6 +240,9 @@ export function ChatView() {
       title: activeTicket.title,
       meta: metaParts.length > 0 ? metaParts.join(' • ') : undefined,
       status: activeTicket.status,
+      statusName: activeTicket.statusName,
+      statusColor: activeTicket.statusColor,
+      statusKind: activeTicket.statusKind,
     };
   }, [activeTicket, hasMessages]);
 

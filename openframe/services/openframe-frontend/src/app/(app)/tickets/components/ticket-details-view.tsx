@@ -26,6 +26,7 @@ import {
   DetailLoader,
   type PageActionButton,
   PageLayout,
+  resolveStatusTagProps,
   TicketInfoSection,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -39,6 +40,7 @@ import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingApprovals } from '@/lib/chat-history';
+import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -67,6 +69,7 @@ import { useTicketMessages } from '../hooks/use-ticket-messages';
 import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../hooks/use-ticket-notes';
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { useTicketStatus } from '../hooks/use-ticket-status';
+import { useTransitionTicket } from '../hooks/use-transition-ticket';
 import type { MessagePage } from '../services/ticket-service.types';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
 import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.types';
@@ -218,6 +221,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const adminChat = useTicketMessages(messageDialogId, CHAT_TYPE.ADMIN);
 
   const { putOnHold, resolve, activate, archive, isUpdating } = useTicketStatus();
+  const transitionTicket = useTransitionTicket();
+  const isLifecycleStatuses = featureFlags.ticketStatuses.enabled();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState<boolean | null>(null);
   const defaultTicketInfoExpanded =
@@ -366,6 +371,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     const nextStatus = await activate(ticketId);
     if (nextStatus) applyStatus(nextStatus);
   }, [dialog, isUpdating, activate, ticketId, applyStatus]);
+
+  const handleTransition = useCallback(
+    (toStatusId: string) => {
+      if (!dialog || transitionTicket.isPending) return;
+      transitionTicket.mutate({ ticketId, toStatusId });
+    },
+    [dialog, ticketId, transitionTicket],
+  );
 
   const handleApprovalAction = useCallback(
     async (requestId: string | undefined, approving: boolean) => {
@@ -521,7 +534,9 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     const isClosed = isResolved || isArchived;
     const actions: PageActionButton[] = [];
 
-    if (!isOnHold && !isClosed) {
+    // With lifecycle statuses, Put On Hold / Resolve are handled by the inline
+    // status changer in the info section, so they're dropped from the action bar.
+    if (!isLifecycleStatuses && !isOnHold && !isClosed) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Put On Hold',
         variant: 'outline',
@@ -531,7 +546,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       });
     }
 
-    if (!isClosed) {
+    if (!isLifecycleStatuses && !isClosed) {
       actions.push({
         label: isUpdating ? 'Updating...' : 'Resolve',
         variant: 'outline',
@@ -562,7 +577,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
 
     return actions;
-  }, [dialog, isUpdating, handlePutOnHold, handleResolve, handleArchive, handleUnarchive]);
+  }, [dialog, isLifecycleStatuses, isUpdating, handlePutOnHold, handleResolve, handleArchive, handleUnarchive]);
 
   if (isLoading) {
     return <DetailLoader />;
@@ -583,6 +598,27 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const clientTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.CLIENT);
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
   const showTokenMemory = !isClosed;
+
+  // With the lifecycle flag on, the status tag becomes an inline changer driven
+  // by the ticket's available transitions. resolveStatusTagProps applies the
+  // unified design (AI_ASSISTANCE/RESOLVED → canonical styling like the board;
+  // TECH_REQUIRED and custom → backend color), shared with the chat surfaces.
+  const statusTag = resolveStatusTagProps({
+    status: dialog.statusId ?? dialog.status,
+    statusKind: dialog.statusKind,
+    statusName: dialog.statusName,
+    statusColor: dialog.statusColor,
+  });
+  const statusInfoProps = isLifecycleStatuses
+    ? {
+        status: statusTag.status,
+        statusLabel: statusTag.label,
+        statusColor: statusTag.color,
+        statusOptions: dialog.availableTransitions,
+        onStatusSelect: handleTransition,
+        isStatusPending: transitionTicket.isPending,
+      }
+    : {};
 
   return (
     <>
@@ -629,6 +665,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
           }}
           status={dialog.status}
+          {...statusInfoProps}
           onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
           expanded={ticketInfoExpanded}
           assigned={{
@@ -711,6 +748,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
                 }}
                 status={dialog.status}
+                {...statusInfoProps}
                 expanded={true}
                 assigned={{
                   currentAssignee: dialog.assignedName
