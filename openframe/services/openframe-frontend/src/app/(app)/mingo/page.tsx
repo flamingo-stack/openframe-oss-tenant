@@ -412,7 +412,14 @@ export default function Mingo() {
             <ChatInput
               ref={chatInputRef}
               placeholder="Enter your Request..."
-              onSend={handleSendMessage}
+              // `onSend`'s return type was widened in core 0.0.218 to
+              // `void | boolean | Promise<boolean>` (return `false` to keep the
+              // draft). Our async handler resolves to `Promise<void>`, which the
+              // union's `void` arm doesn't cover; wrap so the arrow returns void
+              // (clears the draft as before — unchanged behavior).
+              onSend={message => {
+                handleSendMessage(message);
+              }}
               onStop={isTyping && !isCompacting ? stopGeneration : undefined}
               sending={isComposerBusy}
               autoFocus={effectiveDraft}

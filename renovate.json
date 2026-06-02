@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabledManagers": ["maven", "npm"],
+  "enabledManagers": ["maven", "npm", "helmv3", "regex"],
   "labels": ["dependencies", "openframe-libs"],
   "prConcurrentLimit": 3,
   "prCreation": "immediate",
@@ -56,6 +56,60 @@
       "matchPackagePatterns": ["*"],
       "excludePackageNames": ["@flamingo-stack/openframe-frontend-core"],
       "enabled": false
+    },
+    {
+      "description": "Updates for fleetm Docker image",
+      "matchManagers": ["regex"],
+      "matchPackageNames": ["ghcr.io/flamingo-stack/fleetmdm/fleet"],
+      "groupName": "fleetmdm-image",
+      "groupSlug": "fleetmdm-image",
+      "commitMessageTopic": "fleetmdm image",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "fleetmdm"],
+      "prPriority": 10,
+      "enabled": true,
+      "ignoreUnstable": true,
+      "allowedVersions": "!/^9\\.9\\.9$/",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Updates for fleetm Helm chart",
+      "matchManagers": ["helmv3"],
+      "matchPackageNames": ["fleet"],
+      "matchSourceUrls": ["oci://ghcr.io/flamingo-stack/fleetmdm/helm-charts"],
+      "groupName": "fleetmdm-helm-chart",
+      "groupSlug": "fleetmdm-helm-chart",
+      "commitMessageTopic": "fleetmdm Helm chart",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "fleetmdm"],
+      "prPriority": 10,
+      "enabled": true,
+      "ignoreUnstable": true,
+      "allowedVersions": "!/^9\\.9\\.9$/",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Only update fleetmdm chart",
+      "matchManagers": ["helmv3"],
+      "matchPackagePatterns": ["*"],
+      "excludePackageNames": ["fleet"],
+      "enabled": false
+    }
+  ],
+
+  "regexManagers": [
+    {
+      "description": "Track fleetmdm image tag in the fleet chart values.yaml",
+      "fileMatch": [
+        "^manifests/integrated-tools/fleet/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "imageTag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+      ],
+      "depNameTemplate": "ghcr.io/flamingo-stack/fleetmdm/fleet",
+      "datasourceTemplate": "docker"
     }
   ],
 
