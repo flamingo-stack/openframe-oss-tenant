@@ -21,7 +21,7 @@ use crate::services::tool_run_manager::launch_process_in_target_session;
 use crate::utils::windows_helpers::wcslen;
 
 const RETRY_DELAY_SECONDS: u64 = 5;
-const SESSION_STARTUP_DELAY_SECONDS: u64 = 60;
+const SESSION_STARTUP_DELAY_SECONDS: u64 = 60 * 5;
 
 /// Translated from `windows_service::service::ServiceControl::SessionChange`
 #[derive(Debug)]
