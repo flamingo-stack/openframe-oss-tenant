@@ -41,7 +41,8 @@ interface TicketNode {
   ticketNumber: number;
   title: string;
   status: string;
-  statusDefinition?: { id: string; name: string; color: string } | null;
+  statusDefinition?: { id: string; name: string; color: string; kind?: string } | null;
+  availableTransitions?: Array<{ id: string; name: string; color: string }> | null;
   owner: {
     type: 'CLIENT' | 'ADMIN';
     machineId?: string;
@@ -144,6 +145,8 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     statusId: ticket.statusDefinition?.id,
     statusName: ticket.statusDefinition?.name,
     statusColor: ticket.statusDefinition?.color,
+    statusKind: ticket.statusDefinition?.kind,
+    availableTransitions: ticket.availableTransitions ?? undefined,
     owner:
       ticket.owner.type === 'CLIENT'
         ? {

@@ -34,6 +34,9 @@ export interface Dialog {
   statusId?: string;
   statusName?: string;
   statusColor?: string;
+  statusKind?: string;
+  // Allowed status transitions for this ticket (lifecycle), from Ticket.availableTransitions.
+  availableTransitions?: Array<{ id: string; name: string; color: string }>;
   owner: ClientDialogOwner | DialogOwner;
   createdAt: string;
   statusUpdatedAt?: string | null;

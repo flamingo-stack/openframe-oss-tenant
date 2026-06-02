@@ -99,6 +99,17 @@ export const GET_TICKET_QUERY = `
       title
       description
       status
+      statusDefinition {
+        id
+        name
+        color
+        kind
+      }
+      availableTransitions {
+        id
+        name
+        color
+      }
       creationSource
       owner {
         ... on ClientTicketOwner {

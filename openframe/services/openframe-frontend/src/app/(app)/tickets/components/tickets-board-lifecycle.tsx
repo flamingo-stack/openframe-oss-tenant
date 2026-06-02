@@ -14,6 +14,7 @@ import { useMoveTicketLifecycle, useMovingTicketIdsLifecycle } from '../hooks/us
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
+import { mapDefinitionToSystem, usesCanonicalStatusStyle } from '../statuses/types/ticket-statuses.types';
 import type { Dialog } from '../types/dialog.types';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
@@ -111,8 +112,13 @@ export function TicketsBoardLifecycle({
     () =>
       statuses.map(status => {
         const state = columnUpdates[status.id]?.state;
+        // AI_ASSISTANCE/RESOLVED style their header from the canonical status key
+        // (icon/variant). TECH_REQUIRED and custom statuses render from the backend
+        // `color`. `id` stays the statusId regardless.
+        const useCanonicalStyle = usesCanonicalStatusStyle(status.kind);
         return {
           id: status.id,
+          statusKey: useCanonicalStyle ? mapDefinitionToSystem(status).statusKey : undefined,
           label: status.name,
           color: status.color,
           tickets: (state?.tickets ?? []).map(dialogToBoardTicket),

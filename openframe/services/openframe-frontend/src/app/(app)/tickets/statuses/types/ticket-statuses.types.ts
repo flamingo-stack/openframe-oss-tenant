@@ -1,8 +1,17 @@
-import { TICKET_STATUS_COLOR_PRESETS, type TicketStatus } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  kindToCanonicalStatus,
+  TICKET_STATUS_COLOR_PRESETS,
+  type TicketStatus,
+  type TicketStatusKind,
+  usesCanonicalStatusStyle,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { HEX_PATTERN } from '@flamingo-stack/openframe-frontend-core/utils';
 import { z } from 'zod';
 
-export type TicketStatusKind = 'AI_ASSISTANCE' | 'TECH_REQUIRED' | 'RESOLVED' | 'ARCHIVED' | 'CUSTOM';
+// The canonical-status helpers and kind type live in the core lib; re-exported
+// here so this module stays the single status import surface for the feature.
+export { kindToCanonicalStatus, usesCanonicalStatusStyle };
+export type { TicketStatusKind };
 
 export interface TicketStatusDefinition {
   id: string;
@@ -53,13 +62,6 @@ export const ticketStatusesSchema = z.object({
   customStatuses: z.array(customTicketStatusSchema).min(1, 'At least one custom status must remain'),
 });
 
-const KIND_TO_CANONICAL: Record<Exclude<TicketStatusKind, 'CUSTOM'>, TicketStatus> = {
-  AI_ASSISTANCE: 'ACTIVE',
-  TECH_REQUIRED: 'TECH_REQUIRED',
-  RESOLVED: 'RESOLVED',
-  ARCHIVED: 'ARCHIVED',
-};
-
 export const SYSTEM_KIND_META: Record<
   Exclude<TicketStatusKind, 'CUSTOM'>,
   { tooltip: string; tagVariant: SystemTagVariant }
@@ -96,7 +98,7 @@ export function mapDefinitionToSystem(def: TicketStatusDefinition): SystemTicket
   const meta = SYSTEM_KIND_META[kind];
   return {
     id: def.id,
-    statusKey: KIND_TO_CANONICAL[kind],
+    statusKey: kindToCanonicalStatus(kind) ?? 'ACTIVE',
     name: def.name,
     color: def.color,
     position: def.position,
