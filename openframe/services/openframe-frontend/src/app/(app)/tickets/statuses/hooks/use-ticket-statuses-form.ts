@@ -2,8 +2,9 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
+import { useTicketStatusTransitionRules } from '../../hooks/use-ticket-status-transition-rules';
 import { type TicketStatusesPayload, ticketStatusesSchema } from '../types/ticket-statuses.types';
 import { useDeleteTicketStatusMutation, useSaveTicketStatusesMutation } from './use-ticket-statuses-mutations';
 import { useTicketStatusesQuery } from './use-ticket-statuses-query';
@@ -11,10 +12,12 @@ import { useTicketStatusesQuery } from './use-ticket-statuses-query';
 export interface ReplacementOption {
   id: string;
   name: string;
+  color: string;
 }
 
 export function useTicketStatusesForm() {
   const { data } = useTicketStatusesQuery();
+  const { data: transitionRules } = useTicketStatusTransitionRules();
   const saveMutation = useSaveTicketStatusesMutation();
   const deleteMutation = useDeleteTicketStatusMutation();
   const { toast } = useToast();
@@ -54,8 +57,19 @@ export function useTicketStatusesForm() {
   );
 
   const replacementOptions = useMemo<ReplacementOption[]>(
-    () => (data?.snapshot ?? []).map(d => ({ id: d.id, name: d.name })),
+    () => (data?.snapshot ?? []).map(d => ({ id: d.id, name: d.name, color: d.color })),
     [data],
+  );
+
+  // Tickets in the deleted status can only be reassigned to a status it is
+  // allowed to transition to, per the transition-rule matrix.
+  const replacementOptionsFor = useCallback(
+    (statusId: string | undefined): ReplacementOption[] => {
+      if (!statusId) return [];
+      const allowed = new Set(transitionRules?.find(r => r.from === statusId)?.to ?? []);
+      return replacementOptions.filter(o => o.id !== statusId && allowed.has(o.id));
+    },
+    [transitionRules, replacementOptions],
   );
 
   const onValidSubmit = (payload: TicketStatusesPayload) => {
@@ -84,7 +98,7 @@ export function useTicketStatusesForm() {
     canDelete: fieldArray.fields.length > 1,
     systemStatuses: data?.systemStatuses ?? [],
     persistedCustomIds,
-    replacementOptions,
+    replacementOptionsFor,
   };
 }
 

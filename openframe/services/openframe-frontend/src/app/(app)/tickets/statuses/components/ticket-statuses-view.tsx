@@ -54,7 +54,7 @@ export function TicketStatusesView() {
     canDelete,
     systemStatuses,
     persistedCustomIds,
-    replacementOptions,
+    replacementOptionsFor,
   } = useTicketStatusesForm();
 
   const [pendingDelete, setPendingDelete] = useState<{ index: number; custom: CustomTicketStatus } | null>(null);
@@ -164,7 +164,7 @@ export function TicketStatusesView() {
         isOpen={pendingDelete !== null}
         onClose={() => setPendingDelete(null)}
         statusName={pendingDelete?.custom.name ?? ''}
-        options={replacementOptions.filter(o => o.id !== pendingDelete?.custom.id)}
+        options={replacementOptionsFor(pendingDelete?.custom.id)}
         onConfirm={confirmDelete}
         isPending={deleteMutation.isPending}
       />

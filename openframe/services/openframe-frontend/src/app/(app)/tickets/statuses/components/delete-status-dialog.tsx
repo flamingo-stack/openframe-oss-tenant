@@ -76,7 +76,10 @@ export function DeleteStatusDialog({
           <SelectContent>
             {options.map(opt => (
               <SelectItem key={opt.id} value={opt.id}>
-                {opt.name}
+                <span className="flex items-center gap-[var(--spacing-system-xs)]">
+                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: opt.color }} aria-hidden />
+                  {opt.name}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

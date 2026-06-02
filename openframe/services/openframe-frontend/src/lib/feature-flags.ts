@@ -82,7 +82,7 @@ export const featureFlags = {
   },
   ticketStatuses: {
     enabled(): boolean {
-      return true; //getFlagValue('ticket-statuses', () => false);
+      return getFlagValue('ticket-statuses', () => false);
     },
   },
 } as const;
