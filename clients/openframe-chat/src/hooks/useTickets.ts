@@ -44,7 +44,7 @@ const TICKET_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
 export function useTickets() {
   const { flags } = useFeatureFlags();
-  const lifecycle = true; //flags['ticket-statuses'];
+  const lifecycle = flags['ticket-statuses'];
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
 
