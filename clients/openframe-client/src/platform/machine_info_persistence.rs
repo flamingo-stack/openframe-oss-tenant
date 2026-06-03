@@ -64,10 +64,51 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
         .create_subkey("SOFTWARE\\OpenFrame")
         .context("Failed to create registry key")?;
 
+    restrict_key_acl(&key).context("Failed to secure OpenFrame registry key")?;
+
     key.set_value(MACHINE_ID_KEY, &machine_info.machine_id)
         .context("Failed to write MachineId to registry")?;
     key.set_value(CLIENT_SECRET_KEY, &machine_info.client_secret)
         .context("Failed to write ClientSecret to registry")?;
+
+    Ok(())
+}
+
+/// Replaces the registry key's DACL so only `BUILTIN\Administrators` and
+/// `NT AUTHORITY\SYSTEM` may access it.
+#[cfg(target_os = "windows")]
+fn restrict_key_acl(key: &winreg::RegKey) -> Result<()> {
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::{LocalFree, HLOCAL};
+    use windows::Win32::Security::Authorization::{
+        ConvertStringSecurityDescriptorToSecurityDescriptorW, SDDL_REVISION_1,
+    };
+    use windows::Win32::Security::{DACL_SECURITY_INFORMATION, PSECURITY_DESCRIPTOR};
+    use windows::Win32::System::Registry::{RegSetKeySecurity, HKEY};
+
+    // D:P              -> protected DACL; do not inherit the world-readable parent ACEs.
+    // (A;OICI;KA;;;BA) -> Administrators: full control, inherited by any subkeys.
+    // (A;OICI;KA;;;SY) -> SYSTEM:         full control, inherited by any subkeys.
+    let sddl: Vec<u16> = "D:P(A;OICI;KA;;;BA)(A;OICI;KA;;;SY)\0"
+        .encode_utf16()
+        .collect();
+
+    let mut descriptor = PSECURITY_DESCRIPTOR::default();
+    unsafe {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            PCWSTR(sddl.as_ptr()),
+            SDDL_REVISION_1,
+            &mut descriptor,
+            None,
+        )
+        .context("Failed to build registry security descriptor")?;
+
+        // `create_subkey` opens with KEY_ALL_ACCESS, which includes WRITE_DAC, so the
+        // existing handle is permitted to replace the DACL.
+        let result = RegSetKeySecurity(HKEY(key.raw_handle()), DACL_SECURITY_INFORMATION, descriptor);
+        let _ = LocalFree(HLOCAL(descriptor.0));
+        result.context("Failed to apply restrictive DACL to OpenFrame registry key")?;
+    }
 
     Ok(())
 }
