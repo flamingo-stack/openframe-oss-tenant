@@ -16,6 +16,7 @@ import { AiSettingsCustomerCard } from './ai-settings-customer-card';
 import { AiSettingsLayout } from './ai-settings-layout';
 import { AiSettingsQuickActions } from './ai-settings-quick-actions';
 import { type AiSettingsTabId, AiSettingsTabs } from './ai-settings-tabs';
+import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
 const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
   customer: CUSTOMER_AI_ASSISTANT_FORM_ID,
@@ -68,6 +69,14 @@ export function AiSettings() {
             return (
               <div className="flex flex-col gap-[var(--spacing-system-l)]">
                 <AiSettingsCustomerCard settings={settings} />
+                <AiSettingsPreviews
+                  assistantName={settings.assistantName}
+                  avatarUrl={settings.assistantAvatar?.imageUrl}
+                  accentColor={settings.accentColor}
+                  theme={settings.applicationTheme}
+                  providerName={settings.llmProvider}
+                  modelDisplayName={settings.providerModel}
+                />
                 <AiSettingsQuickActions actions={settings.quickActions} />
               </div>
             );

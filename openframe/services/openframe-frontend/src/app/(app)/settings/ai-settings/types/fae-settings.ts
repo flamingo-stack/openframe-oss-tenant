@@ -1,11 +1,4 @@
-/**
- * Type contract for the FaeSettings GraphQL schema.
- *
- * Backend dev Aliaska Varieva shared this spec; once the schema lands we'll
- * wire `faeSettings` / `updateFaeSettings` through useQuery / useMutation.
- * Field names must match the GraphQL types exactly so the integration is a
- * mock-to-network swap.
- */
+/** FaeSettings types for the upcoming GraphQL schema — keep field names in sync for a mock→network swap. */
 
 import type { AIProvider } from '@/generated/schema-enums';
 

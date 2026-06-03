@@ -2,11 +2,7 @@
 
 import type { FaeSettings } from '../types/fae-settings';
 
-/**
- * Static mock that returns data shaped like the upcoming `faeSettings` GraphQL
- * query. Once the schema lands replace the body with `useQuery` / `apiClient`
- * graphql call — consumers don't change.
- */
+/** Mock shaped like the upcoming `faeSettings` query; swap the body for a real query later. */
 export function useFaeSettings(): { settings: FaeSettings; isLoading: boolean } {
   return {
     isLoading: false,

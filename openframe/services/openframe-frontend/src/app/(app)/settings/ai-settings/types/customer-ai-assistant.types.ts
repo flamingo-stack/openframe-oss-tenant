@@ -8,6 +8,8 @@ export const customerAiAssistantSchema = z
     assistantName: z.string().min(1, 'Assistant name is required'),
     llmProvider: z.enum(['ANTHROPIC', 'OPENAI', 'GOOGLE_GEMINI']),
     providerModel: z.string().min(1, 'Provider model is required'),
+    applicationTheme: z.enum(['DARK', 'LIGHT', 'SYSTEM']),
+    accentColor: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Enter a valid hex color (e.g. #F357BB)'),
     answerStyle: z.enum(['SHORT', 'STANDARD', 'DETAILED', 'CUSTOM']),
     customPrompt: z.string().optional(),
     quickActions: z.array(
@@ -30,6 +32,8 @@ export function getCustomerAiAssistantDefaults(settings: FaeSettings): CustomerA
     assistantName: settings.assistantName,
     llmProvider: settings.llmProvider,
     providerModel: settings.providerModel,
+    applicationTheme: settings.applicationTheme,
+    accentColor: settings.accentColor,
     answerStyle: settings.answerStyle ?? 'STANDARD',
     customPrompt: settings.customPrompt ?? '',
     quickActions: settings.quickActions ?? [],

@@ -29,3 +29,57 @@ input[type="number"] {
 .bg-ods-card > button:has(+ div.w-full > div:empty) > div:last-child {
   visibility: hidden;
 }
+
+/*
+ * Scoped theming for the AI Settings live previews.
+ */
+.ai-preview-theme {
+  --color-bg: var(--ods-system-greys-background);
+  --color-bg-card: var(--ods-system-greys-black);
+  --color-bg-surface: var(--ods-system-greys-soft-grey);
+  --color-border-default: var(--ods-system-greys-soft-grey);
+  --color-divider: var(--ods-system-greys-soft-grey);
+  --color-text-primary: var(--ods-system-greys-white);
+  --color-text-secondary: var(--ods-system-greys-grey);
+  --color-text-tertiary: var(--ods-system-greys-soft-grey-hover);
+  --color-text-muted: var(--ods-system-greys-grey-action);
+  --color-text-subtle: rgba(250, 250, 250, 0.6);
+  --color-text-on-accent: #1a1a1a;
+
+  /* "TECH REQUIRED" badge — solid brand-gold fill + dark text, constant across
+   * themes. Renders via the Tag `warning` variant (bg = `…-warning-secondary`,
+   * text = `…-warning`), so we repurpose those two tokens. */
+  --ods-attention-yellow-warning-secondary: #ffc008;
+  --ods-attention-yellow-warning: #1a1a1a;
+}
+
+.ai-preview-theme.theme-light {
+  /* Alpha token not derived from a flipping primitive. */
+  --color-text-subtle: rgba(26, 26, 26, 0.6);
+
+  /* Keep the green "APPROVED BY …" badge identical across themes. */
+  --ods-attention-green-success: #5ea62e;
+  --ods-attention-green-success-secondary: #2e461f;
+}
+
+/*
+ * AI Settings chat preview: the approval-card explanation paragraph renders in
+ * secondary (grey) by default in the core lib; the design shows it in primary
+ * (white) text. The command <code> uses `whitespace-pre-wrap` and markdown
+ * message text has no `whitespace-pre-line`, so this targets only the
+ * explanation paragraph.
+ */
+.fae-chat-preview p.whitespace-pre-line.break-words {
+  color: var(--color-text-primary);
+}
+
+/*
+ * Chat preview: the core lib renders each message with the avatar INLINE in the
+ * name row and the body at full width below it. The design instead puts the
+ * avatar in its own left column with the body aligned under the name, so we
+ * indent the message body (`div.flex.flex-col.gap-2`) past the avatar column
+ * (SquareAvatar `sm` = 32px + 8px gap = 40px).
+ */
+.fae-chat-preview div.flex.flex-col.gap-2 {
+  padding-left: 2.5rem;
+}

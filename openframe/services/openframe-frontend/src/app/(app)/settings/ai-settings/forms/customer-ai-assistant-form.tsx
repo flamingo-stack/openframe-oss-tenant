@@ -1,6 +1,12 @@
 'use client';
 
-import { PlusCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  MonitorIcon,
+  MoonStarIcon,
+  PlusCircleIcon,
+  Sun01Icon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   ImageUploader,
@@ -11,9 +17,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  TabSelector,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { type Control, Controller } from 'react-hook-form';
+import { AiSettingsPreviews } from '../components/previews/ai-settings-previews';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
 import {
   CUSTOMER_AI_ASSISTANT_FORM_ID,
@@ -51,6 +59,10 @@ export function CustomerAiAssistantForm({ settings, onSubmit }: CustomerAiAssist
   const llmProvider = form.watch('llmProvider');
   const modelOptions = PROVIDER_MODELS[llmProvider] ?? [];
   const answerStyle = form.watch('answerStyle');
+  const assistantName = form.watch('assistantName');
+  const providerModel = form.watch('providerModel');
+  const applicationTheme = form.watch('applicationTheme');
+  const accentColor = form.watch('accentColor');
 
   return (
     <form
@@ -135,6 +147,71 @@ export function CustomerAiAssistantForm({ settings, onSubmit }: CustomerAiAssist
             alt={settings.assistantName}
           />
         </div>
+      </div>
+
+      <div className="flex flex-col gap-[var(--spacing-system-l)] rounded-md border border-ods-border p-[var(--spacing-system-l)]">
+        <div className="flex flex-col gap-[var(--spacing-system-l)] md:flex-row md:items-end">
+          <div className="min-w-0 flex-1">
+            <Controller
+              name="applicationTheme"
+              control={form.control}
+              render={({ field }) => (
+                <TabSelector
+                  label="Application Theme"
+                  variant="primary"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  items={[
+                    { id: 'DARK', label: 'Dark', icon: <MoonStarIcon className="size-5" /> },
+                    { id: 'LIGHT', label: 'Light', icon: <Sun01Icon className="size-5" /> },
+                    { id: 'SYSTEM', label: 'System', icon: <MonitorIcon className="size-5" /> },
+                  ]}
+                />
+              )}
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <Controller
+              name="accentColor"
+              control={form.control}
+              render={({ field, fieldState }) => {
+                const swatch = /^#[0-9a-fA-F]{6}$/.test(field.value) ? field.value : '#000000';
+                return (
+                  <Input
+                    label="Accent Color"
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={fieldState.error?.message}
+                    startAdornment={
+                      <span
+                        className="relative block size-4 shrink-0 overflow-hidden rounded-full"
+                        style={{ backgroundColor: swatch }}
+                      >
+                        <input
+                          type="color"
+                          aria-label="Pick accent color"
+                          value={swatch}
+                          onChange={event => field.onChange(event.target.value.toUpperCase())}
+                          className="absolute inset-0 size-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
+                        />
+                      </span>
+                    }
+                  />
+                );
+              }}
+            />
+          </div>
+        </div>
+
+        <AiSettingsPreviews
+          assistantName={assistantName || settings.assistantName}
+          avatarUrl={avatarUrl}
+          accentColor={accentColor || settings.accentColor}
+          theme={applicationTheme}
+          providerName={llmProvider}
+          modelDisplayName={providerModel || settings.providerModel}
+        />
       </div>
 
       <Controller
