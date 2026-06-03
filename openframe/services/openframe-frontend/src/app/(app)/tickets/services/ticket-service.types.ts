@@ -22,6 +22,15 @@ export interface FetchTicketsParams {
   limit: number;
 }
 
+export interface FetchBoardColumnByStatusIdParams {
+  statusId: string;
+  search?: string;
+  organizationIds?: string[];
+  assigneeIds?: string[];
+  cursor?: string;
+  limit: number;
+}
+
 export type BoardStatus = 'ACTIVE' | 'TECH_REQUIRED' | 'ON_HOLD' | 'RESOLVED';
 
 export interface FetchTicketsBoardParams {
@@ -38,11 +47,18 @@ export interface ReorderTicketParams {
   afterTicketId: string | null;
   beforeTicketId: string | null;
   status?: BoardStatus;
+  // Lifecycle column id (custom statuses); forwarded as ReorderTicketInput.statusId.
+  statusId?: string;
 }
 
 export interface TicketStatusTransition {
   from: DialogStatus;
   to: DialogStatus[];
+}
+
+export interface TicketStatusTransitionRule {
+  from: string;
+  to: string[];
 }
 
 export interface FetchMessagesParams {
@@ -57,11 +73,14 @@ export interface FetchMessagesParams {
 export interface TicketService {
   fetchDialogs(params: FetchTicketsParams): Promise<TicketsPage>;
   fetchTicketsBoard(params: FetchTicketsBoardParams): Promise<TicketsBoardPage>;
+  fetchBoardColumnByStatusId(params: FetchBoardColumnByStatusIdParams): Promise<TicketsPage>;
   fetchDialog(id: string): Promise<Dialog | null>;
   fetchMessages(params: FetchMessagesParams): Promise<MessagePage>;
   updateStatus(ticketId: string, status: DialogStatus): Promise<boolean>;
+  transitionTicket(ticketId: string, toStatusId: string): Promise<void>;
   reorderTicket(params: ReorderTicketParams): Promise<DialogStatus>;
   fetchTicketStatusTransitions(): Promise<TicketStatusTransition[]>;
+  fetchTicketStatusTransitionRules(): Promise<TicketStatusTransitionRule[]>;
   sendMessage(dialogId: string, content: string, chatType: ChatType): Promise<void>;
   approveRequest(requestId: string): Promise<void>;
   rejectRequest(requestId: string): Promise<void>;

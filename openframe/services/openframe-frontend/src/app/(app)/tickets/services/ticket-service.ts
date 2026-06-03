@@ -6,7 +6,9 @@ import { API_ENDPOINTS } from '../constants';
 import { getDialogMessagesQuery } from '../queries/dialogs-queries';
 import {
   ARCHIVE_TICKET_MUTATION,
+  GET_BOARD_COLUMN_TICKETS_QUERY,
   GET_TICKET_QUERY,
+  GET_TICKET_STATUS_TRANSITION_RULES_QUERY,
   GET_TICKET_STATUS_TRANSITIONS_QUERY,
   GET_TICKETS_BOARD_QUERY,
   GET_TICKETS_QUERY,
@@ -14,12 +16,14 @@ import {
   REOPEN_TICKET_MUTATION,
   REORDER_TICKET_MUTATION,
   RESOLVE_TICKET_MUTATION,
+  TRANSITION_TICKET_MUTATION,
 } from '../queries/ticket-queries';
 import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import type {
   BoardStatus,
+  FetchBoardColumnByStatusIdParams,
   FetchMessagesParams,
   FetchTicketsBoardParams,
   FetchTicketsParams,
@@ -27,6 +31,7 @@ import type {
   ReorderTicketParams,
   TicketService as TicketServiceInterface,
   TicketStatusTransition,
+  TicketStatusTransitionRule,
   TicketsBoardPage,
   TicketsPage,
 } from './ticket-service.types';
@@ -36,6 +41,8 @@ interface TicketNode {
   ticketNumber: number;
   title: string;
   status: string;
+  statusDefinition?: { id: string; name: string; color: string; kind?: string } | null;
+  availableTransitions?: Array<{ id: string; name: string; color: string }> | null;
   owner: {
     type: 'CLIENT' | 'ADMIN';
     machineId?: string;
@@ -135,6 +142,11 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     id: ticket.id,
     title: ticket.title,
     status: TICKET_TO_DIALOG_STATUS[ticket.status] || (ticket.status as DialogStatus),
+    statusId: ticket.statusDefinition?.id,
+    statusName: ticket.statusDefinition?.name,
+    statusColor: ticket.statusDefinition?.color,
+    statusKind: ticket.statusDefinition?.kind,
+    availableTransitions: ticket.availableTransitions ?? undefined,
     owner:
       ticket.owner.type === 'CLIENT'
         ? {
@@ -273,6 +285,34 @@ export class TicketService implements TicketServiceInterface {
     return result;
   }
 
+  async fetchBoardColumnByStatusId(params: FetchBoardColumnByStatusIdParams): Promise<TicketsPage> {
+    const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
+      query: GET_BOARD_COLUMN_TICKETS_QUERY,
+      variables: {
+        statusId: params.statusId,
+        limit: params.limit,
+        cursor: params.cursor,
+        search: params.search || undefined,
+        organizationIds: params.organizationIds?.length ? params.organizationIds : undefined,
+        assigneeIds: params.assigneeIds?.length ? params.assigneeIds : undefined,
+      },
+    });
+
+    const data = extractGraphQlData(response);
+    const connection = data.tickets;
+
+    return {
+      dialogs: (connection?.edges || []).map(edge => normalizeTicketToDialog(edge.node)),
+      pageInfo: connection?.pageInfo || {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: null,
+        endCursor: null,
+      },
+      filteredCount: connection?.filteredCount ?? 0,
+    };
+  }
+
   async fetchDialog(id: string): Promise<Dialog | null> {
     const response = await apiClient.post<GraphQlResponse<TicketResponse>>(API_ENDPOINTS.GRAPHQL, {
       query: GET_TICKET_QUERY,
@@ -325,6 +365,21 @@ export class TicketService implements TicketServiceInterface {
     return this.mutateTicketStatus(ticketId, mapped.mutation, mapped.key);
   }
 
+  async transitionTicket(ticketId: string, toStatusId: string): Promise<void> {
+    const response = await apiClient.post<GraphQlResponse<Record<'transitionTicket', StatusMutationPayload>>>(
+      API_ENDPOINTS.GRAPHQL,
+      { query: TRANSITION_TICKET_MUTATION, variables: { input: { ticketId, toStatusId } } },
+    );
+
+    const payload = extractGraphQlData(response).transitionTicket;
+    if (payload.userErrors?.length) {
+      throw new Error(payload.userErrors[0].message);
+    }
+    if (!payload.ticket) {
+      throw new Error('transitionTicket returned no ticket');
+    }
+  }
+
   async fetchTicketStatusTransitions(): Promise<TicketStatusTransition[]> {
     const response = await apiClient.post<
       GraphQlResponse<{ ticketStatusTransitions: Array<{ from: string; to: string[] }> }>
@@ -337,13 +392,27 @@ export class TicketService implements TicketServiceInterface {
     }));
   }
 
+  async fetchTicketStatusTransitionRules(): Promise<TicketStatusTransitionRule[]> {
+    const response = await apiClient.post<
+      GraphQlResponse<{ ticketStatusTransitionRules: Array<{ from: { id: string }; to: Array<{ id: string }> }> }>
+    >(API_ENDPOINTS.GRAPHQL, { query: GET_TICKET_STATUS_TRANSITION_RULES_QUERY });
+
+    const data = extractGraphQlData(response);
+    return data.ticketStatusTransitionRules.map(r => ({
+      from: r.from.id,
+      to: r.to.map(t => t.id),
+    }));
+  }
+
   async reorderTicket(params: ReorderTicketParams): Promise<DialogStatus> {
     const input: Record<string, unknown> = {
       id: params.id,
       afterTicketId: params.afterTicketId,
       beforeTicketId: params.beforeTicketId,
     };
-    if (params.status) {
+    if (params.statusId) {
+      input.statusId = params.statusId;
+    } else if (params.status) {
       input.status = DIALOG_TO_TICKET_STATUS[params.status] ?? params.status;
     }
 

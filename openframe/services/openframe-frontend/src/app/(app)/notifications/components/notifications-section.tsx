@@ -2,18 +2,25 @@
 
 import { BellOffIcon, ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { DataTable, SearchInput, useDataTable } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { type ReactNode, Suspense, useMemo } from 'react';
-import { type PreloadedQuery, usePreloadedQuery } from 'react-relay';
-import type { notificationsListQuery as NotificationsListQueryType } from '@/__generated__/notificationsListQuery.graphql';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { type ReactNode, Suspense, useCallback, useMemo } from 'react';
+import { type PreloadedQuery, usePaginationFragment, usePreloadedQuery } from 'react-relay';
+import type { notificationsSectionRelay_query$key as NotificationsSectionFragmentKey } from '@/__generated__/notificationsSectionRelay_query.graphql';
+import type { notificationsSectionRelayPaginationQuery as NotificationsSectionPaginationQueryType } from '@/__generated__/notificationsSectionRelayPaginationQuery.graphql';
+import type { notificationsSectionRelayQuery as NotificationsSectionRelayQueryType } from '@/__generated__/notificationsSectionRelayQuery.graphql';
 import { parseCreatedAt } from '@/graphql/notifications/notifications-helpers';
-import { notificationsListQuery } from '@/graphql/notifications/notifications-list-query';
+import {
+  notificationsSectionRelayFragment,
+  notificationsSectionRelayQuery,
+} from '@/graphql/notifications/notifications-section-relay';
 import { buildNotificationColumns, type NotificationRow } from './notifications-columns';
 
+export const NOTIFICATIONS_SECTION_PAGE_SIZE = 50;
 const EMPTY_ROWS: NotificationRow[] = [];
 
 interface NotificationsSectionProps {
   title: string;
-  queryRef: PreloadedQuery<NotificationsListQueryType> | null | undefined;
+  queryRef: PreloadedQuery<NotificationsSectionRelayQueryType> | null | undefined;
   searchValue: string;
   onSearchChange: (value: string) => void;
   rightAction?: ReactNode;
@@ -55,14 +62,19 @@ export function NotificationsSection({
 }
 
 interface SectionTableProps {
-  queryRef: PreloadedQuery<NotificationsListQueryType>;
+  queryRef: PreloadedQuery<NotificationsSectionRelayQueryType>;
   rowVariant: 'unread' | 'read';
   onMarkRead?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
 function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTableProps) {
-  const data = usePreloadedQuery(notificationsListQuery, queryRef);
+  const { toast } = useToast();
+  const queryData = usePreloadedQuery(notificationsSectionRelayQuery, queryRef);
+  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
+    NotificationsSectionPaginationQueryType,
+    NotificationsSectionFragmentKey
+  >(notificationsSectionRelayFragment, queryData);
 
   const rows = useMemo<NotificationRow[]>(
     () =>
@@ -87,6 +99,17 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
     getRowId: row => row.id,
   });
 
+  const onLoadMore = useCallback(() => {
+    if (!hasNext || isLoadingNext) return;
+    loadNext(NOTIFICATIONS_SECTION_PAGE_SIZE, {
+      onComplete: err => {
+        if (err) {
+          toast({ title: 'Error loading more notifications', description: err.message, variant: 'destructive' });
+        }
+      },
+    });
+  }, [hasNext, isLoadingNext, loadNext, toast]);
+
   const isEmpty = rows.length === 0;
   const emptyIcon =
     rowVariant === 'unread' ? (
@@ -104,7 +127,15 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
           <DataTable.Empty icon={emptyIcon} message={emptyMessage} className="w-full" />
         </div>
       ) : (
-        <DataTable.Body rowClassName="mb-1" />
+        <>
+          <DataTable.Body rowClassName="mb-1" />
+          <DataTable.InfiniteFooter
+            hasNextPage={hasNext}
+            isFetchingNextPage={isLoadingNext}
+            onLoadMore={onLoadMore}
+            skeletonRows={2}
+          />
+        </>
       )}
     </DataTable>
   );
