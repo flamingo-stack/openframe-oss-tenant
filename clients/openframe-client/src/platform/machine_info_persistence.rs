@@ -157,6 +157,7 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
 
 #[cfg(target_os = "macos")]
 fn write_value(key: &str, value: &str) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
 
     let status = Command::new("defaults")
@@ -167,6 +168,11 @@ fn write_value(key: &str, value: &str) -> Result<()> {
     if !status.success() {
         anyhow::bail!("defaults write failed for {} (status {})", key, status);
     }
+
+    // The plist holds the client secret, so restrict it to owner read/write only.
+    let plist_path = format!("{}.plist", PREFERENCES_DOMAIN);
+    std::fs::set_permissions(&plist_path, std::fs::Permissions::from_mode(0o600))
+        .with_context(|| format!("Failed to set permissions for {}", plist_path))?;
     Ok(())
 }
 
@@ -205,7 +211,8 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
 
     let dir = std::path::Path::new(CONFIG_DIR);
     std::fs::create_dir_all(dir).context("Failed to create /etc/openframe")?;
-    let _ = std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700));
+    std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
+        .context("Failed to set permissions for CONFIG_DIR")?;
 
     std::fs::write(dir.join(MACHINE_ID_FILE), &machine_info.machine_id)
         .context("Failed to write machine_id")?;
@@ -213,7 +220,8 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
     let secret_path = dir.join(CLIENT_SECRET_FILE);
     std::fs::write(&secret_path, &machine_info.client_secret)
         .context("Failed to write client_secret")?;
-    let _ = std::fs::set_permissions(&secret_path, std::fs::Permissions::from_mode(0o600));
+    std::fs::set_permissions(&secret_path, std::fs::Permissions::from_mode(0o600))
+        .context("Failed to set permissions for CLIENT_SECRET_FILE")?;
 
     Ok(())
 }
