@@ -9,6 +9,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
+  ColorPickerInput,
   ImageUploader,
   Input,
   RadioGroupBlock,
@@ -21,7 +22,6 @@ import {
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { type Control, Controller } from 'react-hook-form';
-import { AiSettingsPreviews } from '../components/previews/ai-settings-previews';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
 import {
   CUSTOMER_AI_ASSISTANT_FORM_ID,
@@ -35,16 +35,20 @@ import {
   LLM_PROVIDER_OPTIONS,
   PROVIDER_MODELS,
 } from '../utils/fae-settings-display';
+import { AiSettingsCustomerCard } from './ai-settings-customer-card';
+import { AiSettingsQuickActions } from './ai-settings-quick-actions';
+import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
 export type { CustomerAiAssistantFormValues } from '../types/customer-ai-assistant.types';
 export { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
 
-interface CustomerAiAssistantFormProps {
+interface CustomerAiAssistantTabProps {
   settings: FaeSettings;
+  isEditMode: boolean;
   onSubmit: (values: UpdateFaeSettingsInput) => void;
 }
 
-export function CustomerAiAssistantForm({ settings, onSubmit }: CustomerAiAssistantFormProps) {
+export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: CustomerAiAssistantTabProps) {
   const {
     form,
     avatarUrl,
@@ -63,6 +67,23 @@ export function CustomerAiAssistantForm({ settings, onSubmit }: CustomerAiAssist
   const providerModel = form.watch('providerModel');
   const applicationTheme = form.watch('applicationTheme');
   const accentColor = form.watch('accentColor');
+
+  if (!isEditMode) {
+    return (
+      <div className="flex flex-col gap-[var(--spacing-system-l)]">
+        <AiSettingsCustomerCard settings={settings} />
+        <AiSettingsPreviews
+          assistantName={settings.assistantName}
+          avatarUrl={settings.assistantAvatar?.imageUrl}
+          accentColor={settings.accentColor}
+          theme={settings.applicationTheme}
+          providerName={settings.llmProvider}
+          modelDisplayName={settings.providerModel}
+        />
+        <AiSettingsQuickActions actions={settings.quickActions} />
+      </div>
+    );
+  }
 
   return (
     <form
@@ -171,35 +192,12 @@ export function CustomerAiAssistantForm({ settings, onSubmit }: CustomerAiAssist
             />
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="text-h3 text-ods-text-primary">Accent Color</p>
             <Controller
               name="accentColor"
               control={form.control}
-              render={({ field, fieldState }) => {
-                const swatch = /^#[0-9a-fA-F]{6}$/.test(field.value) ? field.value : '#000000';
-                return (
-                  <Input
-                    label="Accent Color"
-                    value={field.value}
-                    onChange={field.onChange}
-                    error={fieldState.error?.message}
-                    startAdornment={
-                      <span
-                        className="relative block size-4 shrink-0 overflow-hidden rounded-full"
-                        style={{ backgroundColor: swatch }}
-                      >
-                        <input
-                          type="color"
-                          aria-label="Pick accent color"
-                          value={swatch}
-                          onChange={event => field.onChange(event.target.value.toUpperCase())}
-                          className="absolute inset-0 size-[200%] -translate-x-1/4 -translate-y-1/4 cursor-pointer border-0 bg-transparent p-0"
-                        />
-                      </span>
-                    }
-                  />
-                );
-              }}
+              render={({ field }) => <ColorPickerInput value={field.value} onChange={field.onChange} />}
             />
           </div>
         </div>

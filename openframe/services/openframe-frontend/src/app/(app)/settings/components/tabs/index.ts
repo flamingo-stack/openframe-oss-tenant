@@ -1,4 +1,3 @@
-export { AiSettingsTab } from './ai-settings';
 export { ApiKeysTab } from './api-keys';
 export { ArchitectureTab } from './architecture';
 export { CompanyAndUsersTab } from './company-and-users';

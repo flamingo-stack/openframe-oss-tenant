@@ -4,13 +4,11 @@ import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-
 import {
   Hierarchy02Icon,
   PasscodeIcon,
-  ShieldCheckIcon,
   ShieldKeyholeIcon,
   UserIcon,
   UsersGroupIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { isOssTenantMode } from '@/lib/app-mode';
-import { AiSettingsTab } from './ai-settings';
 import { ApiKeysTab } from './api-keys';
 import { ArchitectureTab } from './architecture';
 import { CompanyAndUsersTab } from './company-and-users';
@@ -23,7 +21,6 @@ interface SettingsTabNavigationProps {
 }
 
 export const SETTINGS_TABS: TabItem[] = [
-  { id: 'ai-settings', label: 'AI Settings', icon: ShieldCheckIcon, component: AiSettingsTab },
   { id: 'architecture', label: 'Architecture', icon: Hierarchy02Icon, component: ArchitectureTab },
   { id: 'company-and-users', label: 'Company & Users', icon: UsersGroupIcon, component: CompanyAndUsersTab },
   { id: 'api-keys', label: 'API Keys', icon: ShieldKeyholeIcon, component: ApiKeysTab },
