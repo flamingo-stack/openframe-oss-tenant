@@ -38,7 +38,7 @@ export class MeshDesktop implements DesktopInputHandlers {
   private sender: ((data: Uint8Array) => void) | null = null;
   private remoteWidth = 0;
   private remoteHeight = 0;
-  private pressedKeys: Array<{ vk: number; extended: boolean }> = [];
+  private pressedKeys: Array<{ vk: number; extended: boolean; codepoint?: number }> = [];
   private suppressedKeys = new Set<number>();
 
   private tileQueue: Array<{ x: number; y: number; bytes: Uint8Array }> = [];
@@ -217,6 +217,16 @@ export class MeshDesktop implements DesktopInputHandlers {
         this.flushMetaBuffer();
       }
 
+      if (this.isUnicodeEligible(e)) {
+        const codepoint = e.key.charCodeAt(0);
+        if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
+          this.pressedKeys.unshift({ vk: keyCode, extended: isExt, codepoint });
+        }
+        this.send(this.encodeUnicodeKey(1, codepoint));
+        e.preventDefault();
+        return;
+      }
+
       if (!e.repeat && !this.pressedKeys.some(k => k.vk === keyCode)) {
         this.pressedKeys.unshift({ vk: keyCode, extended: isExt });
       }
@@ -264,7 +274,9 @@ export class MeshDesktop implements DesktopInputHandlers {
       if (idx !== -1) {
         const storedKey = this.pressedKeys[idx];
         this.pressedKeys.splice(idx, 1);
-        this.send(this.encodeKeyEvent(2, keyCode, storedKey.extended));
+        this.sendKeyEntryUp(storedKey);
+      } else if (this.isUnicodeEligible(e)) {
+        this.send(this.encodeUnicodeKey(2, e.key.charCodeAt(0)));
       } else {
         this.send(this.encodeKeyEvent(2, keyCode, isExt));
       }
@@ -276,7 +288,7 @@ export class MeshDesktop implements DesktopInputHandlers {
       this.suppressedKeys.clear();
       const keys = [...this.pressedKeys];
       this.pressedKeys = [];
-      for (const k of keys) this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+      for (const k of keys) this.sendKeyEntryUp(k);
     };
 
     canvas.addEventListener('mousemove', onMouseMove);
@@ -388,14 +400,25 @@ export class MeshDesktop implements DesktopInputHandlers {
       return { x: 0, y: 0 };
     }
     const rect = this.canvas.getBoundingClientRect();
-    const cx = (e.clientX - rect.left) / Math.max(1, rect.width);
-    const cy = (e.clientY - rect.top) / Math.max(1, rect.height);
+    if (rect.width === 0 || rect.height === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    const scale = Math.min(rect.width / this.remoteWidth, rect.height / this.remoteHeight);
+    const drawnW = this.remoteWidth * scale;
+    const drawnH = this.remoteHeight * scale;
+    const offsetX = (rect.width - drawnW) / 2;
+    const offsetY = (rect.height - drawnH) / 2;
+
+    const cx = (e.clientX - rect.left - offsetX) / Math.max(1, drawnW);
+    const cy = (e.clientY - rect.top - offsetY) / Math.max(1, drawnH);
+
     let x = Math.round(cx * this.remoteWidth);
     let y = Math.round(cy * this.remoteHeight);
     if (x < 0) x = 0;
     if (y < 0) y = 0;
-    if (x > 65535) x = 65535;
-    if (y > 65535) y = 65535;
+    if (x > this.remoteWidth - 1) x = this.remoteWidth - 1;
+    if (y > this.remoteHeight - 1) y = this.remoteHeight - 1;
     return { x, y };
   }
 
@@ -475,6 +498,39 @@ export class MeshDesktop implements DesktopInputHandlers {
     const dlo = d & 0xff;
     buf[10] = dhi;
     buf[11] = dlo;
+    return buf;
+  }
+
+  private isUnicodeEligible(e: KeyboardEvent): boolean {
+    return (
+      !this.useRemoteKeyboardMap &&
+      typeof e.key === 'string' &&
+      e.key.length === 1 &&
+      e.key !== 'Dead' &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.metaKey &&
+      !(e as KeyboardEvent & { isComposing?: boolean }).isComposing
+    );
+  }
+
+  private sendKeyEntryUp(k: { vk: number; extended: boolean; codepoint?: number }): void {
+    if (k.codepoint != null) {
+      this.send(this.encodeUnicodeKey(2, k.codepoint));
+    } else {
+      this.send(this.encodeKeyEvent(2, k.vk, k.extended));
+    }
+  }
+
+  private encodeUnicodeKey(action: number, codepoint: number): Uint8Array {
+    const buf = new Uint8Array(7);
+    buf[0] = 0x00;
+    buf[1] = 0x55; // Command: MNG_KVM_KEYUNICODE (InputType.KEYUNICODE = 85)
+    buf[2] = 0x00;
+    buf[3] = 0x07;
+    buf[4] = (action - 1) & 0xff;
+    buf[5] = (codepoint >> 8) & 0xff;
+    buf[6] = codepoint & 0xff;
     return buf;
   }
 

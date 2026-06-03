@@ -17,7 +17,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
         prometheus.io/port: "8096"
-        prometheus.io/path: "/management/{{ .Values.global.image.tag }}/prometheus"
+        prometheus.io/path: "/management/{{ default .Values.global.image.tag .Values.image.tag }}/prometheus"
 
     spec:
       initContainers:
@@ -33,7 +33,13 @@ spec:
               name: http
             - containerPort: 8096
               name: management
+
+          envFrom:
+            - configMapRef:
+                name: microservices
           env:
+            - name: RELEASE_VERSION
+              value: "{{ default .Values.global.image.tag .Values.image.tag }}"
             {{- if .Values.deployment.oss.ingress.ngrok.enabled }}
             - name: TENANT_HOST_URL
               value: {{ printf "https://%s" (required "deployment.oss.ingress.ngrok.url is required when ngrok ingress is enabled" .Values.deployment.oss.ingress.ngrok.url) | quote }}
@@ -41,16 +47,13 @@ spec:
             - name: TENANT_HOST_URL
               value: "https://localhost"
             {{- end }}
-          envFrom:
-            - configMapRef:
-                name: microservices
 
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
 
           livenessProbe:
             httpGet:
-              path: /management/{{ .Values.global.image.tag }}/health
+              path: /management/{{ default .Values.global.image.tag .Values.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30
@@ -58,7 +61,7 @@ spec:
             failureThreshold: 5
           readinessProbe:
             httpGet:
-              path: /management/{{ .Values.global.image.tag }}/health
+              path: /management/{{ default .Values.global.image.tag .Values.image.tag }}/health
               port: management
             initialDelaySeconds: 60
             periodSeconds: 30

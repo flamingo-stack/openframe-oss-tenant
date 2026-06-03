@@ -93,10 +93,10 @@ function DevicesSkeleton() {
 }
 
 /**
- * Chats skeleton - matches ChatsOverviewSection exactly
+ * Tickets skeleton - matches TicketsOverviewSection exactly
  * Structure: h2 title + p subtitle + grid of 4 InfoCards
  */
-function ChatsSkeleton() {
+function TicketsSkeleton() {
   return (
     <div className="space-y-4">
       {/* h2 title */}
@@ -117,7 +117,7 @@ function ChatsSkeleton() {
 /**
  * OrganizationCard skeleton - matches OrganizationCard exactly
  */
-function OrganizationCardSkeleton() {
+function CustomerCardSkeleton() {
   return (
     <div className="bg-ods-card border border-ods-border rounded-[6px] p-4">
       <div className="flex items-start gap-3">
@@ -132,10 +132,10 @@ function OrganizationCardSkeleton() {
 }
 
 /**
- * Organizations skeleton - matches OrganizationsOverviewSection exactly
+ * Organizations skeleton - matches CustomersOverviewSection exactly
  * Structure: h2 title + p subtitle + rows of [OrgCard, InfoCard, InfoCard]
  */
-function OrganizationsSkeleton() {
+function CustomersSkeleton() {
   return (
     <div className="space-y-4">
       {/* h2 title */}
@@ -146,7 +146,7 @@ function OrganizationsSkeleton() {
       <div className="flex flex-col gap-3">
         {[1, 2, 3].map(i => (
           <div key={i} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-            <OrganizationCardSkeleton />
+            <CustomerCardSkeleton />
             <InfoCardSkeleton />
             <InfoCardSkeleton />
           </div>
@@ -225,8 +225,8 @@ export function AppShellSkeleton() {
               <div className="space-y-10 pt-6">
                 <OnboardingSkeleton />
                 <DevicesSkeleton />
-                <ChatsSkeleton />
-                <OrganizationsSkeleton />
+                <TicketsSkeleton />
+                <CustomersSkeleton />
               </div>
             </div>
           </div>

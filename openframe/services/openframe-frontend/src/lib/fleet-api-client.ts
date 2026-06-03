@@ -3,9 +3,9 @@
  * Extends the base API client with Fleet-specific functionality
  */
 
-import { FleetHost, FleetHostResponse } from '../app/devices/types/fleet.types';
-import { Policy } from '../app/monitoring/types/policies.types';
-import { Query, QueryReportParams, QueryReportResponse } from '../app/monitoring/types/queries.types';
+import { FleetHost, FleetHostResponse } from '@/app/(app)/devices/types/fleet.types';
+import { Policy } from '@/app/(app)/monitoring/types/policies.types';
+import { Query, QueryReportParams, QueryReportResponse } from '@/app/(app)/monitoring/types/queries.types';
 import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
 import { runtimeEnv } from './runtime-config';
 
@@ -412,6 +412,23 @@ class FleetApiClient {
     const queryString = queryParams.toString();
     const path = queryString ? `/api/v1/fleet/policies/count?${queryString}` : '/api/v1/fleet/policies/count';
     return this.get(path);
+  }
+
+  // Fleet has no dedicated /queries/count endpoint; the list response carries a top-level
+  // `count` (the filtered total). Request a single row and read that count.
+  async getQueriesCount(params?: { team_id?: number; query?: string }): Promise<ApiResponse<{ count: number }>> {
+    const queryParams = new URLSearchParams();
+    if (params?.team_id) queryParams.append('team_id', params.team_id.toString());
+    if (params?.query) queryParams.append('query', params.query);
+    queryParams.append('per_page', '1');
+    const res = await this.get<{ queries?: Query[]; count?: number }>(
+      `/api/latest/fleet/queries?${queryParams.toString()}`,
+    );
+    if (!res.ok) {
+      return { ok: false, error: res.error, status: res.status } as ApiResponse<{ count: number }>;
+    }
+    const count = res.data?.count ?? res.data?.queries?.length ?? 0;
+    return { ok: true, data: { count }, status: res.status } as ApiResponse<{ count: number }>;
   }
 
   async getHostsCount(params?: {

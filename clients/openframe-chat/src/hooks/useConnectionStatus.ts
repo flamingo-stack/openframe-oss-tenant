@@ -1,7 +1,9 @@
-import { buildNatsWsUrl, useNatsDialogSubscription } from '@flamingo-stack/openframe-frontend-core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNatsDialogSubscription } from '@flamingo-stack/openframe-frontend-core';
+import { useEffect, useState } from 'react';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { tokenService } from '../services/tokenService';
+import { log } from '../utils/log';
+import { CHAT_NATS_CLIENT_CONFIG, CHAT_NATS_RECONNECTION_BACKOFF, useChatNatsConfig } from './useChatNatsConfig';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
 
@@ -28,38 +30,25 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
   const [aiConfiguration, setAiConfiguration] = useState<AiConfiguration | null>(null);
   const [isFullyLoaded, setIsFullyLoaded] = useState(false);
 
-  const [apiBaseUrl, setApiBaseUrl] = useState(tokenService.getCurrentApiBaseUrl());
-  const [token, setToken] = useState(tokenService.getCurrentToken());
+  const { getWsUrl, onBeforeReconnect, apiBaseUrl, token } = useChatNatsConfig();
 
   useEffect(() => {
     const initializeCredentials = async () => {
       try {
         if (!apiBaseUrl) {
           await tokenService.initApiUrl();
-          setApiBaseUrl(tokenService.getCurrentApiBaseUrl());
         }
-
         if (!token) {
           await tokenService.requestToken();
-          setToken(tokenService.getCurrentToken());
         }
       } catch (error) {
+        log.error('startup', 'failed to initialize credentials', String(error));
         console.error('Failed to initialize credentials:', error);
       }
     };
 
     initializeCredentials();
   }, [apiBaseUrl, token]);
-
-  useEffect(() => {
-    const unsubscribeToken = tokenService.onTokenUpdate(setToken);
-    const unsubscribeApiUrl = tokenService.onApiUrlUpdate(setApiBaseUrl);
-
-    return () => {
-      unsubscribeToken();
-      unsubscribeApiUrl();
-    };
-  }, []);
 
   useEffect(() => {
     if (apiBaseUrl) {
@@ -90,6 +79,7 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
           setIsFullyLoaded(true);
         }
       } catch (error) {
+        log.error('ai-config', 'failed to load AI configuration', String(error));
         console.error('Failed to load AI configuration:', error);
       }
     };
@@ -97,44 +87,22 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     loadAiConfiguration();
   }, [apiBaseUrl, token]);
 
-  const getNatsWsUrl = useMemo(() => {
-    return (): string => {
-      if (!apiBaseUrl || !token) return '';
-      return buildNatsWsUrl(apiBaseUrl, { 
-        token,
-        includeAuthParam: true,
-        source: 'dashboard',
-      });
-    };
-  }, [apiBaseUrl, token]);
-
-  const clientConfig = useMemo(
-    () => ({
-      name: 'openframe-chat-status',
-      user: 'machine',
-      pass: '',
-    }),
-    [],
-  );
-
-  const handleBeforeReconnect = useCallback(async () => {
-    console.log('[CONNECTION STATUS] NATS disconnected, refreshing token before reconnect...');
-    await tokenService.refreshToken();
-  }, []);
-
   const { isConnected } = useNatsDialogSubscription({
     enabled: !!apiBaseUrl && !!token,
-    dialogId: null, // No dialog subscription, just connection monitoring
+    dialogId: null,
     topics: [],
     onConnect: () => {
+      log.info('nats:status', 'connected');
       setStatus('connected');
     },
     onDisconnect: () => {
+      log.warn('nats:status', 'disconnected');
       setStatus('disconnected');
     },
-    onBeforeReconnect: handleBeforeReconnect,
-    getNatsWsUrl,
-    clientConfig,
+    onBeforeReconnect,
+    getNatsWsUrl: getWsUrl,
+    clientConfig: CHAT_NATS_CLIENT_CONFIG,
+    reconnectionBackoff: CHAT_NATS_RECONNECTION_BACKOFF,
   });
 
   useEffect(() => {

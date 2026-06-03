@@ -3,6 +3,10 @@ pub const MAX_DOWNLOAD_RETRIES: u32 = 3;
 pub const DOWNLOAD_TIMEOUT_SECS: u64 = 300; // 5 minutes
 pub const MIN_BINARY_SIZE_BYTES: u64 = 1024 * 100; // 100 KB
 
+// HTTP client timeouts
+pub const HTTP_CLIENT_TIMEOUT_SECS: u64 = 120; // control-plane (auth, registration, heartbeat, key fetch)
+pub const DOWNLOAD_CLIENT_TIMEOUT_SECS: u64 = 300; // binary downloads (GitHub, Artifactory, tool API)
+
 // Consumer retry
 pub const CONSUMER_RETRY_ATTEMPTS_PER_CYCLE: u32 = 5;
 pub const INITIAL_RETRY_DELAY_MS: u64 = 1000; // 1 second

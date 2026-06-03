@@ -27,9 +27,13 @@ impl TokenDecryptionService {
     pub fn decrypt(&self, encrypted_data: &str) -> Result<String, String> {
         // Decode base64
         let combined = general_purpose::STANDARD.decode(encrypted_data)
-            .map_err(|e| format!("Failed to decode base64: {}", e))?;
+            .map_err(|e| {
+                log::error!("token decrypt: base64 decode failed: {}", e);
+                format!("Failed to decode base64: {}", e)
+            })?;
 
         if combined.len() < 12 {
+            log::error!("token decrypt: payload too short ({} bytes, need >= 12)", combined.len());
             return Err("Encrypted data too short".to_string());
         }
 
@@ -39,15 +43,24 @@ impl TokenDecryptionService {
 
         // Create cipher
         let cipher = Aes256Gcm::new_from_slice(&self.key)
-            .map_err(|e| format!("Failed to create cipher: {}", e))?;
+            .map_err(|e| {
+                log::error!("token decrypt: cipher init failed: {}", e);
+                format!("Failed to create cipher: {}", e)
+            })?;
 
         // Decrypt
         let plaintext = cipher.decrypt(nonce, ciphertext)
-            .map_err(|e| format!("Failed to decrypt: {}", e))?;
+            .map_err(|e| {
+                log::error!("token decrypt: AES-GCM decrypt failed: {}", e);
+                format!("Failed to decrypt: {}", e)
+            })?;
 
         // Convert to string
         String::from_utf8(plaintext)
-            .map_err(|e| format!("Failed to convert to UTF-8: {}", e))
+            .map_err(|e| {
+                log::error!("token decrypt: UTF-8 conversion failed: {}", e);
+                format!("Failed to convert to UTF-8: {}", e)
+            })
     }
 }
 

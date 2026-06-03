@@ -3,11 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
+import { FEATURE_FLAG_NAMES } from '@/lib/feature-flags';
+import { detectTrialExpiredFromGraphqlErrors } from '@/lib/subscription-lock-signal';
 import { type FeatureFlag, useFeatureFlagsStore } from '@/stores/feature-flags-store';
 
 const FE_FEATURE_FLAGS_QUERY = `
-  query FeFeatureFlags {
-    feFeatureFlags {
+  query FeFeatureFlags($names: [String!]) {
+    feFeatureFlags(names: $names) {
       name
       enabled
     }
@@ -20,7 +22,7 @@ interface FeFeatureFlagsResponse {
   data?: {
     feFeatureFlags: FeatureFlag[];
   };
-  errors?: Array<{ message: string }>;
+  errors?: Array<{ message: string; extensions?: { classification?: string } | null }>;
 }
 
 export function useFeatureFlagsQuery({ enabled }: { enabled: boolean }) {
@@ -32,7 +34,10 @@ export function useFeatureFlagsQuery({ enabled }: { enabled: boolean }) {
     queryFn: async () => {
       const response = await apiClient.post<FeFeatureFlagsResponse>('/api/graphql', {
         query: FE_FEATURE_FLAGS_QUERY,
+        variables: { names: [...FEATURE_FLAG_NAMES] },
       });
+
+      detectTrialExpiredFromGraphqlErrors(response.data?.errors);
 
       if (!response.ok || response.data?.errors?.length) {
         const errorMessage = response.data?.errors?.[0]?.message || response.error || 'Failed to fetch feature flags';

@@ -3,7 +3,9 @@ import { PublicEnvScript } from 'next-runtime-env';
 import { Suspense } from 'react';
 import './globals.css';
 import '@flamingo-stack/openframe-frontend-core/styles';
+import { DevTicketObserver } from '@/app/(auth)/auth/components/dev-ticket-observer';
 import { azeretMono, dmSans } from '@/lib/fonts';
+import { NatsAppProvider } from '@/lib/nats/nats-app-provider';
 import { Toaster } from '@/lib/openframe-core-ui';
 import { FeatureFlagsGate } from '../components/feature-flags-gate';
 import { GraphQlIntrospectionInitializer } from '../components/graphql-introspection-initializer';
@@ -11,10 +13,11 @@ import { RouteGuard } from '../components/route-guard';
 import { isAuthEnabled } from '../lib/app-mode';
 import { QueryClientProvider } from '../lib/query-client-provider';
 import { RelayProvider } from '../lib/relay';
-import { DevTicketObserver } from './auth/components/dev-ticket-observer';
 import { AppShellSkeleton } from './components/app-shell-skeleton';
 import { DeploymentInitializer } from './components/deployment-initializer';
+import { EmbedShimRegistration } from './components/embed-shim-registration';
 import { GoogleTagManager } from './components/google-tag-manager';
+import { NotificationsDataProvider } from './components/notifications/notifications-data-provider';
 
 // Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
 export const dynamic = 'force-dynamic';
@@ -90,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning className="min-h-screen antialiased font-body" data-app-type="openframe">
         <GoogleTagManager />
+        <EmbedShimRegistration />
         <DeploymentInitializer />
         <RelayProvider>
           <QueryClientProvider>
@@ -99,13 +103,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <GraphQlIntrospectionInitializer />
               </Suspense>
             )}
-            <FeatureFlagsGate>
-              <RouteGuard>
-                <div className="relative flex min-h-screen flex-col">
-                  <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
-                </div>
-              </RouteGuard>
-            </FeatureFlagsGate>
+            <NatsAppProvider>
+              <FeatureFlagsGate>
+                <NotificationsDataProvider>
+                  <RouteGuard>
+                    <div className="relative flex min-h-screen flex-col">
+                      <Suspense fallback={<AppShellSkeleton />}>{children}</Suspense>
+                    </div>
+                  </RouteGuard>
+                </NotificationsDataProvider>
+              </FeatureFlagsGate>
+            </NatsAppProvider>
           </QueryClientProvider>
         </RelayProvider>
         <Toaster />

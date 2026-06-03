@@ -1,5 +1,21 @@
 import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
-import { runtimeEnv } from './runtime-config';
+
+/**
+ * Server-known flag names. Must be passed to `feFeatureFlags(names: ...)`;
+ * the backend only returns flags that are explicitly requested.
+ */
+export const FEATURE_FLAG_NAMES = [
+  'billings',
+  'thinking',
+  'knowledge-base',
+  'notifications',
+  'tickets-board',
+  'batch-approval',
+  'ai-streaming-jetstream',
+  'debug-nats-chunks',
+  'mingo-sidebar',
+  'ticket-statuses',
+] as const;
 
 /**
  * Read a feature flag value from the server-loaded store,
@@ -19,35 +35,54 @@ function getFlagValue(flagName: string, envFallback: () => boolean): boolean {
  * Server-loaded via feFeatureFlags GraphQL query with env-var fallbacks
  */
 export const featureFlags = {
-  organizationImages: {
+  subscription: {
     enabled(): boolean {
-      return getFlagValue('organizationImages', () => runtimeEnv.featureOrganizationImages());
-    },
-    uploadEnabled(): boolean {
-      return this.enabled();
-    },
-    displayEnabled(): boolean {
-      return this.enabled();
+      return getFlagValue('billings', () => false);
     },
   },
-  ssoAutoAllow: {
+  thinking: {
     enabled(): boolean {
-      return getFlagValue('ssoAutoAllow', () => runtimeEnv.featureSsoAllowDomain());
+      return getFlagValue('thinking', () => false);
     },
   },
-  dialogStop: {
+  knowledgeBase: {
     enabled(): boolean {
-      return getFlagValue('dialog-stop', () => false);
+      return getFlagValue('knowledge-base', () => false);
     },
   },
-  tickets: {
+  notifications: {
     enabled(): boolean {
-      return getFlagValue('tickets', () => false);
+      return getFlagValue('notifications', () => false);
     },
   },
-  tokenBasedMemory: {
+  ticketsBoard: {
     enabled(): boolean {
-      return getFlagValue('token-based-memory', () => false);
+      return getFlagValue('tickets-board', () => false);
+    },
+  },
+  batchApproval: {
+    enabled(): boolean {
+      return getFlagValue('batch-approval', () => false);
+    },
+  },
+  aiStreamingJetstream: {
+    enabled(): boolean {
+      return getFlagValue('ai-streaming-jetstream', () => false);
+    },
+  },
+  debugNatsChunks: {
+    enabled(): boolean {
+      return getFlagValue('debug-nats-chunks', () => false);
+    },
+  },
+  mingoSidebar: {
+    enabled(): boolean {
+      return getFlagValue('mingo-sidebar', () => false);
+    },
+  },
+  ticketStatuses: {
+    enabled(): boolean {
+      return getFlagValue('ticket-statuses', () => false);
     },
   },
 } as const;

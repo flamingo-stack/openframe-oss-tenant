@@ -5,33 +5,44 @@ import {
   ChatContent,
   ChatFooter,
   ChatHeader,
+  type ChatHeaderTicketInfo,
   ChatInput,
-  ChatMessageList,
-  ChatQuickAction,
-  ChatTicketList,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  type Message,
+  type MessageSegment,
   ModelDisplay,
+  type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
-import { ClockHistoryIcon, Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
+import { ChatDialogScreen } from '../components/ChatDialogScreen';
+import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
-import { dialogGraphQlService, type ResumableDialog } from '../services/dialogGraphQLService';
+import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
 
+function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsageData | null {
+  if (!usage) return null;
+  return {
+    inputTokensSize: usage.inputTokensSize ?? 0,
+    outputTokensSize: usage.outputTokensSize ?? 0,
+    totalTokensSize: usage.totalTokensSize ?? 0,
+    contextSize: usage.contextSize ?? 0,
+  };
+}
+
 export function ChatView() {
-  const { flags } = useFeatureFlags();
   const queryClient = useQueryClient();
 
   const [currentModel, setCurrentModel] = useState<{
@@ -40,7 +51,7 @@ export function ChatView() {
     contextWindow: number;
   } | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-  const [resumableDialog, setResumableDialog] = useState<ResumableDialog | null>(null);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageData | null>(null);
   const [faeFormTicket, setFaeFormTicket] = useState<{
     id: string;
     title: string;
@@ -48,7 +59,26 @@ export function ChatView() {
     createdAt: string;
   } | null>(null);
   const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
+  const [activeTicket, setActiveTicket] = useState<{
+    title?: string;
+    ticketNumber?: string;
+    category?: string;
+    timeAgo?: string;
+    status?: string;
+    statusName?: string;
+    statusColor?: string;
+    statusKind?: string;
+  } | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
+
+  const handleTokenUsage = useCallback((data: TokenUsageData) => {
+    setTokenUsage(data);
+  }, []);
+
+  const handleDialogClosed = useCallback(() => {
+    const resolved = { status: 'RESOLVED', statusKind: 'RESOLVED', statusName: undefined, statusColor: undefined };
+    setActiveTicket(prev => (prev ? { ...prev, ...resolved } : resolved));
+  }, []);
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
@@ -65,6 +95,7 @@ export function ChatView() {
     messages,
     isTyping,
     isStreaming,
+    isCompacting,
     sendMessage,
     stopGeneration,
     handleQuickAction,
@@ -84,93 +115,136 @@ export function ChatView() {
     useApi: true,
     useNats: true,
     onMetadataUpdate: handleMetadataUpdate,
+    onTokenUsage: handleTokenUsage,
+    onDialogClosed: handleDialogClosed,
   });
 
   const { toast } = useToast();
 
-  const hasPendingApproval = useMemo(
-    () =>
-      messages.some(
-        (msg: { content: unknown }) =>
-          Array.isArray(msg.content) &&
-          msg.content.some(
-            (seg: { type: string; status?: string }) =>
-              seg.type === 'approval_request' && (!seg.status || seg.status === 'pending'),
-          ),
-      ),
-    [messages],
-  );
+  // Pre-process messages for rendering: filter pending approvals (they
+  // render in the sticky footer), dedupe approval_request/approval_batch
+  // segments across bubbles by requestId (first occurrence wins — agent
+  // retries reuse the same id), and drop empty assistant bubbles that
+  // held only filtered/deduped segments.
+  const processedMessages = useMemo<Message[]>(() => {
+    const seenApprovalIds = new Set<string>();
+    const out: Message[] = [];
+    for (const msg of messages) {
+      if (!Array.isArray(msg.content)) {
+        out.push(msg);
+        continue;
+      }
+      const filtered = (msg.content as MessageSegment[]).filter(segment => {
+        if (segment.type === 'approval_request' && segment.status === 'pending') return false;
 
-  const fetchResumableDialog = useCallback(() => {
-    dialogGraphQlService.getResumableDialog().then(dialog => {
-      setResumableDialog(dialog);
-    });
-  }, []);
+        if (segment.type === 'approval_request') {
+          const id = segment.data?.requestId;
+          if (id) {
+            if (seenApprovalIds.has(id)) return false;
+            seenApprovalIds.add(id);
+          }
+        } else if (segment.type === 'approval_batch') {
+          const id = segment.data?.approvalRequestId;
+          if (id) {
+            if (seenApprovalIds.has(id)) return false;
+            seenApprovalIds.add(id);
+          }
+        }
+        return true;
+      });
 
-  useEffect(() => {
-    if (!flags.tickets) {
-      fetchResumableDialog();
+      if (msg.role === 'assistant' && filtered.length === 0) continue;
+      out.push(filtered.length === msg.content.length ? msg : { ...msg, content: filtered });
     }
-  }, [flags.tickets, fetchResumableDialog]);
+    return out;
+  }, [messages]);
 
   const handleNewChat = useCallback(() => {
     setFaeFormTicket(null);
     setPreviewTicketId(null);
+    setActiveTicket(null);
     clearMessages();
     queryClient.invalidateQueries({ queryKey: ['tickets'] });
-    if (!flags.tickets) {
-      fetchResumableDialog();
-    }
-  }, [clearMessages, queryClient, flags.tickets, fetchResumableDialog]);
+    setTokenUsage(null);
+  }, [clearMessages, queryClient]);
 
-  const ticketsHook = useTickets({ enabled: flags.tickets });
+  const ticketsHook = useTickets();
 
-  const displayTickets = flags.tickets ? ticketsHook.tickets : [];
+  const displayTickets = ticketsHook.tickets;
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
       setFaeFormTicket(null);
       setPreviewTicketId(null);
+      setActiveTicket(null);
 
-      if (flags.tickets) {
-        const dialogId = ticketsHook.getDialogId(ticketId);
-        if (!dialogId) {
-          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-          if (ticketDetails) {
-            setPreviewTicketId(ticketId);
-            showTicketPreview(ticketDetails);
-          } else {
-            toast({
-              title: 'Error',
-              description: 'Failed to load ticket details',
-              variant: 'destructive',
-            });
-          }
-          return;
-        }
-
-        if (ticketsHook.getCreationSource(ticketId) === 'FAE_FORM') {
-          const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
-          if (ticketDetails) {
-            setFaeFormTicket({
-              id: ticketId,
-              title: ticketDetails.title,
-              description: ticketDetails.description,
-              createdAt: ticketDetails.createdAt || new Date().toISOString(),
-            });
-          }
-        }
-
-        await resumeDialog(dialogId);
-      } else {
-        await resumeDialog(ticketId);
+      const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+      if (!ticketDetails) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load ticket details',
+          variant: 'destructive',
+        });
+        return;
       }
+
+      setActiveTicket({
+        title: ticketDetails.title,
+        ticketNumber: ticketDetails.ticketNumber,
+        category: ticketDetails.category,
+        timeAgo: ticketDetails.timeAgo,
+        status: ticketDetails.status,
+        statusName: ticketDetails.statusName,
+        statusColor: ticketDetails.statusColor,
+        statusKind: ticketDetails.statusKind,
+      });
+
+      const dialogId = ticketsHook.getDialogId(ticketId);
+      if (!dialogId) {
+        setPreviewTicketId(ticketId);
+        showTicketPreview(ticketDetails);
+        return;
+      }
+
+      if (ticketDetails.creationSource === 'FAE_FORM') {
+        setFaeFormTicket({
+          id: ticketId,
+          title: ticketDetails.title,
+          description: ticketDetails.description,
+          createdAt: ticketDetails.createdAt || new Date().toISOString(),
+        });
+      }
+
+      await resumeDialog(dialogId);
     },
-    [ticketsHook, resumeDialog, showTicketPreview, toast, flags],
+    [ticketsHook, resumeDialog, showTicketPreview, toast],
   );
+
+  useEffect(() => {
+    if (!dialogId) return;
+    if (tokenUsage) return;
+    dialogGraphQlService.getDialogTokenUsage(dialogId).then(usage => {
+      if (usage) setTokenUsage(toTokenUsageData(usage));
+    });
+  }, [dialogId, tokenUsage]);
 
   const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
+
+  const isActiveTicketResolved = activeTicket?.status === 'RESOLVED' || activeTicket?.statusKind === 'RESOLVED';
+
+  const ticketInfo = useMemo<ChatHeaderTicketInfo | undefined>(() => {
+    if (!activeTicket?.title || !hasMessages) return undefined;
+    const metaParts = [activeTicket.ticketNumber, activeTicket.category, activeTicket.timeAgo].filter(Boolean);
+    return {
+      title: activeTicket.title,
+      meta: metaParts.length > 0 ? metaParts.join(' • ') : undefined,
+      status: activeTicket.status,
+      statusName: activeTicket.statusName,
+      statusColor: activeTicket.statusColor,
+      statusKind: activeTicket.statusKind,
+    };
+  }, [activeTicket, hasMessages]);
 
   const displayModel =
     currentModel ||
@@ -183,7 +257,7 @@ export function ChatView() {
       : null);
 
   const displayMessages = useMemo(() => {
-    if (!faeFormTicket || hasNextPage) return messages;
+    if (!faeFormTicket || hasNextPage) return processedMessages;
     const faeMessage = {
       id: `synthetic-fae-form-${faeFormTicket.id}`,
       role: 'assistant' as const,
@@ -200,8 +274,8 @@ export function ChatView() {
       timestamp: new Date(faeFormTicket.createdAt),
       avatar: faeAvatar,
     };
-    return [faeMessage, ...messages];
-  }, [messages, faeFormTicket, hasNextPage]);
+    return [faeMessage, ...processedMessages];
+  }, [processedMessages, faeFormTicket, hasNextPage]);
 
   useEffect(() => {
     if (!isTicketPreview || !previewTicketId) return;
@@ -235,15 +309,19 @@ export function ChatView() {
     return <WelcomeScreen onGetStarted={completeWelcome} />;
   }
 
+  const isDialogActive = displayMessages.length > 0 || hasMessages || Boolean(dialogId && isLoadingHistory);
+
   return (
-    <ChatContainer>
+    <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
         userAvatar={faeAvatar}
         connectionStatus={status}
         serverUrl={serverUrl}
+        onBack={hasMessages ? handleNewChat : undefined}
+        ticketInfo={ticketInfo}
         headerActions={
           <>
-            {flags.tickets && !hasMessages && (
+            {!hasMessages && (
               <Button
                 onClick={() => setIsTicketModalOpen(true)}
                 variant="outline"
@@ -258,9 +336,10 @@ export function ChatView() {
                 <Button
                   variant="outline"
                   size="icon"
-                  centerIcon={<Ellipsis01Icon className="w-5 h-5" color="var(--color-text-secondary)" />}
                   className="border border-ods-border text-ods-text-primary hover:bg-ods-bg-hover"
-                />
+                >
+                  <Ellipsis01Icon className="w-5 h-5 text-ods-text-primary" />
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="p-0 border-none">
                 <ActionsMenu
@@ -285,132 +364,53 @@ export function ChatView() {
       />
       <NewTicketModal isOpen={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} />
 
-      <ChatContent>
-        {displayMessages.length > 0 || hasMessages || (dialogId && isLoadingHistory) ? (
-          <ChatMessageList
+      <ChatContent className="pt-6 pb-4">
+        {isDialogActive ? (
+          <ChatDialogScreen
             messages={displayMessages}
             dialogId={dialogId || undefined}
             isTyping={isTyping}
-            isLoading={isLoadingHistory}
-            autoScroll={true}
+            isLoadingHistory={isLoadingHistory}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
             onLoadMore={loadMoreMessages}
           />
         ) : (
-          <div className="flex-1 flex flex-col justify-center items-center px-4 min-h-0">
-            <div className="text-center mb-8">
-              <h1 className="text-h2 mb-2">Hey! How can I help?</h1>
-              <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
-            </div>
-
-            {flags.tickets ? (
-              <>
-                {/* Tickets List */}
-                <ChatTicketList className="w-full max-w-2xl" tickets={displayTickets} onTicketClick={handleTicketClick} />
-
-                {/* Quick Actions — shown only when no tickets */}
-                {displayTickets.length === 0 && quickActions.length > 0 && (
-                  <div className="w-full max-w-2xl">
-                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
-                    <div className="space-y-1">
-                      {quickActions.map(action => (
-                        <ChatQuickAction
-                          className="bg-ods-card"
-                          key={action.id}
-                          text={action.text}
-                          onAction={handleQuickAction}
-                          disabled={isDisconnected}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                {/* Resumable Dialog */}
-                {resumableDialog && (
-                  <div className="w-full max-w-2xl mb-6">
-                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">
-                      Resume Previous Conversation
-                    </h3>
-                    <div
-                      className="p-4 bg-ods-card rounded-lg border border-ods-border hover:bg-ods-bg-hover transition-colors cursor-pointer"
-                      onClick={async () => {
-                        const success = await resumeDialog(resumableDialog.id);
-                        if (success) {
-                          setResumableDialog(null);
-                        }
-                      }}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="flex gap-2 text-ods-text-primary font-medium">
-                          <ClockHistoryIcon />
-                          Last Topic: {resumableDialog.title || 'Untitled Conversation'}
-                        </h4>
-                        <span className="text-xs text-ods-text-secondary">
-                          {new Date(resumableDialog.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex text-ods-text-secondary">Would you like to continue?</div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick Actions */}
-                {quickActions.length > 0 && (
-                  <div className="w-full max-w-2xl">
-                    <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-3">Quick Help</h3>
-                    <div className="space-y-1">
-                      {quickActions.map(action => (
-                        <ChatQuickAction
-                          className="bg-ods-card"
-                          key={action.id}
-                          text={action.text}
-                          onAction={handleQuickAction}
-                          disabled={isDisconnected}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          <ChatInitialScreen
+            tickets={displayTickets}
+            onTicketClick={handleTicketClick}
+            quickActions={quickActions}
+            onQuickAction={handleQuickAction}
+            isDisconnected={isDisconnected}
+          />
         )}
       </ChatContent>
 
       <ChatFooter>
-        <ChatInput
-          onSend={sendMessage}
-          onStop={flags['dialog-stop'] && isStreaming && !hasPendingApproval ? stopGeneration : undefined}
-          sending={isStreaming}
-          awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
-          placeholder="Enter your request here..."
-          className={hasMessages ? '' : 'max-w-2xl mx-auto'}
-          reserveAvatarOffset={hasMessages}
-          disabled={isDisconnected}
-        />
-        {displayModel && isFullyLoaded && (
-          <div className={hasMessages ? 'mx-auto w-full max-w-3xl px-4' : 'mx-auto w-full max-w-2xl'}>
-            {hasMessages ? (
-              <div className="grid grid-cols-[32px_1fr] gap-4 mt-3">
-                <div className="invisible h-8 w-8" aria-hidden />
-                <ModelDisplay
-                  provider={displayModel.provider}
-                  modelName={displayModel.modelName}
-                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                />
-              </div>
-            ) : (
-              <div className="mt-3">
-                <ModelDisplay
-                  provider={displayModel.provider}
-                  modelName={displayModel.modelName}
-                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                />
-              </div>
+        {isActiveTicketResolved ? (
+          <p className="text-body2 text-ods-text-secondary text-center py-4">
+            This chat is closed. If you have a similar problem, please create a new request.
+          </p>
+        ) : (
+          <ChatInput
+            onSend={sendMessage}
+            onStop={isStreaming ? stopGeneration : undefined}
+            sending={isStreaming || isCompacting}
+            awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
+            placeholder="Enter your request here..."
+            disabled={isDisconnected}
+          />
+        )}
+        {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
+          <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-sf)]">
+            {displayModel && isFullyLoaded && (
+              <ModelDisplay
+                provider={displayModel.provider}
+                modelName={displayModel.modelName}
+                displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                usedTokens={tokenUsage?.totalTokensSize}
+                contextWindow={tokenUsage?.contextSize}
+              />
             )}
           </div>
         )}

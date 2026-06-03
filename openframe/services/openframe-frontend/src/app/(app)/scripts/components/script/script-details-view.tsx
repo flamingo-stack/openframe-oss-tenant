@@ -1,0 +1,104 @@
+'use client';
+
+import {
+  DetailPageContainer,
+  LoadError,
+  NotFoundError,
+  ScriptInfoSection,
+} from '@flamingo-stack/openframe-frontend-core';
+import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useMemo } from 'react';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { useScriptDetails } from '../../hooks/use-script-details';
+import { ScriptArgumentsCard } from './script-arguments-card';
+import { ScriptDetailsSkeleton } from './script-details-skeleton';
+import { ScriptEditor } from './script-editor';
+
+interface ScriptDetailsViewProps {
+  scriptId: string;
+}
+
+export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
+  const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
+  const handleBack = useSafeBack('/scripts');
+
+  const editHref = `/scripts/edit/${scriptId}`;
+  const runHref = scriptDetails?.id ? `/scripts/details/${scriptDetails.id}/run` : undefined;
+
+  const actions = useMemo(
+    () => [
+      {
+        label: 'Edit Script',
+        variant: 'outline' as const,
+        icon: <PenEditIcon size={20} />,
+        href: editHref,
+      },
+      ...(runHref
+        ? [
+            {
+              label: 'Run Script',
+              icon: <PlayIcon size={20} />,
+              href: runHref,
+              variant: 'accent' as const,
+            },
+          ]
+        : []),
+    ],
+    [editHref, runHref],
+  );
+
+  if (isLoading) {
+    return <ScriptDetailsSkeleton />;
+  }
+
+  if (error) {
+    return <LoadError message={`Error loading script: ${error}`} />;
+  }
+
+  if (!scriptDetails) {
+    return <NotFoundError message="Script not found" />;
+  }
+
+  return (
+    <DetailPageContainer
+      title={scriptDetails.name}
+      backButton={{
+        label: 'Back',
+        onClick: handleBack,
+      }}
+      actions={actions}
+      className="p-[var(--spacing-system-l)]"
+    >
+      {/* Main Content */}
+      <div className="flex flex-col overflow-auto gap-6">
+        <ScriptInfoSection
+          headline={scriptDetails.description}
+          subheadline={'Description'}
+          shellType={scriptDetails.shell}
+          supportedPlatforms={scriptDetails.supported_platforms}
+          category={scriptDetails.category}
+        />
+        {/* Script Arguments and Environment Variables */}
+        {(scriptDetails.args?.length > 0 || scriptDetails.env_vars?.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {scriptDetails.args?.length > 0 ? (
+              <ScriptArgumentsCard title="Default Script Arguments" args={scriptDetails.args} separator=" " />
+            ) : (
+              <div />
+            )}
+            {scriptDetails.env_vars?.length > 0 && (
+              <ScriptArgumentsCard title="Environment Vars" args={scriptDetails.env_vars} />
+            )}
+          </div>
+        )}
+        {/* Script Syntax */}
+        {scriptDetails.script_body && (
+          <div className="flex flex-col gap-1">
+            <div className="text-h5 text-ods-text-secondary w-full">Syntax</div>
+            <ScriptEditor value={scriptDetails.script_body} shell={scriptDetails.shell} readOnly height="400px" />
+          </div>
+        )}{' '}
+      </div>
+    </DetailPageContainer>
+  );
+}

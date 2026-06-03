@@ -16,6 +16,7 @@ pub mod download_configuration;
 pub mod installed_agent_message;
 pub mod update_state;
 pub mod device_tag;
+pub mod tool_version_overrides;
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;

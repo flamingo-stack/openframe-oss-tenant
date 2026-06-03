@@ -14,8 +14,8 @@ pub struct ToolAgentUpdateMessage {
 #[serde(rename_all = "camelCase")]
 pub struct AssetUpdate {
     pub asset_id: String,
-    pub version: String,
+    pub version: Option<String>,
     #[serde(default)]
     pub executable: bool,
-    pub download_configurations: Vec<DownloadConfiguration>,
+    pub download_configurations: Option<Vec<DownloadConfiguration>>,
 }

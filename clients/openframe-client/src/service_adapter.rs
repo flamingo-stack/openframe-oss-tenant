@@ -11,6 +11,16 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tracing::{debug, error, info, warn};
 
+/// Windows SCM recovery ("failure actions") configuration.
+#[derive(Debug, Clone)]
+pub struct RecoveryConfig {
+    pub first_restart_secs: u64,
+    pub second_restart_secs: u64,
+    pub subsequent_restart_secs: u64,
+    pub reset_period_days: u32,
+    pub enable_on_non_crash_failures: bool,
+}
+
 #[derive(Debug, Clone)]
 pub struct ServiceConfig {
     // Basic service information
@@ -43,6 +53,9 @@ pub struct ServiceConfig {
 
     // Process type - maps to Interactive on macOS
     pub is_interactive: bool,
+
+    // Windows SCM recovery actions
+    pub recovery: Option<RecoveryConfig>,
 }
 
 impl Default for ServiceConfig {
@@ -65,6 +78,7 @@ impl Default for ServiceConfig {
             file_limit: None,
             exit_timeout_seconds: None,
             is_interactive: true,
+            recovery: None,
         }
     }
 }
@@ -179,6 +193,17 @@ impl CrossPlatformServiceManager {
         // Install the service using the platform's native service manager
         info!("Installing service with full configuration via CrossPlatformServiceManager");
         manager.install(ctx).context("Failed to install service")?;
+
+        // Apply Windows SCM recovery actions (no-op on other platforms).
+        #[cfg(target_os = "windows")]
+        {
+            if let Some(recovery) = &self.config.recovery {
+                let service_name = format!("com.openframe.{}", self.config.name.to_lowercase());
+                apply_windows_recovery(&service_name, recovery)
+                    .context("Failed to configure Windows recovery actions")?;
+                info!("Configured Windows recovery for '{}'", service_name);
+            }
+        }
 
         // After installation, start the service to ensure it's running
         self.start()?;
@@ -608,4 +633,64 @@ impl CrossPlatformServiceManager {
             }
         }
     }
+}
+
+#[cfg(target_os = "windows")]
+fn apply_windows_recovery(service_name: &str, cfg: &RecoveryConfig) -> Result<()> {
+    use std::time::Duration;
+    use windows_service::{
+        service::{
+            ServiceAccess, ServiceAction, ServiceActionType, ServiceFailureActions,
+            ServiceFailureResetPeriod,
+        },
+        service_manager::{ServiceManager, ServiceManagerAccess},
+    };
+
+    let scm = ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CONNECT)
+        .context("Failed to connect to service control manager")?;
+
+    let service = scm
+        .open_service(
+            service_name,
+            ServiceAccess::CHANGE_CONFIG | ServiceAccess::START,
+        )
+        .context("Failed to open service for recovery configuration")?;
+
+    // Three entries: index 0 = first failure, 1 = second, 2 = subsequent.
+    // Delay is the pause before SCM performs the action.
+    let actions = vec![
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.first_restart_secs),
+        },
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.second_restart_secs),
+        },
+        ServiceAction {
+            action_type: ServiceActionType::Restart,
+            delay: Duration::from_secs(cfg.subsequent_restart_secs),
+        },
+    ];
+
+    let reset_period = Duration::from_secs(cfg.reset_period_days as u64 * 86_400);
+
+    service
+        .update_failure_actions(ServiceFailureActions {
+            reset_period: ServiceFailureResetPeriod::After(reset_period),
+            reboot_msg: None,
+            command: None,
+            actions: Some(actions),
+        })
+        .context("Failed to update service failure actions")?;
+
+    // Without this, SCM only treats crashes as failures — a clean exit(1)
+    // would silently skip recovery.
+    if cfg.enable_on_non_crash_failures {
+        service
+            .set_failure_actions_on_non_crash_failures(true)
+            .context("Failed to enable failure actions on non-crash failures")?;
+    }
+
+    Ok(())
 }

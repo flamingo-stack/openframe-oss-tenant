@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import type { Device } from '../../../devices/types/device.types';
+import type { Device } from '@/app/(app)/devices/types/device.types';
 import type { SubTab } from './device-selector.types';
 
 interface UseDeviceSelectorParams {

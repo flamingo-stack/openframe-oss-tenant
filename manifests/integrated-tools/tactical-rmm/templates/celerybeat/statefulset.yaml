@@ -28,7 +28,7 @@ spec:
           until nc -z tactical-postgres-0.tactical-postgres.integrated-tools.svc.cluster.local 5432; do sleep 2; done &&
           echo "PostgreSQL is ready!" &&
           echo "Waiting for Redis..." &&
-          until nc -z tactical-redis-0.tactical-redis.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
+          until nc -z redis-tactical-headless.integrated-tools.svc.cluster.local 6379; do sleep 2; done &&
           echo "Redis is ready!" &&
           echo "Waiting for Backend..." &&
           until nc -z tactical-backend-0.tactical-backend.integrated-tools.svc.cluster.local 8000; do sleep 2; done &&

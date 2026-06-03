@@ -74,8 +74,15 @@ impl ToolAgentUpdateService {
         let needs_tool_update = installed_tool.version != *new_version;
         let assets_to_update: Vec<_> = message.assets.as_ref()
             .map(|assets| assets.iter().filter(|a| {
+                let new_version = match a.version.as_deref() {
+                    Some(v) => v,
+                    None => return false,
+                };
+                if a.download_configurations.as_ref().map_or(true, |c| c.is_empty()) {
+                    return false;
+                }
                 let existing = installed_tool.assets.iter().find(|ia| ia.id == a.asset_id);
-                existing.map(|e| e.version.as_str()) != Some(a.version.as_str())
+                existing.map(|e| e.version.as_str()) != Some(new_version)
             }).collect())
             .unwrap_or_default();
 
@@ -265,11 +272,12 @@ impl ToolAgentUpdateService {
         installed_tool: &mut crate::models::installed_tool::InstalledTool,
     ) -> Result<()> {
         let asset_id = &asset.asset_id;
-        let new_version = &asset.version;
+        let new_version = asset.version.as_deref()
+            .with_context(|| format!("Asset {} has no version", asset_id))?;
 
         let existing_asset = installed_tool.assets.iter().find(|a| a.id == *asset_id);
 
-        if existing_asset.map(|a| a.version.as_str()) == Some(new_version.as_str()) {
+        if existing_asset.map(|a| a.version.as_str()) == Some(new_version) {
             info!(asset_id = %asset_id, version = %new_version, "Asset already at version, skipping");
             return Ok(());
         }
@@ -286,8 +294,11 @@ impl ToolAgentUpdateService {
             "Processing asset update"
         );
 
+        let download_configs = asset.download_configurations.as_ref()
+            .with_context(|| format!("Asset {} has no download configurations", asset_id))?;
+
         let config = self.github_download_service
-            .find_config_for_current_os(&asset.download_configurations)
+            .find_config_for_current_os(download_configs)
             .with_context(|| format!("No download config for current OS: {}", asset_id))?;
 
         let asset_filename = &config.target_file_name;

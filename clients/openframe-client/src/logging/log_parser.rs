@@ -58,7 +58,7 @@ pub fn read_new_logs(
     Ok((logs, new_position))
 }
 
-fn parse_log_line(line: &str) -> Option<LogEntry> {
+pub fn parse_log_line(line: &str) -> Option<LogEntry> {
     if let Some(entry) = parse_tracing_format(line) {
         return Some(entry);
     }
@@ -88,6 +88,9 @@ fn parse_log_line(line: &str) -> Option<LogEntry> {
 }
 
 fn is_client_log(entry: &LogEntry) -> bool {
+    if entry.level == "TOOL" {
+        return false;
+    }
     entry.msg.starts_with("openframe") || entry.msg.starts_with("async_nats")
 }
 
@@ -247,5 +250,57 @@ mod tests {
         assert_eq!(entry.ts, "2026-03-24T13:24:04Z");
         assert_eq!(entry.level, "INFO");
         assert_eq!(entry.msg, "[tool] Token refresh job started");
+    }
+
+    #[test]
+    fn test_parse_tool_level_format() {
+        let line = "2026-04-06T14:15:10.488Z TOOL Openframe JWT: token123";
+        let entry = parse_log_line(line).unwrap();
+
+        assert_eq!(entry.ts, "2026-04-06T14:15:10.488Z");
+        assert_eq!(entry.level, "TOOL");
+        assert_eq!(entry.msg, "Openframe JWT: token123");
+    }
+
+    #[test]
+    fn test_tool_level_is_not_client_log() {
+        let entry = LogEntry {
+            ts: "2026-04-06T14:15:10.488Z".into(),
+            level: "TOOL".into(),
+            msg: "Connection established".into(),
+            count: None,
+        };
+
+        assert!(!is_client_log(&entry));
+    }
+
+    #[test]
+    fn test_deduplicate_tool_level_logs() {
+        let logs = vec![
+            LogEntry {
+                ts: "2026-04-06T14:15:10.000Z".into(),
+                level: "TOOL".into(),
+                msg: "Connection FAILED: Network timeout".into(),
+                count: None,
+            },
+            LogEntry {
+                ts: "2026-04-06T14:15:11.000Z".into(),
+                level: "TOOL".into(),
+                msg: "Connection FAILED: Network timeout".into(),
+                count: None,
+            },
+            LogEntry {
+                ts: "2026-04-06T14:15:12.000Z".into(),
+                level: "TOOL".into(),
+                msg: "Connection FAILED: Network timeout".into(),
+                count: None,
+            },
+        ];
+
+        let deduped = logs.deduplicate();
+
+        assert_eq!(deduped.len(), 1);
+        assert_eq!(deduped[0].msg, "Connection FAILED: Network timeout");
+        assert_eq!(deduped[0].count, Some(3));
     }
 }

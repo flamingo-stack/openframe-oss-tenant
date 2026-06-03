@@ -3,22 +3,28 @@ import type {
   HistoricalMessage,
   MessageOwner,
 } from '@flamingo-stack/openframe-frontend-core';
-import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
+import { GraphQLClient, type RequestDocument, type Variables } from 'graphql-request';
 import { tokenService } from './tokenService';
 
-export interface ResumableDialog {
-  id: string;
-  title: string;
-  status: string;
-  createdAt: string;
-  statusUpdatedAt: string | null;
-  resolvedAt: string | null;
-  aiResolutionSuggestedAt: string | null;
-  rating: {
-    id: string;
-    dialogId: string;
-    createdAt: string;
-  } | null;
+export interface DialogTokenUsage {
+  inputTokensSize: number | null;
+  outputTokensSize: number | null;
+  totalTokensSize: number | null;
+  contextSize: number | null;
+}
+
+interface DialogTokenUsageEntry extends DialogTokenUsage {
+  chatType: string;
+}
+
+const CLIENT_CHAT_TYPE = 'CLIENT_CHAT';
+
+function pickClientChatTokenUsage(entries: DialogTokenUsageEntry[] | null | undefined): DialogTokenUsage | null {
+  if (!entries) return null;
+  const match = entries.find(e => e.chatType === CLIENT_CHAT_TYPE);
+  if (!match) return null;
+  const { chatType: _chatType, ...usage } = match;
+  return usage;
 }
 
 export type DialogOwner = MessageOwner;
@@ -27,6 +33,7 @@ export type MessageData = CoreMessageData;
 
 export interface Message extends HistoricalMessage {
   dialogMode: string;
+  lastChunkStreamSeq?: number | null;
 }
 
 export interface MessageEdge {
@@ -46,26 +53,28 @@ export interface MessagesConnection {
   pageInfo: PageInfo;
 }
 
-const GET_RESUMABLE_DIALOG_QUERY = gql`
-  query GetDialog {
-    resumableDialog {
+const DIALOG_TOKEN_USAGE_QUERY = `
+  query GetDialogById($id: ID!) {
+    dialog(id: $id) {
       id
-      title
-      status
-      createdAt
-      statusUpdatedAt
-      resolvedAt
-      aiResolutionSuggestedAt
-      rating {
-        id
-        dialogId
-        createdAt
+      tokenUsage {
+        chatType
+        inputTokensSize
+        outputTokensSize
+        totalTokensSize
+        contextSize
       }
     }
   }
 `;
 
-const GET_DIALOG_MESSAGES_QUERY = gql`
+const THINKING_FRAGMENT = `
+            ... on ThinkingData {
+              text
+            }`;
+
+function getDialogMessagesQuery({ includeThinking = false } = {}) {
+  return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
       dialogId: $dialogId
@@ -81,6 +90,7 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
           chatType
           dialogMode
           createdAt
+          lastChunkStreamSeq
           owner {
             type
             ... on AdminOwner {
@@ -97,6 +107,8 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               text
             }
 
+            ${includeThinking ? THINKING_FRAGMENT : ''}
+
             ... on SystemData {
               text
             }
@@ -105,9 +117,11 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               type
               integratedToolType
               toolFunction
+              title
               parameters
               requiresApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ExecutedToolData {
@@ -118,14 +132,25 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               success
               requiredApproval
               approvalStatus
+              toolExecutionRequestId
             }
 
             ... on ApprovalRequestData {
-              type  
+              type
               approvalRequestId
               approvalType
               command
               explanation
+              toolCalls {
+                toolExecutionRequestId
+                toolName
+                toolTitle
+                toolExplanation
+                toolType
+                requiresApproval
+                approvalType
+                toolCallArguments
+              }
             }
 
             ... on ApprovalResultData {
@@ -133,6 +158,15 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
               approvalRequestId
               approved
               approvalType
+            }
+
+            ... on ContextCompactionStartData {
+              type
+            }
+
+            ... on ContextCompactionEndData {
+              type
+              summary
             }
 
             ... on ErrorData {
@@ -151,6 +185,7 @@ const GET_DIALOG_MESSAGES_QUERY = gql`
     }
   }
 `;
+}
 
 export class DialogGraphQlService {
   private graphQlClient: GraphQLClient | null = null;
@@ -194,26 +229,16 @@ export class DialogGraphQlService {
     return client.request<T>(document, variables);
   }
 
-  async getResumableDialog(): Promise<ResumableDialog | null> {
-    try {
-      await tokenService.ensureTokenReady();
-      const data = await this.request<{ resumableDialog: ResumableDialog | null }>(GET_RESUMABLE_DIALOG_QUERY);
-      return data.resumableDialog;
-    } catch (error) {
-      console.error('Failed to fetch resumable dialog:', error);
-      return null;
-    }
-  }
-
   async getDialogMessagesPage(
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
+    { includeThinking = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
-      const data = await this.request<{ messages: MessagesConnection }>(GET_DIALOG_MESSAGES_QUERY, {
+      const data = await this.request<{ messages: MessagesConnection }>(getDialogMessagesQuery({ includeThinking }), {
         dialogId,
         chatType: 'CLIENT_CHAT',
         cursor,
@@ -225,6 +250,20 @@ export class DialogGraphQlService {
       return data.messages || null;
     } catch (error) {
       console.error('Failed to fetch dialog messages page:', error);
+      return null;
+    }
+  }
+
+  async getDialogTokenUsage(dialogId: string): Promise<DialogTokenUsage | null> {
+    try {
+      await tokenService.ensureTokenReady();
+      const data = await this.request<{ dialog: { tokenUsage: DialogTokenUsageEntry[] | null } | null }>(
+        DIALOG_TOKEN_USAGE_QUERY,
+        { id: dialogId },
+      );
+      return pickClientChatTokenUsage(data.dialog?.tokenUsage);
+    } catch (error) {
+      console.error('Failed to fetch dialog token usage:', error);
       return null;
     }
   }

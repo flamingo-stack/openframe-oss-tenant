@@ -15,6 +15,8 @@ pub mod clients;
 pub mod services;
 pub mod listener;
 
+pub mod banner;
+pub mod doctor;
 pub mod logging;
 pub mod monitoring;
 pub mod service;
@@ -59,6 +61,10 @@ use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
 use crate::logging::nats_streaming::LogStreamingRunManager;
+use crate::config::update_config::{
+    HTTP_CLIENT_TIMEOUT_SECS,
+    DOWNLOAD_CLIENT_TIMEOUT_SECS,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServerConfig {
@@ -135,6 +141,7 @@ pub struct Client {
     // Services needed for log streaming initialization
     initial_configuration_service: InitialConfigurationService,
     agent_configuration_service: AgentConfigurationService,
+    installed_tools_service: InstalledToolsService,
     initial_key_service: Arc<InitialKeyService>,
 }
 
@@ -162,9 +169,8 @@ impl Client {
         let config_service = AgentConfigurationService::new(directory_manager.clone())
             .context("Failed to initialize device configuration service")?;
 
-        // Initialize HTTP client
         let http_client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(120))
+            .timeout(Duration::from_secs(HTTP_CLIENT_TIMEOUT_SECS))
             // disable TLS verification for dev mode only
             .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
             .no_proxy()
@@ -172,6 +178,14 @@ impl Client {
             .pool_max_idle_per_host(0)
             .build()
             .context("Failed to create HTTP client")?;
+
+        let download_client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(DOWNLOAD_CLIENT_TIMEOUT_SECS))
+            .danger_accept_invalid_certs(initial_configuration_service.is_local_mode()?)
+            .no_proxy()
+            .pool_max_idle_per_host(0)
+            .build()
+            .context("Failed to create download HTTP client")?;
 
         // Initialize http url
         let http_url = format!("https://{}", initial_configuration_service.get_server_url()?);
@@ -240,13 +254,13 @@ impl Client {
         
         // Initialize tool agent file client
         let tool_agent_file_client = ToolAgentFileClient::new(
-            http_client.clone(),
+            download_client.clone(),
             http_url.clone(),
         );
 
         // Initialize tool API client
         let tool_api_client = ToolApiClient::new(
-            http_client.clone(),
+            download_client.clone(),
             http_url.clone(),
             config_service.clone()
         );
@@ -301,7 +315,7 @@ impl Client {
             .context("Failed to initialize OpenFrame client info service")?;
 
         // Initialize GitHub download service (used by update and installation services)
-        let github_download_service = GithubDownloadService::new(http_client.clone(), DmgExtractor::new());
+        let github_download_service = GithubDownloadService::new(download_client.clone(), DmgExtractor::new());
 
         // Initialize update state and cleanup services (needed by update service)
         let update_state_service = UpdateStateService::new(directory_manager.clone())
@@ -330,6 +344,7 @@ impl Client {
             openframe_client_info_service.clone(),
             github_download_service.clone(),
             update_state_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize tool agent update service
@@ -397,6 +412,7 @@ impl Client {
             update_handler_service,
             initial_configuration_service,
             agent_configuration_service: config_service,
+            installed_tools_service,
             initial_key_service,
         })
     }
@@ -409,6 +425,7 @@ impl Client {
         LogStreamingRunManager::new(
             &self.initial_configuration_service,
             &self.agent_configuration_service,
+            &self.installed_tools_service,
             &self.directory_manager,
         )?.start().await?;
         info!("NATS log streaming initialized successfully");

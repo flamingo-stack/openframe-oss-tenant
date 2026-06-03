@@ -13,14 +13,20 @@ export function useChatApprovals() {
   const [pendingApprovalRequests, setPendingApprovalRequests] = useState<Record<string, ApprovalData>>({});
   const [awaitingTechnicianResponse, setAwaitingTechnicianResponse] = useState(false);
 
+  // Optimistic flip BEFORE the fetch. Backend starts streaming the
+  // continuation immediately on approval; if we wait for the response,
+  // the incoming MESSAGE_START adopts the still-pending bubble and text
+  // chunks overwrite the approval card.
   const handleApproveRequest = useCallback(async (requestId?: string): Promise<void> => {
     if (!requestId) return;
+
+    setApprovalStatuses(prev => ({ ...prev, [requestId]: 'approved' }));
 
     const serverUrl = tokenService.getCurrentApiBaseUrl();
     const token = tokenService.getCurrentToken();
 
     try {
-      const response = await fetch(`${serverUrl}/chat/api/v1/approval-requests/${requestId}/approve`, {
+      await fetch(`${serverUrl}/chat/api/v1/approval-requests/${requestId}/approve`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -28,10 +34,6 @@ export function useChatApprovals() {
         },
         body: JSON.stringify({ approve: true }),
       });
-
-      if (response.ok) {
-        setApprovalStatuses(prev => ({ ...prev, [requestId]: 'approved' }));
-      }
     } catch (error) {
       console.error('Error approving request:', error);
     }
@@ -40,11 +42,13 @@ export function useChatApprovals() {
   const handleRejectRequest = useCallback(async (requestId?: string): Promise<void> => {
     if (!requestId) return;
 
+    setApprovalStatuses(prev => ({ ...prev, [requestId]: 'rejected' }));
+
     const serverUrl = tokenService.getCurrentApiBaseUrl();
     const token = tokenService.getCurrentToken();
 
     try {
-      const response = await fetch(`${serverUrl}/chat/api/v1/approval-requests/${requestId}/approve`, {
+      await fetch(`${serverUrl}/chat/api/v1/approval-requests/${requestId}/approve`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -52,10 +56,6 @@ export function useChatApprovals() {
         },
         body: JSON.stringify({ approve: false }),
       });
-
-      if (response.ok) {
-        setApprovalStatuses(prev => ({ ...prev, [requestId]: 'rejected' }));
-      }
     } catch (error) {
       console.error('Error rejecting request:', error);
     }
@@ -124,6 +124,15 @@ export function useChatApprovals() {
     setAwaitingTechnicianResponse(false);
   }, []);
 
+  // Apply an APPROVAL_RESULT-driven status flip. Updating this map causes
+  // `useDialogMessages` to re-derive `historicalMessages` with the new
+  // status overlaid via `processHistoricalMessages` — the live
+  // `useChatMessages` updater alone can't reach approvals that live in
+  // historical (resumed-dialog) bubbles.
+  const applyResolvedStatus = useCallback((requestId: string, status: 'approved' | 'rejected') => {
+    setApprovalStatuses(prev => (prev[requestId] === status ? prev : { ...prev, [requestId]: status }));
+  }, []);
+
   return {
     approvalStatuses,
     pendingApprovalRequests,
@@ -133,6 +142,7 @@ export function useChatApprovals() {
     updateApprovalStatusInMessages,
     handleEscalatedApproval,
     handleEscalatedApprovalResult,
+    applyResolvedStatus,
     clearApprovals,
   };
 }

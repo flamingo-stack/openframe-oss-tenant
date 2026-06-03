@@ -1,12 +1,15 @@
 import {
   type ChatApprovalStatus,
   type Message,
+  type PendingToolCallData,
   processHistoricalMessages,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
+import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { dialogGraphQlService } from '../services/dialogGraphQLService';
+import { applyToolTitleToMessage } from '../utils/applyToolTitle';
 
 interface UseDialogMessagesOptions {
   enabled?: boolean;
@@ -17,12 +20,15 @@ interface UseDialogMessagesOptions {
 
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
+  const { flags } = useFeatureFlags();
   const { onApprove, onReject, approvalStatuses } = options;
 
-  const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
+  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
-      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam);
+      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
+        includeThinking: flags.thinking,
+      });
       if (!connection || !connection.edges) {
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
       }
@@ -38,11 +44,26 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     enabled: !!dialogId && (options.enabled ?? false),
   });
 
+  const initialOptStartSeq = useMemo(() => {
+    let max = 0;
+    if (!data?.pages) return max;
+    for (const page of data.pages) {
+      for (const edge of page.edges) {
+        const seq = edge.node.lastChunkStreamSeq;
+        if (typeof seq === 'number' && seq > max) max = seq;
+      }
+    }
+    return max;
+  }, [data?.pages]);
+
   const { historicalMessages, escalatedApprovals } = useMemo(() => {
     if (!data?.pages) {
       return {
         historicalMessages: [] as Message[],
-        escalatedApprovals: new Map() as Map<string, { command: string; explanation?: string; approvalType: string }>,
+        escalatedApprovals: new Map() as Map<
+          string,
+          { command: string; explanation?: string; approvalType: string; toolCalls?: PendingToolCallData[] }
+        >,
       };
     }
 
@@ -51,7 +72,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     for (const page of reversedPages) {
       const reversedEdges = [...page.edges].reverse();
       for (const edge of reversedEdges) {
-        allNodes.push(edge.node);
+        allNodes.push(applyToolTitleToMessage(edge.node));
       }
     }
 
@@ -61,10 +82,11 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       approvalStatuses,
       assistantAvatar: faeAvatar,
       displayApprovalTypes: ['CLIENT'],
+      batchApprovalsEnabled: flags['batch-approval'],
     });
 
     return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses]);
+  }, [data?.pages, onApprove, onReject, approvalStatuses, flags]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });
@@ -75,8 +97,10 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     isLoading,
+    isFetched,
     fetchNextPage,
     escalatedApprovals,
+    initialOptStartSeq,
     reset,
   };
 }

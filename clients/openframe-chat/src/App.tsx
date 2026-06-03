@@ -1,4 +1,5 @@
 import './styles/globals.css';
+import { Toaster } from '@flamingo-stack/openframe-frontend-core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { DebugModeProvider } from './contexts/DebugModeContext';
@@ -25,15 +26,18 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <FeatureFlagsProvider>
-        <FeatureFlagsGate>
-          <DebugModeProvider>
-            <ChatView />
-          </DebugModeProvider>
-        </FeatureFlagsGate>
-      </FeatureFlagsProvider>
-    </QueryClientProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <FeatureFlagsProvider>
+          <FeatureFlagsGate>
+            <DebugModeProvider>
+              <ChatView />
+            </DebugModeProvider>
+          </FeatureFlagsGate>
+        </FeatureFlagsProvider>
+      </QueryClientProvider>
+      <Toaster />
+    </>
   );
 }
 

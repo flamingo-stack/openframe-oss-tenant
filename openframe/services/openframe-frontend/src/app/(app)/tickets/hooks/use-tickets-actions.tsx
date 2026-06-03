@@ -1,0 +1,103 @@
+'use client';
+
+import {
+  BoxArchiveIcon,
+  CheckCircleIcon,
+  PenEditIcon,
+  PlusCircleIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type {
+  ActionsMenuGroup,
+  ActionsMenuItem,
+  PageActionButton,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useRouter } from 'next/navigation';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
+import { featureFlags } from '@/lib/feature-flags';
+import { useArchiveResolvedMutation } from './use-archive-resolved-mutation';
+import { useTicketStatistics } from './use-ticket-statistics';
+
+interface UseTicketsActionsParams {
+  isLoading: boolean;
+  enabled?: boolean;
+}
+
+export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActionsParams) {
+  const router = useRouter();
+  const archiveResolvedMutation = useArchiveResolvedMutation();
+  const { resolvedCount } = useTicketStatistics({ enabled });
+  const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
+
+  const handleNewTicket = useCallback(() => {
+    router.push('/tickets/new');
+  }, [router]);
+
+  const handleArchiveConfirm = useCallback(async () => {
+    await archiveResolvedMutation.mutateAsync();
+    setIsArchiveConfirmOpen(false);
+  }, [archiveResolvedMutation]);
+
+  const actions = useMemo<PageActionButton[]>(() => {
+    if (!enabled) return [];
+    return [
+      {
+        label: 'New Ticket',
+        onClick: handleNewTicket,
+        variant: 'outline',
+        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
+      },
+    ];
+  }, [enabled, handleNewTicket]);
+
+  const menuActions = useMemo<ActionsMenuGroup[]>(() => {
+    if (!enabled) return [];
+    const items: ActionsMenuItem[] = [];
+    if (featureFlags.ticketStatuses.enabled()) {
+      items.push({
+        id: 'edit-statuses',
+        label: 'Edit Statuses',
+        icon: <PenEditIcon className="text-ods-text-secondary" />,
+        href: '/tickets/statuses',
+      });
+    }
+    items.push({
+      id: 'tickets-archive',
+      label: 'Tickets Archive',
+      icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
+      href: '/tickets/archive',
+    });
+    if (resolvedCount > 0) {
+      items.push({
+        id: 'archive-resolved',
+        label: 'Archive Resolved Tickets',
+        icon: <CheckCircleIcon className="text-ods-text-secondary" />,
+        onClick: () => setIsArchiveConfirmOpen(true),
+        disabled: archiveResolvedMutation.isPending || isLoading,
+      });
+    }
+    return [{ items }];
+  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading]);
+
+  const dialog: ReactNode = (
+    <ConfirmDialog
+      open={isArchiveConfirmOpen}
+      onOpenChange={open => {
+        if (!open) setIsArchiveConfirmOpen(false);
+      }}
+      title="Archive Resolved Tickets"
+      description={
+        resolvedCount === 1
+          ? 'This will archive 1 resolved ticket. It will be moved to the Tickets Archive but can be restored later.'
+          : `This will archive ${resolvedCount} resolved tickets. They will be moved to the Tickets Archive but can be restored later.`
+      }
+      confirmLabel="Archive Tickets"
+      pendingLabel="Archiving..."
+      variant="destructive"
+      isPending={archiveResolvedMutation.isPending}
+      onConfirm={handleArchiveConfirm}
+    />
+  );
+
+  return { actions, menuActions, dialog };
+}

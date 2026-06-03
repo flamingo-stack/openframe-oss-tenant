@@ -21,6 +21,8 @@ impl NatsMessagePublisher {
 
         client.publish(subject.to_string(), payload_json.into()).await
             .context("Failed to publish message to NATS")?;
+        client.flush().await
+            .context("Failed to flush NATS publish")?;
         Ok(())
     }
 }

@@ -73,8 +73,7 @@ impl GithubDownloadService {
         Ok(binary_bytes)
     }
 
-    /// Download with retry logic and timeout
-    /// Falls back to jsDelivr CDN if GitHub returns 429 (rate limit)
+    /// Download with retry logic and timeout. Falls back to jsDelivr CDN on HTTP 429 (rate limit).
     async fn download_with_retry(&self, url: &str) -> Result<Bytes> {
         let mut last_error = None;
 
@@ -90,16 +89,13 @@ impl GithubDownloadService {
                     return Ok(bytes);
                 }
                 Ok(Err(e)) => {
-                    // Check if this is a rate limit error (HTTP 429)
                     if e.to_string().contains("429") {
                         warn!("GitHub rate limit (429) detected on attempt {}", attempt);
                         warn!("Attempting fallback to jsDelivr CDN...");
-                        
-                        // Convert GitHub URL to jsDelivr CDN URL
+
                         let cdn_url = self.github_to_cdn_url(url);
                         info!("CDN URL: {}", cdn_url);
-                        
-                        // Try downloading from CDN
+
                         match tokio::time::timeout(
                             Duration::from_secs(DOWNLOAD_TIMEOUT_SECS),
                             self.download(&cdn_url)
@@ -123,7 +119,7 @@ impl GithubDownloadService {
                             }
                         }
                     }
-                    
+
                     warn!("Download attempt {} failed: {:#}", attempt, e);
                     last_error = Some(e);
                 }

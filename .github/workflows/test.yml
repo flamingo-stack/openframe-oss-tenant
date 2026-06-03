@@ -197,6 +197,7 @@ jobs:
       - name: Run Tests
         id: tests
         env:
+          TEST_ENV_MODE: OSS
           TEST_BASE_URL: localhost
           TEST_USER_DOMAIN: localhost
           MONGODB_URI: mongodb://mongodb-0.mongodb.datasources.svc.cluster.local:27017
@@ -274,6 +275,8 @@ jobs:
               RUST_TARGET=$(echo "$RUST_TARGET" | tr -d '[:space:]')
               make build TARGET="$RUST_TARGET"
             done
+          elif [[ "${{ matrix.name }}" == "openframe-chat" && "${{ matrix.os }}" == "macos" ]]; then
+            make build TARGET="${{ matrix.target }}" BUNDLES=app
           else
             make build TARGET="${{ matrix.target }}"
           fi
