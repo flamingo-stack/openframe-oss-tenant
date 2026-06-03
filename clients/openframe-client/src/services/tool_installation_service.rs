@@ -272,9 +272,49 @@ impl ToolInstallationService {
             info!("No assets to download for tool: {}", tool_agent_id);
         }
 
-        // TODO: there's risk that tool have been installed but data haven't been sent 
-        //  there should be mechanism of pre check if tool have been installed(some command)
-        //  Also, logic should prevent race conditions if installation stuck
+        // PHASE 6: register the tool in installed_tools.json BEFORE running the
+        // installation command. This addresses the prior TODO ("risk that tool
+        // have been installed but data haven't been sent") and breaks the
+        // CSW-LT-SALES01-style infinite redelivery loop:
+        //
+        // Without this early save, a failure in the installation command (or any
+        // later step) returns Err before the bottom-of-function save runs. The
+        // listener leaves the NATS message unacked, JetStream redelivers, install
+        // runs from scratch — but `get_by_tool_agent_id` still returns None
+        // because save was never reached. The same write attempt fires forever.
+        //
+        // With this save, the next redelivery takes the early-return branch at
+        // the top of install() ("Tool already installed, skipping") and ACKs the
+        // message. The tool stays unhealthy until the user takes manual recovery
+        // action, but the loop stops and the broken state is at least observable
+        // on disk and to the agent. The save at the bottom of this function
+        // remains as a no-op idempotent re-write so any future fields added to
+        // InstalledTool after the install command runs are still captured.
+        let installed_tool_preliminary = InstalledTool {
+            tool_agent_id: tool_agent_id.clone(),
+            tool_id: tool_installation_message.tool_id.clone(),
+            tool_type: tool_installation_message.tool_type.clone(),
+            version: version_clone.clone(),
+            run_command_args: run_args_clone.clone(),
+            tool_agent_id_command_args: tool_installation_message
+                .tool_agent_id_command_args
+                .clone()
+                .unwrap_or_default(),
+            uninstallation_command_args: tool_installation_message
+                .uninstallation_command_args
+                .clone(),
+            installation: installation.clone(),
+            assets: Vec::new(),
+        };
+        info!(
+            "Persisting tool {} to installed_tools.json before installation command (idempotency guard)",
+            tool_agent_id
+        );
+        self.installed_tools_service
+            .save(installed_tool_preliminary)
+            .await
+            .context("Failed to persist installed tool before installation command")?;
+
         // Run installation command if provided
         if tool_installation_message.installation_command_args.is_some() {
             info!("Start run tool installation command for tool {}", tool_agent_id);

@@ -325,6 +325,28 @@ pub async fn uninstall_windows(
         }
     }
 
+    // Fleet/orbit persists outside `app_support_dir`. The orbit binary stores its
+    // node key (`secret-orbit-node-key.txt`), its osquery database
+    // (`osquery.db`), pid file, and log directory under `C:\Program Files\Orbit`.
+    // If we leave these files in place, the next install's fresh orbit reads the
+    // OLD node key and attempts to authenticate with Fleet as the previous
+    // machine, undoing the user's "start from a blank page" intent. This is the
+    // root cause of the CSW-LT-SALES01 "uninstall didn't actually reset fleet"
+    // observation.
+    //
+    // This block is the only Phase-4 hardening we ship in this PR; other ideas
+    // (kill-by-path scans, fail-loud on directory-removal warnings) were
+    // dropped because they paper over weaknesses in the tool-uninstall contract
+    // rather than fixing them. Defense-in-depth is easy to add later if
+    // production shows we actually need it.
+    let orbit_dir = Path::new("C:\\Program Files\\Orbit");
+    if orbit_dir.exists() {
+        info!("Cleaning up orbit data directory: {}", orbit_dir.display());
+        if let Err(e) = remove_directory_with_retry(orbit_dir, 5).await {
+            warn!("Failed to remove orbit data directory: {}", e);
+        }
+    }
+
     // Launch cleanup script to remove binary after process exit
     if install_path.exists() {
         info!("Launching binary cleanup script...");

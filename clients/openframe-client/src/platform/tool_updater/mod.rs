@@ -223,13 +223,94 @@ pub(crate) async fn restore_from_backup(
     info!(tool_id = %tool_agent_id, "Restoring from backup: {} -> {}",
           backup.display(), target_path.display());
 
-    fs::copy(backup, target_path).await
-        .with_context(|| "Failed to restore from backup")?;
+    match copy_with_retry(backup, target_path).await {
+        Ok(()) => {
+            if let Err(e) = fs::remove_file(backup).await {
+                warn!(tool_id = %tool_agent_id,
+                      "Restored but failed to remove backup: {:#}", e);
+            }
+            info!(tool_id = %tool_agent_id, "Rollback completed");
+            Ok(())
+        }
+        Err(copy_err) => {
+            // Last-resort fallback: delete the (likely partial) target, then rename
+            // the backup into place. On NTFS, rename can succeed where copy fails
+            // because it only updates the directory entry rather than opening the
+            // data stream of the (still-locked) destination. This guarantees we
+            // never leave the user without a working binary at `target_path`.
+            warn!(
+                tool_id = %tool_agent_id,
+                "copy_with_retry exhausted ({:#}); trying delete+rename fallback",
+                copy_err
+            );
 
-    fs::remove_file(backup).await
-        .with_context(|| "Failed to remove backup after restore")?;
+            // Best-effort delete of the partially-written target. Ignore the
+            // result — if the file doesn't exist, rename will succeed; if delete
+            // fails, rename below will surface the real error.
+            let _ = fs::remove_file(target_path).await;
 
-    info!(tool_id = %tool_agent_id, "Rollback completed");
+            fs::rename(backup, target_path).await
+                .with_context(|| format!(
+                    "Both copy and rename rollback failed for {}",
+                    target_path.display()
+                ))?;
+            info!(tool_id = %tool_agent_id,
+                  "Rollback completed via delete+rename fallback");
+            Ok(())
+        }
+    }
+}
+
+// Copy with Windows ERROR_SHARING_VIOLATION (32) retry. Same backoff budget as
+// binary_writer::create_file_with_retry: ~10 s total, enough to ride out AV
+// scan-on-write windows that fire after backup_binary finishes.
+#[cfg(target_os = "windows")]
+async fn copy_with_retry(src: &Path, dst: &Path) -> Result<()> {
+    use binary_writer::{
+        SHARING_VIOLATION_OS_ERROR, WRITE_MAX_RETRIES, WRITE_RETRY_DELAY,
+    };
+
+    for attempt in 1..=WRITE_MAX_RETRIES {
+        match fs::copy(src, dst).await {
+            Ok(_) => {
+                if attempt > 1 {
+                    info!(
+                        "fs::copy succeeded on attempt {} for {} -> {}",
+                        attempt,
+                        src.display(),
+                        dst.display()
+                    );
+                }
+                return Ok(());
+            }
+            Err(e)
+                if e.raw_os_error() == Some(SHARING_VIOLATION_OS_ERROR)
+                    && attempt < WRITE_MAX_RETRIES =>
+            {
+                warn!(
+                    "fs::copy locked (attempt {}/{}) on {}: {}. Retrying in {}ms",
+                    attempt,
+                    WRITE_MAX_RETRIES,
+                    dst.display(),
+                    e,
+                    WRITE_RETRY_DELAY.as_millis()
+                );
+                tokio::time::sleep(WRITE_RETRY_DELAY).await;
+            }
+            Err(e) => {
+                return Err(e).with_context(|| {
+                    format!("Failed to copy {} to {}", src.display(), dst.display())
+                });
+            }
+        }
+    }
+    unreachable!()
+}
+
+#[cfg(not(target_os = "windows"))]
+async fn copy_with_retry(src: &Path, dst: &Path) -> Result<()> {
+    fs::copy(src, dst).await
+        .with_context(|| format!("Failed to copy {} to {}", src.display(), dst.display()))?;
     Ok(())
 }
 
