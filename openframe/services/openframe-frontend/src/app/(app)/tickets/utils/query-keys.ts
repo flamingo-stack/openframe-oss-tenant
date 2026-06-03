@@ -44,24 +44,6 @@ export const dialogsQueryKeys = {
         assigneeIds: params.assigneeIds || [],
       },
     ] as const,
-
-  // Lifecycle (custom-status) board columns — parallel namespace, keyed by statusId.
-  // Kept separate from `boardColumn` so the two card shapes never share a cache entry.
-  boardColumnsLifecycle: () => [...dialogsQueryKeys.all, 'boardColumnLifecycle'] as const,
-
-  boardColumnLifecycle: (
-    statusId: string,
-    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] },
-  ) =>
-    [
-      ...dialogsQueryKeys.boardColumnsLifecycle(),
-      statusId,
-      {
-        search: params.search || '',
-        organizationIds: params.organizationIds || [],
-        assigneeIds: params.assigneeIds || [],
-      },
-    ] as const,
 } as const;
 
 /**
@@ -80,6 +62,4 @@ export const ticketsQueryKeys = {
   detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
   statistics: () => [...ticketsQueryKeys.all, 'statistics'] as const,
   statusTransitions: () => [...ticketsQueryKeys.all, 'statusTransitions'] as const,
-  statusTransitionRules: () => [...ticketsQueryKeys.all, 'statusTransitionRules'] as const,
-  statuses: () => [...ticketsQueryKeys.all, 'statuses'] as const,
 } as const;

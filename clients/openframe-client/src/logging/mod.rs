@@ -200,15 +200,8 @@ impl tracing::field::Visit for JsonVisitor {
     }
 }
 
-pub fn init_file_only(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::Result<()> {
-    init_inner(log_endpoint, agent_id, true)
-}
-
+/// Initialize logging with optional endpoint and agent ID
 pub fn init(log_endpoint: Option<String>, agent_id: Option<String>) -> std::io::Result<()> {
-    init_inner(log_endpoint, agent_id, false)
-}
-
-fn init_inner(log_endpoint: Option<String>, agent_id: Option<String>, file_only: bool) -> std::io::Result<()> {
     // Check if logging is already initialized
     static INIT: std::sync::Once = std::sync::Once::new();
     let mut init_result = Ok(());
@@ -236,9 +229,7 @@ fn init_inner(log_endpoint: Option<String>, agent_id: Option<String>, file_only:
         // Get the log file path from the directory manager
         let log_file_path = get_log_file_path(&dir_manager);
 
-        if !file_only {
-            eprintln!("Initializing logging to {}", log_file_path.display());
-        }
+        eprintln!("Initializing logging to {}", log_file_path.display());
 
         // Initialize the log file for manual writing when tracing fails
         match std::fs::OpenOptions::new()
@@ -311,16 +302,12 @@ fn init_inner(log_endpoint: Option<String>, agent_id: Option<String>, file_only:
                 .finish(file);
             let _ = LOG_GUARD.set(guard); // keep guard alive
 
-            // stdout layer (compact, single-line) — omitted in file_only mode
-            let stdout_layer = if file_only {
-                None
-            } else {
-                Some(fmt::layer()
-                    .with_target(true)
-                    .with_level(true)
-                    .compact()
-                    .with_ansi(false))
-            };
+            // stdout layer (compact, single-line)
+            let stdout_layer = fmt::layer()
+                .with_target(true)
+                .with_level(true)
+                .compact()
+                .with_ansi(false);
 
             // file layer (compact, single-line)
             let file_layer = fmt::layer()
@@ -348,9 +335,7 @@ fn init_inner(log_endpoint: Option<String>, agent_id: Option<String>, file_only:
 
         // Force an initial log entry with explicit info level to ensure logging is working
         tracing::info!("OpenFrame logging system initialized");
-        if !file_only {
-            manual_log("INFO", "Logging system initialized");
-        }
+        manual_log("INFO", "Logging system initialized");
 
         // Initialize log shipping if endpoint is provided
         if let Some(endpoint) = log_endpoint {

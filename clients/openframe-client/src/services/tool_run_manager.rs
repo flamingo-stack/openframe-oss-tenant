@@ -6,7 +6,6 @@ use tokio::time::sleep;
 use std::time::Duration;
 use std::collections::HashSet;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use crate::models::installed_tool::{InstalledTool, Installation};
@@ -383,7 +382,6 @@ pub struct ToolRunManager {
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
     updating_tools: Arc<RwLock<HashSet<String>>>,
-    shutting_down: Arc<AtomicBool>,
 }
 
 impl ToolRunManager {
@@ -398,15 +396,7 @@ impl ToolRunManager {
             tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
             updating_tools: Arc::new(RwLock::new(HashSet::new())),
-            shutting_down: Arc::new(AtomicBool::new(false)),
         }
-    }
-
-    /// Signal all run loops to stop launching new processes.
-    /// Called by self-update before the updater kills the service.
-    pub fn signal_shutdown(&self) {
-        self.shutting_down.store(true, Ordering::Release);
-        info!("Tool run manager: shutdown signalled, no new launches will occur");
     }
 
     pub async fn mark_updating(&self, tool_id: &str) {
@@ -484,19 +474,12 @@ impl ToolRunManager {
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
         let updating_tools = self.updating_tools.clone();
-        let shutting_down = self.shutting_down.clone();
         let params_processor = self.params_processor.clone();
         let running_tools = self.running_tools.clone();
         let installation = tool.installation.clone();
 
         tokio::spawn(async move {
             loop {
-                // Self-update in progress — stop the loop entirely
-                if shutting_down.load(Ordering::Acquire) {
-                    info!(tool_id = %tool.tool_agent_id, "Shutdown signalled, stopping run loop");
-                    break;
-                }
-
                 while updating_tools.read().await.contains(&tool.tool_agent_id) {
                     info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
                     sleep(Duration::from_secs(1)).await;
@@ -530,11 +513,6 @@ impl ToolRunManager {
                             let mut launch_args = processed_args.clone();
                             if tool.tool_agent_id == "openframe-chat" {
                                 launch_args.push("--background".to_string());
-                            }
-
-                            if shutting_down.load(Ordering::Acquire) {
-                                info!(tool_id = %tool.tool_agent_id, "Shutdown signalled before launch, stopping run loop");
-                                break;
                             }
 
                             info!("Launching {} as GuiApp in USER session", tool.tool_agent_id);
@@ -662,11 +640,6 @@ impl ToolRunManager {
                     Installation::Standard { .. } => {
                         info!(tool_id = %tool.tool_agent_id, "Launching as Standard (managed process)");
                     }
-                }
-
-                if shutting_down.load(Ordering::Acquire) {
-                    info!(tool_id = %tool.tool_agent_id, "Shutdown signalled before launch, stopping run loop");
-                    break;
                 }
 
                 let mut child = match Command::new(&command_path)

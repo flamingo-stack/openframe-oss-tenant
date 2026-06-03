@@ -2,8 +2,8 @@ import type { Notification, NotificationVariant } from '@flamingo-stack/openfram
 import { ConnectionHandler, type RecordSourceSelectorProxy } from 'relay-runtime';
 import type {
   NotificationSeverity,
-  notificationsDrawerRelay_query$data,
-} from '@/__generated__/notificationsDrawerRelay_query.graphql';
+  notificationsListQuery as NotificationsListQueryType,
+} from '@/__generated__/notificationsListQuery.graphql';
 
 export const NOTIFICATIONS_CONNECTION_KEY = 'NotificationsList_notifications';
 const NOTIFICATION_EDGE_TYPENAME = 'NotificationEdge';
@@ -94,27 +94,6 @@ export function makeMarkAllReadUpdater(pairs: NotificationConnectionPair[]) {
   };
 }
 
-export function makeDeleteAllReadUpdater(pairs: NotificationConnectionPair[]) {
-  return (store: RecordSourceSelectorProxy) => {
-    const root = store.getRoot();
-    const seen = new Set<string>();
-    for (const pair of pairs) {
-      const readConn = ConnectionHandler.getConnection(root, NOTIFICATIONS_CONNECTION_KEY, pair.read);
-      if (!readConn) continue;
-      const connId = readConn.getDataID();
-      if (seen.has(connId)) continue;
-      seen.add(connId);
-
-      readConn.setLinkedRecords([], 'edges');
-      const pageInfo = readConn.getLinkedRecord('pageInfo');
-      if (pageInfo) {
-        pageInfo.setValue(false, 'hasNextPage');
-        pageInfo.setValue(null, 'endCursor');
-      }
-    }
-  };
-}
-
 export function makeDeleteNotificationUpdater(id: string, pairs: NotificationConnectionPair[]) {
   return (store: RecordSourceSelectorProxy) => {
     const root = store.getRoot();
@@ -161,24 +140,16 @@ export function parseSeverity(
   return undefined;
 }
 
-const EPOCH_MS_THRESHOLD = 1e12;
-
-function toEpochMs(value: number): number {
-  return value < EPOCH_MS_THRESHOLD ? value * 1000 : value;
-}
-
 export function parseCreatedAt(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return toEpochMs(value);
+  if (typeof value === 'number') return value;
   if (typeof value === 'string') {
-    const asNumber = Number(value);
-    if (Number.isFinite(asNumber)) return toEpochMs(asNumber);
     const parsed = Date.parse(value);
     if (!Number.isNaN(parsed)) return parsed;
   }
   return Date.now();
 }
 
-type NotificationNode = notificationsDrawerRelay_query$data['notifications']['edges'][number]['node'];
+type NotificationNode = NotificationsListQueryType['response']['notifications']['edges'][number]['node'];
 
 export function mapNotificationNode(node: NotificationNode): Notification {
   const severity = normalizeSeverity(node.severity);

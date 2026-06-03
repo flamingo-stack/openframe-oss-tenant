@@ -138,69 +138,6 @@ export function applyOptimisticMove(queryClient: QueryClient, input: OptimisticM
   return snapshot;
 }
 
-export interface OptimisticMoveLifecycleInput {
-  ticketId: string;
-  sourceStatusId: string;
-  targetStatusId: string;
-  afterTicketId: string | null;
-  beforeTicketId: string | null;
-}
-
-function isLifecycleBoardQueryKey(key: QueryKey): boolean {
-  return Array.isArray(key) && key.length >= 4 && key[0] === 'dialogs' && key[1] === 'boardColumnLifecycle';
-}
-
-// Lifecycle (custom-status) counterpart of applyOptimisticMove: columns are keyed
-// by statusId (key[2]) and the card carries statusId rather than the legacy enum.
-// Reuses the generic page-manipulation helpers; rollback uses rollbackOptimisticMove.
-export function applyOptimisticMoveLifecycle(
-  queryClient: QueryClient,
-  input: OptimisticMoveLifecycleInput,
-): OptimisticMoveSnapshot {
-  const entries = queryClient.getQueriesData<InfiniteData<TicketsPage>>({
-    queryKey: dialogsQueryKeys.boardColumnsLifecycle(),
-  });
-
-  const detailKey = ticketsQueryKeys.detail(input.ticketId);
-  const detailData = queryClient.getQueryData<Dialog | null>(detailKey);
-
-  const snapshot: OptimisticMoveSnapshot = {
-    entries: entries.map(([key, data]) => [key, data] as const),
-    detail: { key: detailKey, data: detailData },
-  };
-
-  const movedDialog = findDialogInCache(entries, input.ticketId) ?? detailData ?? undefined;
-  if (!movedDialog) return snapshot;
-
-  const updatedDialog: Dialog = { ...movedDialog, statusId: input.targetStatusId };
-  const isSameColumn = input.sourceStatusId === input.targetStatusId;
-
-  if (detailData) {
-    queryClient.setQueryData<Dialog | null>(detailKey, { ...detailData, statusId: input.targetStatusId });
-  }
-
-  for (const [key, data] of entries) {
-    if (!data || !isLifecycleBoardQueryKey(key)) continue;
-    const statusInKey = key[2] as string;
-
-    if (isSameColumn) {
-      if (statusInKey !== input.sourceStatusId) continue;
-      const without = removeFromColumn(data, input.ticketId);
-      const next = insertIntoColumn(without, updatedDialog, input.afterTicketId, input.beforeTicketId);
-      queryClient.setQueryData(key, next);
-      continue;
-    }
-
-    if (statusInKey === input.sourceStatusId) {
-      queryClient.setQueryData(key, removeFromColumn(data, input.ticketId));
-    } else if (statusInKey === input.targetStatusId) {
-      queryClient.setQueryData(key, insertIntoColumn(data, updatedDialog, input.afterTicketId, input.beforeTicketId));
-    }
-  }
-
-  return snapshot;
-}
-
 export function rollbackOptimisticMove(queryClient: QueryClient, snapshot: OptimisticMoveSnapshot): void {
   for (const [key, data] of snapshot.entries) {
     queryClient.setQueryData(key, data);

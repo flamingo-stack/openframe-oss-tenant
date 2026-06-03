@@ -1,19 +1,20 @@
 'use client';
 
-import { CheckCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryLoader } from 'react-relay';
-import type { notificationsSectionRelayQuery as NotificationsSectionRelayQueryType } from '@/__generated__/notificationsSectionRelayQuery.graphql';
+import type { notificationsListQuery as NotificationsListQueryType } from '@/__generated__/notificationsListQuery.graphql';
 import {
   notificationsConnectionFilters,
   UNFILTERED_NOTIFICATION_PAIR,
 } from '@/graphql/notifications/notifications-helpers';
-import { notificationsSectionRelayQuery } from '@/graphql/notifications/notifications-section-relay';
+import { notificationsListQuery } from '@/graphql/notifications/notifications-list-query';
 import { useNotificationMutations } from '@/graphql/notifications/use-notification-mutations';
-import { NOTIFICATIONS_SECTION_PAGE_SIZE, NotificationsSection } from './notifications-section';
+import { NotificationsSection } from './notifications-section';
 
+const PAGE_SIZE = 50;
 const SEARCH_DEBOUNCE_MS = 300;
 
 export function NotificationsPageView() {
@@ -41,15 +42,14 @@ export function NotificationsPageView() {
     }
   }, [debouncedSearchHistory, params.searchHistory, setParam]);
 
-  const [newQueryRef, loadNew, disposeNew] =
-    useQueryLoader<NotificationsSectionRelayQueryType>(notificationsSectionRelayQuery);
+  const [newQueryRef, loadNew, disposeNew] = useQueryLoader<NotificationsListQueryType>(notificationsListQuery);
   const [historyQueryRef, loadHistory, disposeHistory] =
-    useQueryLoader<NotificationsSectionRelayQueryType>(notificationsSectionRelayQuery);
+    useQueryLoader<NotificationsListQueryType>(notificationsListQuery);
 
   useEffect(() => {
     const trimmed = debouncedSearchNew.trim();
     loadNew(
-      { first: NOTIFICATIONS_SECTION_PAGE_SIZE, after: null, filter: { read: false }, search: trimmed || null },
+      { first: PAGE_SIZE, after: null, filter: { read: false }, search: trimmed || null },
       { fetchPolicy: 'network-only' },
     );
     return () => disposeNew();
@@ -58,7 +58,7 @@ export function NotificationsPageView() {
   useEffect(() => {
     const trimmed = debouncedSearchHistory.trim();
     loadHistory(
-      { first: NOTIFICATIONS_SECTION_PAGE_SIZE, after: null, filter: { read: true }, search: trimmed || null },
+      { first: PAGE_SIZE, after: null, filter: { read: true }, search: trimmed || null },
       { fetchPolicy: 'network-only' },
     );
     return () => disposeHistory();
@@ -79,16 +79,10 @@ export function NotificationsPageView() {
     toast({ title: 'All notifications marked as read', variant: 'success' });
   }, [toast]);
 
-  const onDeleteAllReadCompleted = useCallback(() => {
-    toast({ title: 'All read notifications deleted', variant: 'success' });
-  }, [toast]);
-
-  const { markRead, markAllRead, removeNotification, removeAllRead, isMarkingAllRead, isDeletingAllRead } =
-    useNotificationMutations({
-      filterPairs,
-      onMarkAllReadCompleted,
-      onDeleteAllReadCompleted,
-    });
+  const { markRead, markAllRead, removeNotification, isMarkingAllRead } = useNotificationMutations({
+    filterPairs,
+    onMarkAllReadCompleted,
+  });
 
   return (
     <div className="flex h-full flex-col gap-[var(--spacing-system-l)]">
@@ -103,7 +97,7 @@ export function NotificationsPageView() {
           <Button
             variant="outline"
             disabled={isMarkingAllRead}
-            leftIcon={<CheckCircleIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />}
+            leftIcon={<CheckCircleIcon size={24} className="text-ods-text-secondary" />}
             onClick={markAllRead}
           >
             Mark All as Done
@@ -118,16 +112,6 @@ export function NotificationsPageView() {
         onSearchChange={setSearchHistoryInput}
         rowVariant="read"
         onDelete={removeNotification}
-        rightAction={
-          <Button
-            variant="outline"
-            disabled={isDeletingAllRead}
-            leftIcon={<TrashIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />}
-            onClick={removeAllRead}
-          >
-            Delete All
-          </Button>
-        }
       />
 
       <p className="text-center text-h6 text-ods-text-secondary">

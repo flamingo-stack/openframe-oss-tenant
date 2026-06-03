@@ -8,7 +8,6 @@ use crate::services::openframe_client_info_service::OpenFrameClientInfoService;
 use crate::services::github_download_service::GithubDownloadService;
 use crate::services::update_state_service::UpdateStateService;
 use crate::platform::updater_launcher::{self, UpdaterParams};
-use crate::services::tool_run_manager::ToolRunManager;
 use std::path::PathBuf;
 use uuid::Uuid;
 use std::sync::Arc;
@@ -20,7 +19,6 @@ pub struct OpenFrameClientUpdateService {
     client_info_service: OpenFrameClientInfoService,
     github_download_service: GithubDownloadService,
     update_state_service: UpdateStateService,
-    tool_run_manager: ToolRunManager,
     /// Mutex to prevent concurrent updates (race condition protection)
     update_in_progress: Arc<Mutex<bool>>,
 }
@@ -30,13 +28,11 @@ impl OpenFrameClientUpdateService {
         client_info_service: OpenFrameClientInfoService,
         github_download_service: GithubDownloadService,
         update_state_service: UpdateStateService,
-        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             client_info_service,
             github_download_service,
             update_state_service,
-            tool_run_manager,
             update_in_progress: Arc::new(Mutex::new(false)),
         }
     }
@@ -207,9 +203,8 @@ impl OpenFrameClientUpdateService {
             return Err(e);
         }
 
-        // Stop all tool run loops to prevent launching processes during shutdown.
-        self.tool_run_manager.signal_shutdown();
-
+        // Update script will stop the service, so everything after this won't execute
+        // NATS notification will be sent from recovery service after restart
         info!("Update process launched, service will be stopped by update script");
         Ok(())
     }

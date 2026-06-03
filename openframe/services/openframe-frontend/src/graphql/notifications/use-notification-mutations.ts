@@ -1,54 +1,42 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useMutation } from 'react-relay';
-import type { deleteAllReadNotificationsMutation as DeleteAllReadNotificationsMutationType } from '@/__generated__/deleteAllReadNotificationsMutation.graphql';
 import type { deleteNotificationMutation as DeleteNotificationMutationType } from '@/__generated__/deleteNotificationMutation.graphql';
 import type { markAllNotificationsReadMutation as MarkAllReadMutationType } from '@/__generated__/markAllNotificationsReadMutation.graphql';
 import type { markNotificationReadMutation as MarkReadMutationType } from '@/__generated__/markNotificationReadMutation.graphql';
-import { deleteAllReadNotificationsMutation } from './delete-all-read-notifications-mutation';
 import { deleteNotificationMutation } from './delete-notification-mutation';
 import { markAllNotificationsReadMutation } from './mark-all-notifications-read-mutation';
 import { markNotificationReadMutation } from './mark-notification-read-mutation';
 import {
-  makeDeleteAllReadUpdater,
   makeDeleteNotificationUpdater,
   makeMarkAllReadUpdater,
   makeMarkReadUpdater,
   type NotificationConnectionPair,
 } from './notifications-helpers';
 
-export type NotificationMutation = 'markRead' | 'markAllRead' | 'delete' | 'deleteAllRead';
+export type NotificationMutation = 'markRead' | 'markAllRead' | 'delete';
 
 interface UseNotificationMutationsOptions {
   filterPairs: NotificationConnectionPair[];
   onError?: (operation: NotificationMutation, err: Error) => void;
   onMarkAllReadCompleted?: () => void;
-  onDeleteAllReadCompleted?: () => void;
 }
 
 export function useNotificationMutations({
   filterPairs,
   onError,
   onMarkAllReadCompleted,
-  onDeleteAllReadCompleted,
 }: UseNotificationMutationsOptions) {
   const { toast } = useToast();
   const [markReadCommit] = useMutation<MarkReadMutationType>(markNotificationReadMutation);
   const [markAllReadCommit, isMarkingAllRead] = useMutation<MarkAllReadMutationType>(markAllNotificationsReadMutation);
   const [deleteCommit] = useMutation<DeleteNotificationMutationType>(deleteNotificationMutation);
-  const [deleteAllReadCommit, isDeletingAllRead] = useMutation<DeleteAllReadNotificationsMutationType>(
-    deleteAllReadNotificationsMutation,
-  );
-
-  const filterPairsRef = useRef(filterPairs);
-  filterPairsRef.current = filterPairs;
 
   const markRead = useCallback(
     (id: string) => {
-      const updater = (store: Parameters<ReturnType<typeof makeMarkReadUpdater>>[0]) =>
-        makeMarkReadUpdater(id, filterPairsRef.current)(store);
+      const updater = makeMarkReadUpdater(id, filterPairs);
       markReadCommit({
         variables: { id },
         optimisticUpdater: updater,
@@ -59,12 +47,11 @@ export function useNotificationMutations({
         },
       });
     },
-    [markReadCommit, onError, toast],
+    [markReadCommit, filterPairs, onError, toast],
   );
 
   const markAllRead = useCallback(() => {
-    const updater = (store: Parameters<ReturnType<typeof makeMarkAllReadUpdater>>[0]) =>
-      makeMarkAllReadUpdater(filterPairsRef.current)(store);
+    const updater = makeMarkAllReadUpdater(filterPairs);
     markAllReadCommit({
       variables: {},
       optimisticUpdater: updater,
@@ -77,12 +64,11 @@ export function useNotificationMutations({
         onError?.('markAllRead', err);
       },
     });
-  }, [markAllReadCommit, onError, onMarkAllReadCompleted, toast]);
+  }, [markAllReadCommit, filterPairs, onError, onMarkAllReadCompleted, toast]);
 
   const removeNotification = useCallback(
     (id: string) => {
-      const updater = (store: Parameters<ReturnType<typeof makeDeleteNotificationUpdater>>[0]) =>
-        makeDeleteNotificationUpdater(id, filterPairsRef.current)(store);
+      const updater = makeDeleteNotificationUpdater(id, filterPairs);
       deleteCommit({
         variables: { id },
         optimisticUpdater: updater,
@@ -93,25 +79,8 @@ export function useNotificationMutations({
         },
       });
     },
-    [deleteCommit, onError, toast],
+    [deleteCommit, filterPairs, onError, toast],
   );
 
-  const removeAllRead = useCallback(() => {
-    const updater = (store: Parameters<ReturnType<typeof makeDeleteAllReadUpdater>>[0]) =>
-      makeDeleteAllReadUpdater(filterPairsRef.current)(store);
-    deleteAllReadCommit({
-      variables: {},
-      optimisticUpdater: updater,
-      updater,
-      onCompleted: () => {
-        onDeleteAllReadCompleted?.();
-      },
-      onError: err => {
-        toast({ title: 'Failed to delete read notifications', description: err.message, variant: 'destructive' });
-        onError?.('deleteAllRead', err);
-      },
-    });
-  }, [deleteAllReadCommit, onError, onDeleteAllReadCompleted, toast]);
-
-  return { markRead, markAllRead, removeNotification, removeAllRead, isMarkingAllRead, isDeletingAllRead };
+  return { markRead, markAllRead, removeNotification, isMarkingAllRead };
 }

@@ -99,17 +99,6 @@ export const GET_TICKET_QUERY = `
       title
       description
       status
-      statusDefinition {
-        id
-        name
-        color
-        kind
-      }
-      availableTransitions {
-        id
-        name
-        color
-      }
       creationSource
       owner {
         ... on ClientTicketOwner {
@@ -338,118 +327,6 @@ export const GET_TICKETS_BOARD_QUERY = `
   }
   ${BOARD_COLUMN_CONNECTION_FRAGMENT}
   ${BOARD_CARD_TICKET_FRAGMENT}
-`;
-
-// ===== Lifecycle board (custom statuses) — gated by featureFlags.ticketStatuses =====
-
-const BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT = `
-  fragment BoardCardTicketLifecycle on Ticket {
-    id
-    ticketNumber
-    title
-    status
-    statusDefinition {
-      id
-      name
-      color
-    }
-    owner {
-      ... on ClientTicketOwner {
-        type
-        machineId
-        machine {
-          id
-          machineId
-          hostname
-          organizationId
-        }
-      }
-      ... on AdminTicketOwner {
-        type
-        userId
-        user {
-          id
-          firstName
-          lastName
-        }
-      }
-    }
-    deviceId
-    deviceHostname
-    organizationId
-    organizationName
-    assignedTo
-    assignedName
-    assigneeImage {
-      imageUrl
-    }
-    labels {
-      id
-      key
-      color
-    }
-    createdAt
-    updatedAt
-    resolvedAt
-    order
-  }
-`;
-
-export const GET_BOARD_COLUMN_TICKETS_QUERY = `
-  query GetBoardColumnTickets($statusId: ID!, $limit: Int!, $cursor: String, $search: String, $organizationIds: [ID!], $assigneeIds: [ID!]) {
-    tickets(
-      filter: { statusIds: [$statusId], organizationIds: $organizationIds, assigneeIds: $assigneeIds }
-      pagination: { limit: $limit, cursor: $cursor }
-      search: $search
-      sort: { field: "order", direction: ASC }
-    ) {
-      edges {
-        cursor
-        node {
-          ...BoardCardTicketLifecycle
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-      filteredCount
-    }
-  }
-  ${BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT}
-`;
-
-export const GET_TICKET_STATUS_TRANSITION_RULES_QUERY = `
-  query TicketStatusTransitionRules {
-    ticketStatusTransitionRules {
-      from {
-        id
-      }
-      to {
-        id
-      }
-    }
-  }
-`;
-
-export const TRANSITION_TICKET_MUTATION = `
-  mutation TransitionTicket($input: TransitionTicketInput!) {
-    transitionTicket(input: $input) {
-      ticket {
-        id
-        status
-        statusDefinition {
-          id
-        }
-      }
-      userErrors {
-        field
-        message
-      }
-    }
-  }
 `;
 
 export const GET_TICKET_LABELS_QUERY = `

@@ -30,13 +30,6 @@ export interface Dialog {
   id: string;
   title: string;
   status: DialogStatus;
-  // Lifecycle (custom-status) board fields — populated from Ticket.statusDefinition.
-  statusId?: string;
-  statusName?: string;
-  statusColor?: string;
-  statusKind?: string;
-  // Allowed status transitions for this ticket (lifecycle), from Ticket.availableTransitions.
-  availableTransitions?: Array<{ id: string; name: string; color: string }>;
   owner: ClientDialogOwner | DialogOwner;
   createdAt: string;
   statusUpdatedAt?: string | null;

@@ -184,6 +184,13 @@ impl Service {
 
     /// Install the service on the current platform
     pub async fn install(params: InstallConfigParams) -> Result<()> {
+        // Check if we have admin privileges
+        if !PermissionUtils::is_admin() {
+            error!("Service installation requires admin/root privileges");
+            return Err(anyhow::anyhow!(
+                "Admin/root privileges required for service installation"
+            ));
+        }
 
         if Self::is_installed() {
             info!("Existing Installation Detected\n");
@@ -401,7 +408,7 @@ impl Service {
 
     /// Get the standard installation location for the OpenFrame binary
     /// This is a location in the system PATH where the binary will be accessible globally
-    pub fn get_install_location() -> PathBuf {
+    fn get_install_location() -> PathBuf {
         #[cfg(target_os = "macos")]
         {
             PathBuf::from("/usr/local/bin/openframe-client")

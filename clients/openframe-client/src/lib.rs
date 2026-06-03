@@ -15,8 +15,6 @@ pub mod clients;
 pub mod services;
 pub mod listener;
 
-pub mod banner;
-pub mod doctor;
 pub mod logging;
 pub mod monitoring;
 pub mod service;
@@ -344,7 +342,6 @@ impl Client {
             openframe_client_info_service.clone(),
             github_download_service.clone(),
             update_state_service.clone(),
-            tool_run_manager.clone(),
         );
 
         // Initialize tool agent update service

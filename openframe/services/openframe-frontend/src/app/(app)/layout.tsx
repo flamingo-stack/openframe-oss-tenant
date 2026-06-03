@@ -2,7 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import { AppLayout } from '../components/app-layout';
-import { OpenframeChatRuntimeProvider } from '../components/openframe-chat-runtime-provider';
 
 function getMainClassNameOverride(pathname: string | null): string | undefined {
   if (!pathname) return undefined;
@@ -15,18 +14,6 @@ function getMainClassNameOverride(pathname: string | null): string | undefined {
 export default function AppGroupLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mainClassNameOverride = getMainClassNameOverride(pathname);
-  // EmbeddableChat now lives inside the app shell as an in-layout
-  // `AppLayoutDrawer` (see `AppShell` in `components/app-layout.tsx`): it
-  // occupies only the main content area, leaving the header and sidebar
-  // visible and interactive, and is opened from a header trigger instead of a
-  // body-level floating "Ask AI" button. This provider still supplies the
-  // `ChatRuntime` context the chat consumes. Hosts both Guide (SSE → MPH via
-  // /guide proxy) and Mingo (NATS → openframe backend) modes side-by-side
-  // with an in-panel toggle. The existing `/mingo` route stays untouched
-  // during the migration — both surfaces coexist until validation is done.
-  return (
-    <OpenframeChatRuntimeProvider>
-      <AppLayout mainClassName={mainClassNameOverride || 'pb-14'}>{children}</AppLayout>
-    </OpenframeChatRuntimeProvider>
-  );
+  // Additional padding for widgets with absolute positioning at the bottom of the page, to prevent overlap with the app layout's fixed bottom bar
+  return <AppLayout mainClassName={mainClassNameOverride || 'pb-14'}>{children}</AppLayout>;
 }
