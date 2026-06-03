@@ -8,6 +8,7 @@ import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { DEFAULT_OS_PLATFORM, type OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { graphql, useLazyLoadQuery } from 'react-relay';
@@ -50,6 +51,10 @@ type NewDeviceFormValues = z.infer<typeof newDeviceSchema>;
 export function NewDeviceContent() {
   const handleBack = useSafeBack('/devices');
   const { toast } = useToast();
+
+  // Customer context passed by "Add Device" launched from a customer's section
+  // (e.g. `/devices/new?organizationId=<id>`), used to pre-select the dropdown.
+  const preselectedOrgId = useSearchParams().get('organizationId');
 
   // Relay query for organizations
   const data = useLazyLoadQuery<NewDeviceContentQueryType>(
@@ -99,13 +104,16 @@ export function NewDeviceContent() {
 
   const selectedOrg = orgs.find(o => o.organizationId === organizationId);
 
-  // Set default org on data load
+  // Set the initial org once data loads. Prefer the customer passed via the
+  // `organizationId` query param (Add Device launched from a customer's
+  // section); fall back to the default organization, then the first one.
   useEffect(() => {
     if (orgs.length > 0 && !organizationId) {
-      const defaultOrg = orgs.find(o => o.isDefault) || orgs[0];
+      const preselected = preselectedOrgId ? orgs.find(o => o.organizationId === preselectedOrgId) : undefined;
+      const defaultOrg = preselected ?? orgs.find(o => o.isDefault) ?? orgs[0];
       if (defaultOrg) form.setValue('organizationId', defaultOrg.organizationId);
     }
-  }, [orgs, organizationId, form]);
+  }, [orgs, organizationId, form, preselectedOrgId]);
 
   const validateBeforeAction = useCallback(async () => {
     const valid = await form.trigger();

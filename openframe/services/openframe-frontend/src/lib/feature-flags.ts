@@ -14,6 +14,7 @@ export const FEATURE_FLAG_NAMES = [
   'ai-streaming-jetstream',
   'debug-nats-chunks',
   'mingo-sidebar',
+  'ticket-statuses',
 ] as const;
 
 /**
@@ -77,6 +78,11 @@ export const featureFlags = {
   mingoSidebar: {
     enabled(): boolean {
       return getFlagValue('mingo-sidebar', () => false);
+    },
+  },
+  ticketStatuses: {
+    enabled(): boolean {
+      return getFlagValue('ticket-statuses', () => false);
     },
   },
 } as const;
