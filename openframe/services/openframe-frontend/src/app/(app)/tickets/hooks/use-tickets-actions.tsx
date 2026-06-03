@@ -38,6 +38,9 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
     setIsArchiveConfirmOpen(false);
   }, [archiveResolvedMutation]);
 
+  const openArchiveResolvedConfirm = useCallback(() => setIsArchiveConfirmOpen(true), []);
+  const canArchiveResolved = resolvedCount > 0 && !archiveResolvedMutation.isPending && !isLoading;
+
   const actions = useMemo<PageActionButton[]>(() => {
     if (!enabled) return [];
     return [
@@ -72,12 +75,12 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
         id: 'archive-resolved',
         label: 'Archive Resolved Tickets',
         icon: <CheckCircleIcon className="text-ods-text-secondary" />,
-        onClick: () => setIsArchiveConfirmOpen(true),
+        onClick: openArchiveResolvedConfirm,
         disabled: archiveResolvedMutation.isPending || isLoading,
       });
     }
     return [{ items }];
-  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading]);
+  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading, openArchiveResolvedConfirm]);
 
   const dialog: ReactNode = (
     <ConfirmDialog
@@ -99,5 +102,5 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
     />
   );
 
-  return { actions, menuActions, dialog };
+  return { actions, menuActions, dialog, canArchiveResolved, openArchiveResolvedConfirm };
 }

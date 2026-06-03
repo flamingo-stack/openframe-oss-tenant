@@ -2,8 +2,10 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
+import { safeBackOrReplace } from '@/app/hooks/use-safe-back';
 import { useTicketStatusTransitionRules } from '../../hooks/use-ticket-status-transition-rules';
 import { type TicketStatusesPayload, ticketStatusesSchema } from '../types/ticket-statuses.types';
 import { useDeleteTicketStatusMutation, useSaveTicketStatusesMutation } from './use-ticket-statuses-mutations';
@@ -21,6 +23,7 @@ export function useTicketStatusesForm() {
   const saveMutation = useSaveTicketStatusesMutation();
   const deleteMutation = useDeleteTicketStatusMutation();
   const { toast } = useToast();
+  const router = useRouter();
 
   const form = useForm<TicketStatusesPayload>({
     resolver: zodResolver(ticketStatusesSchema),
@@ -75,7 +78,12 @@ export function useTicketStatusesForm() {
   const onValidSubmit = (payload: TicketStatusesPayload) => {
     saveMutation.mutate(
       { customStatuses: payload.customStatuses, snapshot: data?.snapshot ?? [] },
-      { onSuccess: saved => reset({ customStatuses: saved }) },
+      {
+        onSuccess: saved => {
+          reset({ customStatuses: saved });
+          safeBackOrReplace(router, '/tickets');
+        },
+      },
     );
   };
 

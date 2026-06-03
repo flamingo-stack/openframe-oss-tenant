@@ -6,6 +6,7 @@ export interface DialogsQueryParams {
   archived: boolean;
   search?: string;
   statusFilters?: string[];
+  statusIds?: string[];
   organizationIds?: string[];
   assigneeIds?: string[];
 }
@@ -25,6 +26,7 @@ export const dialogsQueryKeys = {
         archived: params.archived,
         search: params.search || '',
         statusFilters: params.statusFilters || [],
+        statusIds: params.statusIds || [],
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
       },

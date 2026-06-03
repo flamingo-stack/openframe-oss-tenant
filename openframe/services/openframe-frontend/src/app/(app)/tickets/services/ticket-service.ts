@@ -218,8 +218,12 @@ export class TicketService implements TicketServiceInterface {
       paginationVars.cursor = params.cursor;
     }
 
-    const ticketStatuses = params.statuses.map(s => DIALOG_TO_TICKET_STATUS[s] || s);
-    const filter: Record<string, unknown> = { statuses: ticketStatuses };
+    const filter: Record<string, unknown> = {};
+    if (params.statusIds?.length) {
+      filter.statusIds = params.statusIds;
+    } else {
+      filter.statuses = params.statuses.map(s => DIALOG_TO_TICKET_STATUS[s] || s);
+    }
     if (params.organizationIds?.length) {
       filter.organizationIds = params.organizationIds;
     }

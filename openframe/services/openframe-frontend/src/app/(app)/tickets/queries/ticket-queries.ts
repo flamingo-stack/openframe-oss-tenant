@@ -203,6 +203,12 @@ export const GET_TICKETS_QUERY = `
           ticketNumber
           title
           status
+          statusDefinition {
+            id
+            name
+            color
+            kind
+          }
           owner {
             ... on ClientTicketOwner {
               type
@@ -682,6 +688,12 @@ export const GET_TICKET_STATISTICS_QUERY = `
       totalCount
       statusCounts {
         status
+        count
+      }
+      statusDefinitionCounts {
+        status {
+          kind
+        }
         count
       }
       averageResolutionTimeFormatted
