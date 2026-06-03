@@ -81,8 +81,8 @@ export class ChatApiService {
     });
 
     if (!response.ok) {
-      const errorText = (await response.json().catch(() => response.statusText))?.message;
-      throw new Error(`Failed to create dialog: ${errorText}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`Failed to create dialog: ${response.status} ${response.statusText}${body ? `\n${body}` : ''}`);
     }
 
     const parsed = (await response.json().catch(() => ({}))) as CreateDialogResponse;

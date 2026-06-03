@@ -58,7 +58,8 @@ mod nats_bridge;
 mod token_watcher;
 mod token_decryption_service;
 use nats_bridge::{NatsBridge, NatsEvent, NatsStatus};
-use token_watcher::{TokenWatcher, TokenState};
+use token_decryption_service::TokenDecryptionService;
+use token_watcher::{TokenSource, TokenWatcher};
 use tauri::State;
 use std::sync::{Arc, Mutex};
 
@@ -77,15 +78,15 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_token(token_state: State<TokenState>) -> Option<String> {
-    let token = token_state.current_token.lock().unwrap();
+fn get_token(token_source: State<TokenSource>) -> Option<String> {
+    let token = token_source.read_fresh();
 
     if token.is_some() {
-        log::info!("get_token: returning token to frontend");
+        log::info!("get_token: returning fresh token to frontend");
     } else {
         log::warn!("get_token: token not yet available");
     }
-    token.clone()
+    token
 }
 
 #[tauri::command]
@@ -128,13 +129,18 @@ fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
         *state.enabled.lock().unwrap() = cfg.debug_mode;
     }
     if let (Some(path), Some(secret)) = (cfg.token_path, cfg.secret) {
-        if let Some(state) = app.try_state::<TokenState>() {
-            let mut started = state.started.lock().unwrap();
-            if !*started
-                && TokenWatcher::start(path, secret, app.clone(), state.current_token.clone())
-            {
-                *started = true;
-                log::info!("token watcher initialized");
+        if let Some(source) = app.try_state::<TokenSource>() {
+            match TokenDecryptionService::new(secret) {
+                // `enable` is the once-guard: it returns true only the first
+                // time, so the watcher starts a single time across repeated
+                // apply_config calls (startup, recovery, single-instance relaunch).
+                Ok(decryptor) => {
+                    if source.enable(path, decryptor) {
+                        TokenWatcher::start(source.inner().clone(), app.clone());
+                        log::info!("token watcher initialized");
+                    }
+                }
+                Err(e) => log::error!("token watcher: failed to create decryption service: {}", e),
             }
         }
     }
@@ -321,12 +327,11 @@ pub fn run() {
 
             app.manage(DebugModeState { enabled: Arc::new(Mutex::new(false)) });
 
-            let token_state = TokenState {
-                current_token: Arc::new(Mutex::new(None)),
-                started: Arc::new(Mutex::new(false)),
-            };
-            let bridge_token_state = token_state.clone();
-            app.manage(token_state);
+            // Empty until apply_config enables it (now, on recovery, or on a
+            // single-instance relaunch). The bridge clone shares the same source.
+            let token_source = TokenSource::new();
+            let bridge_token_source = token_source.clone();
+            app.manage(token_source);
 
             let startup_valid = config.is_valid();
             apply_config(app.handle(), config);
@@ -351,7 +356,7 @@ pub fn run() {
             let bridge = NatsBridge::new(
                 app.handle().clone(),
                 bridge_url_state,
-                bridge_token_state,
+                bridge_token_source,
             );
             app.manage(bridge.clone());
             bridge.start();

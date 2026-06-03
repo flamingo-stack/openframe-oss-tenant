@@ -28,7 +28,7 @@ use tauri_plugin_notification::NotificationExt;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
-use crate::token_watcher::TokenState;
+use crate::token_watcher::TokenSource;
 use crate::ServerUrlState;
 
 const NATS_USER: &str = "machine";
@@ -79,7 +79,7 @@ struct Inner {
     started: AtomicBool,
     unread_count: AtomicU32,
     server_url: ServerUrlState,
-    token_state: TokenState,
+    token_source: TokenSource,
     app: AppHandle,
 
     /// machineId for the notification subject. Seeded from
@@ -119,7 +119,7 @@ struct PendingNotification {
 }
 
 impl NatsBridge {
-    pub fn new(app: AppHandle, server_url: ServerUrlState, token_state: TokenState) -> Self {
+    pub fn new(app: AppHandle, server_url: ServerUrlState, token_source: TokenSource) -> Self {
         let env_machine_id = std::env::var("OPENFRAME_MACHINE_ID")
             .ok()
             .map(|s| s.trim().to_string())
@@ -136,7 +136,7 @@ impl NatsBridge {
                 started: AtomicBool::new(false),
                 unread_count: AtomicU32::new(0),
                 server_url,
-                token_state,
+                token_source,
                 app,
                 machine_id: RwLock::new(env_machine_id),
                 notification_task: RwLock::new(None),
@@ -293,9 +293,14 @@ impl NatsBridge {
         let inner = &self.inner;
 
         loop {
-            if read_server_url(inner).is_some() && read_token(inner).is_some() {
+            let have_url = read_server_url(inner).is_some();
+            let have_token = read_token(inner).is_some();
+            if have_url && have_token {
                 break;
             }
+            tracing::info!(
+                "[NATS] waiting for credentials before initial connect (server_url={have_url}, token={have_token})"
+            );
             set_state(inner, ConnectionState::Connecting).await;
             tokio::time::sleep(Duration::from_secs(5)).await;
         }
@@ -303,10 +308,16 @@ impl NatsBridge {
         set_state(inner, ConnectionState::Connecting).await;
 
         let server_url = read_server_url(inner).expect("server url present");
-        let connect_url = build_connect_url(&server_url, &read_token(inner).unwrap_or_default());
+        let token = read_token(inner).unwrap_or_default();
+        let connect_url = build_connect_url(&server_url, &token);
+        tracing::info!(
+            "[NATS] initial connect: url={} token={}",
+            mask_connect_url(&connect_url),
+            mask_token(&token)
+        );
 
         let event_inner = inner.clone();
-        let auth_token_state = inner.token_state.clone();
+        let auth_token_source = inner.token_source.clone();
         let auth_server_url = server_url.clone();
 
         let connect_options = async_nats::ConnectOptions::new()
@@ -322,18 +333,27 @@ impl NatsBridge {
                 }
             })
             .auth_url_callback(move |()| {
-                let token = auth_token_state
-                    .current_token
-                    .lock()
-                    .ok()
-                    .and_then(|g| g.clone());
+                // Decrypt the file at the moment async-nats needs a token, so
+                // reconnect uses the freshest rotation with no poll lag.
+                let token = auth_token_source.read_fresh();
                 let server_url = auth_server_url.clone();
                 async move {
                     match token {
-                        Some(t) => Ok(build_connect_url(&server_url, &t)),
-                        None => Err(async_nats::AuthError::new(
-                            "no token available for NATS reconnect",
-                        )),
+                        Some(t) => {
+                            tracing::info!(
+                                "[NATS] auth_url_callback: supplying token for (re)connect ({})",
+                                mask_token(&t)
+                            );
+                            Ok(build_connect_url(&server_url, &t))
+                        }
+                        None => {
+                            tracing::warn!(
+                                "[NATS] auth_url_callback: no token available for (re)connect"
+                            );
+                            Err(async_nats::AuthError::new(
+                                "no token available for NATS reconnect",
+                            ))
+                        }
                     }
                 }
             });
@@ -341,7 +361,9 @@ impl NatsBridge {
         match connect_options.connect(&connect_url).await {
             Ok(client) => {
                 *inner.client.write().await = Some(client);
-                tracing::info!("[NATS] connect() returned Ok");
+                tracing::info!(
+                    "[NATS] connect() returned Ok (TCP/WS handshake done; awaiting Connected event)"
+                );
             }
             Err(err) => {
                 tracing::error!("[NATS] connect() failed unrecoverably: {err}");
@@ -355,13 +377,10 @@ fn read_server_url(inner: &Inner) -> Option<String> {
     inner.server_url.url.lock().ok().and_then(|g| g.clone())
 }
 
+/// Decrypts the token file on demand so the (re)connect path never lags the
+/// daemon's rotation by the watcher's poll interval.
 fn read_token(inner: &Inner) -> Option<String> {
-    inner
-        .token_state
-        .current_token
-        .lock()
-        .ok()
-        .and_then(|g| g.clone())
+    inner.token_source.read_fresh()
 }
 
 async fn set_state(inner: &Inner, new_state: ConnectionState) {
@@ -749,4 +768,23 @@ fn build_connect_url(server_url: &str, token: &str) -> String {
         .trim_start_matches("http://")
         .trim_end_matches('/');
     format!("wss://{host}{NATS_WS_PATH}?authorization={token}")
+}
+
+fn mask_token(token: &str) -> String {
+    let n = token.chars().count();
+    if n <= 8 {
+        return "****".to_string();
+    }
+    let first: String = token.chars().take(4).collect();
+    let last: String = token.chars().skip(n - 4).collect();
+    format!("{first}...{last} (len {n})")
+}
+
+/// Masks the `authorization=` query param so the connect URL can be logged
+/// without leaking the bearer token.
+fn mask_connect_url(url: &str) -> String {
+    match url.split_once("authorization=") {
+        Some((base, tok)) => format!("{base}authorization={}", mask_token(tok)),
+        None => url.to_string(),
+    }
 }

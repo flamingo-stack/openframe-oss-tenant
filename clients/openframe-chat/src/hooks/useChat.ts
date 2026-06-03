@@ -546,6 +546,7 @@ export function useChat({
         await waitForNatsDone;
       } catch (err) {
         const errorText = err instanceof Error ? err.message : String(err);
+        log.error('chat', `sendMessage failed: ${errorText}`);
         if (!errorText.toLowerCase().includes('network error')) {
           setError(errorText);
           messages.addErrorMessage(errorText);

@@ -1,7 +1,7 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use crate::token_decryption_service::TokenDecryptionService;
 use tauri::{AppHandle, Emitter};
 use serde::Serialize;
@@ -11,106 +11,134 @@ struct TokenUpdateEvent {
     token: String,
 }
 
-/// Service that watches for token changes in the shared token enc file
-pub struct TokenWatcher {
-    token_file_path: PathBuf,
-    current_token: Arc<Mutex<Option<String>>>,
-    decryption_service: TokenDecryptionService,
-    app_handle: AppHandle,
-}
-
-/// Tauri state to share the current token with commands.
+/// Shared, cheaply-cloneable access to the decrypted auth token.
+///
+/// Created empty and `enable`d once the daemon-written config is available, so
+/// it survives main's late/recovery config path. All clones share the same
+/// source + cache, so enabling one (from `apply_config`) makes the token
+/// visible to every holder (the NATS bridge, `get_token`, the watcher thread).
+///
+/// Two read paths:
+///   - `read_fresh` decrypts the file on demand and updates the cache. Used on
+///     the NATS reconnect path (`auth_url_callback`) and by `get_token` so a
+///     (re)connect or a frontend refresh always sees the newest token the
+///     daemon has written, with zero dependency on poll timing.
+///   - `current` returns the last cached value without touching disk.
 #[derive(Clone)]
-pub struct TokenState {
-    pub current_token: Arc<Mutex<Option<String>>>,
-    pub started: Arc<Mutex<bool>>,
+pub struct TokenSource {
+    inner: Arc<Mutex<Option<TokenSourceInner>>>,
+    cached: Arc<Mutex<Option<String>>>,
 }
 
-impl TokenWatcher {
-    /// Starts watching for token changes in a background thread, writing into the
-    /// provided shared token slot.
-    pub fn start(
-        token_path: String,
-        secret: String,
-        app_handle: AppHandle,
-        current_token: Arc<Mutex<Option<String>>>,
-    ) -> bool {
-        let decryption_service = match TokenDecryptionService::new(secret) {
-            Ok(service) => service,
-            Err(e) => {
-                log::error!("token watcher: failed to create decryption service: {}", e);
-                return false;
-            }
-        };
+struct TokenSourceInner {
+    path: PathBuf,
+    decryptor: TokenDecryptionService,
+}
 
-        let watcher = Self {
-            token_file_path: PathBuf::from(token_path),
-            current_token,
-            decryption_service,
-            app_handle,
-        };
+impl TokenSource {
+    /// An empty source. `enable` it once the token path + secret are known.
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(Mutex::new(None)),
+            cached: Arc::new(Mutex::new(None)),
+        }
+    }
 
-        std::thread::spawn(move || {
-            loop {
-                watcher.check_and_update_token();
-                std::thread::sleep(Duration::from_secs(5));
-            }
+    /// Sets the token file + decryptor. Returns `true` the first time, `false`
+    /// if already enabled — callers use that as a once-guard (e.g. to start the
+    /// watcher a single time across repeated `apply_config` calls).
+    pub fn enable(&self, path: String, decryptor: TokenDecryptionService) -> bool {
+        let mut inner = self.inner.lock().unwrap();
+        if inner.is_some() {
+            return false;
+        }
+        *inner = Some(TokenSourceInner {
+            path: PathBuf::from(path),
+            decryptor,
         });
-
         true
     }
 
-    /// Reads the encrypted token from file, decrypts it, and returns it
-    fn read_and_decrypt_token(&self) -> Option<String> {
-        match fs::read_to_string(&self.token_file_path) {
-            Ok(encrypted_content) => {
-                if encrypted_content.trim().is_empty() {
-                    return None;
-                }
-
-                match self.decryption_service.decrypt(encrypted_content.trim()) {
-                    Ok(decrypted) => Some(decrypted),
-                    Err(e) => {
-                        log::error!("token watcher: failed to decrypt token: {}", e);
-                        None
-                    }
-                }
-            }
-            Err(_) => None
-        }
+    /// Reads + decrypts the token file now, refreshes the cache, returns it.
+    pub fn read_fresh(&self) -> Option<String> {
+        let token = {
+            let guard = self.inner.lock().unwrap();
+            let inner = guard.as_ref()?;
+            read_and_decrypt(&inner.path, &inner.decryptor)
+        };
+        *self.cached.lock().unwrap() = token.clone();
+        token
     }
 
-    /// Checks if the token has changed and updates it if necessary
-    fn check_and_update_token(&self) {
-        let new_token = self.read_and_decrypt_token();
-
-        let mut current = self.current_token.lock().unwrap();
-
-        if *current != new_token {
-            match (&*current, &new_token) {
-                (None, Some(token)) => {
-                    log::info!("token watcher: first token received");
-                    self.emit_token_to_frontend(token);
-                }
-                (Some(_), Some(token)) => {
-                    log::info!("token watcher: token refreshed");
-                    self.emit_token_to_frontend(token);
-                }
-                _ => {}
-            }
-            *current = new_token;
-        }
+    pub fn current(&self) -> Option<String> {
+        self.cached.lock().unwrap().clone()
     }
 
-    /// Emits the token to the frontend via Tauri events
-    fn emit_token_to_frontend(&self, token: &str) {
-        let event = TokenUpdateEvent {
-            token: token.to_string(),
+    fn path(&self) -> Option<PathBuf> {
+        self.inner.lock().unwrap().as_ref().map(|i| i.path.clone())
+    }
+}
+
+fn read_and_decrypt(path: &Path, decryptor: &TokenDecryptionService) -> Option<String> {
+    let content = fs::read_to_string(path).ok()?;
+    let trimmed = content.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    match decryptor.decrypt(trimmed) {
+        Ok(token) => Some(token),
+        Err(e) => {
+            log::error!("token watcher: failed to decrypt token: {}", e);
+            None
+        }
+    }
+}
+
+/// Polls the token file for rotation and pushes `token-update` events to the
+/// WebView. An mtime fast-path avoids re-decrypting an unchanged file.
+pub struct TokenWatcher;
+
+impl TokenWatcher {
+    /// Spawns the watcher thread. No-op when the source is not enabled.
+    pub fn start(source: TokenSource, app_handle: AppHandle) {
+        let Some(path) = source.path() else {
+            return;
         };
 
-        match self.app_handle.emit("token-update", event) {
-            Ok(_) => log::debug!("token watcher: token emitted to frontend"),
-            Err(e) => log::error!("token watcher: failed to emit token-update event: {}", e),
-        }
+        std::thread::spawn(move || {
+            let mut last_mtime: Option<SystemTime> = None;
+
+            loop {
+                let mtime = fs::metadata(&path).and_then(|m| m.modified()).ok();
+                // Re-decrypt only when the file mtime moved (or stat failed).
+                if mtime.is_none() || mtime != last_mtime {
+                    last_mtime = mtime;
+
+                    let prev = source.current();
+                    let new = source.read_fresh();
+                    if prev != new {
+                        if let Some(token) = &new {
+                            match prev {
+                                None => log::info!("token watcher: first token received"),
+                                Some(_) => log::info!("token watcher: token refreshed"),
+                            }
+                            emit_token_to_frontend(&app_handle, token);
+                        }
+                    }
+                }
+
+                std::thread::sleep(Duration::from_secs(1));
+            }
+        });
+    }
+}
+
+fn emit_token_to_frontend(app_handle: &AppHandle, token: &str) {
+    let event = TokenUpdateEvent {
+        token: token.to_string(),
+    };
+    match app_handle.emit("token-update", event) {
+        Ok(_) => log::debug!("token watcher: token emitted to frontend"),
+        Err(e) => log::error!("token watcher: failed to emit token-update event: {}", e),
     }
 }

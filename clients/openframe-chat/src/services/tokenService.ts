@@ -65,12 +65,12 @@ class TokenService {
     try {
       await listen<TokenUpdatePayload>('token-update', event => {
         const { token } = event.payload;
-        console.log('[TOKEN SERVICE] Token received from Rust event:', maskToken(token));
+        log.info('token', `token-update event received from Rust (${maskToken(token)})`);
 
         this.setToken(token);
       });
 
-      console.log('[TOKEN SERVICE] Token listener initialized');
+      log.info('token', 'token-update listener initialized');
     } catch (error) {
       console.error('[TOKEN SERVICE] Failed to initialize token listener:', error);
     }
@@ -159,9 +159,12 @@ class TokenService {
       if (serverUrl) {
         const apiUrl = this.normalizeApiUrl(serverUrl);
         this.setApiBaseUrl(apiUrl);
+        log.info('token', `api base url resolved from Rust: ${apiUrl}`);
+      } else {
+        log.warn('token', 'get_server_url returned empty');
       }
     } catch (error) {
-      console.error('[TOKEN SERVICE] Failed to get API base URL:', error);
+      log.error('token', 'failed to get api base url from Rust', String(error));
     }
   }
 
