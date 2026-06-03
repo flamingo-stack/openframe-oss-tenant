@@ -84,9 +84,9 @@ impl RegistrationClient {
             if is_client_secret_error(status, &body) {
                 return Err(RegistrationError::ClientSecretInvalid);
             }
-            return anyhow!(
-                "Failed to register agent with status {} and body {}", status, body
-            ).into();
+            return Err(
+                anyhow::anyhow!("Failed to register agent with status {} and body {}", status, &body)
+                .into());
         }
 
         let registration_response: AgentRegistrationResponse = response
