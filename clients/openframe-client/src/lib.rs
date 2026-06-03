@@ -60,8 +60,8 @@ use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
-use crate::services::script_execution_service::ScriptExecutionService;
-use crate::listener::script_execution_listener::ScriptExecutionListener;
+use crate::services::command_execution_service::CommandExecutionService;
+use crate::listener::command_execution_listener::CommandExecutionListener;
 use crate::logging::nats_streaming::LogStreamingRunManager;
 use crate::config::update_config::{
     HTTP_CLIENT_TIMEOUT_SECS,
@@ -136,7 +136,7 @@ pub struct Client {
     tool_installation_message_listener: ToolInstallationMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
-    script_execution_listener: ScriptExecutionListener,
+    command_execution_listener: CommandExecutionListener,
     tool_run_manager: ToolRunManager,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
@@ -384,12 +384,12 @@ impl Client {
             config_service.clone()
         );
 
-        // Initialize script execution service and listener
-        let script_execution_service = ScriptExecutionService::new();
-        let script_execution_listener = ScriptExecutionListener::new(
+        // Initialize command execution service and listener
+        let command_execution_service = CommandExecutionService::new();
+        let command_execution_listener = CommandExecutionListener::new(
             nats_connection_manager.clone(),
             nats_message_publisher.clone(),
-            script_execution_service,
+            command_execution_service,
             config_service.clone(),
         );
 
@@ -418,7 +418,7 @@ impl Client {
             tool_installation_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
-            script_execution_listener,
+            command_execution_listener,
             tool_run_manager,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
@@ -467,10 +467,10 @@ impl Client {
         // Start tool agent update listener in background
         self.tool_agent_update_listener.start().await?;
 
-        // Start script execution listener in background
-        info!("Starting script execution listener...");
-        self.script_execution_listener.start().await?;
-        info!("Script execution listener started");
+        // Start command execution listener in background
+        info!("Starting command execution listener...");
+        self.command_execution_listener.start().await?;
+        info!("Command execution listener started");
 
         // Start tool run manager
         self.tool_run_manager.run().await?;

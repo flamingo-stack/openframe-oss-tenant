@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ScriptExecutionMessage {
+pub struct CommandExecutionMessage {
     pub execution_id: String,
     pub code: String,
     #[serde(default = "default_shell")]
@@ -25,7 +25,7 @@ fn default_timeout() -> u64 {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ScriptExecutionResult {
+pub struct CommandExecutionResult {
     pub execution_id: String,
     pub machine_id: String,
     pub stdout: String,

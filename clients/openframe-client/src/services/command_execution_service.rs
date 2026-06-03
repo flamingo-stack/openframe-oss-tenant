@@ -1,21 +1,21 @@
 use std::time::Instant;
 use tracing::info;
 
-use crate::models::script_execution_message::{ScriptExecutionMessage, ScriptExecutionResult};
+use crate::models::command_execution_message::{CommandExecutionMessage, CommandExecutionResult};
 
-#[derive(Clone)]
-pub struct ScriptExecutionService;
+#[derive(Clone, Default)]
+pub struct CommandExecutionService;
 
-impl ScriptExecutionService {
+impl CommandExecutionService {
     pub fn new() -> Self {
         Self
     }
 
     pub async fn execute(
         &self,
-        message: &ScriptExecutionMessage,
+        message: &CommandExecutionMessage,
         machine_id: &str,
-    ) -> ScriptExecutionResult {
+    ) -> CommandExecutionResult {
         let start = Instant::now();
 
         info!(
@@ -25,17 +25,22 @@ impl ScriptExecutionService {
             code_len = message.code.len(),
             args_count = message.args.len(),
             env_vars_count = message.env_vars.len(),
-            "Mock script execution (not actually running)"
+            "Mock command execution (not actually running)"
         );
 
         tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
 
         let elapsed = start.elapsed().as_millis() as u64;
 
-        ScriptExecutionResult {
+        CommandExecutionResult {
             execution_id: message.execution_id.clone(),
             machine_id: machine_id.to_string(),
-            stdout: format!("[MOCK] Would execute with shell={}, code_len={}, args={:?}", message.shell, message.code.len(), message.args),
+            stdout: format!(
+                "[MOCK] Would execute with shell={}, code_len={}, args={:?}",
+                message.shell,
+                message.code.len(),
+                message.args
+            ),
             stderr: String::new(),
             exit_code: 0,
             execution_time_ms: elapsed,
