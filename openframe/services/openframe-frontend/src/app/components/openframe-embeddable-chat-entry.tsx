@@ -33,7 +33,7 @@
  * No business logic lives here — everything is callback wiring.
  */
 
-import type { DialogItem, HistoricalMessage } from '@flamingo-stack/openframe-frontend-core';
+import type { DialogItem, HistoricalMessage, NatsMessageType } from '@flamingo-stack/openframe-frontend-core';
 import { EmbeddableChat } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useCallback, useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
@@ -314,6 +314,13 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
       // by the new adapter. Remove once node_modules is past 0.0.215.
       dialogId: null,
       getNatsWsUrl: getWsUrl,
+      // ADMIN/Mingo chat agent replies are published on the
+      // `chat.{dialogId}.admin-message` NATS subject (matches the legacy
+      // /mingo page's `MINGO_JETSTREAM_TOPIC = 'admin-message'`). Without
+      // this the adapter tails the default `…​.message` subject, never
+      // receives reply chunks, and the assistant bubble hangs forever on
+      // "Strutting…". See use-nats-chat-adapter `topics` config.
+      topics: ['admin-message'] as NatsMessageType[],
       publishUserMessage,
       fetchDialogs,
       fetchDialogMessages,
