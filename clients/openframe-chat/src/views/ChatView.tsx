@@ -193,6 +193,12 @@ export function ChatView() {
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
+      // Already viewing this dialog (e.g. clicking its own notification): the
+      // live NATS subscription already holds the latest messages. Reloading
+      // would clear them and fall back to stale cached history.
+      const openDialogId = ticketsHook.getDialogId(ticketId);
+      if (openDialogId && openDialogId === dialogId) return;
+
       setFaeFormTicket(null);
       setPreviewTicketId(null);
       setActiveTicket(null);
@@ -218,8 +224,7 @@ export function ChatView() {
         statusKind: ticketDetails.statusKind,
       });
 
-      const dialogId = ticketsHook.getDialogId(ticketId);
-      if (!dialogId) {
+      if (!openDialogId) {
         setPreviewTicketId(ticketId);
         showTicketPreview(ticketDetails);
         return;
@@ -234,9 +239,9 @@ export function ChatView() {
         });
       }
 
-      await resumeDialog(dialogId);
+      await resumeDialog(openDialogId);
     },
-    [ticketsHook, resumeDialog, showTicketPreview, toast],
+    [ticketsHook, resumeDialog, showTicketPreview, toast, dialogId],
   );
 
   useEffect(() => {
@@ -325,20 +330,24 @@ export function ChatView() {
   }, [isTicketPreview, previewTicketId, resumeDialog]);
 
   // Notification click handler — Rust emits this when the main window
-  // gains focus shortly after a NATS-driven OS notification, asking us
-  // to land on the dialog the notification came from.
+  // gains focus shortly after a NATS-driven OS notification, asking us to
+  // land on the entity the notification came from. A ticket click opens that
+  // ticket even when a different dialog is currently active.
   useEffect(() => {
     type NotificationClickPayload = { kind: string; id: string };
     const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => {
       const { kind, id } = event.payload;
-      if (kind === 'dialog' && id) {
+      if (!id) return;
+      if (kind === 'ticket') {
+        void handleTicketClick(id);
+      } else if (kind === 'dialog') {
         void resumeDialog(id);
       }
     });
     return () => {
       void unlistenPromise.then(unlisten => unlisten());
     };
-  }, [resumeDialog]);
+  }, [handleTicketClick, resumeDialog]);
 
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;

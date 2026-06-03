@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 use async_nats::jetstream::consumer::{pull::OrderedConfig, DeliverPolicy};
 use async_nats::jetstream::{self, Message as JsMessage};
 use async_nats::{Client, Event};
+use base64::{engine::general_purpose, Engine as _};
 use futures::StreamExt;
 use serde::Serialize;
 use tauri::async_runtime::JoinHandle;
@@ -112,9 +113,15 @@ struct DialogState {
     task: JoinHandle<()>,
 }
 
+/// What the WebView should open when the user clicks a notification.
+#[derive(Clone, Debug)]
+enum NotificationTarget {
+    Ticket { ticket_id: String },
+}
+
 #[derive(Clone, Debug)]
 struct PendingNotification {
-    dialog_id: String,
+    target: NotificationTarget,
     fired_at: Instant,
 }
 
@@ -272,21 +279,17 @@ impl NatsBridge {
 
         let Some(p) = pending else { return };
         if p.fired_at.elapsed() > MAX_PENDING_AGE {
-            tracing::debug!(
-                "[NATS] dropping stale pending notification for dialog {}",
-                p.dialog_id
-            );
+            tracing::debug!("[NATS] dropping stale pending notification: {:?}", p.target);
             return;
         }
 
-        tracing::info!(
-            "[NATS] window focused — emitting notification:click for dialog {}",
-            p.dialog_id
-        );
-        let _ = self.inner.app.emit(
-            "notification:click",
-            serde_json::json!({ "kind": "dialog", "id": p.dialog_id }),
-        );
+        let payload = match p.target {
+            NotificationTarget::Ticket { ticket_id } => {
+                tracing::info!("[NATS] window focused — emitting notification:click for ticket {ticket_id}");
+                serde_json::json!({ "kind": "ticket", "id": ticket_id })
+            }
+        };
+        let _ = self.inner.app.emit("notification:click", payload);
     }
 
     async fn run(&self) {
@@ -423,8 +426,36 @@ async fn handle_nats_event(event: Event, inner: &Arc<Inner>) {
 
 // ---------------------------- notification subject ----------------------------
 
+/// machineId precedence: explicit value from `OPENFRAME_MACHINE_ID` /
+/// `nats_set_machine_id`, else (temp fallback) the `machine_id` claim decoded
+/// from the current access token. The derived value is cached so the subject
+/// stays stable and a later explicit `set_machine_id` still overrides it.
+async fn resolve_machine_id(inner: &Arc<Inner>) -> Option<String> {
+    if let Some(id) = inner.machine_id.read().await.clone() {
+        return Some(id);
+    }
+    let id = machine_id_from_jwt(&inner.token_source.read_fresh()?)?;
+    let mut guard = inner.machine_id.write().await;
+    if guard.is_none() {
+        tracing::info!("[NATS] machineId derived from token claim: {id}");
+        *guard = Some(id.clone());
+    }
+    guard.clone().or(Some(id))
+}
+
+/// Decodes the `machine_id` claim from a JWT's payload segment.
+fn machine_id_from_jwt(token: &str) -> Option<String> {
+    let payload = token.split('.').nth(1)?.trim_end_matches('=');
+    let bytes = general_purpose::URL_SAFE_NO_PAD.decode(payload).ok()?;
+    let json: serde_json::Value = serde_json::from_slice(&bytes).ok()?;
+    json.get("machine_id")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
 async fn ensure_notification_subscription(inner: &Arc<Inner>) {
-    let machine_id = match inner.machine_id.read().await.clone() {
+    let machine_id = match resolve_machine_id(inner).await {
         Some(id) => id,
         None => return,
     };
@@ -461,6 +492,12 @@ async fn ensure_notification_subscription(inner: &Arc<Inner>) {
 
 async fn notification_router(inner: Arc<Inner>, mut subscriber: async_nats::Subscriber) {
     while let Some(message) = subscriber.next().await {
+        tracing::info!(
+            "[NATS] notification received on '{}' ({} bytes): {}",
+            message.subject,
+            message.payload.len(),
+            String::from_utf8_lossy(&message.payload)
+        );
         let payload: serde_json::Value = match serde_json::from_slice(&message.payload) {
             Ok(v) => v,
             Err(err) => {
@@ -468,13 +505,7 @@ async fn notification_router(inner: Arc<Inner>, mut subscriber: async_nats::Subs
                 continue;
             }
         };
-        let dialog_id = payload
-            .get("dialogId")
-            .or_else(|| payload.get("dialog_id"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
-        maybe_notify(&inner, &dialog_id, &payload);
+        maybe_notify(&inner, &payload);
     }
     tracing::info!("[NATS] notification router exited (stream closed)");
 }
@@ -506,7 +537,15 @@ async fn create_and_store_consumer(
     };
 
     let filter_subject = format!("chat.{}.message", dialog_id);
+    // A consumer name makes async-nats publish CONSUMER.CREATE to the named
+    // subject `$JS.API.CONSUMER.CREATE.CHAT_CHUNKS.<name>.<filter>` instead of
+    // the bare `$JS.API.CONSUMER.CREATE.CHAT_CHUNKS`. The NATS `machine` user is
+    // authorized via `$JS.API.CONSUMER.CREATE.CHAT_CHUNKS.>`, which matches the
+    // named form only (a trailing `>` requires ≥1 token). Unique per create so
+    // a stale ephemeral consumer from a prior subscribe never collides.
+    let consumer_name = format!("chat-{}", Uuid::new_v4().simple());
     let config = OrderedConfig {
+        name: Some(consumer_name),
         filter_subject: filter_subject.clone(),
         deliver_policy,
         ..Default::default()
@@ -589,7 +628,23 @@ where
             }
         };
 
-        // Track delivered seq under lock; skip duplicates.
+        // Snapshot channels before taking the dedup lock — the read is async,
+        // but the send below must stay synchronous (see next block).
+        let channels: Vec<Channel<NatsEvent>> = inner
+            .event_channels
+            .read()
+            .await
+            .values()
+            .cloned()
+            .collect();
+
+        // Dedup + send atomically under the dialogs lock: the seq that wins the
+        // lock is the seq that reaches the channel first. If the send happened
+        // after releasing the lock, an old consumer task and a freshly
+        // resubscribed one (which overlap briefly on reconnect) could win
+        // adjacent seqs and then send out of order — the WebView's monotonic
+        // streamSeq gate would drop the lower one, losing a chunk. `channel.send`
+        // is synchronous, so holding the lock across it adds no await.
         {
             let mut dialogs = inner.dialogs.write().await;
             let state = match dialogs.get_mut(&dialog_id) {
@@ -602,24 +657,16 @@ where
                 }
             }
             state.last_delivered_stream_seq = Some(stream_seq);
-        }
 
-        let event = NatsEvent {
-            dialog_id: dialog_id.clone(),
-            stream_seq,
-            payload,
-        };
-
-        let channels: Vec<Channel<NatsEvent>> = inner
-            .event_channels
-            .read()
-            .await
-            .values()
-            .cloned()
-            .collect();
-        for channel in channels {
-            if let Err(err) = channel.send(event.clone()) {
-                tracing::warn!("[NATS] channel.send failed: {err}");
+            let event = NatsEvent {
+                dialog_id: dialog_id.clone(),
+                stream_seq,
+                payload,
+            };
+            for channel in &channels {
+                if let Err(err) = channel.send(event.clone()) {
+                    tracing::warn!("[NATS] channel.send failed: {err}");
+                }
             }
         }
     }
@@ -649,72 +696,79 @@ async fn resubscribe_all_dialogs(inner: &Arc<Inner>) {
 
 // ---------------------------- notification dispatch ----------------------------
 
-/// Discriminator shape mirrors `chunk-parser.ts`:
-///   `DIRECT_MESSAGE` — `{ type, text, ownerType, displayName, dialogId }`
-///   `DIALOG_CLOSED`  — `{ type, dialogId }`
+/// A backend notification reduced to what we render + where a click lands.
+struct ParsedNotification {
+    title: String,
+    body: String,
+    target: Option<NotificationTarget>,
+}
+
+/// Polymorphic dispatch on the backend envelope's `context.type`. To support a
+/// new notification kind, add a match arm mapping the envelope to a
+/// `ParsedNotification`. Returns `None` for envelopes we deliberately ignore.
 ///
-/// Echoes from the user themselves carry `ownerType == "CLIENT"`; we skip
-/// those.
-fn maybe_notify(inner: &Arc<Inner>, dialog_id: &str, payload: &serde_json::Value) {
+/// Envelope shape:
+///   `{ id, severity, title, description, createdAt, context: { type, .. } }`
+fn parse_notification(payload: &serde_json::Value) -> Option<ParsedNotification> {
+    let context = payload.get("context")?;
+    let ctx_type = context.get("type").and_then(|v| v.as_str()).unwrap_or_default();
+
+    match ctx_type {
+        "ADMIN_MESSAGE_PUBLISHED" => Some(ParsedNotification {
+            title: string_field(payload, "title").unwrap_or_else(|| "New message".to_string()),
+            body: string_field(payload, "description")
+                .map(|t| truncate_for_notification(&t, 140))
+                .unwrap_or_default(),
+            target: string_field(context, "ticketId")
+                .map(|ticket_id| NotificationTarget::Ticket { ticket_id }),
+        }),
+        _ => None,
+    }
+}
+
+fn string_field(value: &serde_json::Value, key: &str) -> Option<String> {
+    value
+        .get(key)
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(str::to_string)
+}
+
+fn maybe_notify(inner: &Arc<Inner>, payload: &serde_json::Value) {
     let app = &inner.app;
-    let kind = payload.get("type").and_then(|v| v.as_str()).unwrap_or("");
-    let (title, body) = match kind {
-        "DIRECT_MESSAGE" => {
-            let owner_type = payload
-                .get("ownerType")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            if owner_type == "CLIENT" {
-                return;
-            }
-            let display_name = payload
-                .get("displayName")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Technician");
-            let text = payload.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            let body = truncate_for_notification(text, 140);
-            (format!("New message from {display_name}"), body)
-        }
-        "DIALOG_CLOSED" => (
-            "Dialog closed".to_string(),
-            "A technician closed the conversation.".to_string(),
-        ),
-        _ => return,
+    let Some(parsed) = parse_notification(payload) else {
+        let ctx_type = payload
+            .get("context")
+            .and_then(|c| c.get("type"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        tracing::info!("[NATS] maybe_notify: ignoring notification (context.type='{ctx_type}')");
+        return;
     };
 
     if !should_notify(app) {
-        tracing::debug!(
-            "[NATS] skipping notification for {kind} (window visible+focused)"
-        );
+        tracing::debug!("[NATS] skipping notification (window visible+focused)");
         return;
     }
 
-    if let Ok(mut guard) = inner.pending_notification.lock() {
-        *guard = Some(PendingNotification {
-            dialog_id: dialog_id.to_string(),
-            fired_at: Instant::now(),
-        });
+    if let Some(target) = &parsed.target {
+        if let Ok(mut guard) = inner.pending_notification.lock() {
+            *guard = Some(PendingNotification {
+                target: target.clone(),
+                fired_at: Instant::now(),
+            });
+        }
     }
 
     let n = inner.unread_count.fetch_add(1, Ordering::Relaxed) + 1;
     set_unread_surfaces(inner, n);
 
     let app = app.clone();
-    let dialog_id = dialog_id.to_string();
+    let ParsedNotification { title, body, .. } = parsed;
     std::thread::spawn(move || {
-        match app
-            .notification()
-            .builder()
-            .title(&title)
-            .body(&body)
-            .show()
-        {
-            Ok(()) => {
-                tracing::info!("[NATS] notification fired for dialog {dialog_id}");
-            }
-            Err(err) => {
-                tracing::warn!("[NATS] notification show failed: {err}");
-            }
+        match app.notification().builder().title(&title).body(&body).show() {
+            Ok(()) => tracing::info!("[NATS] notification fired: {title}"),
+            Err(err) => tracing::warn!("[NATS] notification show failed: {err}"),
         }
     });
 }
