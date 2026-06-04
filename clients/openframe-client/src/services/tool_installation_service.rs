@@ -332,6 +332,29 @@ impl ToolInstallationService {
         self.installed_tools_service.save(installed_tool.clone()).await
             .context("Failed to save installed tool")?;
 
+        // For GuiApp installations on Windows, register the HKLM autorun entry so Windows
+        // launches the app at every user's logon. WindowsSessionManager picks up the existing
+        // process via find_pid and attaches a waiter, so we don't double-launch on the active session.
+        #[cfg(target_os = "windows")]
+        if let Installation::GuiApp { .. } = &installed_tool.installation {
+            let mut launch_args = self.command_params_resolver
+                .process(tool_agent_id, installed_tool.run_command_args.clone())
+                .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            // For openframe-chat, add --background flag to start in tray
+            if tool_agent_id == "openframe-chat" {
+                launch_args.push("--background".to_string());
+            }
+            let command_path = self.directory_manager
+                .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
+                .to_string_lossy()
+                .to_string();
+            if let Err(e) = crate::utils::windows_helpers::register_autorun(
+                tool_agent_id, &command_path, &launch_args,
+            ) {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to register GuiApp autorun");
+            }
+        }
+
         // Run the tool after successful installation
         info!("Running tool {} after successful installation", tool_agent_id);
         self.tool_run_manager.run_new_tool(installed_tool.clone()).await

@@ -78,7 +78,13 @@ export function TicketsBoard({
   const { mutate: moveTicket } = useMoveTicket();
   const movingIds = useMovingTicketIds();
   const { data: statusTransitions } = useTicketStatusTransitions();
-  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading });
+  const {
+    actions,
+    menuActions,
+    dialog: ticketsActionsDialog,
+    canArchiveResolved,
+    openArchiveResolvedConfirm,
+  } = useTicketsActions({ isLoading });
 
   const allowedFromByStatus = useMemo<Partial<Record<BoardStatus, string[]>>>(() => {
     if (!statusTransitions) return {};
@@ -104,9 +110,10 @@ export function TicketsBoard({
           isLoadingMore: state.isLoadingMore,
           system: ['ACTIVE', 'TECH_REQUIRED', 'RESOLVED'].includes(status),
           allowedFromColumns: allowedFromByStatus[status],
+          archivable: status === 'RESOLVED' && canArchiveResolved,
         });
       }),
-    [columns, allowedFromByStatus, isLoading],
+    [columns, allowedFromByStatus, isLoading, canArchiveResolved],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
@@ -165,6 +172,7 @@ export function TicketsBoard({
             columns={boardColumns}
             onChange={handleChange}
             onLoadMore={loadMore}
+            onArchiveColumn={openArchiveResolvedConfirm}
             getTicketHref={getTicketHref}
             renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
             collapseStorageKey="tickets-board"

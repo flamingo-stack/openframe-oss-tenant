@@ -74,7 +74,13 @@ export function TicketsBoardLifecycle({
   const { data: transitionRules } = useTicketStatusTransitionRules();
   const { mutate: moveTicket } = useMoveTicketLifecycle();
   const movingIds = useMovingTicketIdsLifecycle();
-  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading: statusesLoading });
+  const {
+    actions,
+    menuActions,
+    dialog: ticketsActionsDialog,
+    canArchiveResolved,
+    openArchiveResolvedConfirm,
+  } = useTicketsActions({ isLoading: statusesLoading });
 
   const [columnUpdates, setColumnUpdates] = useState<Record<string, BoardColumnUpdate>>({});
   const loadMoreRef = useRef<Record<string, () => void>>({});
@@ -128,9 +134,10 @@ export function TicketsBoardLifecycle({
           isLoadingMore: state?.isLoadingMore,
           system: status.isSystem,
           allowedFromColumns: allowedFromByStatusId[status.id],
+          archivable: status.kind === 'RESOLVED' && canArchiveResolved,
         };
       }),
-    [statuses, columnUpdates, allowedFromByStatusId, isLoading],
+    [statuses, columnUpdates, allowedFromByStatusId, isLoading, canArchiveResolved],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
@@ -206,6 +213,7 @@ export function TicketsBoardLifecycle({
             columns={boardColumns}
             onChange={handleChange}
             onLoadMore={loadMore}
+            onArchiveColumn={openArchiveResolvedConfirm}
             getTicketHref={getTicketHref}
             renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
             collapseStorageKey="tickets-board-lifecycle"
