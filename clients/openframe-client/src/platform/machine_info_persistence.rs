@@ -11,14 +11,26 @@ use crate::platform::permissions::PermissionUtils;
 const RECORD_KEY: &str = "MachineInfo";
 
 /// Registration identity reused across reinstalls.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct PersistedMachineInfo {
     pub machine_id: String,
     pub client_secret: String,
 }
 
+// Manual Debug so `{:?}` never leaks the live client secret.
+impl std::fmt::Debug for PersistedMachineInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PersistedMachineInfo")
+            .field("machine_id", &self.machine_id)
+            .field("client_secret", &"<redacted>")
+            .finish()
+    }
+}
+
 /// Persists the machine info, overwriting any previous values.
 pub fn write(machine_info: &PersistedMachineInfo) -> Result<()> {
+    // Never persist a record `read()` would later reject as incomplete.
+    ensure_complete(machine_info)?;
     write_impl(machine_info)?;
     info!("Persisted reinstall machine_info");
     Ok(())
