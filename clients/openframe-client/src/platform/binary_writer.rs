@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::path::Path;
 use tokio::fs::{self, File};
 use tokio::io::AsyncWriteExt;
-use tracing::info;
+use tracing::{info, warn};
 
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
@@ -13,10 +13,31 @@ pub async fn write_executable(bytes: &[u8], path: &Path) -> Result<()> {
             .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
     }
 
-    File::create(path)
-        .await
-        .with_context(|| format!("Failed to create file: {}", path.display()))?
-        .write_all(bytes)
+    let mut file = match File::create(path).await {
+        Ok(file) => file,
+        Err(first_err) => {
+            warn!("Failed to create {}: {}. Attempting lock/permission recovery", path.display(), first_err);
+            let _ = crate::platform::file_acl::ensure_writable(path).await;
+
+            #[cfg(target_os = "windows")]
+            {
+                let mut aside = path.as_os_str().to_os_string();
+                aside.push(".old");
+                let aside = std::path::PathBuf::from(aside);
+                let _ = fs::remove_file(&aside).await;
+                match fs::rename(path, &aside).await {
+                    Ok(()) => info!("Moved locked file {} aside to {}", path.display(), aside.display()),
+                    Err(e) => warn!("Failed to move locked file {} aside: {}", path.display(), e),
+                }
+            }
+
+            File::create(path)
+                .await
+                .with_context(|| format!("Failed to create file after recovery: {}", path.display()))?
+        }
+    };
+
+    file.write_all(bytes)
         .await
         .with_context(|| format!("Failed to write file: {}", path.display()))?;
 
