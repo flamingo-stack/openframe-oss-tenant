@@ -25,9 +25,10 @@ function byPosition(a: TicketStatusDefinition, b: TicketStatusDefinition): numbe
   return a.position < b.position ? -1 : a.position > b.position ? 1 : 0;
 }
 
-export function useTicketStatusesQuery() {
+export function useTicketStatusesQuery({ enabled = true }: { enabled?: boolean } = {}) {
   return useQuery<TicketStatusesData>({
     queryKey: ticketsQueryKeys.statuses(),
+    enabled,
     queryFn: async () => {
       const response = await apiClient.post<GraphQlResponse<{ ticketStatuses: TicketStatusDefinition[] }>>(
         API_ENDPOINTS.GRAPHQL,

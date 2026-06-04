@@ -2,6 +2,8 @@
 
 import { Filter02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMemo } from 'react';
+import { useAuthStore } from '@/stores';
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { renderAvatarOption } from './avatar-autocomplete';
 
@@ -15,11 +17,18 @@ const renderOption = renderAvatarOption('round');
 
 export function AssigneeFilter({ value, onChange, className }: AssigneeFilterProps) {
   const { options, isLoading } = useAssigneeOptions();
+  const currentUserId = useAuthStore(state => state.user?.id);
+
+  const sortedOptions = useMemo(() => {
+    const idx = currentUserId ? options.findIndex(o => o.value === currentUserId) : -1;
+    if (idx <= 0) return options;
+    return [options[idx], ...options.slice(0, idx), ...options.slice(idx + 1)];
+  }, [options, currentUserId]);
 
   return (
     <Autocomplete
       multiple
-      options={options}
+      options={sortedOptions}
       value={value}
       onChange={onChange}
       placeholder="Show All Employees"
