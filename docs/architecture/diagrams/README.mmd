@@ -1,0 +1,23 @@
+flowchart TD
+    Client["Browser / Agent / Integration"] --> Gateway["Gateway Service"]
+
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> API["API Service"]
+    Gateway --> ExternalAPI["External API Service"]
+
+    API --> Mongo["MongoDB"]
+    API --> NATS["NATS Messaging"]
+    API --> Kafka["Kafka"]
+
+    Auth --> Mongo
+
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra["Cassandra (Unified Logs)"]
+
+    Management["Management Service"] --> Mongo
+    Management --> NATS
+    Management --> Kafka
+
+    Config["Config Server"] --> Gateway
+    Config --> API
+    Config --> Auth

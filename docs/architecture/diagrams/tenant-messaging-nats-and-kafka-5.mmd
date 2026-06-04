@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant API
+    participant NATS
+    participant Agent
+    participant Kafka
+
+    API->>NATS: Publish CommandMessage
+    Agent->>Agent: Execute script
+    Agent->>Kafka: Publish execution result event
+    Kafka->>Stream: Stream processing

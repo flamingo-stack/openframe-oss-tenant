@@ -1,0 +1,6 @@
+flowchart TD
+    ToolRequest["/tools/{toolId}/..."] --> ResolverRegistry["ToolUpstreamResolverRegistry"]
+    ResolverRegistry -->|Match| SpecificResolver["Tool-Specific Resolver"]
+    ResolverRegistry -->|Fallback| DefaultResolver["DefaultToolUpstreamResolver"]
+    SpecificResolver --> UpstreamUri["Resolved URI"]
+    DefaultResolver --> UpstreamUri

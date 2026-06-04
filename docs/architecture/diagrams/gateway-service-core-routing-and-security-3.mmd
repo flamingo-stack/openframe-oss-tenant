@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> OriginFilter["OriginSanitizerFilter"]
+    OriginFilter --> AddAuthHeader["AddAuthorizationHeaderFilter"]
+    AddAuthHeader --> JwtResolver["JwtIssuerAuthenticationManagerResolver"]
+    JwtResolver --> RoleCheck["Role-Based Authorization"]
+    RoleCheck --> Controller["Controller or Proxy"]

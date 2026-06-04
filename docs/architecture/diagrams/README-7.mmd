@@ -1,0 +1,7 @@
+flowchart TD
+    GatewayApp["Gateway App"] --> ApiApp["API App"]
+    GatewayApp --> AuthApp["Auth App"]
+
+    ApiApp --> Mongo
+    StreamApp["Stream App"] --> Kafka
+    ManagementApp["Management App"] --> Mongo

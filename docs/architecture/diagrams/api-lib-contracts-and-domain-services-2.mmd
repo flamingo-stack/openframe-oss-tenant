@@ -1,0 +1,5 @@
+flowchart TD
+    Client["Client"] --> Args["ConnectionArgs"]
+    Args --> Service["Query Service"]
+    Service --> Repo["Repository Layer"]
+    Repo --> Cursor["CursorCodec"]

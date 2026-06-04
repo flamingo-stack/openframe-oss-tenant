@@ -1,0 +1,4 @@
+flowchart TD
+    API["API Layer"] --> Repository["Custom Repository"]
+    Repository --> Criteria["Mongo Criteria"]
+    Criteria --> MongoDB["MongoDB"]

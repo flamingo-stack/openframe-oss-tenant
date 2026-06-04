@@ -1,0 +1,21 @@
+flowchart LR
+    Gateway["Gateway Application"] --> API["API Application"]
+    Gateway --> ExternalAPI["External API Application"]
+
+    API --> Data["Mongo Domain & Repositories"]
+    API --> Messaging["Tenant Messaging (NATS & Kafka)"]
+
+    ExternalAPI --> API
+
+    Auth["Authorization Server Application"] --> Data
+
+    Stream["Stream Application"] --> KafkaCore["Stream Processing Core"]
+    KafkaCore --> Data
+
+    Management["Management Application"] --> Data
+
+    Client["Client Application"] --> Messaging
+
+    Config["Config Server Application"] --> Gateway
+    Config --> API
+    Config --> Auth

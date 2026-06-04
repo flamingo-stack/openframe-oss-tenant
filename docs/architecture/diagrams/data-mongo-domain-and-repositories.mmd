@@ -1,0 +1,17 @@
+flowchart TD
+    Services["Platform Services"] --> Repos["Repository Layer"]
+    Repos --> Domain["Mongo Domain Documents"]
+    Repos --> MongoTemplate["MongoTemplate"]
+    Repos --> ReactiveRepos["Reactive Repositories"]
+    MongoTemplate --> MongoDB[("MongoDB")]
+    ReactiveRepos --> MongoDB
+
+    subgraph infra["Infrastructure"]
+        Config["Mongo Configurations"]
+        TenantProvider["TenantIdProvider"]
+        IndexConfig["Index Initialization"]
+    end
+
+    Config --> Repos
+    TenantProvider --> Repos
+    IndexConfig --> MongoDB

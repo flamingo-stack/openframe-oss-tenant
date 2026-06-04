@@ -1,0 +1,6 @@
+flowchart TD
+    ToolDB["Tool Database"] --> Debezium
+    Debezium --> Kafka
+    Kafka --> StreamService["Stream Processing Core"]
+    StreamService --> Cassandra
+    StreamService --> KafkaOut["Outbound Kafka"]

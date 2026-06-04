@@ -1,0 +1,5 @@
+flowchart LR
+    API --> Kafka["Kafka Producer"]
+    API --> NATS["NATS Publisher"]
+    Agent --> NATS
+    Stream --> Kafka

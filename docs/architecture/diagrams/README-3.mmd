@@ -1,0 +1,5 @@
+flowchart LR
+    Client["Client"] --> Gateway["Reactive Gateway"]
+    Gateway --> JwtValidation["JWT Validation"]
+    Gateway --> ApiKey["API Key Filter"]
+    Gateway --> Proxy["REST / WS Proxy"]

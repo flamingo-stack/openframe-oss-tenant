@@ -1,0 +1,5 @@
+flowchart LR
+    API["API Layer"] --> Filter["QueryFilter Object"]
+    Filter --> CustomRepo["Custom Repository"]
+    CustomRepo --> Criteria["Mongo Criteria"]
+    Criteria --> MongoDB

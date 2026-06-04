@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantProvider["TenantIdProvider"]
+    TenantProvider --> Repository
+    Repository --> Query["Criteria with tenantId"]
+    Query --> MongoDB

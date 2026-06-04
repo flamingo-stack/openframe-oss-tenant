@@ -1,0 +1,5 @@
+flowchart TD
+    Browser["User Browser"] --> AuthServer["Authorization Server"]
+    AuthServer --> TenantContext["TenantContextFilter"]
+    AuthServer --> Jwt["JWT Issuance"]
+    Jwt --> Gateway["Gateway Resource Server"]

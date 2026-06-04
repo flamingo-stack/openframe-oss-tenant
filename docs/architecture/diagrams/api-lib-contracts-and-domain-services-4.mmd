@@ -1,0 +1,4 @@
+flowchart LR
+    Resolver["GraphQL Resolver"] --> Service["InstalledAgentService"]
+    Service --> Repo["InstalledAgentRepository"]
+    Repo --> Mongo["MongoDB"]

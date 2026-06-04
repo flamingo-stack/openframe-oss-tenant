@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Request with Cursor"] --> QueryBuilder["Build Query"]
+    QueryBuilder --> ApplyCursor["Apply _id Criteria"]
+    ApplyCursor --> Sort["Apply Sort + Limit"]
+    Sort --> MongoDB

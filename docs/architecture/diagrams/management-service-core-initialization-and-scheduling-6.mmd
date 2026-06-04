@@ -1,0 +1,6 @@
+flowchart TD
+    Check["Check PublishState"] --> Published{"Already Published?"}
+    Published -->|"Yes"| Skip["Skip"]
+    Published -->|"No"| Attempts{"Attempts < Max?"}
+    Attempts -->|"Yes"| Publish["Publish to NATS"]
+    Attempts -->|"No"| Stop["Stop Retrying"]

@@ -1,0 +1,10 @@
+flowchart TD
+    ToolDB["Integrated Tool DB"] --> Debezium
+    Debezium --> KafkaIn
+    KafkaIn --> Listener
+    Listener --> Deserializer
+    Deserializer --> Mapper
+    Mapper --> Enrichment
+    Enrichment --> Handler
+    Handler --> CassandraStore["UnifiedLogEvent"]
+    Handler --> KafkaOut

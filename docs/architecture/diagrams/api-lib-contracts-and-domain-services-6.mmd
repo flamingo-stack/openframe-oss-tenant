@@ -1,0 +1,13 @@
+flowchart TD
+    Gateway["Gateway Service Core Routing And Security"]
+    ApiService["Api Service Core GraphQL And Rest"]
+    Contracts["Api Lib Contracts And Domain Services"]
+    DataMongo["Data Mongo Domain And Repositories"]
+    Messaging["Tenant Messaging NATS And Kafka"]
+    Stream["Stream Processing Core"]
+
+    Gateway --> ApiService
+    ApiService --> Contracts
+    Contracts --> DataMongo
+    DataMongo --> Messaging
+    Messaging --> Stream

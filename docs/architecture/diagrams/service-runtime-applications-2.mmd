@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Auth as "Authorization Server"
+    participant API
+    participant DB as "Mongo Database"
+
+    Client->>Gateway: HTTP Request with JWT
+    Gateway->>Auth: Validate token
+    Auth->>Gateway: Token valid
+    Gateway->>API: Forward request
+    API->>DB: Query data
+    DB->>API: Return documents
+    API->>Gateway: JSON response
+    Gateway->>Client: HTTP 200

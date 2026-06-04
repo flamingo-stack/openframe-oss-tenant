@@ -1,0 +1,15 @@
+flowchart LR
+    Netty["Netty Socket Config"] --> WebFlux["Reactive WebFlux Server"]
+    WebFlux --> Security["Gateway Security Config"]
+    Security --> Jwt["JwtAuthConfig"]
+    Security --> AddAuth["AddAuthorizationHeaderFilter"]
+
+    WebFlux --> ApiKey["ApiKeyAuthenticationFilter"]
+    WebFlux --> IntegrationCtrl["IntegrationController"]
+    WebFlux --> WsConfig["WebSocketGatewayConfig"]
+
+    WsConfig --> ToolWsApi["ToolApiWebSocketProxyUrlFilter"]
+    WsConfig --> ToolWsAgent["ToolAgentWebSocketProxyUrlFilter"]
+
+    IntegrationCtrl --> RestProxy["RestProxyService"]
+    ToolWsApi --> Upstream["ToolUpstreamResolver"]

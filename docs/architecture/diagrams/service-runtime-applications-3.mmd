@@ -1,0 +1,22 @@
+flowchart TD
+    subgraph runtime["Tenant Runtime Cluster"]
+        GatewaySvc["Gateway"]
+        ApiSvc["API"]
+        AuthSvc["Auth Server"]
+        StreamSvc["Stream"]
+        MgmtSvc["Management"]
+    end
+
+    Mongo[("MongoDB")]
+    Kafka[("Kafka")]
+    Nats[("NATS")]
+
+    GatewaySvc --> ApiSvc
+    GatewaySvc --> AuthSvc
+
+    ApiSvc --> Mongo
+    StreamSvc --> Kafka
+    StreamSvc --> Mongo
+
+    ApiSvc --> Nats
+    ClientApp["Client"] --> Nats

@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Services["OpenFrame Services"]
+        API["API Service"]
+        MGMT["Management Service"]
+        STREAM["Stream Service"]
+    end
+
+    subgraph KafkaLayer["Kafka Infrastructure"]
+        KConfig["OssTenantKafkaAutoConfiguration"]
+        KTemplate["KafkaTemplate"]
+        Topics["Kafka Topics"]
+    end
+
+    subgraph NatsLayer["NATS Infrastructure"]
+        NBroadcaster["NotificationBroadcaster"]
+        NPublisher["NotificationNatsPublisher"]
+        Subjects["NATS Subjects"]
+    end
+
+    API --> NBroadcaster
+    MGMT --> KTemplate
+    STREAM --> KTemplate
+
+    NBroadcaster --> NPublisher --> Subjects
+    KTemplate --> Topics
+    KConfig --> KTemplate

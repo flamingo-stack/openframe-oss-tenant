@@ -1,0 +1,7 @@
+flowchart TD
+    Message --> Transform
+    Transform --> OperationType
+    OperationType --> PushData
+    PushData --> HandleCreate
+    PushData --> HandleUpdate
+    PushData --> HandleDelete

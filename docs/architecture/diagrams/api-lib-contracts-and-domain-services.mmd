@@ -1,0 +1,6 @@
+flowchart LR
+    Client["Client Applications"] --> ApiService["Api Service Core GraphQL And Rest"]
+    ApiService --> Contracts["Api Lib Contracts And Domain Services"]
+    Contracts --> DataMongo["Data Mongo Domain And Repositories"]
+    Contracts --> Messaging["Tenant Messaging NATS And Kafka"]
+    Contracts --> Stream["Stream Processing Core"]
