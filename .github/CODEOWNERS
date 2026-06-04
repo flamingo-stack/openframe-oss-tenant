@@ -3,12 +3,11 @@
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
 # CODEOWNERS self-ownership
-/.github/CODEOWNERS         @flamingo-stack/devops-engineers
+/.github/CODEOWNERS        @flamingo-stack/devops-engineers
 
-
-# Spring Cloud Config — protected environments only (dev/ is unowned)
-/configs/base/              @flamingo-stack/backend-engineers
-
+# Spring Cloud Config — prod requires devops or lead approval
+/configs/                  @flamingo-stack/lead-engineers @flamingo-stack/backend-engineers
+/configs/base/             @flamingo-stack/lead-engineers
 
 # Kubernetes / ArgoCD manifests
-/manifests/                 @flamingo-stack/devops-engineers
+/manifests/                @flamingo-stack/devops-engineers
