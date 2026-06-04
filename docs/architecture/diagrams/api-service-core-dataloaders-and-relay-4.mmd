@@ -1,0 +1,5 @@
+flowchart TD
+    Machines["Multiple Machines"] --> OrgIds["Collect Organization IDs"]
+    OrgIds --> OrgLoader["OrganizationDataLoader"]
+    OrgLoader --> Repo["OrganizationRepository"]
+    Repo --> ActiveOnly["Filter ACTIVE Status"]

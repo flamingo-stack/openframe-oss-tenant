@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Client Request"] --> Query["Build Query + Filters"]
+    Query --> Cursor["Apply Cursor Criteria"]
+    Cursor --> Sort["Apply Sort Field + _id Fallback"]
+    Sort --> Limit["Apply Limit"]
+    Limit --> Mongo[("MongoDB Query")]

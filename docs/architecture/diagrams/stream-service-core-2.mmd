@@ -1,0 +1,4 @@
+flowchart LR
+    Raw["CommonDebeziumMessage"] --> Deserializer["IntegratedToolEventDeserializer"]
+    Deserializer --> Parsed["DeserializedDebeziumMessage"]
+    Parsed --> UnifiedType["UnifiedEventType"]

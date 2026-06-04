@@ -1,0 +1,5 @@
+flowchart TD
+    Query["GraphQL Query"] --> Connection["CountedGenericConnection"]
+    Connection --> Edge["GenericEdge"]
+    Edge --> Node["Domain DTO"]
+    Connection --> PageInfo["PageInfo"]

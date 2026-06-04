@@ -1,0 +1,7 @@
+flowchart TD
+    Admin["Admin Configures Tool"] --> Management
+    Management --> Mongo
+    Management --> Debezium
+    Debezium --> Kafka
+    Kafka --> Stream
+    Stream --> DomainUpdate["Device / Event Update"]

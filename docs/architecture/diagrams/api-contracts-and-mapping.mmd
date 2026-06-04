@@ -1,0 +1,9 @@
+flowchart LR
+    Client["Client Applications"] --> ApiCore["Api Service Core Graphql And Rest"]
+    ApiCore --> Contracts["Api Contracts And Mapping"]
+    Contracts --> Domain["Mongo Domain And Repositories"]
+    Contracts --> Stream["Stream Service Core"]
+
+    Contracts --> Pagination["Relay Pagination"]
+    Contracts --> Filters["Filter Criteria Models"]
+    Contracts --> Mappers["DTO <-> Entity Mappers"]

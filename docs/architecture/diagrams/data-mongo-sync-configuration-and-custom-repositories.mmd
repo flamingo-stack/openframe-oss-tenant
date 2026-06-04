@@ -1,0 +1,6 @@
+flowchart TD
+    API["API / Management / Auth Services"] --> Domain["Domain Services"]
+    Domain --> Repos["Spring Data Repositories"]
+    Repos --> Custom["Custom MongoTemplate Repositories"]
+    Custom --> MongoInfra["Mongo Infrastructure Config"]
+    MongoInfra --> MongoDB[("MongoDB")]

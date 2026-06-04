@@ -1,0 +1,4 @@
+flowchart LR
+    Article["KnowledgeBaseItem.author"] --> Loader["UserDataLoader"]
+    Loader --> UserService["UserService"]
+    UserService --> Processor["UserProcessor Enrichment"]

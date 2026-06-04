@@ -1,0 +1,10 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant AuthServer
+
+    User->>Gateway: Access protected resource
+    Gateway->>AuthServer: Redirect to authorize
+    AuthServer->>User: Login form
+    User->>AuthServer: Submit credentials
+    AuthServer->>Gateway: Issue access token

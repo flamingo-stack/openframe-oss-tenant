@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Client
+    participant ApiCore as "Api Service Core"
+    participant AgentService
+
+    Client->>ApiCore: RunCommandInput
+    ApiCore->>AgentService: Dispatch command
+    AgentService-->>ApiCore: executionId
+    ApiCore-->>Client: CommandDispatchResponse

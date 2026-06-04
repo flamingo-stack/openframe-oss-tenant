@@ -1,0 +1,7 @@
+flowchart LR
+    Browser["Browser / SPA"] -->|"GET /oauth/login"| Bff["Security Oauth Bff"]
+    Bff -->|"Redirect to /authorize"| AuthServer["Authorization Server Core"]
+    AuthServer -->|"code + state"| Bff
+    Bff -->|"Set auth cookies"| Browser
+    Browser -->|"Authenticated requests"| Gateway["Gateway Service Core"]
+    Gateway -->|"JWT validation"| AuthServer

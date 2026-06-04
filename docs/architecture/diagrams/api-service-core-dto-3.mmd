@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Client
+    participant API
+    participant Provider
+
+    Client->>API: Request authorization
+    API->>Provider: Redirect with client_id
+    Provider->>Client: Redirect with code
+    Client->>API: Exchange code
+    API->>Provider: Token request
+    Provider->>API: access_token
+    API->>Client: TokenResponse

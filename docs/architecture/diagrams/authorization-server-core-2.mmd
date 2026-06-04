@@ -1,0 +1,8 @@
+flowchart TD
+    Request["Incoming HTTP Request"] --> Filter["TenantContextFilter"]
+    Filter --> PathCheck{"Tenant in Path?"}
+    PathCheck -->|Yes| SetCtx["Set TenantContext + Session"]
+    PathCheck -->|No| QueryCheck["Check Query Param / Session"]
+    QueryCheck --> SetCtx
+    SetCtx --> Controller["Controllers / Security"]
+    Controller --> Clear["TenantContext.clear()"]

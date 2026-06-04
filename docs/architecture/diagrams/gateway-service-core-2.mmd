@@ -1,0 +1,10 @@
+flowchart LR
+    WSClient["WebSocket Client"] --> WSGateway["WebSocketGatewayConfig"]
+
+    WSGateway --> AgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    WSGateway --> ApiFilter["ToolApiWebSocketProxyUrlFilter"]
+
+    AgentFilter --> UpstreamResolver["ToolUpstreamResolver"]
+    ApiFilter --> UpstreamResolver
+
+    UpstreamResolver --> ToolWS["Tool WebSocket Endpoint"]

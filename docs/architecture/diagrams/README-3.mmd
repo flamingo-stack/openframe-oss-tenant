@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant Mongo
+    participant Debezium
+    participant Kafka
+    participant Stream
+    participant Cassandra
+
+    Mongo->>Debezium: CDC event
+    Debezium->>Kafka: DebeziumMessage
+    Kafka->>Stream: Kafka Listener
+    Stream->>Stream: Enrich + Map Event
+    Stream->>Cassandra: Persist UnifiedLogEvent

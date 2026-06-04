@@ -1,0 +1,8 @@
+flowchart TD
+    JWT["JWT (tenant_id claim)"] --> Gateway
+    Gateway --> API
+    API --> Mongo["tenantId indexed collections"]
+    Mongo --> Debezium
+    Debezium --> Kafka
+    Kafka --> Stream
+    Stream --> Cassandra["Partitioned by tenant"]

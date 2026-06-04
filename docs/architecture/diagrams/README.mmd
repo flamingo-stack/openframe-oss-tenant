@@ -1,0 +1,19 @@
+flowchart TD
+    Browser["Web UI / External Client"] --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service (GraphQL + REST)"]
+    Gateway --> Authz["Authorization Server"]
+
+    Api --> Mongo["MongoDB"]
+    Api --> Kafka["Kafka"]
+
+    Authz --> Mongo
+    Authz --> JWKS["Tenant JWKS"]
+
+    Kafka --> Stream["Stream Service"]
+    Stream --> Cassandra["Cassandra (Unified Logs)"]
+
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+    Management --> Debezium["Debezium Connect"]
+
+    Debezium --> Kafka

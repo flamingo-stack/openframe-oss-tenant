@@ -1,0 +1,4 @@
+flowchart TD
+    DataFetcher["GraphQL DataFetcher"] --> Service["Query Service"]
+    Service --> Repository["Mongo Repository"]
+    Repository --> Mongo[("MongoDB")]

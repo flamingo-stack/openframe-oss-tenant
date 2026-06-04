@@ -1,0 +1,4 @@
+flowchart TD
+    DefaultBean["Default Processor"] -->|"@ConditionalOnMissingBean"| SpringContext["Spring Context"]
+    CustomBean["Custom SaaS Processor"] --> SpringContext
+    SpringContext --> ActiveBean["Active Implementation"]

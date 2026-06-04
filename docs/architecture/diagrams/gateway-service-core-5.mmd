@@ -1,0 +1,7 @@
+flowchart TD
+    ExtClient["External API Client"] --> ApiKeyFilter
+    ApiKeyFilter --> ValidateKey["ApiKeyValidationService"]
+    ValidateKey --> RateLimit["RateLimitService"]
+
+    RateLimit -->|"Allowed"| Forward["Forward to External API"]
+    RateLimit -->|"Exceeded"| Error429["429 RATE_LIMIT_EXCEEDED"]

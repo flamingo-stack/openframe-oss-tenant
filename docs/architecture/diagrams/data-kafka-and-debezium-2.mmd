@@ -1,0 +1,7 @@
+flowchart TD
+    Msg["DebeziumMessage"] --> Payload["Payload"]
+    Payload --> Before["before"]
+    Payload --> After["after"]
+    Payload --> Source["source"]
+    Payload --> Op["operation"]
+    Payload --> Ts["timestamp"]

@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Application Start"] --> Boot["Spring Boot Initialization"]
+    Boot --> Scan["Component Scan: api, data, core, notification, kafka"]
+    Scan --> Context["Application Context Ready"]
+    Context --> Ready["API Endpoints Available"]

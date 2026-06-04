@@ -1,0 +1,5 @@
+flowchart TD
+    ClientId["Global ID"] --> RelayDecode["Relay.fromGlobalId()"]
+    RelayDecode --> NodeType["NodeType enum"]
+    NodeType --> ServiceLookup["Domain Service Lookup"]
+    ServiceLookup --> Entity["Domain Object"]

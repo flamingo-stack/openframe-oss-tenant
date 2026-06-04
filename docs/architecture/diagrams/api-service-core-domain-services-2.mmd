@@ -1,0 +1,9 @@
+flowchart TD
+    Controller["User Controller"] --> Service["UserService"]
+    Service --> Repo["UserRepository"]
+    Service --> Mapper["UserMapper"]
+    Service --> Processor["UserProcessor"]
+
+    Service -->|"softDeleteUser"| Rules["Deletion Rules"]
+    Rules -->|"Self delete?"| Error1["Throw Exception"]
+    Rules -->|"Owner role?"| Error2["Throw Exception"]

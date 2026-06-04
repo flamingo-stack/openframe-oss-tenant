@@ -1,0 +1,12 @@
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz
+    participant API
+
+    User->>Gateway: Access protected route
+    Gateway->>Authz: Redirect to /authorize
+    Authz->>User: Login / SSO
+    Authz-->>Gateway: JWT Access Token
+    Gateway->>API: Forward request (Bearer token)
+    API-->>User: GraphQL / REST response

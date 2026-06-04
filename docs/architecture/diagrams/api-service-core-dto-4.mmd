@@ -1,0 +1,5 @@
+flowchart TD
+    Admin["Tenant Admin"] --> Request["SSOConfigRequest"]
+    Request --> Service["SSOConfigService"]
+    Service --> Persist["Persist Per Tenant Config"]
+    Persist --> Response["SSOConfigResponse"]

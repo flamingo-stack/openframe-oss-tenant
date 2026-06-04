@@ -1,0 +1,8 @@
+flowchart TD
+    Client["Web Client / Agent / External API"] --> Controller["REST Controller / GraphQL Resolver"]
+    Controller --> DTOIn["Input DTO"]
+    DTOIn --> Service["Domain Service"]
+    Service --> DTOOut["Response DTO"]
+    DTOOut --> Client
+
+    Service --> Domain["Domain Models"]

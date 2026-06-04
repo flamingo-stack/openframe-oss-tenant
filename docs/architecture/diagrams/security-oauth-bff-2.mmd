@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant Browser
+    participant BFF as Security Oauth Bff
+    participant Auth as Authorization Server
+
+    Browser->>BFF: GET /oauth/login?tenantId=...
+    BFF->>Auth: Build authorize URL (PKCE + state)
+    BFF->>Browser: 302 Redirect + state cookie
+    Browser->>Auth: /authorize

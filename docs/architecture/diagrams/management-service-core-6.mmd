@@ -1,0 +1,4 @@
+flowchart TD
+    SchedulerTick["Scheduler Trigger"] --> Lock{{ShedLock?}}
+    Lock -->|"Acquired"| Execute["Execute Task"]
+    Lock -->|"Not Acquired"| Skip["Skip Execution"]

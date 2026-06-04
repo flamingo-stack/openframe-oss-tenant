@@ -1,0 +1,4 @@
+flowchart LR
+    Resolver["Machine.installedAgents"] --> Loader["InstalledAgentDataLoader"]
+    Loader --> Service["InstalledAgentService"]
+    Service --> Repo["InstalledAgent Repository"]

@@ -1,0 +1,7 @@
+flowchart TD
+    API["API Service Core"] --> Domain["Data Mongo Domain And Repositories"]
+    Auth["Authorization Server Core"] --> Domain
+    Management["Management Service Core"] --> Domain
+    Stream["Stream Service Core"] --> Domain
+
+    Domain --> Mongo[("MongoDB")]

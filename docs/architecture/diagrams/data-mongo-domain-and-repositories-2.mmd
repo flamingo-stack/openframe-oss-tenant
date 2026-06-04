@@ -1,0 +1,5 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantProvider["TenantIdProvider"]
+    TenantProvider --> DefaultProvider["DefaultTenantIdProvider"]
+    DefaultProvider --> Repository["Repository Layer"]
+    Repository --> Mongo[("MongoDB Collection")]

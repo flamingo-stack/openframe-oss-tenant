@@ -1,0 +1,6 @@
+flowchart TD
+    Input["Requested redirectTo"] --> HasParam["Has value?"]
+    HasParam -->|"Yes"| UseParam["Use redirectTo"]
+    HasParam -->|"No"| CheckRef["Check Referer header"]
+    CheckRef -->|"Exists"| UseRef["Use Referer"]
+    CheckRef -->|"Missing"| Default["Use /"]

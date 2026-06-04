@@ -1,0 +1,7 @@
+flowchart TD
+    Client["GraphQL Client"] --> Args["ConnectionArgs"]
+    Args --> Resolver["Resolver / DataFetcher"]
+    Resolver --> Codec["CursorCodec"]
+    Codec --> Repo["Mongo Repository"]
+    Repo --> Codec
+    Codec --> Client

@@ -1,0 +1,4 @@
+flowchart TD
+    Descriptor["NotificationContextDescriptor"] --> Jackson["Jackson Module"]
+    Jackson --> Converter["Mongo Custom Conversions"]
+    Converter --> Mongo[("MongoDB")]

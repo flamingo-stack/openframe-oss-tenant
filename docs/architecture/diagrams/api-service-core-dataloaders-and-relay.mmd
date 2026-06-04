@@ -1,0 +1,7 @@
+flowchart TD
+    Client["Frontend Client"] --> GraphQL["GraphQL API Layer"]
+    GraphQL --> DataFetchers["Data Fetchers"]
+    DataFetchers --> DataLoaders["DataLoaders"]
+    DataLoaders --> DomainServices["Domain Services"]
+    DomainServices --> Repositories["Mongo Repositories"]
+    Repositories --> Database[("MongoDB")]
