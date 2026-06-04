@@ -15,6 +15,7 @@ export interface MessagePage {
 
 export interface FetchTicketsParams {
   statuses: string[];
+  statusIds?: string[];
   search?: string;
   organizationIds?: string[];
   assigneeIds?: string[];
