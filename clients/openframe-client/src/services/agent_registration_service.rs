@@ -35,7 +35,10 @@ impl AgentRegistrationService {
     pub async fn register_agent(&self) -> Result<AgentRegistrationResponse> {
         let initial_key = self.initial_configuration_service.get_initial_key()?;
 
-        let response = match machine_info_persistence::read() {
+        let credentials = machine_info_persistence::read()
+            .context("Aborting registration: prior registration state is undetermined")?;
+
+        let response = match credentials {
             Some(credentials) => {
                 info!(
                     "Found saved credentials from a previous install; reinstalling with machine_id: {}",
@@ -49,19 +52,19 @@ impl AgentRegistrationService {
             }
         };
 
-        self.config_service.save_registration_data(
-            response.machine_id.clone(),
-            response.client_id.clone(),
-            response.client_secret.clone()
-        ).await?;
-
         let machine_info = PersistedMachineInfo {
             machine_id: response.machine_id.clone(),
             client_secret: response.client_secret.clone(),
         };
         if let Err(e) = machine_info_persistence::write(&machine_info) {
-            error!("Failed to persist reinstall machine info: {}", e);
+            error!("Failed to persist machine info: {}", e);
         }
+
+        self.config_service.save_registration_data(
+            response.machine_id.clone(),
+            response.client_id.clone(),
+            response.client_secret.clone()
+        ).await?;
 
         Ok(response)
     }

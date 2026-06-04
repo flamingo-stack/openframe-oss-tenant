@@ -1,57 +1,107 @@
 //! Persisted registration info that survives uninstall/reinstall cycles.
 
 use anyhow::{Context, Result};
-use tracing::info;
+use serde::{Deserialize, Serialize};
+use tracing::{info, warn};
 
-const MACHINE_ID_KEY: &str = "MachineId";
-const CLIENT_SECRET_KEY: &str = "ClientSecret";
+use crate::platform::permissions::PermissionUtils;
+
+/// Slot holding the single JSON record (registry value / plist key).
+#[cfg(any(target_os = "windows", target_os = "macos"))]
+const RECORD_KEY: &str = "MachineInfo";
 
 /// Registration identity reused across reinstalls.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersistedMachineInfo {
     pub machine_id: String,
     pub client_secret: String,
 }
 
-/// Reads persisted machine info, returning `Some` only when every value is present.
-pub fn read() -> Option<PersistedMachineInfo> {
-    read_impl().ok()
-}
-
-/// Persists the machine info so a later reinstall can reuse the existing machine.
-/// Overwrites any previously stored values.
+/// Persists the machine info, overwriting any previous values.
 pub fn write(machine_info: &PersistedMachineInfo) -> Result<()> {
     write_impl(machine_info)?;
     info!("Persisted reinstall machine_info");
     Ok(())
 }
 
-#[cfg(target_os = "windows")]
-fn read_impl() -> Result<PersistedMachineInfo> {
-    Ok(PersistedMachineInfo {
-        machine_id: read_value(MACHINE_ID_KEY)?,
-        client_secret: read_value(CLIENT_SECRET_KEY)?,
+/// Reads the persisted machine info.
+///
+/// - `Ok(Some(info))` — credentials found; reuse them to reinstall.
+/// - `Ok(None)` — the store is confirmed missing, so a fresh install is safe.
+/// - `Err(_)` — the store exists but could not be read (locked, corrupt,
+///   partial, permission-denied)
+pub fn read() -> Result<Option<PersistedMachineInfo>> {
+    match read_once() {
+        Err(e) if is_permission_denied(&e) => {
+            if PermissionUtils::is_admin() {
+                warn!("Permission denied reading persisted machine info; repairing permissions and retrying");
+                repair_permissions()
+                    .context("Failed to repair permissions on the machine info store")?;
+                read_once().context("Read still failed after repairing store permissions")
+            } else {
+                Err(e).context(
+                    "Permission denied reading persisted machine info; the agent must run as \
+                     root/SYSTEM. Refusing to treat this as a fresh machine",
+                )
+            }
+        }
+        other => other,
+    }
+}
+
+/// JSON-encode the record.
+fn serialize(info: &PersistedMachineInfo) -> Result<String> {
+    serde_json::to_string(info).context("Failed to serialize machine info")
+}
+
+/// Decode and validate a JSON record.
+fn deserialize(raw: &str) -> Result<PersistedMachineInfo> {
+    let info: PersistedMachineInfo = serde_json::from_str(raw.trim())
+        .context("Persisted machine info is corrupt (invalid JSON)")?;
+    ensure_complete(&info)?;
+    Ok(info)
+}
+
+/// Reject records missing either field.
+fn ensure_complete(info: &PersistedMachineInfo) -> Result<()> {
+    if info.machine_id.trim().is_empty() || info.client_secret.trim().is_empty() {
+        anyhow::bail!("Persisted machine info is incomplete (empty field)");
+    }
+    Ok(())
+}
+
+/// True if any error in the chain is an OS permission-denied error.
+fn is_permission_denied(err: &anyhow::Error) -> bool {
+    err.chain().any(|cause| {
+        cause
+            .downcast_ref::<std::io::Error>()
+            .map_or(false, |io| io.kind() == std::io::ErrorKind::PermissionDenied)
     })
 }
 
+// Windows: HKLM\SOFTWARE\OpenFrame, single REG_SZ value `MachineInfo`.
+
 #[cfg(target_os = "windows")]
-fn read_value(name: &str) -> Result<String> {
+fn read_once() -> Result<Option<PersistedMachineInfo>> {
+    use std::io::ErrorKind;
     use winreg::enums::*;
     use winreg::RegKey;
 
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
-    let key = hklm
-        .open_subkey("SOFTWARE\\OpenFrame")
-        .context("OpenFrame registry key not found")?;
+    let key = match hklm.open_subkey("SOFTWARE\\OpenFrame") {
+        Ok(key) => key,
+        Err(e) if e.kind() == ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(e).context("Failed to open OpenFrame registry key"),
+    };
 
-    let value: String = key
-        .get_value(name)
-        .with_context(|| format!("Failed to read {} from registry", name))?;
-
-    if value.is_empty() {
-        anyhow::bail!("Registry value {} is empty", name);
+    let record: std::io::Result<String> = key.get_value(RECORD_KEY);
+    match record {
+        Ok(raw) => Ok(Some(deserialize(&raw)?)),
+        Err(e) if e.kind() == ErrorKind::NotFound => {
+            anyhow::bail!("OpenFrame registry key exists but holds no machine info (corrupt or partial write)")
+        }
+        Err(e) => Err(e).context("Failed to read MachineInfo from registry"),
     }
-    Ok(value)
 }
 
 #[cfg(target_os = "windows")]
@@ -66,16 +116,27 @@ fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
 
     restrict_key_acl(&key).context("Failed to secure OpenFrame registry key")?;
 
-    key.set_value(MACHINE_ID_KEY, &machine_info.machine_id)
-        .context("Failed to write MachineId to registry")?;
-    key.set_value(CLIENT_SECRET_KEY, &machine_info.client_secret)
-        .context("Failed to write ClientSecret to registry")?;
+    // Single atomic write.
+    let record = serialize(machine_info)?;
+    key.set_value(RECORD_KEY, &record)
+        .context("Failed to write MachineInfo to registry")?;
 
     Ok(())
 }
 
-/// Replaces the registry key's DACL so only `BUILTIN\Administrators` and
-/// `NT AUTHORITY\SYSTEM` may access it.
+#[cfg(target_os = "windows")]
+fn repair_permissions() -> Result<()> {
+    use winreg::enums::*;
+    use winreg::RegKey;
+
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let key = hklm
+        .open_subkey_with_flags("SOFTWARE\\OpenFrame", KEY_ALL_ACCESS)
+        .context("Failed to open OpenFrame registry key to repair its ACL")?;
+    restrict_key_acl(&key).context("Failed to re-apply ACL to OpenFrame registry key")
+}
+
+/// Restricts the key's DACL to Administrators and SYSTEM.
 #[cfg(target_os = "windows")]
 fn restrict_key_acl(key: &winreg::RegKey) -> Result<()> {
     use windows::core::PCWSTR;
@@ -103,9 +164,8 @@ fn restrict_key_acl(key: &winreg::RegKey) -> Result<()> {
         )
         .context("Failed to build registry security descriptor")?;
 
-        // `create_subkey` opens with KEY_ALL_ACCESS, which includes WRITE_DAC, so the
-        // existing handle is permitted to replace the DACL.
         let result = RegSetKeySecurity(HKEY(key.raw_handle()), DACL_SECURITY_INFORMATION, descriptor);
+        // Free the descriptor allocated above; nothing actionable on failure.
         let _ = LocalFree(HLOCAL(descriptor.0));
         result.context("Failed to apply restrictive DACL to OpenFrame registry key")?;
     }
@@ -113,19 +173,45 @@ fn restrict_key_acl(key: &winreg::RegKey) -> Result<()> {
     Ok(())
 }
 
+// macOS: /Library/Preferences/com.openframe.client.plist, single key `MachineInfo`.
+
 #[cfg(target_os = "macos")]
 const PREFERENCES_DOMAIN: &str = "/Library/Preferences/com.openframe.client";
 
 #[cfg(target_os = "macos")]
-fn read_impl() -> Result<PersistedMachineInfo> {
-    Ok(PersistedMachineInfo {
-        machine_id: read_value(MACHINE_ID_KEY)?,
-        client_secret: read_value(CLIENT_SECRET_KEY)?,
-    })
+fn plist_path() -> String {
+    format!("{}.plist", PREFERENCES_DOMAIN)
 }
 
 #[cfg(target_os = "macos")]
-fn read_value(key: &str) -> Result<String> {
+fn read_once() -> Result<Option<PersistedMachineInfo>> {
+    let plist_path = plist_path();
+    if !std::path::Path::new(&plist_path)
+        .try_exists()
+        .with_context(|| format!("Failed to check whether {} exists", plist_path))?
+    {
+        return Ok(None);
+    }
+
+    // The data is read via `defaults`, whose permission failures surface as a
+    // generic subprocess error that `read()`'s repair path cannot recognize.
+    // Probe readability directly first so a denied read yields a real
+    // `io::ErrorKind::PermissionDenied`, which the repair path can act on.
+    if let Err(e) = std::fs::File::open(&plist_path) {
+        if e.kind() == std::io::ErrorKind::PermissionDenied {
+            return Err(e).with_context(|| format!("Permission denied reading {}", plist_path));
+        }
+    }
+
+    match read_default(RECORD_KEY)? {
+        Some(raw) => Ok(Some(deserialize(&raw)?)),
+        None => anyhow::bail!("plist exists but holds no machine info (corrupt or partial write)"),
+    }
+}
+
+/// Reads a single `defaults` key; `Ok(None)` if absent.
+#[cfg(target_os = "macos")]
+fn read_default(key: &str) -> Result<Option<String>> {
     use std::process::Command;
 
     let output = Command::new("defaults")
@@ -133,95 +219,154 @@ fn read_value(key: &str) -> Result<String> {
         .output()
         .with_context(|| format!("Failed to execute defaults read for {}", key))?;
 
-    if !output.status.success() {
-        anyhow::bail!(
-            "defaults read failed for {} (status {})",
-            key,
-            output.status
-        );
+    if output.status.success() {
+        return Ok(Some(String::from_utf8_lossy(&output.stdout).trim().to_string()));
     }
 
-    let value = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if value.is_empty() {
-        anyhow::bail!("defaults value for {} is empty", key);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    if stderr.contains("does not exist") {
+        Ok(None)
+    } else {
+        anyhow::bail!("defaults read failed for {}: {}", key, stderr.trim());
     }
-    Ok(value)
 }
 
 #[cfg(target_os = "macos")]
 fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
-    write_value(MACHINE_ID_KEY, &machine_info.machine_id)?;
-    write_value(CLIENT_SECRET_KEY, &machine_info.client_secret)?;
+    use std::process::Command;
+
+    // Single atomic write.
+    let record = serialize(machine_info)?;
+    let status = Command::new("defaults")
+        .args(["write", PREFERENCES_DOMAIN, RECORD_KEY, "-string", &record])
+        .status()
+        .context("Failed to execute defaults write for MachineInfo")?;
+    if !status.success() {
+        anyhow::bail!("defaults write failed for MachineInfo (status {})", status);
+    }
+
+    // `defaults` creates the plist group/other-readable, so there is a brief
+    // window before we tighten it. Lock it to owner-only and verify; if it
+    // cannot be secured, delete it rather than leave the client secret exposed.
+    let plist_path = plist_path();
+    if let Err(e) = secure_plist(&plist_path) {
+        let _ = std::fs::remove_file(&plist_path);
+        return Err(e);
+    }
+
+    Ok(())
+}
+
+/// Restricts the plist to owner read/write and verifies no group/other access remains.
+#[cfg(target_os = "macos")]
+fn secure_plist(plist_path: &str) -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(plist_path, std::fs::Permissions::from_mode(0o600))
+        .with_context(|| format!("Failed to set permissions for {}", plist_path))?;
+
+    let mode = std::fs::metadata(plist_path)
+        .with_context(|| format!("Failed to stat {}", plist_path))?
+        .permissions()
+        .mode();
+    if mode & 0o077 != 0 {
+        anyhow::bail!(
+            "{} is still group/other-accessible after chmod (mode {:o})",
+            plist_path,
+            mode
+        );
+    }
+
     Ok(())
 }
 
 #[cfg(target_os = "macos")]
-fn write_value(key: &str, value: &str) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
-    use std::process::Command;
-
-    let status = Command::new("defaults")
-        .args(["write", PREFERENCES_DOMAIN, key, "-string", value])
-        .status()
-        .with_context(|| format!("Failed to execute defaults write for {}", key))?;
-
-    if !status.success() {
-        anyhow::bail!("defaults write failed for {} (status {})", key, status);
+fn repair_permissions() -> Result<()> {
+    let plist_path = plist_path();
+    if std::path::Path::new(&plist_path).try_exists().unwrap_or(false) {
+        secure_plist(&plist_path)?;
     }
-
-    // The plist holds the client secret, so restrict it to owner read/write only.
-    let plist_path = format!("{}.plist", PREFERENCES_DOMAIN);
-    std::fs::set_permissions(&plist_path, std::fs::Permissions::from_mode(0o600))
-        .with_context(|| format!("Failed to set permissions for {}", plist_path))?;
     Ok(())
 }
+
+// Linux: /etc/openframe/machine.json (single record), 0700 dir / 0600 file.
 
 #[cfg(target_os = "linux")]
 const CONFIG_DIR: &str = "/etc/openframe";
 #[cfg(target_os = "linux")]
-const MACHINE_ID_FILE: &str = "machine_id";
-#[cfg(target_os = "linux")]
-const CLIENT_SECRET_FILE: &str = "client_secret";
+const RECORD_FILE: &str = "machine.json";
 
 #[cfg(target_os = "linux")]
-fn read_impl() -> Result<PersistedMachineInfo> {
-    Ok(PersistedMachineInfo {
-        machine_id: read_value(MACHINE_ID_FILE)?,
-        client_secret: read_value(CLIENT_SECRET_FILE)?,
-    })
-}
-
-#[cfg(target_os = "linux")]
-fn read_value(name: &str) -> Result<String> {
-    let path = std::path::Path::new(CONFIG_DIR).join(name);
-    let value = std::fs::read_to_string(&path)
-        .with_context(|| format!("Failed to read {}", path.display()))?
-        .trim()
-        .to_string();
-
-    if value.is_empty() {
-        anyhow::bail!("{} is empty", path.display());
+fn read_once() -> Result<Option<PersistedMachineInfo>> {
+    let dir = std::path::Path::new(CONFIG_DIR);
+    if !dir
+        .try_exists()
+        .with_context(|| format!("Failed to check whether {} exists", CONFIG_DIR))?
+    {
+        return Ok(None);
     }
-    Ok(value)
+
+    let record_path = dir.join(RECORD_FILE);
+    if !record_path
+        .try_exists()
+        .with_context(|| format!("Failed to check whether {} exists", record_path.display()))?
+    {
+        anyhow::bail!("{} exists but holds no machine info (corrupt or partial write)", CONFIG_DIR);
+    }
+
+    let raw = std::fs::read_to_string(&record_path)
+        .with_context(|| format!("Failed to read {}", record_path.display()))?;
+    Ok(Some(deserialize(&raw)?))
 }
 
 #[cfg(target_os = "linux")]
 fn write_impl(machine_info: &PersistedMachineInfo) -> Result<()> {
-    use std::os::unix::fs::PermissionsExt;
+    use std::io::Write;
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
 
     let dir = std::path::Path::new(CONFIG_DIR);
     std::fs::create_dir_all(dir).context("Failed to create /etc/openframe")?;
     std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
         .context("Failed to set permissions for CONFIG_DIR")?;
 
-    std::fs::write(dir.join(MACHINE_ID_FILE), &machine_info.machine_id)
-        .context("Failed to write machine_id")?;
+    let record = serialize(machine_info)?;
 
-    let secret_path = dir.join(CLIENT_SECRET_FILE);
-    std::fs::write(&secret_path, &machine_info.client_secret)
-        .context("Failed to write client_secret")?;
-    std::fs::set_permissions(&secret_path, std::fs::Permissions::from_mode(0o600))
-        .context("Failed to set permissions for CLIENT_SECRET_FILE")?;
+    // Atomic write: temp file, fsync, rename.
+    let record_path = dir.join(RECORD_FILE);
+    let tmp_path = dir.join(".machine.json.tmp");
+    {
+        let mut tmp = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(&tmp_path)
+            .with_context(|| format!("Failed to create {}", tmp_path.display()))?;
+        tmp.write_all(record.as_bytes())
+            .context("Failed to write machine info record")?;
+        tmp.sync_all().context("Failed to fsync machine info record")?;
+    }
+    std::fs::rename(&tmp_path, &record_path)
+        .with_context(|| format!("Failed to move record into {}", record_path.display()))?;
+    // Best-effort durability of the rename; the data is already safely fsynced.
+    let _ = std::fs::File::open(dir).and_then(|d| d.sync_all());
 
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn repair_permissions() -> Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+
+    let dir = std::path::Path::new(CONFIG_DIR);
+    if dir.try_exists().unwrap_or(false) {
+        std::fs::set_permissions(dir, std::fs::Permissions::from_mode(0o700))
+            .context("Failed to reset permissions on /etc/openframe")?;
+    }
+    let record_path = dir.join(RECORD_FILE);
+    if record_path.try_exists().unwrap_or(false) {
+        std::fs::set_permissions(&record_path, std::fs::Permissions::from_mode(0o600))
+            .with_context(|| format!("Failed to reset permissions on {}", record_path.display()))?;
+    }
     Ok(())
 }
