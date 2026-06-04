@@ -1,0 +1,5 @@
+flowchart LR
+    ActivityTopic["fleet-mdm-activities"] --> Join["Left Join (5s window)"]
+    HostTopic["fleet-mdm-host-activities"] --> Join
+    Join --> HeaderAdder["Add MESSAGE_TYPE Header"]
+    HeaderAdder --> Output["fleet-mdm-events"]

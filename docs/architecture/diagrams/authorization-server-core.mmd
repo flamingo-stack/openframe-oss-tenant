@@ -1,0 +1,11 @@
+flowchart LR
+    User["End User"] --> Browser["Browser / SPA"]
+    Browser --> Authz["Authorization Server Core"]
+
+    Authz --> IdP["External IdP<br/>Google / Microsoft"]
+    Authz --> Mongo["MongoDB<br/>Auth & OAuth Data"]
+
+    Authz --> Gateway["Gateway Service Core"]
+    Gateway --> Api["API Service Core"]
+
+    Authz --> JWKS["Tenant JWKS Endpoint"]

@@ -1,7 +1,7 @@
-flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
-    MongoCDC["Debezium CDC"] --> Kafka
-    Kafka --> Stream["Stream Service"]
-    Stream --> Cassandra
-    Stream --> KafkaOut["Outbound Kafka"]
-    Stream --> Pinot
+flowchart TD
+    Admin["Admin Configures Tool"] --> Management
+    Management --> Mongo
+    Management --> Debezium
+    Debezium --> Kafka
+    Kafka --> Stream
+    Stream --> DomainUpdate["Device / Event Update"]

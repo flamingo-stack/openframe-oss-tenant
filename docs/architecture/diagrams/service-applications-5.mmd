@@ -1,0 +1,6 @@
+flowchart TD
+    KafkaTopic["Kafka Topic"] --> Listener["Kafka Listener"]
+    Listener --> Deserializer["Event Deserializer"]
+    Deserializer --> Enrichment["Enrichment Service"]
+    Enrichment --> Handler["Message Handler"]
+    Handler --> Persistence["MongoDB / Domain Services"]

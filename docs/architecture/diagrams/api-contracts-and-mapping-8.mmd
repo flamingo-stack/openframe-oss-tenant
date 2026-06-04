@@ -1,0 +1,6 @@
+flowchart TD
+    Gateway["Gateway Service Core"] --> ApiCore
+    Auth["Authorization Server Core"] --> ApiCore
+    ApiCore["Api Service Core"] --> Contracts["Api Contracts And Mapping"]
+    Contracts --> Mongo["Mongo Domain And Repositories"]
+    Contracts --> Stream["Stream Service Core"]

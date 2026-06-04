@@ -1,0 +1,4 @@
+flowchart LR
+    ApiFilter["API Filter DTO"] --> Mapper["Service Mapper"]
+    Mapper --> DomainFilter["Domain QueryFilter"]
+    DomainFilter --> Repository["Repository Query"]

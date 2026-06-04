@@ -1,0 +1,11 @@
+flowchart LR
+    LB["Load Balancer"] --> GatewayCluster["Gateway Cluster"]
+    GatewayCluster --> ApiCluster["API Cluster"]
+    GatewayCluster --> ExternalCluster["External API Cluster"]
+
+    AuthCluster["Authorization Cluster"]
+    ManagementCluster["Management Cluster"]
+    StreamCluster["Stream Cluster"]
+
+    ApiCluster --> Mongo["MongoDB"]
+    StreamCluster --> Kafka["Kafka Cluster"]

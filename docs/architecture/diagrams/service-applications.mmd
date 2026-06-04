@@ -1,0 +1,22 @@
+flowchart LR
+    Client["Web Client / External Systems"] --> Gateway["Gateway Application"]
+    Gateway --> Api["API Application"]
+    Gateway --> ExternalApi["External API Application"]
+
+    Api --> Data["Data Layer"]
+    Api --> Stream["Stream Application"]
+
+    ExternalApi --> Data
+
+    AuthClient["OAuth / SSO Clients"] --> AuthServer["Authorization Server Application"]
+    AuthServer --> Data
+
+    Management["Management Application"] --> Data
+    Management --> Stream
+
+    Stream --> Kafka["Kafka / Debezium"]
+
+    Config["Config Server Application"] --> Api
+    Config --> Gateway
+    Config --> AuthServer
+    Config --> Management

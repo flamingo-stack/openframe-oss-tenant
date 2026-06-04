@@ -1,0 +1,12 @@
+flowchart LR
+    Client["Web UI / External Client"] --> Gateway["Gateway Service"]
+    Gateway --> ApiCore["Api Service Core Graphql And Rest"]
+    Gateway --> Authz["Authorization Server Core"]
+
+    ApiCore --> Domain["Domain Services"]
+    Domain --> Mongo["Mongo Domain & Repositories"]
+    Domain --> Stream["Stream Service Core"]
+    Domain --> Mgmt["Management Service Core"]
+
+    Authz --> Jwt["JWT Issuer (Multi-Issuer)"]
+    Jwt --> Gateway

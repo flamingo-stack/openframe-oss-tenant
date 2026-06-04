@@ -1,0 +1,10 @@
+flowchart TD
+    Config["Configuration"] --> Security["SecurityConfig"]
+    Config --> Scalars["GraphQL Scalars"]
+    Config --> RestTemplate["RestTemplate"]
+
+    Rest["REST Controllers"] --> Services["Domain Services"]
+    GraphQL["GraphQL DataFetchers"] --> Services
+    GraphQL --> DataLoaders["Dataloaders"]
+
+    Services --> Repos["Mongo Repositories"]

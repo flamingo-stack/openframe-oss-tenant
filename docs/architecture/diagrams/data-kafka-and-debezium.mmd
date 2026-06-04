@@ -1,0 +1,38 @@
+flowchart LR
+    subgraph services["Platform Services"]
+        Api["API Service"]
+        Stream["Stream Service"]
+        Mgmt["Management Service"]
+    end
+
+    subgraph kafka_layer["Kafka Infrastructure"]
+        Producer["OssTenantKafkaProducer"]
+        Template["KafkaTemplate"]
+        Listener["KafkaListenerContainerFactory"]
+        Admin["KafkaAdmin"]
+    end
+
+    subgraph debezium_layer["Debezium Layer"]
+        Init["DebeziumConnectorInitializer"]
+        Scheduler["DebeziumHealthCheckScheduler"]
+        Recovery["ConnectorRecoveryManager"]
+        Tracker["MongoRecreationTracker"]
+    end
+
+    subgraph connect["Kafka Connect / Debezium"]
+        ConnectCluster["Debezium Connect Cluster"]
+    end
+
+    Api --> Producer
+    Stream --> Listener
+    Mgmt --> Producer
+
+    Producer --> Template
+    Template --> Admin
+
+    Init --> ConnectCluster
+    Scheduler --> Recovery
+    Recovery --> ConnectCluster
+    Recovery --> Tracker
+
+    ConnectCluster --> Listener

@@ -1,0 +1,6 @@
+flowchart TD
+    Startup["Application Startup"] --> SecretInit["AgentRegistrationSecretInitializer"]
+    Startup --> AgentInit["IntegratedToolAgentInitializer"]
+    Startup --> NatsInit["NATS Stream Initializer"]
+    Startup --> ClientInit["OpenFrame Client Configuration Initializer"]
+    Startup --> TacticalInit["Tactical RMM Scripts Initializer"]

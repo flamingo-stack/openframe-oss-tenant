@@ -1,664 +1,313 @@
 # Security Best Practices
 
-OpenFrame implements comprehensive security measures across all architectural layers. This guide covers authentication, authorization, data protection, and security best practices for development and deployment.
+This document covers authentication and authorization patterns, data protection, input validation, secrets management, and security testing guidelines for OpenFrame OSS Tenant.
 
-## Security Architecture Overview
+---
+
+## Authentication and Authorization Architecture
+
+OpenFrame uses a layered security model:
 
 ```mermaid
-flowchart TB
-    subgraph "Client Layer"
-        Browser[Web Browser]
-        Desktop[Desktop Client]
-        Mobile[Mobile App]
-        Agent[Device Agent]
-    end
-    
-    subgraph "Edge Security"
-        CDN[CDN/WAF<br/>DDoS Protection]
-        LoadBalancer[Load Balancer<br/>TLS Termination]
-    end
-    
-    subgraph "API Gateway Security"
-        Gateway[Gateway Service<br/>JWT Validation]
-        RateLimit[Rate Limiting]
-        CORS[CORS Policy]
-    end
-    
-    subgraph "Identity & Access"
-        AuthServer[Authorization Server<br/>OAuth2/OIDC]
-        TenantKeys[Tenant RSA Keys]
-        RBAC[Role-Based Access]
-    end
-    
-    subgraph "Service Security"
-        ServiceMesh[Service Mesh<br/>mTLS]
-        APIKeys[API Key Management]
-        Secrets[Secret Management]
-    end
-    
-    subgraph "Data Security"
-        Encryption[Data Encryption]
-        Audit[Audit Logging]
-        Backup[Secure Backup]
-    end
-    
-    Browser --> CDN
-    Desktop --> CDN
-    Mobile --> CDN
-    Agent --> LoadBalancer
-    
-    CDN --> LoadBalancer
-    LoadBalancer --> Gateway
-    Gateway --> RateLimit
-    RateLimit --> CORS
-    
-    CORS --> AuthServer
-    AuthServer --> TenantKeys
-    TenantKeys --> RBAC
-    
-    RBAC --> ServiceMesh
-    ServiceMesh --> APIKeys
-    APIKeys --> Secrets
-    
-    Secrets --> Encryption
-    Encryption --> Audit
-    Audit --> Backup
+flowchart TD
+    Client["Client Request"] --> Gateway["Gateway Service\n(Edge Security)"]
+    Gateway --> JwtValidation["JWT Validation\n(Multi-Issuer)"]
+    Gateway --> ApiKeyAuth["API Key Authentication\n(/external-api/**)"]
+    JwtValidation --> Services["Internal Services\n(Resource Servers)"]
+    Services --> RoleCheck["Role-Based Authorization\n(@PreAuthorize)"]
+    RoleCheck --> Data["Tenant-Scoped Data Access"]
 ```
 
-## Authentication and Authorization
+### Layers of Security
 
-### Multi-Tenant OAuth2/OIDC Implementation
+| Layer | Component | Responsibility |
+|-------|-----------|---------------|
+| **Edge** | `GatewaySecurityConfig` | JWT validation, CORS, API key auth, rate limiting |
+| **Service** | `SecurityConfig` (per service) | OAuth2 resource server, role extraction |
+| **Application** | `@PreAuthorize`, `AuthPrincipal` | Method-level authorization |
+| **Data** | `tenantId` scoping in repositories | Data isolation per tenant |
 
-OpenFrame uses a sophisticated multi-tenant authentication system built on Spring Authorization Server:
+---
 
-**Tenant-Scoped Authentication Flow:**
+## OAuth2 / JWT Patterns
+
+### Obtaining Tokens
+
+All services act as **OAuth2 Resource Servers** — they validate JWT Bearer tokens but do not issue them. Tokens are issued by the **Authorization Server**.
+
+**OAuth2 Authorization Code + PKCE flow:**
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Frontend
-    participant Gateway
-    participant AuthServer
-    participant TenantDB
-    
-    User->>Frontend: Login Request
-    Frontend->>AuthServer: OAuth2 Authorization Code Flow
-    AuthServer->>TenantDB: Validate Tenant & User
-    TenantDB-->>AuthServer: User Info + Tenant Claims
-    AuthServer->>AuthServer: Generate JWT with tenant_id
-    AuthServer-->>Frontend: Access Token (JWT)
-    Frontend->>Gateway: API Request + JWT
-    Gateway->>Gateway: Validate JWT + Extract tenant_id
-    Gateway->>API: Forward Request + Tenant Context
+    participant SPA["SPA / Client"]
+    participant Authz["Authorization Server"]
+    participant API["API Service"]
+
+    SPA->>Authz: Authorization request + code_challenge
+    Authz->>SPA: Authorization code
+    SPA->>Authz: Token request + code_verifier
+    Authz->>SPA: access_token + refresh_token
+    SPA->>API: API request (Bearer token)
+    API->>API: Validate JWT signature (per-tenant JWKS)
 ```
 
-**Key Security Features:**
-- **Tenant-specific RSA keys** for JWT signing and validation
-- **Dynamic client registration** per tenant
-- **SSO integration** with Google Workspace and Microsoft Azure AD
-- **Refresh token rotation** for enhanced security
-- **Session management** with secure cookies
+### JWT Claims and Role Extraction
 
-### JWT Token Structure
+Each JWT contains:
 
-**Example JWT Claims:**
 ```json
 {
-  "iss": "https://auth.openframe.dev/tenant/{tenant_id}",
-  "sub": "user:123",
-  "aud": ["openframe-api", "openframe-gateway"],
-  "exp": 1640995200,
-  "iat": 1640991600,
-  "tenant_id": "tenant_abc123",
-  "organization_id": "org_xyz789",
-  "roles": ["ADMIN", "DEVICE_MANAGER"],
-  "permissions": ["devices:read", "devices:write", "users:manage"],
-  "session_id": "sess_456def"
+  "iss": "https://auth.yourtenant.openframe.ai",
+  "sub": "user-id-123",
+  "tenant_id": "your-tenant-id",
+  "userId": "user-id-123",
+  "roles": ["ADMIN"],
+  "exp": 1700000000
 }
 ```
 
-**Security Validations:**
-- **Signature verification** using tenant-specific RSA public keys
-- **Issuer validation** against expected tenant issuer URL
-- **Audience validation** for service-specific access
-- **Expiration time** enforcement (default: 1 hour access, 30 days refresh)
-- **Tenant isolation** enforcement at every request
+**Role mapping in Gateway (`GatewaySecurityConfig`):**
 
-### Role-Based Access Control (RBAC)
-
-OpenFrame implements a flexible RBAC system with hierarchical roles:
-
-**Role Hierarchy:**
 ```text
-SUPER_ADMIN
-├── TENANT_ADMIN
-│   ├── ORGANIZATION_ADMIN
-│   │   ├── DEVICE_MANAGER
-│   │   ├── USER_MANAGER
-│   │   └── VIEWER
-│   └── TECHNICIAN
-│       ├── DEVICE_OPERATOR
-│       └── INCIDENT_RESPONDER
-└── API_USER
-    ├── INTEGRATION_READ
-    └── INTEGRATION_WRITE
+/api/**              → ROLE_ADMIN
+/tools/agent/**      → ROLE_AGENT
+/clients/**          → ROLE_AGENT
+/external-api/**     → API Key (X-API-Key header)
+/ws/tools/**         → ROLE_ADMIN or ROLE_AGENT
 ```
 
-**Permission Model:**
-```java
-@PreAuthorize("hasRole('DEVICE_MANAGER') and hasPermission('device', #deviceId, 'WRITE')")
-public DeviceResponse updateDevice(@PathVariable String deviceId, 
-                                  @RequestBody UpdateDeviceRequest request) {
-    // Implementation with automatic tenant scoping
-}
-```
+### Multi-Issuer JWT Validation
 
-## API Security
+The Gateway and API services support multiple JWT issuers simultaneously — one per tenant. Issuer URLs follow the pattern:
 
-### API Key Authentication
-
-For external integrations, OpenFrame supports API key authentication with comprehensive security controls:
-
-**API Key Format:**
 ```text
-Format: ak_1a2b3c4d5e6f7890.sk_live_abcdefghijklmnopqrstuvwxyz123456
-        ↑                   ↑
-        Key ID              Secret Key
+https://auth.{tenantId}.openframe.ai
 ```
 
-**Security Features:**
-- **Scoped permissions** - Keys are limited to specific API endpoints
-- **Rate limiting** - Per-key rate limits and quotas
-- **Expiration dates** - Automatic key expiration
-- **Usage tracking** - Comprehensive audit logs for API key usage
-- **IP restrictions** - Optional IP allowlisting for keys
-- **Environment separation** - Different keys for development/production
+Token validation uses cached `NimbusReactiveJwtDecoder` instances (Caffeine cache) to avoid repeated JWKS fetching.
 
-**API Key Security Implementation:**
-```java
-@Component
-public class ApiKeyAuthenticationFilter implements WebFilter {
-    
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        String apiKey = extractApiKey(exchange.getRequest());
-        
-        return validateApiKey(apiKey)
-            .flatMap(keyInfo -> enforceRateLimit(keyInfo, exchange))
-            .flatMap(keyInfo -> validatePermissions(keyInfo, exchange))
-            .flatMap(keyInfo -> auditApiKeyUsage(keyInfo, exchange))
-            .then(chain.filter(exchange));
-    }
-}
+---
+
+## Per-Tenant Cryptographic Isolation
+
+Each tenant has its own **RSA-2048 key pair** for JWT signing:
+
+- Private key: stored in MongoDB, encrypted at rest using `EncryptionService`
+- Public key: exposed via JWKS endpoint (`/.well-known/jwks.json`)
+- `kid` (key ID): included in JWT headers for key lookup
+
+**Key lifecycle:**
+
+```mermaid
+flowchart TD
+    NewTenant["New Tenant Registered"] --> KeyCheck{"Key exists?"}
+    KeyCheck -->|No| Generate["Generate RSA-2048 key pair"]
+    Generate --> Encrypt["Encrypt private key (AES)"]
+    Encrypt --> Store["Persist to MongoDB (TenantKey)"]
+    KeyCheck -->|Yes| Load["Load + Decrypt private key"]
+    Store --> Sign["Sign JWT"]
+    Load --> Sign
 ```
 
-### Input Validation and Sanitization
+> **Never store unencrypted private keys.** Always use the `EncryptionService` for at-rest encryption.
 
-**Request Validation:**
-```java
-@RestController
-@Validated
-public class OrganizationController {
-    
-    @PostMapping("/organizations")
-    public ResponseEntity<Organization> createOrganization(
-            @Valid @RequestBody CreateOrganizationRequest request,
-            @Parameter(description = "Tenant context") 
-            @TenantId String tenantId) {
-        
-        // Input is automatically validated and sanitized
-        return organizationService.createOrganization(request, tenantId);
-    }
-}
+---
 
-@Data
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class CreateOrganizationRequest {
-    
-    @NotBlank(message = "Organization name is required")
-    @Size(max = 100, message = "Organization name must be less than 100 characters")
-    @Pattern(regexp = "^[a-zA-Z0-9\\s\\-\\.]+$", message = "Invalid characters in organization name")
-    private String name;
-    
-    @Email(message = "Invalid email format")
-    @NotNull(message = "Contact email is required")
-    private String contactEmail;
-    
-    @Size(max = 500, message = "Description must be less than 500 characters")
-    private String description;
-}
+## API Key Security
+
+External API consumers authenticate using API keys via the `X-API-Key` header.
+
+### API Key Validation Flow
+
+```mermaid
+flowchart TD
+    ExtRequest["External Request\n/external-api/**"] --> ApiKeyFilter["ApiKeyAuthenticationFilter"]
+    ApiKeyFilter --> Validate["ApiKeyValidationService\n(Redis cache)"]
+    Validate -->|Valid| RateLimit["RateLimitService"]
+    Validate -->|Invalid| Reject["401 Unauthorized"]
+    RateLimit -->|Within limit| Forward["Forward to External API"]
+    RateLimit -->|Exceeded| TooMany["429 Rate Limit Exceeded"]
 ```
 
-**SQL Injection Prevention:**
-- **Parameterized queries** for all database operations
-- **ORM usage** (JPA/Hibernate) prevents direct SQL construction
-- **Input sanitization** for user-provided content
-- **Query whitelisting** for dynamic query scenarios
+### Rate Limit Headers
 
-**XSS Prevention:**
-```java
-@Component
-public class XSSProtectionFilter implements Filter {
-    
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, 
-                        FilterChain chain) throws IOException, ServletException {
-        
-        HttpServletRequest httpRequest = (HttpServletRequest) request;
-        XSSRequestWrapper wrappedRequest = new XSSRequestWrapper(httpRequest);
-        
-        chain.doFilter(wrappedRequest, response);
-    }
-}
+API key responses include rate limit metadata:
 
-public class XSSRequestWrapper extends HttpServletRequestWrapper {
-    
-    @Override
-    public String getParameter(String parameter) {
-        return sanitizeInput(super.getParameter(parameter));
-    }
-    
-    private String sanitizeInput(String value) {
-        if (value == null) return null;
-        
-        // Remove script tags, event handlers, etc.
-        return Jsoup.clean(value, Whitelist.basicWithImages());
-    }
-}
+```text
+X-Rate-Limit-Limit-Minute: 60
+X-Rate-Limit-Remaining-Minute: 45
+X-Rate-Limit-Limit-Hour: 1000
+X-Rate-Limit-Remaining-Hour: 987
 ```
 
-## Data Encryption and Secure Storage
+### Best Practices for API Keys
 
-### Encryption at Rest
+- Store API keys in a secrets manager, not in code or config files
+- Rotate keys regularly and revoke unused keys via the Settings API
+- Use the most restrictive scope necessary
+- Monitor API key usage for anomalies via the audit logs
 
-**Database Encryption:**
-```yaml
-# MongoDB encryption configuration
-security:
-  encryption:
-    keyVaultDB: "encryption"
-    schemaMap:
-      "openframe.users":
-        encryptMetadata:
-          keyId: "user-data-key"
-        properties:
-          personalInfo:
-            encrypt:
-              bsonType: "object"
-              algorithm: "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic"
-```
-
-**Application-Level Encryption:**
-```java
-@Service
-public class EncryptionService {
-    
-    private final AESUtil aesUtil;
-    
-    @Value("${openframe.encryption.key}")
-    private String encryptionKey;
-    
-    public String encryptSensitiveData(String plainText) {
-        try {
-            return aesUtil.encrypt(plainText, encryptionKey);
-        } catch (Exception e) {
-            throw new EncryptionException("Failed to encrypt sensitive data", e);
-        }
-    }
-    
-    public String decryptSensitiveData(String encryptedText) {
-        try {
-            return aesUtil.decrypt(encryptedText, encryptionKey);
-        } catch (Exception e) {
-            throw new EncryptionException("Failed to decrypt sensitive data", e);
-        }
-    }
-}
-```
-
-### Encryption in Transit
-
-**TLS Configuration:**
-```yaml
-# Gateway TLS configuration
-server:
-  port: 8443
-  ssl:
-    enabled: true
-    key-store-type: PKCS12
-    key-store: classpath:keystore.p12
-    key-store-password: ${SSL_KEYSTORE_PASSWORD}
-    protocol: TLS
-    enabled-protocols: TLSv1.3,TLSv1.2
-    ciphers: 
-      - TLS_AES_256_GCM_SHA384
-      - TLS_CHACHA20_POLY1305_SHA256
-      - TLS_AES_128_GCM_SHA256
-```
-
-**Service-to-Service Communication:**
-```java
-@Configuration
-public class ServiceMeshSecurityConfig {
-    
-    @Bean
-    public WebClient secureWebClient() {
-        SslContext sslContext = SslContextBuilder
-            .forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-            .protocols("TLSv1.3", "TLSv1.2")
-            .build();
-            
-        HttpClient httpClient = HttpClient.create()
-            .secure(sslContextSpec -> sslContextSpec.sslContext(sslContext));
-            
-        return WebClient.builder()
-            .clientConnector(new ReactorClientHttpConnector(httpClient))
-            .build();
-    }
-}
-```
+---
 
 ## Secrets Management
 
-### Environment Variables and Configuration
+### Environment Variables
 
-**Secret Hierarchy:**
+All sensitive configuration must be provided via environment variables or a secrets manager — **never hardcoded in source code or committed to version control**.
+
+| Secret | Where Used | Example |
+|--------|-----------|---------|
+| `ENCRYPTION_KEY` | Tenant key encryption | Use 256-bit AES key |
+| `OAUTH2_CLIENT_SECRET` | OAuth2 client registration | Random 64+ char string |
+| `SPRING_DATA_MONGODB_URI` | MongoDB connection | Include auth credentials |
+| `ANTHROPIC_API_KEY` | AI agent tooling | Starts with `sk-ant-` |
+
+### `.gitignore` Enforcement
+
+Ensure these files are always in `.gitignore`:
+
 ```text
-1. Kubernetes Secrets (Production)
-2. Docker Secrets (Container environments)
-3. Environment Variables (Development)
-4. Configuration Files (Local development only)
+.env
+.env.local
+.env.*.local
+application-local.yml
+application-local.yaml
+*.key
+*.pem
+secrets/
 ```
 
-**Spring Cloud Config Integration:**
-```yaml
-# bootstrap.yml
-spring:
-  cloud:
-    config:
-      uri: ${CONFIG_SERVER_URL:http://localhost:8888}
-      username: ${CONFIG_SERVER_USERNAME}
-      password: ${CONFIG_SERVER_PASSWORD}
-      fail-fast: true
-      retry:
-        max-attempts: 6
-        initial-interval: 1000ms
-encrypt:
-  key: ${CONFIG_ENCRYPTION_KEY}
-```
+### Production Secrets
 
-**Encrypted Configuration Values:**
-```yaml
-# application-prod.yml (encrypted values)
-spring:
-  datasource:
-    password: '{cipher}AQA8Q9+N9vgKz2X8dNj2A1B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6'
-  
-anthropic:
-  api-key: '{cipher}BQB9R0+O0whLa3Y9eOk3B2C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7'
-  
-oauth2:
-  client-secret: '{cipher}CQC0S1+P1xiMb4Z0fPl4C3D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8'
-```
+In production, use a dedicated secrets manager:
 
-### Vault Integration (Production)
+- **HashiCorp Vault** — Recommended for self-hosted deployments
+- **AWS Secrets Manager / GCP Secret Manager** — For cloud deployments
+- **Kubernetes Secrets** — For Kubernetes-based deployments (prefer sealed secrets or external secrets operator)
 
-**HashiCorp Vault Configuration:**
+---
+
+## Input Validation and Sanitization
+
+### Java Service Layer
+
+All REST endpoint inputs are validated using Bean Validation (`@Valid`):
+
 ```java
-@Configuration
-@EnableVault
-public class VaultConfig extends AbstractVaultConfiguration {
-    
-    @Override
-    public ClientAuthentication clientAuthentication() {
-        AppRoleAuthenticationOptions options = AppRoleAuthenticationOptions.builder()
-            .roleId(RoleId.provided(vaultProperties.getAppRole().getRoleId()))
-            .secretId(SecretId.provided(vaultProperties.getAppRole().getSecretId()))
-            .build();
-            
-        return new AppRoleAuthentication(options, restOperations());
-    }
-    
-    @Override
-    public VaultEndpoint vaultEndpoint() {
-        return VaultEndpoint.create(vaultProperties.getHost(), vaultProperties.getPort());
-    }
+// Example controller pattern
+@PostMapping("/organizations")
+public ResponseEntity<OrganizationResponse> create(
+    @Valid @RequestBody CreateOrganizationRequest request,
+    @AuthenticationPrincipal AuthPrincipal principal) {
+    ...
 }
 ```
 
-## Security Vulnerabilities and Mitigations
+Custom validators exist for domain-specific constraints:
 
-### Common Threats and Defenses
+| Validator | Purpose |
+|-----------|---------|
+| `@ValidEmail` + `ValidEmailValidator` | Validates email format |
+| `@TenantDomain` + `TenantDomainValidator` | Validates tenant domain format |
+| Tag validation (`TagValidation`) | Validates tag key/value constraints |
 
-**OWASP Top 10 Mitigations:**
+### GraphQL Input Validation
 
-| Threat | Mitigation Strategy |
-|--------|-------------------|
-| **Injection** | Parameterized queries, input validation, ORM usage |
-| **Broken Authentication** | Multi-factor authentication, session management, JWT best practices |
-| **Sensitive Data Exposure** | Encryption at rest/transit, data classification, secure storage |
-| **XML External Entities** | Disable XML external entity processing, input validation |
-| **Broken Access Control** | RBAC implementation, tenant isolation, principle of least privilege |
-| **Security Misconfiguration** | Secure defaults, automated security scanning, configuration management |
-| **Cross-Site Scripting** | Input sanitization, output encoding, CSP headers |
-| **Insecure Deserialization** | Input validation, safe serialization libraries, type checking |
-| **Known Vulnerabilities** | Dependency scanning, automated patching, security monitoring |
-| **Insufficient Logging** | Comprehensive audit logs, security event monitoring, alerting |
+GraphQL mutations use typed input objects (DTOs) with validation annotations. Invalid inputs return GraphQL errors rather than HTTP errors.
 
-### Dependency Security
+### Preventing Injection Attacks
 
-**Maven Security Plugin Configuration:**
-```xml
-<plugin>
-    <groupId>org.owasp</groupId>
-    <artifactId>dependency-check-maven</artifactId>
-    <version>8.4.0</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>check</goal>
-            </goals>
-        </execution>
-    </executions>
-    <configuration>
-        <failBuildOnCVSS>7</failBuildOnCVSS>
-        <suppressionFile>owasp-suppressions.xml</suppressionFile>
-    </configuration>
-</plugin>
+- **MongoDB:** Spring Data automatically parameterizes queries — avoid raw MongoDB `$where` clauses
+- **GraphQL:** Relay global IDs are decoded and validated before use
+- **NATS Messages:** All agent messages are deserialized against strict schemas
+
+---
+
+## CORS Configuration
+
+CORS is configured at the **Gateway** layer via `CorsConfig` / `CorsDisableConfig`:
+
+- Allowed origins: configured per environment
+- Allowed methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`
+- Credentials: allowed for authenticated requests
+- Preflight caching: enabled
+
+> For local development, CORS may be relaxed. **Always enforce strict CORS in production.**
+
+---
+
+## Security Testing Guidelines
+
+### Running Security Tests
+
+```bash
+# Run Spring Security integration tests
+mvn test -pl openframe/services/openframe-api \
+  -Dtest="*SecurityTest,*AuthTest"
+
+# Run all tests including security
+mvn test -pl openframe/services/openframe-api
 ```
 
-**Automated Vulnerability Scanning:**
+### Security Test Patterns
+
+The project uses `spring-security-test` for securing test contexts:
+
+```java
+@WithMockUser(roles = {"ADMIN"})
+@Test
+void shouldReturnDevicesForAdmin() {
+    // test code
+}
+
+@Test
+void shouldRejectUnauthenticatedRequest() {
+    mockMvc.perform(get("/api/devices"))
+        .andExpect(status().isUnauthorized());
+}
+```
+
+### Static Analysis
+
+Run security-focused static analysis:
+
 ```bash
-# Regular security scans in CI/CD pipeline
+# OWASP Dependency Check (checks for known CVEs)
 mvn org.owasp:dependency-check-maven:check
 
-# Container security scanning
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  -v `$PWD`:/tmp -w /tmp aquasec/trivy image openframe/api-service:latest
-
-# Infrastructure security scanning
-checkov -d ./manifests/kubernetes/ --framework kubernetes
-```
-
-## Security Testing and Code Review Guidelines
-
-### Security Testing Strategy
-
-**Automated Security Testing:**
-```java
-@SpringBootTest
-@AutoConfigureTestDatabase
-@TestPropertySource(properties = {
-    "spring.profiles.active=test",
-    "logging.level.org.springframework.security=DEBUG"
-})
-class SecurityIntegrationTest {
-    
-    @Test
-    void testUnauthorizedAccess() {
-        // Test that endpoints require authentication
-        webTestClient.get()
-            .uri("/api/devices")
-            .exchange()
-            .expectStatus().isUnauthorized();
-    }
-    
-    @Test
-    void testCrossTenantDataAccess() {
-        // Test that users cannot access other tenant's data
-        String tenant1Token = getTokenForTenant("tenant1");
-        String tenant2DeviceId = createDeviceForTenant("tenant2");
-        
-        webTestClient.get()
-            .uri("/api/devices/{id}", tenant2DeviceId)
-            .header("Authorization", "Bearer " + tenant1Token)
-            .exchange()
-            .expectStatus().isForbidden();
-    }
-    
-    @Test
-    void testSQLInjectionPrevention() {
-        // Test that SQL injection attempts are blocked
-        String maliciousInput = "'; DROP TABLE users; --";
-        
-        webTestClient.post()
-            .uri("/api/organizations")
-            .bodyValue(new CreateOrganizationRequest(maliciousInput, "test@example.com"))
-            .header("Authorization", "Bearer " + getValidToken())
-            .exchange()
-            .expectStatus().isBadRequest();
-    }
-}
-```
-
-**Manual Security Testing Checklist:**
-- [ ] **Authentication bypass** attempts
-- [ ] **Authorization escalation** testing  
-- [ ] **Input validation** boundary testing
-- [ ] **Session management** security
-- [ ] **Cross-tenant data isolation** verification
-- [ ] **API rate limiting** effectiveness
-- [ ] **Error message** information leakage
-- [ ] **TLS configuration** validation
-
-### Secure Code Review Guidelines
-
-**Security-Focused Code Review Checklist:**
-
-```markdown
-## Authentication & Authorization
-- [ ] All endpoints require appropriate authentication
-- [ ] User roles and permissions are properly enforced
-- [ ] Tenant isolation is maintained throughout the request flow
-- [ ] JWT tokens are validated correctly
-- [ ] API keys have appropriate scope limitations
-
-## Input Validation
-- [ ] All user inputs are validated and sanitized
-- [ ] Parameterized queries are used for database operations
-- [ ] File uploads have proper type and size restrictions
-- [ ] Regular expressions are safe from ReDoS attacks
-
-## Data Protection
-- [ ] Sensitive data is encrypted at rest
-- [ ] PII is properly handled and protected
-- [ ] Database queries are scoped to the correct tenant
-- [ ] Audit logs capture security-relevant events
-
-## Error Handling
-- [ ] Error messages don't leak sensitive information
-- [ ] Stack traces are not exposed to end users
-- [ ] Security exceptions are logged appropriately
-- [ ] Fallback mechanisms maintain security posture
-
-## Configuration
-- [ ] Secrets are not hard-coded in source code
-- [ ] Default passwords are changed
-- [ ] Security headers are configured correctly
-- [ ] HTTPS is enforced for all communications
-```
-
-## Environment Variables and Secrets Management
-
-### Development Environment Security
-
-**Development Security Configuration:**
-```bash
-# Development environment variables (non-production)
-export OPENFRAME_ENV=development
-export JWT_SECRET="dev-jwt-secret-key-change-in-production"
-export OAUTH2_CLIENT_SECRET="dev-oauth2-client-secret"
-export ENCRYPTION_KEY="dev-encryption-key-32-chars-long"
-
-# AI API Keys (use your own)
-export ANTHROPIC_API_KEY="sk-ant-api03-your-dev-key-here"
-export OPENAI_API_KEY="sk-your-openai-dev-key-here"
-
-# Database credentials (development only)
-export MONGODB_USERNAME="openframe_dev"
-export MONGODB_PASSWORD="dev_password_123"
-export REDIS_PASSWORD="redis_dev_password"
-```
-
-**Production Security Configuration:**
-```bash
-# Production environment (use secure secret management)
-export OPENFRAME_ENV=production
-export JWT_SECRET="${vault_jwt_secret}"
-export OAUTH2_CLIENT_SECRET="${vault_oauth2_secret}"
-export ENCRYPTION_KEY="${vault_encryption_key}"
-
-# Production API keys
-export ANTHROPIC_API_KEY="${vault_anthropic_key}"
-export OPENAI_API_KEY="${vault_openai_key}"
-
-# Database credentials from vault/k8s secrets
-export MONGODB_USERNAME="${vault_mongodb_user}"
-export MONGODB_PASSWORD="${vault_mongodb_password}"
-export REDIS_PASSWORD="${vault_redis_password}"
-```
-
-### Kubernetes Secrets Management
-
-**Secret Creation:**
-```bash
-# Create secrets for production
-kubectl create secret generic openframe-secrets \
-  --from-literal=jwt-secret="$(openssl rand -base64 32)" \
-  --from-literal=encryption-key="$(openssl rand -base64 32)" \
-  --from-literal=oauth2-client-secret="your-oauth2-secret"
-
-kubectl create secret generic openframe-ai-keys \
-  --from-literal=anthropic-api-key="your-anthropic-key" \
-  --from-literal=openai-api-key="your-openai-key"
-```
-
-**Secret Usage in Deployments:**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: openframe-api
-spec:
-  template:
-    spec:
-      containers:
-      - name: api-service
-        image: openframe/api-service:latest
-        env:
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: openframe-secrets
-              key: jwt-secret
-        - name: ANTHROPIC_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: openframe-ai-keys
-              key: anthropic-api-key
+# SonarQube / SonarCloud analysis
+mvn sonar:sonar \
+  -Dsonar.projectKey=openframe-oss-tenant \
+  -Dsonar.host.url=https://sonarcloud.io
 ```
 
 ---
 
-*Security is a foundational aspect of OpenFrame's architecture. Regular security reviews, testing, and updates are essential for maintaining a secure platform. Continue with [Testing](../testing/README.md) and [Contributing](../contributing/guidelines.md) guides for complete development practices.*
+## Common Security Vulnerabilities and Mitigations
+
+| Vulnerability | Mitigation in OpenFrame |
+|---------------|------------------------|
+| **Broken Authentication** | OAuth2 + PKCE, short-lived JWTs, refresh token rotation |
+| **Broken Access Control** | Tenant-scoped data access, role-based authorization at gateway and service layers |
+| **Injection (MongoDB)** | Spring Data parameterized queries, no raw query execution |
+| **Cross-Site Request Forgery** | CSRF disabled (stateless JWT-based auth), SameSite cookies |
+| **Sensitive Data Exposure** | Private keys encrypted at rest; secrets via env vars only |
+| **Security Misconfiguration** | CORS restricted by env; permissive configs blocked in prod profile |
+| **Broken Object Level Authorization** | Relay global IDs validated against tenant context; no direct ID access without ownership check |
+| **Rate Limiting** | API key rate limits enforced at gateway (per-minute, per-hour, per-day) |
+
+---
+
+## Security Code Review Checklist
+
+Before merging any PR that touches security-sensitive code:
+
+- [ ] No secrets, passwords, or API keys in source code
+- [ ] All new REST endpoints are authenticated (or explicitly documented as public)
+- [ ] All new REST endpoints validate input with `@Valid`
+- [ ] GraphQL mutations use strongly-typed input DTOs
+- [ ] New MongoDB queries use parameterized criteria (not raw query strings)
+- [ ] Tenant scoping is applied in all new repository queries
+- [ ] Error responses do not expose internal implementation details
+- [ ] New scheduled tasks use ShedLock to prevent duplicate execution
+- [ ] Password/secret fields are excluded from logs (`@JsonIgnore`, `@ToString.Exclude`)

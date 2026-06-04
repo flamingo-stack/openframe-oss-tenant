@@ -1,0 +1,10 @@
+flowchart TD
+    Client["Client / Agent / External API Consumer"] --> Gateway["Gateway Service Core"]
+
+    Gateway --> Auth["JWT / API Key Validation"]
+    Auth --> Rate["Rate Limiting"]
+    Rate --> Routing["Tool Upstream Resolver"]
+
+    Routing --> APIService["API Service Core"]
+    Routing --> AuthzService["Authorization Server Core"]
+    Routing --> ToolUpstream["Integrated Tool Upstream"]

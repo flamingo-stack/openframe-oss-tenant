@@ -1,15 +1,12 @@
-flowchart TD
-    UI["Frontend & Chat Clients"] --> Edge["Gateway Layer"]
-    Edge --> Security["Authorization Server & Shared JWT"]
-    Edge --> ApiLayer["API & External API Services"]
+sequenceDiagram
+    participant User
+    participant Gateway
+    participant Authz
+    participant API
 
-    ApiLayer --> Domain["Domain Services"]
-    Domain --> Data["Mongo / Cassandra / Pinot"]
-
-    Stream["Stream Service"] --> Kafka["Kafka"]
-    Kafka --> Stream
-    Stream --> Pinot
-    Stream --> Cassandra
-
-    Client["Client Service"] --> NATS["NATS / JetStream"]
-    Client --> Domain
+    User->>Gateway: Access protected route
+    Gateway->>Authz: Redirect to /authorize
+    Authz->>User: Login / SSO
+    Authz-->>Gateway: JWT Access Token
+    Gateway->>API: Forward request (Bearer token)
+    API-->>User: GraphQL / REST response

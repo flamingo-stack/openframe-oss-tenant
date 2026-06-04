@@ -1,0 +1,6 @@
+flowchart TD
+    Start["Scheduler Trigger"] --> CheckTenant["Tenant Registered?"]
+    CheckTenant -->|"Yes"| Reconcile["Reconcile Missing Connectors"]
+    CheckTenant -->|"No"| Skip["Skip Reconcile"]
+    Reconcile --> Recover["ConnectorRecoveryManager.checkAndRecoverAll()"]
+    Recover --> End["END"]

@@ -1,0 +1,3 @@
+flowchart LR
+    Create["createTicket(tokens)"] --> Store["ConcurrentHashMap"]
+    Consume["consumeTicket(id)"] --> Remove["Remove from Map"]

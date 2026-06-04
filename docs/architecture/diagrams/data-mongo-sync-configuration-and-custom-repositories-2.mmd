@@ -1,0 +1,3 @@
+flowchart LR
+    Config["Mongo Config"] -->|"tenant isolation OFF"| Sync["MongoSyncConfig"]
+    Config -->|"tenant isolation ON"| Tenant["TenantAwareSyncConfig"]

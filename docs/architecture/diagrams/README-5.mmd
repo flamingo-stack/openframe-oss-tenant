@@ -1,6 +1,8 @@
 flowchart TD
-    Agent["Device Agent"] --> ClientService
-    ClientService --> Mongo
-    Agent --> NATS
-    NATS --> ClientService
-    ClientService --> DomainServices
+    JWT["JWT (tenant_id claim)"] --> Gateway
+    Gateway --> API
+    API --> Mongo["tenantId indexed collections"]
+    Mongo --> Debezium
+    Debezium --> Kafka
+    Kafka --> Stream
+    Stream --> Cassandra["Partitioned by tenant"]

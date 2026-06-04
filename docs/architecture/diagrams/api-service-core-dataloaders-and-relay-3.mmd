@@ -1,0 +1,5 @@
+flowchart TD
+    Input["List of Item IDs"] --> Filter["Remove nulls"]
+    Filter --> Query["Repository.findByIdIn"]
+    Query --> Map["Map by ID"]
+    Map --> Ordered["Restore Original Order"]

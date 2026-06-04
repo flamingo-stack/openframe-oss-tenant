@@ -1,0 +1,5 @@
+flowchart TD
+    Save["Mongo Save"] --> Listener["Publish Lifecycle Listener"]
+    Listener --> Check{{"Status PUBLISHED?"}}
+    Check -->|Yes| Stamp["Set publishedAt if null"]
+    Check -->|No| Skip["No Change"]

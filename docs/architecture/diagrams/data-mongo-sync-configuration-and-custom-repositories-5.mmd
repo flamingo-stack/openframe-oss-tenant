@@ -1,0 +1,5 @@
+flowchart TD
+    TicketQuery["TicketQueryFilter"] --> Criteria["Build Criteria"]
+    Criteria --> CursorTicket["Apply Cursor"]
+    CursorTicket --> Aggregation["Aggregation or Find"]
+    Aggregation --> MongoTicket[("MongoDB")]

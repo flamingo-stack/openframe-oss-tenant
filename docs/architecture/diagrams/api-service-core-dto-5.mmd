@@ -1,0 +1,5 @@
+flowchart TD
+    Admin["Admin Action"] --> Request["Force*Request DTO"]
+    Request --> Processor["Domain Processor"]
+    Processor --> Agent["Tool Agent"]
+    Agent --> Result["ForceToolAgentUpdateResponse"]

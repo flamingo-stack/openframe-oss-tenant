@@ -1,0 +1,8 @@
+flowchart TD
+    Http["HttpSecurity"] --> AS["OAuth2AuthorizationServerConfigurer"]
+    AS --> OIDC["Enable OIDC"]
+    AS --> Settings["AuthorizationServerSettings<br/>multipleIssuersAllowed=true"]
+
+    AS --> JWK["JWKSource (TenantKeyService)"]
+    JWK --> JWTEnc["JwtEncoder"]
+    JWK --> JWTDec["JwtDecoder"]

@@ -1,0 +1,4 @@
+flowchart LR
+    Query["GraphQL Query"] --> Fetcher
+    Fetcher --> DataLoader
+    DataLoader --> BatchQuery["Batch Repository Query"]

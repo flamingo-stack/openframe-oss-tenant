@@ -1,0 +1,16 @@
+flowchart TD
+    App["Management Application"] --> Config["Management Configuration"]
+    App --> Controllers["REST Controllers"]
+    App --> Initializers["Application Initializers"]
+    App --> Schedulers["Distributed Schedulers"]
+    App --> Migrations["Mongo Change Units"]
+
+    Controllers --> Services["Management Services"]
+    Initializers --> Services
+    Schedulers --> Services
+
+    Services --> Mongo[("MongoDB")]
+    Services --> Redis[("Redis")]
+    Services --> Nats[("NATS Streams")]
+    Services --> Kafka[("Kafka / Debezium")]
+    Services --> Tools["External Tool APIs"]

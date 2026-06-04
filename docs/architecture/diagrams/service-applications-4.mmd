@@ -1,0 +1,6 @@
+flowchart TD
+    Client["Client Request"] --> Gateway["Gateway Filters"]
+    Gateway --> AuthCheck["JWT / API Key Validation"]
+    AuthCheck --> Route["Route to Target Service"]
+    Route --> Api["API Service"]
+    Route --> ExternalApi["External API Service"]

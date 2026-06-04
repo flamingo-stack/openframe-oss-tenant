@@ -1,0 +1,6 @@
+flowchart TD
+    Criteria["FilterCriteria"] --> Repository["Mongo Query Builder"]
+    Repository --> Results["Filtered Results"]
+
+    Repository --> Aggregation["Aggregation Query"]
+    Aggregation --> Filters["Filters DTO"]

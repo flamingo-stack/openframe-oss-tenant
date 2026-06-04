@@ -1,0 +1,8 @@
+flowchart TD
+    SaveRequest["Save Tool Request"] --> CheckTenant{{Tenant Registered?}}
+
+    CheckTenant -->|"No"| PersistOnly["Persist Tool + Connector Template"]
+    CheckTenant -->|"Yes"| ApplyConnector["Create/Update Debezium Connector"]
+
+    PersistOnly --> Hooks["Execute Post Save Hooks"]
+    ApplyConnector --> Hooks

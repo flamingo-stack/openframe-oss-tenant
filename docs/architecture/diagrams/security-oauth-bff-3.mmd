@@ -1,0 +1,5 @@
+flowchart TD
+    Start["Refresh Request"] --> Check["Refresh Token Present?"]
+    Check -->|"No"| Unauthorized["401"]
+    Check -->|"Yes"| Exchange["Call OAuthBffService"]
+    Exchange --> Success["Set new cookies"]

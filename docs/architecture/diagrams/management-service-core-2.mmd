@@ -1,0 +1,8 @@
+flowchart LR
+    Client["Admin / System"] --> DeviceCtrl["DevicePinotResyncController"]
+    Client --> ToolCtrl["IntegratedToolController"]
+    Client --> ReleaseCtrl["ReleaseVersionController"]
+
+    DeviceCtrl --> MachineRepo["MachineRepository"]
+    ToolCtrl --> ToolService["IntegratedToolService"]
+    ReleaseCtrl --> ReleaseService["ReleaseVersionService"]

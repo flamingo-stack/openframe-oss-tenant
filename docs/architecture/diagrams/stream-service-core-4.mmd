@@ -1,0 +1,7 @@
+flowchart TD
+    DebeziumMsg["DeserializedDebeziumMessage"] --> Handler["DebeziumMessageHandler"]
+    Handler --> Transform["transform()"]
+    Transform --> Operation["OperationType"]
+    Operation --> Create["handleCreate"]
+    Operation --> Update["handleUpdate"]
+    Operation --> Delete["handleDelete"]

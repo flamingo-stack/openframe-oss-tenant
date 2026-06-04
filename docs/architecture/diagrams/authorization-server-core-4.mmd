@@ -1,0 +1,10 @@
+flowchart TD
+    JWTReq["JWT Signing Request"] --> TenantKeySvc["TenantKeyService"]
+    TenantKeySvc --> Check["Active Key Exists?"]
+    Check -->|Yes| Load["Load & Decrypt Private Key"]
+    Check -->|No| Generate["Generate RSA Key Pair"]
+    Generate --> Encrypt["Encrypt Private Key"]
+    Encrypt --> Store["Persist TenantKey (Mongo)"]
+    Load --> RSAKey["RSAKey (kid)"]
+    Store --> RSAKey
+    RSAKey --> JWT["Signed JWT"]

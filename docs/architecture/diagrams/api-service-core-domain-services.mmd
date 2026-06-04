@@ -1,0 +1,5 @@
+flowchart TD
+    Controllers["REST and GraphQL Controllers"] --> Services["Api Service Core Domain Services"]
+    Services --> Repositories["Mongo Repositories"]
+    Services --> Processors["Domain Processors"]
+    Services --> External["Encryption and Validation Services"]

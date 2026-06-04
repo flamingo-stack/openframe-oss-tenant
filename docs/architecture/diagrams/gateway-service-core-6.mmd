@@ -1,0 +1,10 @@
+flowchart TD
+    Request["Tool Request"] --> ResolverRegistry["ToolUpstreamResolverRegistry"]
+
+    ResolverRegistry --> Mesh["MeshCentralUpstreamResolver"]
+    ResolverRegistry --> Tactical["TacticalRmmUpstreamResolver"]
+    ResolverRegistry --> Default["DefaultToolUpstreamResolver"]
+
+    Mesh --> MeshUpstream["MeshCentral Service"]
+    Tactical --> TacticalUpstream["Tactical RMM Services"]
+    Default --> GenericUpstream["Configured Tool URL"]

@@ -1,0 +1,4 @@
+flowchart TD
+    DomainService["DomainValidationService"] --> Validator["DomainExistenceValidator"]
+    Validator --> DefaultImpl["DefaultDomainExistenceValidator"]
+    DefaultImpl -->|"anyExists"| Result["false"]

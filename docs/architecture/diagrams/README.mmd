@@ -1,21 +1,19 @@
 flowchart TD
-    Frontend["Frontend Tenant UI"] --> Gateway["Gateway Service"]
-    ChatClient["Chat Desktop Client"] --> Gateway
+    Browser["Web UI / External Client"] --> Gateway["Gateway Service"]
+    Gateway --> Api["API Service (GraphQL + REST)"]
+    Gateway --> Authz["Authorization Server"]
 
-    Gateway --> ApiService["API Service"]
-    Gateway --> ExternalApi["External API Service"]
-    Gateway --> AuthServer["Authorization Server"]
+    Api --> Mongo["MongoDB"]
+    Api --> Kafka["Kafka"]
 
-    ApiService --> Mongo["MongoDB"]
-    ApiService --> Pinot["Apache Pinot"]
-    ApiService --> Kafka["Kafka Cluster"]
+    Authz --> Mongo
+    Authz --> JWKS["Tenant JWKS"]
 
-    StreamService["Stream Service"] --> Kafka
-    StreamService --> Cassandra["Cassandra"]
-    StreamService --> Pinot
+    Kafka --> Stream["Stream Service"]
+    Stream --> Cassandra["Cassandra (Unified Logs)"]
 
-    ClientService["Client Service"] --> Mongo
-    ClientService --> NATS["NATS / JetStream"]
+    Management["Management Service"] --> Mongo
+    Management --> Kafka
+    Management --> Debezium["Debezium Connect"]
 
-    AuthServer --> Mongo
-    Gateway --> AuthServer
+    Debezium --> Kafka

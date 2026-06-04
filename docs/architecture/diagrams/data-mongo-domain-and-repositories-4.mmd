@@ -1,0 +1,4 @@
+flowchart TD
+    Service["Service Layer"] --> BaseRepo["Base Repository Interface"]
+    BaseRepo --> Impl["Mongo Implementation"]
+    Impl --> Mongo[("MongoDB")]

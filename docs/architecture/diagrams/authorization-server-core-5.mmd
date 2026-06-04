@@ -1,0 +1,4 @@
+flowchart LR
+    OAuthDomain["OAuth2Authorization"] --> Mapper["MongoAuthorizationMapper"]
+    Mapper --> MongoEntity["MongoOAuth2Authorization"]
+    MongoEntity --> Repo["MongoOAuth2AuthorizationRepository"]

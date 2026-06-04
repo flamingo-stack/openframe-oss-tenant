@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant Client
+    participant GraphQL
+    participant MachineLoader
+    participant OrgLoader
+    participant TagLoader
+    participant Mongo
+
+    Client->>GraphQL: Query machines
+    GraphQL->>MachineLoader: Load machines by IDs
+    MachineLoader->>Mongo: findByMachineIdIn
+    GraphQL->>OrgLoader: Batch organizationIds
+    OrgLoader->>Mongo: findByOrganizationIdIn
+    GraphQL->>TagLoader: Batch machineIds
+    TagLoader->>Mongo: getTagsForMachines
+    Mongo-->>GraphQL: Batched results
+    GraphQL-->>Client: Response
