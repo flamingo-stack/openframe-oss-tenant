@@ -74,6 +74,40 @@
       "separateMajorMinor": false
     },
     {
+      "description": "Updates for meshcentral Docker image",
+      "matchManagers": ["regex"],
+      "matchPackageNames": ["ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral"],
+      "groupName": "meshcentral-image",
+      "groupSlug": "meshcentral-image",
+      "commitMessageTopic": "meshcentral image",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "meshcentral"],
+      "prPriority": 10,
+      "enabled": true,
+      "ignoreUnstable": true,
+      "separateMajorMinor": false
+    },
+    {
+      "description": "Updates for tacticalrmm Docker images",
+      "matchManagers": ["regex"],
+      "matchPackageNames": [
+        "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx",
+        "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base",
+        "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend"
+      ],
+      "groupName": "tacticalrmm-image",
+      "groupSlug": "tacticalrmm-image",
+      "commitMessageTopic": "tacticalrmm images",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "deps",
+      "labels": ["dependencies", "tacticalrmm"],
+      "prPriority": 10,
+      "enabled": true,
+      "ignoreUnstable": true,
+      "separateMajorMinor": false
+    },
+    {
       "description": "Updates for fleetm Helm chart",
       "matchManagers": ["helmv3"],
       "matchPackageNames": ["fleet"],
@@ -109,6 +143,50 @@
         "imageTag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
       ],
       "depNameTemplate": "ghcr.io/flamingo-stack/fleetmdm/fleet",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Track meshcentral image tag",
+      "fileMatch": [
+        "^manifests/integrated-tools/meshcentral/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "repository: meshcentral\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+      ],
+      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Track tactical-nginx image tag",
+      "fileMatch": [
+        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "repository: tactical-nginx\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+      ],
+      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Track tactical-base image tag",
+      "fileMatch": [
+        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "repository: tactical-base\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+      ],
+      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Track tactical-frontend image tag",
+      "fileMatch": [
+        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
+      ],
+      "matchStrings": [
+        "repository: tactical-frontend\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+      ],
+      "depNameTemplate": "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend",
       "datasourceTemplate": "docker"
     }
   ],
