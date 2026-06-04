@@ -101,9 +101,8 @@ impl ToolInstallationService {
         
                 // Stop the tool process if it's running
                 info!("Stopping existing tool process for {}", tool_agent_id);
-                if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool).await {
                     warn!("Failed to stop tool process: {:#}", e);
-                // Continue with uninstallation even if process kill fails
                 }
         
                 // Wait for process to fully terminate

@@ -34,7 +34,7 @@ pub async fn ensure_writable(path: &Path) -> Result<()> {
 
     if let Ok(output) = Command::new("icacls")
         .arg(&path_str)
-        .args(["/grant", "Everyone:F", "/T", "/C", "/Q"])
+        .args(["/grant", "*S-1-5-32-544:F", "*S-1-5-18:F", "/T", "/C", "/Q"])
         .output()
         .await
     {

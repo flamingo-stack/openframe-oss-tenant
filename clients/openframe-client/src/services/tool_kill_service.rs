@@ -215,7 +215,10 @@ impl ToolKillService {
                 info!("Stopping GUI app by executable path: {}", executable_path);
                 self.stop_tool_by_path(executable_path).await
             }
-            Installation::Standard { .. } => {
+            Installation::Standard { executable_path } => {
+                if let Some(path) = executable_path {
+                    self.stop_tool_by_path(path).await?;
+                }
                 self.stop_tool(tool_agent_id).await
             }
             Installation::Service { service_name, executable_path } => {
