@@ -32,12 +32,40 @@ const CONTENT_HUB_ORIGIN = 'https://www.flamingo.run';
 import { type ChatRuntime, ChatRuntimeContext } from '@flamingo-stack/openframe-frontend-core/contexts';
 import {
   buildListUrl as buildEntityCardListUrl,
+  type ComposeContentUrl,
   clearEmbedProxyAuth,
+  DEV_SECTION_PARAM_KEYS,
   type EmbedAuthAdapter,
   setEmbedAuthAdapter,
 } from '@flamingo-stack/openframe-frontend-core/utils';
 import { type ReactNode, useMemo } from 'react';
 import { runtimeEnv } from '@/lib/runtime-config';
+
+/**
+ * Unified content-href seam for the openframe embedder (the same `composeContentUrl`
+ * the hub's own page-view cards + chat cards use). openframe hosts NONE of the hub's
+ * content in-app, so every card opens OUT to its real home. Two cases:
+ *
+ *   1. roadmap / delivery — path DIFFERS per platform (openframe `/roadmap` vs
+ *      flamingo `/roadmap-and-releases?tab=…`), so a verbatim `externalUrl` can't
+ *      be trusted. Rebuild against the flamingo unified page from the item's id
+ *      (mirrors `SECTION_PATH_BY_PLATFORM.flamingo` in
+ *      `multi-platform-hub/lib/utils/dev-section-url.ts`). `internal_task` is NOT
+ *      here — its `externalUrl` is a platform-agnostic `app.clickup.com` link.
+ *   2. everything else (blog / release / case-study / podcast / …) — the
+ *      RAG-authoritative `externalUrl` verbatim (already an absolute
+ *      owning-platform URL), identical to the hub's own composer.
+ */
+const composeOpenframeContentUrl: ComposeContentUrl = ({ type, identifier, externalUrl, targetPlatform }) => {
+  if (type === 'roadmap_item' || type === 'delivery_item') {
+    const tab = type === 'roadmap_item' ? 'roadmap' : 'delivery';
+    return {
+      href: `${CONTENT_HUB_ORIGIN}/roadmap-and-releases?tab=${tab}&${DEV_SECTION_PARAM_KEYS.search}=${encodeURIComponent(identifier)}`,
+      targetPlatform: null,
+    };
+  }
+  return { href: externalUrl ?? '', targetPlatform: targetPlatform ?? null };
+};
 
 import { refreshAccessToken } from '@/lib/token-refresh-manager';
 
@@ -166,6 +194,11 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         mode: 'embed',
         defaultContentOrigin: CONTENT_HUB_ORIGIN,
       },
+      // Unified content-href seam: openframe hosts no hub content in-app, so
+      // every card opens OUT to its real home — roadmap/delivery rebuilt against
+      // the flamingo unified page, company-hub content re-based onto company-hub,
+      // everything else passed through verbatim. See `composeOpenframeContentUrl`.
+      composeContentUrl: composeOpenframeContentUrl,
       source: CHAT_SOURCE,
     };
   }, []);
