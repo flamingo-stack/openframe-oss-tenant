@@ -131,6 +131,7 @@ openframe:
       topics:
         outbound:
           devices-topic: devices-topic
+          rmm-command-events: rmm.command.events
   integration:
     tool:
       enabled: true
