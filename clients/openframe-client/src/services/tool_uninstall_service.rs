@@ -35,9 +35,6 @@ impl ToolUninstallService {
     }
 
     /// Uninstall all installed tools by running their uninstallation commands
-    /// 
-    /// This method will fail immediately if any tool fails to uninstall.
-    /// No partial success - either all tools are uninstalled or the operation fails.
     pub async fn uninstall_all(&self) -> Result<()> {
         info!("Starting uninstallation of all installed tools");
 
@@ -54,9 +51,10 @@ impl ToolUninstallService {
         for tool in installed_tools {
             info!("Processing uninstallation for tool: {}", tool.tool_agent_id);
 
-            // Fail immediately if uninstallation fails
-            self.uninstall_tool(&tool).await
-                .with_context(|| format!("Failed to uninstall tool: {}", tool.tool_agent_id))?;
+            if let Err(e) = self.uninstall_tool(&tool).await {
+                warn!("Failed to uninstall tool {} (continuing with remaining tools): {:#}", tool.tool_agent_id, e);
+                continue;
+            }
 
             info!("Successfully uninstalled tool: {}", tool.tool_agent_id);
         }

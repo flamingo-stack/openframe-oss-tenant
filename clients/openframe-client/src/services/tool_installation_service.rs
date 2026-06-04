@@ -101,9 +101,8 @@ impl ToolInstallationService {
         
                 // Stop the tool process if it's running
                 info!("Stopping existing tool process for {}", tool_agent_id);
-                if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool).await {
                     warn!("Failed to stop tool process: {:#}", e);
-                // Continue with uninstallation even if process kill fails
                 }
         
                 // Wait for process to fully terminate
@@ -138,6 +137,20 @@ impl ToolInstallationService {
             }
         }
 
+        if reinstall && tool_agent_id.to_lowercase().contains("fleet") {
+            info!("Cleaning up leftover Orbit state for {}", tool_agent_id);
+            if let Err(e) = self.tool_kill_service.stop_asset("osqueryd", tool_agent_id).await {
+                warn!("Failed to stop osqueryd before Orbit cleanup: {:#}", e);
+            }
+            let orbit_dir = crate::platform::orbit_dir();
+            if orbit_dir.exists() {
+                info!("Removing leftover Orbit directory: {}", orbit_dir.display());
+                if let Err(e) = crate::platform::remove_directory_with_retry(&orbit_dir, 5).await {
+                    warn!("Failed to remove Orbit directory {}: {:#}", orbit_dir.display(), e);
+                }
+            }
+        }
+
         // Ensure tool-specific directory exists
         fs::create_dir_all(&tool_folder_path)
             .await
@@ -145,14 +158,43 @@ impl ToolInstallationService {
 
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
 
-        // Download and install the tool
-        let (executable_path, installation_type, bundle_id, config_service_name) = match &tool_installation_message.download_configurations {
+        let resolved_config = match &tool_installation_message.download_configurations {
             Some(configs) => {
                 let config = self.github_download_service.find_config_for_current_os(configs)
                     .with_context(|| format!("No download config for current OS: {}", tool_agent_id))?;
+                Some(config.with_version_override(&version_clone, &effective_version))
+            }
+            None => None,
+        };
 
-                let resolved_config = config.with_version_override(&version_clone, &effective_version);
+        let stop_executable_path = default_agent_path.to_string_lossy().to_string();
+        let stop_installation = match resolved_config.as_ref().map(|c| c.installation_type).unwrap_or(InstallationType::Standard) {
+            InstallationType::Service => resolved_config.as_ref()
+                .and_then(|c| c.service_name.clone())
+                .or_else(|| tool_installation_message.service_name.clone())
+                .map(|service_name| Installation::Service { service_name, executable_path: Some(stop_executable_path) }),
+            InstallationType::GuiApp => Some(Installation::GuiApp {
+                executable_path: stop_executable_path,
+                bundle_id: resolved_config.as_ref().and_then(|c| c.bundle_id.clone()),
+            }),
+            InstallationType::Standard => Some(Installation::Standard { executable_path: Some(stop_executable_path) }),
+        };
+        info!("Stopping any leftover holder for {} before download", tool_agent_id);
+        if let Some(stop_installation) = &stop_installation {
+            if let Err(e) = self.tool_kill_service.stop_for_installation(tool_agent_id, stop_installation).await {
+                warn!("Failed to stop leftover holder before download: {:#}", e);
+            }
+        }
+        if !matches!(stop_installation, Some(Installation::Standard { .. })) {
+            if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                warn!("Failed to stop leftover processes by pattern before download: {:#}", e);
+            }
+        }
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
+        // Download and install the tool
+        let (executable_path, installation_type, bundle_id, config_service_name) = match resolved_config {
+            Some(resolved_config) => {
                 let exec_path = self.install_from_download_config(
                     &resolved_config,
                     tool_agent_id,
@@ -201,6 +243,11 @@ impl ToolInstallationService {
                 
                 // Download and save asset if it doesn't already exist
                 if !asset_path.exists() {
+                    if is_executable {
+                        if let Err(e) = self.tool_kill_service.stop_asset(&asset.id, tool_agent_id).await {
+                            warn!("Failed to stop asset process {} before write: {:#}", asset.id, e);
+                        }
+                    }
                     let asset_bytes = match asset.source {
                         AssetSource::Artifactory => {
                             info!("Downloading artifactory asset: {}", asset.id);
@@ -253,6 +300,10 @@ impl ToolInstallationService {
                 } else {
                     info!("Asset {} for tool {} already exists at {}, skipping download",
                           asset.id, tool_agent_id, asset_path.display());
+                }
+
+                if is_executable {
+                    let _ = crate::platform::file_acl::harden_executable(&asset_path).await;
                 }
 
                 // Publish installed asset message only for executable assets with version (always, even if already downloaded)
