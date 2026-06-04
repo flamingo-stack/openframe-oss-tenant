@@ -2,7 +2,7 @@ import type { productSubscriptionCardProductFragment$data } from '@/__generated_
 import type { productSubscriptionCardSubscriptionFragment$data } from '@/__generated__/productSubscriptionCardSubscriptionFragment.graphql';
 import type { ProductCheckoutInput } from '../hooks/use-create-checkout-session';
 import type { PackageUpdateInput } from '../hooks/use-update-subscription';
-import type { BillingPeriod, ProductSelectionState } from '../types/subscription.types';
+import type { BillingPeriod, PlanComparison, PlanLine, ProductSelectionState } from '../types/subscription.types';
 
 export const CUSTOM_OPTION_ID = '__custom__';
 export const PAYG_OPTION_ID = '__payg__';
@@ -246,4 +246,79 @@ export function buildCheckoutProduct(
     quantity,
     payAsYouGoEnabled: true,
   };
+}
+
+/** Selected committed quantity in billable units (null for PAYG / empty Custom). */
+function selectionUnits(product: ProductData, selection: ProductSelectionState): number | null {
+  if (selection.selectedPackageId === PAYG_OPTION_ID) return null;
+  if (selection.selectedPackageId === CUSTOM_OPTION_ID) return customUnits(product, selection.customQuantity);
+  if (selection.selectedPackageId) {
+    const parsed = Number.parseInt(selection.selectedPackageId, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+/**
+ * Annualized committed cost for `units` billable units against `tiers`.
+ * `priceTier.unitPrice` is per unit per month, so a year is always × 12 — the
+ * yearly discount is already baked into the yearly period's tiers.
+ */
+function annualizedPackagePrice(
+  units: number | null,
+  tiers: readonly PriceTierInput[] | null | undefined,
+): number | null {
+  if (units == null || units <= 0 || !tiers || tiers.length === 0) return null;
+  const applicable = tiers.find(t => units >= t.from && (t.upTo == null || units <= t.upTo)) ?? tiers[tiers.length - 1];
+  if (!applicable) return null;
+  return units * applicable.unitPrice * 12;
+}
+
+function tiersForPeriod(product: ProductData, period: BillingPeriod | null): readonly PriceTierInput[] {
+  const option = product.packageOptions.find(opt => opt.billingPeriod === period) ?? product.packageOptions[0];
+  return option?.priceTiers ?? [];
+}
+
+/**
+ * Current vs selected plan for the Current/New summary block. Prices are derived
+ * from the catalog tiers (the subscription fragment has no price tiers), so a
+ * current committed package is priced against the catalog option for its period.
+ */
+export function buildPlanComparison(
+  product: ProductData,
+  selection: ProductSelectionState,
+  subscriptionProduct: SubscriptionProductData | null,
+): PlanComparison {
+  const activePackage = subscriptionProduct?.packageOptions.find(opt => opt.status === 'ACTIVE') ?? null;
+
+  let current: PlanLine | null = null;
+  if (subscriptionProduct) {
+    if (activePackage && activePackage.quantity != null) {
+      const period = (activePackage.billingPeriod ?? null) as BillingPeriod | null;
+      current = {
+        payg: false,
+        quantity: toDisplayQuantity(activePackage.quantity, product.unitSize),
+        billingPeriod: period,
+        annualTotal: annualizedPackagePrice(activePackage.quantity, tiersForPeriod(product, period)),
+      };
+    } else {
+      // No committed package → product is on always-on PAYG.
+      current = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
+    }
+  }
+
+  let next: PlanLine;
+  if (selection.selectedPackageId === PAYG_OPTION_ID) {
+    next = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
+  } else {
+    const units = selectionUnits(product, selection);
+    next = {
+      payg: false,
+      quantity: units != null ? toDisplayQuantity(units, product.unitSize) : null,
+      billingPeriod: selection.billingPeriod,
+      annualTotal: annualizedPackagePrice(units, tiersForPeriod(product, selection.billingPeriod)),
+    };
+  }
+
+  return { current, next };
 }
