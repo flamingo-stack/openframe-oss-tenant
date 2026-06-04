@@ -3,8 +3,9 @@
 import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { findLatestPendingApprovalId } from '@/lib/chat-history';
+import { getFullImageUrl } from '@/lib/image-url';
 import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
@@ -19,6 +20,9 @@ interface ProcessedMessage {
   content: string | MessageSegment[];
   role: 'user' | 'assistant' | 'error';
   name: string;
+  /** Author avatar, resolved to a full/absolute URL (relative `imageUrl`s from
+   *  GraphQL/the auth store are prefixed via `getFullImageUrl`). */
+  avatar?: string | null;
   authorType?: AuthorType;
   assistantType?: 'fae' | 'mingo';
   timestamp: Date;
@@ -42,6 +46,33 @@ interface UseMingoChat {
   isTyping: boolean;
   isCompacting: boolean;
   assistantType: 'mingo';
+}
+
+/** Structural equality on the rendered `content`. Arrays (segment lists) are
+ *  compared by reference first (cheap, hits for unchanged messages) and only
+ *  fall back to a stringify when lengths match — strings compare by value. */
+function isContentEqual(a: ProcessedMessage['content'], b: ProcessedMessage['content']): boolean {
+  if (a === b) return true;
+  const aIsArray = Array.isArray(a);
+  const bIsArray = Array.isArray(b);
+  if (aIsArray !== bIsArray) return false;
+  if (!aIsArray || !bIsArray) return false; // both strings, already not === above
+  if (a.length !== b.length) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Whether two processed messages render identically — drives reference reuse
+ *  so the lib's reference-equality memo can skip unchanged messages. */
+function isSameProcessedMessage(a: ProcessedMessage, b: ProcessedMessage): boolean {
+  return (
+    a.role === b.role &&
+    a.name === b.name &&
+    a.avatar === b.avatar &&
+    a.authorType === b.authorType &&
+    a.assistantType === b.assistantType &&
+    a.timestamp.getTime() === b.timestamp.getTime() &&
+    isContentEqual(a.content, b.content)
+  );
 }
 
 export function useMingoChat(dialogId: string | null): UseMingoChat {
@@ -69,8 +100,14 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   const sendMessageMutation = useSendMessageMutation();
   const stopGenerationMutation = useStopGenerationMutation();
 
+  // Previous render's processed messages, keyed by id, for reference reuse.
+  const stableMessagesRef = useRef<Map<string, ProcessedMessage>>(new Map());
+
   const messages = useMemo((): ProcessedMessage[] => {
-    if (!dialogId) return [];
+    if (!dialogId) {
+      stableMessagesRef.current = new Map();
+      return [];
+    }
 
     const currentMessages = messagesByDialog.get(dialogId) || [];
     // Dedupe approval cards across bubbles: the agent re-asks for the same
@@ -86,7 +123,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       let filteredContent = msg.content;
 
       if (Array.isArray(msg.content)) {
-        filteredContent = (msg.content as MessageSegment[]).filter(segment => {
+        const filtered = (msg.content as MessageSegment[]).filter(segment => {
           if (segment.type === 'approval_request' && segment.status === 'pending') return false;
 
           if (segment.type === 'approval_request') {
@@ -105,6 +142,9 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
 
           return true;
         });
+        // Reuse the original array reference when nothing was removed, so
+        // `content` stays referentially stable for unchanged messages.
+        filteredContent = filtered.length === msg.content.length ? msg.content : filtered;
       }
 
       // Skip assistant bubbles that are empty after filtering (only held
@@ -120,12 +160,34 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         role: msg.role,
         authorType: msg.authorType,
         name: msg.name || 'Unknown',
+        // `msg.avatar` is a relative `imageUrl` (GraphQL owner image or the
+        // optimistic auth-store avatar); resolve to a full URL once here so
+        // both the standalone page and the embeddable chat get an absolute src.
+        avatar: getFullImageUrl(msg.avatar) ?? null,
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
       });
     }
 
-    return processed;
+    // Reference reconciliation: the lib memoizes each rendered message and
+    // compares `content` BY REFERENCE, so it only skips re-rendering when the
+    // exact same instance is passed again. The mapping above builds fresh
+    // objects on every realtime chunk, defeating that memo and forcing the
+    // whole list (and every open menu/card inside it) to re-render. Reuse the
+    // previous render's object for any message whose processed output is
+    // structurally unchanged — comparing the FINAL result (not the source) so
+    // the cross-message approval dedup above stays correct.
+    const prevStable = stableMessagesRef.current;
+    const nextStable = new Map<string, ProcessedMessage>();
+    const reconciled = processed.map(msg => {
+      const previous = prevStable.get(msg.id);
+      const stable = previous && isSameProcessedMessage(previous, msg) ? previous : msg;
+      nextStable.set(msg.id, stable);
+      return stable;
+    });
+    stableMessagesRef.current = nextStable;
+
+    return reconciled;
   }, [dialogId, messagesByDialog]);
 
   // Extract pending approvals from messages, deduplicated by requestId
@@ -203,6 +265,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
           authorType: 'admin',
           content: content.trim(),
           name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin',
+          // Relative `imageUrl`; resolved to a full URL in the processed mapping.
+          avatar: user?.image?.imageUrl ?? null,
           timestamp: new Date(),
         };
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { ChatIdentityProvider } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import {
   AppLayoutDrawer,
   AppLayoutDrawerContent,
@@ -61,6 +62,17 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // Toggle the Mingo chat drawer from the header's "Mingo AI" launcher.
   const toggleChat = useCallback(() => setChatOpen(prev => !prev), []);
 
+  // Close the drawer on route navigation. The drawer is non-modal (header +
+  // sidebar stay interactive while it's open), so clicking a nav link or an
+  // in-chat link that routes should land the user on the new page rather than
+  // leaving the panel covering it. The lib's EmbeddableChat leaves this
+  // pathname-driven close to the embedder (it has no router), so we own it
+  // here. Runs on `pathname` change; the initial no-op (already closed) is
+  // harmless — React bails on a same-value `setState`.
+  useEffect(() => {
+    setChatOpen(false);
+  }, [pathname]);
+
   const { isLocked } = useSubscriptionLock();
   // Checkout result pages render their own success/cancel UI; they're the only
   // place a paying user lands before the webhook flips the subscription to ACTIVE.
@@ -70,7 +82,15 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // `mingo-sidebar` feature flag. It's also only meaningful inside the full,
   // unlocked app shell (it hits authed endpoints), so the subscription lock
   // suppresses both the launcher and the drawer regardless of the flag.
-  const chatEnabled = featureFlags.mingoSidebar.enabled() && !showLockContent;
+  //
+  // Suppressed on the legacy `/mingo` route: that page is itself a full Mingo
+  // chat and shares the same global `mingo-messages-store`. Mounting the drawer
+  // there too means two surfaces fight over `activeDialogId` — e.g. the page's
+  // URL→store sync immediately re-selects the dialog the drawer's Back button
+  // just cleared, so Back appears to do nothing. The drawer is the replacement
+  // for that page, so they should never be live at the same time.
+  const isMingoPage = pathname?.startsWith('/mingo') ?? false;
+  const chatEnabled = featureFlags.mingoSidebar.enabled() && !showLockContent && !isMingoPage;
   const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
@@ -136,22 +156,28 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   );
 
   const chatDrawer = chatEnabled ? (
-    <AppLayoutDrawer open={chatOpen} onOpenChange={setChatOpen}>
-      <AppLayoutDrawerContent
-        side="right"
-        flush
-        resizable
-        minSize={480}
-        defaultSize={640}
-        storageKey="openframe:mingo-chat-width"
-        panelClassName="!bg-ods-bg"
-        debugLayoutShift
-      >
-        {/* No AppLayoutDrawerHeader/Title — EmbeddableChat renders its own
-            header + X button; a wrapper header would double it up. */}
-        <OpenframeEmbeddableChatEntry open={chatOpen} onOpenChange={setChatOpen} />
-      </AppLayoutDrawerContent>
-    </AppLayoutDrawer>
+    // ChatIdentityProvider wraps the drawer (not the remounting panel content)
+    // so chat identity resolves ONCE for the session and survives the drawer
+    // closing/reopening. Without it, EmbeddableChat self-fetches identity on
+    // every open (the panel unmounts on close). Must sit inside the chat
+    // runtime context (provided higher up by OpenframeChatRuntimeProvider).
+    <ChatIdentityProvider>
+      <AppLayoutDrawer open={chatOpen} onOpenChange={setChatOpen}>
+        <AppLayoutDrawerContent
+          side="right"
+          flush
+          resizable
+          minSize={480}
+          defaultSize={640}
+          storageKey="openframe:mingo-chat-width"
+          panelClassName="!bg-ods-bg"
+        >
+          {/* No AppLayoutDrawerHeader/Title — EmbeddableChat renders its own
+              header + X button; a wrapper header would double it up. */}
+          <OpenframeEmbeddableChatEntry open={chatOpen} onOpenChange={setChatOpen} />
+        </AppLayoutDrawerContent>
+      </AppLayoutDrawer>
+    </ChatIdentityProvider>
   ) : null;
 
   return (

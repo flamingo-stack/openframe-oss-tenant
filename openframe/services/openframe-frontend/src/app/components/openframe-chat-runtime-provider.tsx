@@ -4,28 +4,38 @@
  * OpenframeChatRuntimeProvider — supplies the `ChatRuntime` context the
  * lib's `<EmbeddableChat>` requires. Openframe-frontend exposes BOTH
  * Mingo (NATS, openframe backend) and Guide (SSE, MPH backend via the
- * `/guide` proxy) modes through the in-panel toggle. The endpoint URLs
+ * `/content` proxy) modes through the in-panel toggle. The endpoint URLs
  * below cover both transports:
  *
  *   - Mingo callbacks live in `MingoEmbeddableChatEntry` and don't touch
  *     this runtime — they call `apiClient` against `/chat/*` directly.
  *   - Guide reads its endpoint URLs FROM this runtime. Each Guide path
- *     is prefixed with `/guide/`; the openframe-frontend Next.js layer
+ *     is prefixed with `/content/`; the openframe-frontend Next.js layer
  *     reverse-proxies that prefix to the MPH origin so neither the lib
  *     nor the host page learns the upstream MPH URL.
  *
- * Navigation is `mode: 'host'` with `navigate` routed through the Next.js
- * App Router so in-app chip clicks land via `router.push` instead of a
- * hard `location.assign`. New-tab decisions fall back to the lib default.
+ * Navigation is `mode: 'embed'`: openframe-frontend is an EMBEDDER of the
+ * Flamingo content hub, not its host. The content entity cards (blog,
+ * roadmap, case-studies, …) carry RELATIVE hrefs (`/blog/<slug>`) that only
+ * resolve on the hub origin — those routes don't exist in openframe. Embed
+ * mode makes the lib (a) absolutize every relative card/chip href against
+ * `defaultContentOrigin` and (b) always open it in a new tab, so a click
+ * lands on the real page on the hub instead of 404-ing in-app. Mingo emits
+ * no openframe-internal links, so there's no same-tab `navigate` to wire.
  */
+
+/** Public origin of the Flamingo content hub where the chat's content
+ *  entity-card pages (blog / roadmap / case-studies / podcasts / …) actually
+ *  live. Relative card hrefs are absolutized against this in embed mode. */
+const CONTENT_HUB_ORIGIN = 'https://www.flamingo.run';
 
 import { type ChatRuntime, ChatRuntimeContext } from '@flamingo-stack/openframe-frontend-core/contexts';
 import {
+  buildListUrl as buildEntityCardListUrl,
   clearEmbedProxyAuth,
   type EmbedAuthAdapter,
   setEmbedAuthAdapter,
 } from '@flamingo-stack/openframe-frontend-core/utils';
-import { useRouter } from 'next/navigation';
 import { type ReactNode, useMemo } from 'react';
 import { runtimeEnv } from '@/lib/runtime-config';
 
@@ -97,20 +107,18 @@ const CHAT_AUTH_ADAPTER: EmbedAuthAdapter = {
 // `clearEmbedProxyAuth()`: openframe never does proxy-impersonation, but an
 // earlier `setEmbedProxyAuth`-based approach persisted the openframe JWT under
 // `<appType>.chat.proxy-auth.v1`. That copy is frozen at login, so
-// `applyProxyAuth` kept attaching a stale/expired Bearer to `/guide/*`.
+// `applyProxyAuth` kept attaching a stale/expired Bearer to `/content/*`.
 if (typeof window !== 'undefined') {
   clearEmbedProxyAuth();
   setEmbedAuthAdapter(CHAT_AUTH_ADAPTER);
 }
 
 export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
-
   const runtime = useMemo<ChatRuntime>(() => {
     // All Guide-mode endpoints are built as absolute URLs against the
     // backend gateway (`NEXT_PUBLIC_TENANT_HOST_URL`, e.g.
     // `https://test-dev.openframe.build`). The gateway exposes the
-    // `/guide/*` route mapped to MPH so the lib's bare `fetch()` calls
+    // `/content/*` route mapped to MPH so the lib's bare `fetch()` calls
     // land directly on the gateway with no Next.js rewrite hop.
     //
     // The lib's `embedAuthedFetch` normally rejects cross-origin URLs as
@@ -121,44 +129,46 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
     // the gateway) or naturally pass it (if openframe-frontend and the
     // gateway end up on the same origin behind a single reverse proxy).
     const tenantHost = runtimeEnv.tenantHostUrl().replace(/\/+$/, '');
-    const guide = (path: string): string => `${tenantHost}/guide${path}`;
+    const content = (path: string): string => `${tenantHost}/content${path}`;
 
     return {
       endpoints: {
         // Upstream paths verified live against the deployed instance
         // (2026-05-29 endpoint table).
-        chatStreamUrl: guide('/api/docs/chat'),
-        approvalToolUrl: guide('/api/chat/agent/confirm-tool'),
-        commandsUrl: guide('/api/docs/commands'),
-        // RAG entity-card list URLs are MPH-owned; openframe-frontend
-        // has no native equivalent. Return null until a per-type
-        // builder is wired against the proxy.
-        buildListUrl: () => null,
-        attachmentUploadUrl: guide('/api/storage/generate-upload-url'),
-        attachmentViewUrlPrefix: guide('/api/storage/view/chat-attachments/'),
+        chatStreamUrl: content('/api/docs/chat'),
+        approvalToolUrl: content('/api/chat/agent/confirm-tool'),
+        commandsUrl: content('/api/docs/commands'),
+        // Fetch-mode entity cards (blog, roadmap, case study, release,
+        // podcast/webinar/event, …) expand their `[card://<type>:<id>]`
+        // markers by GETting the type's list endpoint. The lib owns the
+        // non-obvious per-type URL shapes (`task_ids` vs `ids`, `pageSize`,
+        // `&filter=all`, distinct paths); we just point its builder at the
+        // `/content` reverse proxy so the URLs land on MPH. Returning null
+        // here (the old TODO) left every such card with no URL → no fetch →
+        // blank card.
+        buildListUrl: (type, ids) => buildEntityCardListUrl(type, ids, `${tenantHost}/content`),
+        attachmentUploadUrl: content('/api/storage/generate-upload-url'),
+        attachmentViewUrlPrefix: content('/api/storage/view/chat-attachments/'),
         // SOURCE-VS-DEPLOYED GAP: MPH source has `/api/auth/identity`
         // (at `app/api/auth/identity/route.ts`). The deployed instance
         // also serves `/api/chat/identity` per the live endpoint table
         // verified 2026-05-29. We use the deployed path because it's
         // the one verified to work end-to-end; if 404, swap to
         // `/api/auth/identity`.
-        identityUrl: guide('/api/chat/identity'),
-        imageProxyUrlPrefix: guide('/api/image-proxy'),
+        identityUrl: content('/api/chat/identity'),
+        imageProxyUrlPrefix: content('/api/image-proxy'),
       },
       navigation: {
-        mode: 'host',
-        navigate: ({ href }: { href: string; path?: string | null; targetPlatform?: string | null }) => {
-          // Route in-app links through Next router so SPA state survives.
-          // Returning true tells the lib we've handled it; false would
-          // make it fall back to `location.assign`.
-          if (!href) return false;
-          router.push(href);
-          return true;
-        },
+        // Embedder, not host — see the file header. Relative content-card
+        // hrefs get absolutized against `defaultContentOrigin` and opened in
+        // a new tab (the lib's `computeIsNewTab` short-circuits to new-tab in
+        // embed mode), so there's no in-app `navigate` to wire.
+        mode: 'embed',
+        defaultContentOrigin: CONTENT_HUB_ORIGIN,
       },
       source: CHAT_SOURCE,
     };
-  }, [router]);
+  }, []);
 
   return <ChatRuntimeContext.Provider value={runtime}>{children}</ChatRuntimeContext.Provider>;
 }
