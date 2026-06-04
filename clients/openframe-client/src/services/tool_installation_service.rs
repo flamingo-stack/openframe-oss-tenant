@@ -138,17 +138,12 @@ impl ToolInstallationService {
             }
         }
 
-        // On an explicit reinstall, clear Fleet's leftover Orbit runtime state (osquery.db, node key)
-        // that Fleet's own uninstall does not remove, so the fresh agent starts clean
         if reinstall && tool_agent_id.to_lowercase().contains("fleet") {
             info!("Cleaning up leftover Orbit state for {}", tool_agent_id);
             if let Err(e) = self.tool_kill_service.stop_asset("osqueryd", tool_agent_id).await {
                 warn!("Failed to stop osqueryd before Orbit cleanup: {:#}", e);
             }
-            let orbit_dir = std::path::PathBuf::from(
-                std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
-            )
-            .join("Orbit");
+            let orbit_dir = crate::platform::orbit_dir();
             if orbit_dir.exists() {
                 info!("Removing leftover Orbit directory: {}", orbit_dir.display());
                 if let Err(e) = crate::platform::remove_directory_with_retry(&orbit_dir, 5).await {
@@ -164,7 +159,6 @@ impl ToolInstallationService {
 
         let default_agent_path = self.directory_manager.get_agent_path(tool_agent_id);
 
-        // Resolve the OS-specific download config up front so the target shape is known before download
         let resolved_config = match &tool_installation_message.download_configurations {
             Some(configs) => {
                 let config = self.github_download_service.find_config_for_current_os(configs)
@@ -174,18 +168,17 @@ impl ToolInstallationService {
             None => None,
         };
 
-        // Stop any leftover holder (service/process/GUI) before overwriting its binary, mirroring update prepare
         let stop_executable_path = default_agent_path.to_string_lossy().to_string();
         let stop_installation = match resolved_config.as_ref().map(|c| c.installation_type).unwrap_or(InstallationType::Standard) {
             InstallationType::Service => resolved_config.as_ref()
                 .and_then(|c| c.service_name.clone())
                 .or_else(|| tool_installation_message.service_name.clone())
-                .map(|service_name| Installation::Service { service_name, executable_path: Some(stop_executable_path.clone()) }),
+                .map(|service_name| Installation::Service { service_name, executable_path: Some(stop_executable_path) }),
             InstallationType::GuiApp => Some(Installation::GuiApp {
-                executable_path: stop_executable_path.clone(),
+                executable_path: stop_executable_path,
                 bundle_id: resolved_config.as_ref().and_then(|c| c.bundle_id.clone()),
             }),
-            InstallationType::Standard => Some(Installation::Standard { executable_path: Some(stop_executable_path.clone()) }),
+            InstallationType::Standard => Some(Installation::Standard { executable_path: Some(stop_executable_path) }),
         };
         info!("Stopping any leftover holder for {} before download", tool_agent_id);
         if let Some(stop_installation) = &stop_installation {
@@ -193,8 +186,10 @@ impl ToolInstallationService {
                 warn!("Failed to stop leftover holder before download: {:#}", e);
             }
         }
-        if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
-            warn!("Failed to stop leftover processes by pattern before download: {:#}", e);
+        if !matches!(stop_installation, Some(Installation::Standard { .. })) {
+            if let Err(e) = self.tool_kill_service.stop_tool(tool_agent_id).await {
+                warn!("Failed to stop leftover processes by pattern before download: {:#}", e);
+            }
         }
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
@@ -308,7 +303,6 @@ impl ToolInstallationService {
                           asset.id, tool_agent_id, asset_path.display());
                 }
 
-                // Ensure executable assets have safe admin-only permissions on every install, even when skipped
                 if is_executable {
                     let _ = crate::platform::file_acl::harden_executable(&asset_path).await;
                 }

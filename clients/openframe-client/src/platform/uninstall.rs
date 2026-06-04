@@ -13,6 +13,13 @@ const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
+pub fn orbit_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(
+        std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
+    )
+    .join("Orbit")
+}
+
 /// Remove a directory with retry logic for locked files
 pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Result<()> {
     if !path.exists() {
@@ -131,7 +138,6 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
 
     info!("Attempting force removal using Windows rd command for: {}", path.display());
 
-    // Take ownership and grant permissions so the directory can be removed
     let _ = crate::platform::file_acl::ensure_writable(path).await;
 
     // Wait for permissions to take effect
@@ -300,10 +306,7 @@ pub async fn uninstall_windows(
         }
     }
 
-    let orbit_dir = std::path::PathBuf::from(
-        std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
-    )
-    .join("Orbit");
+    let orbit_dir = orbit_dir();
     if orbit_dir.exists() {
         info!("Cleaning up Orbit directory: {}", orbit_dir.display());
         if let Err(e) = remove_directory_with_retry(&orbit_dir, 5).await {
