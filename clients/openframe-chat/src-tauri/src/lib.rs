@@ -114,8 +114,33 @@ fn log_from_js(level: String, scope: String, message: String) {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn register_app_id() {
+    use winreg::{enums::*, RegKey};
+
+    extern "system" {
+        fn SetCurrentProcessExplicitAppUserModelID(app_id: *const u16) -> i32;
+    }
+    let aumid: Vec<u16> = "com.openframe.chat\0".encode_utf16().collect();
+    unsafe { SetCurrentProcessExplicitAppUserModelID(aumid.as_ptr()); }
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    if let Ok((key, _)) =
+        hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
+    {
+        let _ = key.set_value("DisplayName", &"OpenFrame Chat");
+        if let Ok(exe) = std::env::current_exe() {
+            let icon = exe.to_string_lossy().into_owned();
+            let _ = key.set_value("IconUri", &icon.as_str());
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    register_app_id();
+
     println!("[startup] openframe-chat starting (version {})", env!("CARGO_PKG_VERSION"));
 
     // Read configuration from CFPreferences (written by openframe-client daemon)

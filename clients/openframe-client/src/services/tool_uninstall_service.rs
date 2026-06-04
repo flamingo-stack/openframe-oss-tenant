@@ -91,6 +91,7 @@ impl ToolUninstallService {
             _ => {
                 info!("No uninstallation command provided for tool: {}", tool_agent_id);
                 self.cleanup_gui_app_bundle(tool).await;
+                self.cleanup_gui_app_autorun(tool);
                 return Ok(());
             }
         };
@@ -107,6 +108,8 @@ impl ToolUninstallService {
 
         if !agent_path.exists() {
             warn!("Tool agent executable not found at {}, skipping uninstallation command", agent_path.display());
+            self.cleanup_gui_app_bundle(tool).await;
+            self.cleanup_gui_app_autorun(tool);
             return Ok(());
         }
 
@@ -127,7 +130,7 @@ impl ToolUninstallService {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            
+
             // Fail immediately if uninstall command returns non-zero exit code
             return Err(anyhow::anyhow!(
                 "Uninstallation command for {} exited with status: {}\nstdout: {}\nstderr: {}",
@@ -137,7 +140,7 @@ impl ToolUninstallService {
                 stderr
             ));
         }
-        
+
         let stdout = String::from_utf8_lossy(&output.stdout);
         info!("Uninstallation command executed successfully for tool: {}\nstdout: {}", tool_agent_id, stdout);
 
@@ -146,6 +149,9 @@ impl ToolUninstallService {
 
         // Cleanup GUI app bundle if applicable
         self.cleanup_gui_app_bundle(tool).await;
+
+        // Remove the GuiApp from autorun if applicable
+        self.cleanup_gui_app_autorun(tool);
 
         Ok(())
     }
@@ -182,6 +188,17 @@ impl ToolUninstallService {
         #[cfg(not(target_os = "macos"))]
         {
             let _ = executable_path;
+        }
+    }
+
+    fn cleanup_gui_app_autorun(&self, tool: &InstalledTool) {
+        let Installation::GuiApp { .. } = &tool.installation else {
+            return;
+        };
+
+        #[cfg(target_os = "windows")]
+        {
+            crate::utils::windows_helpers::unregister_autorun(&tool.tool_agent_id);
         }
     }
 }

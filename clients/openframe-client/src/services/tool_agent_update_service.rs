@@ -181,6 +181,8 @@ impl ToolAgentUpdateService {
                 self.installed_tools_service.save(installed_tool.clone()).await
                     .with_context(|| format!("Failed to save migrated tool: {}", tool_agent_id))?;
 
+                self.register_windows_gui_app_autorun(installed_tool);
+
                 info!(tool_id = %tool_agent_id, version = %new_version, "Migration completed successfully");
                 self.publish_installed_agent_message(tool_agent_id, new_version).await;
                 return Ok(());
@@ -193,6 +195,8 @@ impl ToolAgentUpdateService {
         installed_tool.version = new_version.to_string();
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save updated tool: {}", tool_agent_id))?;
+
+        self.register_windows_gui_app_autorun(installed_tool);
 
         info!(tool_id = %tool_agent_id, version = %new_version, "Update completed successfully");
         self.publish_installed_agent_message(tool_agent_id, new_version).await;
@@ -358,6 +362,29 @@ impl ToolAgentUpdateService {
             }
             Err(e) => {
                 warn!(id = %id, error = %e, "Failed to get machine_id");
+            }
+        }
+    }
+
+    fn register_windows_gui_app_autorun(&self, installed_tool: &crate::models::installed_tool::InstalledTool) {
+        #[cfg(target_os = "windows")]
+        if let Installation::GuiApp { .. } = &installed_tool.installation {
+            let tool_agent_id = &installed_tool.tool_agent_id;
+            let mut launch_args = self.command_params_resolver
+                .process(tool_agent_id, installed_tool.run_command_args.clone())
+                .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            // For openframe-chat, add --background flag to start in tray
+            if tool_agent_id == "openframe-chat" {
+                launch_args.push("--background".to_string());
+            }
+            let command_path = self.directory_manager
+                .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
+                .to_string_lossy()
+                .to_string();
+            if let Err(e) = crate::utils::windows_helpers::register_autorun(
+                tool_agent_id, &command_path, &launch_args,
+            ) {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to register GuiApp autorun");
             }
         }
     }
