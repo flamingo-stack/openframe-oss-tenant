@@ -6,6 +6,7 @@ import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
 import type { GraphQlResponse } from '../../devices/types/device.types';
 import { API_ENDPOINTS, TICKET_STATUS } from '../../tickets/constants';
 import { GET_TICKET_STATISTICS_QUERY } from '../../tickets/queries/ticket-queries';
+import { resolvedCountFromStatistics, type TicketStatisticsCounts } from '../../tickets/utils/ticket-statistics';
 
 // ============ Types ============
 
@@ -35,9 +36,8 @@ interface DeviceFiltersResponse {
 }
 
 interface TicketStatsResponse {
-  ticketStatistics: {
+  ticketStatistics: TicketStatisticsCounts & {
     totalCount: number;
-    statusCounts: Array<{ status: string; count: number }>;
     averageResolutionTimeFormatted: string;
     averageRating: number;
   };
@@ -122,7 +122,7 @@ class DashboardApiService {
 
       const total = data.totalCount || 0;
       const active = (data.statusCounts || []).find(s => s.status === TICKET_STATUS.ACTIVE)?.count || 0;
-      const resolved = (data.statusCounts || []).find(s => s.status === TICKET_STATUS.RESOLVED)?.count || 0;
+      const resolved = resolvedCountFromStatistics(data);
 
       return {
         total,

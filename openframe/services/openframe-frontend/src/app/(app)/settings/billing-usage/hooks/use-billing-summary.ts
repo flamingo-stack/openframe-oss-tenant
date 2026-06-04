@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { billingUsageViewQuery$data } from '@/__generated__/billingUsageViewQuery.graphql';
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { OpenframeProduct, SubscriptionProductStatus } from '@/generated/schema-enums';
+import { toDisplayQuantity } from '../subscription/utils/subscription.utils';
 
 const WARNING_THRESHOLD = 90;
 const OVER_THRESHOLD = 100;
@@ -15,8 +16,18 @@ function getUsageState(percentage: number): UsageState {
 }
 
 type SubscriptionData = billingUsageViewQuery$data['subscription'];
+type BillingPlanData = billingUsageViewQuery$data['billingPlan'];
 
-export function useBillingSummary(subscription: SubscriptionData) {
+export function useBillingSummary(subscription: SubscriptionData, billingPlan: BillingPlanData) {
+  const unitSizeByProduct = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of billingPlan?.products ?? []) {
+      map.set(p.name, Number(p.unitSize ?? 1) || 1);
+    }
+    return map;
+  }, [billingPlan]);
+  const managedDevicesUnitSize = unitSizeByProduct.get(OpenframeProduct.MANAGED_DEVICES) ?? 1;
+  const aiUnitSize = unitSizeByProduct.get(OpenframeProduct.AI_ASSISTANCE) ?? 1;
   const subscriptionProducts = subscription?.products ?? [];
   const status = subscription?.status ?? SubscriptionStatus.ACTIVE;
   const pendingInvoices = subscription?.pendingInvoices ?? [];
@@ -55,8 +66,8 @@ export function useBillingSummary(subscription: SubscriptionData) {
   const aiIsPayg = aiProduct?.payAsYouGoOption != null && aiActive == null;
   const hasAi = aiActive != null || aiIsPayg;
 
-  const deviceAllocation = managedDevicesActive?.quantity ?? 0;
-  const aiAllocation = aiActive?.quantity ?? 0;
+  const deviceAllocation = toDisplayQuantity(managedDevicesActive?.quantity, managedDevicesUnitSize);
+  const aiAllocation = toDisplayQuantity(aiActive?.quantity, aiUnitSize);
 
   const devicePct = deviceAllocation > 0 ? Math.round((devicesUsed / deviceAllocation) * 100) : 0;
   const aiPct = aiAllocation > 0 ? Math.round((aiTokensUsed / aiAllocation) * 100) : 0;
@@ -122,9 +133,9 @@ export function useBillingSummary(subscription: SubscriptionData) {
   const hasPendingPlan = managedDevicesPending != null || aiPending != null;
   const updatedPlan = {
     showDevice: managedDevicesPending != null,
-    deviceQuantity: managedDevicesPending?.quantity ?? 0,
+    deviceQuantity: toDisplayQuantity(managedDevicesPending?.quantity, managedDevicesUnitSize),
     showAi: aiPending != null,
-    aiQuantity: aiPending?.quantity ?? 0,
+    aiQuantity: toDisplayQuantity(aiPending?.quantity, aiUnitSize),
     startDate: (managedDevicesPending?.startDate ?? aiPending?.startDate ?? null) as string | null,
   };
 

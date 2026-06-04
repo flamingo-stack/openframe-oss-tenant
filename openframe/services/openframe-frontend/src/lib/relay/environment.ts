@@ -4,6 +4,7 @@ import type { FetchFunction, IEnvironment } from 'relay-runtime';
 import { Environment, Network, RecordSource, Store } from 'relay-runtime';
 import { forceLogout } from '../force-logout';
 import { runtimeEnv } from '../runtime-config';
+import { detectTrialExpiredFromGraphqlErrors } from '../subscription-lock-signal';
 import { isTokenRefreshing, refreshAccessToken } from '../token-refresh-manager';
 
 const ACCESS_TOKEN_KEY = 'of_access_token';
@@ -92,6 +93,7 @@ const fetchRelay: FetchFunction = async (request, variables) => {
 
   if (json.errors) {
     console.error('[Relay] GraphQL errors:', json.errors);
+    detectTrialExpiredFromGraphqlErrors(json.errors);
   }
 
   return json;

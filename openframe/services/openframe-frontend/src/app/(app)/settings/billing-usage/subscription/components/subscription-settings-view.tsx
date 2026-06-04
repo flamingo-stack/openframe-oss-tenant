@@ -1,7 +1,7 @@
 'use client';
 
 import { CheckboxBlock, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { type ReactNode, Suspense, useCallback, useState } from 'react';
+import { Fragment, type ReactNode, Suspense, useCallback, useState } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { subscriptionSettingsViewQuery as SubscriptionSettingsViewQueryType } from '@/__generated__/subscriptionSettingsViewQuery.graphql';
 import { useSubscriptionLock } from '@/app/components/subscription-lock/subscription-lock-context';
@@ -9,6 +9,7 @@ import { SubscriptionStatus } from '@/app/components/subscription-lock/subscript
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
+import { buildProductCancelUpdates } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
 import { ProductSubscriptionCard } from './product-subscription-card';
 import { SubscriptionSettingsSkeleton } from './subscription-settings-skeleton';
@@ -22,6 +23,9 @@ interface ProductDisplay {
   customSubtitle: string;
   helpText?: ReactNode;
 }
+
+const ADDITIONAL_DEVICES_HELPER_TEXT =
+  'You can add more devices anytime. Additional devices beyond your package are charged at $5/device and added to your next invoice.';
 
 const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
   MANAGED_DEVICES: {
@@ -56,6 +60,7 @@ const subscriptionSettingsViewQuery = graphql`
       products {
         name
         payAsYouGoOption { id }
+        packageOptions { packageOptionId status }
         ...productSubscriptionCardSubscriptionFragment
       }
     }
@@ -97,7 +102,10 @@ function SubscriptionSettingsContent() {
   }, []);
 
   const considered = products.filter(p => !(p.name === 'AI_ASSISTANCE' && !aiEnabled));
-  const packageUpdates = considered.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []);
+  const aiCancelUpdates = aiEnabled
+    ? []
+    : buildProductCancelUpdates('AI_ASSISTANCE', subscriptionProducts.find(sp => sp.name === 'AI_ASSISTANCE') ?? null);
+  const packageUpdates = [...considered.flatMap(p => updatesMap[p.name]?.packageUpdates ?? []), ...aiCancelUpdates];
   const checkoutProducts = considered.map(p => updatesMap[p.name]?.checkout).filter(c => c != null);
   const hasInvalidCustom = considered.some(p => {
     const updates = updatesMap[p.name];
@@ -126,24 +134,38 @@ function SubscriptionSettingsContent() {
           if (!display) return null;
           const subProduct = subscriptionProducts.find(sp => sp.name === product.name) ?? null;
           return (
-            <ProductSubscriptionCard
-              key={product.id}
-              productRef={product}
-              subscriptionProductRef={subProduct}
-              disabled={product.name === 'AI_ASSISTANCE' && !aiEnabled}
-              onUpdatesChange={updates => handleUpdatesChange(product.name, updates)}
-              {...display}
-            />
+            <Fragment key={product.id}>
+              <ProductSubscriptionCard
+                productRef={product}
+                subscriptionProductRef={subProduct}
+                disabled={product.name === 'AI_ASSISTANCE' && !aiEnabled}
+                onUpdatesChange={updates => handleUpdatesChange(product.name, updates)}
+                {...display}
+              />
+              {product.name === 'MANAGED_DEVICES' && (
+                <p className="text-h6 text-ods-text-secondary lg:hidden">{ADDITIONAL_DEVICES_HELPER_TEXT}</p>
+              )}
+            </Fragment>
           );
         })}
       </div>
 
-      <div className="flex flex-row gap-6 items-center">
+      <div className="hidden md:flex flex-row gap-6 items-center">
         <p className="hidden lg:block text-h6 text-ods-text-secondary flex-1 max-w-[500px]">
-          You can add more devices anytime. Additional devices beyond your package are charged at $5/device and added to
-          your next invoice.
+          {ADDITIONAL_DEVICES_HELPER_TEXT}
         </p>
         <div className="flex flex-1 justify-end">
+          <SubscriptionSubmitButton
+            needsCheckout={needsCheckout}
+            packageUpdates={packageUpdates}
+            checkoutProducts={checkoutProducts}
+            hasInvalidCustom={hasInvalidCustom}
+          />
+        </div>
+      </div>
+
+      <div className="md:hidden sticky bottom-0 z-10 -mx-[var(--spacing-system-l)] border-t border-ods-border bg-ods-card px-[var(--spacing-system-l)] py-4">
+        <div className="flex justify-end">
           <SubscriptionSubmitButton
             needsCheckout={needsCheckout}
             packageUpdates={packageUpdates}

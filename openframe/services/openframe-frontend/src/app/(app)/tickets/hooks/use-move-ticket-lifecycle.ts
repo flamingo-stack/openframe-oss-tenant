@@ -1,0 +1,82 @@
+'use client';
+
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { ticketService } from '../services';
+import {
+  applyOptimisticMoveLifecycle,
+  type OptimisticMoveLifecycleInput,
+  type OptimisticMoveSnapshot,
+  rollbackOptimisticMove,
+} from '../utils/optimistic-board';
+import { dialogsQueryKeys, ticketsQueryKeys } from '../utils/query-keys';
+
+export interface MoveTicketLifecycleParams {
+  ticketId: string;
+  sourceStatusId: string;
+  targetStatusId: string;
+  afterTicketId: string | null;
+  beforeTicketId: string | null;
+}
+
+const MOVE_TICKET_LIFECYCLE_MUTATION_KEY = ['tickets-board', 'move-lifecycle'] as const;
+
+async function moveTicketRequest(params: MoveTicketLifecycleParams): Promise<void> {
+  const isCrossColumn = params.sourceStatusId !== params.targetStatusId;
+  const hasAnchor = params.afterTicketId !== null || params.beforeTicketId !== null;
+
+  if (isCrossColumn && !hasAnchor) {
+    await ticketService.transitionTicket(params.ticketId, params.targetStatusId);
+    return;
+  }
+
+  await ticketService.reorderTicket({
+    id: params.ticketId,
+    afterTicketId: params.afterTicketId,
+    beforeTicketId: params.beforeTicketId,
+    statusId: isCrossColumn ? params.targetStatusId : undefined,
+  });
+}
+
+export function useMoveTicketLifecycle() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation<void, Error, MoveTicketLifecycleParams, OptimisticMoveSnapshot>({
+    mutationKey: MOVE_TICKET_LIFECYCLE_MUTATION_KEY,
+    scope: { id: 'tickets-board-move-lifecycle' },
+    mutationFn: moveTicketRequest,
+    onMutate: async params => {
+      await queryClient.cancelQueries({ queryKey: dialogsQueryKeys.boardColumnsLifecycle() });
+      const input: OptimisticMoveLifecycleInput = {
+        ticketId: params.ticketId,
+        sourceStatusId: params.sourceStatusId,
+        targetStatusId: params.targetStatusId,
+        afterTicketId: params.afterTicketId,
+        beforeTicketId: params.beforeTicketId,
+      };
+      return applyOptimisticMoveLifecycle(queryClient, input);
+    },
+    onError: (err, _params, snapshot) => {
+      if (snapshot) rollbackOptimisticMove(queryClient, snapshot);
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to move ticket',
+        variant: 'destructive',
+        duration: 5000,
+      });
+    },
+    onSettled: (_data, _err, params) => {
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(params.ticketId) });
+    },
+  });
+}
+
+export function useMovingTicketIdsLifecycle(): Set<string> {
+  const pending = useMutationState<string>({
+    filters: { mutationKey: MOVE_TICKET_LIFECYCLE_MUTATION_KEY, status: 'pending' },
+    select: m => (m.state.variables as MoveTicketLifecycleParams | undefined)?.ticketId ?? '',
+  });
+  return useMemo(() => new Set(pending.filter(Boolean)), [pending]);
+}

@@ -8,6 +8,7 @@ import {
   multiSelectFilterFn,
   type OnChangeFn,
   type Row,
+  resolveStatusTagProps,
   SquareAvatar,
   TicketStatusTag,
   TruncateText,
@@ -92,7 +93,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
   const statusColumn: ColumnDef<Dialog> = {
     accessorKey: 'status',
     header: 'STATUS',
-    cell: ({ row }: { row: Row<Dialog> }) => <TicketStatusTag status={row.original.status} />,
+    cell: ({ row }: { row: Row<Dialog> }) => <TicketStatusTag {...resolveStatusTagProps(row.original)} />,
     ...(!isArchived && {
       filterFn: multiSelectFilterFn,
       meta: {

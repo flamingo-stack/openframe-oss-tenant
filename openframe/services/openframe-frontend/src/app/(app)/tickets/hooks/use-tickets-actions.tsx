@@ -3,6 +3,7 @@
 import {
   BoxArchiveIcon,
   CheckCircleIcon,
+  PenEditIcon,
   PlusCircleIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type {
@@ -13,6 +14,7 @@ import type {
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
+import { featureFlags } from '@/lib/feature-flags';
 import { useArchiveResolvedMutation } from './use-archive-resolved-mutation';
 import { useTicketStatistics } from './use-ticket-statistics';
 
@@ -36,6 +38,9 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
     setIsArchiveConfirmOpen(false);
   }, [archiveResolvedMutation]);
 
+  const openArchiveResolvedConfirm = useCallback(() => setIsArchiveConfirmOpen(true), []);
+  const canArchiveResolved = resolvedCount > 0 && !archiveResolvedMutation.isPending && !isLoading;
+
   const actions = useMemo<PageActionButton[]>(() => {
     if (!enabled) return [];
     return [
@@ -50,25 +55,32 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
 
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     if (!enabled) return [];
-    const items: ActionsMenuItem[] = [
-      {
-        id: 'tickets-archive',
-        label: 'Tickets Archive',
-        icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
-        href: '/tickets/archive',
-      },
-    ];
+    const items: ActionsMenuItem[] = [];
+    if (featureFlags.ticketStatuses.enabled()) {
+      items.push({
+        id: 'edit-statuses',
+        label: 'Edit Statuses',
+        icon: <PenEditIcon className="text-ods-text-secondary" />,
+        href: '/tickets/statuses',
+      });
+    }
+    items.push({
+      id: 'tickets-archive',
+      label: 'Tickets Archive',
+      icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
+      href: '/tickets/archive',
+    });
     if (resolvedCount > 0) {
       items.push({
         id: 'archive-resolved',
         label: 'Archive Resolved Tickets',
         icon: <CheckCircleIcon className="text-ods-text-secondary" />,
-        onClick: () => setIsArchiveConfirmOpen(true),
+        onClick: openArchiveResolvedConfirm,
         disabled: archiveResolvedMutation.isPending || isLoading,
       });
     }
     return [{ items }];
-  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading]);
+  }, [enabled, resolvedCount, archiveResolvedMutation.isPending, isLoading, openArchiveResolvedConfirm]);
 
   const dialog: ReactNode = (
     <ConfirmDialog
@@ -90,5 +102,5 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
     />
   );
 
-  return { actions, menuActions, dialog };
+  return { actions, menuActions, dialog, canArchiveResolved, openArchiveResolvedConfirm };
 }
