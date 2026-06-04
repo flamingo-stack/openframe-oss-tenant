@@ -1,0 +1,8 @@
+flowchart TD
+    Command["NotificationCommand"] --> Broadcaster["NotificationBroadcaster"]
+
+    Broadcaster --> Repo["NotificationRepository"]
+    Broadcaster --> ReadState["NotificationReadStateService"]
+    Broadcaster --> PublisherOpt["Optional NotificationNatsPublisher"]
+
+    PublisherOpt -->|"publish"| Nats["NATS Subject"]

@@ -1,316 +1,192 @@
 # Prerequisites
 
-Before getting started with OpenFrame, ensure your development environment meets the following requirements.
-
-## System Requirements
-
-### Minimum Hardware Requirements
-
-| Component | Minimum | Recommended |
-|-----------|---------|-------------|
-| CPU | 4 cores | 8+ cores |
-| RAM | 8 GB | 16+ GB |
-| Storage | 50 GB SSD | 100+ GB SSD |
-| Network | Stable internet | High-speed broadband |
-
-### Operating System Support
-
-OpenFrame supports development on:
-
-- **Linux** (Ubuntu 20.04+, CentOS 8+, Debian 11+)
-- **macOS** (10.15+)
-- **Windows** (Windows 10/11 with WSL2 recommended)
-
-## Required Software
-
-### Java Development
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Java JDK** | 21+ | Backend service development |
-| **Apache Maven** | 3.8+ | Build tool for Java services |
-| **Spring Boot** | 3.3.0 | Already included in dependencies |
-
-**Install Java 21:**
-
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install openjdk-21-jdk
-
-# macOS with Homebrew
-brew install openjdk@21
-
-# Windows (download from Oracle or use Chocolatey)
-choco install openjdk21
-```
-
-**Verify Java installation:**
-
-```bash
-java -version
-# Should show: openjdk version "21.x.x"
-
-mvn -version
-# Should show: Apache Maven 3.8.x or higher
-```
-
-### Node.js Development
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Node.js** | 18+ | VoltAgent core and tooling |
-| **npm** | 9+ | Package management |
-
-**Install Node.js:**
-
-```bash
-# Ubuntu/Debian - via NodeSource
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# macOS with Homebrew
-brew install node
-
-# Windows - download from nodejs.org or use Chocolatey
-choco install nodejs
-```
-
-**Verify Node.js installation:**
-
-```bash
-node --version
-# Should show: v18.x.x or higher
-
-npm --version
-# Should show: 9.x.x or higher
-```
-
-### Database Systems
-
-OpenFrame requires several database systems for different purposes:
-
-| Database | Version | Purpose |
-|----------|---------|---------|
-| **MongoDB** | 6.0+ | Primary transactional storage |
-| **Apache Cassandra** | 4.0+ | Time-series and log persistence |
-| **Apache Pinot** | 1.2.0+ | Real-time analytics |
-| **Redis** | 7.0+ | Caching and session storage |
-
-### Message Brokers
-
-| Software | Version | Purpose |
-|----------|---------|---------|
-| **Apache Kafka** | 3.6+ | Event streaming backbone |
-| **NATS Server** | 2.10+ | Agent messaging |
-
-### Development Tools
-
-| Tool | Version | Purpose |
-|------|---------|---------|
-| **Docker** | 20.10+ | Containerization (recommended for databases) |
-| **Docker Compose** | 2.0+ | Multi-container orchestration |
-| **Git** | 2.30+ | Version control |
-| **IDE** | Latest | IntelliJ IDEA, VS Code, or Eclipse |
-
-## Environment Variables
-
-Set the following environment variables for development:
-
-### Database Configuration
-
-```bash
-# MongoDB
-export MONGODB_URI="mongodb://localhost:27017/openframe"
-export MONGODB_DATABASE="openframe"
-
-# Cassandra
-export CASSANDRA_CONTACT_POINTS="localhost:9042"
-export CASSANDRA_KEYSPACE="openframe_logs"
-
-# Redis
-export REDIS_HOST="localhost"
-export REDIS_PORT="6379"
-
-# Apache Pinot
-export PINOT_CONTROLLER_URL="http://localhost:9000"
-export PINOT_BROKER_URL="http://localhost:8000"
-```
-
-### Message Brokers
-
-```bash
-# Kafka
-export KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
-export KAFKA_GROUP_ID="openframe-dev"
-
-# NATS
-export NATS_SERVERS="nats://localhost:4222"
-export NATS_CLUSTER_ID="openframe-cluster"
-```
-
-### Application Configuration
-
-```bash
-# OpenFrame Configuration
-export OPENFRAME_PROFILE="development"
-export OPENFRAME_CONFIG_SERVER="http://localhost:8888"
-
-# Security
-export JWT_SECRET="your-jwt-secret-key-here"
-export OAUTH2_CLIENT_SECRET="your-oauth2-client-secret"
-
-# AI Integration
-export ANTHROPIC_API_KEY="your-anthropic-api-key"
-export OPENAI_API_KEY="your-openai-api-key"
-```
-
-## Account Requirements
-
-### Required Accounts
-
-While OpenFrame is open-source, you may need accounts for:
-
-- **Anthropic** (for Claude AI integration) - [Get API key](https://console.anthropic.com/)
-- **OpenAI** (for GPT integration) - [Get API key](https://platform.openai.com/)
-- **GitHub** (for source code access) - [Free account](https://github.com/)
-
-### Optional Third-party Integrations
-
-Depending on your MSP needs:
-
-- **Google Workspace** (for SSO)
-- **Microsoft Azure AD** (for SSO)
-- **Slack** (for notifications)
-- **Various RMM/PSA tools** (TacticalRMM, ConnectWise, etc.)
-
-## Network Requirements
-
-### Firewall Considerations
-
-Ensure the following ports are accessible:
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 8080 | API Service | Internal REST/GraphQL API |
-| 8081 | Gateway Service | Edge routing and security |
-| 8082 | Authorization Server | OAuth2/OIDC endpoints |
-| 8083 | External API | Public API endpoints |
-| 8888 | Config Server | Centralized configuration |
-| 3000 | Frontend UI | Web dashboard (development) |
-
-### Database Ports
-
-| Port | Database | Purpose |
-|------|----------|---------|
-| 27017 | MongoDB | Document storage |
-| 9042 | Cassandra | Time-series data |
-| 6379 | Redis | Caching |
-| 9000 | Pinot Controller | Analytics coordination |
-| 8000 | Pinot Broker | Analytics queries |
-
-### Message Broker Ports
-
-| Port | Service | Purpose |
-|------|---------|---------|
-| 9092 | Kafka | Event streaming |
-| 4222 | NATS | Agent messaging |
-| 2181 | Zookeeper | Kafka coordination |
-
-## Verification Commands
-
-Run these commands to verify your environment is ready:
-
-### Check Java and Maven
-
-```bash
-java -version
-mvn -version
-```
-
-### Check Node.js
-
-```bash
-node --version
-npm --version
-```
-
-### Check Docker
-
-```bash
-docker --version
-docker compose version
-```
-
-### Check Git
-
-```bash
-git --version
-```
-
-### Test Database Connections
-
-```bash
-# MongoDB (if running locally)
-mongosh --eval "db.runCommand('ping')"
-
-# Redis (if running locally)
-redis-cli ping
-```
-
-## Quick Setup with Docker
-
-For development, you can start the required databases using Docker Compose:
-
-```bash
-# Create a docker-compose.yml for development dependencies
-curl -o docker-compose.dev.yml https://raw.githubusercontent.com/flamingo-stack/openframe-oss-tenant/main/docker-compose.dev.yml
-
-# Start development databases
-docker compose -f docker-compose.dev.yml up -d
-```
-
-This will start MongoDB, Redis, Kafka, and other required services in development mode.
-
-## Next Steps
-
-Once your environment meets these prerequisites:
-
-1. **[Quick Start Guide](quick-start.md)** - Get OpenFrame running quickly
-2. **[First Steps Guide](first-steps.md)** - Explore the platform features
-
-## Troubleshooting
-
-### Common Issues
-
-**Java Version Conflicts:**
-```bash
-# Check all Java versions
-java -version
-javac -version
-echo `$JAVA_HOME`
-```
-
-**Port Conflicts:**
-```bash
-# Check what's running on OpenFrame ports
-netstat -tulpn | grep :8080
-lsof -i :8080  # macOS
-```
-
-**Docker Issues:**
-```bash
-# Restart Docker service
-sudo systemctl restart docker  # Linux
-# Or restart Docker Desktop on macOS/Windows
-```
-
-### Getting Help
-
-If you encounter issues:
-- Join the [OpenMSP Slack Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- Check the platform documentation for environment-specific guides
+Before setting up OpenFrame OSS Tenant, ensure your development or deployment environment meets the following requirements.
 
 ---
 
-*Ready to proceed? Continue with the [Quick Start Guide](quick-start.md) to get OpenFrame running.*
+## Required Software
+
+| Tool | Minimum Version | Purpose |
+|---|---|---|
+| **Java (JDK)** | 21 | Backend microservices runtime |
+| **Maven** | 3.9+ | Build tool for all Java modules |
+| **Node.js** | 18+ | Frontend (Next.js) and documentation tooling |
+| **npm** or **pnpm** | npm 9+ / pnpm 8+ | Frontend package management |
+| **MongoDB** | 6.0+ | Primary persistence layer |
+| **Redis** | 7.0+ | Distributed locking, caching, rate limiting |
+| **Apache Kafka** | 3.6+ | Durable event messaging |
+| **Apache Cassandra** | 4.0+ | Unified log storage (stream processing) |
+| **NATS** (with JetStream) | 2.10+ | Real-time agent messaging |
+| **Rust** (optional) | 1.75+ | Required only for building the `openframe-client` agent |
+| **kubectl** | 1.28+ | Kubernetes deployment (optional) |
+
+---
+
+## System Requirements
+
+### Minimum (Development)
+
+| Resource | Minimum |
+|---|---|
+| CPU | 4 cores |
+| RAM | 8 GB |
+| Disk | 20 GB free |
+| OS | Linux, macOS, or Windows (with WSL2) |
+
+### Recommended (Production)
+
+| Resource | Recommended |
+|---|---|
+| CPU | 8+ cores per service node |
+| RAM | 16 GB+ per service node |
+| Disk | 100 GB+ (SSD) for databases |
+| Network | 1 Gbps internal |
+
+---
+
+## Infrastructure Dependencies
+
+OpenFrame OSS Tenant requires the following infrastructure services to be running:
+
+```mermaid
+graph LR
+    A["OpenFrame Services"] --> B["MongoDB"]
+    A --> C["Redis"]
+    A --> D["Apache Kafka"]
+    A --> E["Apache Cassandra"]
+    A --> F["NATS JetStream"]
+    A --> G["Config Server"]
+```
+
+### MongoDB
+
+- Used as the primary data store for all domain entities (tenants, users, devices, tickets, etc.)
+- Multi-tenant data with `tenantId` scoping on all collections
+- Requires replica set configuration for Debezium CDC support
+
+### Redis
+
+- Powers the distributed scheduler locking (ShedLock)
+- Caches machine and organization info
+- Used for API key stats and rate limit tracking
+
+### Apache Kafka
+
+- Receives Debezium CDC events from MongoDB
+- Used for durable event processing (stream service)
+- Topic auto-creation is managed by the Management service
+
+### Apache Cassandra
+
+- Stores unified log events from stream processing
+- Designed for time-series querying of audit/activity logs
+
+### NATS JetStream
+
+- Real-time messaging between OpenFrame services and the Rust agent (`openframe-client`)
+- Streams provisioned at startup by the Management service
+
+---
+
+## Environment Variables
+
+OpenFrame services are configured via Spring Cloud Config Server. Key environment variable categories:
+
+| Category | Examples |
+|---|---|
+| **MongoDB** | `SPRING_DATA_MONGODB_URI`, `SPRING_DATA_MONGODB_DATABASE` |
+| **Redis** | `SPRING_REDIS_HOST`, `SPRING_REDIS_PORT` |
+| **Kafka** | `SPRING_KAFKA_BOOTSTRAP_SERVERS` |
+| **NATS** | `NATS_URL` |
+| **Cassandra** | `SPRING_CASSANDRA_CONTACT_POINTS` |
+| **Security** | `JWT_ISSUER_URI`, `JWT_PUBLIC_KEY` |
+| **External Tools** | Tool-specific API keys and URLs (configured at runtime via the management API) |
+
+> Refer to your environment configuration files for actual values. Defaults for local development are typically set in the Config Server's configuration repository.
+
+---
+
+## Account & Access Requirements
+
+| Requirement | Description |
+|---|---|
+| **GitHub Access** | To clone this repository and `openframe-oss-lib` dependency |
+| **Maven Repository Access** | For OpenFrame OSS library artifacts (`com.openframe.oss`) |
+| **OpenMSP Slack (optional)** | For community support and questions |
+
+The OpenFrame OSS library artifacts are published to a Maven repository. Ensure your `~/.m2/settings.xml` has credentials configured if the repository requires authentication.
+
+---
+
+## Kubernetes (Optional)
+
+If deploying to Kubernetes, you will additionally need:
+
+| Tool | Minimum Version |
+|---|---|
+| **kubectl** | 1.28+ |
+| **Helm** | 3.14+ |
+| **A running K8s cluster** | 1.28+ (e.g., kind, k3s, GKE, EKS, AKS) |
+
+Kubernetes manifests are available under the `manifests/` directory.
+
+---
+
+## Verification Checklist
+
+Run these commands to verify your environment is ready:
+
+```bash
+# Java 21
+java --version
+# Expected: openjdk 21.x.x or similar
+
+# Maven
+mvn --version
+# Expected: Apache Maven 3.9.x
+
+# Node.js
+node --version
+# Expected: v18.x.x or higher
+
+# npm
+npm --version
+# Expected: 9.x.x or higher
+
+# MongoDB (if running locally)
+mongosh --eval "db.version()"
+
+# Redis (if running locally)
+redis-cli ping
+# Expected: PONG
+
+# Kafka (if running locally)
+kafka-topics.sh --version
+
+# NATS (if running locally)
+nats-server --version
+```
+
+---
+
+## OpenFrame OSS Library
+
+This repository depends on `openframe-oss-lib` which provides shared libraries. Ensure the following version is available in your Maven repository:
+
+| Library | Version |
+|---|---|
+| `com.openframe.oss:openframe-core` | `5.64.0` |
+| `com.openframe.oss:openframe-api-lib` | `5.64.0` |
+| `com.openframe.oss:openframe-security-core` | `5.64.0` |
+| `com.openframe.oss:openframe-data-mongo-*` | `5.64.0` |
+
+The parent POM (`pom.xml`) manages all library versions via the `openframe.libs.version` property.
+
+---
+
+## Next Steps
+
+Once your environment is ready:
+
+- Follow the [Quick Start](quick-start.md) guide to get the platform running
+- Review the [First Steps](first-steps.md) guide to explore key features

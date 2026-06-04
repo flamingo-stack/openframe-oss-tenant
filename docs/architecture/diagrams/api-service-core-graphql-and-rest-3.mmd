@@ -1,0 +1,7 @@
+flowchart TD
+    GlobalId["Global ID"] --> Decode["Relay.fromGlobalId"]
+    Decode --> Type["Node Type"]
+    Decode --> RawId["Entity ID"]
+    RawId --> Service["Domain Service Lookup"]
+    Service --> Entity["Domain Object"]
+    Entity --> Encode["Relay.toGlobalId"]

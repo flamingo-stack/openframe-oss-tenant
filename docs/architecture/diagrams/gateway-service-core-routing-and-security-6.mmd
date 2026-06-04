@@ -1,0 +1,6 @@
+flowchart LR
+    WsReq["WebSocket Request"] --> RouteLocator["RouteLocator"]
+    RouteLocator --> ToolApiFilter["ToolApiWebSocketProxyUrlFilter"]
+    RouteLocator --> ToolAgentFilter["ToolAgentWebSocketProxyUrlFilter"]
+    ToolApiFilter --> UpstreamWs["Tool WS Upstream"]
+    ToolAgentFilter --> UpstreamWs

@@ -1,0 +1,4 @@
+flowchart TD
+    Load["Load Script From Resources"] --> Exists{"Script Exists?"}
+    Exists -->|"No"| Create["Create Script via API"]
+    Exists -->|"Yes"| Update["Update Script via API"]

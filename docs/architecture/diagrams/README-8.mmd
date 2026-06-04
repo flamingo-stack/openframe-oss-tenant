@@ -1,0 +1,18 @@
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Auth
+    participant API
+    participant Mongo
+    participant Kafka
+    participant NATS
+
+    Client->>Gateway: HTTP Request (JWT)
+    Gateway->>Auth: Validate Token
+    Auth->>Gateway: Token OK
+    Gateway->>API: Forward Request
+    API->>Mongo: Query / Persist
+    API->>Kafka: Publish Event
+    API->>NATS: Notify Agents
+    API->>Gateway: Response
+    Gateway->>Client: HTTP 200

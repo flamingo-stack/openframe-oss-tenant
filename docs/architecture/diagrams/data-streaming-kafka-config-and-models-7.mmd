@@ -1,3 +1,0 @@
-flowchart TD
-    Publish["Kafka Publish"] -->|"exception"| Recovery["KafkaRecoveryHandlerImpl"]
-    Recovery --> Log["Structured Error Log"]

@@ -1,0 +1,23 @@
+flowchart TD
+    Browser["User Browser"] -->|"Login / OAuth2"| AuthServer["Authorization Server Core"]
+
+    subgraph security_layer["Security & OAuth2 Layer"]
+        AuthServer --> AuthzConfig["AuthorizationServerConfig"]
+        AuthServer --> DefaultSecurity["SecurityConfig"]
+        AuthServer --> TenantFilter["TenantContextFilter"]
+    end
+
+    subgraph identity_layer["Identity & SSO"]
+        AuthServer --> LoginController["LoginController"]
+        AuthServer --> InvitationController["InvitationRegistrationController"]
+        AuthServer --> TenantRegController["TenantRegistrationController"]
+        AuthServer --> SsoDiscovery["SsoDiscoveryController"]
+    end
+
+    subgraph token_layer["Token & Key Management"]
+        AuthServer --> TenantKeyServiceNode["TenantKeyService"]
+        AuthServer --> MongoAuthService["MongoAuthorizationService"]
+        AuthServer --> ClientRepo["MongoRegisteredClientRepository"]
+    end
+
+    AuthServer --> MongoDB[("MongoDB")]

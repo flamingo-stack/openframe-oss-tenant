@@ -1,0 +1,17 @@
+flowchart TD
+    App["Management Application"] --> Config["Management Configuration"]
+    App --> Initializers["Startup Initializers"]
+    App --> Schedulers["Background Schedulers"]
+    App --> Controllers["Management Controllers"]
+    App --> Migrations["MongoDB Change Units"]
+
+    Initializers --> Mongo[("MongoDB")]
+    Initializers --> NATS[("NATS Streams")]
+    Initializers --> Tools["External Tool APIs"]
+
+    Schedulers --> Redis[("Redis")]
+    Schedulers --> Mongo
+    Schedulers --> NATS
+
+    Controllers --> Mongo
+    Controllers --> KafkaConnect["Debezium / Kafka Connect"]

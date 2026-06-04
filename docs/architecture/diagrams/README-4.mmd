@@ -1,7 +1,4 @@
-flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
-    MongoCDC["Debezium CDC"] --> Kafka
-    Kafka --> Stream["Stream Service"]
-    Stream --> Cassandra
-    Stream --> KafkaOut["Outbound Kafka"]
-    Stream --> Pinot
+flowchart TD
+    API["API Layer"] --> Repository["Custom Repository"]
+    Repository --> Criteria["Mongo Criteria"]
+    Criteria --> MongoDB["MongoDB"]

@@ -1,0 +1,7 @@
+flowchart TD
+    Event["Deserialized Event"] --> MachineCache["MachineIdCacheService"]
+    MachineCache --> OrgCache["Organization Cache"]
+    Event --> TenantResolver["Tenant Resolver"]
+    MachineCache --> Enriched
+    OrgCache --> Enriched
+    TenantResolver --> Enriched["IntegratedToolEnrichedData"]

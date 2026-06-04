@@ -1,0 +1,9 @@
+flowchart TD
+    Boot["Spring Boot Startup"] --> Init["DataInitializer"]
+    Boot --> Security["SecurityConfig"]
+    Boot --> GraphQLInit["DGS Initialization"]
+    GraphQLInit --> Scalars["Custom Scalars"]
+    GraphQLInit --> Resolvers["DataFetchers and TypeResolvers"]
+    Security --> Ready["API Ready"]
+    Resolvers --> Ready
+    Init --> Ready

@@ -1,0 +1,8 @@
+flowchart TD
+    InviteLink["Invitation Link"] --> AcceptEndpoint["/invitations/accept/sso"]
+    AcceptEndpoint --> SetCookie["Set SSO Invite Cookie"]
+    SetCookie --> RedirectProvider["Redirect To SSO Provider"]
+    RedirectProvider --> Callback["OAuth2 Callback"]
+    Callback --> InviteHandler["InviteSsoHandler"]
+    InviteHandler --> RegisterUser["InvitationRegistrationService"]
+    RegisterUser --> ContinueOAuth["Continue Authorization Flow"]

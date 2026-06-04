@@ -1,0 +1,4 @@
+flowchart TD
+    Event --> Check["TenantId Present?"]
+    Check -->|Yes| Continue
+    Check -->|No| Drop

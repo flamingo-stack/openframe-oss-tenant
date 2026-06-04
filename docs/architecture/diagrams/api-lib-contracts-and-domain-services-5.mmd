@@ -1,0 +1,5 @@
+flowchart TD
+    Save["BeforeConvertEvent"] --> Listener["KnowledgeBasePublishLifecycleListener"]
+    Listener --> Check{{"Status PUBLISHED?"}}
+    Check -->|"Yes"| Stamp["Set publishedAt"]
+    Check -->|"No"| End["End"]

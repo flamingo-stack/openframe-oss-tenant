@@ -1,15 +1,5 @@
 flowchart TD
-    UI["Frontend & Chat Clients"] --> Edge["Gateway Layer"]
-    Edge --> Security["Authorization Server & Shared JWT"]
-    Edge --> ApiLayer["API & External API Services"]
-
-    ApiLayer --> Domain["Domain Services"]
-    Domain --> Data["Mongo / Cassandra / Pinot"]
-
-    Stream["Stream Service"] --> Kafka["Kafka"]
-    Kafka --> Stream
-    Stream --> Pinot
-    Stream --> Cassandra
-
-    Client["Client Service"] --> NATS["NATS / JetStream"]
-    Client --> Domain
+    Browser["User Browser"] --> AuthServer["Authorization Server"]
+    AuthServer --> TenantContext["TenantContextFilter"]
+    AuthServer --> Jwt["JWT Issuance"]
+    Jwt --> Gateway["Gateway Resource Server"]

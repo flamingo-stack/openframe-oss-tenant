@@ -1,0 +1,5 @@
+flowchart TD
+    Tick["Scheduler Tick"] --> ApiKey["ApiKeyStatsSyncScheduler"]
+    Tick --> Heartbeat["DeviceHeartbeatOfflineDetectionScheduler"]
+    Tick --> Fleet["FleetMdmSetupScheduler"]
+    Tick --> Fallback["AgentVersionUpdatePublishFallbackScheduler"]

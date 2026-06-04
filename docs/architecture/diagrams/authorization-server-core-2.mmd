@@ -1,0 +1,6 @@
+flowchart TD
+    Request["Incoming Request"] --> TenantFilter["TenantContextFilter"]
+    TenantFilter --> ContextSet["TenantContext.setTenantId()"]
+    ContextSet --> AuthLogic["Security / OAuth2 Processing"]
+    AuthLogic --> TokenIssue["JWT Issued With tenant_id Claim"]
+    TokenIssue --> ContextClear["TenantContext.clear()"]

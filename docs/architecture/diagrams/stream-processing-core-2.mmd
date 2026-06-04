@@ -1,0 +1,5 @@
+flowchart LR
+    StreamsApp["Kafka Streams App"] --> Serde1["ActivityMessage Serde"]
+    StreamsApp --> Serde2["HostActivityMessage Serde"]
+    StreamsApp --> StateDir["State Store Directory"]
+    StreamsApp --> JoinWindow["Join Window 5s"]

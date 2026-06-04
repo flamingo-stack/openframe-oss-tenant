@@ -1,12 +1,5 @@
-sequenceDiagram
-    participant Browser
-    participant Gateway
-    participant AuthServer
-    participant ApiService
-
-    Browser->>AuthServer: OAuth Login (tenant-scoped)
-    AuthServer-->>Browser: JWT (tenant_id claim)
-    Browser->>Gateway: API Request with JWT
-    Gateway->>Gateway: Validate issuer + signature
-    Gateway->>ApiService: Forward with identity context
-    ApiService->>ApiService: Enforce tenant isolation
+flowchart LR
+    Client["Client"] --> Gateway["Reactive Gateway"]
+    Gateway --> JwtValidation["JWT Validation"]
+    Gateway --> ApiKey["API Key Filter"]
+    Gateway --> Proxy["REST / WS Proxy"]

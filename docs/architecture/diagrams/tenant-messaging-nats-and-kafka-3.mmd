@@ -1,0 +1,4 @@
+flowchart TD
+    Producer["Kafka Producer"] -->|"send"| Broker["Kafka Broker"]
+    Producer -->|"exception"| Recovery["KafkaRecoveryHandlerImpl"]
+    Recovery --> Logs["Structured Error Logs"]

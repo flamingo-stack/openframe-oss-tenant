@@ -1,0 +1,36 @@
+flowchart TD
+    Client["Client Applications"] --> Gateway["Gateway Service"]
+    Gateway --> ApiCore["Api Service Core Graphql And Rest"]
+
+    subgraph api_layer["API Layer"]
+        direction TB
+        RestControllers["REST Controllers"]
+        GraphQL["GraphQL DGS DataFetchers"]
+    end
+
+    subgraph service_layer["Service Layer"]
+        direction TB
+        DomainServices["Domain Services"]
+        Processors["Post Processors"]
+        Validators["Domain Validators"]
+    end
+
+    subgraph infra_layer["Infrastructure"]
+        direction TB
+        Mongo["Mongo Repositories"]
+        Messaging["NATS and Kafka"]
+        AuthServer["Authorization Server"]
+    end
+
+    ApiCore --> RestControllers
+    ApiCore --> GraphQL
+
+    RestControllers --> DomainServices
+    GraphQL --> DomainServices
+
+    DomainServices --> Processors
+    DomainServices --> Validators
+
+    DomainServices --> Mongo
+    DomainServices --> Messaging
+    DomainServices --> AuthServer

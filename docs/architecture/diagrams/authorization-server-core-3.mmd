@@ -1,0 +1,9 @@
+flowchart TD
+    TokenRequest["Token Request"] --> JwkSource["JWKSource Bean"]
+    JwkSource --> TenantKeyServiceNode["TenantKeyService"]
+    TenantKeyServiceNode -->|"Active Key Exists"| UseKey["Return Existing RSAKey"]
+    TenantKeyServiceNode -->|"No Active Key"| Generate["Generate RSA Key Pair"]
+    Generate --> Store["Encrypt & Store Private Key"]
+    Store --> UseKey
+    UseKey --> JwtEncoder["NimbusJwtEncoder"]
+    JwtEncoder --> AccessToken["Signed JWT"]

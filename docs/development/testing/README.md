@@ -1,784 +1,338 @@
 # Testing Overview
 
-OpenFrame follows comprehensive testing practices to ensure reliability, security, and performance across all components. This guide covers the testing strategy, frameworks, and best practices used throughout the platform.
+OpenFrame OSS Tenant includes a comprehensive testing infrastructure spanning unit tests, integration tests, and end-to-end UI tests. The project uses Spring Boot Test, JUnit 5, Mockito, and a dedicated `openframe-test` module for integration testing.
 
-## Testing Strategy
+---
 
-### Testing Pyramid
-
-```mermaid
-graph TD
-    E2E[End-to-End Tests<br/>~5% of tests<br/>Full user workflows]
-    Integration[Integration Tests<br/>~25% of tests<br/>Service interactions]
-    Unit[Unit Tests<br/>~70% of tests<br/>Individual components]
-    
-    E2E --> Integration
-    Integration --> Unit
-```
-
-**Test Distribution:**
-- **Unit Tests (70%)**: Fast, isolated tests for individual components
-- **Integration Tests (25%)**: Service interactions and database operations
-- **End-to-End Tests (5%)**: Complete user workflows and system behavior
-
-### Test Categories by Layer
-
-```mermaid
-flowchart LR
-    subgraph "Frontend Testing"
-        UnitUI[Unit Tests<br/>Component Logic]
-        IntegrationUI[Integration Tests<br/>API Calls]
-        E2EUI[E2E Tests<br/>User Workflows]
-    end
-    
-    subgraph "Backend Testing"
-        UnitBE[Unit Tests<br/>Service Logic]
-        IntegrationBE[Integration Tests<br/>Database & Messaging]
-        ContractBE[Contract Tests<br/>API Compatibility]
-    end
-    
-    subgraph "Infrastructure Testing"
-        SecurityTests[Security Tests<br/>Vulnerabilities]
-        PerformanceTests[Performance Tests<br/>Load & Stress]
-        ChaosTests[Chaos Tests<br/>Resilience]
-    end
-```
-
-## Test Structure and Organization
-
-### Backend Test Structure
+## Test Structure
 
 ```text
-src/test/java/
-├── unit/                           # Unit tests
-│   ├── service/                   # Service layer tests
-│   ├── controller/                # Controller tests (with @WebMvcTest)
-│   ├── mapper/                    # Mapper and DTO tests
-│   └── util/                      # Utility class tests
-├── integration/                   # Integration tests
-│   ├── repository/                # Database integration tests
-│   ├── messaging/                 # Kafka/NATS integration tests
-│   ├── external/                  # External API integration tests
-│   └── security/                  # Security integration tests
-└── e2e/                          # End-to-end tests
-    ├── api/                      # API workflow tests
-    ├── auth/                     # Authentication flow tests
-    └── tenant/                   # Multi-tenancy tests
+openframe-oss-tenant/
+├── openframe/
+│   └── services/
+│       ├── openframe-api/
+│       │   └── src/test/java/com/openframe/api/
+│       │       ├── config/              # Test configuration
+│       │       ├── util/                # Test utilities
+│       │       └── TestConstants.java   # Shared test constants
+│       ├── openframe-test/
+│       │   └── src/main/java/com/openframe/test/
+│       │       ├── tests/               # API integration tests
+│       │       ├── tests/ui/            # UI integration tests
+│       │       ├── api/                 # API client helpers
+│       │       ├── pages/               # Page object models
+│       │       ├── data/                # Test data generators
+│       │       ├── config/              # Test environment config
+│       │       └── runner/              # Test runner infrastructure
+└── deps/openframe-oss-lib/
+    ├── openframe-api-service-core/
+    │   └── src/test/                    # Integration tests for API core
+    └── openframe-data-mongo-sync/
+        └── src/test/                    # MongoDB integration tests
 ```
 
-### Frontend Test Structure
+---
 
-```text
-src/
-├── components/
-│   └── __tests__/                # Component unit tests
-├── hooks/
-│   └── __tests__/                # Custom hook tests  
-├── services/
-│   └── __tests__/                # Service layer tests
-├── utils/
-│   └── __tests__/                # Utility function tests
-└── __tests__/
-    ├── integration/              # API integration tests
-    ├── e2e/                      # End-to-end Playwright tests
-    └── setup/                    # Test configuration
-```
+## Test Categories
 
-## Testing Frameworks and Tools
+### Unit Tests
 
-### Backend Testing Stack
+Unit tests cover individual components in isolation using Mockito for dependency mocking.
 
-| Framework | Purpose | Usage |
-|-----------|---------|-------|
-| **JUnit 5** | Unit testing framework | Core testing framework for all Java tests |
-| **Mockito** | Mocking framework | Service mocking and behavior verification |
-| **Spring Boot Test** | Spring integration testing | `@SpringBootTest`, `@WebMvcTest`, `@DataJpaTest` |
-| **TestContainers** | Integration testing with real databases | MongoDB, Redis, Kafka containers for integration tests |
-| **WireMock** | HTTP service mocking | External API mocking and contract testing |
-| **RestAssured** | API testing | REST API integration and contract testing |
+**Key Test Files:**
+- `AgentRegistrationServiceTest` — Agent registration logic
+- `AgentControllerTest` — Controller request handling
+- `PinotQueryBuilderTest` — Query builder correctness
+- `MachineTagEventAspectTest` — AOP aspect behavior
+- `NotificationContextGraphQlTypeResolverTest` — GraphQL type resolution
 
-### Frontend Testing Stack
+### Integration Tests
 
-| Framework | Purpose | Usage |
-|-----------|---------|-------|
-| **Jest** | JavaScript testing framework | Unit and integration tests |
-| **React Testing Library** | Component testing | Component behavior and user interaction testing |
-| **MSW (Mock Service Worker)** | API mocking | HTTP request mocking for frontend tests |
-| **Playwright** | End-to-end testing | Cross-browser E2E testing and automation |
+Integration tests use embedded infrastructure (MongoDB, Redis) via Testcontainers.
+
+**Key Integration Test Bases:**
+- `BaseMongoIntegrationTest` — Sets up an embedded MongoDB for repository tests
+- `GraphQlIntegrationTestApplication` — Full Spring context for GraphQL tests
+- `ServiceIntegrationTestApplication` — Service-level integration testing
+
+### End-to-End API Tests
+
+The `openframe-test` service contains a full E2E test suite against running services:
+
+**Test Coverage Areas:**
+- `OwnerRegistrationTest` — Full tenant registration flow
+- `UserInvitationsTest` — User invitation and acceptance
+- `DevicesTest` — Device management APIs
+- `TicketsTest` — Ticket creation, update, transition
+- `OrganizationsTest` — Customer organization management
+- `KnowledgeBaseTest` — Article and folder lifecycle
+- `LogsTest` — Audit log querying
+- `ScriptsTest` — Script CRUD and execution
+- `AuthTokensTest` — Token issuance and validation
+
+### UI Tests
+
+The `openframe-test` module also includes Playwright-based UI tests:
+
+**Page Object Models:**
+- `AuthEntryPage` — Login/signup page
+- `DashboardPage` — Main dashboard
+- `DevicesPage` / `DeviceDetailsPage` — Device management
+- `RemoteDesktopPage` / `RemoteShellPage` — Remote access
+- `ScriptsPage` / `RunScriptPage` — Script management
+- `MonitoringPage` — Fleet monitoring
+
+---
 
 ## Running Tests
 
-### Backend Test Execution
+### Run All Tests
 
-**Run all tests:**
 ```bash
-# Maven: All tests with coverage
-mvn clean test
+# Run all tests across all modules
+mvn test
 
-# Maven: Integration tests only
-mvn clean verify -Dtest.groups=integration
-
-# Maven: Unit tests only (excluding integration)
-mvn test -Dtest.groups='!integration'
+# Run tests with a specific profile
+mvn test -Pintegration-tests
 ```
 
-**Run specific test categories:**
+### Run Tests for a Specific Module
+
 ```bash
-# Security tests only
-mvn test -Dtest="**/*SecurityTest"
+# API service tests
+mvn test -pl openframe/services/openframe-api
 
-# Repository integration tests
-mvn test -Dtest="**/*RepositoryTest" -Dspring.profiles.active=test
+# Test service integration tests
+mvn test -pl openframe/services/openframe-test
 
-# Controller tests only
-mvn test -Dtest="**/*ControllerTest"
+# OSS library tests (in deps)
+mvn test -pl openframe-oss-lib/openframe-api-service-core
 ```
 
-**IDE Test Execution:**
-```text
-IntelliJ IDEA:
-- Right-click on test class → Run 'TestClassName'
-- Right-click on test method → Run specific test
-- Use test runner window for batch execution
+### Run a Specific Test Class
 
-VS Code:
-- Use Java Test Runner extension
-- Run tests from Test Explorer panel
-- Debug tests with integrated debugger
-```
-
-### Frontend Test Execution
-
-**Run all frontend tests:**
 ```bash
-cd openframe/services/openframe-frontend
+mvn test -pl openframe/services/openframe-api \
+  -Dtest=AgentRegistrationServiceTest
 
-# All tests with coverage
-npm test
-
-# Watch mode for development
-npm run test:watch
-
-# Integration tests only
-npm run test:integration
-
-# E2E tests
-npm run test:e2e
+# Run a specific test method
+mvn test -pl openframe/services/openframe-api \
+  -Dtest=AgentRegistrationServiceTest#testRegisterAgent
 ```
 
-**Specific test execution:**
+### Skip Tests (for fast builds)
+
 ```bash
-# Component tests only
-npm test -- --testPathPattern=components
+# Skip compilation of tests
+mvn clean install -DskipTests
 
-# Service tests only  
-npm test -- --testPathPattern=services
-
-# Single test file
-npm test -- ComponentName.test.tsx
+# Compile tests but skip execution
+mvn clean install -Dmaven.test.skip=false -DskipTests=true
 ```
 
-## Test Examples and Patterns
+---
 
-### Unit Testing Examples
+## Writing New Tests
 
-**Service Layer Unit Test:**
+### Unit Test Template
+
 ```java
 @ExtendWith(MockitoExtension.class)
-class OrganizationServiceTest {
-    
+class MyServiceTest {
+
     @Mock
-    private OrganizationRepository organizationRepository;
-    
-    @Mock
-    private TenantContext tenantContext;
-    
+    private MyRepository repository;
+
     @InjectMocks
-    private OrganizationService organizationService;
-    
+    private MyService service;
+
     @Test
-    void createOrganization_Success() {
-        // Given
-        String tenantId = "tenant123";
-        CreateOrganizationRequest request = new CreateOrganizationRequest("Test Org", "test@example.com");
-        Organization savedOrg = new Organization("org123", "Test Org", tenantId);
-        
-        when(tenantContext.getTenantId()).thenReturn(tenantId);
-        when(organizationRepository.save(any(Organization.class))).thenReturn(savedOrg);
-        
-        // When
-        OrganizationResponse result = organizationService.createOrganization(request);
-        
-        // Then
-        assertThat(result.getName()).isEqualTo("Test Org");
-        assertThat(result.getTenantId()).isEqualTo(tenantId);
-        
-        verify(organizationRepository).save(argThat(org -> 
-            org.getName().equals("Test Org") && 
-            org.getTenantId().equals(tenantId)
-        ));
-    }
-    
-    @Test
-    void createOrganization_TenantIsolation() {
-        // Given
-        when(tenantContext.getTenantId()).thenReturn("tenant123");
-        CreateOrganizationRequest request = new CreateOrganizationRequest("Test Org", "test@example.com");
-        
-        // When
-        organizationService.createOrganization(request);
-        
-        // Then - Verify tenant ID is always set
-        verify(organizationRepository).save(argThat(org -> 
-            "tenant123".equals(org.getTenantId())
-        ));
+    void whenValidInput_thenReturnsExpectedResult() {
+        // Arrange
+        when(repository.findByTenantId("tenant-1"))
+            .thenReturn(Optional.of(new MyEntity()));
+
+        // Act
+        MyResult result = service.process("tenant-1");
+
+        // Assert
+        assertThat(result).isNotNull();
+        verify(repository).findByTenantId("tenant-1");
     }
 }
 ```
 
-**Controller Layer Test:**
+### MongoDB Integration Test Template
+
 ```java
-@WebMvcTest(OrganizationController.class)
-class OrganizationControllerTest {
-    
+@SpringBootTest(classes = ServiceIntegrationTestApplication.class)
+class MyRepositoryIT extends BaseMongoIntegrationTest {
+
+    @Autowired
+    private MyRepository repository;
+
+    @Test
+    void whenSave_thenFindByTenantId() {
+        // Given
+        MyDocument doc = MyDocument.builder()
+            .tenantId("test-tenant")
+            .name("Test")
+            .build();
+
+        // When
+        repository.save(doc);
+
+        // Then
+        List<MyDocument> results = repository.findAllByTenantId("test-tenant");
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getName()).isEqualTo("Test");
+    }
+}
+```
+
+### Spring Security Test Template
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+class MyControllerSecurityTest {
+
     @Autowired
     private MockMvc mockMvc;
-    
-    @MockBean
-    private OrganizationService organizationService;
-    
-    @MockBean
-    private JwtDecoder jwtDecoder;
-    
+
     @Test
-    @WithMockUser(roles = "ORGANIZATION_ADMIN")
-    void createOrganization_ValidRequest_Returns201() throws Exception {
-        // Given
-        CreateOrganizationRequest request = new CreateOrganizationRequest("Test Org", "test@example.com");
-        OrganizationResponse response = new OrganizationResponse("org123", "Test Org");
-        
-        when(organizationService.createOrganization(any(CreateOrganizationRequest.class)))
-            .thenReturn(response);
-        
-        // When & Then
-        mockMvc.perform(post("/api/organizations")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.id").value("org123"))
-            .andExpect(jsonPath("$.name").value("Test Org"));
+    @WithMockUser(roles = "ADMIN")
+    void adminEndpoint_withAdminRole_returns200() throws Exception {
+        mockMvc.perform(get("/api/v1/resource"))
+            .andExpect(status().isOk());
     }
-    
+
     @Test
-    void createOrganization_Unauthorized_Returns401() throws Exception {
-        // Given
-        CreateOrganizationRequest request = new CreateOrganizationRequest("Test Org", "test@example.com");
-        
-        // When & Then
-        mockMvc.perform(post("/api/organizations")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+    void adminEndpoint_withoutAuth_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/resource"))
             .andExpect(status().isUnauthorized());
     }
 }
 ```
 
-### Integration Testing Examples
+### GraphQL Integration Test Template
 
-**Database Integration Test:**
 ```java
-@SpringBootTest
-@Testcontainers
-@TestPropertySource(properties = {
-    "spring.data.mongodb.uri=mongodb://localhost:27017/test",
-    "spring.profiles.active=test"
-})
-class OrganizationRepositoryIntegrationTest {
-    
-    @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:6.0")
-            .withExposedPorts(27017);
-    
+@SpringBootTest(classes = GraphQlIntegrationTestApplication.class)
+class MyDataFetcherIT extends BaseMongoIntegrationTest {
+
     @Autowired
-    private OrganizationRepository organizationRepository;
-    
-    @DynamicPropertySource
-    static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-    }
-    
+    private DgsQueryExecutor dgsQueryExecutor;
+
     @Test
-    @Transactional
-    void findByTenantId_ReturnsOnlyTenantOrganizations() {
-        // Given
-        String tenant1 = "tenant1";
-        String tenant2 = "tenant2";
-        
-        organizationRepository.save(new Organization("org1", "Org 1", tenant1));
-        organizationRepository.save(new Organization("org2", "Org 2", tenant1));
-        organizationRepository.save(new Organization("org3", "Org 3", tenant2));
-        
-        // When
-        List<Organization> result = organizationRepository.findByTenantId(tenant1);
-        
-        // Then
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(Organization::getTenantId).containsOnly(tenant1);
-        assertThat(result).extracting(Organization::getName).containsExactlyInAnyOrder("Org 1", "Org 2");
+    void queryDevices_returnsPagedResults() {
+        // Arrange: seed test data
+
+        // Act
+        ExecutionResult result = dgsQueryExecutor.execute("""
+            query {
+                devices(first: 10) {
+                    edges {
+                        node {
+                            id
+                            name
+                        }
+                    }
+                }
+            }
+            """);
+
+        // Assert
+        assertThat(result.getErrors()).isEmpty();
     }
 }
-```
-
-**Messaging Integration Test:**
-```java
-@SpringBootTest
-@EmbeddedKafka(partitions = 1, 
-               brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
-class EventProcessingIntegrationTest {
-    
-    @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
-    
-    @Autowired
-    private EventProcessor eventProcessor;
-    
-    @Test
-    void processDeviceEvent_PublishesEnrichedEvent() throws InterruptedException {
-        // Given
-        DeviceEvent originalEvent = new DeviceEvent("device123", "tenant456", "STATUS_CHANGE");
-        CountDownLatch latch = new CountDownLatch(1);
-        
-        // Set up consumer to verify enriched event
-        eventProcessor.setEnrichedEventListener(event -> {
-            assertThat(event.getDeviceId()).isEqualTo("device123");
-            assertThat(event.getTenantId()).isEqualTo("tenant456");
-            assertThat(event.getEnrichmentData()).isNotNull();
-            latch.countDown();
-        });
-        
-        // When
-        kafkaTemplate.send("device-events", originalEvent);
-        
-        // Then
-        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-    }
-}
-```
-
-### Frontend Testing Examples
-
-**Component Unit Test:**
-```typescript
-import { render, screen, fireEvent } from '@testing-library/react';
-import { DeviceStatus } from '../DeviceStatus';
-
-describe('DeviceStatus', () => {
-  it('renders device status correctly', () => {
-    render(<DeviceStatus deviceId="device123" status="online" />);
-    
-    expect(screen.getByText('Device device123: online')).toBeInTheDocument();
-    expect(screen.getByRole('status')).toHaveClass('status-online');
-  });
-  
-  it('handles status changes', () => {
-    const onStatusChange = jest.fn();
-    render(
-      <DeviceStatus 
-        deviceId="device123" 
-        status="offline" 
-        onStatusChange={onStatusChange} 
-      />
-    );
-    
-    fireEvent.click(screen.getByRole('button', { name: /change status/i }));
-    
-    expect(onStatusChange).toHaveBeenCalledWith('device123', 'online');
-  });
-});
-```
-
-**API Service Test:**
-```typescript
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
-import { DeviceApiService } from '../deviceApiService';
-
-const server = setupServer(
-  rest.get('/api/devices', (req, res, ctx) => {
-    return res(ctx.json([
-      { id: 'device1', name: 'Test Device', status: 'online' }
-    ]));
-  })
-);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-describe('DeviceApiService', () => {
-  it('fetches devices successfully', async () => {
-    const devices = await DeviceApiService.getDevices();
-    
-    expect(devices).toHaveLength(1);
-    expect(devices[0]).toMatchObject({
-      id: 'device1',
-      name: 'Test Device',
-      status: 'online'
-    });
-  });
-  
-  it('handles API errors gracefully', async () => {
-    server.use(
-      rest.get('/api/devices', (req, res, ctx) => {
-        return res(ctx.status(500), ctx.json({ error: 'Internal Server Error' }));
-      })
-    );
-    
-    await expect(DeviceApiService.getDevices()).rejects.toThrow('Failed to fetch devices');
-  });
-});
-```
-
-### End-to-End Testing Examples
-
-**Authentication E2E Test:**
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('Authentication Flow', () => {
-  test('user can login and access dashboard', async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/auth/login');
-    
-    // Fill in credentials
-    await page.fill('[data-testid=email-input]', 'admin@example.com');
-    await page.fill('[data-testid=password-input]', 'password123');
-    
-    // Submit login form
-    await page.click('[data-testid=login-button]');
-    
-    // Verify redirect to dashboard
-    await expect(page).toHaveURL('/dashboard');
-    
-    // Verify user is authenticated
-    await expect(page.locator('[data-testid=user-menu]')).toBeVisible();
-    
-    // Verify dashboard content loads
-    await expect(page.locator('[data-testid=devices-overview]')).toBeVisible();
-    await expect(page.locator('[data-testid=organizations-overview]')).toBeVisible();
-  });
-  
-  test('invalid credentials show error message', async ({ page }) => {
-    await page.goto('/auth/login');
-    
-    await page.fill('[data-testid=email-input]', 'invalid@example.com');
-    await page.fill('[data-testid=password-input]', 'wrongpassword');
-    await page.click('[data-testid=login-button]');
-    
-    await expect(page.locator('[data-testid=error-message]')).toHaveText('Invalid credentials');
-    await expect(page).toHaveURL('/auth/login');
-  });
-});
-```
-
-**Multi-Tenant E2E Test:**
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('Multi-Tenant Isolation', () => {
-  test('users only see their tenant data', async ({ page }) => {
-    // Login as tenant1 user
-    await loginAs(page, 'tenant1-admin@example.com', 'password123');
-    
-    // Navigate to organizations
-    await page.goto('/organizations');
-    
-    // Should only see tenant1 organizations
-    const organizations = page.locator('[data-testid=organization-row]');
-    await expect(organizations).toHaveCount(2); // Only tenant1 orgs
-    
-    // Verify organization names are tenant1 specific
-    await expect(organizations.first()).toContainText('Tenant 1 Org A');
-    await expect(organizations.last()).toContainText('Tenant 1 Org B');
-    
-    // Logout and login as tenant2 user
-    await logout(page);
-    await loginAs(page, 'tenant2-admin@example.com', 'password123');
-    
-    // Navigate to organizations
-    await page.goto('/organizations');
-    
-    // Should only see tenant2 organizations
-    const tenant2Orgs = page.locator('[data-testid=organization-row]');
-    await expect(tenant2Orgs).toHaveCount(1); // Only tenant2 orgs
-    await expect(tenant2Orgs.first()).toContainText('Tenant 2 Org');
-  });
-});
-```
-
-## Coverage Requirements
-
-### Coverage Targets
-
-| Test Type | Minimum Coverage | Target Coverage |
-|-----------|-----------------|-----------------|
-| **Unit Tests** | 70% | 85% |
-| **Integration Tests** | 60% | 75% |
-| **E2E Tests** | 50% | 70% |
-| **Security Tests** | 80% | 95% |
-
-### Coverage Reporting
-
-**Backend Coverage (JaCoCo):**
-```xml
-<plugin>
-    <groupId>org.jacoco</groupId>
-    <artifactId>jacoco-maven-plugin</artifactId>
-    <version>0.8.8</version>
-    <executions>
-        <execution>
-            <goals>
-                <goal>prepare-agent</goal>
-            </goals>
-        </execution>
-        <execution>
-            <id>report</id>
-            <phase>test</phase>
-            <goals>
-                <goal>report</goal>
-            </goals>
-        </execution>
-        <execution>
-            <id>check</id>
-            <goals>
-                <goal>check</goal>
-            </goals>
-            <configuration>
-                <rules>
-                    <rule>
-                        <element>BUNDLE</element>
-                        <limits>
-                            <limit>
-                                <counter>LINE</counter>
-                                <value>COVEREDRATIO</value>
-                                <minimum>0.70</minimum>
-                            </limit>
-                        </limits>
-                    </rule>
-                </rules>
-            </configuration>
-        </execution>
-    </executions>
-</plugin>
-```
-
-**Frontend Coverage (Jest):**
-```json
-{
-  "collectCoverageFrom": [
-    "src/**/*.{ts,tsx}",
-    "!src/**/*.d.ts",
-    "!src/**/*.stories.tsx",
-    "!src/test/**/*"
-  ],
-  "coverageThreshold": {
-    "global": {
-      "lines": 70,
-      "functions": 70,
-      "branches": 60,
-      "statements": 70
-    }
-  },
-  "coverageReporters": ["text", "lcov", "html"]
-}
-```
-
-## Test Data Management
-
-### Test Database Setup
-
-**MongoDB Test Configuration:**
-```java
-@TestConfiguration
-public class TestDatabaseConfig {
-    
-    @Bean
-    @Primary
-    public MongoTemplate testMongoTemplate() {
-        return new MongoTemplate(mongoClient(), "openframe_test");
-    }
-    
-    @EventListener
-    public void handleTestExecution(BeforeTestExecutionEvent event) {
-        // Clean database before each test
-        mongoTemplate.getDb().drop();
-    }
-}
-```
-
-**Test Data Builders:**
-```java
-public class TestDataBuilder {
-    
-    public static Organization.OrganizationBuilder defaultOrganization() {
-        return Organization.builder()
-            .id("test-org-" + UUID.randomUUID())
-            .name("Test Organization")
-            .tenantId("test-tenant")
-            .contactEmail("test@example.com")
-            .createdAt(Instant.now());
-    }
-    
-    public static Device.DeviceBuilder defaultDevice() {
-        return Device.builder()
-            .id("test-device-" + UUID.randomUUID())
-            .name("Test Device")
-            .type(DeviceType.DESKTOP)
-            .status(DeviceStatus.ONLINE)
-            .organizationId("test-org")
-            .tenantId("test-tenant");
-    }
-}
-```
-
-### Test Environment Configuration
-
-**Application Test Properties:**
-```yaml
-# application-test.yml
-spring:
-  profiles:
-    active: test
-  data:
-    mongodb:
-      uri: mongodb://localhost:27017/openframe_test
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: openframe-test-group
-      auto-offset-reset: earliest
-  redis:
-    host: localhost
-    port: 6379
-    database: 1
-
-logging:
-  level:
-    com.openframe: DEBUG
-    org.springframework.kafka: INFO
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-```
-
-## CI/CD Integration
-
-### GitHub Actions Test Pipeline
-
-```yaml
-name: Test Pipeline
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  backend-tests:
-    runs-on: ubuntu-latest
-    
-    services:
-      mongodb:
-        image: mongo:6.0
-        ports:
-          - 27017:27017
-      redis:
-        image: redis:7.0
-        ports:
-          - 6379:6379
-      kafka:
-        image: confluentinc/cp-kafka:latest
-        ports:
-          - 9092:9092
-        env:
-          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-          KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up JDK 21
-        uses: actions/setup-java@v3
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-      
-      - name: Cache Maven dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-      
-      - name: Run tests
-        run: mvn clean verify -Dspring.profiles.active=test
-      
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./target/site/jacoco/jacoco.xml
-
-  frontend-tests:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: openframe/services/openframe-frontend/package-lock.json
-      
-      - name: Install dependencies
-        run: |
-          cd openframe/services/openframe-frontend
-          npm ci
-      
-      - name: Run tests
-        run: |
-          cd openframe/services/openframe-frontend
-          npm run test:ci
-      
-      - name: Run E2E tests
-        run: |
-          cd openframe/services/openframe-frontend
-          npm run test:e2e:ci
-
-  security-tests:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Run OWASP Dependency Check
-        uses: dependency-check/Dependency-Check_Action@main
-        with:
-          project: 'OpenFrame'
-          path: '.'
-          format: 'HTML,JSON'
-      
-      - name: Upload security results
-        uses: actions/upload-artifact@v3
-        with:
-          name: security-reports
-          path: reports/
 ```
 
 ---
 
-*Comprehensive testing is essential for maintaining OpenFrame's reliability and security. Follow these practices and continue with [Contributing Guidelines](../contributing/guidelines.md) to understand the development workflow.*
+## Test Configuration
+
+### Test Environment Configuration
+
+The `openframe-test-service-core` library provides test configuration:
+
+```java
+// EnvironmentConfig — reads from test environment variables
+// MongoConfig — configures test MongoDB connection
+// UserConfig — pre-configured test users (ADMIN, regular user)
+```
+
+Set test environment variables:
+
+```bash
+# For integration tests against running services
+export TEST_API_URL=http://localhost:8080
+export TEST_AUTH_URL=http://localhost:9000
+export TEST_MONGODB_URI=mongodb://localhost:27017/openframe_test
+```
+
+### Auth Flow in Tests
+
+The test framework supports two auth flows:
+- `AuthFlowOSS` — For open-source/self-hosted deployments
+- `AuthFlowSAAS` — For SaaS/cloud deployments
+
+```java
+// Test base class selects auth flow from environment
+@Autowired
+private IAuthFlow authFlow;
+
+@BeforeEach
+void authenticate() {
+    AuthParts auth = authFlow.login(UserConfig.ADMIN_EMAIL, UserConfig.ADMIN_PASSWORD);
+    // Use auth.accessToken() in subsequent requests
+}
+```
+
+---
+
+## Test Data Generators
+
+The `openframe-test-service-core` provides generators for creating realistic test data:
+
+```java
+// Available generators
+AuthGenerator.createRegistrationRequest()
+OrganizationGenerator.createOrganizationRequest("Test Org")
+DeviceGenerator.createDevice("tenant-id", "org-id")
+TicketGenerator.createTicketInput("Test ticket", assigneeId)
+KnowledgeBaseGenerator.createArticleInput("Article title")
+ScriptGenerator.createScriptRequest("My Script", ShellType.POWERSHELL)
+```
+
+---
+
+## Coverage Requirements
+
+OpenFrame follows these testing principles:
+- Unit tests for all service and repository classes
+- Integration tests for critical data flows (registration, auth, device management)
+- E2E tests for key user journeys (tenant registration, device onboarding, ticket lifecycle)
+
+Run coverage reports:
+
+```bash
+# Generate JaCoCo coverage report
+mvn test jacoco:report
+
+# View report
+open target/site/jacoco/index.html
+```
+
+---
+
+## Continuous Integration
+
+Tests run automatically on every push and pull request. The CI pipeline:
+
+1. Builds all modules (`mvn clean install`)
+2. Runs unit tests (`mvn test`)
+3. Runs integration tests (with Testcontainers for MongoDB, Redis)
+4. Generates coverage reports
+
+> Results and failures are reported to the team via **OpenMSP Slack** using the `SlackListener` integration in the test framework.

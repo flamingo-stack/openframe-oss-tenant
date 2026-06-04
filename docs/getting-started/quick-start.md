@@ -1,297 +1,235 @@
-# Quick Start Guide
+# Quick Start
 
-Get OpenFrame up and running in under 5 minutes. This guide will have you exploring the platform quickly using the fastest setup method.
+Get OpenFrame OSS Tenant up and running in under 10 minutes.
 
-[![OpenFrame v0.3.7 - Enhanced Developer Experience](https://img.youtube.com/vi/O8hbBO5Mym8/maxresdefault.jpg)](https://www.youtube.com/watch?v=O8hbBO5Mym8)
+> **Prerequisites**: Ensure you have Java 21, Maven 3.9+, MongoDB, Redis, Kafka, NATS, and Cassandra available. See the [Prerequisites](prerequisites.md) guide for details.
 
-## TL;DR - 5-Minute Setup
+---
 
-For the quickest start, use our development shell scripts:
+## TL;DR
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+git clone https://github.com/openframeai/openframe-oss-tenant.git
 cd openframe-oss-tenant
 
-# 2. Start development dependencies
-./scripts/dev-start-dependencies.sh
-
-# 3. Initialize development configuration  
-./clients/openframe-client/scripts/setup_dev_init_config.sh
-
-# 4. Build and start services
+# 2. Build all Java services
 mvn clean install -DskipTests
-./scripts/start-all-services.sh
 
-# 5. Access the platform
-open http://localhost:3000
+# 3. Start the Config Server first
+cd openframe/services/openframe-config
+mvn spring-boot:run
+
+# 4. Start remaining services (in separate terminals)
+# Terminal 2 - Authorization Server
+cd openframe/services/openframe-authorization-server
+mvn spring-boot:run
+
+# Terminal 3 - API Service
+cd openframe/services/openframe-api
+mvn spring-boot:run
+
+# Terminal 4 - Gateway
+cd openframe/services/openframe-gateway
+mvn spring-boot:run
+
+# Terminal 5 - Management Service
+cd openframe/services/openframe-management
+mvn spring-boot:run
 ```
+
+---
 
 ## Step-by-Step Setup
 
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
+git clone https://github.com/openframeai/openframe-oss-tenant.git
 cd openframe-oss-tenant
 ```
 
-### Step 2: Start Development Dependencies
+### Step 2: Build the Project
 
-OpenFrame requires several databases and message brokers. Start them using Docker:
-
-```bash
-# Start MongoDB, Redis, Kafka, Cassandra, and other dependencies
-./scripts/dev-start-dependencies.sh
-
-# Verify services are running
-docker ps
-```
-
-You should see containers for:
-- MongoDB (port 27017)
-- Redis (port 6379) 
-- Kafka + Zookeeper (ports 9092, 2181)
-- Apache Pinot (ports 9000, 8000)
-- NATS Server (port 4222)
-
-### Step 3: Initialize Configuration
-
-Run the client configuration setup script:
+The project uses a multi-module Maven build. Run from the root to build all modules:
 
 ```bash
-./clients/openframe-client/scripts/setup_dev_init_config.sh
-```
-
-This script configures:
-- Database connection strings
-- Default tenant settings
-- OAuth2 client registration
-- AI service endpoints
-
-### Step 4: Build the Platform
-
-Build all Spring Boot services:
-
-```bash
-# Clean build with tests skipped for quick start
 mvn clean install -DskipTests
-
-# If you prefer to run tests (takes longer):
-# mvn clean install
 ```
 
-Expected output:
+> The `-DskipTests` flag speeds up the initial build. Run tests separately once your environment is fully configured.
+
+### Step 3: Configure Infrastructure
+
+Ensure your infrastructure services are running. OpenFrame expects the following defaults for local development (override via Config Server):
+
+| Service | Default Host | Default Port |
+|---|---|---|
+| MongoDB | localhost | 27017 |
+| Redis | localhost | 6379 |
+| Kafka | localhost | 9092 |
+| NATS | localhost | 4222 |
+| Cassandra | localhost | 9042 |
+
+### Step 4: Start the Config Server
+
+The Config Server must start first — all other services depend on it for configuration:
+
+```bash
+cd openframe/services/openframe-config
+mvn spring-boot:run
+```
+
+Wait until you see the Spring Boot banner and a log line like:
 ```text
-[INFO] ------------------------------------------------------------------------
-[INFO] Reactor Summary:
-[INFO] ------------------------------------------------------------------------
-[INFO] OpenFrame Platform ................................ SUCCESS
-[INFO] OpenFrame Config ................................... SUCCESS
-[INFO] OpenFrame API ...................................... SUCCESS
-[INFO] OpenFrame Authorization Server ..................... SUCCESS
-[INFO] OpenFrame Gateway .................................. SUCCESS
-[INFO] OpenFrame External API ............................. SUCCESS
-[INFO] OpenFrame Client ................................... SUCCESS
-[INFO] OpenFrame Stream ................................... SUCCESS
-[INFO] OpenFrame Management ............................... SUCCESS
-[INFO] ------------------------------------------------------------------------
+Started ConfigServerApplication in X.XXX seconds
 ```
 
 ### Step 5: Start Core Services
 
-Launch the microservices in the correct order:
+Start these services in order (each in its own terminal):
 
+**Authorization Server** (handles login, OAuth2, JWT):
 ```bash
-# Start all services
-./scripts/start-all-services.sh
+cd openframe/services/openframe-authorization-server
+mvn spring-boot:run
 ```
 
-This starts services in dependency order:
-1. **Config Server** (port 8888) - Centralized configuration
-2. **Authorization Server** (port 8082) - OAuth2/OIDC
-3. **Gateway** (port 8081) - API gateway and security
-4. **API Service** (port 8080) - Internal APIs
-5. **External API** (port 8083) - Public APIs
-6. **Client Service** (port 8084) - Agent communication
-7. **Stream Service** (port 8085) - Event processing
-
-### Step 6: Start the Frontend
-
-In a new terminal, start the web UI:
-
+**API Service** (GraphQL + REST):
 ```bash
-cd openframe/services/openframe-frontend
-
-# Install dependencies (first time only)
-npm install
-
-# Start development server
-npm run dev
+cd openframe/services/openframe-api
+mvn spring-boot:run
 ```
 
-The frontend will be available at `http://localhost:3000`.
-
-## Verify Installation
-
-### Check Service Health
-
-Verify all services are running:
-
+**Gateway Service** (edge routing, security):
 ```bash
-# Check API service
-curl http://localhost:8080/actuator/health
-
-# Check Gateway
-curl http://localhost:8081/actuator/health
-
-# Check Authorization Server
-curl http://localhost:8082/actuator/health
+cd openframe/services/openframe-gateway
+mvn spring-boot:run
 ```
 
-Expected response for each:
-```json
-{"status":"UP"}
-```
-
-### Access the Platform
-
-Open your browser and navigate to:
-
-- **Main Dashboard**: `http://localhost:3000`
-- **API Documentation**: `http://localhost:8080/swagger-ui.html`
-- **Gateway Health**: `http://localhost:8081/actuator/health`
-
-### Create Your First Tenant
-
-1. Navigate to `http://localhost:3000`
-2. Click "Sign Up" to create a new account
-3. Complete the tenant registration form
-4. Verify your email (check development logs for the verification link)
-5. Log in to access the OpenFrame dashboard
-
-## Hello World Example
-
-Once logged in, test the platform with these steps:
-
-### 1. Create an Organization
-
+**Management Service** (initializers, schedulers):
 ```bash
-# Using the External API with an API key
-curl -X POST http://localhost:8083/api/v1/organizations \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-api-key" \
-  -d '{
-    "name": "Example MSP",
-    "contactInformation": {
-      "email": "admin@example-msp.com"
-    }
-  }'
+cd openframe/services/openframe-management
+mvn spring-boot:run
 ```
 
-### 2. Register a Test Device
+### Step 6: (Optional) Start Supporting Services
 
-In the web UI:
-1. Navigate to **Devices** → **New Device**
-2. Use the registration command provided
-3. Install the OpenFrame client on a test machine
-
-### 3. Test Mingo AI Assistant
-
-1. Navigate to **Mingo** in the sidebar
-2. Start a conversation: "Help me understand my infrastructure"
-3. Mingo will analyze your connected devices and provide insights
-
-## Expected Results
-
-After successful setup, you should see:
-
-### Dashboard Overview
-- **Devices**: 0-1 devices (if you registered a test device)
-- **Organizations**: 1 organization (the one you created)
-- **Recent Activity**: Setup and registration events
-- **AI Insights**: Welcome message from Mingo
-
-### Available Features
-- ✅ Multi-tenant authentication
-- ✅ Device management interface
-- ✅ Organization management
-- ✅ Mingo AI assistant
-- ✅ Real-time event streaming
-- ✅ API access with key management
-
-### Performance Expectations
-- **Startup time**: 2-3 minutes for all services
-- **Memory usage**: ~4GB with default configuration
-- **Response time**: <200ms for API calls locally
-
-## Quick Commands Reference
-
+**Stream Service** (event processing):
 ```bash
-# Start development environment
-./scripts/dev-start-dependencies.sh
-
-# Stop all services
-./scripts/stop-all-services.sh
-
-# Restart specific service
-./scripts/restart-service.sh api-service
-
-# View logs
-docker compose logs -f openframe-api
-
-# Clean rebuild
-mvn clean install && ./scripts/restart-all-services.sh
+cd openframe/services/openframe-stream
+mvn spring-boot:run
 ```
 
-## Troubleshooting Quick Fixes
-
-### Services Won't Start
+**External API Service** (third-party integrations):
 ```bash
-# Check if ports are in use
-netstat -tulpn | grep :8080
-
-# Kill conflicting processes
-pkill -f "java.*openframe"
-
-# Restart with clean slate
-./scripts/stop-all-services.sh
-./scripts/dev-start-dependencies.sh
-./scripts/start-all-services.sh
+cd openframe/services/openframe-external-api
+mvn spring-boot:run
 ```
 
-### Database Connection Issues
+**Client Service** (agent-facing API):
 ```bash
-# Restart databases
-docker compose restart mongodb redis kafka
-
-# Check database connectivity
-docker compose exec mongodb mongosh --eval "db.runCommand('ping')"
+cd openframe/services/openframe-client
+mvn spring-boot:run
 ```
 
-### Frontend Not Loading
+### Step 7: Start the Frontend
+
 ```bash
 cd openframe/services/openframe-frontend
-
-# Clear node modules and reinstall
-rm -rf node_modules package-lock.json
 npm install
 npm run dev
 ```
 
-## Next Steps
-
-Now that OpenFrame is running:
-
-1. **[First Steps Guide](first-steps.md)** - Explore key features and workflows
-2. **[Development Environment Setup](../development/setup/local-development.md)** - Configure for development work
-
-## Need Help?
-
-- **Community**: Join [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **Documentation**: Browse the architecture guides for deeper understanding
-- **Issues**: Report problems on the GitHub repository
+The frontend development server starts on `http://localhost:3000` by default.
 
 ---
 
-*🎉 Congratulations! You now have OpenFrame running locally. Continue with [First Steps](first-steps.md) to learn how to use the platform effectively.*
+## Service Startup Order
+
+```mermaid
+graph TD
+    A["Config Server"] --> B["Authorization Server"]
+    A --> C["API Service"]
+    A --> D["Gateway Service"]
+    A --> E["Management Service"]
+    B --> F["Stream Service"]
+    C --> F
+    E --> G["External API Service"]
+    E --> H["Client Service"]
+```
+
+> **Important**: Always start the Config Server before any other service.
+
+---
+
+## Verify the Platform is Running
+
+After starting the core services, verify health endpoints:
+
+```bash
+# Gateway health
+curl http://localhost:8080/actuator/health
+
+# API health
+curl http://localhost:8081/health
+
+# Authorization Server
+curl http://localhost:9000/.well-known/openid-configuration
+```
+
+Expected response for health endpoints:
+```json
+{"status": "UP"}
+```
+
+---
+
+## Service Ports (Default)
+
+| Service | Default Port |
+|---|---|
+| Config Server | 8888 |
+| Gateway | 8080 |
+| Authorization Server | 9000 |
+| API Service | 8081 |
+| Management Service | 8082 |
+| Stream Service | 8083 |
+| External API Service | 8084 |
+| Client Service | 8085 |
+| Frontend (dev) | 3000 |
+
+> Port assignments may vary based on your Config Server configuration. Check your environment configuration for actual ports.
+
+---
+
+## Development Init Script
+
+A development initialization script is available for configuring the client service environment:
+
+```bash
+# Initialize development configuration for the client service
+bash clients/openframe-client/scripts/setup_dev_init_config.sh
+```
+
+---
+
+## What Happens at Startup
+
+When the **Management Service** starts, it automatically:
+
+1. Creates an initial **agent registration secret**
+2. Initializes **integrated tool agent configurations** from classpath resources
+3. Provisions required **NATS JetStream streams** (TOOL_INSTALLATION, CLIENT_UPDATE, etc.)
+4. Loads the **OpenFrame client configuration** baseline
+5. Synchronizes **Tactical RMM scripts** if configured
+
+---
+
+## Next Steps
+
+After completing this quick start:
+
+- Follow the [First Steps](first-steps.md) guide to explore key platform features
+- Review the [Prerequisites](prerequisites.md) if you encounter setup issues
+- Join the [OpenMSP Slack community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA) for support

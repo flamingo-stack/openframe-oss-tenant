@@ -1,376 +1,374 @@
-# OpenFrame OSS Tenant – Repository Overview
+# OpenFrame OSS Tenant
 
-The **`openframe-oss-tenant`** repository is the multi-service, multi-tenant open-source foundation of the OpenFrame platform. It provides the full backend and frontend stack required to run a tenant-aware, AI-enabled MSP platform including:
+The **`openframe-oss-tenant`** repository contains the full multi-tenant runtime stack of the OpenFrame platform.  
+It assembles identity, API, routing, persistence, messaging, stream processing, and management services into a cohesive tenant-aware system.
 
-- ✅ API Service (REST + GraphQL)
-- ✅ Authorization Server (OAuth2 / OIDC, multi-tenant)
-- ✅ Gateway (JWT validation, API keys, WebSocket proxy)
-- ✅ Stream Service (Kafka Streams, enrichment, CDC processing)
-- ✅ Client Service (agent lifecycle & NATS listeners)
-- ✅ External API Service (public API-key interface)
-- ✅ Data Layer (MongoDB, Cassandra, Pinot)
-- ✅ Kafka infrastructure
-- ✅ Shared Security & OAuth BFF
-- ✅ Frontend Tenant UI + Mingo AI
-- ✅ Chat Desktop Client services
+OpenFrame is designed as a modular, library-driven architecture where:
 
-This repository is not a single application — it is a **modular microservice architecture** built from reusable core libraries and service entrypoints.
+- Core capabilities live in reusable libraries
+- Runtime services compose those libraries into deployable applications
+- Every layer is multi-tenant by design
+- Kafka and NATS power event-driven communication
+- MongoDB provides the primary persistence layer
+
+This repository represents the **tenant runtime implementation** of the OpenFrame platform.
 
 ---
 
-# 1. End-to-End Architecture
+# Repository Purpose
 
-The OpenFrame OSS Tenant platform follows a layered, event-driven, multi-tenant SaaS architecture.
+The repository provides:
 
-## High-Level System Topology
+- ✅ Multi-tenant OAuth2 Authorization Server  
+- ✅ GraphQL + REST API layer  
+- ✅ Reactive Gateway with JWT and API key security  
+- ✅ Mongo domain model and repositories  
+- ✅ Kafka-based stream processing  
+- ✅ NATS real-time agent messaging  
+- ✅ Management service with schedulers and migrations  
+- ✅ Executable Spring Boot runtime applications  
+
+It forms a complete **tenant-scoped cloud-native backend**.
+
+---
+
+# High-Level End-to-End Architecture
 
 ```mermaid
 flowchart TD
-    Frontend["Frontend Tenant UI"] --> Gateway["Gateway Service"]
-    ChatClient["Chat Desktop Client"] --> Gateway
+    Client["Browser / Agent / Integration"] --> Gateway["Gateway Service"]
 
-    Gateway --> ApiService["API Service"]
-    Gateway --> ExternalApi["External API Service"]
-    Gateway --> AuthServer["Authorization Server"]
+    Gateway --> Auth["Authorization Server"]
+    Gateway --> API["API Service"]
+    Gateway --> ExternalAPI["External API Service"]
 
-    ApiService --> Mongo["MongoDB"]
-    ApiService --> Pinot["Apache Pinot"]
-    ApiService --> Kafka["Kafka Cluster"]
+    API --> Mongo["MongoDB"]
+    API --> NATS["NATS Messaging"]
+    API --> Kafka["Kafka"]
 
-    StreamService["Stream Service"] --> Kafka
-    StreamService --> Cassandra["Cassandra"]
-    StreamService --> Pinot
+    Auth --> Mongo
 
-    ClientService["Client Service"] --> Mongo
-    ClientService --> NATS["NATS / JetStream"]
+    Stream["Stream Service"] --> Kafka
+    Stream --> Cassandra["Cassandra (Unified Logs)"]
 
-    AuthServer --> Mongo
-    Gateway --> AuthServer
+    Management["Management Service"] --> Mongo
+    Management --> NATS
+    Management --> Kafka
+
+    Config["Config Server"] --> Gateway
+    Config --> API
+    Config --> Auth
 ```
+
+The architecture follows strict separation of concerns:
+
+| Layer | Responsibility |
+|--------|---------------|
+| Gateway | Routing, JWT validation, API key auth |
+| Authorization Server | OAuth2, OIDC, SSO, tenant identity |
+| API Service | GraphQL + REST orchestration |
+| Data Layer | Mongo domain & repositories |
+| Stream Layer | CDC ingestion, enrichment, unified logs |
+| Messaging | Kafka (durable) + NATS (real-time) |
+| Management | Initialization, migrations, schedulers |
+| Runtime Apps | Executable Spring Boot services |
 
 ---
 
-# 2. Layered Architecture
+# Module Structure
 
-OpenFrame is composed of reusable **core libraries** and deployable **service applications**.
+The repository is organized into reusable libraries and runtime services.
 
-## Architectural Layers
+## Core Libraries (`openframe-oss-lib`)
+
+### 1️⃣ API Service Core (GraphQL & REST)
+
+**Path:**  
+`openframe-oss-lib/openframe-api-service-core`
+
+Exposes tenant-facing APIs using:
+
+- REST controllers
+- Netflix DGS GraphQL
+- OAuth2 Resource Server integration
+- Relay-compliant global node resolution
+- Domain service orchestration
+
+📘 See:  
+**API Service Core GraphQL And Rest**
+
+---
+
+### 2️⃣ API Contracts & Domain Services
+
+**Path:**  
+`openframe-oss-lib/openframe-api-lib`
+
+Defines:
+
+- DTOs for GraphQL & REST
+- Filter models
+- Relay pagination contracts
+- Domain mappers
+- Shared domain services
+
+📘 See:  
+**Api Lib Contracts And Domain Services**
+
+---
+
+### 3️⃣ Authorization Server Core
+
+**Path:**  
+`openframe-oss-lib/openframe-authorization-service-core`
+
+Provides:
+
+- OAuth2 + OIDC endpoints
+- Multi-tenant JWT issuance
+- Per-tenant RSA signing keys
+- SSO (Google, Microsoft)
+- Invitation & onboarding flows
+- PKCE support
+- Mongo-backed authorization storage
 
 ```mermaid
 flowchart TD
-    UI["Frontend & Chat Clients"] --> Edge["Gateway Layer"]
-    Edge --> Security["Authorization Server & Shared JWT"]
-    Edge --> ApiLayer["API & External API Services"]
-
-    ApiLayer --> Domain["Domain Services"]
-    Domain --> Data["Mongo / Cassandra / Pinot"]
-
-    Stream["Stream Service"] --> Kafka["Kafka"]
-    Kafka --> Stream
-    Stream --> Pinot
-    Stream --> Cassandra
-
-    Client["Client Service"] --> NATS["NATS / JetStream"]
-    Client --> Domain
+    Browser["User Browser"] --> AuthServer["Authorization Server"]
+    AuthServer --> TenantContext["TenantContextFilter"]
+    AuthServer --> Jwt["JWT Issuance"]
+    Jwt --> Gateway["Gateway Resource Server"]
 ```
 
----
-
-# 3. Core Service Applications
-
-Located under:
-
-```
-openframe/services
-```
-
-These are Spring Boot entrypoints that wire the core libraries into deployable services.
-
-### Key Services
-
-- **API Service** – REST + GraphQL internal platform APIs
-- **Authorization Server** – Multi-tenant OAuth2/OIDC
-- **Gateway** – JWT validation, API key enforcement, WebSocket proxy
-- **External API** – Public, API-key–secured integration surface
-- **Stream Service** – Kafka Streams processing & enrichment
-- **Client Service** – Agent registration & lifecycle management
-- **Management Service** – Operational tooling
-- **Config Server** – Centralized configuration
-
-Documentation reference:
-- See **Service Applications Entrypoints**
+📘 See:  
+**Authorization Server Core**
 
 ---
 
-# 4. Identity & Multi-Tenancy Model
+### 4️⃣ Gateway Service Core (Routing & Security)
 
-OpenFrame enforces tenant isolation across:
+**Path:**  
+`openframe-oss-lib/openframe-gateway-service-core`
 
-- JWT claims
-- OAuth clients
-- RSA signing keys
-- Mongo documents
-- SSO provider configuration
+Built on:
 
-## Multi-Tenant Security Flow
-
-```mermaid
-sequenceDiagram
-    participant Browser
-    participant Gateway
-    participant AuthServer
-    participant ApiService
-
-    Browser->>AuthServer: OAuth Login (tenant-scoped)
-    AuthServer-->>Browser: JWT (tenant_id claim)
-    Browser->>Gateway: API Request with JWT
-    Gateway->>Gateway: Validate issuer + signature
-    Gateway->>ApiService: Forward with identity context
-    ApiService->>ApiService: Enforce tenant isolation
-```
-
-Documentation references:
-- **Authorization Server Core And Tenant Context**
-- **Authorization Server Keys And Persistence**
-- **Security OAuth BFF And Shared JWT**
-
----
-
-# 5. API Layer
-
-The API layer is split into:
-
-- **Internal API Service**
-- **External API Service**
-- **Gateway Controllers**
-
-## Internal API Service
-
-- REST Controllers
-- GraphQL Fetchers
-- DataLoaders
-- Cursor-based pagination
-- Tenant-aware authentication
-
-Documentation:
-- **Api Service Core Config And Security**
-- **Api Service Core Rest Controllers**
-- **Api Service Core GraphQL Fetchers And Dataloaders**
-
----
-
-## External API Service
-
-- `/api/v1/**`
-- API-key authentication
-- Rate limiting
-- Structured DTO contracts
-- Tool proxying
-
-Documentation:
-- **External Api Service Core Rest And Dto**
-
----
-
-# 6. Streaming & Event Processing
-
-The Stream Service normalizes and enriches events from:
-
-- Fleet MDM
-- MeshCentral
-- Tactical RMM
-- Debezium CDC
-
-## Streaming Architecture
+- Spring Cloud Gateway
+- Reactive WebFlux Security
+- JWT multi-issuer validation
+- API key + rate limiting
+- REST & WebSocket proxying
+- Tool-specific upstream resolvers
 
 ```mermaid
 flowchart LR
-    Tools["Fleet / Tactical / Mesh"] --> Kafka
-    MongoCDC["Debezium CDC"] --> Kafka
-    Kafka --> Stream["Stream Service"]
-    Stream --> Cassandra
-    Stream --> KafkaOut["Outbound Kafka"]
-    Stream --> Pinot
+    Client["Client"] --> Gateway["Reactive Gateway"]
+    Gateway --> JwtValidation["JWT Validation"]
+    Gateway --> ApiKey["API Key Filter"]
+    Gateway --> Proxy["REST / WS Proxy"]
 ```
 
-Core modules:
-- **Stream Service Core Kafka Streams And Deserialization**
-- **Stream Service Core Message Handling And Enrichment**
-- **Data Streaming Kafka Config And Models**
+📘 See:  
+**Gateway Service Core Routing And Security**
 
 ---
 
-# 7. Data Layer
+### 5️⃣ Data Mongo Domain & Repositories
 
-The repository includes multiple data systems:
+**Path:**  
+`openframe-oss-lib/openframe-data-mongo-*`
 
-| Technology | Purpose |
-|------------|----------|
-| MongoDB | Primary transactional storage |
-| Cassandra | Time-series & log persistence |
-| Apache Pinot | Real-time analytics |
-| Kafka | Event backbone |
-| NATS / JetStream | Agent event messaging |
+Defines:
 
-Documentation:
-- **Data Mongo Core And Documents**
-- **Data Mongo Repositories**
-- **Data Pinot Repositories And Models**
-- **Data Platform Config And Health**
-
----
-
-# 8. Client & Agent Lifecycle
-
-The Client Service handles:
-
-- Agent authentication
-- Machine registration
-- Tool agent downloads
-- NATS-based heartbeats
-- Installed agent tracking
-- Tool connection events
-
-## Agent Event Flow
+- Core domain documents
+- Multi-tenant `tenantId` enforcement
+- Reactive + sync repositories
+- Custom MongoTemplate queries
+- Cursor-based pagination
+- Aggregation pipelines
+- Index governance
 
 ```mermaid
 flowchart TD
-    Agent["Device Agent"] --> ClientService
-    ClientService --> Mongo
-    Agent --> NATS
-    NATS --> ClientService
-    ClientService --> DomainServices
+    API["API Layer"] --> Repository["Custom Repository"]
+    Repository --> Criteria["Mongo Criteria"]
+    Criteria --> MongoDB["MongoDB"]
 ```
 
-Documentation:
-- **Client Service Core Http And Listeners**
+📘 See:  
+**Data Mongo Domain And Repositories**
 
 ---
 
-# 9. Gateway Layer
+### 6️⃣ Stream Processing Core
 
-The Gateway is the reactive edge:
+**Path:**  
+`openframe-oss-lib/openframe-stream-service-core`
 
-- JWT issuer validation
-- API key enforcement
-- Rate limiting
-- CORS
-- WebSocket proxying
+Handles:
 
-Documentation:
-- **Gateway Core Security And Websocket Proxy**
-- **Gateway Rest Controllers**
+- Debezium CDC ingestion
+- Kafka listeners
+- Tool-specific deserialization
+- Event normalization
+- Tenant-aware enrichment
+- Cassandra unified log storage
+- Kafka Streams joins
 
----
+```mermaid
+flowchart TD
+    ToolDB["Tool Database"] --> Debezium
+    Debezium --> Kafka
+    Kafka --> StreamService["Stream Processing Core"]
+    StreamService --> Cassandra
+    StreamService --> KafkaOut["Outbound Kafka"]
+```
 
-# 10. Frontend & AI (Mingo)
-
-The frontend integrates:
-
-- Centralized `ApiClient`
-- SaaS-aware authentication
-- Tool API wrappers
-- Mingo AI dialog orchestration
-- Streaming message store
-- GraphQL chat integration
-
-Documentation:
-- **Frontend Tenant Api Clients And Mingo**
-- **Chat Client Services And Debug**
+📘 See:  
+**Stream Processing Core**
 
 ---
 
-# 11. Repository Design Principles
+### 7️⃣ Tenant Messaging (NATS & Kafka)
 
-### ✅ Modular Monorepo
-Reusable core libraries shared across services.
+**Path:**  
+`openframe-oss-lib/openframe-data-{nats,kafka}`
 
-### ✅ Multi-Tenant by Design
-Tenant ID embedded at:
-- Token level
-- Database level
-- OAuth client level
-- Key management level
+Provides:
+
+- Multi-tenant Kafka configuration
+- Topic auto-creation
+- Kafka producers & recovery handlers
+- Real-time NATS notifications
+- Agent command messaging models
+
+```mermaid
+flowchart LR
+    API --> Kafka["Kafka Producer"]
+    API --> NATS["NATS Publisher"]
+    Agent --> NATS
+    Stream --> Kafka
+```
+
+📘 See:  
+**Tenant Messaging Nats And Kafka**
+
+---
+
+### 8️⃣ Management Service Core
+
+**Path:**  
+`openframe-oss-lib/openframe-management-service-core`
+
+Responsible for:
+
+- Startup initializers
+- Tenant provisioning
+- NATS stream creation
+- Tactical RMM sync
+- Mongock migrations
+- Distributed schedulers (ShedLock + Redis)
+- Backfill jobs
+
+📘 See:  
+**Management Service Core Initialization And Scheduling**
+
+---
+
+## Runtime Applications (`openframe/services`)
+
+Each service is an independent Spring Boot deployment unit:
+
+- `openframe-api`
+- `openframe-authorization-server`
+- `openframe-gateway`
+- `openframe-stream`
+- `openframe-management`
+- `openframe-external-api`
+- `openframe-client`
+- `openframe-config`
+
+```mermaid
+flowchart TD
+    GatewayApp["Gateway App"] --> ApiApp["API App"]
+    GatewayApp --> AuthApp["Auth App"]
+
+    ApiApp --> Mongo
+    StreamApp["Stream App"] --> Kafka
+    ManagementApp["Management App"] --> Mongo
+```
+
+📘 See:  
+**Service Runtime Applications**
+
+---
+
+# Cross-Cutting Design Principles
+
+### ✅ Multi-Tenant Isolation
+- `tenantId` enforced at domain level
+- Tenant-aware JWTs
+- Per-tenant signing keys
+- Tenant-scoped messaging
 
 ### ✅ Event-Driven Backbone
-Kafka + Streams for normalization and enrichment.
+- Kafka for durable streaming
+- NATS for real-time agent messaging
+- Debezium for CDC ingestion
 
-### ✅ Reactive Edge
-Gateway built with Spring WebFlux.
+### ✅ Library-First Architecture
+- Core logic lives in reusable libraries
+- Runtime apps assemble them
 
-### ✅ AI-Ready
-Integrated Mingo AI chat system with streaming messages and tool execution workflows.
+### ✅ Security-First Edge
+- Gateway validates JWT
+- Authorization Server is root of trust
+- API keys for external integrations
 
-### ✅ Extensible
-Most services provide:
-- Conditional beans
-- Strategy interfaces
-- Overridable processors
-
----
-
-# 12. Core Modules Documentation Index
-
-Below are the primary documentation modules in this repository:
-
-### API Layer
-- Api Service Core Config And Security  
-- Api Service Core Rest Controllers  
-- Api Service Core GraphQL Fetchers And Dataloaders  
-- Api Lib DTO And Mapping  
-- Api Lib Domain Services  
-
-### Authorization
-- Authorization Server Core And Tenant Context  
-- Authorization Server Rest Controllers  
-- Authorization Server Keys And Persistence  
-- Authorization Server SSO And Registration Flow  
-
-### Data
-- Data Mongo Core And Documents  
-- Data Mongo Repositories  
-- Data Platform Config And Health  
-- Data Pinot Repositories And Models  
-- Data Streaming Kafka Config And Models  
-
-### Gateway
-- Gateway Core Security And Websocket Proxy  
-- Gateway Rest Controllers  
-
-### Stream
-- Stream Service Core Kafka Streams And Deserialization  
-- Stream Service Core Message Handling And Enrichment  
-
-### Client
-- Client Service Core Http And Listeners  
-
-### Security
-- Security OAuth BFF And Shared JWT  
-
-### Frontend
-- Frontend Tenant Api Clients And Mingo  
-- Chat Client Services And Debug  
-
-### Applications
-- Service Applications Entrypoints  
+### ✅ Reactive + Blocking Separation
+- Gateway and some APIs are reactive
+- Management & stream components may use blocking repositories
+- Clear repository abstraction boundaries
 
 ---
 
-# Conclusion
+# End-to-End Request Lifecycle
 
-The **`openframe-oss-tenant`** repository is the full-stack, multi-tenant OpenFrame SaaS platform foundation.
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway
+    participant Auth
+    participant API
+    participant Mongo
+    participant Kafka
+    participant NATS
 
-It combines:
+    Client->>Gateway: HTTP Request (JWT)
+    Gateway->>Auth: Validate Token
+    Auth->>Gateway: Token OK
+    Gateway->>API: Forward Request
+    API->>Mongo: Query / Persist
+    API->>Kafka: Publish Event
+    API->>NATS: Notify Agents
+    API->>Gateway: Response
+    Gateway->>Client: HTTP 200
+```
 
-- OAuth2 multi-tenant identity
-- JWT-secured microservices
-- Reactive gateway edge
-- REST + GraphQL APIs
-- Event-driven streaming
-- Analytics via Pinot
-- Agent lifecycle orchestration
-- API-key public interface
-- AI-powered chat (Mingo)
-- Frontend + Desktop clients
+---
 
-It is designed for scalability, extensibility, and strict tenant isolation — enabling OpenFrame to function as a unified AI-driven MSP platform.
+# Summary
+
+The **`openframe-oss-tenant`** repository is the full tenant runtime implementation of OpenFrame.
+
+It delivers:
+
+- Multi-tenant identity & OAuth2
+- Secure reactive gateway routing
+- GraphQL + REST APIs
+- Mongo-backed domain model
+- Kafka-based stream processing
+- Real-time NATS messaging
+- Operational management & scheduling
+- Cloud-native deployable services
+
+It represents a **complete, modular, event-driven, multi-tenant backend platform** designed for extensibility, scalability, and security across the entire OpenFrame ecosystem.
