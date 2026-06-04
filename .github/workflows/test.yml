@@ -25,6 +25,7 @@ on:
       - 'manifests/**'
       - 'clients/**'
       - 'configs/**'
+      - 'renovate.json'
 
 concurrency:
   group: pr-${{ github.head_ref || github.ref }}
