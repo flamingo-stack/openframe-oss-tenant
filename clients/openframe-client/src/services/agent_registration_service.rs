@@ -79,7 +79,6 @@ impl AgentRegistrationService {
         loop {
             match machine_info_persistence::read() {
                 Ok(credentials) => return Ok(credentials),
-                Err(e) if machine_info_persistence::is_permission_denied(&e) => return Err(e),
                 Err(e) => match READ_RETRY_DELAYS.get(attempt) {
                     Some(&delay) => {
                         warn!(

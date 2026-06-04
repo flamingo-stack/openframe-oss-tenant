@@ -4,8 +4,6 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
-use crate::platform::permissions::PermissionUtils;
-
 /// Slot holding the single JSON record (registry value / plist key).
 #[cfg(any(target_os = "windows", target_os = "macos"))]
 const RECORD_KEY: &str = "MachineInfo";
@@ -45,17 +43,10 @@ pub fn write(machine_info: &PersistedMachineInfo) -> Result<()> {
 pub fn read() -> Result<Option<PersistedMachineInfo>> {
     match read_once() {
         Err(e) if is_permission_denied(&e) => {
-            if PermissionUtils::is_admin() {
-                warn!("Permission denied reading persisted machine info; repairing permissions and retrying");
-                repair_permissions()
-                    .context("Failed to repair permissions on the machine info store")?;
-                read_once().context("Read still failed after repairing store permissions")
-            } else {
-                Err(e).context(
-                    "Permission denied reading persisted machine info; the agent must run as \
-                     root/SYSTEM. Refusing to treat this as a fresh machine",
-                )
-            }
+            warn!("Permission denied reading persisted machine info; repairing permissions and retrying");
+            repair_permissions()
+                .context("Failed to repair permissions on the machine info store")?;
+            read_once().context("Read still failed after repairing store permissions")
         }
         other => other,
     }
