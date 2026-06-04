@@ -12,187 +12,239 @@
 
 # OpenFrame OSS Tenant
 
-**The multi-service, multi-tenant open-source foundation of the OpenFrame platform** — An AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation.
+**OpenFrame** ([openframe.ai](https://openframe.ai) · [flamingo.run/openframe](https://www.flamingo.run/openframe)) is the unified platform that integrates multiple MSP tools into a single AI-driven interface, automating IT support operations across the entire stack.
 
-OpenFrame provides the unified platform that integrates multiple MSP tools into a single AI-driven interface, featuring **Mingo AI** for technicians and **Fae** for clients, automating IT support operations across the stack.
+The **`openframe-oss-tenant`** repository is the full **multi-tenant runtime backend** of the OpenFrame platform. It assembles identity, API, routing, persistence, messaging, stream processing, and management services into a cohesive tenant-aware system — ready for production deployment as a cloud-native MSP backend.
 
-[![OpenFrame Preview Webinar](https://img.youtube.com/vi/bINdW0CQbvY/maxresdefault.jpg)](https://www.youtube.com/watch?v=bINdW0CQbvY)
+> **Part of Flamingo**: OpenFrame is the open-source backbone of [Flamingo](https://flamingo.run), an AI-powered MSP platform that replaces expensive proprietary software with open-source alternatives enhanced by intelligent automation (Mingo AI for technicians, Fae for clients).
 
-[![OpenFrame: 5-Minute MSP Platform Walkthrough - Cut Vendor Costs & Automate Ops](https://img.youtube.com/vi/er-z6IUnAps/maxresdefault.jpg)](https://www.youtube.com/watch?v=er-z6IUnAps)
+---
+
+## 🎬 See It In Action
+
+[![OpenFrame Product Walkthrough (Beta Access)](https://img.youtube.com/vi/awc-yAnkhIo/maxresdefault.jpg)](https://www.youtube.com/watch?v=awc-yAnkhIo)
+
+[![Getting Started with OpenFrame - Organization Setup Basics](https://img.youtube.com/vi/-_56_qYvMWk/maxresdefault.jpg)](https://www.youtube.com/watch?v=-_56_qYvMWk)
+
+---
 
 ## ✨ Features
 
-### 🤖 AI-Powered Automation
-- **Mingo AI Assistant** - Autonomous agent architecture that handles incident triage, alert management, and automated response workflows
-- **Fae Client Interface** - AI-powered client interface for streamlined communication
-- **Intelligent Data Processing** - Real-time event normalization and enrichment with Kafka Streams
+| Feature | Description |
+|---|---|
+| **Multi-Tenant Architecture** | Every layer is tenant-scoped — data, auth, messaging, and APIs all enforce `tenantId` isolation |
+| **OAuth2 / OIDC Authorization Server** | Full-featured auth server with SSO (Google, Microsoft), per-tenant RSA signing keys, PKCE support |
+| **GraphQL + REST API** | Netflix DGS-powered GraphQL with Relay pagination, custom scalars, and REST mutation endpoints |
+| **Reactive Gateway** | Spring Cloud Gateway with JWT validation, API key auth, WebSocket proxying, and rate limiting |
+| **Event-Driven Messaging** | Apache Kafka (durable streaming) + NATS JetStream (real-time agent communication) |
+| **CDC Stream Processing** | Debezium-based ingestion, event normalization, Kafka Streams enrichment, Cassandra unified logs |
+| **Tool Integrations** | MeshCentral, Tactical RMM, and Fleet MDM supported out of the box |
+| **Mingo AI** | AI-powered ticket automation and IT support intelligence for MSP technicians |
+| **Management & Scheduling** | Startup initializers, Mongock migrations, ShedLock distributed schedulers |
+| **Self-Hosted** | Deploy on your own infrastructure with Kubernetes manifests included |
 
-### 🏗️ Enterprise-Grade Architecture
-- **Multi-Tenant by Design** - Complete tenant isolation across OAuth clients, JWT tokens, RSA keys, and database documents
-- **Microservice Foundation** - Spring Boot 3.3.0 services with Java 21, designed for scalability and modularity
-- **Event-Driven Backbone** - Kafka + Streams for real-time data flow and processing
-- **Reactive Edge** - Spring WebFlux Gateway for high-performance request routing
+---
 
-### 🔌 Comprehensive Integration
-- **MSP Tool Integration** - Fleet MDM, Tactical RMM, MeshCentral for device management and remote access
-- **Data Pipeline** - Apache NiFi, MongoDB, Cassandra, Apache Pinot for analytics and storage
-- **Real-Time Messaging** - NATS/JetStream for agent communication and event handling
-- **Standardized APIs** - REST + GraphQL APIs with OpenAPI documentation
-
-### 🔐 Security & Compliance
-- **OAuth2/OIDC Multi-Tenant** - Complete authorization server with SSO integration (Google, Microsoft)
-- **JWT Multi-Issuer Support** - Tenant-scoped authentication with cached validation
-- **API Key Management** - Rate-limited external API access with proper authorization
-- **End-to-End Security** - Gateway-enforced security with downstream identity context
-
-## 🚀 Quick Start
-
-Get OpenFrame running locally in under 5 minutes:
-
-```bash
-# Clone and setup
-git clone https://github.com/flamingo-stack/openframe-oss-tenant.git
-cd openframe-oss-tenant
-
-# Start dependencies (MongoDB, Redis, Kafka, Cassandra, Pinot, NATS)
-./scripts/dev-start-dependencies.sh
-
-# Initialize configuration
-./clients/openframe-client/scripts/setup_dev_init_config.sh
-
-# Build and start services
-mvn clean install -DskipTests
-./scripts/start-all-services.sh
-
-# Access the platform
-open http://localhost:3000
-```
-
-Expected services after startup:
-- **Frontend UI**: `http://localhost:3000`
-- **API Service**: `http://localhost:8080`
-- **Gateway**: `http://localhost:8081` 
-- **Authorization Server**: `http://localhost:8082`
-
-## 🏛️ Architecture
-
-OpenFrame follows a **layered, event-driven, multi-tenant SaaS architecture**:
+## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
-    UI[Frontend Tenant UI] --> Gateway[Gateway Service]
-    Chat[Chat Desktop Client] --> Gateway
-    
-    Gateway --> API[API Service]
-    Gateway --> External[External API Service] 
-    Gateway --> Auth[Authorization Server]
-    
-    API --> Mongo[(MongoDB)]
-    API --> Pinot[(Apache Pinot)]
-    API --> Kafka[(Kafka Cluster)]
-    
-    Stream[Stream Service] --> Kafka
-    Stream --> Cassandra[(Cassandra)]
-    Stream --> Pinot
-    
-    Client[Client Service] --> Mongo
-    Client --> NATS[(NATS/JetStream)]
-    
+    Client["Browser / Agent / Integration"] --> Gateway["Gateway Service\n(Spring Cloud Gateway)"]
+
+    Gateway --> Auth["Authorization Server\n(OAuth2 / OIDC)"]
+    Gateway --> API["API Service\n(GraphQL + REST)"]
+    Gateway --> ExternalAPI["External API Service"]
+
+    API --> Mongo["MongoDB\n(Primary Store)"]
+    API --> NATS["NATS JetStream\n(Real-time Messaging)"]
+    API --> Kafka["Apache Kafka\n(Event Streaming)"]
+
     Auth --> Mongo
+
+    Stream["Stream Service\n(Kafka Streams)"] --> Kafka
+    Stream --> Cassandra["Apache Cassandra\n(Unified Logs)"]
+
+    Management["Management Service\n(Initializers & Schedulers)"] --> Mongo
+    Management --> NATS
+    Management --> Kafka
+
+    Config["Config Server\n(Spring Cloud Config)"] --> Gateway
+    Config --> API
+    Config --> Auth
 ```
 
-### Core Services
+### Service Overview
 
-| Service | Purpose | Port | Technology |
-|---------|---------|------|------------|
-| **API Service** | Internal REST + GraphQL APIs | 8080 | Spring Boot, GraphQL |
-| **Authorization Server** | Multi-tenant OAuth2/OIDC | 8082 | Spring Authorization Server |
-| **Gateway** | Security, routing, WebSocket proxy | 8081 | Spring Cloud Gateway |
-| **External API** | Public API endpoints | 8083 | Spring Boot REST |
-| **Stream Service** | Event processing and enrichment | 8085 | Kafka Streams |
-| **Client Service** | Agent lifecycle management | 8084 | Spring Boot, NATS |
-| **Frontend UI** | Web-based tenant dashboard | 3000 | Node.js with AI/LLM |
-| **Chat Client** | Desktop AI assistant | - | Rust/Tauri |
+| Service | Port | Responsibility |
+|---|---|---|
+| **Config Server** | 8888 | Centralized configuration for all services |
+| **Gateway** | 8080 | Edge routing, JWT validation, API key auth, WebSocket proxy |
+| **Authorization Server** | 9000 | OAuth2/OIDC, SSO, multi-tenant JWT issuance |
+| **API Service** | 8081 | GraphQL + REST orchestration layer |
+| **Management Service** | 8082 | Startup init, migrations, schedulers |
+| **Stream Service** | 8083 | Debezium CDC ingestion, event enrichment |
+| **External API Service** | 8084 | Third-party integration surface |
+| **Client Service** | 8085 | Agent-facing APIs, NATS communication |
+| **Frontend (dev)** | 3000 | Next.js UI with hot reload |
 
-## 🔄 Multi-Tenant Security Flow
+---
 
-```mermaid
-sequenceDiagram
-    participant Browser
-    participant Gateway
-    participant AuthServer
-    participant ApiService
-    participant Database
+## 🚀 Quick Start
 
-    Browser->>AuthServer: OAuth Login (tenant-scoped)
-    AuthServer-->>Browser: JWT (tenant_id claim)
-    Browser->>Gateway: API Request with JWT
-    Gateway->>Gateway: Validate issuer + signature
-    Gateway->>ApiService: Forward with identity context
-    ApiService->>ApiService: Enforce tenant isolation
-    ApiService->>Database: Query with tenant_id scope
+> **Prerequisites**: Java 21, Maven 3.9+, MongoDB 6+, Redis 7+, Apache Kafka 3.6+, NATS 2.10+, Apache Cassandra 4+. See [Prerequisites](./docs/getting-started/prerequisites.md) for details.
+
+### 1. Clone & Build
+
+```bash
+git clone https://github.com/openframeai/openframe-oss-tenant.git
+cd openframe-oss-tenant
+mvn clean install -DskipTests
 ```
 
-## 🛠️ Technology Stack
+### 2. Start the Config Server First
 
-### Backend Services
-- **Java 21** with **Spring Boot 3.3.0**
-- **Spring Security** with OAuth2/OIDC support
-- **Spring Cloud Gateway** for reactive routing
-- **Apache Kafka** for event streaming
-- **NATS/JetStream** for agent messaging
+```bash
+cd openframe/services/openframe-config
+mvn spring-boot:run
+```
 
-### Data Layer
-- **MongoDB** - Primary transactional storage
-- **Apache Cassandra** - Time-series and log persistence  
-- **Apache Pinot** - Real-time analytics and querying
-- **Redis** - Caching and session management
+### 3. Start Core Services (each in a separate terminal)
 
-### AI & Automation
-- **VoltAgent Core** - Intelligent automation framework
-- **Anthropic SDK** and **OpenAI** integration
-- **GraphQL** - Chat integration with streaming messages
-- **Real-time dialog orchestration** - Zustand stores for message state
+```bash
+# Authorization Server
+cd openframe/services/openframe-authorization-server
+mvn spring-boot:run
 
-## 📚 Documentation
+# API Service
+cd openframe/services/openframe-api
+mvn spring-boot:run
 
-Comprehensive documentation is available in the [docs](./docs/README.md) directory:
+# Gateway
+cd openframe/services/openframe-gateway
+mvn spring-boot:run
 
-- **[Getting Started](./docs/README.md#getting-started)** - Quick setup and introduction
-- **[Reference Documentation](./docs/README.md#reference-documentation)** - Technical architecture and API specs  
-- **[Development Guides](./docs/README.md#development)** - Contributing and development workflows
+# Management Service
+cd openframe/services/openframe-management
+mvn spring-boot:run
+```
 
-### CLI Tools
+### 4. Start the Frontend
 
-The OpenFrame CLI tools are maintained in a separate repository:
-- **Repository**: [flamingo-stack/openframe-cli](https://github.com/flamingo-stack/openframe-cli)
-- **Installation**: [Installation Guide](https://github.com/flamingo-stack/openframe-cli#installation)
-- **Documentation**: [CLI Documentation](https://github.com/flamingo-stack/openframe-cli/tree/main/docs)
+```bash
+cd openframe/services/openframe-frontend
+npm install
+npm run dev
+# Frontend available at http://localhost:3000
+```
+
+### 5. Verify the Platform
+
+```bash
+# Gateway health
+curl http://localhost:8080/actuator/health
+
+# Authorization Server OIDC discovery
+curl http://localhost:9000/.well-known/openid-configuration
+
+# API Service health
+curl http://localhost:8081/health
+```
+
+📚 For full setup instructions, see the **[Quick Start Guide](./docs/getting-started/quick-start.md)**.
+
+---
+
+## 🧱 Technology Stack
+
+### Backend (Java 21 + Spring Boot 3.3)
+
+- **Runtime**: Java 21, Spring Boot 3.3, Spring Cloud 2023.0
+- **API**: Netflix DGS (GraphQL), Spring WebMVC, Spring WebFlux
+- **Security**: Spring Authorization Server, Spring Security (OAuth2/JWT/OIDC)
+- **Gateway**: Spring Cloud Gateway (Reactive, Netty)
+- **Messaging**: Apache Kafka 3.6, NATS JetStream
+- **Databases**: MongoDB 6+, Redis 7+, Apache Cassandra 4+
+- **Stream Processing**: Kafka Streams, Debezium CDC
+- **Scheduling**: ShedLock (Redis), Spring `@Scheduled`
+- **Migrations**: Mongock
+- **Build**: Maven (multi-module `openframe-parent`)
+
+### Frontend
+
+- **Framework**: Next.js (React)
+- **Component Library**: `@flamingo-stack/openframe-frontend-core`
+- **Styling**: TailwindCSS
+
+### Infrastructure
+
+- **Orchestration**: Kubernetes (manifests included under `manifests/`)
+- **Agent**: Rust (`openframe-client`) — communicates via NATS JetStream
+- **Desktop Chat**: Tauri (`openframe-chat`)
+
+---
+
+## 📁 Repository Structure
+
+```text
+openframe-oss-tenant/
+├── openframe/
+│   └── services/
+│       ├── openframe-api/               # API Application (GraphQL + REST)
+│       ├── openframe-authorization-server/  # OAuth2/OIDC Authorization Server
+│       ├── openframe-gateway/           # Reactive Gateway
+│       ├── openframe-external-api/      # External API for integrations
+│       ├── openframe-management/        # Management, schedulers, migrations
+│       ├── openframe-stream/            # Kafka Streams event processing
+│       ├── openframe-client/            # Agent-facing API service
+│       ├── openframe-config/            # Spring Cloud Config Server
+│       └── openframe-frontend/          # Next.js frontend
+├── clients/
+│   ├── openframe-client/               # Rust agent client
+│   └── openframe-chat/                 # Tauri desktop chat app
+├── manifests/                          # Kubernetes deployment manifests
+└── pom.xml                             # Maven parent POM
+```
+
+---
+
+## 📖 Documentation
+
+📚 See the **[Documentation Index](./docs/README.md)** for comprehensive guides:
+
+- **[Introduction](./docs/getting-started/introduction.md)** — What is OpenFrame and why it exists
+- **[Prerequisites](./docs/getting-started/prerequisites.md)** — Required software and system requirements
+- **[Quick Start](./docs/getting-started/quick-start.md)** — Get running in under 10 minutes
+- **[First Steps](./docs/getting-started/first-steps.md)** — Register a tenant, explore the dashboard, connect integrations
+- **[Architecture Overview](./docs/development/architecture/README.md)** — Detailed system architecture
+- **[Local Development](./docs/development/setup/local-development.md)** — Hot reload, debugging, dev workflows
+- **[Contributing Guidelines](./docs/development/contributing/guidelines.md)** — Code style, PR process, conventions
+
+---
+
+## 🤝 Community & Support
+
+OpenFrame is developed by the [Flamingo](https://flamingo.run) team and the **OpenMSP community**.
+
+> ⚠️ We do **not** use GitHub Issues or GitHub Discussions. All community interaction happens in Slack.
+
+- **Community Slack**: [Join OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
+- **OpenMSP Hub**: [openmsp.ai](https://www.openmsp.ai/)
+- **OpenFrame Website**: [openframe.ai](https://openframe.ai)
+- **Flamingo Platform**: [flamingo.run](https://flamingo.run)
+
+---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for:
+We welcome contributions! Please read the **[Contributing Guidelines](./CONTRIBUTING.md)** before opening a pull request.
 
-- Development workflow and branch naming
-- Code style and conventions  
-- Pull request process and review guidelines
-- Testing requirements and quality standards
-
-Join our community:
-- **Slack**: [OpenMSP Community](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
-- **Documentation**: [OpenFrame Docs](https://www.flamingo.run/openframe)
-
-## 🏢 Enterprise & Support
-
-- **Platform**: [Flamingo](https://flamingo.run) - AI-powered MSP platform
-- **OpenFrame**: [Product Page](https://www.flamingo.run/openframe) - Unified MSP interface
-- **Community**: [OpenMSP](https://www.openmsp.ai/) - Open source MSP community
-
-## 📄 License
-
-This project is licensed under the Flamingo AI Unified License v1.0 - see the [LICENSE.md](LICENSE.md) file for details.
+Key conventions:
+- Branch naming: `feat/`, `fix/`, `refactor/`, `docs/`, `chore/`
+- Commits: [Conventional Commits](https://www.conventionalcommits.org/)
+- All discussion in [OpenMSP Slack](https://join.slack.com/t/openmsp/shared_invite/zt-36bl7mx0h-3~U2nFH6nqHqoTPXMaHEHA)
 
 ---
+
 <div align="center">
   Built with 💛 by the <a href="https://www.flamingo.run/about"><b>Flamingo</b></a> team
 </div>
