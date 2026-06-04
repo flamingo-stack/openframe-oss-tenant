@@ -31,6 +31,8 @@ pub mod update_state_service;
 pub mod update_cleanup_service;
 pub mod update_handler_service;
 pub mod initial_key_service;
+#[cfg(target_os = "windows")]
+pub mod windows_session_manager;
 
 pub use agent_auth_service::AgentAuthService;
 pub use agent_configuration_service::AgentConfigurationService;

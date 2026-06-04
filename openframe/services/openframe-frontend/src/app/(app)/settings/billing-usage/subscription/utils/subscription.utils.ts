@@ -85,8 +85,7 @@ export function buildInitialSelection(
     selectedPackageId = String(matchedTier.from);
   } else if (activeQuantity != null) {
     selectedPackageId = CUSTOM_OPTION_ID;
-    // Backend quantity is in units; the Custom input shows the real product count.
-    customQuantity = activeQuantity * (Number(product.unitSize ?? 1) || 1);
+    customQuantity = toDisplayQuantity(activeQuantity, product.unitSize);
   } else {
     // No active tier/custom package: default to PAYG (current PAYG state, or soft-default for trial/no-plan users).
     selectedPackageId = PAYG_OPTION_ID;
@@ -117,6 +116,17 @@ function toCatalogOptionId(globalId: string): string {
 }
 
 /**
+ * Backend `quantity` (and catalog `priceTier.from`) is stored in billable units
+ * (devices: 1, AI tokens: 100_000). Multiply by `unitSize` to get the value the
+ * user actually sees in the UI (real device count, real token count).
+ */
+export function toDisplayQuantity(rawUnits: number | null | undefined, unitSize: number | null | undefined): number {
+  if (rawUnits == null) return 0;
+  const size = Number(unitSize ?? 1) || 1;
+  return rawUnits * size;
+}
+
+/**
  * The Custom Amount input holds the real product count the user typed (tokens,
  * devices, …). Tier `from` / mutation `quantity` are in units, so convert by
  * dividing by `unitSize`. Returns null when empty or not a whole multiple of
@@ -130,10 +140,15 @@ function customUnits(product: ProductData, customQuantity: number | null): numbe
 }
 
 /**
- * PAYG no longer has a dedicated mutation input — it flows through
- * `PackageUpdateInput` like any package. CANCEL uses the subscription-side
- * `packageOptionId` (already the raw catalog uuid). ADD resolves the raw uuid
- * from the catalog `ProductOption.id` via `toCatalogOptionId`.
+ * Backend semantics (see `SubscriptionUpdateService.addPackage`):
+ * - `ADD` for a product auto-ends the product's currently active package
+ *   (sets its endDate to phaseStart - 1). So package swaps within the same
+ *   product are a single `ADD` — no explicit `CANCEL` of the previous tier.
+ * - PAYG is always-on and self-healed by `reconcilePaygInvariant` on every
+ *   `updateSubscription` call. FE never touches PAYG via `PackageUpdateInput`.
+ * - `CANCEL` is reserved for removing a product's commitment entirely (e.g.
+ *   switching from a committed package to PAYG-only, or turning AI Assistant
+ *   off — the latter is handled at the view level, see SubscriptionSettingsView).
  */
 export function diffPackageUpdates(
   product: ProductData,
@@ -143,9 +158,12 @@ export function diffPackageUpdates(
   const activePackage = subscriptionProduct?.packageOptions.find(opt => opt.status === 'ACTIVE') ?? null;
   const activeCancelId = activePackage?.packageOptionId ?? null;
   const activeQuantity = activePackage?.quantity ?? null;
-  const currentPaygCancelId = subscriptionProduct?.payAsYouGoOption?.packageOptionId ?? null;
 
   const wantsPayg = currentSelection.selectedPackageId === PAYG_OPTION_ID;
+
+  if (wantsPayg) {
+    return activeCancelId ? [{ productName: product.name, packageOptionId: activeCancelId, action: 'CANCEL' }] : [];
+  }
 
   const nextPackageOption =
     product.packageOptions.find(opt => opt.billingPeriod === currentSelection.billingPeriod) ??
@@ -154,42 +172,46 @@ export function diffPackageUpdates(
   const nextPackageId = nextPackageOption ? toCatalogOptionId(nextPackageOption.id) : null;
 
   let nextQuantity: number | null = null;
-  if (!wantsPayg) {
-    if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
-      nextQuantity = customUnits(product, currentSelection.customQuantity);
-    } else if (currentSelection.selectedPackageId) {
-      const parsed = Number.parseInt(currentSelection.selectedPackageId, 10);
-      nextQuantity = Number.isFinite(parsed) ? parsed : null;
-    }
+  if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
+    nextQuantity = customUnits(product, currentSelection.customQuantity);
+  } else if (currentSelection.selectedPackageId) {
+    const parsed = Number.parseInt(currentSelection.selectedPackageId, 10);
+    nextQuantity = Number.isFinite(parsed) ? parsed : null;
   }
 
-  // Unchanged → no-op.
-  if (wantsPayg && currentPaygCancelId != null) return [];
-  if (!wantsPayg && activeCancelId != null && activeCancelId === nextPackageId && activeQuantity === nextQuantity) {
+  if (activeCancelId != null && activeCancelId === nextPackageId && activeQuantity === nextQuantity) {
     return [];
   }
 
-  const updates: PackageUpdateInput[] = [];
-
-  // Cancel whatever is currently active (a package, and/or PAYG when switching away).
-  if (activeCancelId) {
-    updates.push({ productName: product.name, packageOptionId: activeCancelId, action: 'CANCEL' });
-  }
-  if (currentPaygCancelId != null && !wantsPayg) {
-    updates.push({ productName: product.name, packageOptionId: currentPaygCancelId, action: 'CANCEL' });
+  if (nextPackageId && nextQuantity) {
+    return [{ productName: product.name, packageOptionId: nextPackageId, action: 'ADD', quantity: nextQuantity }];
   }
 
-  // Add the desired option.
-  if (wantsPayg) {
-    const paygAddId = product.payAsYouGoOption ? toCatalogOptionId(product.payAsYouGoOption.id) : null;
-    if (paygAddId) {
-      updates.push({ productName: product.name, packageOptionId: paygAddId, action: 'ADD' });
-    }
-  } else if (nextPackageId && nextQuantity) {
-    updates.push({ productName: product.name, packageOptionId: nextPackageId, action: 'ADD', quantity: nextQuantity });
-  }
+  return [];
+}
 
-  return updates;
+interface CancelablePackageOption {
+  readonly packageOptionId: string;
+  readonly status: SubscriptionProductData['packageOptions'][number]['status'];
+}
+
+interface CancelableSubscriptionProduct {
+  readonly packageOptions: ReadonlyArray<CancelablePackageOption>;
+}
+
+/**
+ * When the user disables the AI Assistant checkbox while there is an active
+ * AI subscription, we still need to CANCEL its active package — the view
+ * filters AI out of the per-card diff, so this lives at the view level.
+ */
+export function buildProductCancelUpdates(
+  productName: ProductData['name'],
+  subscriptionProduct: CancelableSubscriptionProduct | null,
+): PackageUpdateInput[] {
+  if (!subscriptionProduct) return [];
+  return subscriptionProduct.packageOptions
+    .filter(opt => opt.status === 'ACTIVE')
+    .map(opt => ({ productName, packageOptionId: opt.packageOptionId, action: 'CANCEL' }));
 }
 
 /**
@@ -222,6 +244,6 @@ export function buildCheckoutProduct(
     productName: product.name,
     packageOptionId: periodOption ? toCatalogOptionId(periodOption.id) : null,
     quantity,
-    payAsYouGoEnabled: false,
+    payAsYouGoEnabled: true,
   };
 }
