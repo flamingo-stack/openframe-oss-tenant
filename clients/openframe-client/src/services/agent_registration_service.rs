@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{Context, Result};
 use tracing::{error, info, warn};
 
@@ -7,6 +9,10 @@ use crate::platform::machine_info_persistence::{self, PersistedMachineInfo};
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::device_data_fetcher::DeviceDataFetcher;
 use crate::services::InitialConfigurationService;
+
+/// Backoff between persisted-read retries before falling back to a fresh install.
+const READ_RETRY_DELAYS: [Duration; 3] =
+    [Duration::from_secs(1), Duration::from_secs(3), Duration::from_secs(5)];
 
 #[derive(Clone)]
 pub struct AgentRegistrationService {
@@ -35,8 +41,7 @@ impl AgentRegistrationService {
     pub async fn register_agent(&self) -> Result<AgentRegistrationResponse> {
         let initial_key = self.initial_configuration_service.get_initial_key()?;
 
-        let credentials = machine_info_persistence::read()
-            .context("Aborting registration: prior registration state is undetermined")?;
+        let credentials = Self::read_persisted_credentials().await?;
 
         let response = match credentials {
             Some(credentials) => {
@@ -67,6 +72,36 @@ impl AgentRegistrationService {
         ).await?;
 
         Ok(response)
+    }
+
+    async fn read_persisted_credentials() -> Result<Option<PersistedMachineInfo>> {
+        let mut attempt = 0;
+        loop {
+            match machine_info_persistence::read() {
+                Ok(credentials) => return Ok(credentials),
+                Err(e) if machine_info_persistence::is_permission_denied(&e) => return Err(e),
+                Err(e) => match READ_RETRY_DELAYS.get(attempt) {
+                    Some(&delay) => {
+                        warn!(
+                            "Failed to read persisted machine info (attempt {}): {:#}; retrying in {:?}",
+                            attempt + 1,
+                            e,
+                            delay
+                        );
+                        tokio::time::sleep(delay).await;
+                        attempt += 1;
+                    }
+                    None => {
+                        error!(
+                            "Failed to read persisted machine info after {} attempts: {:#}; performing a fresh registration",
+                            attempt + 1,
+                            e
+                        );
+                        return Ok(None);
+                    }
+                },
+            }
+        }
     }
 
     /// First install: the server generates machineId, clientSecret
