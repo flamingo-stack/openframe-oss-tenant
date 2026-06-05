@@ -76,7 +76,7 @@
     {
       "description": "Updates for meshcentral Docker image",
       "matchManagers": ["regex"],
-      "matchPackageNames": ["ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral"],
+      "matchPackageNames": ["ghcr.io/flamingo-stack/meshcentral/meshcentral"],
       "groupName": "meshcentral-image",
       "groupSlug": "meshcentral-image",
       "commitMessageTopic": "meshcentral image",
@@ -92,7 +92,7 @@
       "description": "Updates for tacticalrmm Docker images",
       "matchManagers": ["regex"],
       "matchPackageNames": [
-        "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base",
+        "ghcr.io/flamingo-stack/tacticalrmm/tactical",
         "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend"
       ],
       "groupName": "tacticalrmm-image",
@@ -152,7 +152,7 @@
       "matchStrings": [
         "repository: meshcentral\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
       ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral",
+      "depNameTemplate": "ghcr.io/flamingo-stack/meshcentral/meshcentral",
       "datasourceTemplate": "docker"
     },
     {
@@ -161,9 +161,9 @@
         "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
       ],
       "matchStrings": [
-        "repository: tactical-base\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
+        "repository: tactical\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
       ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base",
+      "depNameTemplate": "ghcr.io/flamingo-stack/tacticalrmm/tactical",
       "datasourceTemplate": "docker"
     },
     {
