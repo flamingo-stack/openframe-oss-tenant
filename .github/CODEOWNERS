@@ -1,11 +1,9 @@
 # CODEOWNERS
 # Last-match-wins: put broader patterns above more specific ones.
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
-
-# CODEOWNERS self-ownership
 /.github/CODEOWNERS        @flamingo-stack/devops-engineers
 
-# Spring Cloud Config — prod requires devops or lead approval
+# Spring Cloud Config — configs require lead + backend; base/ are lead-only
 /configs/                  @flamingo-stack/lead-engineers @flamingo-stack/backend-engineers
 /configs/base/             @flamingo-stack/lead-engineers
 
