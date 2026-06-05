@@ -16,7 +16,7 @@ import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
 import { useCreateCustomer } from '../hooks/use-create-customer';
-import { useCustomerDetails } from '../hooks/use-customer-details';
+import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { useUpdateCustomer } from '../hooks/use-update-customer';
 
 interface NewCustomerPageProps {
@@ -260,6 +260,9 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
       }
 
       await queryClient.invalidateQueries({ queryKey: ['organizations'] });
+      if (organizationId) {
+        await queryClient.invalidateQueries({ queryKey: customerDetailsQueryKeys.detail(organizationId) });
+      }
 
       toast({
         title: organizationId ? 'Customer updated' : 'Customer created',

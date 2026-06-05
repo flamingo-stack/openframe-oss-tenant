@@ -27,6 +27,25 @@ export const notificationsDrawerRelayFragment = graphql`
           context {
             __typename
             type
+            ... on AdminAiMessageContext {
+              dialogId
+            }
+            ... on AdminApprovalRequestContext {
+              approvalRequestId
+              dialogId
+              ticketId
+              approvalType
+              toolCalls {
+                toolExecutionRequestId
+                toolName
+                toolTitle
+                toolExplanation
+                toolType
+                requiresApproval
+                approvalType
+                toolCallArguments
+              }
+            }
           }
         }
       }
