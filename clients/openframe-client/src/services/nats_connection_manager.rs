@@ -114,8 +114,13 @@ impl NatsConnectionManager {
             "Auth URL callback triggered - performing reauthentication"
         );
 
-        match auth_service.reauthenticate().await {
-            Ok(_) => {
+        match tokio::time::timeout(
+            std::time::Duration::from_secs(10),
+            auth_service.reauthenticate(),
+        )
+        .await
+        {
+            Ok(Ok(_)) => {
                 info!("Reauthentication successful in auth_url_callback");
 
                 match config_service.get_access_token().await {
@@ -130,9 +135,15 @@ impl NatsConnectionManager {
                     }
                 }
             }
-            Err(e) => {
+            Ok(Err(e)) => {
                 error!("Reauthentication failed in auth_url_callback: {}", e);
                 Err(async_nats::AuthError::new(format!("Reauthentication failed: {}", e)))
+            }
+            Err(_) => {
+                error!("Reauthentication timed out in auth_url_callback after 10s");
+                Err(async_nats::AuthError::new(
+                    "Reauthentication timed out after 10s".to_string(),
+                ))
             }
         }
     }
