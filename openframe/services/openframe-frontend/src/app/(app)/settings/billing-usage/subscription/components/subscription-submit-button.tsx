@@ -14,6 +14,8 @@ interface SubscriptionSubmitButtonProps {
   checkoutProducts: ProductCheckoutInput[];
   /** True when a Custom Amount has an empty/invalid quantity (update flow only). */
   hasInvalidCustom: boolean;
+  /** Extra classes for the button (e.g. `w-full` for the mobile action bar). */
+  className?: string;
 }
 
 /**
@@ -28,13 +30,11 @@ export function SubscriptionSubmitButton({
   packageUpdates,
   checkoutProducts,
   hasInvalidCustom,
+  className,
 }: SubscriptionSubmitButtonProps) {
   const updateSubscription = useUpdateSubscription();
   const createCheckout = useCreateCheckoutSession();
   const { toast } = useToast();
-
-  console.log(packageUpdates, 'packageUpdates');
-  console.log(checkoutProducts, 'checkoutProducts');
 
   const isPending = updateSubscription.isPending || createCheckout.isPending;
 
@@ -42,6 +42,7 @@ export function SubscriptionSubmitButton({
     return (
       <Button
         variant="accent"
+        className={className}
         onClick={() => {
           if (!checkoutProducts.length) return;
           createCheckout.mutate({ products: checkoutProducts });
@@ -70,6 +71,7 @@ export function SubscriptionSubmitButton({
   return (
     <Button
       variant="accent"
+      className={className}
       onClick={handleUpdate}
       loading={isPending}
       disabled={isPending || packageUpdates.length === 0}

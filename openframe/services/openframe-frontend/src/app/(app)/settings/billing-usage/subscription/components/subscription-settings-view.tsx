@@ -8,9 +8,10 @@ import { useSubscriptionLock } from '@/app/components/subscription-lock/subscrip
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import type { OpenframeProduct, ProductUpdates } from '../types/subscription.types';
+import type { OpenframeProduct, PlanLine, ProductUpdates } from '../types/subscription.types';
 import { buildProductCancelUpdates } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
+import { PlanChangeSummary, type PlanChangeSummaryItem } from './plan-change-summary';
 import { ProductSubscriptionCard } from './product-subscription-card';
 import { SubscriptionSettingsSkeleton } from './subscription-settings-skeleton';
 import { SubscriptionSubmitButton } from './subscription-submit-button';
@@ -18,11 +19,16 @@ import { SubscriptionSubmitButton } from './subscription-submit-button';
 interface ProductDisplay {
   title: string;
   description: string;
+  /** Short label used in the Current/New plan comparison block. */
+  rowLabel: string;
   packageUnitLabel: string;
   customLabel: string;
   customSubtitle: string;
   helpText?: ReactNode;
 }
+
+/** Disabling a product cancels its committed package, falling back to always-on PAYG. */
+const PAYG_PLAN_LINE: PlanLine = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
 
 const ADDITIONAL_DEVICES_HELPER_TEXT =
   'You can add more devices anytime. Additional devices beyond your package are charged at $5/device and added to your next invoice.';
@@ -31,6 +37,7 @@ const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
   MANAGED_DEVICES: {
     title: 'Device Management Plan',
     description: "Select the number of devices you'd like to include in your monthly subscription plan:",
+    rowLabel: 'Devices',
     packageUnitLabel: 'devices',
     customLabel: 'Custom Amount',
     customSubtitle: 'Choose your number of devices',
@@ -38,6 +45,7 @@ const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
   AI_ASSISTANCE: {
     title: 'AI Assistant Add-on',
     description: 'Buy OpenFrame tokens to power your AI assistants across all supported models. One unified balance.',
+    rowLabel: 'AI Tokens',
     packageUnitLabel: 'OpenFrame tokens',
     customLabel: 'Custom Amount',
     customSubtitle: 'Choose your number of tokens',
@@ -52,6 +60,7 @@ const subscriptionSettingsViewQuery = graphql`
       products {
         id
         name
+        packageOptions { billingPeriod }
         ...productSubscriptionCardProductFragment
       }
     }
@@ -93,6 +102,15 @@ function SubscriptionSettingsContent() {
   const products = data.billingPlan?.products ?? [];
   const subscriptionProducts = data.subscription?.products ?? [];
 
+  // If any displayed card shows a billing-period (monthly/yearly) toggle, the
+  // others reserve the same space so the cards stay vertically aligned. When no
+  // card has a toggle, nothing is reserved.
+  const anyHasBillingToggle = products.some(
+    p =>
+      PRODUCT_DISPLAY[p.name] != null &&
+      new Set(p.packageOptions.map(opt => opt.billingPeriod).filter(Boolean)).size > 1,
+  );
+
   const [aiEnabled, setAiEnabled] = useState(true);
 
   const [updatesMap, setUpdatesMap] = useState<Partial<Record<OpenframeProduct, ProductUpdates>>>({});
@@ -111,6 +129,22 @@ function SubscriptionSettingsContent() {
     const updates = updatesMap[p.name];
     return updates != null && !updates.valid;
   });
+
+  // Current vs selected plan, one row per product. AI being turned off cancels
+  // its committed package, so its "next" line falls back to always-on PAYG.
+  const summaryItems: PlanChangeSummaryItem[] = products.flatMap(product => {
+    const display = PRODUCT_DISPLAY[product.name];
+    const comparison = updatesMap[product.name]?.comparison;
+    if (!display || !comparison) return [];
+    const isAiOff = product.name === 'AI_ASSISTANCE' && !aiEnabled;
+    const effective = isAiOff ? { current: comparison.current, next: PAYG_PLAN_LINE } : comparison;
+    // Skip products that are neither active today nor being committed to.
+    if (!effective.current && effective.next.payg) return [];
+    return [{ label: display.rowLabel, comparison: effective }];
+  });
+
+  // Only meaningful for the update flow (active subscription) once something changed.
+  const showPlanChange = !needsCheckout && packageUpdates.length > 0 && summaryItems.length > 0;
 
   return (
     <PageLayout
@@ -139,6 +173,7 @@ function SubscriptionSettingsContent() {
                 productRef={product}
                 subscriptionProductRef={subProduct}
                 disabled={product.name === 'AI_ASSISTANCE' && !aiEnabled}
+                reserveBillingPeriodSpace={anyHasBillingToggle}
                 onUpdatesChange={updates => handleUpdatesChange(product.name, updates)}
                 {...display}
               />
@@ -149,6 +184,8 @@ function SubscriptionSettingsContent() {
           );
         })}
       </div>
+
+      {showPlanChange && <PlanChangeSummary items={summaryItems} />}
 
       <div className="hidden md:flex flex-row gap-6 items-center">
         <p className="hidden lg:block text-h6 text-ods-text-secondary flex-1 max-w-[500px]">
@@ -164,13 +201,18 @@ function SubscriptionSettingsContent() {
         </div>
       </div>
 
-      <div className="md:hidden sticky bottom-0 z-10 -mx-[var(--spacing-system-l)] border-t border-ods-border bg-ods-card px-[var(--spacing-system-l)] py-4">
-        <div className="flex justify-end">
+      {/* Fixed (not sticky) so the bar always pins to the bottom of the viewport,
+          even when the page is shorter than the screen — sticky only engages while
+          scrolling, leaving the bar stranded mid-page on short content. The app's
+          <main> reserves pb-20 for exactly this bar. */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-20 border-t border-ods-border bg-ods-card p-[var(--spacing-system-l)]">
+        <div className="flex">
           <SubscriptionSubmitButton
             needsCheckout={needsCheckout}
             packageUpdates={packageUpdates}
             checkoutProducts={checkoutProducts}
             hasInvalidCustom={hasInvalidCustom}
+            className="w-full"
           />
         </div>
       </div>

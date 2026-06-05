@@ -15,6 +15,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores';
 import { apiClient } from '@/lib/api-client';
+import { isOssTenantMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { handleApiError } from '@/lib/handle-api-error';
@@ -146,15 +147,17 @@ export function SettingsHub() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {SETTINGS_NAV_ITEMS.filter(
           item => item.href !== '/settings/billing-usage' || featureFlags.subscription.enabled(),
-        ).map(item => (
-          <SettingsNavCard
-            key={item.href}
-            href={item.href}
-            icon={<item.icon size={24} />}
-            title={item.title}
-            description={item.description}
-          />
-        ))}
+        )
+          .filter(item => item.href !== '/settings/architecture' || isOssTenantMode())
+          .map(item => (
+            <SettingsNavCard
+              key={item.href}
+              href={item.href}
+              icon={<item.icon size={24} />}
+              title={item.title}
+              description={item.description}
+            />
+          ))}
       </div>
 
       {/* Modals */}
