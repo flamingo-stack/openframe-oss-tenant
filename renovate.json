@@ -92,7 +92,6 @@
       "description": "Updates for tacticalrmm Docker images",
       "matchManagers": ["regex"],
       "matchPackageNames": [
-        "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx",
         "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-base",
         "ghcr.io/flamingo-stack/tactical-frontend/tactical-frontend"
       ],
@@ -154,17 +153,6 @@
         "repository: meshcentral\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
       ],
       "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/meshcentral",
-      "datasourceTemplate": "docker"
-    },
-    {
-      "description": "Track tactical-nginx image tag",
-      "fileMatch": [
-        "^manifests/integrated-tools/tactical-rmm/values\\.yaml$"
-      ],
-      "matchStrings": [
-        "repository: tactical-nginx\\s+tag:\\s*[\"']?(?<currentValue>[^\\s\"']+)[\"']?"
-      ],
-      "depNameTemplate": "ghcr.io/flamingo-stack/openframe-oss-tenant/tactical-nginx",
       "datasourceTemplate": "docker"
     },
     {

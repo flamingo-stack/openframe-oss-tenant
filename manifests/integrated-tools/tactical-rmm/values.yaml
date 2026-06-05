@@ -34,7 +34,7 @@ tactical:
     image:
       registry: ghcr.io/flamingo-stack/openframe-oss-tenant
       repository: tactical-nginx
-      tag: "0.7.20"
+      tag: latest
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"
