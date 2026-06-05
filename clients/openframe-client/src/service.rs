@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::runtime::Runtime;
+use tokio::sync::Notify;
 use tracing::{error, info, warn};
 
 use crate::installation_initial_config_service::{
@@ -48,26 +49,23 @@ define_windows_service!(ffi_service_main, windows_service_main);
 /// Windows service main function - called by SCM
 #[cfg(windows)]
 fn windows_service_main(_args: Vec<std::ffi::OsString>) {
-    // Create shutdown signal channel
-    let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
-    let shutdown_tx = Arc::new(std::sync::Mutex::new(Some(shutdown_tx)));
+    // Shared shutdown signal. The SCM control handler runs on a non-async
+    // thread; calling `notify_waiters()` from there is safe and wakes the
+    // async waiter inside Service::run, which then calls `signal_shutdown()`
+    // on the tool run manager before exiting cleanly.
+    let shutdown = Arc::new(Notify::new());
 
     // Create channel for SessionChange events for WindowsSessionManager
     let (session_tx, session_rx) = mpsc::unbounded_channel::<SessionEvent>();
 
     // Register service control handler with PROPER stop handling
     let status_handle = match service_control_handler::register(FULL_SERVICE_NAME, {
-        let shutdown_tx = Arc::clone(&shutdown_tx);
+        let shutdown = Arc::clone(&shutdown);
         move |control_event| {
             match control_event {
                 ServiceControl::Stop | ServiceControl::Shutdown => {
                     info!("Received stop/shutdown signal from Windows SCM");
-                    
-                    // Send shutdown signal
-                    if let Some(tx) = shutdown_tx.lock().unwrap().take() {
-                        let _ = tx.send(());
-                    }
-
+                    shutdown.notify_waiters();
                     ServiceControlHandlerResult::NoError
                 }
                 ServiceControl::Interrogate => {
@@ -113,23 +111,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
         }
     };
 
-    // Run service with shutdown signal
-    let result = rt.block_on(async {
-        // Spawn service core
-        let service_handle = tokio::spawn(Service::run(Some(session_rx)));
-        
-        // Wait for either service completion or shutdown signal
-        tokio::select! {
-            result = service_handle => {
-                info!("Service core completed");
-                result.unwrap_or_else(|e| Err(anyhow::anyhow!("Service panicked: {}", e)))
-            }
-            _ = tokio::task::spawn_blocking(move || shutdown_rx.recv()) => {
-                info!("Shutdown signal received, stopping service...");
-                Ok(())
-            }
-        }
-    });
+    let result = rt.block_on(Service::run(Some(session_rx), shutdown));
 
     if let Err(e) = result {
         eprintln!("Service core failed: {:?}", e);
@@ -389,9 +371,14 @@ impl Service {
     /// Run the service core logic.
     ///
     /// `session_bus` carries Windows SessionChange events; `None` on non-Windows or when
-    /// running not as a service
-    pub async fn run(session_bus: Option<crate::SessionBus>) -> Result<()> {
-        // Common code for all platforms
+    /// running not as a service.
+    /// `shutdown` is fired by the platform-specific stop signal (Windows SCM Stop on
+    /// Windows, SIGTERM/SIGINT on Unix — installed below). When triggered, the client's
+    /// `ToolRunManager` is told to stop spawning new processes before the runtime exits.
+    pub async fn run(
+        session_bus: Option<crate::SessionBus>,
+        shutdown: Arc<Notify>,
+    ) -> Result<()> {
         info!("Starting OpenFrame service core");
 
         // Initialize directory manager based on environment
@@ -423,9 +410,40 @@ impl Service {
         // Initialize the client
         let client = Client::new(session_bus)?;
 
+        // On Unix, install SIGTERM/SIGINT handlers that fire the same `shutdown` Notify.
+        // launchd/systemd send SIGTERM when stopping the service; without this, the
+        // runtime would be killed without giving ToolRunManager a chance to stop launches.
+        #[cfg(unix)]
+        {
+            let shutdown = Arc::clone(&shutdown);
+            tokio::spawn(async move {
+                use tokio::signal::unix::{signal, SignalKind};
+                let term = signal(SignalKind::terminate());
+                let int_ = signal(SignalKind::interrupt());
+                match (term, int_) {
+                    (Ok(mut t), Ok(mut i)) => {
+                        tokio::select! {
+                            _ = t.recv() => info!("Received SIGTERM"),
+                            _ = i.recv() => info!("Received SIGINT"),
+                        }
+                        shutdown.notify_waiters();
+                    }
+                    _ => warn!("Failed to install Unix signal handlers; service will not shut down gracefully"),
+                }
+            });
+        }
 
-        // Start the client
-        client.start().await
+        tokio::select! {
+            r = client.start() => r,
+            _ = shutdown.notified() => {
+                info!("Shutdown signal received — stopping tool run manager");
+                client.signal_shutdown();
+                // Give in-flight tool run loops a moment to observe the flag and exit
+                // before the runtime drops everything.
+                tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                Ok(())
+            }
+        }
     }
 
     /// Get the standard installation location for the OpenFrame binary
@@ -487,7 +505,8 @@ impl Service {
         #[cfg(not(windows))]
         {
             let rt = Runtime::new().context("Failed to create Tokio runtime")?;
-            rt.block_on(Self::run(None))
+            let shutdown = Arc::new(Notify::new());
+            rt.block_on(Self::run(None, shutdown))
         }
     }
 

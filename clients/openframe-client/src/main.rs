@@ -200,7 +200,8 @@ fn main() -> Result<()> {
             init_logging();
             info!("No command specified, running as service (legacy mode)");
 
-            if let Err(e) = rt.block_on(Service::run(None)) {
+            let shutdown = std::sync::Arc::new(tokio::sync::Notify::new());
+            if let Err(e) = rt.block_on(Service::run(None, shutdown)) {
                 error!("Service failed: {:#}", e);
                 process::exit(1);
             }

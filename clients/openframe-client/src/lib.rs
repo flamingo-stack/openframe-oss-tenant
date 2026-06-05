@@ -409,6 +409,14 @@ impl Client {
         })
     }
 
+    /// Signal the tool run manager to stop launching new tool processes.
+    /// Why: when the updater stops the openframe-client service to replace its
+    /// binary, in-flight launches in `ToolRunManager` would race the shutdown
+    /// and either spawn doomed children or leave half-initialized state behind.
+    pub fn signal_shutdown(&self) {
+        self.tool_run_manager.signal_shutdown();
+    }
+
     pub async fn start(&self) -> Result<()> {
         info!("Starting OpenFrame Client");
 
