@@ -18,15 +18,21 @@ COPY openframe/ openframe/
 
 RUN --mount=type=secret,id=GITHUB_TOKEN \
     export GITHUB_TOKEN=$(cat /run/secrets/GITHUB_TOKEN) && \
-    mvn clean install \
-    -U \
-    -pl openframe/services/openframe-gateway \
-    -am \
-    -Dcompress \
-    --batch-mode \
-    --no-transfer-progress \
-    -Dmaven.javadoc.skip=true \
-    -Dmaven.test.skip=true
+    for attempt in 1 2 3; do \
+        mvn clean install \
+        -U \
+        -pl openframe/services/openframe-gateway \
+        -am \
+        -Dcompress \
+        --batch-mode \
+        --no-transfer-progress \
+        -Dmaven.javadoc.skip=true \
+        -Dmaven.test.skip=true \
+        && exit 0; \
+        echo "Maven build attempt ${attempt}/3 failed (GitHub Packages resolve may be flaky); retrying in 15s..." >&2; \
+        sleep 15; \
+    done; \
+    echo "Maven build failed after 3 attempts" >&2; exit 1
 
 
 
