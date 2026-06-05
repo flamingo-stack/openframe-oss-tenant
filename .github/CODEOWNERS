@@ -1,14 +1,11 @@
 # CODEOWNERS
 # Last-match-wins: put broader patterns above more specific ones.
 # Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+/.github/CODEOWNERS        @flamingo-stack/devops-engineers
 
-# CODEOWNERS self-ownership
-/.github/CODEOWNERS         @flamingo-stack/devops-engineers
-
-
-# Spring Cloud Config — protected environments only (dev/ is unowned)
-/configs/base/              @flamingo-stack/backend-engineers
-
+# Spring Cloud Config — configs require lead + backend; base/ are lead-only
+/configs/                  @flamingo-stack/lead-engineers @flamingo-stack/backend-engineers
+/configs/base/             @flamingo-stack/lead-engineers
 
 # Kubernetes / ArgoCD manifests
-/manifests/                 @flamingo-stack/devops-engineers
+/manifests/                @flamingo-stack/devops-engineers
