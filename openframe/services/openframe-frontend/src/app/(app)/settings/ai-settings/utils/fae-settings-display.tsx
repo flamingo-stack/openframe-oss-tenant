@@ -7,7 +7,7 @@ type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: strin
 export const LLM_PROVIDER_LABEL: Record<AIProvider, string> = {
   ANTHROPIC: 'Anthropic',
   OPENAI: 'OpenAI',
-  GOOGLE_GEMINI: 'Google',
+  GOOGLE_GEMINI: 'Google Gemini',
 };
 
 export const LLM_PROVIDER_ICON: Record<AIProvider, IconComponent> = {

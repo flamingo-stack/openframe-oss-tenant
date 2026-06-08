@@ -105,7 +105,7 @@ export function MeetFaePreview({
         <div className="flex shrink-0 items-center justify-center gap-[var(--spacing-system-xs)] text-ods-text-secondary">
           <span className="text-h6">Powered by</span>
           <FlamingoLogo className="h-5 w-auto" fill="currentColor" />
-          <span className="font-heading text-[14px] font-semibold leading-5">Flamingo</span>
+          <span className="font-heading text-h6 font-semibold">Flamingo</span>
         </div>
       </div>
     </div>

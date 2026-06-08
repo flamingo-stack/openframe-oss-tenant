@@ -24,8 +24,14 @@ export function MingoAiChatTab({ settings: _settings, isEditMode, onSubmit }: Mi
   });
 
   const handleSubmit = form.handleSubmit(() => {
-    // TODO: map form values to UpdateFaeSettingsInput
-    onSubmit({});
+    // TODO: map form values to UpdateFaeSettingsInput once Mingo fields exist.
+    // No fields are implemented yet, so guard against sending an empty payload
+    // through the shared Save flow (which would trigger a no-op backend update).
+    const payload: UpdateFaeSettingsInput = {};
+    if (Object.keys(payload).length === 0) {
+      return;
+    }
+    onSubmit(payload);
   });
 
   if (!isEditMode) {

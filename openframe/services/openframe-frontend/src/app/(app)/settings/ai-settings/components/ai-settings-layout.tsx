@@ -111,7 +111,7 @@ function ResponsiveAction({ action, hideMobileIcon }: { action: PageActionButton
           loading={action.loading}
           leftIcon={action.icon}
           size="icon"
-          aria-label={action.label ?? action.ariaLabel}
+          aria-label={action.ariaLabel ?? action.label}
           className="md:hidden [&_svg]:!text-ods-text-primary"
         />
       )}
