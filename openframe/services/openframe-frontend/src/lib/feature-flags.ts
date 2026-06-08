@@ -16,6 +16,7 @@ export const FEATURE_FLAG_NAMES = [
   'mingo-sidebar',
   'ticket-statuses',
   'mingo-ai-chat-settings',
+  'customer-ai-assistant-settings',
 ] as const;
 
 /**
@@ -89,6 +90,11 @@ export const featureFlags = {
   mingoAiChatSettings: {
     enabled(): boolean {
       return getFlagValue('mingo-ai-chat-settings', () => false);
+    },
+  },
+  customerAiAssistantSettings: {
+    enabled(): boolean {
+      return getFlagValue('customer-ai-assistant-settings', () => false);
     },
   },
 } as const;

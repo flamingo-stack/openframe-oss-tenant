@@ -7,7 +7,7 @@ import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
 import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
 import { useAiSettingsActions } from './ai-settings-actions';
 import { AiSettingsLayout } from './ai-settings-layout';
-import { type AiSettingsTabId, AiSettingsTabs } from './ai-settings-tabs';
+import { type AiSettingsTabId, AiSettingsTabs, getVisibleAiSettingsTabs } from './ai-settings-tabs';
 import { CUSTOMER_AI_ASSISTANT_FORM_ID, CustomerAiAssistantTab } from './customer-ai-assistant-tab';
 import { GUARDRAILS_FORM_ID, GuardrailsTab } from './guardrails-tab';
 import { MINGO_AI_CHAT_FORM_ID, MingoAiChatTab } from './mingo-ai-chat-tab';
@@ -25,8 +25,15 @@ export function AiSettings() {
   // No record yet → start from defaults so the first save creates one.
   const settings = loadedSettings ?? getDefaultFaeSettings();
 
-  const [activeTab, setActiveTab] = useState<AiSettingsTabId>('customer');
+  // Tabs are feature-flag gated; default to the first one that's visible.
+  const visibleTabs = getVisibleAiSettingsTabs();
+  const firstTabId = (visibleTabs[0]?.id as AiSettingsTabId | undefined) ?? 'guardrails';
+
+  const [activeTab, setActiveTab] = useState<AiSettingsTabId>(firstTabId);
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Fall back to a visible tab if the active one is hidden by a flag.
+  const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
 
   const handleEdit = useCallback(() => setIsEditMode(true), []);
   const handleCancel = useCallback(() => setIsEditMode(false), []);
@@ -37,11 +44,11 @@ export function AiSettings() {
     setIsEditMode(false);
   }, []);
   const handleSave = useCallback(() => {
-    const form = document.getElementById(FORM_ID_BY_TAB[activeTab]);
+    const form = document.getElementById(FORM_ID_BY_TAB[effectiveTab]);
     if (form instanceof HTMLFormElement) {
       form.requestSubmit();
     }
-  }, [activeTab]);
+  }, [effectiveTab]);
 
   const handleFormSubmit = useCallback(
     (values: UpdateFaeSettingsInput) => {
@@ -84,7 +91,7 @@ export function AiSettings() {
 
   return (
     <AiSettingsLayout actions={actions} mobileBottomActions={isEditMode}>
-      <AiSettingsTabs activeTab={activeTab} onTabChange={handleTabChange}>
+      <AiSettingsTabs activeTab={effectiveTab} onTabChange={handleTabChange}>
         {activeId => {
           if (activeId === 'guardrails') {
             return <GuardrailsTab isEditMode={isEditMode} onSaved={() => setIsEditMode(false)} />;

@@ -552,7 +552,7 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
                 {isEditMode ? (
                   <>
                     <Label htmlFor="provider" className="text-ods-text-primary">
-                      Fae LLM Provider
+                      LLM Provider
                     </Label>
                     <Select value={selectedProvider} onValueChange={handleProviderChange} disabled={isSaving}>
                       <SelectTrigger
@@ -595,7 +595,7 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
                       </span>
                       <ProviderIcon className="w-5 h-5 text-ods-accent" />
                     </div>
-                    <Label className="text-ods-text-secondary text-sm block">Fae LLM Provider</Label>
+                    <Label className="text-ods-text-secondary text-sm block">LLM Provider</Label>
                   </div>
                 )}
               </div>
@@ -672,7 +672,7 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
                         })()}
                       </span>
                     </div>
-                    <Label className="text-ods-text-secondary text-sm block">Fae Guardrails</Label>
+                    <Label className="text-ods-text-secondary text-sm block">Guardrails</Label>
                   </div>
                 )}
               </div>

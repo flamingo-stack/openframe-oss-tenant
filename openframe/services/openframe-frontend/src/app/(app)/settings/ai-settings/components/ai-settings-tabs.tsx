@@ -15,6 +15,21 @@ export const AI_SETTINGS_TABS: TabItem[] = [
   { id: 'guardrails', label: 'Guardrails', icon: ShieldCheckIcon },
 ];
 
+// Tabs gated behind server feature flags until each feature ships. Guardrails
+// is always visible.
+const TAB_FEATURE_FLAG: Partial<Record<AiSettingsTabId, () => boolean>> = {
+  customer: () => featureFlags.customerAiAssistantSettings.enabled(),
+  mingo: () => featureFlags.mingoAiChatSettings.enabled(),
+};
+
+/** Tabs visible for the current feature-flag state (server-driven). */
+export function getVisibleAiSettingsTabs(): TabItem[] {
+  return AI_SETTINGS_TABS.filter(tab => {
+    const flag = TAB_FEATURE_FLAG[tab.id as AiSettingsTabId];
+    return !flag || flag();
+  });
+}
+
 interface AiSettingsTabsProps {
   activeTab: AiSettingsTabId;
   onTabChange: (id: AiSettingsTabId) => void;
@@ -22,8 +37,7 @@ interface AiSettingsTabsProps {
 }
 
 export function AiSettingsTabs({ activeTab, onTabChange, children }: AiSettingsTabsProps) {
-  // Mingo AI Chat is gated behind a feature flag until the feature ships.
-  const tabs = AI_SETTINGS_TABS.filter(tab => tab.id !== 'mingo' || featureFlags.mingoAiChatSettings.enabled());
+  const tabs = getVisibleAiSettingsTabs();
 
   return (
     <TabNavigation
