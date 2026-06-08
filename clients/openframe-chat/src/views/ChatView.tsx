@@ -17,7 +17,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import faeAvatar from '../assets/fae-avatar.png';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
@@ -31,6 +31,9 @@ import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
+
+const TICKET_DIALOG_POLL_INTERVAL_MS = 5000;
+const TICKET_DIALOG_POLL_MAX_ATTEMPTS = 36;
 
 function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsageData | null {
   if (!usage) return null;
@@ -277,33 +280,38 @@ export function ChatView() {
     return [faeMessage, ...processedMessages];
   }, [processedMessages, faeFormTicket, hasNextPage]);
 
+  // A freshly created ticket has no dialog yet; poll until the backend attaches
+  // one, then swap the static preview for the live conversation. Capped so a
+  // ticket that never gets a dialog doesn't poll forever.
+  const { data: previewTicket } = useQuery({
+    queryKey: ['ticket-dialog-poll', previewTicketId],
+    queryFn: () => (previewTicketId ? ticketGraphQlService.getTicket(previewTicketId) : null),
+    enabled: isTicketPreview && !!previewTicketId,
+    retry: false,
+    staleTime: 0,
+    refetchInterval: query => {
+      if (query.state.data?.dialog?.id) return false;
+      const attempts = query.state.dataUpdateCount + query.state.errorUpdateCount;
+      return attempts >= TICKET_DIALOG_POLL_MAX_ATTEMPTS ? false : TICKET_DIALOG_POLL_INTERVAL_MS;
+    },
+  });
+
   useEffect(() => {
-    if (!isTicketPreview || !previewTicketId) return;
+    if (!isTicketPreview || !previewTicketId || !previewTicket?.dialog?.id) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const ticket = await ticketGraphQlService.getTicket(previewTicketId);
-        if (ticket?.dialog?.id) {
-          setPreviewTicketId(null);
+    setPreviewTicketId(null);
 
-          if (ticket.creationSource === 'FAE_FORM') {
-            setFaeFormTicket({
-              id: previewTicketId,
-              title: ticket.title,
-              description: ticket.description,
-              createdAt: ticket.createdAt,
-            });
-          }
+    if (previewTicket.creationSource === 'FAE_FORM') {
+      setFaeFormTicket({
+        id: previewTicketId,
+        title: previewTicket.title,
+        description: previewTicket.description,
+        createdAt: previewTicket.createdAt,
+      });
+    }
 
-          await resumeDialog(ticket.dialog.id);
-        }
-      } catch {
-        // Silently retry on next interval
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isTicketPreview, previewTicketId, resumeDialog]);
+    resumeDialog(previewTicket.dialog.id);
+  }, [previewTicket, isTicketPreview, previewTicketId, resumeDialog]);
 
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;

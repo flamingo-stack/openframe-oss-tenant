@@ -2,7 +2,7 @@ use tauri::{
     image::Image,
     menu::MenuItem,
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    Manager, RunEvent, WindowEvent,
+    Emitter, Manager, RunEvent, WindowEvent,
 };
 
 #[cfg(target_os = "macos")]
@@ -448,6 +448,14 @@ pub fn run() {
                 WindowEvent::CloseRequested { api, .. } => {
                     api.prevent_close();
                     let _ = window.hide();
+                    // Hidden to tray: drive react-query's focusManager so polling pauses.
+                    // Gated to "main" so the invisible helper window can't move visibility.
+                    if window.label() == "main" {
+                        let _ = window.emit("window-visibility", false);
+                    }
+                }
+                WindowEvent::Focused(focused) if window.label() == "main" => {
+                    let _ = window.emit("window-visibility", *focused);
                 }
                 _ => {}
             }

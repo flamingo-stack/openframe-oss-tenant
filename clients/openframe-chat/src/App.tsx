@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { DebugModeProvider } from './contexts/DebugModeContext';
 import { FeatureFlagsGate, FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
+import { useWindowFocusManager } from './hooks/useWindowFocusManager';
 import { ChatView } from './views/ChatView';
 
 const queryClient = new QueryClient({
@@ -18,6 +19,7 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  useWindowFocusManager();
   useConnectionStatus();
 
   useEffect(() => {
