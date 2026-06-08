@@ -120,7 +120,7 @@ export function DevicesTableBody({
 }
 
 function OrganizationCell({ device }: { device: Device }) {
-  const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
+  const fullImageUrl = getFullImageUrl(device.organizationImageUrl, device.organizationImageHash);
 
   return (
     <div className="flex items-center gap-3">

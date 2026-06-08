@@ -53,6 +53,7 @@ export const GET_DEVICES_QUERY = `
             name
             image {
               imageUrl
+              hash
             }
           }
           serialNumber
@@ -116,6 +117,7 @@ export const GET_DEVICE_QUERY = `
         name
         image {
           imageUrl
+          hash
         }
       }
       serialNumber

@@ -6,12 +6,13 @@ import { getFullImageUrl } from '@/lib/image-url';
 
 interface OrgAvatarProps {
   imageUrl?: string | null;
+  hash?: string | null;
   name: string;
 }
 
-export function OrgAvatar({ imageUrl, name }: OrgAvatarProps) {
+export function OrgAvatar({ imageUrl, hash, name }: OrgAvatarProps) {
   const initials = name.substring(0, 2).toUpperCase() || '??';
-  const fullUrl = getFullImageUrl(imageUrl);
+  const fullUrl = getFullImageUrl(imageUrl, hash);
   const [failedUrl, setFailedUrl] = useState<string | undefined>(undefined);
 
   const showImage = Boolean(fullUrl) && failedUrl !== fullUrl;

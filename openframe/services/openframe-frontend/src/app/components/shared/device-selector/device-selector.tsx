@@ -341,7 +341,7 @@ export function DeviceSelector({
         header: 'CUSTOMER',
         cell: ({ row }: { row: Row<Device> }) => {
           const device = row.original;
-          const fullImageUrl = getFullImageUrl(device.organizationImageUrl);
+          const fullImageUrl = getFullImageUrl(device.organizationImageUrl, device.organizationImageHash);
           return (
             <div className="flex items-center gap-3">
               <EntityImage src={fullImageUrl} alt={device.organization || 'Customer'} className="size-12 md:size-12" />

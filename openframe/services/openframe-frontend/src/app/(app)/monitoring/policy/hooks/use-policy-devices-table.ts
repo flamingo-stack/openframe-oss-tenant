@@ -135,6 +135,7 @@ export function usePolicyDevicesTable(
         deviceType: device?.type,
         organization: device?.organization,
         organizationImageUrl: device?.organizationImageUrl,
+        organizationImageHash: device?.organizationImageHash,
         osType: device?.osType,
         complianceStatus: status,
         machineId: device?.machineId,

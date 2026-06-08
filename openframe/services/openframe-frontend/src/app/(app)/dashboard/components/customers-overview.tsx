@@ -56,7 +56,7 @@ export function CustomersOverviewSection() {
     }
 
     return rows.map(org => {
-      const fullImageUrl = getFullImageUrl(org.imageUrl);
+      const fullImageUrl = getFullImageUrl(org.imageUrl, org.imageHash);
 
       return (
         <div key={org.id} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">

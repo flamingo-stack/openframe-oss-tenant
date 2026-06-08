@@ -65,6 +65,11 @@ interface ProductSubscriptionCardProps {
   customSubtitle: string;
   helpText?: ReactNode;
   disabled?: boolean;
+  /**
+   * Reserve vertical space for the billing-period toggle even when this card
+   * has none, so cards stay aligned when a sibling card shows the toggle.
+   */
+  reserveBillingPeriodSpace?: boolean;
   onUpdatesChange: (updates: ProductUpdates) => void;
 }
 
@@ -100,6 +105,7 @@ export function ProductSubscriptionCard({
   customSubtitle,
   helpText,
   disabled = false,
+  reserveBillingPeriodSpace = false,
   onUpdatesChange,
 }: ProductSubscriptionCardProps) {
   const product = useFragment(productSubscriptionCardProductFragment, productRef);
@@ -159,13 +165,18 @@ export function ProductSubscriptionCard({
 
       <p className="text-h4 text-ods-text-primary">{description}</p>
 
-      {billingPeriodItems.length > 1 && (
+      {billingPeriodItems.length > 1 ? (
         <TabSelector
           value={selection.billingPeriod}
           onValueChange={setBillingPeriod}
           variant="primary"
           items={billingPeriodItems}
         />
+      ) : (
+        // Match the TabSelector's h-12 so cards align when a sibling shows the
+        // toggle. Only needed in the lg side-by-side layout; below that the cards
+        // stack, so the spacer is hidden to avoid an empty gap.
+        reserveBillingPeriodSpace && <div aria-hidden className="hidden h-12 lg:block" />
       )}
 
       <div className="flex flex-col gap-2 w-full">

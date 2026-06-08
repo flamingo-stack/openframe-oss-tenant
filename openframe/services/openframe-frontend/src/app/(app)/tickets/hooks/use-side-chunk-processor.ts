@@ -33,6 +33,7 @@ interface UseSideChunkProcessorOptions {
   assistantName: string;
   assistantType: AssistantType;
   userDisplayName?: string;
+  isDirectMode?: boolean;
   onApprove?: (requestId?: string) => void | Promise<void>;
   onReject?: (requestId?: string) => void | Promise<void>;
   onMetadata?: (metadata: {
@@ -48,7 +49,15 @@ interface UseSideChunkProcessorOptions {
  */
 export function useSideChunkProcessor(
   side: ChatSide,
-  { assistantName, assistantType, userDisplayName, onApprove, onReject, onMetadata }: UseSideChunkProcessorOptions,
+  {
+    assistantName,
+    assistantType,
+    userDisplayName,
+    isDirectMode,
+    onApprove,
+    onReject,
+    onMetadata,
+  }: UseSideChunkProcessorOptions,
 ) {
   const {
     [side]: sideState,
@@ -234,6 +243,7 @@ export function useSideChunkProcessor(
     approvalStatuses,
     enableThinking: featureFlags.thinking.enabled(),
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
+    isDirectMode,
   });
 
   return processChunk;

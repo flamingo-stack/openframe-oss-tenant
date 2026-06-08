@@ -9,6 +9,7 @@ import {
   UserIcon,
   UsersGroupIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { isOssTenantMode } from '@/lib/app-mode';
 import { AiSettingsTab } from './ai-settings';
 import { ApiKeysTab } from './api-keys';
 import { ArchitectureTab } from './architecture';
@@ -30,8 +31,9 @@ export const SETTINGS_TABS: TabItem[] = [
   { id: 'profile', label: 'Profile', icon: UserIcon, component: ProfileTab },
 ];
 
-export const getSettingsTabs = (): TabItem[] => SETTINGS_TABS;
+export const getSettingsTabs = (): TabItem[] =>
+  SETTINGS_TABS.filter(tab => tab.id !== 'architecture' || isOssTenantMode());
 
 export function SettingsTabNavigation({ activeTab, onTabChange }: SettingsTabNavigationProps) {
-  return <TabNavigation activeTab={activeTab} onTabChange={onTabChange} tabs={SETTINGS_TABS} />;
+  return <TabNavigation activeTab={activeTab} onTabChange={onTabChange} tabs={getSettingsTabs()} />;
 }

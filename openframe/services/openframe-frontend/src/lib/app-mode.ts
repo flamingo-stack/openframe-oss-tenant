@@ -84,6 +84,11 @@ export function isRouteAllowedInCurrentMode(pathname: string): boolean {
     return pathname.startsWith('/auth') || pathname === '/';
   }
 
+  // Architecture settings are OSS-only
+  if (mode !== 'oss-tenant' && pathname.startsWith('/settings/architecture')) {
+    return false;
+  }
+
   if (mode === 'saas-tenant') {
     // App-only mode: block all auth routes
     return !pathname.startsWith('/auth');

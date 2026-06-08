@@ -3,6 +3,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQlService';
+import { log } from '../utils/log';
 
 function formatTimeAgo(dateString: string): string {
   const now = Date.now();
@@ -51,11 +52,28 @@ export function useTickets() {
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: ['tickets', lifecycle],
     queryFn: async ({ pageParam }) => {
+      const startedAt = Date.now();
+      log.info('useTickets', 'polling request', {
+        cursor: pageParam,
+        lifecycle,
+        statuses: TICKET_STATUSES,
+        limit: 20,
+        refetchIntervalMs: 60_000,
+      });
+
       const connection = await ticketGraphQlService.getTickets({
         statuses: TICKET_STATUSES,
         cursor: pageParam,
         limit: 20,
         lifecycle,
+      });
+
+      log.info('useTickets', 'polling response', {
+        cursor: pageParam,
+        durationMs: Date.now() - startedAt,
+        count: connection?.edges?.length ?? 0,
+        hasNextPage: connection?.pageInfo?.hasNextPage ?? false,
+        endCursor: connection?.pageInfo?.endCursor ?? null,
       });
 
       if (!connection?.edges) {

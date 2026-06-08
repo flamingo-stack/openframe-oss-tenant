@@ -57,7 +57,7 @@ export function PolicyDevicesTable({ policyId, assignedHostIds }: PolicyDevicesT
         header: 'CUSTOMER',
         cell: ({ row }: { row: Row<PolicyDeviceRow> }) => {
           const r = row.original;
-          const fullImageUrl = getFullImageUrl(r.organizationImageUrl);
+          const fullImageUrl = getFullImageUrl(r.organizationImageUrl, r.organizationImageHash);
           return (
             <div className="flex items-center gap-3">
               <EntityImage src={fullImageUrl} alt={r.organization || 'Customer'} className="size-12 md:size-12" />

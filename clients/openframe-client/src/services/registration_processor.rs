@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
 use tokio::time::{sleep, Duration};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
-use crate::services::AgentRegistrationService;
-use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::models::AgentRegistrationResponse;
+use crate::services::agent_configuration_service::AgentConfigurationService;
+use crate::services::AgentRegistrationService;
 
 #[derive(Clone)]
 pub struct RegistrationProcessor {
@@ -26,14 +26,11 @@ impl RegistrationProcessor {
     pub async fn process(&self) -> Result<()> {
         let machine_id = self.config_service.get_machine_id().await?;
         if !machine_id.is_empty() {
-            info!(
-                "Existing machine_id detected ({}). Skipping registration.",
-                machine_id
-            );
+            info!("Already registered (machine_id: {})", machine_id);
             return Ok(());
         }
 
-        info!("No machine_id found – starting registration loop");
+        info!("Starting registration");
         loop {
             match self.attempt_registration().await {
                 Ok(_) => {
@@ -41,8 +38,7 @@ impl RegistrationProcessor {
                     return Ok(());
                 }
                 Err(e) => {
-                    error!("Registration attempt failed. Retrying in 60 seconds…: {:#}", e);
-                    // TODO: Add exponential backoff
+                    error!("Registration failed: {:#}. Retrying in 60s", e);
                     sleep(Duration::from_secs(60)).await;
                 }
             }

@@ -14,6 +14,7 @@ type OrganizationNode = {
   websiteUrl?: string;
   image?: {
     imageUrl?: string;
+    hash?: string;
   };
 };
 
@@ -31,6 +32,7 @@ export interface OrganizationOverviewRow {
   name: string;
   websiteUrl: string;
   imageUrl: string | null;
+  imageHash: string | null;
   total: number;
   active: number;
   inactive: number;
@@ -50,6 +52,7 @@ const GET_ORGANIZATIONS_QUERY = `
           websiteUrl
           image {
             imageUrl
+            hash
           }
         }
       }
@@ -189,6 +192,7 @@ async function fetchCustomersOverview(_limit: number): Promise<{
           name: org.name,
           websiteUrl: org.websiteUrl || '',
           imageUrl: org.image?.imageUrl || null,
+          imageHash: org.image?.hash || null,
           total,
           active,
           inactive,

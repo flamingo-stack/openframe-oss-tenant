@@ -200,6 +200,7 @@ export interface Device {
   organizationId?: string;
   organization?: string;
   organizationImageUrl?: string | null;
+  organizationImageHash?: string | null;
 
   // Tags
   tags?: DeviceTag[];
@@ -323,6 +324,7 @@ export type DevicesGraphQlNode = {
     name: string;
     image?: {
       imageUrl: string;
+      hash?: string;
     };
   };
   serialNumber?: string;
@@ -364,6 +366,7 @@ export type DeviceGraphQlNode = {
     name: string;
     image?: {
       imageUrl: string;
+      hash?: string;
     };
   };
   serialNumber?: string;

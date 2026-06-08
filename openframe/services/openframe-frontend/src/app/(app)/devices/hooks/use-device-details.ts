@@ -250,6 +250,7 @@ function createDevice(
     organizationId: node.organization?.organizationId,
     organization: node.organization?.name || tacticalData?.client_name,
     organizationImageUrl: node.organization?.image?.imageUrl || null,
+    organizationImageHash: node.organization?.image?.hash || null,
 
     // Tags
     tags: node.tags || tacticalData?.custom_fields || [],

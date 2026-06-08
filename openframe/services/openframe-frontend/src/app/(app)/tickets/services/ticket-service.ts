@@ -54,10 +54,10 @@ interface TicketNode {
   deviceHostname?: string;
   organizationId?: string;
   organizationName?: string;
-  organizationImage?: { imageUrl: string };
+  organizationImage?: { imageUrl: string; hash?: string };
   assignedTo?: string;
   assignedName?: string;
-  assigneeImage?: { imageUrl: string };
+  assigneeImage?: { imageUrl: string; hash?: string };
   labels?: Array<{ id: string; key: string; color?: string }>;
   notes?: Array<{
     id: string;
@@ -65,7 +65,7 @@ interface TicketNode {
     content: string;
     authorId: string;
     author?: { id: string; firstName: string; lastName: string };
-    authorImage?: { imageUrl: string };
+    authorImage?: { imageUrl: string; hash?: string };
     createdAt: string;
     updatedAt: string;
   }>;
@@ -172,9 +172,11 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     organizationId: ticket.organizationId,
     organizationName: ticket.organizationName,
     organizationImageUrl: ticket.organizationImage?.imageUrl,
+    organizationImageHash: ticket.organizationImage?.hash,
     assignedTo: ticket.assignedTo,
     assignedName: ticket.assignedName,
     assigneeImageUrl: ticket.assigneeImage?.imageUrl,
+    assigneeImageHash: ticket.assigneeImage?.hash,
     labels: ticket.labels,
     attachments: ticket.attachments,
     tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
@@ -185,6 +187,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
       authorId: note.authorId,
       authorName: note.author ? `${note.author.firstName} ${note.author.lastName}`.trim() : undefined,
       authorImageUrl: note.authorImage?.imageUrl,
+      authorImageHash: note.authorImage?.hash,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
     })),
