@@ -13,9 +13,11 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
-import { getTicketTableColumns, TicketTableBody } from './ticket-table-columns';
+import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
+import { getTicketTableColumns, type StatusFilterOption, TicketTableBody } from './ticket-table-columns';
 
 interface TicketsTableProps {
   isArchived: boolean;
@@ -54,6 +56,16 @@ export function TicketsTable({
 
   const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading, enabled: !isArchived });
 
+  // Lifecycle status filter options (value = status id). Legacy enum options are used when the flag is off.
+  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
+  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && !isArchived });
+  const statusOptions = useMemo<StatusFilterOption[] | undefined>(() => {
+    if (!lifecycleEnabled || isArchived) return undefined;
+    return (statusesQuery.data?.snapshot ?? [])
+      .filter(s => s.kind !== 'ARCHIVED')
+      .map(s => ({ id: s.id, value: s.id, label: s.name }));
+  }, [lifecycleEnabled, isArchived, statusesQuery.data]);
+
   const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const columnFilters = useMemo<ColumnFiltersState>(
@@ -88,14 +100,14 @@ export function TicketsTable({
 
   const filterGroups = useMemo(
     () =>
-      getTicketTableColumns({ isArchived })
+      getTicketTableColumns({ isArchived, statusOptions })
         .filter(column => column.meta?.filter?.options)
         .map(column => ({
           id: String(column.id ?? (column as { accessorKey?: string }).accessorKey ?? ''),
           title: typeof column.header === 'string' ? column.header : '',
           options: column.meta?.filter?.options || [],
         })),
-    [isArchived],
+    [isArchived, statusOptions],
   );
 
   const hasMobileFilter = filterGroups.length > 0;
@@ -154,6 +166,7 @@ export function TicketsTable({
             skeletonRows={10}
             stickyHeaderOffset="top-[96px]"
             isArchived={isArchived}
+            statusOptions={statusOptions}
             columnFilters={isArchived ? undefined : columnFilters}
             onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
             footerSlot={

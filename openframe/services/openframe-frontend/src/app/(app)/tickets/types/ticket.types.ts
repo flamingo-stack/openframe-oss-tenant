@@ -60,12 +60,20 @@ export interface KnowledgeBaseArticle {
   createdAt: string;
 }
 
+export interface TicketStatusRef {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export interface Ticket {
   id: string;
   ticketNumber: number;
   title: string;
   description?: string;
   status: TicketStatus;
+  statusDefinition?: TicketStatusRef & { kind: string };
+  availableTransitions?: TicketStatusRef[];
   creationSource?: string;
   owner: TicketOwner;
   deviceId?: string;
@@ -119,6 +127,7 @@ export interface DeletePayload {
 export interface CreateTicketInput {
   title: string;
   description?: string;
+  statusId?: string;
   deviceId?: string;
   organizationId?: string;
   assigneeId?: string;

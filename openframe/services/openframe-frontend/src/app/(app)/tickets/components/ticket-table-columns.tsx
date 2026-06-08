@@ -20,8 +20,24 @@ import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import type { ClientDialogOwner, Dialog } from '../types/dialog.types';
 
+export interface StatusFilterOption {
+  id: string;
+  value: string;
+  label: string;
+}
+
+// Legacy status filter options (ticket-statuses feature flag OFF).
+const LEGACY_STATUS_FILTER_OPTIONS: StatusFilterOption[] = [
+  { id: 'ACTIVE', value: 'ACTIVE', label: 'Active' },
+  { id: 'TECH_REQUIRED', value: 'TECH_REQUIRED', label: 'Tech Required' },
+  { id: 'ON_HOLD', value: 'ON_HOLD', label: 'On Hold' },
+  { id: 'RESOLVED', value: 'RESOLVED', label: 'Resolved' },
+];
+
 interface TicketTableColumnsOptions {
   isArchived?: boolean;
+  // Lifecycle status options (value = status id). Falls back to the legacy enum options when omitted.
+  statusOptions?: StatusFilterOption[];
 }
 
 function formatTimestamp(timestamp: string): string {
@@ -31,7 +47,7 @@ function formatTimestamp(timestamp: string): string {
 }
 
 export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): ColumnDef<Dialog>[] {
-  const { isArchived = false } = options;
+  const { isArchived = false, statusOptions } = options;
 
   const titleColumn: ColumnDef<Dialog> = {
     accessorKey: 'title',
@@ -98,12 +114,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
       filterFn: multiSelectFilterFn,
       meta: {
         filter: {
-          options: [
-            { id: 'ACTIVE', value: 'ACTIVE', label: 'Active' },
-            { id: 'TECH_REQUIRED', value: 'TECH_REQUIRED', label: 'Tech Required' },
-            { id: 'ON_HOLD', value: 'ON_HOLD', label: 'On Hold' },
-            { id: 'RESOLVED', value: 'RESOLVED', label: 'Resolved' },
-          ],
+          options: statusOptions ?? LEGACY_STATUS_FILTER_OPTIONS,
         },
       },
     }),
@@ -143,6 +154,7 @@ interface TicketTableBodyProps {
   actionsColumn?: ColumnDef<Dialog>;
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
+  statusOptions?: StatusFilterOption[];
 }
 
 export function TicketTableBody({
@@ -156,11 +168,12 @@ export function TicketTableBody({
   actionsColumn,
   columnFilters,
   onColumnFiltersChange,
+  statusOptions,
 }: TicketTableBodyProps) {
   const columns = useMemo<ColumnDef<Dialog>[]>(() => {
-    const base = getTicketTableColumns({ isArchived });
+    const base = getTicketTableColumns({ isArchived, statusOptions });
     return actionsColumn ? [...base, actionsColumn, TICKET_OPEN_COLUMN] : [...base, TICKET_OPEN_COLUMN];
-  }, [isArchived, actionsColumn]);
+  }, [isArchived, actionsColumn, statusOptions]);
 
   const table = useDataTable<Dialog>({
     data: tickets,

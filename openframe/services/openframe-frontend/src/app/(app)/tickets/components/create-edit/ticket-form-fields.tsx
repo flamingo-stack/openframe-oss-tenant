@@ -2,13 +2,19 @@
 
 import { Autocomplete, FileUpload, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
+import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { AssignmentsField } from '@/components/assignments';
+import { featureFlags } from '@/lib/feature-flags';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
 import { useAssigneeOptions, useDeviceOptions, useOrganizationOptions } from '../../hooks/use-ticket-options';
+import { useTicketStatusesQuery } from '../../statuses/hooks/use-ticket-statuses-query';
 import type { CreateTicketFormData } from '../../types/create-ticket.types';
+import type { Ticket } from '../../types/ticket.types';
+import { resolveCurrentStatus } from '../../utils/resolve-current-status';
 import { avatarStartAdornment, renderAvatarOption } from '../avatar-autocomplete';
+import { renderStatusOption, type StatusOption, statusStartAdornment } from '../status-autocomplete';
 import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
 import { TicketTagsManager } from './ticket-tags-manager';
 
@@ -20,6 +26,7 @@ interface TicketFormFieldsProps {
   tempAttachments: ReturnType<typeof useTempAttachments>;
   isFaeForm?: boolean;
   isEditMode?: boolean;
+  ticket?: Ticket;
 }
 
 export function TicketFormFields({
@@ -27,8 +34,9 @@ export function TicketFormFields({
   tempAttachments,
   isFaeForm = false,
   isEditMode = false,
+  ticket,
 }: TicketFormFieldsProps) {
-  const { control, watch, resetField } = form;
+  const { control, watch, resetField, setValue } = form;
 
   const [orgSearch, setOrgSearch] = useState('');
   const [deviceSearch, setDeviceSearch] = useState('');
@@ -41,6 +49,47 @@ export function TicketFormFields({
   const organizationOptions = useOrganizationOptions(debouncedOrgSearch);
   const deviceOptions = useDeviceOptions(selectedOrgId ?? undefined, debouncedDeviceSearch);
   const assigneeOptions = useAssigneeOptions();
+
+  // Surface the signed-in user at the top of the assignee list (self-assign shortcut).
+  const authUserId = useAuthStore(s => s.user?.id);
+  const assigneeOptionsList = useMemo(() => {
+    const options = assigneeOptions.options;
+    const idx = authUserId ? options.findIndex(o => o.value === authUserId) : -1;
+    if (idx <= 0) return options;
+    return [options[idx], ...options.slice(0, idx), ...options.slice(idx + 1)];
+  }, [assigneeOptions.options, authUserId]);
+
+  // The ticket's device may not be in the fetched page (large fleet / search), which would
+  // leave the Autocomplete rendering the raw id. Seed it from the ticket's known hostname.
+  const deviceOptionsList = useMemo(() => {
+    const options = deviceOptions.options;
+    const currentId = ticket?.deviceId;
+    if (!currentId || options.some(o => o.value === currentId)) return options;
+    return [{ label: ticket?.deviceHostname || currentId, value: currentId }, ...options];
+  }, [deviceOptions.options, ticket?.deviceId, ticket?.deviceHostname]);
+
+  const statusFlag = featureFlags.ticketStatuses.enabled();
+  const statusesQuery = useTicketStatusesQuery({ enabled: statusFlag });
+  const statusOptions = useMemo<StatusOption[]>(() => {
+    if (!statusFlag) return [];
+    if (isEditMode) {
+      const current = resolveCurrentStatus(ticket, statusesQuery.data?.snapshot);
+      const transitions = ticket?.availableTransitions ?? [];
+      const byId = new Map<string, StatusOption>();
+      if (current) byId.set(current.id, { label: current.name, value: current.id, color: current.color });
+      for (const t of transitions) byId.set(t.id, { label: t.name, value: t.id, color: t.color });
+      return [...byId.values()];
+    }
+    return (statusesQuery.data?.customStatuses ?? []).map(s => ({ label: s.name, value: s.id, color: s.color }));
+  }, [statusFlag, isEditMode, ticket, statusesQuery.data]);
+
+  const selectedStatusId = watch('statusId');
+  // New ticket: pre-select the first status once options load.
+  useEffect(() => {
+    if (statusFlag && !isEditMode && !selectedStatusId && statusOptions.length > 0) {
+      setValue('statusId', statusOptions[0].value);
+    }
+  }, [statusFlag, isEditMode, selectedStatusId, statusOptions, setValue]);
   const renderPreview = useCallback(
     (source: string) => (
       <div className="custom-preview-wrapper" style={{ height: '100%', overflow: 'auto' }}>
@@ -93,8 +142,8 @@ export function TicketFormFields({
         )}
       />
 
-      {/* Organization, Device, Assigned — 3-column grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Organization, Device, Assigned, Status — 4-column grid (2 on mobile) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         <Controller
           name="organizationId"
           control={control}
@@ -130,7 +179,7 @@ export function TicketFormFields({
           render={({ field, fieldState }) => (
             <Autocomplete
               label="Device"
-              options={deviceOptions.options}
+              options={deviceOptionsList}
               value={field.value ?? null}
               onChange={val => field.onChange(val)}
               onInputChange={setDeviceSearch}
@@ -148,11 +197,11 @@ export function TicketFormFields({
           name="assignedTo"
           control={control}
           render={({ field }) => {
-            const selectedAssignee = assigneeOptions.options.find(o => o.value === field.value);
+            const selectedAssignee = assigneeOptionsList.find(o => o.value === field.value);
             return (
               <Autocomplete
                 label="Assigned"
-                options={assigneeOptions.options}
+                options={assigneeOptionsList}
                 value={field.value ?? null}
                 onChange={val => field.onChange(val)}
                 placeholder="Select Assignee"
@@ -163,6 +212,32 @@ export function TicketFormFields({
             );
           }}
         />
+
+        {/* Status — custom-status lifecycle only */}
+        {statusFlag && (
+          <Controller
+            name="statusId"
+            control={control}
+            render={({ field, fieldState }) => {
+              const selectedStatus = statusOptions.find(o => o.value === field.value);
+              return (
+                <Autocomplete
+                  label="Status"
+                  options={statusOptions}
+                  value={field.value ?? null}
+                  onChange={val => field.onChange(val)}
+                  placeholder="Select Status"
+                  loading={!isEditMode && statusesQuery.isLoading}
+                  disabled={isFaeForm}
+                  error={fieldState.error?.message}
+                  invalid={!!fieldState.error}
+                  startAdornment={statusStartAdornment(selectedStatus)}
+                  renderOption={renderStatusOption}
+                />
+              );
+            }}
+          />
+        )}
       </div>
 
       {/* Labels / Tags */}

@@ -6,15 +6,19 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
+import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS, CREATION_SOURCE } from '../constants';
 import { GET_TICKET_QUERY } from '../queries/ticket-queries';
+import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
 import { type CreateTicketFormData, createTicketSchema } from '../types/create-ticket.types';
 import type { Ticket } from '../types/ticket.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import { ticketsQueryKeys } from '../utils/query-keys';
+import { resolveCurrentStatus } from '../utils/resolve-current-status';
 import { useCreateTicket } from './use-create-ticket';
 import { useTempAttachments } from './use-temp-attachments';
+import { useTransitionTicket } from './use-transition-ticket';
 import { useUpdateTicket } from './use-update-ticket';
 
 interface UseCreateTicketFormOptions {
@@ -25,11 +29,12 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
   const isEditMode = !!ticketId;
   const createTicketMutation = useCreateTicket();
   const updateTicketMutation = useUpdateTicket();
+  const transitionTicketMutation = useTransitionTicket();
   const tempAttachments = useTempAttachments();
   const { mutateAsync: applyAssignmentsDiff } = useApplyAssignmentsDiff();
 
   const { data: ticket, isLoading: isLoadingTicket } = useQuery({
-    queryKey: ticketsQueryKeys.detail(ticketId || ''),
+    queryKey: ticketsQueryKeys.editForm(ticketId || ''),
     queryFn: async () => {
       const response = await apiClient.post<GraphQlResponse<{ ticket: Ticket }>>(API_ENDPOINTS.GRAPHQL, {
         query: GET_TICKET_QUERY,
@@ -38,12 +43,22 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       return extractGraphQlData(response).ticket;
     },
     enabled: isEditMode,
+    // Always refetch on open so status/assignee edits reflect transitions made elsewhere
+    // (the edit-form key isn't covered by every detail-only invalidation).
+    staleTime: 0,
   });
+
+  // Resolve the ticket's current status (statusDefinition, or the legacy-status fallback
+  // for tickets with no statusId) so edit mode can prefill it.
+  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
+  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && isEditMode });
+  const currentStatus = resolveCurrentStatus(ticket, statusesQuery.data?.snapshot);
 
   const form = useForm<CreateTicketFormData>({
     resolver: zodResolver(createTicketSchema),
     defaultValues: {
       title: '',
+      statusId: undefined,
       organizationId: undefined,
       deviceId: undefined,
       userId: undefined,
@@ -68,6 +83,7 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       form.reset({
         title: ticket.title || '',
         description: ticket.description || '',
+        statusId: currentStatus?.id || undefined,
         organizationId: ticket.organizationId || undefined,
         deviceId: ticket.deviceId || undefined,
         assignedTo: ticket.assignedTo || undefined,
@@ -83,7 +99,15 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- tempAttachments.initializeExisting is stable (useCallback)
-  }, [ticket, isEditMode, form, tempAttachments.initializeExisting, assignedItems.isReady, assignedItems.value]);
+  }, [
+    ticket,
+    isEditMode,
+    form,
+    tempAttachments.initializeExisting,
+    assignedItems.isReady,
+    assignedItems.value,
+    currentStatus?.id,
+  ]);
 
   const handleSave = form.handleSubmit(async data => {
     const nextAssignments = data.assignments ?? {};
@@ -92,6 +116,12 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
 
       if (tempAttachments.hasPendingDeletes) {
         await tempAttachments.deleteRemovedAttachments();
+      }
+
+      // Transition first: updateTicket's onSuccess navigates away, so a failed
+      // transition afterwards would strand the user on the next page mid-error.
+      if (data.statusId && data.statusId !== currentStatus?.id) {
+        await transitionTicketMutation.mutateAsync({ ticketId, toStatusId: data.statusId });
       }
 
       await updateTicketMutation.mutateAsync({
@@ -117,6 +147,7 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
       const created = await createTicketMutation.mutateAsync({
         title: data.title,
         description: data.description || undefined,
+        statusId: data.statusId || undefined,
         organizationId: data.organizationId || undefined,
         deviceId: data.deviceId || undefined,
         assigneeId: data.assignedTo || undefined,
@@ -139,9 +170,11 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
 
   return {
     form,
+    ticket,
     isEditMode,
     isLoadingTicket,
-    isSubmitting: createTicketMutation.isPending || updateTicketMutation.isPending,
+    isSubmitting:
+      createTicketMutation.isPending || updateTicketMutation.isPending || transitionTicketMutation.isPending,
     handleSave,
     tempAttachments,
     isFaeForm,

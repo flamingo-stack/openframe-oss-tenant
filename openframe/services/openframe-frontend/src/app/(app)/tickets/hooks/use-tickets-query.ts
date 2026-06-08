@@ -10,32 +10,50 @@ import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-qu
 import { type DialogsQueryParams, dialogsQueryKeys } from '../utils/query-keys';
 
 const TICKETS_PAGE_SIZE = 20;
+// Legacy non-archived status set — the default filter when no lifecycle statusIds are available.
+const NON_ARCHIVED_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
 export function useTicketsQuery({ archived, search, statusFilters, organizationIds, assigneeIds }: DialogsQueryParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && archived });
+  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled });
+  // Under lifecycle, the table filters by status id (selected ids, the archived id, or all
+  // non-archived ids when nothing is selected). Legacy enum strings are used only when the flag is off.
   const statusIds = useMemo(() => {
-    if (!(lifecycleEnabled && archived)) return undefined;
-    const archivedId = statusesQuery.data?.snapshot.find(s => s.kind === 'ARCHIVED')?.id;
-    return archivedId ? [archivedId] : undefined;
-  }, [lifecycleEnabled, archived, statusesQuery.data]);
+    if (!lifecycleEnabled) return undefined;
+    const snapshot = statusesQuery.data?.snapshot;
+    if (archived) {
+      const archivedId = snapshot?.find(s => s.kind === 'ARCHIVED')?.id;
+      return archivedId ? [archivedId] : undefined;
+    }
+    if (statusFilters && statusFilters.length > 0) return statusFilters;
+    return snapshot?.filter(s => s.kind !== 'ARCHIVED').map(s => s.id);
+  }, [lifecycleEnabled, archived, statusFilters, statusesQuery.data]);
 
-  const waitingForStatusIds = lifecycleEnabled && archived && statusesQuery.isLoading;
+  const waitingForStatusIds = lifecycleEnabled && statusesQuery.isLoading;
 
   const query = useInfiniteQuery<TicketsPage, Error>({
     queryKey: dialogsQueryKeys.list({ archived, search, statusFilters, statusIds, organizationIds, assigneeIds }),
     enabled: !waitingForStatusIds,
     queryFn: async ({ pageParam }) => {
-      let statuses: string[];
-      if (statusFilters && statusFilters.length > 0) {
-        statuses = statusFilters;
+      // `statuses` is the enum fallback; fetchDialogs prefers `statusIds` whenever it's non-empty.
+      // Under lifecycle it's only used when the snapshot can't resolve ids (e.g. its fetch errored),
+      // keeping the non-archived list scoped instead of sending an empty filter that leaks archived.
+      let statuses: string[] = [];
+      if (!lifecycleEnabled) {
+        if (statusFilters && statusFilters.length > 0) {
+          statuses = statusFilters;
+        } else if (archived) {
+          statuses = ['ARCHIVED'];
+        } else {
+          statuses = NON_ARCHIVED_STATUSES;
+        }
       } else if (archived) {
         statuses = ['ARCHIVED'];
-      } else {
-        statuses = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
+      } else if (!statusIds?.length) {
+        statuses = NON_ARCHIVED_STATUSES;
       }
 
       return ticketService.fetchDialogs({

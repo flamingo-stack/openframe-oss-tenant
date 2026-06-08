@@ -11,7 +11,7 @@ export function CreateEditTicketPage() {
   const searchParams = useSearchParams();
   const ticketId = searchParams.get('edit');
 
-  const { form, isEditMode, isLoadingTicket, isSubmitting, handleSave, tempAttachments, isFaeForm } =
+  const { form, ticket, isEditMode, isLoadingTicket, isSubmitting, handleSave, tempAttachments, isFaeForm } =
     useCreateTicketForm({
       ticketId,
     });
@@ -44,7 +44,13 @@ export function CreateEditTicketPage() {
       backButton={backButton}
       actions={actions}
     >
-      <TicketFormFields form={form} tempAttachments={tempAttachments} isFaeForm={isFaeForm} isEditMode={isEditMode} />
+      <TicketFormFields
+        form={form}
+        ticket={ticket}
+        tempAttachments={tempAttachments}
+        isFaeForm={isFaeForm}
+        isEditMode={isEditMode}
+      />
     </PageLayout>
   );
 }

@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import { API_ENDPOINTS } from '../../constants';
 import { extractGraphQlData, type GraphQlResponse } from '../../utils/graphql';
-import { ticketsQueryKeys } from '../../utils/query-keys';
+import { invalidateAllDialogs, ticketsQueryKeys } from '../../utils/query-keys';
 import {
   CREATE_TICKET_STATUS_MUTATION,
   DELETE_TICKET_STATUS_MUTATION,
@@ -150,6 +150,8 @@ export function useDeleteTicketStatusMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statuses() });
+      // Deleting a status reassigns its tickets to the replacement status — refresh the board columns / list.
+      invalidateAllDialogs(queryClient);
       toast({ title: 'Deleted', description: 'Ticket status removed', variant: 'success' });
     },
     onError: err => {

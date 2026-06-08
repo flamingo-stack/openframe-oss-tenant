@@ -80,6 +80,9 @@ export const ticketsQueryKeys = {
   all: ['tickets'] as const,
   labels: () => [...ticketsQueryKeys.all, 'labels'] as const,
   detail: (id: string) => [...ticketsQueryKeys.all, 'detail', id] as const,
+  // Edit-form ticket fetch. Distinct from `detail` (which caches a Dialog) so the
+  // full Ticket shape (statusDefinition, availableTransitions) isn't clobbered by — or read from — the Dialog cache.
+  editForm: (id: string) => [...ticketsQueryKeys.all, 'editForm', id] as const,
   statistics: () => [...ticketsQueryKeys.all, 'statistics'] as const,
   statusTransitions: () => [...ticketsQueryKeys.all, 'statusTransitions'] as const,
   statusTransitionRules: () => [...ticketsQueryKeys.all, 'statusTransitionRules'] as const,

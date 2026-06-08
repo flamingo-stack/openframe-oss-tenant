@@ -6,7 +6,11 @@ import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries'
 import type { GraphQlResponse } from '../../devices/types/device.types';
 import { API_ENDPOINTS, TICKET_STATUS } from '../../tickets/constants';
 import { GET_TICKET_STATISTICS_QUERY } from '../../tickets/queries/ticket-queries';
-import { resolvedCountFromStatistics, type TicketStatisticsCounts } from '../../tickets/utils/ticket-statistics';
+import {
+  kindCountsFromStatistics,
+  resolvedCountFromStatistics,
+  type TicketStatisticsCounts,
+} from '../../tickets/utils/ticket-statistics';
 
 // ============ Types ============
 
@@ -26,6 +30,10 @@ export interface DashboardTicketStats {
   avgFaeRate: number;
   activePercentage: number;
   resolvedPercentage: number;
+  // Lifecycle (custom-status) kind breakdown — populated when the ticket-statuses feature is on.
+  aiAssistance: number;
+  techRequired: number;
+  otherStatuses: number;
 }
 
 interface DeviceFiltersResponse {
@@ -123,6 +131,7 @@ class DashboardApiService {
       const total = data.totalCount || 0;
       const active = (data.statusCounts || []).find(s => s.status === TICKET_STATUS.ACTIVE)?.count || 0;
       const resolved = resolvedCountFromStatistics(data);
+      const kinds = kindCountsFromStatistics(data);
 
       return {
         total,
@@ -132,6 +141,9 @@ class DashboardApiService {
         avgFaeRate: typeof data.averageRating === 'number' ? Number(data.averageRating.toFixed(1)) : 0,
         activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
         resolvedPercentage: total > 0 ? Math.round((resolved / total) * 100) : 0,
+        aiAssistance: kinds.aiAssistance,
+        techRequired: kinds.techRequired,
+        otherStatuses: kinds.otherStatuses,
       };
     } catch (error) {
       throw this.handleApiError(error, 'Ticket stats fetch');
