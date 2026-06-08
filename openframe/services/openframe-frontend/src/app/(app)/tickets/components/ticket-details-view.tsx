@@ -197,7 +197,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       id: note.id,
       text: note.content,
       authorName: note.authorName || 'Unknown',
-      authorAvatar: getFullImageUrl(note.authorImageUrl),
+      authorAvatar: getFullImageUrl(note.authorImageUrl, note.authorImageHash),
       createdAt: note.createdAt,
       isOwn: currentUser?.id === note.authorId,
     }));
@@ -652,7 +652,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               dialog.organizationName ||
               (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
               'Unassigned',
-            imageSrc: getFullImageUrl(dialog.organizationImageUrl),
+            imageSrc: getFullImageUrl(dialog.organizationImageUrl, dialog.organizationImageHash),
           }}
           user="Unassigned"
           device={{
@@ -674,7 +674,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
               ? {
                   id: dialog.assignedTo!,
                   name: dialog.assignedName,
-                  avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
+                  avatarSrc: getFullImageUrl(dialog.assigneeImageUrl, dialog.assigneeImageHash),
                 }
               : undefined,
             options: assigneeOptions.options.map(o => ({
@@ -735,7 +735,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                     dialog.organizationName ||
                     (isClientOwner(dialog.owner) ? dialog.owner.machine?.organizationId : undefined) ||
                     'Unassigned',
-                  imageSrc: getFullImageUrl(dialog.organizationImageUrl),
+                  imageSrc: getFullImageUrl(dialog.organizationImageUrl, dialog.organizationImageHash),
                 }}
                 user="Unassigned"
                 device={{
@@ -756,7 +756,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                     ? {
                         id: dialog.assignedTo!,
                         name: dialog.assignedName,
-                        avatarSrc: getFullImageUrl(dialog.assigneeImageUrl),
+                        avatarSrc: getFullImageUrl(dialog.assigneeImageUrl, dialog.assigneeImageHash),
                       }
                     : undefined,
                   options: assigneeOptions.options.map(o => ({

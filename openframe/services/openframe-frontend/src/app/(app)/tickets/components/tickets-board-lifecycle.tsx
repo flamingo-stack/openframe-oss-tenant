@@ -10,6 +10,7 @@ import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/i
 import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { appendImageHash } from '@/lib/image-url';
 import { useMoveTicketLifecycle, useMovingTicketIdsLifecycle } from '../hooks/use-move-ticket-lifecycle';
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
@@ -51,7 +52,7 @@ function dialogToBoardTicket(dialog: Dialog): BoardTicket {
             id: dialog.assignedTo,
             name: dialog.assignedName,
             initials: initialsOf(dialog.assignedName),
-            avatarUrl: dialog.assigneeImageUrl,
+            avatarUrl: appendImageHash(dialog.assigneeImageUrl, dialog.assigneeImageHash),
           },
         ]
       : undefined,

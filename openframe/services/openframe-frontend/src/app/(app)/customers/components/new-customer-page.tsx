@@ -15,6 +15,7 @@ import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
 import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
+import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
 import { useCreateCustomer } from '../hooks/use-create-customer';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { useUpdateCustomer } from '../hooks/use-update-customer';
@@ -31,6 +32,7 @@ interface FormState {
   mailingAddress: string;
   mailingSameAsPhysical: boolean;
   imageUrl?: string;
+  imageHash?: string;
 }
 
 interface PreservedFields {
@@ -101,7 +103,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
 
   const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
   const showImageUploader = isSaasTenant;
-  const displayedImage = pendingPreviewUrl || getFullImageUrl(form.imageUrl);
+  const displayedImage = pendingPreviewUrl || getFullImageUrl(form.imageUrl, form.imageHash);
 
   const set = (partial: Partial<FormState>) => setForm(prev => ({ ...prev, ...partial }));
 
@@ -128,6 +130,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
       mailingAddress: mailing,
       mailingSameAsPhysical: sameAsPhysical,
       imageUrl: organization.imageUrl || undefined,
+      imageHash: organization.imageHash || undefined,
     });
 
     const reconstructedContacts = [organization.primary, organization.billing, organization.technical]
@@ -170,11 +173,26 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
     setPendingFile(file);
   };
 
+  const invalidateOrganizationImageQueries = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['organizations'] }),
+      queryClient.invalidateQueries({ queryKey: dashboardQueryKeys.all }),
+      ...(organizationId
+        ? [queryClient.invalidateQueries({ queryKey: customerDetailsQueryKeys.detail(organizationId) })]
+        : []),
+    ]);
+  };
+
   const handleImageChange = async (file: File) => {
     if (organizationId) {
       try {
         const uploadedUrl = await uploadWithAuth(`/api/organizations/${organizationId}/image`, file);
-        set({ imageUrl: uploadedUrl });
+        // The image path is stable across uploads, so bust the cache with the
+        // upload time — otherwise the uploader keeps showing the old bytes.
+        set({ imageUrl: uploadedUrl, imageHash: String(Date.now()) });
+        // The image persists immediately (independent of Save), so refresh the
+        // cached org lists that render this logo with its hash elsewhere.
+        await invalidateOrganizationImageQueries();
         toast({
           title: 'Upload successful',
           description: 'Customer image has been updated',
@@ -196,7 +214,8 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
     if (organizationId && form.imageUrl) {
       try {
         await deleteWithAuth(`/api/organizations/${organizationId}/image`);
-        set({ imageUrl: undefined });
+        set({ imageUrl: undefined, imageHash: undefined });
+        await invalidateOrganizationImageQueries();
         toast({
           title: 'Delete successful',
           description: 'Customer image has been deleted',
@@ -259,10 +278,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         }
       }
 
-      await queryClient.invalidateQueries({ queryKey: ['organizations'] });
-      if (organizationId) {
-        await queryClient.invalidateQueries({ queryKey: customerDetailsQueryKeys.detail(organizationId) });
-      }
+      await invalidateOrganizationImageQueries();
 
       toast({
         title: organizationId ? 'Customer updated' : 'Customer created',

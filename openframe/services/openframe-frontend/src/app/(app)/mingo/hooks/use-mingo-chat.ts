@@ -5,7 +5,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
 import { findLatestPendingApprovalId } from '@/lib/chat-history';
-import { getFullImageUrl } from '@/lib/image-url';
+import { appendImageHash, getFullImageUrl } from '@/lib/image-url';
 import { selectUser, useAuthStore } from '@/stores';
 import {
   useCreateDialogMutation,
@@ -265,8 +265,8 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
           authorType: 'admin',
           content: content.trim(),
           name: [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin',
-          // Relative `imageUrl`; resolved to a full URL in the processed mapping.
-          avatar: user?.image?.imageUrl ?? null,
+          // Relative `imageUrl` with cache-bust hash; resolved to a full URL in the processed mapping.
+          avatar: appendImageHash(user?.image?.imageUrl, user?.image?.hash) ?? null,
           timestamp: new Date(),
         };
 

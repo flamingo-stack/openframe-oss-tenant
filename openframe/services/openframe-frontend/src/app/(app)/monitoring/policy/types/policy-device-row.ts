@@ -7,6 +7,7 @@ export interface PolicyDeviceRow {
   deviceType: string | undefined;
   organization: string | undefined;
   organizationImageUrl: string | null | undefined;
+  organizationImageHash: string | null | undefined;
   osType: string | undefined;
   complianceStatus: ComplianceStatus;
   machineId: string | undefined;

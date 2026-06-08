@@ -37,6 +37,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const userEmail = useAuthStore(state => state.user?.email);
   const userRole = useAuthStore(state => state.user?.role);
   const userImageUrl = useAuthStore(state => state.user?.image?.imageUrl);
+  const userImageHash = useAuthStore(state => state.user?.image?.hash);
 
   // Mingo chat open state — shared between the header trigger below and the
   // in-layout `AppLayoutDrawer` + `OpenframeEmbeddableChatEntry` in the
@@ -107,7 +108,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     [userFirstName, userLastName],
   );
 
-  const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl), [userImageUrl]);
+  const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl, userImageHash), [userImageUrl, userImageHash]);
 
   const notificationsEnabled = featureFlags.notifications.enabled();
 

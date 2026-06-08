@@ -37,7 +37,7 @@ const ASSIGNED_ITEMS_QUERY = `#graphql
               createdAt
               updatedAt
               contactInformation { contacts { contactName email } }
-              image { imageUrl }
+              image { imageUrl hash }
             }
             ... on Machine {
               machineId
@@ -49,7 +49,7 @@ const ASSIGNED_ITEMS_QUERY = `#graphql
               agentVersion
               machineStatus: status
               lastSeen
-              organization { id organizationId name image { imageUrl } }
+              organization { id organizationId name image { imageUrl hash } }
               serialNumber
               manufacturer
               model
