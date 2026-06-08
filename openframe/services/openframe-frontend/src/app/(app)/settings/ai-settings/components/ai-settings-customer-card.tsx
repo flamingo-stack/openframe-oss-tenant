@@ -26,7 +26,7 @@ export function AiSettingsCustomerCard({ settings }: AiSettingsCustomerCardProps
   const cells: ReactNode[] = [
     <>
       <EntityImage
-        src={getFullImageUrl(settings.assistantAvatar?.imageUrl)}
+        src={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
         alt={settings.assistantName}
         className="size-10 rounded-full"
       />

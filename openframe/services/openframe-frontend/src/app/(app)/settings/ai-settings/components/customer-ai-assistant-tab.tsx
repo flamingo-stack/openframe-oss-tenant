@@ -75,7 +75,7 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
         <AiSettingsCustomerCard settings={settings} />
         <AiSettingsPreviews
           assistantName={settings.assistantName}
-          avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl)}
+          avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
           accentColor={settings.accentColor}
           theme={settings.applicationTheme}
           providerName={settings.llmProvider}
