@@ -1,5 +1,6 @@
 'use client';
 
+import { getApprovalMeta, isApprovalNotification } from '@flamingo-stack/openframe-frontend-core';
 import { BellOffIcon, ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { DataTable, SearchInput, useDataTable } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -8,11 +9,12 @@ import { type PreloadedQuery, usePaginationFragment, usePreloadedQuery } from 'r
 import type { notificationsSectionRelay_query$key as NotificationsSectionFragmentKey } from '@/__generated__/notificationsSectionRelay_query.graphql';
 import type { notificationsSectionRelayPaginationQuery as NotificationsSectionPaginationQueryType } from '@/__generated__/notificationsSectionRelayPaginationQuery.graphql';
 import type { notificationsSectionRelayQuery as NotificationsSectionRelayQueryType } from '@/__generated__/notificationsSectionRelayQuery.graphql';
-import { parseCreatedAt } from '@/graphql/notifications/notifications-helpers';
+import { mapNotificationNode, parseCreatedAt } from '@/graphql/notifications/notifications-helpers';
 import {
   notificationsSectionRelayFragment,
   notificationsSectionRelayQuery,
 } from '@/graphql/notifications/notifications-section-relay';
+import { NotificationApprovalSubRow } from './notification-approval-subrow';
 import { buildNotificationColumns, type NotificationRow } from './notifications-columns';
 
 export const NOTIFICATIONS_SECTION_PAGE_SIZE = 50;
@@ -84,6 +86,7 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
         description: edge.node.description ?? null,
         createdAt: parseCreatedAt(edge.node.createdAt),
         read: edge.node.read,
+        notification: mapNotificationNode(edge.node),
       })),
     [data.notifications.edges],
   );
@@ -91,6 +94,19 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
   const columns = useMemo(
     () => buildNotificationColumns({ rowVariant, onMarkRead, onDelete }),
     [rowVariant, onMarkRead, onDelete],
+  );
+
+  const renderSubRow = useCallback(
+    (item: NotificationRow) => {
+      if (!isApprovalNotification(item.notification) || !getApprovalMeta(item.notification)) return null;
+      return (
+        <NotificationApprovalSubRow
+          notification={item.notification}
+          onResolved={rowVariant === 'unread' ? onMarkRead : undefined}
+        />
+      );
+    },
+    [rowVariant, onMarkRead],
   );
 
   const table = useDataTable<NotificationRow>({
@@ -128,7 +144,7 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
         </div>
       ) : (
         <>
-          <DataTable.Body rowClassName="mb-1" />
+          <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} />
           <DataTable.InfiniteFooter
             hasNextPage={hasNext}
             isFetchingNextPage={isLoadingNext}

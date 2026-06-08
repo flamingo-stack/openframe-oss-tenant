@@ -206,22 +206,29 @@ impl ToolKillService {
     }
 
     pub async fn stop_installed_tool(&self, tool: &InstalledTool) -> Result<()> {
-        match &tool.installation {
+        self.stop_for_installation(&tool.tool_agent_id, &tool.installation).await
+    }
+
+    pub async fn stop_for_installation(&self, tool_agent_id: &str, installation: &Installation) -> Result<()> {
+        match installation {
             Installation::GuiApp { executable_path, .. } => {
                 info!("Stopping GUI app by executable path: {}", executable_path);
                 self.stop_tool_by_path(executable_path).await
             }
-            Installation::Standard { .. } => {
-                self.stop_tool(&tool.tool_agent_id).await
+            Installation::Standard { executable_path } => {
+                if let Some(path) = executable_path {
+                    self.stop_tool_by_path(path).await?;
+                }
+                self.stop_tool(tool_agent_id).await
             }
             Installation::Service { service_name, executable_path } => {
-                info!(tool_id = %tool.tool_agent_id, service_name = %service_name,
+                info!(tool_id = %tool_agent_id, service_name = %service_name,
                       "Stopping Service type tool via system service manager");
                 self.stop_service(service_name).await?;
 
                 // Kill any remaining processes by executable path (detached children)
                 if let Some(path) = executable_path {
-                    info!(tool_id = %tool.tool_agent_id, "Killing remaining processes by path: {}", path);
+                    info!(tool_id = %tool_agent_id, "Killing remaining processes by path: {}", path);
                     self.stop_tool_by_path(path).await?;
                 }
                 Ok(())

@@ -69,6 +69,7 @@ export function useAddTicketNote(ticketId: string) {
           ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'You'
           : 'You',
         authorImageUrl: currentUser?.image?.imageUrl,
+        authorImageHash: currentUser?.image?.hash,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

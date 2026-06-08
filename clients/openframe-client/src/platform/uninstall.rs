@@ -13,6 +13,13 @@ const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
+pub fn orbit_dir() -> std::path::PathBuf {
+    std::path::PathBuf::from(
+        std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
+    )
+    .join("Orbit")
+}
+
 /// Remove a directory with retry logic for locked files
 pub async fn remove_directory_with_retry(path: &Path, max_retries: u32) -> Result<()> {
     if !path.exists() {
@@ -131,33 +138,7 @@ async fn force_remove_directory(path: &Path) -> Result<()> {
 
     info!("Attempting force removal using Windows rd command for: {}", path.display());
 
-    // First, try to take ownership and grant permissions
-    let takeown_output = Command::new("takeown")
-        .args(&["/F", &path.to_string_lossy(), "/R", "/D", "Y"])
-        .output()
-        .await;
-
-    if let Ok(output) = takeown_output {
-        if output.status.success() {
-            info!("Successfully took ownership of: {}", path.display());
-        } else {
-            warn!("Failed to take ownership, continuing anyway...");
-        }
-    }
-
-    // Grant full permissions
-    let icacls_output = Command::new("icacls")
-        .args(&[&path.to_string_lossy(), "/grant", "Everyone:F", "/T", "/C", "/Q"])
-        .output()
-        .await;
-
-    if let Ok(output) = icacls_output {
-        if output.status.success() {
-            info!("Successfully granted permissions for: {}", path.display());
-        } else {
-            warn!("Failed to grant permissions, continuing anyway...");
-        }
-    }
+    let _ = crate::platform::file_acl::ensure_writable(path).await;
 
     // Wait for permissions to take effect
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -322,6 +303,14 @@ pub async fn uninstall_windows(
         );
         if let Err(e) = remove_directory_with_retry(dir_manager.app_support_dir(), 5).await {
             warn!("Failed to remove app support directory: {}", e);
+        }
+    }
+
+    let orbit_dir = orbit_dir();
+    if orbit_dir.exists() {
+        info!("Cleaning up Orbit directory: {}", orbit_dir.display());
+        if let Err(e) = remove_directory_with_retry(&orbit_dir, 5).await {
+            warn!("Failed to remove Orbit directory: {}", e);
         }
     }
 

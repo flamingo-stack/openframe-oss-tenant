@@ -138,11 +138,13 @@ export const GET_TICKET_QUERY = `
       organizationName
       organizationImage {
         imageUrl
+        hash
       }
       assignedTo
       assignedName
       assigneeImage {
         imageUrl
+        hash
       }
       labels {
         id
@@ -181,6 +183,7 @@ export const GET_TICKET_QUERY = `
         }
         authorImage {
           imageUrl
+          hash
         }
         createdAt
         updatedAt
@@ -238,6 +241,7 @@ export const GET_TICKETS_QUERY = `
           assignedName
           assigneeImage {
             imageUrl
+            hash
           }
           labels {
             id
@@ -296,6 +300,7 @@ const BOARD_CARD_TICKET_FRAGMENT = `
     assignedName
     assigneeImage {
       imageUrl
+      hash
     }
     labels {
       id
@@ -388,6 +393,7 @@ const BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT = `
     assignedName
     assigneeImage {
       imageUrl
+      hash
     }
     labels {
       id
@@ -492,6 +498,7 @@ export const ADD_TICKET_NOTE_MUTATION = `
         }
         authorImage {
           imageUrl
+          hash
         }
         createdAt
         updatedAt
@@ -519,6 +526,7 @@ export const UPDATE_TICKET_NOTE_MUTATION = `
         }
         authorImage {
           imageUrl
+          hash
         }
         createdAt
         updatedAt

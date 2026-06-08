@@ -4,7 +4,8 @@ import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core';
 import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
-import type { User, UserImage } from '@/app/(auth)/auth/stores';
+import type { User } from '@/app/(auth)/auth/stores';
+import { useAuthStore } from '@/app/(auth)/auth/stores';
 import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
@@ -14,21 +15,23 @@ interface EditProfileModalProps {
   onClose: () => void;
   user: User | null;
   onSave: (data: { firstName: string; lastName: string }) => Promise<void>;
-  onImageChange: (image: UserImage | undefined) => void;
   isSaving: boolean;
 }
 
-export function EditProfileModal({ isOpen, onClose, user, onSave, onImageChange, isSaving }: EditProfileModalProps) {
+export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: EditProfileModalProps) {
   const { toast } = useToast();
+  const updateUser = useAuthStore(state => state.updateUser);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [imageUrl, setImageUrl] = useState<string | undefined>();
+  const [imageHash, setImageHash] = useState<string | undefined>();
 
   useEffect(() => {
     if (isOpen && user) {
       setFirstName(user.firstName || '');
       setLastName(user.lastName || '');
       setImageUrl(user.image?.imageUrl);
+      setImageHash(user.image?.hash);
     }
   }, [isOpen, user]);
 
@@ -40,23 +43,30 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, onImageChange,
         description: 'Profile image has been updated',
         variant: 'success',
       });
+      // The image path is stable across uploads, so push the new URL with a
+      // fresh cache-bust into the auth store and the modal preview — this
+      // updates every avatar render site (header, profile card, this uploader)
+      // immediately, without a stale-read race on a separate profile GET.
+      const bust = String(Date.now());
       setImageUrl(uploadedUrl);
-      onImageChange({ imageUrl: uploadedUrl, hash: '' });
+      setImageHash(bust);
+      updateUser({ image: { imageUrl: uploadedUrl, hash: bust } });
       return uploadedUrl;
     },
-    [toast, onImageChange],
+    [toast, updateUser],
   );
 
   const handleAuthenticatedDelete = useCallback(async (): Promise<void> => {
     await deleteWithAuth('/api/users/image');
     setImageUrl(undefined);
-    onImageChange(undefined);
+    setImageHash(undefined);
+    updateUser({ image: undefined });
     toast({
       title: 'Delete successful',
       description: 'Profile image has been removed',
       variant: 'success',
     });
-  }, [toast, onImageChange]);
+  }, [toast, updateUser]);
 
   const handleSave = useCallback(async () => {
     await onSave({ firstName, lastName });
@@ -64,7 +74,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, onImageChange,
   }, [firstName, lastName, onSave, onClose]);
 
   const primaryRole = user?.roles?.[0] || 'User';
-  const displayImageUrl = getFullImageUrl(imageUrl);
+  const displayImageUrl = getFullImageUrl(imageUrl, imageHash);
 
   return (
     <SimpleModal

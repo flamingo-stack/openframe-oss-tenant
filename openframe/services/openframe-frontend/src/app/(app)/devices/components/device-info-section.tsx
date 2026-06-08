@@ -47,7 +47,7 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
   // TEMP: assigned-user block is hidden until the backend returns a user entity
   const assignedUser = { username: null, imageUrl: null };
   const assignedUserImageUrl = getFullImageUrl(assignedUser?.imageUrl);
-  const customerImageUrl = getFullImageUrl(device.organizationImageUrl);
+  const customerImageUrl = getFullImageUrl(device.organizationImageUrl, device.organizationImageHash);
   const customerHref = device.organizationId ? `/customers/details/${device.organizationId}` : undefined;
 
   // Cells defined once and reused across both responsive layouts below.

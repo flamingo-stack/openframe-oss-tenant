@@ -169,7 +169,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
   const subtitleParts = [organization.website, organization.industry].filter(p => p && p !== '-');
   const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' • ') : undefined;
 
-  const logoSrc = getFullImageUrl(organization.imageUrl);
+  const logoSrc = getFullImageUrl(organization.imageUrl, organization.imageHash);
 
   return (
     <>

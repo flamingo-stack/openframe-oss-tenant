@@ -80,8 +80,8 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   }, [article.author]);
 
   const authorImageUrl = useMemo(
-    () => getFullImageUrl(article.author?.image?.imageUrl),
-    [article.author?.image?.imageUrl],
+    () => getFullImageUrl(article.author?.image?.imageUrl, article.author?.image?.hash),
+    [article.author?.image?.imageUrl, article.author?.image?.hash],
   );
 
   const uiAttachments = useMemo(() => {

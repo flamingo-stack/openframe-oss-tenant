@@ -1,9 +1,6 @@
 import type { Notification, NotificationVariant } from '@flamingo-stack/openframe-frontend-core';
 import { ConnectionHandler, type RecordSourceSelectorProxy } from 'relay-runtime';
-import type {
-  NotificationSeverity,
-  notificationsDrawerRelay_query$data,
-} from '@/__generated__/notificationsDrawerRelay_query.graphql';
+import type { NotificationSeverity } from '@/__generated__/notificationsDrawerRelay_query.graphql';
 
 export const NOTIFICATIONS_CONNECTION_KEY = 'NotificationsList_notifications';
 const NOTIFICATION_EDGE_TYPENAME = 'NotificationEdge';
@@ -178,10 +175,71 @@ export function parseCreatedAt(value: unknown): number {
   return Date.now();
 }
 
-type NotificationNode = notificationsDrawerRelay_query$data['notifications']['edges'][number]['node'];
+interface ApprovalToolCallShape {
+  readonly toolExecutionRequestId: string | null | undefined;
+  readonly toolName: string;
+  readonly toolTitle: string | null | undefined;
+  readonly toolExplanation: string | null | undefined;
+  readonly toolType: string | null | undefined;
+  readonly requiresApproval: boolean;
+  readonly approvalType: string | null | undefined;
+  readonly toolCallArguments: unknown;
+}
 
-export function mapNotificationNode(node: NotificationNode): Notification {
+/**
+ * Structural shape shared by the drawer and section fragments. Relay emits `context`
+ * as a flat object keyed by `__typename` with all inline-fragment fields optional, so
+ * both generated node types are assignable to this one mapper input.
+ */
+export interface NotificationNodeShape {
+  readonly id: string;
+  readonly severity: NotificationSeverity;
+  readonly title: string;
+  readonly description: string | null | undefined;
+  readonly createdAt: unknown;
+  readonly read: boolean;
+  readonly context: {
+    // biome-ignore lint/style/useNamingConvention: GraphQL __typename discriminator
+    readonly __typename: string;
+    readonly type: string;
+    readonly approvalRequestId?: string;
+    readonly approvalType?: string;
+    readonly dialogId?: string;
+    readonly ticketId?: string | null;
+    readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
+  };
+}
+
+export function mapNotificationNode(node: NotificationNodeShape): Notification {
   const severity = normalizeSeverity(node.severity);
+  const { context } = node;
+  const meta: Record<string, unknown> = {
+    contextType: context.type,
+    contextTypename: context.__typename,
+  };
+  let category: string | undefined;
+
+  if (context.__typename === 'AdminAiMessageContext' && context.dialogId) {
+    category = 'mingo';
+    meta.dialogId = context.dialogId;
+  } else if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
+    category = 'approval';
+    meta.approvalRequestId = context.approvalRequestId;
+    meta.dialogId = context.dialogId;
+    meta.ticketId = context.ticketId ?? null;
+    meta.approvalType = context.approvalType ?? null;
+    meta.toolCalls = (context.toolCalls ?? []).map(call => ({
+      toolExecutionRequestId: call.toolExecutionRequestId,
+      toolName: call.toolName,
+      toolTitle: call.toolTitle,
+      toolExplanation: call.toolExplanation,
+      toolType: call.toolType,
+      requiresApproval: call.requiresApproval,
+      approvalType: call.approvalType,
+      toolCallArguments: call.toolCallArguments,
+    }));
+  }
+
   return {
     id: node.id,
     title: node.title,
@@ -190,9 +248,7 @@ export function mapNotificationNode(node: NotificationNode): Notification {
     read: node.read,
     severity,
     variant: severityToVariant(severity),
-    meta: {
-      contextType: node.context.type,
-      contextTypename: node.context.__typename,
-    },
+    category,
+    meta,
   };
 }

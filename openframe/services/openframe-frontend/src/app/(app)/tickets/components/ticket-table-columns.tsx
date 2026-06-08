@@ -73,7 +73,7 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
       return ticket.assignedName ? (
         <div className="flex items-center gap-2 min-w-0">
           <SquareAvatar
-            src={getFullImageUrl(ticket.assigneeImageUrl)}
+            src={getFullImageUrl(ticket.assigneeImageUrl, ticket.assigneeImageHash)}
             alt={ticket.assignedName}
             fallback={ticket.assignedName}
             size="sm"

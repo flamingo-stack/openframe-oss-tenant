@@ -86,6 +86,7 @@ export function createDeviceListItem(node: DevicesGraphQlNode): Device {
     organizationId: node.organization?.organizationId,
     organization: node.organization?.name,
     organizationImageUrl: node.organization?.image?.imageUrl || null,
+    organizationImageHash: node.organization?.image?.hash || null,
 
     // Tags
     tags: node.tags,

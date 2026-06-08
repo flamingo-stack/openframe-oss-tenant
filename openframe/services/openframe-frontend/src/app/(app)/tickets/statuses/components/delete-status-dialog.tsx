@@ -2,6 +2,7 @@
 
 import {
   Button,
+  ColorSwatch,
   Label,
   Select,
   SelectContent,
@@ -77,7 +78,7 @@ export function DeleteStatusDialog({
             {options.map(opt => (
               <SelectItem key={opt.id} value={opt.id}>
                 <span className="flex items-center gap-[var(--spacing-system-xs)]">
-                  <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: opt.color }} aria-hidden />
+                  <ColorSwatch color={opt.color} />
                   {opt.name}
                 </span>
               </SelectItem>
