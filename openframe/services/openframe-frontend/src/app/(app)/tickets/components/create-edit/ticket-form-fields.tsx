@@ -129,7 +129,7 @@ export function TicketFormFields({
         control={control}
         render={({ field, fieldState }) => (
           <div>
-            <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Title</Label>
+            <Label className="text-lg font-medium text-ods-text-primary">Title</Label>
             <Input
               type="text"
               value={field.value}
