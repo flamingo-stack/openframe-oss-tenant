@@ -15,6 +15,7 @@ export const FEATURE_FLAG_NAMES = [
   'debug-nats-chunks',
   'mingo-sidebar',
   'ticket-statuses',
+  'mingo-ai-chat-settings',
 ] as const;
 
 /**
@@ -83,6 +84,11 @@ export const featureFlags = {
   ticketStatuses: {
     enabled(): boolean {
       return getFlagValue('ticket-statuses', () => false);
+    },
+  },
+  mingoAiChatSettings: {
+    enabled(): boolean {
+      return getFlagValue('mingo-ai-chat-settings', () => false);
     },
   },
 } as const;

@@ -4,6 +4,7 @@ import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/ic
 import { ChatsIcon, ShieldCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ReactNode } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
 
 export const AI_SETTINGS_TAB_IDS = ['customer', 'mingo', 'guardrails'] as const;
 export type AiSettingsTabId = (typeof AI_SETTINGS_TAB_IDS)[number];
@@ -21,9 +22,12 @@ interface AiSettingsTabsProps {
 }
 
 export function AiSettingsTabs({ activeTab, onTabChange, children }: AiSettingsTabsProps) {
+  // Mingo AI Chat is gated behind a feature flag until the feature ships.
+  const tabs = AI_SETTINGS_TABS.filter(tab => tab.id !== 'mingo' || featureFlags.mingoAiChatSettings.enabled());
+
   return (
     <TabNavigation
-      tabs={AI_SETTINGS_TABS}
+      tabs={tabs}
       activeTab={activeTab}
       onTabChange={tabId => onTabChange(tabId as AiSettingsTabId)}
       showRightGradient

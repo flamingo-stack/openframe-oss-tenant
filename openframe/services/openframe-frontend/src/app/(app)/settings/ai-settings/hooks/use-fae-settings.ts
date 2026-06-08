@@ -1,46 +1,80 @@
 'use client';
 
-import type { FaeSettings } from '../types/fae-settings';
+import { useQuery } from '@tanstack/react-query';
+import type { AIProvider } from '@/generated/schema-enums';
+import { apiClient } from '@/lib/api-client';
+import { GET_FAE_SETTINGS_QUERY } from '../queries/fae-settings-queries';
+import type { AnswerStyle, ApplicationTheme, FaeSettings } from '../types/fae-settings';
 
-/** Mock shaped like the upcoming `faeSettings` query; swap the body for a real query later. */
-export function useFaeSettings(): { settings: FaeSettings; isLoading: boolean } {
+export const faeSettingsQueryKeys = {
+  detail: (organizationId: string | null) => ['fae-settings', { organizationId }] as const,
+};
+
+interface FaeSettingsGql {
+  id: string;
+  organizationId: string | null;
+  assistantName: string;
+  assistantAvatar: { imageUrl: string; hash: string | null } | null;
+  llmProvider: AIProvider;
+  providerModel: string;
+  applicationTheme: ApplicationTheme;
+  accentColor: string;
+  answerStyle: AnswerStyle | null;
+  customPrompt: string | null;
+  quickActions: { id: string; name: string; instructions: string }[] | null;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+interface GraphqlResponse<T> {
+  data?: T;
+  errors?: { message: string }[];
+}
+
+function toFaeSettings(fae: FaeSettingsGql): FaeSettings {
   return {
-    isLoading: false,
-    settings: MOCK_FAE_SETTINGS,
+    id: fae.id,
+    organizationId: fae.organizationId ?? null,
+    assistantName: fae.assistantName,
+    assistantAvatar: fae.assistantAvatar
+      ? { imageUrl: fae.assistantAvatar.imageUrl, hash: fae.assistantAvatar.hash ?? undefined }
+      : null,
+    llmProvider: fae.llmProvider,
+    providerModel: fae.providerModel,
+    applicationTheme: fae.applicationTheme,
+    accentColor: fae.accentColor,
+    answerStyle: fae.answerStyle ?? null,
+    customPrompt: fae.customPrompt ?? null,
+    quickActions: (fae.quickActions ?? []).map(q => ({ id: q.id, name: q.name, instructions: q.instructions })),
+    createdAt: fae.createdAt,
+    updatedAt: fae.updatedAt ?? null,
   };
 }
 
-const MOCK_FAE_SETTINGS: FaeSettings = {
-  id: 'fs_mock_1',
-  organizationId: null,
-  assistantName: 'Grace “Fae” Meadows',
-  assistantAvatar: { imageUrl: '/assets/ai-settings/fae-avatar.png' },
-  llmProvider: 'ANTHROPIC',
-  providerModel: 'Claude Opus 4.1',
-  applicationTheme: 'DARK',
-  accentColor: '#F357BB',
-  answerStyle: 'SHORT',
-  customPrompt: null,
-  quickActions: [
-    {
-      id: 'configure-email',
-      name: 'Configure Email on New Device',
-      instructions:
-        'Guide user through email setup for Outlook/mobile. Collect: device type, email client, existing account details. Provide step-by-step configuration with server settings: IMAP/SMTP hosts, ports (993/587), SSL requirements. If authentication fails, create ticket with: username, device info, error messages, attempted steps.',
+/**
+ * Loads FaeSettings from the AI agent GraphQL endpoint (/chat/graphql, the same
+ * endpoint Mingo/tickets use). `settings` is null when no record exists yet.
+ */
+export function useFaeSettings(organizationId: string | null = null) {
+  const query = useQuery({
+    queryKey: faeSettingsQueryKeys.detail(organizationId),
+    queryFn: async (): Promise<FaeSettings | null> => {
+      const response = await apiClient.post<GraphqlResponse<{ faeSettings: FaeSettingsGql | null }>>('/chat/graphql', {
+        query: GET_FAE_SETTINGS_QUERY,
+        variables: { organizationId },
+      });
+
+      if (!response.ok || !response.data) {
+        throw new Error(response.error || 'Failed to load AI settings');
+      }
+      if (response.data.errors?.length) {
+        throw new Error(response.data.errors.map(e => e.message).join(', '));
+      }
+
+      const fae = response.data.data?.faeSettings;
+      return fae ? toFaeSettings(fae) : null;
     },
-    {
-      id: 'connect-shared-drive',
-      name: 'Connect to Shared Drive',
-      instructions:
-        "Help user map network drives. Get: operating system, drive letter needed, specific share name. Provide commands: Windows - 'net use Z: \\\\server\\share', Mac - 'Connect to Server' steps. Include authentication format: domain\\username. If connection fails, gather: error codes, network location, current permissions, and create ticket for IT review.",
-    },
-    {
-      id: 'request-software-installation',
-      name: 'Request Software Installation',
-      instructions:
-        "Process software installation requests. Collect: exact software name/version, business justification, urgency level, user's role/department. Check against approved software list. For approved items: create ticket with installation priority. For unapproved: explain approval process, security review timeline, and alternative approved solutions.",
-    },
-  ],
-  createdAt: '2026-05-22T00:00:00Z',
-  updatedAt: null,
-};
+  });
+
+  return { settings: query.data ?? null, isLoading: query.isLoading, error: query.error, refetch: query.refetch };
+}

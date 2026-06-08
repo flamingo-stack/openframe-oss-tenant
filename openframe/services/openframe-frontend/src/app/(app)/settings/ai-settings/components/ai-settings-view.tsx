@@ -1,8 +1,10 @@
 'use client';
 
+import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useState } from 'react';
 import { useFaeSettings } from '../hooks/use-fae-settings';
-import type { UpdateFaeSettingsInput } from '../types/fae-settings';
+import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
+import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
 import { useAiSettingsActions } from './ai-settings-actions';
 import { AiSettingsLayout } from './ai-settings-layout';
 import { type AiSettingsTabId, AiSettingsTabs } from './ai-settings-tabs';
@@ -17,7 +19,11 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
 };
 
 export function AiSettings() {
-  const { settings } = useFaeSettings();
+  const { settings: loadedSettings, isLoading, error, refetch } = useFaeSettings();
+  const { update } = useUpdateFaeSettings();
+
+  // No record yet → start from defaults so the first save creates one.
+  const settings = loadedSettings ?? getDefaultFaeSettings();
 
   const [activeTab, setActiveTab] = useState<AiSettingsTabId>('customer');
   const [isEditMode, setIsEditMode] = useState(false);
@@ -37,10 +43,12 @@ export function AiSettings() {
     }
   }, [activeTab]);
 
-  const handleFormSubmit = useCallback((_values: UpdateFaeSettingsInput) => {
-    // TODO: call updateFaeSettings mutation
-    setIsEditMode(false);
-  }, []);
+  const handleFormSubmit = useCallback(
+    (values: UpdateFaeSettingsInput) => {
+      update(values, () => setIsEditMode(false));
+    },
+    [update],
+  );
 
   const actions = useAiSettingsActions({
     isEditMode,
@@ -48,6 +56,31 @@ export function AiSettings() {
     onSave: handleSave,
     onCancel: handleCancel,
   });
+
+  if (isLoading && !loadedSettings) {
+    return (
+      <AiSettingsLayout actions={actions}>
+        <CompactPageLoader />
+      </AiSettingsLayout>
+    );
+  }
+
+  // Failed to load and nothing cached: show an error + retry instead of editable
+  // defaults, so the user can't accidentally overwrite real settings on save.
+  if (error && !loadedSettings) {
+    return (
+      <AiSettingsLayout>
+        <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
+          <p className="text-ods-text-secondary">
+            Couldn't load AI settings. The service may be temporarily unavailable.
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      </AiSettingsLayout>
+    );
+  }
 
   return (
     <AiSettingsLayout actions={actions} mobileBottomActions={isEditMode}>

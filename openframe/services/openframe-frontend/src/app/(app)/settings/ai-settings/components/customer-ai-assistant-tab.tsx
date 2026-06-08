@@ -22,6 +22,7 @@ import {
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { type Control, Controller } from 'react-hook-form';
+import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
 import {
   CUSTOMER_AI_ASSISTANT_FORM_ID,
@@ -74,7 +75,7 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
         <AiSettingsCustomerCard settings={settings} />
         <AiSettingsPreviews
           assistantName={settings.assistantName}
-          avatarUrl={settings.assistantAvatar?.imageUrl}
+          avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl)}
           accentColor={settings.accentColor}
           theme={settings.applicationTheme}
           providerName={settings.llmProvider}

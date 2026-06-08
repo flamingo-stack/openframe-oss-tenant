@@ -4,6 +4,7 @@ import { EntityImage } from '@flamingo-stack/openframe-frontend-core/components/
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
 import { InfoCell } from '@/app/components/shared/info-cell';
+import { getFullImageUrl } from '@/lib/image-url';
 import type { FaeSettings } from '../types/fae-settings';
 import {
   ANSWER_STYLE_LABEL,
@@ -25,7 +26,7 @@ export function AiSettingsCustomerCard({ settings }: AiSettingsCustomerCardProps
   const cells: ReactNode[] = [
     <>
       <EntityImage
-        src={settings.assistantAvatar?.imageUrl}
+        src={getFullImageUrl(settings.assistantAvatar?.imageUrl)}
         alt={settings.assistantName}
         className="size-10 rounded-full"
       />
