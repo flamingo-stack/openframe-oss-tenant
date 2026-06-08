@@ -44,9 +44,9 @@ tactical:
 
   base:
     image:
-      registry: ghcr.io/flamingo-stack/openframe-oss-tenant
-      repository: tactical-base
-      tag: latest
+      registry: ghcr.io/flamingo-stack/tacticalrmm
+      repository: tactical
+      tag: "0.0.23"
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"

@@ -12,9 +12,9 @@ registerJob:
 
 server:
   image:
-    registry: ghcr.io/flamingo-stack/openframe-oss-tenant
+    registry: ghcr.io/flamingo-stack/meshcentral
     repository: meshcentral
-    tag: latest
+    tag: "0.0.19"
   podAnnotations:
     loki.grafana.com/scrape: "true"
     prometheus.io/scrape: "true"
