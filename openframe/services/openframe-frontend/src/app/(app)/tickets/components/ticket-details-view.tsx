@@ -240,6 +240,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     assistantName: ASSISTANT_CONFIG.FAE.name,
     assistantType: ASSISTANT_CONFIG.FAE.type,
     userDisplayName: clientDisplayName,
+    isDirectMode,
     onMetadata: useCallback((metadata: { modelDisplayName: string; providerName: string }) => {
       setCurrentClientModel({ provider: metadata.providerName, displayName: metadata.modelDisplayName });
     }, []),
