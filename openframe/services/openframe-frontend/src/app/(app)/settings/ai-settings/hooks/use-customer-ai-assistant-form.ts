@@ -28,7 +28,9 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
   // The avatar is stored via a separate REST endpoint, not the settings GraphQL.
   // imageUrl from the API is relative (/images/...), so resolve it for <img src>.
   const imageEndpoint = `/api/fae-settings/${settings.id}/image`;
-  const [avatarUrl, setAvatarUrl] = useState(getFullImageUrl(settings.assistantAvatar?.imageUrl));
+  const [avatarUrl, setAvatarUrl] = useState(
+    getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash),
+  );
 
   const handleAvatarChange = async (file: File) => {
     if (!settings.id) {
@@ -44,7 +46,10 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
     setAvatarUrl(preview);
     try {
       const uploadedUrl = await uploadWithAuth(imageEndpoint, file);
-      setAvatarUrl(getFullImageUrl(uploadedUrl));
+      // The image endpoint URL is content-stable, so the browser would otherwise
+      // serve the previously cached avatar. Bust the cache so the freshly
+      // uploaded image actually loads.
+      setAvatarUrl(getFullImageUrl(uploadedUrl, String(Date.now())));
       toast({ title: 'Avatar updated', description: 'Assistant avatar uploaded', variant: 'success' });
     } catch (err) {
       setAvatarUrl(previous);

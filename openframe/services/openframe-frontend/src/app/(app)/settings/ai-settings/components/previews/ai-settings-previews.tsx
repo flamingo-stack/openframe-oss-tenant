@@ -26,22 +26,26 @@ export function AiSettingsPreviews({
 }: AiSettingsPreviewsProps) {
   const resolved = useResolvedTheme(theme);
 
+  // Scope the theme to each card, not the wrapper: `.theme-light` flips
+  // `--ods-system-greys-background`, so applying it to the container would turn
+  // the whole container white too. Per-card scoping keeps the container on the
+  // (dark) app background while only the cards re-theme.
+  const themeClass = cn('ai-preview-theme', resolved === 'light' ? 'theme-light' : 'theme-dark');
+
   return (
-    <div
-      className={cn(
-        'ai-preview-theme',
-        resolved === 'light' ? 'theme-light' : 'theme-dark',
-        'grid grid-cols-2 items-start gap-[var(--spacing-system-l)] rounded-md bg-ods-bg',
-      )}
-    >
-      <MeetFaePreview assistantName={assistantName} avatarUrl={avatarUrl} accentColor={accentColor} />
-      <FaeChatPreview
-        assistantName={assistantName}
-        avatarUrl={avatarUrl}
-        accentColor={accentColor}
-        providerName={providerName}
-        modelDisplayName={modelDisplayName}
-      />
+    <div className="grid grid-cols-2 items-start gap-[var(--spacing-system-l)] rounded-md bg-ods-bg">
+      <div className={themeClass}>
+        <MeetFaePreview assistantName={assistantName} avatarUrl={avatarUrl} accentColor={accentColor} />
+      </div>
+      <div className={themeClass}>
+        <FaeChatPreview
+          assistantName={assistantName}
+          avatarUrl={avatarUrl}
+          accentColor={accentColor}
+          providerName={providerName}
+          modelDisplayName={modelDisplayName}
+        />
+      </div>
     </div>
   );
 }
