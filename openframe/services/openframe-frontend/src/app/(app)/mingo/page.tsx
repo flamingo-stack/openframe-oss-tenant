@@ -12,6 +12,7 @@ import {
   ModelDisplay,
   Skeleton,
 } from '@flamingo-stack/openframe-frontend-core';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { Menu01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -398,7 +399,8 @@ export default function Mingo() {
               isLoading={isResolvingDialog || (!effectiveDraft && isAnyLoading && processedMessages.length === 0)}
               assistantType={assistantType}
               pendingApprovals={effectiveDraft ? [] : pendingApprovals}
-              showAvatars={false}
+              showAvatars={true}
+              assistantIcon={<MingoIcon className="h-6 w-6" cornerColor="var(--ods-flamingo-cyan-base)" />}
               autoScroll={true}
               hasNextPage={effectiveDraft ? false : hasNextMessagePage}
               isFetchingNextPage={effectiveDraft ? false : isFetchingNextMessagePage}

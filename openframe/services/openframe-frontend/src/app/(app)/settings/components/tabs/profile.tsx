@@ -111,7 +111,12 @@ export function ProfileTab() {
       {/* Profile Card */}
       <div className="bg-ods-card border border-ods-border rounded-md p-4 flex items-center gap-4">
         {/* Avatar */}
-        <SquareAvatar src={getFullImageUrl(user.image?.imageUrl)} fallback={displayName} size="lg" variant="round" />
+        <SquareAvatar
+          src={getFullImageUrl(user.image?.imageUrl, user.image?.hash)}
+          fallback={displayName}
+          size="lg"
+          variant="round"
+        />
 
         {/* Name and Email */}
         <div className="flex-1 min-w-0 overflow-hidden">
@@ -174,7 +179,6 @@ export function ProfileTab() {
         onClose={() => setIsEditModalOpen(false)}
         user={user}
         onSave={updateProfile}
-        onImageChange={image => updateUser({ image })}
         isSaving={isUpdating}
       />
 

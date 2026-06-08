@@ -24,6 +24,7 @@ export interface Customer {
   contractDue: string;
   lastActivity: string;
   imageUrl?: string | null;
+  imageHash?: string | null;
 }
 
 export interface OrganizationNode {
@@ -40,7 +41,7 @@ export interface OrganizationNode {
   contactInformation?: {
     contacts?: Array<{ contactName?: string | null; email?: string | null }> | null;
   } | null;
-  image?: { imageUrl?: string | null } | null;
+  image?: { imageUrl?: string | null; hash?: string | null } | null;
 }
 
 export function mapOrganizationNode(node: OrganizationNode): Customer {
@@ -61,6 +62,7 @@ export function mapOrganizationNode(node: OrganizationNode): Customer {
     contractDue: node.contractEndDate ?? '',
     lastActivity: node.updatedAt || node.createdAt || new Date().toISOString(),
     imageUrl: node.image?.imageUrl ?? null,
+    imageHash: node.image?.hash ?? null,
   };
 }
 

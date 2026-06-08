@@ -1,8 +1,10 @@
 'use client';
 
+import type { Notification } from '@flamingo-stack/openframe-frontend-core';
 import { CheckCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, type ColumnDef, type Row } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { format } from 'date-fns';
+import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
 
 export interface NotificationRow {
   id: string;
@@ -10,6 +12,7 @@ export interface NotificationRow {
   description: string | null | undefined;
   createdAt: number;
   read: boolean;
+  notification: Notification;
 }
 
 interface BuildColumnsArgs {
@@ -59,8 +62,18 @@ export function buildNotificationColumns({
       id: 'action',
       header: '',
       enableSorting: false,
-      meta: { width: 'w-[224px]' },
-      cell: () => null,
+      meta: { width: 'w-[160px]', align: 'right' },
+      cell: ({ row }: { row: Row<NotificationRow> }) => {
+        const action = resolveNotificationAction(row.original.notification);
+        if (!action) return null;
+        return (
+          <div data-no-row-click className="flex w-full justify-end">
+            <Button variant="outline" className="w-full" href={action.route} openInNewTab>
+              {action.label}
+            </Button>
+          </div>
+        );
+      },
     },
     {
       id: 'rowIcon',

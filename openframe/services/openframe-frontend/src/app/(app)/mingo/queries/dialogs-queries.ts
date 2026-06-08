@@ -87,6 +87,10 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
                 id
                 firstName
                 lastName
+                image {
+                  imageUrl
+                  hash
+                }
               }
             }
           }

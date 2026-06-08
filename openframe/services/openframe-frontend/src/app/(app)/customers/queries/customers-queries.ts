@@ -20,6 +20,7 @@ export const GET_ORGANIZATIONS_QUERY = `#graphql
           contractEndDate
           image {
             imageUrl
+            hash
           }
           createdAt
           updatedAt
@@ -50,6 +51,7 @@ export const GET_ORGANIZATIONS_MIN_QUERY = `#graphql
           isDefault
           image {
             imageUrl
+            hash
           }
         }
       }
@@ -94,6 +96,7 @@ export const GET_ORGANIZATION_BY_ORGANIZATION_ID_QUERY = `#graphql
       }
       image {
         imageUrl
+        hash
       }
       monthlyRevenue
       contractStartDate
@@ -144,6 +147,7 @@ export const GET_ORGANIZATION_BY_ID_QUERY = `#graphql
       }
       image {
         imageUrl
+        hash
       }
       monthlyRevenue
       contractStartDate

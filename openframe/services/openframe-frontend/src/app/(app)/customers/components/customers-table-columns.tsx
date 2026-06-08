@@ -29,10 +29,11 @@ export interface UiCustomerEntry {
   lastActivityDate: string;
   lastActivityRelative: string;
   imageUrl?: string | null;
+  imageHash?: string | null;
 }
 
 export function CustomerNameCell({ org }: { org: UiCustomerEntry }) {
-  const fullImageUrl = getFullImageUrl(org.imageUrl);
+  const fullImageUrl = getFullImageUrl(org.imageUrl, org.imageHash);
 
   return (
     <div className="flex items-center gap-4 min-w-0">
@@ -61,6 +62,7 @@ export function transformCustomerToEntry(org: Customer, deviceCount: number | nu
     lastActivityDate: new Date(org.lastActivity).toLocaleString(),
     lastActivityRelative: formatRelativeTime(org.lastActivity),
     imageUrl: org.imageUrl,
+    imageHash: org.imageHash,
   };
 }
 

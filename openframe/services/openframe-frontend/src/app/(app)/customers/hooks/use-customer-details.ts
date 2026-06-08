@@ -23,6 +23,7 @@ export interface CustomerDetails {
   notes: string[];
   isDefault: boolean;
   imageUrl?: string | null;
+  imageHash?: string | null;
   status: string;
 }
 
@@ -72,6 +73,7 @@ function mapOrganization(org: any): CustomerDetails {
     notes: org.notes ? [org.notes] : [],
     isDefault: org.isDefault || false,
     imageUrl: org.image?.imageUrl,
+    imageHash: org.image?.hash,
     status: org.status || 'ACTIVE',
   };
 }

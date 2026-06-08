@@ -7,6 +7,7 @@ import type { BillingPeriod, ProductUpdates } from '../types/subscription.types'
 import {
   buildCheckoutProduct,
   buildInitialSelection,
+  buildPlanComparison,
   CUSTOM_OPTION_ID,
   diffPackageUpdates,
   PAYG_OPTION_ID,
@@ -43,6 +44,7 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
       packageUpdates: diffPackageUpdates(product, selection, subscriptionProduct),
       checkout: buildCheckoutProduct(product, selection),
       valid,
+      comparison: buildPlanComparison(product, selection, subscriptionProduct),
     });
   }, [product, subscriptionProduct, selection]);
 

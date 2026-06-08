@@ -34,6 +34,7 @@ const newDeviceContentQuery = graphql`
           isDefault
           image {
             imageUrl
+            hash
           }
         }
       }
@@ -70,6 +71,7 @@ export function NewDeviceContent() {
       name: edge.node.name,
       isDefault: edge.node.isDefault,
       imageUrl: edge.node.image?.imageUrl ?? undefined,
+      imageHash: edge.node.image?.hash ?? undefined,
     }));
   }, [data.organizations?.edges]);
 
@@ -256,7 +258,7 @@ export function NewDeviceContent() {
                 startAdornment={
                   selectedOrg ? (
                     <span className="group-has-[:focus]:hidden">
-                      <OrgAvatar imageUrl={selectedOrg.imageUrl} name={selectedOrg.name} />
+                      <OrgAvatar imageUrl={selectedOrg.imageUrl} hash={selectedOrg.imageHash} name={selectedOrg.name} />
                     </span>
                   ) : undefined
                 }
@@ -264,7 +266,7 @@ export function NewDeviceContent() {
                   const org = orgs.find(o => o.organizationId === option.value);
                   return (
                     <div className="flex items-center gap-2 w-full">
-                      <OrgAvatar imageUrl={org?.imageUrl} name={org?.name ?? option.label} />
+                      <OrgAvatar imageUrl={org?.imageUrl} hash={org?.imageHash} name={org?.name ?? option.label} />
                       <span>{option.label}</span>
                     </div>
                   );

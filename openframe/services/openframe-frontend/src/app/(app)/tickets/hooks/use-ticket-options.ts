@@ -37,7 +37,7 @@ async function fetchCustomerOptions(search: string): Promise<AvatarOption[]> {
   return edges.map(({ node }: any) => ({
     label: node.name,
     value: node.organizationId,
-    imageUrl: getFullImageUrl(node.image?.imageUrl),
+    imageUrl: getFullImageUrl(node.image?.imageUrl, node.image?.hash),
   }));
 }
 
@@ -87,7 +87,7 @@ async function fetchAssigneeOptions(): Promise<AvatarOption[]> {
   return items.map((user: any) => ({
     label: [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email,
     value: user.id,
-    imageUrl: getFullImageUrl(user.image?.imageUrl),
+    imageUrl: getFullImageUrl(user.image?.imageUrl, user.image?.hash),
   }));
 }
 
