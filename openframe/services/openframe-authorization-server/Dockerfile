@@ -29,8 +29,8 @@ RUN --mount=type=secret,id=GITHUB_TOKEN \
         -Dmaven.javadoc.skip=true \
         -Dmaven.test.skip=true \
         && exit 0; \
-        echo "Maven build attempt ${attempt}/3 failed (GitHub Packages resolve may be flaky); retrying in 15s..." >&2; \
-        sleep 15; \
+        echo "Maven build attempt ${attempt}/3 failed (GitHub Packages resolve may be flaky); retrying in 30s..." >&2; \
+        sleep 30; \
     done; \
     echo "Maven build failed after 3 attempts" >&2; exit 1
 
