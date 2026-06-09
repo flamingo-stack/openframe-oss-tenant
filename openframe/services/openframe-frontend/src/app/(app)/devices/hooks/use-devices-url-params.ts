@@ -3,21 +3,22 @@
 import type { TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DEFAULT_VISIBLE_STATUSES } from '../constants/device-statuses';
+import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import type { DeviceFilterInput } from '../types/device.types';
 
 interface UseDevicesUrlParamsOptions {
   /**
    * Default statuses applied when the user hasn't picked any.
-   * - omitted → `DEFAULT_VISIBLE_STATUSES` (ONLINE / OFFLINE / PENDING / ARCHIVED,
-   *   hides DELETED). Used on the main Devices page and the Customer devices tab.
-   * - `[]` → no default, every status (including DELETED) returned.
+   * - omitted → `DEFAULT_DEVICES_LIST_STATUSES` (ONLINE / OFFLINE / ARCHIVED;
+   *   PENDING is unselected by default, DELETED hidden). Used on the main Devices
+   *   page and the Customer devices tab.
+   * - `[]` → no default, every status (including PENDING / DELETED) returned.
    */
   defaultStatuses?: string[];
 }
 
 export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
-  const defaultStatuses = options.defaultStatuses ?? DEFAULT_VISIBLE_STATUSES;
+  const defaultStatuses = options.defaultStatuses ?? DEFAULT_DEVICES_LIST_STATUSES;
 
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
@@ -50,23 +51,32 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
     [params.tags],
   );
 
-  const filters: DeviceFilterInput = useMemo(() => {
-    const effectiveStatuses = params.statuses.length > 0 ? params.statuses : defaultStatuses;
-    return {
+  // When the user hasn't explicitly picked statuses, fall back to the defaults
+  // (PENDING excluded). Shared by the API query and the filter UI so the shown
+  // checkmarks match what's actually queried (online/offline/archived checked,
+  // pending unchecked by default).
+  const effectiveStatuses = useMemo(
+    () => (params.statuses.length > 0 ? params.statuses : defaultStatuses),
+    [params.statuses, defaultStatuses],
+  );
+
+  const filters: DeviceFilterInput = useMemo(
+    () => ({
       ...(effectiveStatuses.length > 0 && { statuses: effectiveStatuses }),
       osTypes: params.osTypes,
       organizationIds: params.organizationIds,
       ...(tagValues.length > 0 && { tagValues }),
-    };
-  }, [params.statuses, params.osTypes, params.organizationIds, tagValues, defaultStatuses]);
+    }),
+    [effectiveStatuses, params.osTypes, params.organizationIds, tagValues],
+  );
 
   const tableFilters = useMemo(
     () => ({
-      status: params.statuses,
+      status: effectiveStatuses,
       os: params.osTypes,
       organization: params.organizationIds,
     }),
-    [params.statuses, params.osTypes, params.organizationIds],
+    [effectiveStatuses, params.osTypes, params.organizationIds],
   );
 
   const tagOptions: TagSearchOption<string>[] = useMemo(
@@ -121,6 +131,7 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
     setLocalSearch,
     debouncedSearch,
     filters,
+    effectiveStatuses,
     tableFilters,
     tagOptions,
     handleFilterChange,

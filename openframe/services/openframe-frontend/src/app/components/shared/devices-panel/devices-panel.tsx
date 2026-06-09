@@ -71,6 +71,7 @@ export function DevicesPanel({
     setLocalSearch,
     debouncedSearch,
     filters: urlFilters,
+    effectiveStatuses,
     tableFilters,
     tagOptions,
     handleFilterChange,
@@ -94,11 +95,11 @@ export function DevicesPanel({
 
   const columnFilters = useMemo<ColumnFiltersState>(
     () => [
-      ...(params.statuses.length > 0 ? [{ id: 'status', value: params.statuses }] : []),
+      ...(effectiveStatuses.length > 0 ? [{ id: 'status', value: effectiveStatuses }] : []),
       ...(params.osTypes.length > 0 ? [{ id: 'os', value: params.osTypes }] : []),
       ...(params.organizationIds.length > 0 ? [{ id: 'organization', value: params.organizationIds }] : []),
     ],
-    [params.statuses, params.osTypes, params.organizationIds],
+    [effectiveStatuses, params.osTypes, params.organizationIds],
   );
 
   const onColumnFiltersChange = useCallback<OnChangeFn<ColumnFiltersState>>(
