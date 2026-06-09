@@ -108,6 +108,41 @@ impl ToolInstallationService {
                 // Wait for process to fully terminate
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
+                if let Some(uninstall_args) = installed_tool.uninstallation_command_args.as_ref()
+                    .filter(|args| !args.is_empty())
+                {
+                    let agent_path = self.directory_manager
+                        .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
+                    if agent_path.exists() {
+                        match self.command_params_resolver.process(tool_agent_id, uninstall_args.clone()) {
+                            Ok(processed_args) => {
+                                info!("Running uninstall command for {} before reinstall", tool_agent_id);
+                                let mut cmd = Command::new(&agent_path);
+                                cmd.args(&processed_args);
+                                match cmd.output().await {
+                                    Ok(output) if output.status.success() => {
+                                        info!("Uninstall command completed for {} before reinstall", tool_agent_id);
+                                    }
+                                    Ok(output) => {
+                                        warn!("Uninstall command for {} exited with status {}: {}",
+                                            tool_agent_id, output.status, String::from_utf8_lossy(&output.stderr));
+                                    }
+                                    Err(e) => {
+                                        #[cfg(target_os = "windows")]
+                                        log_file_lock_info(&e, &agent_path.to_string_lossy(), "execute uninstall command before reinstall");
+                                        warn!("Failed to execute uninstall command for {}: {:#}", tool_agent_id, e);
+                                    }
+                                }
+                            }
+                            Err(e) => warn!("Failed to process uninstall command params for {}: {:#}", tool_agent_id, e),
+                        }
+                    } else {
+                        warn!("Tool executable not found at {}, skipping uninstall command before reinstall", agent_path.display());
+                    }
+
+                    tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                }
+
                 info!("Removing existing tool directory: {}", tool_folder_path.display());
                 if tool_folder_path.exists() {
                     fs::remove_dir_all(&tool_folder_path)
