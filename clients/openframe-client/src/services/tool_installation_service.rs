@@ -133,6 +133,10 @@ impl ToolInstallationService {
                                         warn!("Failed to execute uninstall command for {}: {:#}", tool_agent_id, e);
                                     }
                                 }
+
+                                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&agent_path.to_string_lossy()).await {
+                                    warn!("Failed to cleanup processes for {} after uninstall: {:#}", tool_agent_id, e);
+                                }
                             }
                             Err(e) => warn!("Failed to process uninstall command params for {}: {:#}", tool_agent_id, e),
                         }
