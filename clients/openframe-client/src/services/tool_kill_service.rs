@@ -308,9 +308,10 @@ impl ToolKillService {
         } else {
             error!("Failed to stop service {}: stdout={}, stderr={}", service_name, stdout, stderr);
             Err(anyhow::anyhow!(
-                "Failed to stop service {}: {}",
+                "Failed to stop service {}: stdout={} stderr={}",
                 service_name,
-                stderr
+                stdout.trim(),
+                stderr.trim()
             ))
         }
     }

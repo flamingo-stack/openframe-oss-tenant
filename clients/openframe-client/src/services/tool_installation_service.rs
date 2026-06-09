@@ -147,13 +147,17 @@ impl ToolInstallationService {
                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 }
 
-                info!("Removing existing tool directory: {}", tool_folder_path.display());
-                if tool_folder_path.exists() {
-                    fs::remove_dir_all(&tool_folder_path)
-                        .await
-                        .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                let installed_agent_path = self.directory_manager
+                    .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
+                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&installed_agent_path.to_string_lossy()).await {
+                    warn!("Failed to kill processes locking tool directory for {}: {:#}", tool_agent_id, e);
                 }
-                        
+
+                info!("Removing existing tool directory: {}", tool_folder_path.display());
+                crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
+                    .await
+                    .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
                 // Delete from both services
