@@ -23,7 +23,6 @@ import {
 import {
   type ActionsMenuGroup,
   type ActionsMenuItem,
-  DetailLoader,
   type PageActionButton,
   PageLayout,
   resolveStatusTagProps,
@@ -74,6 +73,7 @@ import type { MessagePage } from '../services/ticket-service.types';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
 import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.types';
 import { ticketsQueryKeys } from '../utils/query-keys';
+import { TicketDetailsSkeleton } from './ticket-details-skeleton';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
 
 function maxLastChunkStreamSeq(pages: MessagePage[] | undefined): number {
@@ -581,7 +581,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   }, [dialog, isLifecycleStatuses, isUpdating, handlePutOnHold, handleResolve, handleArchive, handleUnarchive]);
 
   if (isLoading) {
-    return <DetailLoader />;
+    return <TicketDetailsSkeleton onBack={handleBackToTickets} />;
   }
 
   if (dialogError) {

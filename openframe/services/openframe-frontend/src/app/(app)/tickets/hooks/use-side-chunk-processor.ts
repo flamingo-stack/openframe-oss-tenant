@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
+import { useAuthStore } from '@/stores';
 import { type ChatSide, useTicketDetailsStore } from '../stores/ticket-details-store';
 
 function isInProgress(segments: MessageSegment[]): boolean {
@@ -75,6 +76,8 @@ export function useSideChunkProcessor(
   } = useTicketDetailsStore();
 
   const { messages } = sideState;
+
+  const currentUserId = useAuthStore(state => state.user?.id);
 
   useEffect(() => {
     if (onApprove || onReject) {
@@ -174,8 +177,8 @@ export function useSideChunkProcessor(
           updateToolExecutionInMessages('admin', execId, segment.data);
         }
       },
-      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string }) => {
-        if (side === 'admin' && meta?.ownerType === 'ADMIN') return;
+      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+        if (meta?.userId && meta.userId === currentUserId) return;
 
         const isAdminAuthor = meta?.ownerType === 'ADMIN';
         const name = isAdminAuthor ? meta?.displayName : (userDisplayName ?? meta?.displayName);
@@ -226,6 +229,7 @@ export function useSideChunkProcessor(
       setTokenUsage,
       addMessage,
       userDisplayName,
+      currentUserId,
       onMetadata,
       onApprove,
       onReject,

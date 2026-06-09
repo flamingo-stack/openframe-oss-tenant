@@ -69,6 +69,9 @@ export function useMoveTicketLifecycle() {
     },
     onSettled: (_data, _err, params) => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(params.ticketId) });
+      if (params.sourceStatusId !== params.targetStatusId) {
+        queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statistics() });
+      }
     },
   });
 }

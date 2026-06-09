@@ -143,21 +143,14 @@ if (typeof window !== 'undefined') {
 
 export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode }) {
   const runtime = useMemo<ChatRuntime>(() => {
-    // All Guide-mode endpoints are built as absolute URLs against the
-    // backend gateway (`NEXT_PUBLIC_TENANT_HOST_URL`, e.g.
-    // `https://test-dev.openframe.build`). The gateway exposes the
-    // `/content/*` route mapped to MPH so the lib's bare `fetch()` calls
-    // land directly on the gateway with no Next.js rewrite hop.
-    //
-    // The lib's `embedAuthedFetch` normally rejects cross-origin URLs as
-    // defense-in-depth (bearer + Supabase cookies must not leak), BUT
-    // its dev-mode escape hatch (`NODE_ENV !== 'production'`) lets the
-    // browser call across origins for local development. Production
-    // bundles either keep the strict guard (if served cross-origin from
-    // the gateway) or naturally pass it (if openframe-frontend and the
-    // gateway end up on the same origin behind a single reverse proxy).
-    const tenantHost = runtimeEnv.tenantHostUrl().replace(/\/+$/, '');
-    const content = (path: string): string => `${tenantHost}/content${path}`;
+    // Guide-mode endpoints are SAME-ORIGIN relative `/content/*` paths. The
+    // lib's `embedAuthedFetch` rejects cross-origin URLs in production builds
+    // (bearer + cookies must not leak across origins); keeping these relative
+    // means the browser always calls the page origin and the guard passes in
+    // every build. The Next.js `rewrites()` (see `next.config.mjs`) forwards
+    // `/content/*` to the tenant gateway, and in a same-origin production
+    // deployment the platform reverse proxy answers it before Next does.
+    const content = (path: string): string => `/content${path}`;
 
     return {
       endpoints: {
@@ -174,7 +167,7 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // `/content` reverse proxy so the URLs land on MPH. Returning null
         // here (the old TODO) left every such card with no URL → no fetch →
         // blank card.
-        buildListUrl: (type, ids) => buildEntityCardListUrl(type, ids, `${tenantHost}/content`),
+        buildListUrl: (type, ids) => buildEntityCardListUrl(type, ids, '/content'),
         attachmentUploadUrl: content('/api/storage/generate-upload-url'),
         attachmentViewUrlPrefix: content('/api/storage/view/chat-attachments/'),
         // SOURCE-VS-DEPLOYED GAP: MPH source has `/api/auth/identity`

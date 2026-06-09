@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { useNatsAppConfig } from '@/lib/nats/nats-app-config';
+import { useAuthStore } from '@/stores';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogNode } from '../types/dialog.types';
 import type { CoreMessage } from '../types/message.types';
@@ -190,6 +191,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     setTokenUsage,
   } = useMingoMessagesStore();
 
+  const currentUserId = useAuthStore(state => state.user?.id);
+
   useEffect(() => {
     if (onApprove || onReject) {
       getOrCreateAccumulator(dialogId, { onApprove, onReject });
@@ -337,6 +340,19 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         if (execId) updateToolExecutionInMessages(dialogId, execId, segment.data);
       },
 
+      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+        if (meta?.userId && meta.userId === currentUserId) return;
+        addMessage(dialogId, {
+          id: `user-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          role: 'user',
+          authorType: meta?.ownerType === 'ADMIN' ? 'admin' : 'user',
+          content: text,
+          name: meta?.displayName || (meta?.ownerType === 'ADMIN' ? 'Admin' : 'You'),
+          avatar: null,
+          timestamp: new Date(),
+        });
+      },
+
       onMetadata,
       onApprove,
       onReject,
@@ -351,6 +367,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       updateApprovalStatusInMessages,
       updateToolExecutionInMessages,
       addErrorMessage,
+      addMessage,
+      currentUserId,
       setTokenUsage,
       onMetadata,
       onApprove,

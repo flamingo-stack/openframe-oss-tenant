@@ -206,6 +206,7 @@ export interface NotificationNodeShape {
     readonly approvalType?: string;
     readonly dialogId?: string;
     readonly ticketId?: string | null;
+    readonly customerTicketId?: string | null;
     readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
   };
 }
@@ -222,6 +223,9 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
   if (context.__typename === 'AdminAiMessageContext' && context.dialogId) {
     category = 'mingo';
     meta.dialogId = context.dialogId;
+  } else if (context.__typename === 'CustomerTicketCreatedContext' && context.customerTicketId) {
+    category = 'ticket';
+    meta.ticketId = context.customerTicketId;
   } else if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
     category = 'approval';
     meta.approvalRequestId = context.approvalRequestId;

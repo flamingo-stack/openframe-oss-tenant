@@ -3,6 +3,9 @@ import { ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE, type Notification } from '@flaming
 /** Context discriminator for a Mingo admin-chat AI message. */
 export const ADMIN_AI_MESSAGE_CONTEXT_TYPE = 'ADMIN_AI_MESSAGE';
 
+/** Context discriminator for a newly created customer ticket. */
+export const CUSTOMER_TICKET_CREATED_CONTEXT_TYPE = 'CUSTOMER_TICKET_CREATED';
+
 export interface NotificationAction {
   label: string;
   route: string;
@@ -27,6 +30,11 @@ export function resolveNotificationAction(notification: Notification): Notificat
 
   if (meta.contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
     return { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+  }
+
+  if (meta.contextType === CUSTOMER_TICKET_CREATED_CONTEXT_TYPE) {
+    const ticketId = typeof meta.ticketId === 'string' ? meta.ticketId : null;
+    if (ticketId) return { label: 'Open Ticket', route: ticketRoute(ticketId) };
   }
 
   return null;
