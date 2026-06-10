@@ -90,7 +90,7 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   } = useAiPolicies();
 
   const [isFetchingBaseTemplate, setIsFetchingBaseTemplate] = useState(false);
-  const [, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
 
   const customTemplate = useMemo(() => templateOptions.find(t => t.type === CUSTOM_TEMPLATE_TYPE), [templateOptions]);
   const hasCustomTemplate = !!customTemplate;
@@ -124,6 +124,15 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   const [customPolicy, setCustomPolicy] = useState<CustomPolicyState>(emptyCustomPolicyState);
 
   const editSnapshotRef = useRef<EditSnapshot | null>(null);
+
+  // Latest pending rule edits, readable from the rebuild effect without
+  // re-running it (and collapsing the panel) on every permission change.
+  const customChangesRef = useRef(customPolicy.changes);
+  customChangesRef.current = customPolicy.changes;
+
+  // Which template the current policyGroups were built from; session-only UI
+  // state (expansion, global permissions) must not survive a template switch.
+  const groupsSourceIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (configuration) {
@@ -170,8 +179,38 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
       });
     }
 
-    const finalGroups = buildPolicyGroups(templateToDisplay.rules as PolicyRule[]);
-    setPolicyGroups(finalGroups);
+    // Rebuild from the template rules. While the same template stays on
+    // screen, keep what the user already did this session: expanded
+    // categories, pending rule edits and (in edit mode only) chosen global
+    // permissions — background refetches must not visually revert those.
+    // Switching templates or leaving edit mode drops session-only state so
+    // the preview always matches what a reload would show.
+    const sourceId = templateToDisplay.id;
+    const isSameSource = groupsSourceIdRef.current === sourceId;
+    groupsSourceIdRef.current = sourceId;
+    const changes = customChangesRef.current;
+    setPolicyGroups(prev => {
+      const next = buildPolicyGroups(templateToDisplay.rules as PolicyRule[]);
+      for (const [groupName, categories] of next) {
+        const prevCategories = isSameSource ? prev.get(groupName) : undefined;
+        next.set(
+          groupName,
+          categories.map(cat => {
+            const prevCat = prevCategories?.find(c => c.id === cat.id);
+            return {
+              ...cat,
+              isExpanded: prevCat?.isExpanded ?? cat.isExpanded,
+              globalPermission: isEditMode ? prevCat?.globalPermission : undefined,
+              policies: cat.policies.map(p => {
+                const pendingLevel = changes.get(p.naturalKey);
+                return pendingLevel ? { ...p, approvalLevel: pendingLevel } : p;
+              }),
+            };
+          }),
+        );
+      }
+      return next;
+    });
   }, [customPolicy.baseTemplateForDisplay, customPolicy.enabled, selectedTemplate, selectedTemplateId, isEditMode]);
 
   const resetCustomPolicyState = useCallback(() => {
@@ -179,10 +218,24 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   }, [emptyCustomPolicyState]);
 
   const handleSave = useCallback(async () => {
+    // Guard against submissions outside an edit session (e.g. stray form
+    // submits) and against double-submits while a save is in flight.
+    if (!isEditMode || isSubmittingRef.current) return;
+
     const savePromises: Promise<unknown>[] = [];
 
     const snapshot = editSnapshotRef.current;
     const aiConfigChanged = !!snapshot && (selectedProvider !== snapshot.provider || selectedModel !== snapshot.model);
+
+    if (aiConfigChanged && (!selectedProvider || !selectedModel)) {
+      toast({
+        title: 'Model Required',
+        description: 'Select a provider model before saving.',
+        variant: 'destructive',
+        duration: 5000,
+      });
+      return;
+    }
 
     if (aiConfigChanged) {
       savePromises.push(
@@ -250,20 +303,22 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     }
 
     if (savePromises.length > 0) {
-      setIsSubmitting(true);
+      isSubmittingRef.current = true;
       try {
         await Promise.all(savePromises);
         savedRef.current = true;
         onSaved();
       } catch (_error) {
       } finally {
-        setIsSubmitting(false);
+        isSubmittingRef.current = false;
       }
     } else {
       savedRef.current = true;
       onSaved();
     }
   }, [
+    isEditMode,
+    toast,
     onSaved,
     activateTemplate,
     activeTemplateId,
@@ -739,6 +794,7 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
                         description: opt.description,
                         trailing: !isCustomType ? (
                           <Button
+                            type="button"
                             variant="outline"
                             onClick={e => {
                               e.preventDefault();
