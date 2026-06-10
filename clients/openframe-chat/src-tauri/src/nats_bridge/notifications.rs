@@ -233,9 +233,10 @@ fn maybe_notify(inner: &Arc<Inner>, payload: &serde_json::Value) {
 }
 
 fn should_notify(app: &AppHandle) -> bool {
-    let main = match app.get_webview_window("main") {
-        Some(w) => w,
-        None => return false,
+    // No window = the user can't be looking at the chat — notify. Matches
+    // the unwrap_or(false) policy below: unknown state counts as not engaged.
+    let Some(main) = app.get_webview_window("main") else {
+        return true;
     };
     let visible = main.is_visible().unwrap_or(false);
     let focused = main.is_focused().unwrap_or(false);
