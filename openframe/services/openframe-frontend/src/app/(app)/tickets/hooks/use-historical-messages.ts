@@ -3,8 +3,11 @@
 import {
   type AssistantType,
   type Message as ChatMessage,
+  computeHistoryPrepend,
+  flattenMessagePagesChronological,
   type HistoricalMessage,
   type MessageSegment,
+  mergeHistoryWithRealtime,
   processHistoricalMessagesWithErrors,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useRef } from 'react';
@@ -20,6 +23,9 @@ interface UseHistoricalMessageSyncOptions {
   chatType: ChatType;
   assistantConfig: { name: string; type: AssistantType };
   pages: MessagePage[] | undefined;
+  /** react-query `dataUpdatedAt` of the pages — the freshness boundary the
+   *  merge uses to decide which realtime synthetics history can replace. */
+  dataUpdatedAt: number;
   isFetched: boolean;
   onApprove: (requestId?: string) => void | Promise<void>;
   onReject: (requestId?: string) => void | Promise<void>;
@@ -35,12 +41,17 @@ export function useHistoricalMessages({
   chatType,
   assistantConfig,
   pages,
+  dataUpdatedAt,
   isFetched,
   onApprove,
   onReject,
 }: UseHistoricalMessageSyncOptions) {
   const getMessages = useTicketDetailsStore(s => s.getMessages);
   const setMessages = useTicketDetailsStore(s => s.setMessages);
+  // Reactive (not the getter): the merge must RE-RUN when the stream ends —
+  // that's the moment the exempted streaming synthetic becomes droppable
+  // against already-fetched history, and nothing else re-triggers the effect.
+  const streamingMessageId = useTicketDetailsStore(s => s[side].streaming?.id ?? null);
   const prependWithBoundaryMerge = useTicketDetailsStore(s => s.prependWithBoundaryMerge);
   const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
   const mergeApprovalStatuses = useTicketDetailsStore(s => s.mergeApprovalStatuses);
@@ -64,18 +75,17 @@ export function useHistoricalMessages({
       prevDialogIdRef.current = messageDialogId;
     }
 
-    const flatMessages = [...pages].reverse().flatMap(page => [...page.messages].reverse());
+    const flatMessages = flattenMessagePagesChronological(pages);
 
-    const historical: HistoricalMessage[] = flatMessages
-      .filter(msg => msg.chatType === chatType)
-      .map(msg => ({
-        id: msg.id,
-        dialogId: msg.dialogId,
-        chatType: msg.chatType,
-        createdAt: msg.createdAt,
-        owner: msg.owner,
-        messageData: msg.messageData,
-      }));
+    // The server filters by chatType; `chatTypeFilter` below is the defensive layer.
+    const historical: HistoricalMessage[] = flatMessages.map(msg => ({
+      id: msg.id,
+      dialogId: msg.dialogId,
+      chatType: msg.chatType,
+      createdAt: msg.createdAt,
+      owner: msg.owner,
+      messageData: msg.messageData,
+    }));
 
     const historicalResolutions: Record<string, 'approved' | 'rejected'> = {};
     for (const msg of historical) {
@@ -114,45 +124,27 @@ export function useHistoricalMessages({
       })),
     );
 
+    // Empty snapshot (the merge itself also guards this): skip the no-op store write.
+    if (storeMessages.length === 0) {
+      processedPageCountRef.current = pages.length;
+      return;
+    }
+
     const isPagination = processedPageCountRef.current > 0 && pages.length > processedPageCountRef.current;
 
     if (!isPagination) {
-      const existing = getMessages(side);
-      const processedIds = new Set(storeMessages.map(m => m.id));
-      const realtimeOnly = existing.filter(m => {
-        if (processedIds.has(m.id)) return false;
-        if (m.id.startsWith('optimistic-') && m.role === 'user' && typeof m.content === 'string') {
-          return !storeMessages.some(pm => pm.role === 'user' && pm.content === m.content);
-        }
-        return true;
+      const merged = mergeHistoryWithRealtime({
+        processedHistory: storeMessages,
+        rawHistoryIds: new Set(flatMessages.map(m => m.id)),
+        existingMessages: getMessages(side),
+        streamingMessageId,
+        historyFetchedAt: dataUpdatedAt,
       });
-      setMessages(side, [...storeMessages, ...realtimeOnly]);
+      setMessages(side, merged);
     } else {
-      const existing = getMessages(side);
-      const existingIds = new Set(existing.map(m => m.id));
-      const newMessages: ChatMessage[] = [];
-      let boundaryIndex = -1;
-      for (let i = 0; i < storeMessages.length; i++) {
-        if (existingIds.has(storeMessages[i].id)) {
-          boundaryIndex = i;
-          break;
-        }
-        newMessages.push(storeMessages[i]);
-      }
-
-      let boundaryMessageId: string | undefined;
-      let boundaryUpdates: Partial<ChatMessage> | undefined;
-      if (boundaryIndex >= 0) {
-        const boundary = storeMessages[boundaryIndex];
-        const existingBoundary = existing.find(m => m.id === boundary.id);
-        if (existingBoundary && JSON.stringify(existingBoundary.content) !== JSON.stringify(boundary.content)) {
-          boundaryMessageId = boundary.id;
-          boundaryUpdates = { content: boundary.content };
-        }
-      }
-
-      if (newMessages.length > 0 || boundaryUpdates) {
-        prependWithBoundaryMerge(side, newMessages, boundaryMessageId, boundaryUpdates);
+      const prepend = computeHistoryPrepend(storeMessages, getMessages(side));
+      if (prepend) {
+        prependWithBoundaryMerge(side, prepend.newMessages, prepend.boundaryMessageId, prepend.boundaryUpdates);
       }
     }
 
@@ -164,7 +156,9 @@ export function useHistoricalMessages({
     assistantConfig.name,
     assistantConfig.type,
     pages,
+    dataUpdatedAt,
     isFetched,
+    streamingMessageId,
     getMessages,
     setMessages,
     prependWithBoundaryMerge,

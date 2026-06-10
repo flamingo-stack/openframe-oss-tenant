@@ -7,6 +7,7 @@ import {
   LoadError,
   MessageCircleIcon,
   ModelDisplay,
+  maxPersistedStreamSeq,
   NotFoundError,
   Tabs,
   TabsList,
@@ -69,24 +70,11 @@ import { useAddTicketNote, useDeleteTicketNote, useUpdateTicketNote } from '../h
 import { useAssigneeOptions } from '../hooks/use-ticket-options';
 import { useTicketStatus } from '../hooks/use-ticket-status';
 import { useTransitionTicket } from '../hooks/use-transition-ticket';
-import type { MessagePage } from '../services/ticket-service.types';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
 import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.types';
 import { ticketsQueryKeys } from '../utils/query-keys';
 import { TicketDetailsSkeleton } from './ticket-details-skeleton';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
-
-function maxLastChunkStreamSeq(pages: MessagePage[] | undefined): number {
-  let max = 0;
-  if (!pages) return max;
-  for (const page of pages) {
-    for (const msg of page.messages) {
-      const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && seq > max) max = seq;
-    }
-  }
-  return max;
-}
 
 interface TicketDetailsViewProps {
   ticketId: string;
@@ -329,8 +317,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
   }, [dialog?.owner?.type, activeChatTab]);
 
-  const clientInitialOptStartSeq = useMemo(() => maxLastChunkStreamSeq(clientChat.rawPages), [clientChat.rawPages]);
-  const adminInitialOptStartSeq = useMemo(() => maxLastChunkStreamSeq(adminChat.rawPages), [adminChat.rawPages]);
+  const clientInitialOptStartSeq = useMemo(() => maxPersistedStreamSeq(clientChat.rawPages), [clientChat.rawPages]);
+  const adminInitialOptStartSeq = useMemo(() => maxPersistedStreamSeq(adminChat.rawPages), [adminChat.rawPages]);
   const isInitialOptStartSeqReady = clientChat.isFetched && adminChat.isFetched;
 
   const applyStatus = useCallback(
@@ -431,6 +419,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     chatType: CHAT_TYPE.CLIENT,
     assistantConfig: ASSISTANT_CONFIG.FAE,
     pages: clientChat.rawPages,
+    dataUpdatedAt: clientChat.dataUpdatedAt,
     isFetched: clientChat.isFetched,
     onApprove: handleApprove,
     onReject: handleReject,
@@ -441,6 +430,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     chatType: CHAT_TYPE.ADMIN,
     assistantConfig: ASSISTANT_CONFIG.MINGO,
     pages: adminChat.rawPages,
+    dataUpdatedAt: adminChat.dataUpdatedAt,
     isFetched: adminChat.isFetched,
     onApprove: handleApprove,
     onReject: handleReject,

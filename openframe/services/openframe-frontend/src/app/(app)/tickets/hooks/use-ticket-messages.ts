@@ -1,9 +1,8 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import type { ChatType } from '../constants';
 import { ticketService } from '../services';
 import type { MessagePage } from '../services/ticket-service.types';
-import type { Message } from '../types/dialog.types';
 
 export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
   const queryClient = useQueryClient();
@@ -37,14 +36,9 @@ export function useTicketMessages(dialogId: string | null, chatType: ChatType) {
     staleTime: 30 * 1000,
   });
 
-  const messages = useMemo(() => {
-    if (!messagesQuery.data?.pages) return [] as Message[];
-    return [...messagesQuery.data.pages].reverse().flatMap(p => [...p.messages].reverse());
-  }, [messagesQuery.data?.pages]);
-
   return {
-    messages,
     rawPages: messagesQuery.data?.pages,
+    dataUpdatedAt: messagesQuery.dataUpdatedAt,
     isLoading: messagesQuery.isLoading,
     isFetched: messagesQuery.isFetched,
     hasNextPage: messagesQuery.hasNextPage ?? false,

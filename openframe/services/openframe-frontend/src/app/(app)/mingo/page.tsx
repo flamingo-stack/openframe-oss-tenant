@@ -379,7 +379,7 @@ export default function Mingo() {
           onLoadMore={fetchNextPage}
           className={cn(
             'flex-shrink-0 transition-transform duration-300',
-            'fixed inset-y-0 left-0 z-50',
+            'fixed inset-y-0 left-0 z-50 md:z-auto',
             sidebarOpen ? 'translate-x-0' : '-translate-x-full',
             'md:relative md:translate-x-0 md:transition-none',
           )}

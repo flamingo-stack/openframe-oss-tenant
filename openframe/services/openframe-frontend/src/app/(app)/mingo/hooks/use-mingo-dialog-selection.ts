@@ -1,8 +1,11 @@
 'use client';
 
 import {
+  computeHistoryPrepend,
+  flattenMessagePagesChronological,
   type HistoricalMessage,
-  type MessageSegment,
+  maxPersistedStreamSeq,
+  mergeHistoryWithRealtime,
   processHistoricalMessagesWithErrors,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -19,20 +22,6 @@ import { useApproveRequestMutation, useRejectRequestMutation } from '../services
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogResponse, Message, MessagePage, MessagesResponse } from '../types';
 
-function computeInitialStartSeq(pages: MessagePage[] | undefined): number {
-  let max = 0;
-  if (!pages) return max;
-  for (const page of pages) {
-    for (const msg of page.messages) {
-      const seq = msg.lastChunkStreamSeq;
-      if (typeof seq === 'number' && seq > max) {
-        max = seq;
-      }
-    }
-  }
-  return max;
-}
-
 export function useMingoDialogSelection() {
   const { toast } = useToast();
   const [approvalStatuses, setApprovalStatuses] = useState<Record<string, ApprovalStatus>>({});
@@ -43,6 +32,9 @@ export function useMingoDialogSelection() {
     prependWithBoundaryMerge,
     getMessages,
     getStreamingMessage,
+    setStreamingMessage,
+    setTyping,
+    getHighestStreamSeq,
     setLoadingDialog,
     setLoadingMessages,
     setPagination,
@@ -173,9 +165,52 @@ export function useMingoDialogSelection() {
   });
 
   const initialOptStartSeq = useMemo(
-    () => computeInitialStartSeq(messagesQuery.data?.pages),
+    () => maxPersistedStreamSeq(messagesQuery.data?.pages),
     [messagesQuery.data?.pages],
   );
+
+  const chronologicalMessages = useMemo(
+    () => flattenMessagePagesChronological(messagesQuery.data?.pages),
+    [messagesQuery.data?.pages],
+  );
+
+  // Close a streaming entry left behind by unmounting mid-stream (onStreamEnd
+  // never fired, and the STREAM_END chunk is not guaranteed to replay). The
+  // server-side IDLE is authoritative; the seq baseline guards the race where
+  // a stale pre-stream fetch resolves as IDLE mid-stream — any chunk for this
+  // dialog since it was opened means a STREAM_END will follow and owns the
+  // closure.
+  const dialogStreamState = dialogQuery.data?.streamState;
+  const baselineSeqRef = useRef<{ dialogId: string | null; seq: number }>({ dialogId: null, seq: 0 });
+  useEffect(() => {
+    if (!activeDialogId) return;
+    if (baselineSeqRef.current.dialogId !== activeDialogId) {
+      baselineSeqRef.current = { dialogId: activeDialogId, seq: getHighestStreamSeq(activeDialogId) };
+    }
+    // Only a post-mount fetch is trusted for closure — a cache-served IDLE
+    // inside the staleTime window may predate a stream.
+    if (dialogStreamState !== 'IDLE' || !dialogQuery.isFetchedAfterMount) return;
+    if (getHighestStreamSeq(activeDialogId) > baselineSeqRef.current.seq) return;
+    if (getStreamingMessage(activeDialogId)) {
+      setStreamingMessage(activeDialogId, null);
+      setTyping(activeDialogId, false);
+    }
+  }, [
+    activeDialogId,
+    dialogStreamState,
+    dialogQuery.isFetchedAfterMount,
+    getHighestStreamSeq,
+    getStreamingMessage,
+    setStreamingMessage,
+    setTyping,
+  ]);
+
+  // Streaming exemption for the history merge, gated on the same server-side
+  // signal so a not-yet-closed stale entry can't exempt its synthetic.
+  const streamingEntryId = useMingoMessagesStore(s =>
+    activeDialogId ? (s.streamingMessages.get(activeDialogId)?.id ?? null) : null,
+  );
+  const streamingExemptId = dialogStreamState === 'IDLE' ? null : streamingEntryId;
 
   const selectDialogMutation = useMutation({
     mutationFn: async (dialogId: string) => {
@@ -193,10 +228,8 @@ export function useMingoDialogSelection() {
   });
 
   useEffect(() => {
-    if (messagesQuery.data?.pages && activeDialogId) {
-      const allGraphQlMessages = [...messagesQuery.data.pages].reverse().flatMap(page => [...page.messages].reverse());
-
-      const extractedStatuses = allGraphQlMessages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
+    if (chronologicalMessages.length > 0 && activeDialogId) {
+      const extractedStatuses = chronologicalMessages.reduce<Record<string, ApprovalStatus>>((acc, msg) => {
         const messageDataArray = Array.isArray(msg.messageData) ? msg.messageData : [msg.messageData];
 
         messageDataArray.forEach((data: any) => {
@@ -215,36 +248,48 @@ export function useMingoDialogSelection() {
         });
       }
     }
-  }, [messagesQuery.data?.pages, activeDialogId]);
+  }, [chronologicalMessages, activeDialogId]);
 
-  const processedPageCountRef = useRef<number>(0);
+  // All three fields gate the merge: page count detects fetchNextPage
+  // appends, dataUpdatedAt detects in-place refetches (same count, new
+  // content), exemptId re-runs the merge when a stream starts/ends — the
+  // moment an exempted synthetic becomes droppable.
+  const processedHistoryRef = useRef<{ pageCount: number; dataUpdatedAt: number; exemptId: string | null }>({
+    pageCount: 0,
+    dataUpdatedAt: 0,
+    exemptId: null,
+  });
   const prevActiveDialogIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!messagesQuery.data?.pages || !activeDialogId || !messagesQuery.isFetched) return;
 
     const pages = messagesQuery.data.pages;
+    const dataUpdatedAt = messagesQuery.dataUpdatedAt;
 
     if (activeDialogId !== prevActiveDialogIdRef.current) {
-      processedPageCountRef.current = 0;
+      processedHistoryRef.current = { pageCount: 0, dataUpdatedAt: 0, exemptId: null };
       prevActiveDialogIdRef.current = activeDialogId;
     }
 
-    const previouslyProcessedCount = processedPageCountRef.current;
-    if (pages.length === previouslyProcessedCount) return;
+    const prevProcessed = processedHistoryRef.current;
+    if (
+      pages.length === prevProcessed.pageCount &&
+      dataUpdatedAt === prevProcessed.dataUpdatedAt &&
+      streamingExemptId === prevProcessed.exemptId
+    ) {
+      return;
+    }
 
-    const allGraphQlMessages = [...pages].reverse().flatMap(page => [...page.messages].reverse());
-
-    const historicalMessages: HistoricalMessage[] = allGraphQlMessages
-      .filter(msg => msg.chatType === CHAT_TYPE.ADMIN)
-      .map(msg => ({
-        id: msg.id,
-        dialogId: msg.dialogId,
-        chatType: msg.chatType,
-        createdAt: msg.createdAt,
-        owner: msg.owner,
-        messageData: msg.messageData,
-      }));
+    // The queryFn already filters to ADMIN messages — no re-filter needed.
+    const historicalMessages: HistoricalMessage[] = chronologicalMessages.map(msg => ({
+      id: msg.id,
+      dialogId: msg.dialogId,
+      chatType: msg.chatType,
+      createdAt: msg.createdAt,
+      owner: msg.owner,
+      messageData: msg.messageData,
+    }));
 
     const assistantConfig = ASSISTANT_CONFIG.MINGO;
     const { messages: rawProcessedMessages } = processHistoricalMessagesWithErrors(historicalMessages, {
@@ -259,129 +304,42 @@ export function useMingoDialogSelection() {
     const allProcessedMessages = foldPendingApprovalsEnvelope(rawProcessedMessages as Message[]);
 
     if (allProcessedMessages.length === 0) {
-      processedPageCountRef.current = pages.length;
+      processedHistoryRef.current = { pageCount: pages.length, dataUpdatedAt, exemptId: streamingExemptId };
       return;
     }
 
     const existingMessages = getMessages(activeDialogId);
-    const rawPageMessageIds = new Set(allGraphQlMessages.map(msg => msg.id));
-    const processedMessageIds = new Set(allProcessedMessages.map(m => m.id));
 
-    if (previouslyProcessedCount === 0) {
-      // Local store, not dialog.streamState: the question here is "does the realtime processor have an in-flight synthetic to dedupe against," not "what does the backend say."
-      const isStreaming = getStreamingMessage(activeDialogId) !== null;
-      const historyEndsWithAssistant = allProcessedMessages[allProcessedMessages.length - 1]?.role === 'assistant';
+    // fetchNextPage appended an older page below what's already rendered —
+    // prepend only the new head. Anything else (first sync for this dialog,
+    // or an in-place refetch of known pages) rebuilds the list via the full
+    // merge, which dedupes realtime synthetics against persisted history.
+    const isPageAppend = prevProcessed.pageCount > 0 && pages.length > prevProcessed.pageCount;
 
-      // Realtime synthetic ids (`assistant-<timestamp>-...`) never match Mongo
-      // ObjectIds from history. Without dedup we render the same turn twice.
-      // Bek persistence is asynchronous per-chunk: an assistant turn ending in
-      // an approval can have its APPROVAL_REQUEST document persisted before
-      // the leading THINKING/TEXT documents, so GraphQL can return a partial
-      // trailing assistant (just `[approval_batch]`) while the realtime store
-      // already has the full `[thinking, text, approval_batch]` synthetic.
-      // Resolve by `approval_batch.approvalRequestId`:
-      //   - if history's trailing assistant shares a batch id with an existing
-      //     synthetic AND the synthetic has more segments — drop the history
-      //     assistant (synthetic is more complete).
-      //   - else (history is at least as complete) — drop the synthetic.
-      //   - if no batch overlap — fall back to the legacy "trim trailing
-      //     synthetic when stream is idle" behavior.
-      const historyTrailingAssistant = historyEndsWithAssistant
-        ? allProcessedMessages[allProcessedMessages.length - 1]
-        : null;
-      const historyBatchId =
-        historyTrailingAssistant && Array.isArray(historyTrailingAssistant.content)
-          ? ((
-              historyTrailingAssistant.content.find(s => s.type === 'approval_batch') as
-                | Extract<MessageSegment, { type: 'approval_batch' }>
-                | undefined
-            )?.data?.approvalRequestId ?? null)
-          : null;
-
-      let processedToUse = allProcessedMessages;
-      let trimmedExisting = existingMessages;
-
-      if (historyBatchId) {
-        const existingWithSameBatch = existingMessages.find(
-          m =>
-            m.role === 'assistant' &&
-            Array.isArray(m.content) &&
-            m.content.some(
-              s =>
-                s.type === 'approval_batch' &&
-                (s as Extract<MessageSegment, { type: 'approval_batch' }>).data?.approvalRequestId === historyBatchId,
-            ),
+    if (isPageAppend) {
+      const prepend = computeHistoryPrepend(allProcessedMessages, existingMessages);
+      if (prepend) {
+        prependWithBoundaryMerge(
+          activeDialogId,
+          prepend.newMessages,
+          prepend.boundaryMessageId,
+          prepend.boundaryUpdates,
         );
-        if (existingWithSameBatch && Array.isArray(existingWithSameBatch.content)) {
-          const histSize = Array.isArray(historyTrailingAssistant?.content)
-            ? historyTrailingAssistant.content.length
-            : 0;
-          const realtimeSize = existingWithSameBatch.content.length;
-          if (realtimeSize > histSize) {
-            processedToUse = allProcessedMessages.slice(0, -1);
-          } else {
-            trimmedExisting = existingMessages.filter(m => m.id !== existingWithSameBatch.id);
-          }
-        }
-      } else if (!isStreaming && historyEndsWithAssistant) {
-        let cutIndex = existingMessages.length;
-        for (let i = existingMessages.length - 1; i >= 0; i--) {
-          const m = existingMessages[i];
-          if (m.role === 'assistant' && m.id.startsWith('assistant-')) {
-            cutIndex = i;
-          } else {
-            break;
-          }
-        }
-        trimmedExisting = existingMessages.slice(0, cutIndex);
       }
-
-      const realtimeMessages = trimmedExisting.filter(m => {
-        if (processedMessageIds.has(m.id)) return false;
-        if (rawPageMessageIds.has(m.id)) return false;
-        if (m.role === 'user' && m.id.startsWith('optimistic-') && typeof m.content === 'string') {
-          return !processedToUse.some(pm => pm.role === 'user' && pm.content === m.content);
-        }
-        return true;
-      });
-      setMessages(activeDialogId, [...processedToUse, ...realtimeMessages]);
     } else {
-      const existingIds = new Set(existingMessages.map(m => m.id));
-      const newMessages: Message[] = [];
-      let boundaryMessageIndex = -1;
-
-      for (let i = 0; i < allProcessedMessages.length; i++) {
-        if (existingIds.has(allProcessedMessages[i].id)) {
-          boundaryMessageIndex = i;
-          break;
-        }
-        newMessages.push(allProcessedMessages[i]);
-      }
-
-      let boundaryMessageId: string | undefined;
-      let boundaryUpdates: Partial<Message> | undefined;
-
-      if (boundaryMessageIndex >= 0) {
-        const boundaryMessage = allProcessedMessages[boundaryMessageIndex];
-        const existingBoundary = existingMessages.find(m => m.id === boundaryMessage.id);
-
-        if (existingBoundary) {
-          const existingContent = JSON.stringify(existingBoundary.content);
-          const newContent = JSON.stringify(boundaryMessage.content);
-
-          if (existingContent !== newContent) {
-            boundaryMessageId = boundaryMessage.id;
-            boundaryUpdates = { content: boundaryMessage.content };
-          }
-        }
-      }
-
-      if (newMessages.length > 0 || boundaryUpdates) {
-        prependWithBoundaryMerge(activeDialogId, newMessages, boundaryMessageId, boundaryUpdates);
-      }
+      const merged = mergeHistoryWithRealtime({
+        processedHistory: allProcessedMessages,
+        rawHistoryIds: new Set(chronologicalMessages.map(msg => msg.id)),
+        existingMessages,
+        streamingMessageId: streamingExemptId,
+        historyFetchedAt: dataUpdatedAt,
+        historyMaxStreamSeq: initialOptStartSeq,
+        realtimeSeenStreamSeq: getHighestStreamSeq(activeDialogId),
+      });
+      setMessages(activeDialogId, merged);
     }
 
-    processedPageCountRef.current = pages.length;
+    processedHistoryRef.current = { pageCount: pages.length, dataUpdatedAt, exemptId: streamingExemptId };
 
     const lastPage = pages[pages.length - 1];
     if (lastPage) {
@@ -393,10 +351,14 @@ export function useMingoDialogSelection() {
     }
   }, [
     messagesQuery.data?.pages,
+    messagesQuery.dataUpdatedAt,
     activeDialogId,
     messagesQuery.isFetched,
+    chronologicalMessages,
+    streamingExemptId,
+    initialOptStartSeq,
     getMessages,
-    getStreamingMessage,
+    getHighestStreamSeq,
     setMessages,
     prependWithBoundaryMerge,
     setPagination,
@@ -407,7 +369,7 @@ export function useMingoDialogSelection() {
     isSelectingDialog: selectDialogMutation.isPending,
     isLoadingDialog: dialogQuery.isLoading,
     isLoadingMessages: messagesQuery.isLoading,
-    rawMessagesCount: messagesQuery.data?.pages.reduce((total, page) => total + page.messages.length, 0) || 0,
+    rawMessagesCount: chronologicalMessages.length,
     dialogError: dialogQuery.error?.message || null,
     messagesError: messagesQuery.error?.message || null,
     refetchDialog: dialogQuery.refetch,
