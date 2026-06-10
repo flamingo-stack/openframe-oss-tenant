@@ -131,6 +131,7 @@ openframe:
       topics:
         outbound:
           devices-topic: devices-topic
+          logs-events: logs.events
   integration:
     tool:
       enabled: true
