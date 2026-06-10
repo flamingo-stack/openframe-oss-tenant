@@ -30,8 +30,8 @@ public class LogsEventListener {
 
     @KafkaListener(
             topics = "${openframe.oss-tenant.kafka.topics.inbound.logs-events.name}",
-            groupId = "openframe-saas-logs-events-group",
-            containerFactory = "saasTenantKafkaListenerContainerFactory"
+            groupId = "openframe-oss-logs-events-group",
+            containerFactory = "ossTenantKafkaListenerContainerFactory"
     )
     public void listenLogsEvents(@Payload CommonDebeziumMessage message,
                                  @Header(KafkaHeader.MESSAGE_TYPE_HEADER) MessageType messageType) {
