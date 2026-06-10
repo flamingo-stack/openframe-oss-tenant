@@ -6,6 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_nats::Event;
+use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use tauri::async_runtime;
 use tauri::Emitter;
 
@@ -200,12 +201,22 @@ fn reconnect_delay(attempt: usize) -> Duration {
     Duration::from_millis((base_ms as f64 * jitter) as u64)
 }
 
+/// Everything except RFC 3986 unreserved characters gets percent-encoded —
+/// a no-op for JWTs, and the same output the web client's URLSearchParams
+/// produces for this query param.
+const QUERY_VALUE: &AsciiSet = &NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'_')
+    .remove(b'.')
+    .remove(b'~');
+
 fn build_connect_url(server_url: &str, token: &str) -> String {
     let (scheme, host) = match server_url.strip_prefix("http://") {
         Some(h) => ("ws", h),
         None => ("wss", server_url.strip_prefix("https://").unwrap_or(server_url)),
     };
     let host = host.trim_end_matches('/');
+    let token = utf8_percent_encode(token, QUERY_VALUE);
     format!("{scheme}://{host}{NATS_WS_PATH}?authorization={token}")
 }
 

@@ -3,7 +3,8 @@ import { listen } from '@tauri-apps/api/event';
 import { log, maskToken } from '../utils/log';
 
 interface TokenUpdatePayload {
-  token: string;
+  /** null = the daemon's token file is gone/unreadable; drop the cache. */
+  token: string | null;
 }
 
 class TokenService {
@@ -69,6 +70,14 @@ class TokenService {
     try {
       await listen<TokenUpdatePayload>('token-update', event => {
         const { token } = event.payload;
+        if (!token) {
+          // Clear the cache so requests stop carrying a revoked token, but
+          // don't notify onTokenUpdate listeners — they treat every callback
+          // as "token available" (e.g. enabling queries).
+          log.warn('token', 'token cleared by daemon — dropping cached token');
+          this.currentToken = null;
+          return;
+        }
         log.info('token', `token-update event received from Rust (${maskToken(token)})`);
 
         this.setToken(token);

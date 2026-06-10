@@ -2,8 +2,7 @@
 // the WebView. Two responsibilities:
 //   1. A core NATS subscription on `machine.<machineId>.notification` for OS
 //      notifications (`notifications`). Always on; subject is determined by
-//      machineId provided by the openframe-agent daemon config or
-//      `nats_set_machine_id` IPC.
+//      the machineId provided by the openframe-agent daemon config.
 //   2. On-demand JetStream OrderedConsumers on `chat.<dialogId>.message` for
 //      chat streaming (`dialogs`). Created when the WebView calls
 //      `nats_subscribe_dialog` after the user opens a ticket; torn down on
@@ -87,8 +86,8 @@ struct Inner {
 
     /// machineId for the notification subject. Provided by the
     /// openframe-agent daemon via preferences/CLI args (like the token path
-    /// and secret); overridable via `nats_set_machine_id`.
-    machine_id: RwLock<Option<String>>,
+    /// and secret); fixed for the process lifetime.
+    machine_id: Option<String>,
     /// Router task for `machine.<id>.notification`. async-nats re-issues
     /// SUB frames after reconnect, so the same task survives WS drops.
     /// Re-created only when machineId changes.
@@ -122,7 +121,7 @@ impl NatsBridge {
         if let Some(id) = &machine_id {
             tracing::info!("[NATS] machineId from config: {id}");
         } else {
-            tracing::warn!("[NATS] no machineId in config — notifications stay off until nats_set_machine_id");
+            tracing::warn!("[NATS] no machineId in config — OS notifications disabled");
         }
         Self {
             inner: Arc::new(Inner {
@@ -137,7 +136,7 @@ impl NatsBridge {
                 server_url,
                 token_source,
                 app,
-                machine_id: RwLock::new(machine_id),
+                machine_id,
                 notification_task: RwLock::new(None),
                 dialogs: RwLock::new(HashMap::new()),
                 event_channel: RwLock::new(None),

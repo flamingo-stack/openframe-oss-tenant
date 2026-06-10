@@ -183,16 +183,6 @@ class NatsBridgeClient {
     }
   }
 
-  async setMachineId(machineId: string): Promise<void> {
-    if (!isTauri) return;
-    try {
-      await this.init();
-      await invoke('nats_set_machine_id', { machineId });
-    } catch (err) {
-      console.warn('[NATS] nats_set_machine_id failed:', err);
-    }
-  }
-
   subscribeDialog(dialogId: string, optStartSeq: number | null | undefined): Promise<void> {
     if (!isTauri) return Promise.resolve();
     return this.enqueueDialogOp(async () => {
@@ -255,17 +245,6 @@ export function useNatsNotificationsEnabled(enabled: boolean): void {
   }, [enabled]);
 }
 
-/**
- * Pushes the machineId to Rust whenever it changes. No-op in Vite-only mode.
- * Idempotent — Rust short-circuits when the id is unchanged.
- */
-export function useNatsMachineId(machineId: string | null): void {
-  useEffect(() => {
-    if (!isTauri || !machineId) return;
-    void natsBridge.setMachineId(machineId);
-  }, [machineId]);
-}
-
 interface UseTauriDialogSubscriptionOpts {
   enabled: boolean;
   dialogId: string | null;
@@ -306,7 +285,13 @@ export function useTauriDialogSubscription({
   // refocus) — tearing down a live consumer for that loses chunks. Rust
   // resumes from max(initial, last_delivered) + 1 on its own.
   useEffect(() => {
-    if (!isTauri || !enabled || !dialogId) return;
+    if (!isTauri || !enabled || !dialogId) {
+      // Reset on disable too — a stale `true` would let useChat's
+      // waitForNatsSubscription shortcut skip a fresh dialog's confirmation.
+      setIsSubscribed(false);
+      highestSeqRef.current = null;
+      return;
+    }
     highestSeqRef.current = null;
     setIsSubscribed(false);
     void natsBridge.subscribeDialog(dialogId, optStartSeqRef.current);

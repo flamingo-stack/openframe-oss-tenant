@@ -51,15 +51,34 @@ impl AppConfig {
         let mut machine_id: Option<String> = None;
         let mut debug_mode = false;
 
+        // The next token is a value only if it isn't flag-shaped — otherwise
+        // a flag with a missing value would swallow the following flag
+        // (e.g. `--machineId --devMode` making "--devMode" the machine id).
+        let value_after = |i: usize| -> Option<String> {
+            let v = args.get(i + 1)?;
+            if v.is_empty() || v.starts_with('-') {
+                return None;
+            }
+            Some(v.clone())
+        };
+
         for i in 0..args.len() {
-            if args[i] == "--openframe-token-path" && i + 1 < args.len() {
-                token_path = Some(args[i + 1].clone());
-            } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
-                secret = Some(args[i + 1].clone());
-            } else if args[i] == "--serverUrl" && i + 1 < args.len() {
-                server_url = Some(args[i + 1].clone());
-            } else if args[i] == "--machineId" && i + 1 < args.len() {
-                machine_id = Some(args[i + 1].clone());
+            if args[i] == "--openframe-token-path" {
+                if let Some(v) = value_after(i) {
+                    token_path = Some(v);
+                }
+            } else if args[i] == "--openframe-secret" {
+                if let Some(v) = value_after(i) {
+                    secret = Some(v);
+                }
+            } else if args[i] == "--serverUrl" {
+                if let Some(v) = value_after(i) {
+                    server_url = Some(v);
+                }
+            } else if args[i] == "--machineId" {
+                if let Some(v) = value_after(i) {
+                    machine_id = Some(v);
+                }
             } else if args[i] == "--devMode" {
                 debug_mode = true;
             }

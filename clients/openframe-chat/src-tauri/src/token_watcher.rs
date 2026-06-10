@@ -9,7 +9,9 @@ use serde::Serialize;
 
 #[derive(Clone, Serialize)]
 struct TokenUpdateEvent {
-    token: String,
+    /// `None` (JSON null) tells the frontend to drop its cached token —
+    /// the file was removed, emptied, or no longer decrypts.
+    token: Option<String>,
 }
 
 /// Shared, cheaply-cloneable access to the decrypted auth token.
@@ -111,18 +113,28 @@ impl TokenWatcher {
 
                     let new = source.read_fresh();
                     if new != last_emitted {
-                        if let Some(token) = &new {
-                            match last_emitted {
-                                None => log::info!(
-                                    "token watcher: first token received ({})",
-                                    mask_token(token)
-                                ),
-                                Some(_) => log::info!(
-                                    "token watcher: token refreshed ({})",
-                                    mask_token(token)
-                                ),
+                        match &new {
+                            Some(token) => {
+                                match last_emitted {
+                                    None => log::info!(
+                                        "token watcher: first token received ({})",
+                                        mask_token(token)
+                                    ),
+                                    Some(_) => log::info!(
+                                        "token watcher: token refreshed ({})",
+                                        mask_token(token)
+                                    ),
+                                }
+                                emit_token_to_frontend(&app_handle, Some(token));
                             }
-                            emit_token_to_frontend(&app_handle, token);
+                            // Only reachable from Some → None (startup None
+                            // equals the initial last_emitted).
+                            None => {
+                                log::warn!(
+                                    "token watcher: token unavailable (removed/empty/undecryptable) — clearing frontend cache"
+                                );
+                                emit_token_to_frontend(&app_handle, None);
+                            }
                         }
                         last_emitted = new;
                     }
@@ -134,9 +146,9 @@ impl TokenWatcher {
     }
 }
 
-fn emit_token_to_frontend(app_handle: &AppHandle, token: &str) {
+fn emit_token_to_frontend(app_handle: &AppHandle, token: Option<&str>) {
     let event = TokenUpdateEvent {
-        token: token.to_string(),
+        token: token.map(str::to_string),
     };
     // emit_to: a broadcast `emit` reaches every event target, so a single JS
     // `listen` would receive the event once per target (duplicates).

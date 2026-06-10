@@ -37,29 +37,6 @@ impl NatsBridge {
         }
     }
 
-    /// Override the env-seeded machineId. Aborts any existing notification
-    /// subscription and lets `ensure_notification_subscription` recreate it
-    /// on the new subject.
-    pub async fn set_machine_id(&self, id: String) {
-        let trimmed = id.trim();
-        if trimmed.is_empty() {
-            return;
-        }
-        let new_id = trimmed.to_string();
-        let prev_task = {
-            let mut guard = self.inner.machine_id.write().await;
-            if guard.as_deref() == Some(trimmed) {
-                return;
-            }
-            *guard = Some(new_id);
-            self.inner.notification_task.write().await.take()
-        };
-        if let Some(handle) = prev_task {
-            handle.abort();
-        }
-        ensure_notification_subscription(&self.inner).await;
-    }
-
     /// Called from the main-window focus handler. Clears unread state and,
     /// if a notification was fired in the last `MAX_PENDING_AGE` seconds,
     /// emits `notification:click` so the WebView can navigate.
@@ -99,7 +76,7 @@ impl NatsBridge {
 }
 
 pub(super) async fn ensure_notification_subscription(inner: &Arc<Inner>) {
-    let machine_id = match inner.machine_id.read().await.clone() {
+    let machine_id = match &inner.machine_id {
         Some(id) => id,
         None => return,
     };
@@ -109,7 +86,7 @@ pub(super) async fn ensure_notification_subscription(inner: &Arc<Inner>) {
     };
 
     // Hold the write lock across check + subscribe + store so concurrent
-    // callers (Connected handler vs `set_machine_id`) can't double-subscribe.
+    // Connected handlers can't double-subscribe.
     let mut task_guard = inner.notification_task.write().await;
     if task_guard.is_some() {
         // Already subscribed — async-nats re-issues SUB on reconnect, so
@@ -136,10 +113,14 @@ pub(super) async fn ensure_notification_subscription(inner: &Arc<Inner>) {
 
 async fn notification_router(inner: Arc<Inner>, mut subscriber: async_nats::Subscriber) {
     while let Some(message) = subscriber.next().await {
+        // Payload carries user-facing content — full dump only at debug.
         tracing::info!(
-            "[NATS] notification received on '{}' ({} bytes): {}",
+            "[NATS] notification received on '{}' ({} bytes)",
             message.subject,
-            message.payload.len(),
+            message.payload.len()
+        );
+        tracing::debug!(
+            "[NATS] notification payload: {}",
             String::from_utf8_lossy(&message.payload)
         );
         let payload: serde_json::Value = match serde_json::from_slice(&message.payload) {
@@ -151,7 +132,12 @@ async fn notification_router(inner: Arc<Inner>, mut subscriber: async_nats::Subs
         };
         maybe_notify(&inner, &payload);
     }
-    tracing::info!("[NATS] notification router exited (stream closed)");
+    // The stream only closes if the client is torn down — but if it ever
+    // does, clear the slot so the next Connected event re-subscribes instead
+    // of treating the dead handle as "already subscribed". No generation
+    // guard needed: this task is installed once and never replaced.
+    *inner.notification_task.write().await = None;
+    tracing::info!("[NATS] notification router exited (stream closed) — will re-subscribe on next connect");
 }
 
 /// A backend notification reduced to what we render + where a click lands.

@@ -161,7 +161,7 @@ fn register_app_id() {
     if let Ok((key, _)) =
         hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
     {
-        let _ = key.set_value("DisplayName", &"Fae Chat");
+        let _ = key.set_value("DisplayName", &"OpenFrame Chat");
         if let Ok(exe) = std::env::current_exe() {
             let icon = exe.to_string_lossy().into_owned();
             let _ = key.set_value("IconUri", &icon.as_str());
@@ -177,15 +177,6 @@ async fn nats_status(bridge: State<'_, NatsBridge>) -> Result<NatsStatus, String
 #[tauri::command]
 fn nats_set_notifications_enabled(bridge: State<'_, NatsBridge>, enabled: bool) {
     bridge.set_notifications_enabled(enabled);
-}
-
-#[tauri::command]
-async fn nats_set_machine_id(
-    bridge: State<'_, NatsBridge>,
-    machine_id: String,
-) -> Result<(), String> {
-    bridge.set_machine_id(machine_id).await;
-    Ok(())
 }
 
 #[tauri::command]
@@ -578,7 +569,6 @@ pub fn run() {
             log_from_js,
             nats_status,
             nats_set_notifications_enabled,
-            nats_set_machine_id,
             nats_subscribe_dialog,
             nats_unsubscribe_dialog,
             nats_register_event_channel,
