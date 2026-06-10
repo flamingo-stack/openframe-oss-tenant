@@ -13,7 +13,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 /**
- * Consumer for the generic <b>logs-events</b> topic ({@code shared.logs.events}).
+ * Consumer for the generic <b>logs-events</b> topic ({@code logs.events}).
  *
  * <p>A single topic carries many event types; the concrete type is read from the
  * {@code message-type} header rather than encoded in the topic name (no
@@ -35,7 +35,11 @@ public class LogsEventListener {
     )
     public void listenLogsEvents(@Payload CommonDebeziumMessage message,
                                  @Header(KafkaHeader.MESSAGE_TYPE_HEADER) MessageType messageType) {
-        log.info("Received logs-event: type={}", messageType);
-        messageProcessor.process(message, messageType);
+        try {
+            log.info("Received logs-event: type={}", messageType);
+            messageProcessor.process(message, messageType);
+        } catch (Exception e) {
+            log.error("Failed to process logs-event: type={}", messageType, e);
+        }
     }
 }
