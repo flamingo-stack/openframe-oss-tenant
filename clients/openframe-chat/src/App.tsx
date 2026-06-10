@@ -3,10 +3,10 @@ import { Toaster } from '@flamingo-stack/openframe-frontend-core';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { DebugModeProvider } from './contexts/DebugModeContext';
-import { FeatureFlagsGate, FeatureFlagsProvider } from './contexts/FeatureFlagsContext';
+import { FeatureFlagsGate, FeatureFlagsProvider, useFeatureFlags } from './contexts/FeatureFlagsContext';
 import { useConnectionStatus } from './hooks/useConnectionStatus';
 import { resolveMachineId } from './services/machineIdService';
-import { useNatsMachineId } from './services/natsTauri';
+import { useNatsMachineId, useNatsNotificationsEnabled } from './services/natsTauri';
 import { ChatView } from './views/ChatView';
 
 const queryClient = new QueryClient({
@@ -18,6 +18,14 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Must render inside FeatureFlagsProvider; Rust keeps notifications off until
+// the loaded flag value arrives.
+function NatsNotificationsFlag() {
+  const { flags, isLoaded } = useFeatureFlags();
+  useNatsNotificationsEnabled(isLoaded && flags.notifications);
+  return null;
+}
 
 function App() {
   useConnectionStatus();
@@ -34,6 +42,7 @@ function App() {
     <>
       <QueryClientProvider client={queryClient}>
         <FeatureFlagsProvider>
+          <NatsNotificationsFlag />
           <FeatureFlagsGate>
             <DebugModeProvider>
               <ChatView />

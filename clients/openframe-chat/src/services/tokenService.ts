@@ -11,6 +11,10 @@ class TokenService {
   private currentApiBaseUrl: string | null = null;
   private listeners: Set<(token: string) => void> = new Set();
   private apiUrlListeners: Set<(apiUrl: string) => void> = new Set();
+  // In-flight dedup: several hooks request the token / API URL on mount;
+  // without it each concurrent caller fires its own invoke (and log line).
+  private tokenRequest: Promise<string | null> | null = null;
+  private apiUrlRequest: Promise<void> | null = null;
 
   constructor() {
     this.initTokenListener();
@@ -82,6 +86,15 @@ class TokenService {
   async requestToken(): Promise<string | null> {
     if (this.currentToken) return this.currentToken;
 
+    if (!this.tokenRequest) {
+      this.tokenRequest = this.doRequestToken().finally(() => {
+        this.tokenRequest = null;
+      });
+    }
+    return this.tokenRequest;
+  }
+
+  private async doRequestToken(): Promise<string | null> {
     try {
       const token = await invoke<string | null>('get_token');
 
@@ -153,6 +166,17 @@ class TokenService {
    * Initialize API base URL from Tauri
    */
   async initApiUrl() {
+    if (this.currentApiBaseUrl) return;
+
+    if (!this.apiUrlRequest) {
+      this.apiUrlRequest = this.doInitApiUrl().finally(() => {
+        this.apiUrlRequest = null;
+      });
+    }
+    return this.apiUrlRequest;
+  }
+
+  private async doInitApiUrl(): Promise<void> {
     try {
       const serverUrl = await invoke<string>('get_server_url');
 

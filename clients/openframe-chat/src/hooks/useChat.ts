@@ -183,12 +183,14 @@ export function useChat({
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
+        log.info('nats:chat', 'stream started');
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
         messagesRef.current.ensureAssistantMessage();
       },
       onStreamEnd: () => {
+        log.info('nats:chat', 'stream ended');
         setNatsStreaming(false);
         setIsTyping(false);
         const resolve = natsDoneResolverRef.current;
@@ -368,11 +370,14 @@ export function useChat({
   // biome-ignore lint/correctness/useExhaustiveDependencies: dialog change is the reset trigger
   useEffect(() => {
     lastAppliedStreamSeqRef.current = -1;
+    hasAppliedChunkRef.current = false;
   }, [natsDialogId]);
 
-  // Mirrors `streamSeq`-of-last-chunk for the idle-detection effect below.
+  // Wall-clock time of the last applied chunk, for the stall watchdog below.
   const lastChunkAtRef = useRef<number>(Date.now());
   const [isStalled, setIsStalled] = useState(false);
+
+  const hasAppliedChunkRef = useRef(false);
 
   const handleJetStreamEvent = useCallback(
     (payload: unknown) => {
@@ -380,6 +385,10 @@ export function useChat({
       if (typeof chunk.streamSeq === 'number') {
         if (chunk.streamSeq <= lastAppliedStreamSeqRef.current) return;
         lastAppliedStreamSeqRef.current = chunk.streamSeq;
+      }
+      if (!hasAppliedChunkRef.current) {
+        hasAppliedChunkRef.current = true;
+        log.info('nats:chat', 'first chunk applied', { streamSeq: chunk.streamSeq });
       }
       lastChunkAtRef.current = Date.now();
       setIsStalled(false);
@@ -495,7 +504,7 @@ export function useChat({
   }, []);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    (text: string): Promise<boolean> => {
       setError(null);
 
       // Sending a message while an approval is pending is an interrupt —
@@ -522,40 +531,57 @@ export function useChat({
       setNatsStreaming(true);
       messages.resetCurrentMessageSegments();
 
-      try {
-        if (!useNats) {
-          throw new Error('NATS is required for incoming messages (SSE removed)');
+      // ChatInput clears the draft when this promise resolves (false keeps
+      // it for retry), so resolve at backend acceptance — not after the full
+      // response streamed, which would hold the typed text in the disabled
+      // input for the whole generation.
+      let resolveAccepted!: (accepted: boolean) => void;
+      const accepted = new Promise<boolean>(resolve => {
+        resolveAccepted = resolve;
+      });
+
+      void (async () => {
+        try {
+          if (!useNats) {
+            throw new Error('NATS is required for incoming messages (SSE removed)');
+          }
+
+          const api = apiServiceRef.current;
+          if (!api) throw new Error('API service not initialized');
+
+          const dialogId = natsDialogId || (await api.createDialog());
+          if (dialogId !== natsDialogId) {
+            setNatsDialogId(dialogId);
+          }
+
+          await waitForNatsSubscription(dialogId);
+
+          const waitForNatsDone = new Promise<void>(resolve => {
+            natsDoneResolverRef.current = resolve;
+          });
+
+          await api.sendMessage({ dialogId, content: text, chatType: 'CLIENT_CHAT' });
+          log.info('chat', 'message accepted by backend', { dialogId });
+          resolveAccepted(true);
+
+          await waitForNatsDone;
+          log.info('chat', 'stream done resolved', { dialogId });
+        } catch (err) {
+          resolveAccepted(false);
+          const errorText = err instanceof Error ? err.message : String(err);
+          log.error('chat', `sendMessage failed: ${errorText}`);
+          if (!errorText.toLowerCase().includes('network error')) {
+            setError(errorText);
+            messages.addErrorMessage(errorText);
+          }
+        } finally {
+          setIsTyping(false);
+          setNatsStreaming(false);
+          natsDoneResolverRef.current = null;
         }
+      })();
 
-        const api = apiServiceRef.current;
-        if (!api) throw new Error('API service not initialized');
-
-        const dialogId = natsDialogId || (await api.createDialog());
-        if (dialogId !== natsDialogId) {
-          setNatsDialogId(dialogId);
-        }
-
-        await waitForNatsSubscription(dialogId);
-
-        const waitForNatsDone = new Promise<void>(resolve => {
-          natsDoneResolverRef.current = resolve;
-        });
-
-        await api.sendMessage({ dialogId, content: text, chatType: 'CLIENT_CHAT' });
-
-        await waitForNatsDone;
-      } catch (err) {
-        const errorText = err instanceof Error ? err.message : String(err);
-        log.error('chat', `sendMessage failed: ${errorText}`);
-        if (!errorText.toLowerCase().includes('network error')) {
-          setError(errorText);
-          messages.addErrorMessage(errorText);
-        }
-      } finally {
-        setIsTyping(false);
-        setNatsStreaming(false);
-        natsDoneResolverRef.current = null;
-      }
+      return accepted;
     },
     [messages, useNats, natsDialogId, waitForNatsSubscription],
   );

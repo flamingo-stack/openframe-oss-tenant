@@ -82,7 +82,8 @@ fn get_token(token_source: State<TokenSource>) -> Option<String> {
     let token = token_source.read_fresh();
 
     if token.is_some() {
-        log::info!("get_token: returning fresh token to frontend");
+        // JS logs the (masked) result itself — keep the Rust side at debug.
+        log::debug!("get_token: returning fresh token to frontend");
     } else {
         log::warn!("get_token: token not yet available");
     }
@@ -174,8 +175,8 @@ async fn nats_status(bridge: State<'_, NatsBridge>) -> Result<NatsStatus, String
 }
 
 #[tauri::command]
-fn nats_unread_count(bridge: State<'_, NatsBridge>) -> u32 {
-    bridge.unread_count()
+fn nats_set_notifications_enabled(bridge: State<'_, NatsBridge>, enabled: bool) {
+    bridge.set_notifications_enabled(enabled);
 }
 
 #[tauri::command]
@@ -210,16 +211,8 @@ async fn nats_unsubscribe_dialog(
 async fn nats_register_event_channel(
     bridge: State<'_, NatsBridge>,
     channel: tauri::ipc::Channel<NatsEvent>,
-) -> Result<String, String> {
-    Ok(bridge.register_event_channel(channel).await)
-}
-
-#[tauri::command]
-async fn nats_unregister_event_channel(
-    bridge: State<'_, NatsBridge>,
-    id: String,
 ) -> Result<(), String> {
-    bridge.unregister_event_channel(&id).await;
+    bridge.register_event_channel(channel).await;
     Ok(())
 }
 
@@ -308,6 +301,12 @@ pub fn run() {
                     } else {
                         log::LevelFilter::Info
                     })
+                    // Warn keeps the fork's connection errors while dropping
+                    // its ~6-line-per-attempt reconnect narration at Info and
+                    // the full connect URL (incl. the bearer token query
+                    // param) it logs at Debug. The bridge logs its own
+                    // connected/disconnected/auth lines.
+                    .level_for("async_nats", log::LevelFilter::Warn)
                     .max_file_size(5_000_000)
                     .rotation_strategy(RotationStrategy::KeepSome(5))
                     .timezone_strategy(TimezoneStrategy::UseLocal)
@@ -333,6 +332,9 @@ pub fn run() {
             let bridge_token_source = token_source.clone();
             app.manage(token_source);
 
+            // Seed for the bridge; the WebView can override at runtime via
+            // nats_set_machine_id. Captured before apply_config consumes config.
+            let machine_id = config.machine_id.clone();
             let startup_valid = config.is_valid();
             apply_config(app.handle(), config);
 
@@ -357,10 +359,11 @@ pub fn run() {
                 app.handle().clone(),
                 bridge_url_state,
                 bridge_token_source,
+                machine_id,
             );
             app.manage(bridge.clone());
             bridge.start();
-            println!("[INFO] NATS bridge initialized");
+            log::info!("NATS bridge initialized");
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;
 
@@ -574,12 +577,11 @@ pub fn run() {
             get_debug_mode,
             log_from_js,
             nats_status,
-            nats_unread_count,
+            nats_set_notifications_enabled,
             nats_set_machine_id,
             nats_subscribe_dialog,
             nats_unsubscribe_dialog,
             nats_register_event_channel,
-            nats_unregister_event_channel,
         ]);
     
     builder.build(tauri::generate_context!())

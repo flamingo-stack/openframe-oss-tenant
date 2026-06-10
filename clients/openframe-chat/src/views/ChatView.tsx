@@ -22,7 +22,7 @@ import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openfra
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
@@ -36,6 +36,7 @@ import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
+import { isTauri } from '../utils/runtime';
 
 function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsageData | null {
   if (!usage) return null;
@@ -329,25 +330,30 @@ export function ChatView() {
     return () => clearInterval(interval);
   }, [isTicketPreview, previewTicketId, resumeDialog]);
 
-  // Notification click handler — Rust emits this when the main window
-  // gains focus shortly after a NATS-driven OS notification, asking us to
-  // land on the entity the notification came from. A ticket click opens that
-  // ticket even when a different dialog is currently active.
+  // Rust emits notification:click when the window gains focus shortly after a
+  // NATS-driven OS notification; open the entity it came from. The ref keeps
+  // the Tauri listener registered once instead of churning per render.
+  const notificationClickRef = useRef({ handleTicketClick, resumeDialog, dialogId });
+  notificationClickRef.current = { handleTicketClick, resumeDialog, dialogId };
+
   useEffect(() => {
+    if (!isTauri) return;
     type NotificationClickPayload = { kind: string; id: string };
     const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => {
       const { kind, id } = event.payload;
       if (!id) return;
       if (kind === 'ticket') {
-        void handleTicketClick(id);
+        void notificationClickRef.current.handleTicketClick(id);
       } else if (kind === 'dialog') {
-        void resumeDialog(id);
+        const { resumeDialog, dialogId } = notificationClickRef.current;
+        // Already viewing this dialog — the live subscription has the message.
+        if (id !== dialogId) void resumeDialog(id);
       }
     });
     return () => {
-      void unlistenPromise.then(unlisten => unlisten());
+      unlistenPromise.then(unlisten => unlisten()).catch(() => undefined);
     };
-  }, [handleTicketClick, resumeDialog]);
+  }, []);
 
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;

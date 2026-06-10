@@ -1,3 +1,4 @@
+import { log, maskToken } from '../utils/log';
 import { tokenService } from './tokenService';
 
 type CreateDialogResponse = {
@@ -97,6 +98,13 @@ export class ChatApiService {
 
   async sendMessage(args: { dialogId: string; content: string; chatType: 'CLIENT_CHAT' }): Promise<void> {
     await tokenService.ensureTokenReady();
+
+    // Masked token in the request log so prod logs can confirm sends carry
+    // the freshest rotation (correlate with the token watcher lines).
+    log.info('api', 'sendMessage request', {
+      dialogId: args.dialogId,
+      token: maskToken(tokenService.getCurrentToken() ?? ''),
+    });
 
     const url = `${this.getApiBaseUrl()}/chat/api/v1/messages`;
     const response = await fetch(url, {

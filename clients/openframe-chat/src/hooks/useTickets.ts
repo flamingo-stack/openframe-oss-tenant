@@ -50,15 +50,19 @@ export function useTickets() {
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
 
-  // Gate the query on token availability. Firing before the token arrives makes
-  // `getTickets` swallow the auth error and resolve with an empty list, which
-  // React Query then caches as a successful (empty) result for `staleTime` —
-  // leaving the list blank until a manual refresh. Waiting for the token means
-  // the first fetch carries auth and returns real data.
+  // Gate the query on the token: an unauthenticated first fetch resolves empty
+  // and React Query caches it as success for `staleTime`, blanking the list.
   const [hasToken, setHasToken] = useState(() => !!tokenService.getCurrentToken());
   useEffect(() => {
     if (hasToken) return;
-    void tokenService.requestToken().catch(() => null);
+    // Use the resolved value too — requestToken can return a token that was
+    // cached after the useState initializer ran, without a token-update event.
+    tokenService
+      .requestToken()
+      .then(token => {
+        if (token) setHasToken(true);
+      })
+      .catch(() => null);
     return tokenService.onTokenUpdate(() => setHasToken(true));
   }, [hasToken]);
 

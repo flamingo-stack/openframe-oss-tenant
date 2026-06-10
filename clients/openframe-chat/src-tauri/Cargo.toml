@@ -29,7 +29,6 @@ tauri-plugin-single-instance = "2"
 tauri-plugin-notification = "2"
 aes-gcm = "0.10"
 base64 = "0.21"
-notify = "6.1"
 async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
 futures = "0.3"

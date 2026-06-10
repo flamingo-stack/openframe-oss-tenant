@@ -3,6 +3,7 @@ pub struct AppConfig {
     pub token_path: Option<String>,
     pub secret: Option<String>,
     pub server_url: Option<String>,
+    pub machine_id: Option<String>,
     pub debug_mode: bool,
 }
 
@@ -14,6 +15,7 @@ impl AppConfig {
             token_path: macos::read_string("openframe-token-path"),
             secret: macos::read_string("openframe-secret"),
             server_url: macos::read_string("serverUrl"),
+            machine_id: macos::read_string("machineId"),
             debug_mode: macos::read_bool("devMode"),
         };
 
@@ -30,10 +32,11 @@ impl AppConfig {
         };
 
         println!(
-            "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, debug: {})",
+            "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, machine_id: {}, debug: {})",
             cfg.token_path.is_some(),
             cfg.secret.is_some(),
             cfg.server_url.is_some(),
+            cfg.machine_id.is_some(),
             cfg.debug_mode,
         );
 
@@ -45,6 +48,7 @@ impl AppConfig {
         let mut token_path: Option<String> = None;
         let mut secret: Option<String> = None;
         let mut server_url: Option<String> = None;
+        let mut machine_id: Option<String> = None;
         let mut debug_mode = false;
 
         for i in 0..args.len() {
@@ -54,6 +58,8 @@ impl AppConfig {
                 secret = Some(args[i + 1].clone());
             } else if args[i] == "--serverUrl" && i + 1 < args.len() {
                 server_url = Some(args[i + 1].clone());
+            } else if args[i] == "--machineId" && i + 1 < args.len() {
+                machine_id = Some(args[i + 1].clone());
             } else if args[i] == "--devMode" {
                 debug_mode = true;
             }
@@ -63,6 +69,7 @@ impl AppConfig {
             token_path,
             secret,
             server_url,
+            machine_id,
             debug_mode,
         }
     }
