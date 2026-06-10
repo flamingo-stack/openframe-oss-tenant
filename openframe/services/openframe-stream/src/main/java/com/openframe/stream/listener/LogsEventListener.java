@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@ConditionalOnProperty(name = "openframe.oss.tenant.kafka.topics.inbound.logs-events")
+@ConditionalOnProperty(name = "openframe.oss-tenant.kafka.topics.inbound.logs-events.name")
 public class LogsEventListener {
 
     private final GenericJsonMessageProcessor messageProcessor;
