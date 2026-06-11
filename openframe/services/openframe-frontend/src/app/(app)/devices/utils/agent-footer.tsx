@@ -11,7 +11,7 @@ const AGENT_REPO_LINKS: Record<ToolType, string> = {
 };
 
 function isLinkedToolType(toolType: string): toolType is ToolType {
-  return toolType in AGENT_REPO_LINKS;
+  return Object.hasOwn(AGENT_REPO_LINKS, toolType);
 }
 
 /** toolType stays a string: agents-tab synthesizes values outside ToolType (e.g. OSQUERYD) */
