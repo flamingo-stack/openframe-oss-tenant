@@ -16,6 +16,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Controller } from 'react-hook-form';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
+import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
 import { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
 import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
 import {
@@ -23,7 +24,6 @@ import {
   LLM_PROVIDER_ICON,
   LLM_PROVIDER_LABEL,
   LLM_PROVIDER_OPTIONS,
-  PROVIDER_MODELS,
 } from '../utils/fae-settings-display';
 import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
@@ -44,8 +44,10 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
     onSubmit,
   });
 
+  const { modelsByProvider } = useSupportedModels();
+
   const llmProvider = form.watch('llmProvider');
-  const modelOptions = PROVIDER_MODELS[llmProvider] ?? [];
+  const modelOptions = modelsByProvider?.[llmProvider] ?? [];
   const answerStyle = form.watch('answerStyle');
   const assistantName = form.watch('assistantName');
   const providerModel = form.watch('providerModel');
@@ -53,7 +55,14 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
   const accentColor = form.watch('accentColor');
 
   if (!isEditMode) {
-    return <AiSettingsOverview settings={settings} quickActions={settings.quickActions} />;
+    const settingsModelLabel = getProviderModelLabel(modelsByProvider, settings.llmProvider, settings.providerModel);
+    return (
+      <AiSettingsOverview
+        settings={settings}
+        providerModelLabel={settingsModelLabel}
+        quickActions={settings.quickActions}
+      />
+    );
   }
 
   return (
@@ -179,7 +188,11 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
           accentColor={accentColor || settings.accentColor}
           theme={applicationTheme}
           providerName={llmProvider}
-          modelDisplayName={providerModel || settings.providerModel}
+          modelDisplayName={getProviderModelLabel(
+            modelsByProvider,
+            llmProvider,
+            providerModel || settings.providerModel,
+          )}
         />
       </div>
 

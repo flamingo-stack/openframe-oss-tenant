@@ -15,11 +15,13 @@ import {
 
 interface AiSettingsCustomerCardProps {
   settings: FaeSettings;
+  /** Display name for `settings.providerModel` (which stores the backend model name). */
+  providerModelLabel?: string;
 }
 
 const CELL = 'flex items-center gap-2 min-h-14 md:min-h-20 px-3 md:px-4 py-3 md:py-4';
 
-export function AiSettingsCustomerCard({ settings }: AiSettingsCustomerCardProps) {
+export function AiSettingsCustomerCard({ settings, providerModelLabel }: AiSettingsCustomerCardProps) {
   const ProviderIcon = LLM_PROVIDER_ICON[settings.llmProvider];
   const answerStyleLabel = settings.answerStyle ? ANSWER_STYLE_LABEL[settings.answerStyle] : '—';
 
@@ -40,7 +42,7 @@ export function AiSettingsCustomerCard({ settings }: AiSettingsCustomerCardProps
       label="LLM Provider"
       icon={<ProviderIcon className="w-6 h-6 text-ods-text-secondary" />}
     />,
-    <InfoCell value={settings.providerModel} label="Provider Model" />,
+    <InfoCell value={providerModelLabel || settings.providerModel || '—'} label="Provider Model" />,
     <InfoCell value={answerStyleLabel} label="Answer Style" />,
     <InfoCell value={APPLICATION_THEME_LABEL[settings.applicationTheme]} label="Application Theme" />,
     <InfoCell value={settings.accentColor} label="Accent Color" />,
