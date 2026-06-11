@@ -1,14 +1,7 @@
 'use client';
 
+import { MonitorIcon, MoonStarIcon, Sun01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  MonitorIcon,
-  MoonStarIcon,
-  PlusCircleIcon,
-  Sun01Icon,
-  TrashIcon,
-} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import {
-  Button,
   ColorPickerInput,
   ImageUploader,
   Input,
@@ -21,13 +14,9 @@ import {
   TabSelector,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { type Control, Controller } from 'react-hook-form';
-import { getFullImageUrl } from '@/lib/image-url';
+import { Controller } from 'react-hook-form';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
-import {
-  CUSTOMER_AI_ASSISTANT_FORM_ID,
-  type CustomerAiAssistantFormValues,
-} from '../types/customer-ai-assistant.types';
+import { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
 import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
 import {
   ANSWER_STYLE_OPTIONS,
@@ -36,8 +25,8 @@ import {
   LLM_PROVIDER_OPTIONS,
   PROVIDER_MODELS,
 } from '../utils/fae-settings-display';
-import { AiSettingsCustomerCard } from './ai-settings-customer-card';
-import { AiSettingsQuickActions } from './ai-settings-quick-actions';
+import { AiSettingsOverview } from './ai-settings-overview';
+import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
 export type { CustomerAiAssistantFormValues } from '../types/customer-ai-assistant.types';
@@ -50,16 +39,10 @@ interface CustomerAiAssistantTabProps {
 }
 
 export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: CustomerAiAssistantTabProps) {
-  const {
-    form,
-    avatarUrl,
-    handleAvatarChange,
-    handleAvatarRemove,
-    quickActionFields,
-    addQuickAction,
-    removeQuickAction,
-    handleSubmit,
-  } = useCustomerAiAssistantForm({ settings, onSubmit });
+  const { form, avatarUrl, handleAvatarChange, handleAvatarRemove, handleSubmit } = useCustomerAiAssistantForm({
+    settings,
+    onSubmit,
+  });
 
   const llmProvider = form.watch('llmProvider');
   const modelOptions = PROVIDER_MODELS[llmProvider] ?? [];
@@ -70,20 +53,7 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
   const accentColor = form.watch('accentColor');
 
   if (!isEditMode) {
-    return (
-      <div className="flex flex-col gap-[var(--spacing-system-l)]">
-        <AiSettingsCustomerCard settings={settings} />
-        <AiSettingsPreviews
-          assistantName={settings.assistantName}
-          avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
-          accentColor={settings.accentColor}
-          theme={settings.applicationTheme}
-          providerName={settings.llmProvider}
-          modelDisplayName={settings.providerModel}
-        />
-        <AiSettingsQuickActions actions={settings.quickActions} />
-      </div>
-    );
+    return <AiSettingsOverview settings={settings} quickActions={settings.quickActions} />;
   }
 
   return (
@@ -241,69 +211,7 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
         />
       )}
 
-      <span className="text-h2 text-ods-text-primary mt-8">Assistant Quick Actions</span>
-
-      <div className="flex flex-col gap-[var(--spacing-system-xl)]">
-        {quickActionFields.map((field, index) => (
-          <QuickActionCard
-            key={field.id}
-            index={index}
-            control={form.control}
-            onRemove={() => removeQuickAction(index)}
-          />
-        ))}
-      </div>
-
-      <Button
-        type="button"
-        variant="transparent"
-        onClick={addQuickAction}
-        leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-        className="self-start"
-      >
-        Add Quick Action
-      </Button>
+      <AiSettingsQuickActionsEditor control={form.control} className="mt-8" />
     </form>
-  );
-}
-
-interface QuickActionCardProps {
-  index: number;
-  control: Control<CustomerAiAssistantFormValues>;
-  onRemove: () => void;
-}
-
-function QuickActionCard({ index, control, onRemove }: QuickActionCardProps) {
-  return (
-    <div className="flex flex-col gap-[var(--spacing-system-m)] bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-l)]">
-      <div className="flex items-end gap-[var(--spacing-system-l)]">
-        <div className="flex-1 min-w-0">
-          <Controller
-            name={`quickActions.${index}.name`}
-            control={control}
-            render={({ field, fieldState }) => (
-              <Input {...field} label="Action Name" error={fieldState.error?.message} />
-            )}
-          />
-        </div>
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={onRemove}
-          aria-label="Remove quick action"
-          leftIcon={<TrashIcon className="w-5 h-5" />}
-          className="[&_svg]:!text-ods-error"
-        />
-      </div>
-
-      <Controller
-        name={`quickActions.${index}.instructions`}
-        control={control}
-        render={({ field, fieldState }) => (
-          <Textarea {...field} label="Action Instructions" error={fieldState.error?.message} rows={4} />
-        )}
-      />
-    </div>
   );
 }
