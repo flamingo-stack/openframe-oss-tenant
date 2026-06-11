@@ -3,6 +3,7 @@
 import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useState } from 'react';
 import { useFaeSettings } from '../hooks/use-fae-settings';
+import { useUpdateAiConfiguration } from '../hooks/use-update-ai-configuration';
 import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
 import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
 import { useAiSettingsActions } from './ai-settings-actions';
@@ -21,6 +22,7 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
 export function AiSettings() {
   const { settings: loadedSettings, isLoading, error, refetch } = useFaeSettings();
   const { update } = useUpdateFaeSettings();
+  const { updateAiConfiguration } = useUpdateAiConfiguration();
 
   // No record yet → start from defaults so the first save creates one.
   const settings = loadedSettings ?? getDefaultFaeSettings();
@@ -52,9 +54,18 @@ export function AiSettings() {
 
   const handleFormSubmit = useCallback(
     (values: UpdateFaeSettingsInput) => {
-      update(values, () => setIsEditMode(false));
+      update(values, () => {
+        if (
+          values.llmProvider &&
+          values.providerModel &&
+          (values.llmProvider !== settings.llmProvider || values.providerModel !== settings.providerModel)
+        ) {
+          updateAiConfiguration({ provider: values.llmProvider, modelName: values.providerModel });
+        }
+        setIsEditMode(false);
+      });
     },
-    [update],
+    [update, updateAiConfiguration, settings.llmProvider, settings.providerModel],
   );
 
   const actions = useAiSettingsActions({

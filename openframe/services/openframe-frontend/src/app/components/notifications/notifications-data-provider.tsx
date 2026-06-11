@@ -31,11 +31,13 @@ import {
 import {
   ConnectionHandler,
   commitLocalUpdate,
+  commitMutation,
   useLazyLoadQuery,
   usePaginationFragment,
   useRelayEnvironment,
 } from 'react-relay';
 import type { RecordProxy, RecordSourceSelectorProxy } from 'relay-runtime';
+import type { markNotificationReadMutation as MarkReadMutationType } from '@/__generated__/markNotificationReadMutation.graphql';
 import type {
   NotificationSeverity,
   notificationsDrawerRelay_query$key as NotificationsDrawerFragmentKey,
@@ -43,17 +45,21 @@ import type {
 import type { notificationsDrawerRelayPaginationQuery as NotificationsDrawerPaginationQueryType } from '@/__generated__/notificationsDrawerRelayPaginationQuery.graphql';
 import type { notificationsDrawerRelayQuery as NotificationsDrawerRelayQueryType } from '@/__generated__/notificationsDrawerRelayQuery.graphql';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
+import { markNotificationReadMutation } from '@/graphql/notifications/mark-notification-read-mutation';
 import {
   notificationsDrawerRelayFragment,
   notificationsDrawerRelayQuery,
 } from '@/graphql/notifications/notifications-drawer-relay';
 import {
+  makeMarkReadUpdater,
   mapNotificationNode,
   NOTIFICATIONS_CONNECTION_KEY,
   parseSeverity,
   UNFILTERED_NOTIFICATION_PAIR,
 } from '@/graphql/notifications/notifications-helpers';
+import { refreshUnreadCounts } from '@/graphql/notifications/unread-counts-relay';
 import { useNotificationMutations } from '@/graphql/notifications/use-notification-mutations';
+import { isDialogViewActive } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
 import {
@@ -424,6 +430,21 @@ interface NotificationsLiveBridgeProps {
   userId: string;
 }
 
+/**
+ * True when the notification is an AI-message for a dialog the user is
+ * watching live (mingo page or chat drawer) in a visible tab. Such
+ * notifications are redundant — the message is already rendering in the chat —
+ * so the popup is skipped and the notification auto-marked read. Approval
+ * requests are deliberately excluded: they carry actions, so they stay unread
+ * until the user acts (same convention as `NavigationTileWrapper`).
+ */
+function isWatchingNotificationDialog(payload: NatsNotificationPayload): boolean {
+  if (payload.context?.type !== ADMIN_AI_MESSAGE_CONTEXT_TYPE) return false;
+  const dialogId = payload.context.dialogId;
+  if (typeof dialogId !== 'string' || !isDialogViewActive(dialogId)) return false;
+  return typeof document !== 'undefined' && document.visibilityState === 'visible';
+}
+
 function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   const environment = useRelayEnvironment();
   const subject = `${NOTIFICATION_SUBJECT_PREFIX}.${userId}.${NOTIFICATION_SUBJECT_SUFFIX}`;
@@ -440,15 +461,9 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
       const title = payload.title ?? 'Notification';
       const description = payload.description ?? null;
       const createdAtSeconds = Date.now() / 1000;
+      const suppress = isWatchingNotificationDialog(payload);
 
       commitLocalUpdate(environmentRef.current, store => {
-        const conn = ConnectionHandler.getConnection(
-          store.getRoot(),
-          NOTIFICATIONS_CONNECTION_KEY,
-          UNFILTERED_NOTIFICATION_PAIR.unread,
-        );
-        if (!conn) return;
-
         const node = store.get(relayId) ?? store.create(relayId, 'Notification');
         node.setValue(relayId, 'id');
         node.setValue(severity ?? 'INFO', 'severity');
@@ -458,8 +473,37 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
         node.setValue(false, 'read');
         node.setLinkedRecord(writeNotificationContext(store, `${relayId}:context`, payload), 'context');
 
+        if (suppress) {
+          // Never enters the unread connection, so no popup and no drawer
+          // entry; lands directly in the read connection instead.
+          makeMarkReadUpdater(relayId, [UNFILTERED_NOTIFICATION_PAIR])(store);
+          return;
+        }
+
+        const conn = ConnectionHandler.getConnection(
+          store.getRoot(),
+          NOTIFICATIONS_CONNECTION_KEY,
+          UNFILTERED_NOTIFICATION_PAIR.unread,
+        );
+        if (!conn) return;
         prependNotificationEdge(store, conn, node, relayId);
       });
+
+      if (suppress) {
+        // Persist the auto-read server-side; refresh sidebar badges either way
+        // so they stay truthful even if the mutation fails.
+        commitMutation<MarkReadMutationType>(environmentRef.current, {
+          mutation: markNotificationReadMutation,
+          variables: { id: relayId },
+          onCompleted: () => refreshUnreadCounts(environmentRef.current),
+          onError: () => refreshUnreadCounts(environmentRef.current),
+        });
+        return;
+      }
+
+      // The push payload carries no category, so re-fetch the per-category
+      // unread counts that drive the sidebar badges.
+      refreshUnreadCounts(environmentRef.current);
     }, []),
   );
 

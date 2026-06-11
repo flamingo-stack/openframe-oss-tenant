@@ -119,6 +119,7 @@ export function useSaveTicketStatusesMutation() {
     mutationFn: saveTicketStatuses,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statuses() });
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statusTransitionRules() });
       toast({ title: 'Saved', description: 'Ticket statuses updated', variant: 'success' });
     },
     onError: err => {
@@ -150,6 +151,7 @@ export function useDeleteTicketStatusMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statuses() });
+      queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statusTransitionRules() });
       // Deleting a status reassigns its tickets to the replacement status — refresh the board columns / list.
       invalidateAllDialogs(queryClient);
       toast({ title: 'Deleted', description: 'Ticket status removed', variant: 'success' });
