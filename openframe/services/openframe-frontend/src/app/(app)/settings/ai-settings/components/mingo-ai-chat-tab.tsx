@@ -35,11 +35,7 @@ export function MingoAiChatTab({ settings, isEditMode, onSubmit }: MingoAiChatTa
   }
 
   return (
-    <form
-      id={MINGO_AI_CHAT_FORM_ID}
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-[var(--spacing-system-l)] max-md:[&_input]:!text-[14px] max-md:[&_textarea]:!text-[14px]"
-    >
+    <form id={MINGO_AI_CHAT_FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-[var(--spacing-system-l)]">
       <AiSettingsQuickActionsEditor control={form.control} title="Mingo Quick Actions" />
     </form>
   );
