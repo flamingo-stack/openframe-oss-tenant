@@ -13,6 +13,7 @@ import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-fronten
 import { Info as InfoIcon } from 'lucide-react';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
+import { getAgentFooter } from '../../utils/agent-footer';
 import { getDeviceStatusConfig } from '../../utils/device-status';
 
 interface AgentsTabProps {
@@ -152,6 +153,8 @@ export function AgentsTab({ device }: AgentsTabProps) {
               items.push({ label: 'Last fetched', value: formatted });
             }
 
+            const cardData = { items, footer: getAgentFooter(agent.toolType) };
+
             return (
               <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative flex flex-col">
                 <div className="absolute top-4 left-4 z-10">
@@ -171,12 +174,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <InfoCard
-                  data={{
-                    items: items,
-                  }}
-                  className="pt-16 flex-1 min-h-0"
-                />
+                <InfoCard data={cardData} className="pt-16 flex-1 min-h-0" />
               </div>
             );
           })
