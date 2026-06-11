@@ -224,7 +224,15 @@ impl ToolKillService {
             Installation::Service { service_name, executable_path } => {
                 info!(tool_id = %tool_agent_id, service_name = %service_name,
                       "Stopping Service type tool via system service manager");
-                self.stop_service(service_name).await?;
+                // Non-fatal: even if the service manager can't stop it, fall through
+                // to the path-based process kill below so a stuck/pending service
+                // (e.g. Mesh Agent returning error 1061) doesn't leave the binary
+                // locked and dead-lock the reinstall/update.
+                if let Err(e) = self.stop_service(service_name).await {
+                    warn!(tool_id = %tool_agent_id,
+                          "Failed to stop service {} (continuing with process kill by path): {:#}",
+                          service_name, e);
+                }
 
                 // Kill any remaining processes by executable path (detached children)
                 if let Some(path) = executable_path {
@@ -296,28 +304,135 @@ impl ToolKillService {
 
         if output.status.success() {
             info!("Service {} stop initiated", service_name);
-            self.wait_for_service_stop_windows(service_name).await
-        } else if stderr.contains("1062") || stdout.contains("1062") {
+            // `sc stop` only *initiates* the stop; the SCM may keep reporting the
+            // service as running for a while. If it never reaches STOPPED, fall
+            // back to force-killing so we don't leave the binary locked.
+            if self.wait_for_service_stop_windows(service_name).await? {
+                return Ok(());
+            }
+            warn!("Service {} did not reach STOPPED after sc stop; force-killing", service_name);
+            return self.force_stop_service_windows(service_name).await;
+        }
+
+        if stderr.contains("1062") || stdout.contains("1062") {
             // Error 1062: The service has not been started
             info!("Service {} is not running (error 1062)", service_name);
-            Ok(())
-        } else if stderr.contains("1060") || stdout.contains("1060") {
+            return Ok(());
+        }
+
+        if stderr.contains("1060") || stdout.contains("1060") {
             // Error 1060: The specified service does not exist
             warn!("Service {} does not exist (error 1060)", service_name);
-            Ok(())
+            return Ok(());
+        }
+
+        // Error 1061 (ERROR_SERVICE_CANNOT_ACCEPT_CTRL): the service is in a
+        // pending/transitional state and won't accept a stop right now. This is
+        // common with the Mesh Agent on Windows Server and previously caused the
+        // reinstall to abort, leaving agent.exe locked (os error 32) in a retry
+        // loop. Any other sc failure is treated the same way: force-kill the
+        // service process so the reinstall/update can proceed instead of
+        // dead-locking.
+        if stderr.contains("1061") || stdout.contains("1061") {
+            warn!("Service {} cannot accept stop control (error 1061); force-killing service process", service_name);
         } else {
-            error!("Failed to stop service {}: stdout={}, stderr={}", service_name, stdout, stderr);
-            Err(anyhow::anyhow!(
-                "Failed to stop service {}: stdout={} stderr={}",
-                service_name,
-                stdout.trim(),
-                stderr.trim()
-            ))
+            error!("sc stop failed for service {}: stdout={}, stderr={}; force-killing service process",
+                   service_name, stdout.trim(), stderr.trim());
+        }
+        self.force_stop_service_windows(service_name).await
+    }
+
+    /// Force-stop a Windows service by killing its host process tree.
+    ///
+    /// Used when `sc stop` can't gracefully stop the service (e.g. error 1061,
+    /// the service is in a pending state). Resolves the service PID via
+    /// `sc queryex` and terminates it with `taskkill /F /T`, retrying to defeat
+    /// SCM auto-restart, until the service is no longer running.
+    #[cfg(target_os = "windows")]
+    async fn force_stop_service_windows(&self, service_name: &str) -> Result<()> {
+        const MAX_ATTEMPTS: u32 = 6;
+
+        for attempt in 1..=MAX_ATTEMPTS {
+            match self.query_service_pid_windows(service_name).await {
+                // PID 0 or no PID line => service is not running.
+                Some(0) | None => {
+                    info!("Service {} is no longer running (force-stop attempt {})", service_name, attempt);
+                    return Ok(());
+                }
+                Some(pid) => {
+                    info!("Force-killing service {} process tree (pid {}, attempt {}/{})",
+                          service_name, pid, attempt, MAX_ATTEMPTS);
+
+                    let output = Command::new("taskkill")
+                        .args(["/F", "/T", "/PID", &pid.to_string()])
+                        .output()
+                        .await
+                        .with_context(|| format!("Failed to execute taskkill for service {} (pid {})", service_name, pid))?;
+
+                    if !output.status.success() {
+                        let kill_stdout = String::from_utf8_lossy(&output.stdout);
+                        let kill_stderr = String::from_utf8_lossy(&output.stderr);
+                        // taskkill returns non-zero if the process already exited
+                        // between query and kill; that's fine, the next check confirms.
+                        warn!("taskkill for service {} (pid {}) reported: stdout={} stderr={}",
+                              service_name, pid, kill_stdout.trim(), kill_stderr.trim());
+                    }
+                }
+            }
+
+            sleep(Duration::from_millis(500)).await;
+        }
+
+        // Final verification.
+        match self.query_service_pid_windows(service_name).await {
+            Some(0) | None => {
+                info!("Service {} force-stopped successfully", service_name);
+                Ok(())
+            }
+            Some(pid) => {
+                error!("Service {} still running (pid {}) after {} force-kill attempts",
+                       service_name, pid, MAX_ATTEMPTS);
+                Err(anyhow::anyhow!(
+                    "Failed to force-stop service {} (pid {} still running after {} attempts)",
+                    service_name, pid, MAX_ATTEMPTS
+                ))
+            }
         }
     }
 
+    /// Resolve the host process PID of a Windows service via `sc queryex`.
+    ///
+    /// Returns `Some(0)` when the service reports a zero PID (stopped), and
+    /// `None` when the service can't be queried or has no PID line.
     #[cfg(target_os = "windows")]
-    async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<()> {
+    async fn query_service_pid_windows(&self, service_name: &str) -> Option<u32> {
+        let output = Command::new("sc")
+            .args(["queryex", service_name])
+            .output()
+            .await
+            .ok()?;
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        for line in stdout.lines() {
+            let line = line.trim();
+            // The PID line looks like: "PID                : 1234"
+            if let Some(rest) = line.strip_prefix("PID") {
+                if let Some(value) = rest.split(':').nth(1) {
+                    if let Ok(pid) = value.trim().parse::<u32>() {
+                        return Some(pid);
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// Poll `sc query` until the service reports STOPPED.
+    ///
+    /// Returns `Ok(true)` if the service reached STOPPED (or no longer exists),
+    /// `Ok(false)` if it timed out while still running.
+    #[cfg(target_os = "windows")]
+    async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<bool> {
         const MAX_ATTEMPTS: u32 = 20; // 10 seconds total
 
         for attempt in 1..=MAX_ATTEMPTS {
@@ -330,14 +445,15 @@ impl ToolKillService {
 
             let stdout = String::from_utf8_lossy(&output.stdout);
 
-            if stdout.contains("STOPPED") {
+            // 1060: the service no longer exists => effectively stopped/removed.
+            if stdout.contains("STOPPED") || stdout.contains("1060") {
                 info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
-                return Ok(());
+                return Ok(true);
             }
         }
 
         warn!("Service {} did not confirm stopped after {} attempts", service_name, MAX_ATTEMPTS);
-        Ok(())
+        Ok(false)
     }
 
     #[cfg(target_os = "macos")]
