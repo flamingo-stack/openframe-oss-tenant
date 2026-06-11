@@ -33,8 +33,7 @@
     {
       "description": "Disable all other dependencies - only update openframe libs",
       "matchManagers": ["maven"],
-      "matchPackagePatterns": ["*"],
-      "excludePackagePatterns": ["^com\\.openframe\\.oss"],
+      "matchPackageNames": ["!/^com\\.openframe\\.oss/"],
       "enabled": false
     },
     {
@@ -54,8 +53,7 @@
     {
       "description": "Disable all other npm dependencies - only update openframe-frontend-core",
       "matchManagers": ["npm"],
-      "matchPackagePatterns": ["*"],
-      "excludePackageNames": ["@flamingo-stack/openframe-frontend-core"],
+      "matchPackageNames": ["!@flamingo-stack/openframe-frontend-core"],
       "enabled": false
     },
     {
@@ -127,8 +125,7 @@
     {
       "description": "Only update fleetmdm chart",
       "matchManagers": ["helmv3"],
-      "matchPackagePatterns": ["*"],
-      "excludePackageNames": ["fleet"],
+      "matchPackageNames": ["!fleet"],
       "enabled": false
     }
   ],
