@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { FaeSettings } from './fae-settings';
+import { quickActionSchema } from './quick-action.types';
 
 export const CUSTOMER_AI_ASSISTANT_FORM_ID = 'ai-settings-customer-ai-assistant-form';
 
@@ -12,13 +13,7 @@ export const customerAiAssistantSchema = z
     accentColor: z.string().regex(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, 'Enter a valid hex color (e.g. #F357BB)'),
     answerStyle: z.enum(['SHORT', 'STANDARD', 'DETAILED', 'CUSTOM']),
     customPrompt: z.string().optional(),
-    quickActions: z.array(
-      z.object({
-        id: z.string().optional(),
-        name: z.string().min(1, 'Action name is required'),
-        instructions: z.string().min(1, 'Action instructions are required'),
-      }),
-    ),
+    quickActions: z.array(quickActionSchema),
   })
   .refine(data => data.answerStyle !== 'CUSTOM' || (data.customPrompt?.trim().length ?? 0) > 0, {
     message: 'Custom prompt is required',

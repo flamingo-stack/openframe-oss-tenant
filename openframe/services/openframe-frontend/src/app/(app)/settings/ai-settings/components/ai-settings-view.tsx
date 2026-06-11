@@ -6,12 +6,13 @@ import { useFaeSettings } from '../hooks/use-fae-settings';
 import { useUpdateAiConfiguration } from '../hooks/use-update-ai-configuration';
 import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
 import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
+import { MINGO_AI_CHAT_FORM_ID } from '../types/mingo-ai-chat.types';
 import { useAiSettingsActions } from './ai-settings-actions';
 import { AiSettingsLayout } from './ai-settings-layout';
 import { type AiSettingsTabId, AiSettingsTabs, getVisibleAiSettingsTabs } from './ai-settings-tabs';
 import { CUSTOMER_AI_ASSISTANT_FORM_ID, CustomerAiAssistantTab } from './customer-ai-assistant-tab';
 import { GUARDRAILS_FORM_ID, GuardrailsTab } from './guardrails-tab';
-import { MINGO_AI_CHAT_FORM_ID, MingoAiChatTab } from './mingo-ai-chat-tab';
+import { MingoAiChatTab } from './mingo-ai-chat-tab';
 
 const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
   customer: CUSTOMER_AI_ASSISTANT_FORM_ID,
