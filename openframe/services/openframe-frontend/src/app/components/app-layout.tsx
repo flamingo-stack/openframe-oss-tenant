@@ -18,6 +18,7 @@ import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
 import { AppShellSkeleton } from './app-shell-skeleton';
+import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
 import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry';
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
 import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';
@@ -92,7 +93,8 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // for that page, so they should never be live at the same time.
   const isMingoPage = pathname?.startsWith('/mingo') ?? false;
   const chatEnabled = featureFlags.mingoSidebar.enabled() && !showLockContent && !isMingoPage;
-  const navigationItems = useMemo(() => getNavigationItems(pathname), [pathname]);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCountsByCategory>({});
+  const navigationItems = useMemo(() => getNavigationItems(pathname, unreadCounts), [pathname, unreadCounts]);
 
   const sidebarConfig: NavigationSidebarConfig = useMemo(
     () => ({
@@ -182,17 +184,24 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   ) : null;
 
   return (
-    <CoreAppLayout
-      mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
-      sidebarConfig={sidebarConfig}
-      loadingFallback={<ContentLoading />}
-      mobileBurgerMenuProps={mobileBurgerMenuProps}
-      headerProps={headerProps}
-      disabled={showLockContent}
-      drawer={chatDrawer}
-    >
-      {showLockContent ? <SubscriptionLockContent /> : children}
-    </CoreAppLayout>
+    <>
+      {notificationsEnabled && (
+        <Suspense fallback={null}>
+          <UnreadCountsHydrator onChange={setUnreadCounts} />
+        </Suspense>
+      )}
+      <CoreAppLayout
+        mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
+        sidebarConfig={sidebarConfig}
+        loadingFallback={<ContentLoading />}
+        mobileBurgerMenuProps={mobileBurgerMenuProps}
+        headerProps={headerProps}
+        disabled={showLockContent}
+        drawer={chatDrawer}
+      >
+        {showLockContent ? <SubscriptionLockContent /> : children}
+      </CoreAppLayout>
+    </>
   );
 }
 

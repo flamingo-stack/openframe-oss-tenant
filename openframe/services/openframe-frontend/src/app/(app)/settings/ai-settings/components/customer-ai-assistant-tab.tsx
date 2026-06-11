@@ -24,6 +24,7 @@ import {
 import { type Control, Controller } from 'react-hook-form';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
+import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
 import {
   CUSTOMER_AI_ASSISTANT_FORM_ID,
   type CustomerAiAssistantFormValues,
@@ -34,7 +35,6 @@ import {
   LLM_PROVIDER_ICON,
   LLM_PROVIDER_LABEL,
   LLM_PROVIDER_OPTIONS,
-  PROVIDER_MODELS,
 } from '../utils/fae-settings-display';
 import { AiSettingsCustomerCard } from './ai-settings-customer-card';
 import { AiSettingsQuickActions } from './ai-settings-quick-actions';
@@ -61,8 +61,10 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
     handleSubmit,
   } = useCustomerAiAssistantForm({ settings, onSubmit });
 
+  const { modelsByProvider } = useSupportedModels();
+
   const llmProvider = form.watch('llmProvider');
-  const modelOptions = PROVIDER_MODELS[llmProvider] ?? [];
+  const modelOptions = modelsByProvider?.[llmProvider] ?? [];
   const answerStyle = form.watch('answerStyle');
   const assistantName = form.watch('assistantName');
   const providerModel = form.watch('providerModel');
@@ -70,16 +72,17 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
   const accentColor = form.watch('accentColor');
 
   if (!isEditMode) {
+    const settingsModelLabel = getProviderModelLabel(modelsByProvider, settings.llmProvider, settings.providerModel);
     return (
       <div className="flex flex-col gap-[var(--spacing-system-l)]">
-        <AiSettingsCustomerCard settings={settings} />
+        <AiSettingsCustomerCard settings={settings} providerModelLabel={settingsModelLabel} />
         <AiSettingsPreviews
           assistantName={settings.assistantName}
           avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
           accentColor={settings.accentColor}
           theme={settings.applicationTheme}
           providerName={settings.llmProvider}
-          modelDisplayName={settings.providerModel}
+          modelDisplayName={settingsModelLabel}
         />
         <AiSettingsQuickActions actions={settings.quickActions} />
       </div>
@@ -209,7 +212,11 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
           accentColor={accentColor || settings.accentColor}
           theme={applicationTheme}
           providerName={llmProvider}
-          modelDisplayName={providerModel || settings.providerModel}
+          modelDisplayName={getProviderModelLabel(
+            modelsByProvider,
+            llmProvider,
+            providerModel || settings.providerModel,
+          )}
         />
       </div>
 

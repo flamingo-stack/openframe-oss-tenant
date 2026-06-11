@@ -11,7 +11,7 @@
 2. ALL styling MUST use ODS design tokens (no hardcoded colors)
 3. Follow WCAG 2.1 AA accessibility standards
 4. Use `react-hook-form` + `zod` for forms; use `useToast` for all API feedback
-5. Use `@tanstack/react-query` for all server-state data fetching
+5. Use `react-relay` for GraphQL data fetching wherever possible — the codebase is gradually migrating to Relay. Use `@tanstack/react-query` for REST APIs and for legacy GraphQL code that has not been migrated yet. Do NOT introduce new raw-POST GraphQL calls.
 
 ## Setup & Commands
 
@@ -34,6 +34,8 @@ Access: http://localhost:3000
 | `npm run build:local` | Production build with webpack |
 | `npm run start` | Start production server |
 | `npm run type-check` | TypeScript validation (`tsc --noEmit`) |
+| `npm run relay` | Relay compiler — regenerates `src/__generated__/` artifacts |
+| `npm run relay:watch` | Relay compiler in watch mode |
 | `npm run lint` | Next.js ESLint check |
 | `npm run lint:biome` | Biome check (linting + formatting) |
 | `npm run lint:biome:fix` | Biome auto-fix |
@@ -77,7 +79,8 @@ NEXT_PUBLIC_FEATURE_MONITORING=false            # Monitoring pages (default: fal
 | UI Library | React | 19 (^19.2.0) |
 | Type System | TypeScript | 5.8 (^5.8.3) |
 | Component Library | @flamingo-stack/openframe-frontend-core | 0.0.46 |
-| Data Fetching | @tanstack/react-query | 5.90 |
+| GraphQL Data Fetching | react-relay + relay-runtime + relay-compiler | 20.1 |
+| REST / Legacy Data Fetching | @tanstack/react-query | 5.90 |
 | Forms | react-hook-form + @hookform/resolvers | 7.71 + 5.2 |
 | Validation | zod | 4.3 |
 | State Management | Zustand + immer | 5.0.8 + 10.1 |
@@ -310,9 +313,50 @@ export function MyComponent() {
 2. Use conditional logic INSIDE hooks (useEffect, useMemo), not around them
 3. Never wrap hooks in try-catch — handle errors inside the hook instead
 
-### Data Fetching with TanStack React Query
+### Data Fetching Strategy
 
-All server-state data fetching uses `@tanstack/react-query`. No Apollo Client.
+The app is **gradually migrating GraphQL data fetching to react-relay**. The rules:
+
+1. **New GraphQL code → react-relay.** Queries, fragments, mutations, pagination — all through Relay.
+2. **REST APIs → `@tanstack/react-query`** with `apiClient` (this is not changing).
+3. **Legacy GraphQL** (raw POST through `apiClient` or react-query wrappers) still exists — leave it working, but migrate it to Relay when touching it substantially. Do not add new code in that style.
+4. No Apollo Client anywhere.
+
+### GraphQL with react-relay (preferred)
+
+**Setup:**
+- Schema: `schema.graphql` (repo root of the frontend service)
+- Config: `relay.config.json`; generated artifacts in `src/__generated__/`
+- Environment/provider: `src/lib/relay/` (singleton, cookie auth + 401 refresh, mounted in root layout above all other providers)
+- Run `npm run relay` after adding/changing any `graphql\`...\`` tag (`npm run build` also runs it)
+- Operation names MUST be prefixed with the camelCased file name (e.g. `unread-counts-relay.ts` → `unreadCountsRelayQuery`)
+
+**Reference implementations** (notifications domain, fully on Relay):
+- `src/graphql/notifications/` — query/fragment/mutation definitions, connection updaters via `ConnectionHandler`
+- `src/app/components/notifications/notifications-data-provider.tsx` — `useLazyLoadQuery`, `usePaginationFragment`, `commitLocalUpdate` for NATS live updates
+- `src/graphql/notifications/unread-counts-relay.ts` — small query + `fetchQuery` store refresh pattern
+
+**Patterns:**
+```typescript
+import { graphql, useLazyLoadQuery, useMutation } from 'react-relay';
+import type { myFileNameQuery as MyFileNameQueryType } from '@/__generated__/myFileNameQuery.graphql';
+
+export const myFileNameQuery = graphql`
+  query myFileNameQuery($first: Int!) {
+    notifications(first: $first) { ... }
+  }
+`;
+
+// In a component (wrap in <Suspense> — useLazyLoadQuery suspends):
+const data = useLazyLoadQuery<MyFileNameQueryType>(myFileNameQuery, { first: 30 }, { fetchPolicy: 'store-and-network' });
+```
+- Prefer fragments + `usePaginationFragment` for connections; use `@connection` + `ConnectionHandler` updaters to keep lists consistent after mutations
+- Mutations: `useMutation` with `optimisticUpdater`/`updater`; toast feedback via `useToast` in `onError` stays mandatory
+- To refresh store data imperatively: `fetchQuery(environment, query, vars, { fetchPolicy: 'network-only' }).subscribe({})` — all subscribed components re-render from the store
+
+### REST Fetching with TanStack React Query
+
+REST (non-GraphQL) server state uses `@tanstack/react-query` with `apiClient`.
 
 **Query pattern:**
 ```typescript
@@ -376,17 +420,18 @@ new QueryClient({
 });
 ```
 
-### GraphQL Usage
+### Legacy GraphQL Usage (do not extend)
 
-GraphQL queries are sent as raw POST requests through `apiClient` — there is no Apollo Client:
+Older code sends GraphQL queries as raw POST requests through `apiClient`:
 ```typescript
 const response = await apiClient.post('/api/graphql', {
   query: GET_DEVICES_QUERY,
   variables: { limit: 20, cursor: null },
 });
 ```
+This style is being migrated to react-relay. Don't write new code like this; when substantially reworking a feature that uses it, migrate it to Relay.
 
-The GraphQL endpoint is determined at runtime: `${window.location.origin}/api/graphql`
+The GraphQL endpoint is determined at runtime: `${window.location.origin}/api/graphql` (the Relay environment resolves the same endpoint).
 
 ### API Error Handling with useToast
 
@@ -582,16 +627,25 @@ The root layout (`src/app/layout.tsx`) establishes the global provider hierarchy
   </head>
   <body>
     <GoogleTagManager />             <!-- Analytics (if GTM ID set) -->
+    <EmbedShimRegistration />
     <DeploymentInitializer />        <!-- Runtime detection -->
-    <DevTicketObserver />            <!-- Dev auth (if enabled) -->
-    <GraphQlIntrospectionInitializer />  <!-- Schema cache -->
-    <QueryClientProvider>            <!-- TanStack React Query -->
-      <RouteGuard>                   <!-- App mode route filtering -->
-        <Suspense>
-          {children}                 <!-- Page content -->
-        </Suspense>
-      </RouteGuard>
-    </QueryClientProvider>
+    <RelayProvider>                  <!-- react-relay environment (singleton) -->
+      <QueryClientProvider>          <!-- TanStack React Query -->
+        <DevTicketObserver />        <!-- Dev auth (if auth enabled) -->
+        <GraphQlIntrospectionInitializer />  <!-- Schema cache -->
+        <NatsAppProvider>            <!-- NATS live updates -->
+          <FeatureFlagsGate>
+            <NotificationsDataProvider>  <!-- Notifications drawer/popups (Relay) -->
+              <RouteGuard>           <!-- App mode route filtering -->
+                <Suspense>
+                  {children}         <!-- Page content -->
+                </Suspense>
+              </RouteGuard>
+            </NotificationsDataProvider>
+          </FeatureFlagsGate>
+        </NatsAppProvider>
+      </QueryClientProvider>
+    </RelayProvider>
     <Toaster />                      <!-- Toast notifications -->
   </body>
 </html>
@@ -804,7 +858,7 @@ if (response.ok) {
 2. **Always use core library components** — no custom UI primitives
 3. **Always use `useToast`** for all API operation feedback
 4. **Use ODS design tokens** — never hardcode colors or styles
-5. **Use TanStack React Query** for all data fetching — no Apollo Client
+5. **Use react-relay for GraphQL** (gradual migration — prefer it wherever possible); **TanStack React Query for REST** — no Apollo Client, no new raw-POST GraphQL
 6. **Use react-hook-form + zod** for forms
 7. **Biome is the primary linter** — must pass before commits
 8. **Normalize multi-source data** — Fleet -> GraphQL -> Tactical priority
