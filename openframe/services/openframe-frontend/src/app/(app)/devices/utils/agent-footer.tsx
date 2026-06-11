@@ -1,17 +1,7 @@
+import type { InfoCardFooterData } from '@flamingo-stack/openframe-frontend-core';
 import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { ShieldCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import type { ReactNode } from 'react';
 import type { ToolType } from '../types/device.types';
-
-export interface InfoCardFooterData {
-  icon?: ReactNode;
-  text: string;
-  logo?: ReactNode;
-  link?: {
-    href: string;
-    label?: string;
-  };
-}
 
 /** External repository links per tool type; agents without an entry get no footer */
 const AGENT_REPO_LINKS: Record<ToolType, string> = {
