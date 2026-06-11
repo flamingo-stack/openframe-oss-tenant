@@ -7,6 +7,7 @@ import {
   ChatHeader,
   type ChatHeaderTicketInfo,
   ChatInput,
+  ChatQuickActionRow,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -392,14 +393,28 @@ export function ChatView() {
             This chat is closed. If you have a similar problem, please create a new request.
           </p>
         ) : (
-          <ChatInput
-            onSend={sendMessage}
-            onStop={isStreaming ? stopGeneration : undefined}
-            sending={isStreaming || isCompacting}
-            awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
-            placeholder="Enter your request here..."
-            disabled={isDisconnected}
-          />
+          <>
+            {/* Quick-action chips above the composer — initial screen only.
+                As many as fit render inline; the rest collapse under a "⋯" menu. */}
+            {!isDialogActive && !isDisconnected && quickActions.length > 0 && (
+              <ChatQuickActionRow
+                className="mb-[var(--spacing-system-xs)]"
+                chips={quickActions.map(action => ({
+                  id: action.id,
+                  label: action.text,
+                  onSelect: () => handleQuickAction(action.text),
+                }))}
+              />
+            )}
+            <ChatInput
+              onSend={sendMessage}
+              onStop={isStreaming ? stopGeneration : undefined}
+              sending={isStreaming || isCompacting}
+              awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
+              placeholder="Enter your request here..."
+              disabled={isDisconnected}
+            />
+          </>
         )}
         {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
           <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-sf)]">
