@@ -3,29 +3,39 @@ import { useEffect, useState } from 'react';
 import { type FaeSettingsResponse, faeSettingsService } from '../services/faeSettingsService';
 import { tokenService } from '../services/tokenService';
 
-export const faeSettingsQueryKey = ['faeSettings'] as const;
+/** Cache key scoped to the active connection so settings from a previous
+ *  server/identity are never served after the token or API URL changes. */
+export const faeSettingsQueryKey = (apiBaseUrl: string | null) => ['faeSettings', { apiBaseUrl }] as const;
+
+interface ConnectionState {
+  isReady: boolean;
+  apiBaseUrl: string | null;
+}
+
+function readConnectionState(): ConnectionState {
+  const token = tokenService.getCurrentToken();
+  const apiBaseUrl = tokenService.getCurrentApiBaseUrl();
+  return { isReady: Boolean(token && apiBaseUrl), apiBaseUrl: apiBaseUrl ?? null };
+}
 
 /**
  * Loads FaeSettings (assistant customization incl. quickActions) from
  * /chat/graphql. `data` is `null` when no record exists yet. The query waits
- * for the token/API URL to be available
+ * for the token/API URL to be available; readiness is recomputed on every
+ * token/API update (and can flip back to false when credentials drop), and
+ * the cache is keyed by the API base URL so a connection change refetches
+ * instead of serving stale settings.
  */
 export function useFaeSettingsQuery({ enabled }: { enabled: boolean }) {
-  const [isReady, setIsReady] = useState(false);
+  const [connection, setConnection] = useState<ConnectionState>(readConnectionState);
 
   useEffect(() => {
-    const checkReady = () => {
-      const token = tokenService.getCurrentToken();
-      const apiUrl = tokenService.getCurrentApiBaseUrl();
-      if (token && apiUrl) {
-        setIsReady(true);
-      }
-    };
+    const syncConnection = () => setConnection(readConnectionState());
 
-    checkReady();
+    syncConnection();
 
-    const unsubToken = tokenService.onTokenUpdate(() => checkReady());
-    const unsubUrl = tokenService.onApiUrlUpdate(() => checkReady());
+    const unsubToken = tokenService.onTokenUpdate(syncConnection);
+    const unsubUrl = tokenService.onApiUrlUpdate(syncConnection);
 
     return () => {
       unsubToken();
@@ -34,9 +44,9 @@ export function useFaeSettingsQuery({ enabled }: { enabled: boolean }) {
   }, []);
 
   return useQuery<FaeSettingsResponse | null>({
-    queryKey: faeSettingsQueryKey,
+    queryKey: faeSettingsQueryKey(connection.apiBaseUrl),
     queryFn: () => faeSettingsService.fetchFaeSettings(),
-    enabled: enabled && isReady,
+    enabled: enabled && connection.isReady,
     retry: 1,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,

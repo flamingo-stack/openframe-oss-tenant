@@ -12,7 +12,8 @@ export interface QuickAction {
 }
 
 // Bundled defaults - used while the customer-ai-assistant-settings flag is off,
-// the server has no FaeSettings record, or the query errors out.
+// the server has no FaeSettings record (or its quickActions is null), or the
+// query errors out. An explicitly saved empty list does NOT fall back here.
 const FALLBACK_QUICK_ACTIONS: QuickAction[] = quickActionsData.actions.map(action => ({
   id: action.id,
   name: action.text,
@@ -25,8 +26,12 @@ export function useChatConfig() {
   const query = useFaeSettingsQuery({ enabled: customizationEnabled });
 
   const quickActions = useMemo<QuickAction[]>(() => {
+    // Nullable vs empty matters here: `null`/missing means "nothing configured
+    // yet" and falls back to the bundled defaults, while an explicitly saved
+    // empty list means the admin chose to hide quick actions entirely - so we
+    // return it as-is and the UI renders no action row.
     const serverActions = query.data?.quickActions;
-    if (customizationEnabled && serverActions && serverActions.length > 0) {
+    if (customizationEnabled && serverActions) {
       return serverActions.map(action => ({
         id: action.id,
         name: action.name,

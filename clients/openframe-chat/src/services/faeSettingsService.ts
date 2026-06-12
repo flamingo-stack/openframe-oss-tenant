@@ -56,17 +56,6 @@ class FaeSettingsService {
   private currentEndpoint: string | null = null;
 
   private async initializeClient(): Promise<GraphQLClient> {
-    if (this.graphQlClient && this.currentEndpoint) {
-      const token = tokenService.getCurrentToken();
-      if (token) {
-        this.graphQlClient.setHeaders({
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        });
-      }
-      return this.graphQlClient;
-    }
-
     const baseUrl = tokenService.getCurrentApiBaseUrl();
     const token = tokenService.getCurrentToken();
 
@@ -75,6 +64,16 @@ class FaeSettingsService {
     }
 
     const endpoint = `${baseUrl}/chat/graphql`;
+
+    // Reuse the cached client only while the endpoint is unchanged; a new API
+    // base URL recreates the client so requests never hit a stale server.
+    if (this.graphQlClient && this.currentEndpoint === endpoint) {
+      this.graphQlClient.setHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      });
+      return this.graphQlClient;
+    }
 
     this.graphQlClient = new GraphQLClient(endpoint, {
       headers: {
