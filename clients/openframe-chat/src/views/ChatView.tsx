@@ -20,11 +20,12 @@ import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openfra
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
+import { useApplyFaeAppearance } from '../hooks/useApplyFaeAppearance';
+import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
 import { useTickets } from '../hooks/useTickets';
@@ -71,6 +72,8 @@ export function ChatView() {
     statusKind?: string;
   } | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
+  const { assistantName, assistantAvatar } = useAssistantBranding();
+  useApplyFaeAppearance();
 
   const handleTokenUsage = useCallback((data: TokenUsageData) => {
     setTokenUsage(data);
@@ -262,7 +265,7 @@ export function ChatView() {
     const faeMessage = {
       id: `synthetic-fae-form-${faeFormTicket.id}`,
       role: 'assistant' as const,
-      name: 'Fae',
+      name: assistantName ?? 'Fae',
       content: [
         'Your request has been received. We will contact you shortly.',
         '',
@@ -273,10 +276,10 @@ export function ChatView() {
         faeFormTicket.description || '(No description provided)',
       ].join('\n'),
       timestamp: new Date(faeFormTicket.createdAt),
-      avatar: faeAvatar,
+      avatar: assistantAvatar,
     };
     return [faeMessage, ...processedMessages];
-  }, [processedMessages, faeFormTicket, hasNextPage]);
+  }, [processedMessages, faeFormTicket, hasNextPage, assistantName, assistantAvatar]);
 
   useEffect(() => {
     if (!isTicketPreview || !previewTicketId) return;
@@ -315,7 +318,8 @@ export function ChatView() {
   return (
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
-        userAvatar={faeAvatar}
+        userName={assistantName}
+        userAvatar={assistantAvatar}
         connectionStatus={status}
         serverUrl={serverUrl}
         onBack={hasMessages ? handleNewChat : undefined}

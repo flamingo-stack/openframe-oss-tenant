@@ -6,10 +6,10 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { dialogGraphQlService } from '../services/dialogGraphQLService';
 import { applyToolTitleToMessage } from '../utils/applyToolTitle';
+import { useAssistantBranding } from './useAssistantBranding';
 
 interface UseDialogMessagesOptions {
   enabled?: boolean;
@@ -21,6 +21,7 @@ interface UseDialogMessagesOptions {
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
   const { flags } = useFeatureFlags();
+  const { assistantName, assistantAvatar } = useAssistantBranding();
   const { onApprove, onReject, approvalStatuses } = options;
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage } = useInfiniteQuery({
@@ -80,13 +81,14 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       onApprove,
       onReject,
       approvalStatuses,
-      assistantAvatar: faeAvatar,
+      assistantName: assistantName ?? 'Fae',
+      assistantAvatar,
       displayApprovalTypes: ['CLIENT'],
       batchApprovalsEnabled: flags['batch-approval'],
     });
 
     return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses, flags]);
+  }, [data?.pages, onApprove, onReject, approvalStatuses, flags, assistantName, assistantAvatar]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });
