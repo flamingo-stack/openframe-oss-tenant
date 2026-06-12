@@ -124,9 +124,13 @@ pub async fn run_preinstall(params: &InstallConfigParams) -> DoctorReport {
 pub async fn run_healthcheck() -> DoctorReport {
     let mut results = Vec::new();
 
-    results.push(check_admin_privileges());
-    if results.last().unwrap().status == CheckStatus::Fail {
-        return DoctorReport { results, title: "health check" };
+    // The Linux secured dir is root-only (0o700 root:root); reading the config requires root.
+    #[cfg(target_os = "linux")]
+    {
+        results.push(check_admin_privileges());
+        if results.last().unwrap().status == CheckStatus::Fail {
+            return DoctorReport { results, title: "health check" };
+        }
     }
 
     let dir_manager = DirectoryManager::new();
