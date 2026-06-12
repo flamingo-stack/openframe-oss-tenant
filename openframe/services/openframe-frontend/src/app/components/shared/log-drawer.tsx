@@ -94,7 +94,7 @@ export function LogDrawer({
         if (!open) onClose();
       }}
     >
-      <DrawerContent side="right" className="max-w-[400px]">
+      <DrawerContent side="right" offsetHeader className="max-w-[400px]">
         {/* Header */}
         <DrawerHeader>
           <DrawerTitle>Log Details</DrawerTitle>
