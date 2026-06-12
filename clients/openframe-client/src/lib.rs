@@ -32,6 +32,9 @@ pub mod updater;
 pub mod installation_initial_config_service;
 pub mod utils;
 
+#[cfg(any(unix, windows))]
+pub mod executor;
+
 /// Channel to pass Windows SessionChange events to WindowsSessionManager
 /// Unit on non-Windows so signatures stay flat
 #[cfg(target_os = "windows")]
