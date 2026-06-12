@@ -39,7 +39,7 @@ pub async fn start_service(service_name: &str) -> Result<()> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         // Ignore "already running" error
-        if !stderr.contains("1056") {
+        if !stderr.contains(crate::config::windows_service_error::ALREADY_RUNNING) {
             anyhow::bail!("sc start failed: {}", stderr);
         }
     }

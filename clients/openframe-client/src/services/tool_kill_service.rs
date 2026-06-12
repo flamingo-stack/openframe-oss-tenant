@@ -4,16 +4,18 @@ use sysinfo::{System, Signal, Pid};
 use tokio::time::{sleep, Duration};
 use tokio::process::Command;
 use crate::models::{InstalledTool, Installation};
+use crate::config::service_stop::{
+    FORCE_KILL_TIMEOUT_SECS, GRACEFUL_SHUTDOWN_TIMEOUT_SECS, MAX_KILL_RETRIES,
+    PROCESS_CHECK_INTERVAL_MS,
+};
+#[cfg(target_os = "windows")]
+use crate::config::service_stop::{SERVICE_FORCE_KILL_MAX_ATTEMPTS, SERVICE_STOP_MAX_ATTEMPTS};
+#[cfg(target_os = "windows")]
+use crate::config::windows_service_error;
 
 /// Service responsible for stopping/killing tool processes
 #[derive(Clone)]
 pub struct ToolKillService;
-
-/// Configuration for process termination
-const GRACEFUL_SHUTDOWN_TIMEOUT_SECS: u64 = 5;
-const FORCE_KILL_TIMEOUT_SECS: u64 = 3;
-const MAX_KILL_RETRIES: u32 = 3;
-const PROCESS_CHECK_INTERVAL_MS: u64 = 500;
 
 impl ToolKillService {
     pub fn new() -> Self {
@@ -314,15 +316,19 @@ impl ToolKillService {
             return self.force_stop_service_windows(service_name).await;
         }
 
-        if stderr.contains("1062") || stdout.contains("1062") {
-            // Error 1062: The service has not been started
-            info!("Service {} is not running (error 1062)", service_name);
+        if stderr.contains(windows_service_error::NOT_STARTED)
+            || stdout.contains(windows_service_error::NOT_STARTED)
+        {
+            // The service has not been started.
+            info!("Service {} is not running (error {})", service_name, windows_service_error::NOT_STARTED);
             return Ok(());
         }
 
-        if stderr.contains("1060") || stdout.contains("1060") {
-            // Error 1060: The specified service does not exist
-            warn!("Service {} does not exist (error 1060)", service_name);
+        if stderr.contains(windows_service_error::DOES_NOT_EXIST)
+            || stdout.contains(windows_service_error::DOES_NOT_EXIST)
+        {
+            // The specified service does not exist.
+            warn!("Service {} does not exist (error {})", service_name, windows_service_error::DOES_NOT_EXIST);
             return Ok(());
         }
 
@@ -333,8 +339,11 @@ impl ToolKillService {
         // loop. Any other sc failure is treated the same way: force-kill the
         // service process so the reinstall/update can proceed instead of
         // dead-locking.
-        if stderr.contains("1061") || stdout.contains("1061") {
-            warn!("Service {} cannot accept stop control (error 1061); force-killing service process", service_name);
+        if stderr.contains(windows_service_error::CANNOT_ACCEPT_CTRL)
+            || stdout.contains(windows_service_error::CANNOT_ACCEPT_CTRL)
+        {
+            warn!("Service {} cannot accept stop control (error {}); force-killing service process",
+                  service_name, windows_service_error::CANNOT_ACCEPT_CTRL);
         } else {
             error!("sc stop failed for service {}: stdout={}, stderr={}; force-killing service process",
                    service_name, stdout.trim(), stderr.trim());
@@ -350,9 +359,7 @@ impl ToolKillService {
     /// SCM auto-restart, until the service is no longer running.
     #[cfg(target_os = "windows")]
     async fn force_stop_service_windows(&self, service_name: &str) -> Result<()> {
-        const MAX_ATTEMPTS: u32 = 6;
-
-        for attempt in 1..=MAX_ATTEMPTS {
+        for attempt in 1..=SERVICE_FORCE_KILL_MAX_ATTEMPTS {
             match self.query_service_pid_windows(service_name).await {
                 // PID 0 or no PID line => service is not running.
                 Some(0) | None => {
@@ -361,7 +368,7 @@ impl ToolKillService {
                 }
                 Some(pid) => {
                     info!("Force-killing service {} process tree (pid {}, attempt {}/{})",
-                          service_name, pid, attempt, MAX_ATTEMPTS);
+                          service_name, pid, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
 
                     let output = Command::new("taskkill")
                         .args(["/F", "/T", "/PID", &pid.to_string()])
@@ -380,7 +387,7 @@ impl ToolKillService {
                 }
             }
 
-            sleep(Duration::from_millis(500)).await;
+            sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
         }
 
         // Final verification.
@@ -391,10 +398,10 @@ impl ToolKillService {
             }
             Some(pid) => {
                 error!("Service {} still running (pid {}) after {} force-kill attempts",
-                       service_name, pid, MAX_ATTEMPTS);
+                       service_name, pid, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
                 Err(anyhow::anyhow!(
                     "Failed to force-stop service {} (pid {} still running after {} attempts)",
-                    service_name, pid, MAX_ATTEMPTS
+                    service_name, pid, SERVICE_FORCE_KILL_MAX_ATTEMPTS
                 ))
             }
         }
@@ -433,10 +440,8 @@ impl ToolKillService {
     /// `Ok(false)` if it timed out while still running.
     #[cfg(target_os = "windows")]
     async fn wait_for_service_stop_windows(&self, service_name: &str) -> Result<bool> {
-        const MAX_ATTEMPTS: u32 = 20; // 10 seconds total
-
-        for attempt in 1..=MAX_ATTEMPTS {
-            sleep(Duration::from_millis(500)).await;
+        for attempt in 1..=SERVICE_STOP_MAX_ATTEMPTS {
+            sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
 
             let output = Command::new("sc")
                 .args(["query", service_name])
@@ -445,14 +450,14 @@ impl ToolKillService {
 
             let stdout = String::from_utf8_lossy(&output.stdout);
 
-            // 1060: the service no longer exists => effectively stopped/removed.
-            if stdout.contains("STOPPED") || stdout.contains("1060") {
+            // A missing service (DOES_NOT_EXIST) is effectively stopped/removed.
+            if stdout.contains("STOPPED") || stdout.contains(windows_service_error::DOES_NOT_EXIST) {
                 info!("Service {} confirmed stopped after {} attempts", service_name, attempt);
                 return Ok(true);
             }
         }
 
-        warn!("Service {} did not confirm stopped after {} attempts", service_name, MAX_ATTEMPTS);
+        warn!("Service {} did not confirm stopped after {} attempts", service_name, SERVICE_STOP_MAX_ATTEMPTS);
         Ok(false)
     }
 
