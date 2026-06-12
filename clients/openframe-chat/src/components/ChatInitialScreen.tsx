@@ -57,8 +57,8 @@ export function ChatInitialScreen({
           <ChatQuickAction
             className="bg-ods-card"
             key={action.id}
-            text={action.text}
-            onAction={onQuickAction}
+            text={action.name}
+            onAction={() => onQuickAction(action.instructions)}
             disabled={isDisconnected}
           />
         ))}

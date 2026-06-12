@@ -401,8 +401,8 @@ export function ChatView() {
                 className="mb-[var(--spacing-system-xs)]"
                 chips={quickActions.map(action => ({
                   id: action.id,
-                  label: action.text,
-                  onSelect: () => handleQuickAction(action.text),
+                  label: action.name,
+                  onSelect: () => handleQuickAction(action.instructions),
                 }))}
               />
             )}
