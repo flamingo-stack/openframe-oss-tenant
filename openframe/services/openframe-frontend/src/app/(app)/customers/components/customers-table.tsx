@@ -1,11 +1,19 @@
 'use client';
 
-import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  BuildingsIcon,
+  GraphMixSquareIcon,
+  IdCardIcon,
+  PlusCircleIcon,
+  ShieldCheckIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { DataTable, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { useCustomers } from '../hooks/use-customers';
 import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
 
@@ -70,21 +78,41 @@ export function CustomersTable({ status }: CustomersTableProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       contentClassName="flex flex-col"
     >
-      <div>
-        <div
-          className={cn(
-            'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
-            'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
-          )}
-        >
-          <div className="flex-1 min-w-0">
-            <CustomersSearchInput value={localSearch} onChange={setLocalSearch} />
+      {error ? (
+        <div className="text-ods-attention-red-error">{error}</div>
+      ) : !isLoading && !debouncedSearch && customers.length === 0 ? (
+        <EmptyState
+          icon={<IdCardIcon />}
+          title="No Customers yet"
+          description="Companies whose devices, tickets, and users you manage will be displayed here."
+          actions={[
+            { icon: <BuildingsIcon />, label: 'Group devices and users by client' },
+            { icon: <GraphMixSquareIcon />, label: 'Track tickets, SLAs, and activity per Customer' },
+            { icon: <ShieldCheckIcon />, label: 'Monitor security posture per Customer' },
+          ]}
+          buttonLabel="Ask Mingo about Customers"
+          buttonIcon={
+            <MingoIcon
+              className="size-5"
+              color="white"
+              eyesColor="var(--ods-flamingo-cyan-base)"
+              cornerColor="var(--ods-flamingo-cyan-base)"
+            />
+          }
+        />
+      ) : (
+        <div>
+          <div
+            className={cn(
+              'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
+              'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
+            )}
+          >
+            <div className="flex-1 min-w-0">
+              <CustomersSearchInput value={localSearch} onChange={setLocalSearch} />
+            </div>
           </div>
-        </div>
 
-        {error ? (
-          <div className="text-ods-attention-red-error">{error}</div>
-        ) : (
           <CustomersTableBody
             customers={customers}
             isLoading={isLoading}
@@ -102,8 +130,8 @@ export function CustomersTable({ status }: CustomersTableProps) {
               )
             }
           />
-        )}
-      </div>
+        </div>
+      )}
     </PageLayout>
   );
 }
