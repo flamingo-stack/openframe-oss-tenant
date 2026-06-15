@@ -7,7 +7,7 @@ export interface TicketStatusCount {
 }
 
 export interface TicketStatusDefinitionCount {
-  status: { kind: string };
+  status: { kind: string; color?: string };
   count: number;
 }
 
@@ -29,6 +29,10 @@ function sumKindCount(stats: TicketStatisticsCounts | undefined, kind: string): 
   return (stats?.statusDefinitionCounts ?? [])
     .filter(c => c.status.kind === kind)
     .reduce((total, c) => total + c.count, 0);
+}
+
+export function kindColorFromStatistics(stats: TicketStatisticsCounts | undefined, kind: string): string | undefined {
+  return (stats?.statusDefinitionCounts ?? []).find(c => c.status.kind === kind)?.status.color ?? undefined;
 }
 
 export function resolvedCountFromStatistics(stats: TicketStatisticsCounts | undefined): number {

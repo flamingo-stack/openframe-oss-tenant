@@ -701,6 +701,7 @@ export const GET_TICKET_STATISTICS_QUERY = `
       statusDefinitionCounts {
         status {
           kind
+          color
         }
         count
       }

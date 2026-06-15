@@ -69,8 +69,8 @@ impl DoctorReport {
         println!("\nOpenFrame Doctor \u{2014} {}\n", self.title);
         for r in &self.results {
             let icon = match r.status {
-                CheckStatus::Pass => "\u{2713}",
-                CheckStatus::Fail => "\u{2717}",
+                CheckStatus::Pass => "+",
+                CheckStatus::Fail => "x",
                 CheckStatus::Warn => "!",
                 CheckStatus::Info => "i",
             };
