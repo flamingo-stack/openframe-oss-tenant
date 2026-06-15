@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter02Icon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Filter02Icon, SearchIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnFiltersState,
@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { featureFlags } from '@/lib/feature-flags';
 import { useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
@@ -112,6 +113,8 @@ export function TicketsTable({
 
   const hasMobileFilter = filterGroups.length > 0;
 
+  const showEmptyState = !isLoading && !debouncedSearch && (statusFilters?.length ?? 0) === 0 && tickets.length === 0;
+
   if (error) {
     return <PageError message={error} />;
   }
@@ -159,25 +162,33 @@ export function TicketsTable({
             />
           )}
 
-          <TicketTableBody
-            tickets={tickets}
-            isLoading={isLoading}
-            emptyMessage={emptyMessage}
-            skeletonRows={10}
-            stickyHeaderOffset="top-[96px]"
-            isArchived={isArchived}
-            statusOptions={statusOptions}
-            columnFilters={isArchived ? undefined : columnFilters}
-            onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
-            footerSlot={
-              <DataTable.InfiniteFooter
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={handleFetchNextPage}
-                skeletonRows={2}
-              />
-            }
-          />
+          {showEmptyState ? (
+            <EmptyState
+              icon={<TagIcon />}
+              title="Ticket history empty"
+              description="Tickets will appear here when available"
+            />
+          ) : (
+            <TicketTableBody
+              tickets={tickets}
+              isLoading={isLoading}
+              emptyMessage={emptyMessage}
+              skeletonRows={10}
+              stickyHeaderOffset="top-[96px]"
+              isArchived={isArchived}
+              statusOptions={statusOptions}
+              columnFilters={isArchived ? undefined : columnFilters}
+              onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
+              footerSlot={
+                <DataTable.InfiniteFooter
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  onLoadMore={handleFetchNextPage}
+                  skeletonRows={2}
+                />
+              }
+            />
+          )}
         </div>
       </PageLayout>
       {ticketsActionsDialog}
