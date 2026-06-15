@@ -92,7 +92,7 @@ export function Policies() {
 
   // Show the empty state instead of the search bar + table only when there is
   // genuinely no data: loading finished, no active search, and no policies.
-  const showEmptyState = !isLoading && !params.search && policies.length === 0;
+  const showEmptyState = !isLoading && !params.search.trim() && policies.length === 0;
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
