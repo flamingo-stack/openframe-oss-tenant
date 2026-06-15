@@ -29,7 +29,6 @@ export default function Devices() {
           buttonIcon={
             <MingoIcon
               className="size-5"
-              color="white"
               eyesColor="var(--ods-flamingo-cyan-base)"
               cornerColor="var(--ods-flamingo-cyan-base)"
             />

@@ -70,6 +70,8 @@ export function CustomersTable({ status }: CustomersTableProps) {
     [handleAddCustomer],
   );
 
+  const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;
+
   return (
     <PageLayout
       title="Customers"
@@ -80,7 +82,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
     >
       {error ? (
         <div className="text-ods-attention-red-error">{error}</div>
-      ) : !isLoading && !debouncedSearch && customers.length === 0 ? (
+      ) : showEmptyState ? (
         <EmptyState
           icon={<IdCardIcon />}
           title="No Customers yet"
@@ -94,7 +96,6 @@ export function CustomersTable({ status }: CustomersTableProps) {
           buttonIcon={
             <MingoIcon
               className="size-5"
-              color="white"
               eyesColor="var(--ods-flamingo-cyan-base)"
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
