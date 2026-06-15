@@ -24,6 +24,7 @@ export const notificationsDrawerRelayFragment = graphql`
           description
           createdAt
           read
+          category
           context {
             __typename
             type
@@ -35,6 +36,7 @@ export const notificationsDrawerRelayFragment = graphql`
               dialogId
               ticketId
               approvalType
+              resolution
               toolCalls {
                 toolExecutionRequestId
                 toolName
