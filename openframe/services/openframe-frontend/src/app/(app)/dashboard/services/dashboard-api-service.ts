@@ -7,8 +7,10 @@ import type { GraphQlResponse } from '../../devices/types/device.types';
 import { API_ENDPOINTS, TICKET_STATUS } from '../../tickets/constants';
 import { GET_TICKET_STATISTICS_QUERY } from '../../tickets/queries/ticket-queries';
 import {
+  kindColorFromStatistics,
   kindCountsFromStatistics,
   resolvedCountFromStatistics,
+  TICKET_STATUS_KIND,
   type TicketStatisticsCounts,
 } from '../../tickets/utils/ticket-statistics';
 
@@ -34,6 +36,7 @@ export interface DashboardTicketStats {
   aiAssistance: number;
   techRequired: number;
   otherStatuses: number;
+  techRequiredColor?: string;
 }
 
 interface DeviceFiltersResponse {
@@ -144,6 +147,7 @@ class DashboardApiService {
         aiAssistance: kinds.aiAssistance,
         techRequired: kinds.techRequired,
         otherStatuses: kinds.otherStatuses,
+        techRequiredColor: kindColorFromStatistics(data, TICKET_STATUS_KIND.TECH_REQUIRED),
       };
     } catch (error) {
       throw this.handleApiError(error, 'Ticket stats fetch');

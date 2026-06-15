@@ -17,7 +17,7 @@ import {
 import { ErrorBoundary } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useNatsJsonSubscription } from '@flamingo-stack/openframe-frontend-core/nats';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -52,6 +52,7 @@ import {
   notificationsDrawerRelayQuery,
 } from '@/graphql/notifications/notifications-drawer-relay';
 import {
+  adjustUnreadCount,
   makeMarkReadUpdater,
   mapNotificationNode,
   NOTIFICATIONS_CONNECTION_KEY,
@@ -63,7 +64,11 @@ import { useNotificationMutations } from '@/graphql/notifications/use-notificati
 import { isDialogViewActive } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
-import { ADMIN_AI_MESSAGE_CONTEXT_TYPE, resolveNotificationRoute } from './notification-navigation';
+import {
+  ADMIN_AI_MESSAGE_CONTEXT_TYPE,
+  notificationTargetsLocation,
+  resolveNotificationRoute,
+} from './notification-navigation';
 import { useApproveRequest } from './use-approve-request';
 
 const DRAWER_PAGE_SIZE = 30;
@@ -90,6 +95,8 @@ function parseApprovalContext(context: NatsNotificationPayload['context']): Appr
     dialogId: typeof context.dialogId === 'string' ? context.dialogId : null,
     ticketId: typeof context.ticketId === 'string' ? context.ticketId : null,
     approvalType: typeof context.approvalType === 'string' ? context.approvalType : null,
+    resolution: typeof context.resolution === 'string' ? context.resolution : null,
+    resolvedByName: typeof context.resolvedByName === 'string' ? context.resolvedByName : null,
     toolCalls: rawToolCalls.map(raw => {
       const call = (raw ?? {}) as Record<string, unknown>;
       return {
@@ -152,6 +159,8 @@ function writeNotificationContext(
     record.setValue(approval.dialogId ?? null, 'dialogId');
     record.setValue(approval.ticketId ?? null, 'ticketId');
     record.setValue(approval.approvalType ?? null, 'approvalType');
+    record.setValue(approval.resolution ?? null, 'resolution');
+    record.setValue(approval.resolvedByName ?? null, 'resolvedByName');
     record.setLinkedRecords(
       approval.toolCalls.map((call, i) => writeToolCallRecord(store, `${contextRecordId}:toolCall:${i}`, call)),
       'toolCalls',
@@ -192,7 +201,12 @@ interface NatsNotificationPayload {
   title?: string;
   description?: string;
   createdAt?: string | number;
-  context?: { type?: string; [k: string]: unknown };
+  // Backend NotificationCategory (e.g. MINGO); buckets the sidebar unread count.
+  category?: string;
+  // CREATED is the initial push; UPDATED supersedes an earlier push with the same id
+  // (e.g. an approval request whose status changed). Absent → treat as CREATED.
+  eventType?: 'CREATED' | 'UPDATED';
+  context?: { type?: string; resolution?: string; resolvedByName?: string; [k: string]: unknown };
 }
 
 interface PaginationState {
@@ -386,12 +400,47 @@ function NotificationsDataInner({
             </Suspense>
           </ErrorBoundary>
           <NotificationsLiveBridge userId={userId} />
+          <EntityViewAutoReader />
           <NotificationPopups className={POPUP_OFFSET_CLASS} />
         </>
       )}
       {children}
     </NotificationsProvider>
   );
+}
+
+/** A still-actionable approval request: stays unread until the user actually approves/rejects it. */
+function isPendingApproval(notification: Notification): boolean {
+  const approval = getApprovalMeta(notification);
+  if (!approval) return false;
+  const resolution = approval.resolution?.toUpperCase();
+  return !resolution || resolution === 'PENDING';
+}
+
+/**
+ * Marks an unread notification read once the user opens the entity it points at (the mingo
+ * dialog, the ticket, …). Works off the shared route mapping so it stays consistent across
+ * every entity type a notification can carry, and routes through the context's `markRead` so
+ * the drawer list, the unread connection and the sidebar bucket all update together. Pending
+ * approval requests are left unread — opening the entity isn't acting on them; they clear only
+ * once approved/rejected.
+ */
+function EntityViewAutoReader() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { notifications, markRead } = useNotifications();
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const notification of notifications) {
+      if (notification.read || isPendingApproval(notification)) continue;
+      if (notificationTargetsLocation(notification, pathname, params)) {
+        markRead(notification.id);
+      }
+    }
+  }, [pathname, searchParams, notifications, markRead]);
+
+  return null;
 }
 
 interface NotificationsDrawerHydratorProps {
@@ -516,6 +565,14 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   useNatsJsonSubscription<NatsNotificationPayload>(
     subject,
     useCallback(payload => {
+      // TEMP DEBUG: notification realtime chunks
+      console.log('[notif-nats]', payload.eventType ?? 'CREATED', {
+        id: payload.id ?? payload.notificationId,
+        category: payload.category,
+        resolution: payload.context?.resolution,
+        type: payload.context?.type,
+        payload,
+      });
       const rawId = payload.notificationId ?? payload.id;
       if (!rawId) return;
       const relayId = notificationGlobalId(rawId);
@@ -523,22 +580,37 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
       const title = payload.title ?? 'Notification';
       const description = payload.description ?? null;
       const createdAtSeconds = Date.now() / 1000;
+      const category = payload.category ?? null;
+      const isUpdate = payload.eventType === 'UPDATED';
       const suppress = isWatchingNotificationDialog(payload);
 
       commitLocalUpdate(environmentRef.current, store => {
-        const node = store.get(relayId) ?? store.create(relayId, 'Notification');
+        const existing = store.get(relayId);
+        // An UPDATED event mutates a notification in place (e.g. an approval that was
+        // resolved). If it isn't in the store there's nothing visible to update — don't
+        // resurrect a card the user already dismissed or that scrolled out of the window.
+        if (isUpdate && !existing) return;
+        const node = existing ?? store.create(relayId, 'Notification');
         node.setValue(relayId, 'id');
         node.setValue(severity ?? 'INFO', 'severity');
         node.setValue(title, 'title');
         node.setValue(description, 'description');
-        node.setValue(createdAtSeconds, 'createdAt');
-        node.setValue(false, 'read');
+        node.setValue(category, 'category');
         node.setLinkedRecord(writeNotificationContext(store, `${relayId}:context`, payload), 'context');
 
+        if (isUpdate) {
+          // Leave createdAt, read state and connection membership untouched — the backend
+          // re-publishes the resolution only; the reactive tile reads the new status.
+          return;
+        }
+
+        node.setValue(createdAtSeconds, 'createdAt');
+        node.setValue(false, 'read');
+
         if (suppress) {
-          // Never enters the unread connection, so no popup and no drawer
-          // entry; lands directly in the read connection instead.
-          makeMarkReadUpdater(relayId, [UNFILTERED_NOTIFICATION_PAIR])(store);
+          // Never enters the unread connection, so no popup and no drawer entry; lands
+          // directly in the read connection. It was never counted, so skip the decrement.
+          makeMarkReadUpdater(relayId, [UNFILTERED_NOTIFICATION_PAIR], { adjustCount: false })(store);
           return;
         }
 
@@ -549,7 +621,12 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
         );
         if (!conn) return;
         prependNotificationEdge(store, conn, node, relayId);
+        // Bump the sidebar bucket in the same transaction as the drawer prepend.
+        adjustUnreadCount(store, category, 1);
       });
+
+      // In-place update: read state is unchanged, so no popup, no desktop mirror, no badge re-fetch.
+      if (isUpdate) return;
 
       if (suppress) {
         // Persist the auto-read server-side; refresh sidebar badges either way
@@ -567,8 +644,8 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
         maybeShowDesktopNotification(payload, relayId, title, description, route => routerRef.current.push(route));
       }
 
-      // The push payload carries no category, so re-fetch the per-category
-      // unread counts that drive the sidebar badges.
+      // The bucket was already bumped locally (above) so the sidebar is instantly consistent
+      // with the drawer; reconcile against the authoritative server counts (cross-tab/drift).
       refreshUnreadCounts(environmentRef.current);
     }, []),
   );
