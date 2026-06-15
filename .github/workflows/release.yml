@@ -126,7 +126,7 @@ jobs:
           EXTRA_BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
         with:
           max_attempts: 3
-          retry_wait_seconds: 30
+          retry_wait_seconds: 5
           timeout_minutes: 30
           shell: bash
           command: |
