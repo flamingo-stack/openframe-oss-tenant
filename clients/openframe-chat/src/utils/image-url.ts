@@ -24,7 +24,7 @@ export function appendImageHash<T extends string | null | undefined>(imageUrl: T
     return imageUrl;
   }
   const separator = imageUrl.includes('?') ? '&' : '?';
-  return `${imageUrl}${separator}v=${hash}` as T;
+  return `${imageUrl}${separator}v=${encodeURIComponent(hash)}` as T;
 }
 
 function buildFullUrl(imageUrl: string): string {
