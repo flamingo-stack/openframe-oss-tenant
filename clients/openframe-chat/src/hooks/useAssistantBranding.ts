@@ -1,4 +1,5 @@
 import faeAvatar from '../assets/fae-avatar.png';
+import { getFullImageUrl } from '../utils/image-url';
 import { useChatConfig } from './useChatConfig';
 
 export interface AssistantBranding {
@@ -13,9 +14,10 @@ export interface AssistantBranding {
 export function useAssistantBranding(): AssistantBranding {
   const { faeSettings } = useChatConfig();
   const configuredName = faeSettings?.assistantName?.trim();
+  const avatar = faeSettings?.assistantAvatar;
 
   return {
     assistantName: configuredName || undefined,
-    assistantAvatar: faeSettings?.assistantAvatar?.imageUrl || faeAvatar,
+    assistantAvatar: getFullImageUrl(avatar?.imageUrl, avatar?.hash) || faeAvatar,
   };
 }
