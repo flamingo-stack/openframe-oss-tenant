@@ -30,9 +30,6 @@ export const notificationsDrawerRelayFragment = graphql`
             ... on AdminAiMessageContext {
               dialogId
             }
-            ... on CustomerTicketCreatedContext {
-              customerTicketId: ticketId
-            }
             ... on AdminApprovalRequestContext {
               approvalRequestId
               dialogId
