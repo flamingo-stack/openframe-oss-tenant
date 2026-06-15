@@ -1,16 +1,24 @@
 import { useEffect } from 'react';
+import { deriveAccentShades } from '../utils/accentShades';
 import { useChatConfig } from './useChatConfig';
 
-// ODS accent custom properties overridden by the configured accent color.
-// `--ods-accent` is the canonical token; the `--color-accent-*` aliases are
-// what components actually consume for hover/active/focus states.
-const ACCENT_CSS_VARS = [
-  '--ods-accent',
-  '--color-accent-primary',
-  '--color-accent-hover',
-  '--color-accent-active',
-  '--color-accent-focus',
-];
+// Maps each overridden ODS custom property to which accent shade it gets.
+// `base` is the accent itself; `hover`/`active` are ODS-style darkened steps so
+// interaction states stay visually distinct instead of collapsing to one color.
+// `--ods-accent` is the canonical token; `--color-accent-*` are the aliases
+// components consume. `--ods-flamingo-pink-*` back the lib's
+// `bg-ods-flamingo-pink` / `text-ods-flamingo-pink`, used by the assistant
+// Avatar fill and fae author name - overriding them recolors those to the accent.
+const ACCENT_VAR_SHADES = {
+  '--ods-accent': 'base',
+  '--color-accent-primary': 'base',
+  '--color-accent-focus': 'base',
+  '--color-accent-hover': 'hover',
+  '--color-accent-active': 'active',
+  '--ods-flamingo-pink-base': 'base',
+  '--ods-flamingo-pink-hover': 'hover',
+  '--ods-flamingo-pink-action': 'active',
+} as const;
 
 /**
  * Applies FaeSettings appearance to the document:
@@ -52,11 +60,14 @@ export function useApplyFaeAppearance() {
     if (!accentColor) return;
 
     const root = document.documentElement;
-    for (const cssVar of ACCENT_CSS_VARS) {
-      root.style.setProperty(cssVar, accentColor);
+    const shades = deriveAccentShades(accentColor);
+    const cssVars = Object.keys(ACCENT_VAR_SHADES) as Array<keyof typeof ACCENT_VAR_SHADES>;
+
+    for (const cssVar of cssVars) {
+      root.style.setProperty(cssVar, shades[ACCENT_VAR_SHADES[cssVar]]);
     }
     return () => {
-      for (const cssVar of ACCENT_CSS_VARS) {
+      for (const cssVar of cssVars) {
         root.style.removeProperty(cssVar);
       }
     };
