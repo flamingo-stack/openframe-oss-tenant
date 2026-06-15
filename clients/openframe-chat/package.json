@@ -18,7 +18,7 @@
     "format:fix": "biome format --fix ."
   },
   "dependencies": {
-    "@flamingo-stack/openframe-frontend-core": "0.0.255-snapshot.20260611200421",
+    "@flamingo-stack/openframe-frontend-core": "0.0.271-snapshot.20260615175535",
     "@tanstack/react-query": "^5.90.21",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
