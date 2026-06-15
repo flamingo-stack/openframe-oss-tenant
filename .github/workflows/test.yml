@@ -117,8 +117,6 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
 
 
       - name: Build and push image
