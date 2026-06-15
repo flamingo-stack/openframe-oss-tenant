@@ -318,7 +318,7 @@ export function ChatView() {
   return (
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
-        userName={assistantName}
+        userName={assistantName ?? 'Fae'}
         userAvatar={assistantAvatar}
         connectionStatus={status}
         serverUrl={serverUrl}

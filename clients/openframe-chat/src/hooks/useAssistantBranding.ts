@@ -4,7 +4,8 @@ import { useChatConfig } from './useChatConfig';
 
 export interface AssistantBranding {
   /** Configured assistant name; `undefined` when not customized so callers
-   *  keep their own defaults (header shows the lib default, messages "Fae"). */
+   *  apply their own fallback (both header and message bubbles default to
+   *  "Fae" via `assistantName ?? 'Fae'`). */
   assistantName: string | undefined;
   /** Avatar image src - the configured URL or the bundled default. */
   assistantAvatar: string;
