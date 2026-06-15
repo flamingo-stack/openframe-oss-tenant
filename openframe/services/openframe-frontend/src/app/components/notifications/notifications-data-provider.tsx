@@ -14,6 +14,7 @@ import {
   type RenderNotificationTile,
   useNotifications,
 } from '@flamingo-stack/openframe-frontend-core';
+import { ErrorBoundary } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useNatsJsonSubscription } from '@flamingo-stack/openframe-frontend-core/nats';
 import { useRouter } from 'next/navigation';
@@ -62,11 +63,7 @@ import { useNotificationMutations } from '@/graphql/notifications/use-notificati
 import { isDialogViewActive } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
-import {
-  ADMIN_AI_MESSAGE_CONTEXT_TYPE,
-  CUSTOMER_TICKET_CREATED_CONTEXT_TYPE,
-  resolveNotificationRoute,
-} from './notification-navigation';
+import { ADMIN_AI_MESSAGE_CONTEXT_TYPE, resolveNotificationRoute } from './notification-navigation';
 import { useApproveRequest } from './use-approve-request';
 
 const DRAWER_PAGE_SIZE = 30;
@@ -81,7 +78,6 @@ const DRAWER_FILTER_PAIRS = [UNFILTERED_NOTIFICATION_PAIR];
 const NATS_CONTEXT_TYPENAME = 'GenericContext';
 const APPROVAL_CONTEXT_TYPENAME = 'AdminApprovalRequestContext';
 const ADMIN_AI_MESSAGE_CONTEXT_TYPENAME = 'AdminAiMessageContext';
-const CUSTOMER_TICKET_CREATED_CONTEXT_TYPENAME = 'CustomerTicketCreatedContext';
 
 /** Extract the approval payload from a raw NATS notification context, or null if it isn't one. */
 function parseApprovalContext(context: NatsNotificationPayload['context']): ApprovalNotificationMeta | null {
@@ -168,14 +164,6 @@ function writeNotificationContext(
     const record = upsertContextRecord(store, contextRecordId, ADMIN_AI_MESSAGE_CONTEXT_TYPENAME);
     record.setValue(ADMIN_AI_MESSAGE_CONTEXT_TYPE, 'type');
     record.setValue(dialogId, 'dialogId');
-    return record;
-  }
-
-  const ticketId = payload.context?.ticketId;
-  if (payload.context?.type === CUSTOMER_TICKET_CREATED_CONTEXT_TYPE && typeof ticketId === 'string') {
-    const record = upsertContextRecord(store, contextRecordId, CUSTOMER_TICKET_CREATED_CONTEXT_TYPENAME);
-    record.setValue(CUSTOMER_TICKET_CREATED_CONTEXT_TYPE, 'type');
-    record.setValue(ticketId, 'ticketId');
     return record;
   }
 
@@ -392,9 +380,11 @@ function NotificationsDataInner({
     >
       {enabled && (
         <>
-          <Suspense fallback={null}>
-            <NotificationsDrawerHydrator onPaginationChange={setPagination} />
-          </Suspense>
+          <ErrorBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <NotificationsDrawerHydrator onPaginationChange={setPagination} />
+            </Suspense>
+          </ErrorBoundary>
           <NotificationsLiveBridge userId={userId} />
           <NotificationPopups className={POPUP_OFFSET_CLASS} />
         </>
