@@ -57,6 +57,7 @@ function dialogToBoardTicket(dialog: Dialog): BoardTicket {
         ]
       : undefined,
     tags: dialog.labels?.map(l => l.key),
+    createdAt: dialog.createdAt,
   };
 }
 

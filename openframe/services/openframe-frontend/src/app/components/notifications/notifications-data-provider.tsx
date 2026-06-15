@@ -14,6 +14,7 @@ import {
   type RenderNotificationTile,
   useNotifications,
 } from '@flamingo-stack/openframe-frontend-core';
+import { ErrorBoundary } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useNatsJsonSubscription } from '@flamingo-stack/openframe-frontend-core/nats';
 import { useRouter } from 'next/navigation';
@@ -62,15 +63,13 @@ import { useNotificationMutations } from '@/graphql/notifications/use-notificati
 import { isDialogViewActive } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
-import {
-  ADMIN_AI_MESSAGE_CONTEXT_TYPE,
-  CUSTOMER_TICKET_CREATED_CONTEXT_TYPE,
-  resolveNotificationRoute,
-} from './notification-navigation';
+import { ADMIN_AI_MESSAGE_CONTEXT_TYPE, resolveNotificationRoute } from './notification-navigation';
 import { useApproveRequest } from './use-approve-request';
 
 const DRAWER_PAGE_SIZE = 30;
 const SHOW_POPUPS_STORAGE_KEY = 'of.notifications:showPopups';
+const SHOW_DESKTOP_POPUPS_STORAGE_KEY = 'of.notifications:desktop';
+const DESKTOP_NOTIFICATION_ICON = '/assets/openframe/android-chrome-192x192.png';
 const NOTIFICATION_SUBJECT_PREFIX = 'user';
 const NOTIFICATION_SUBJECT_SUFFIX = 'notification';
 const POPUP_OFFSET_CLASS = 'top-16 md:top-[4.5rem]';
@@ -79,7 +78,6 @@ const DRAWER_FILTER_PAIRS = [UNFILTERED_NOTIFICATION_PAIR];
 const NATS_CONTEXT_TYPENAME = 'GenericContext';
 const APPROVAL_CONTEXT_TYPENAME = 'AdminApprovalRequestContext';
 const ADMIN_AI_MESSAGE_CONTEXT_TYPENAME = 'AdminAiMessageContext';
-const CUSTOMER_TICKET_CREATED_CONTEXT_TYPENAME = 'CustomerTicketCreatedContext';
 
 /** Extract the approval payload from a raw NATS notification context, or null if it isn't one. */
 function parseApprovalContext(context: NatsNotificationPayload['context']): ApprovalNotificationMeta | null {
@@ -166,14 +164,6 @@ function writeNotificationContext(
     const record = upsertContextRecord(store, contextRecordId, ADMIN_AI_MESSAGE_CONTEXT_TYPENAME);
     record.setValue(ADMIN_AI_MESSAGE_CONTEXT_TYPE, 'type');
     record.setValue(dialogId, 'dialogId');
-    return record;
-  }
-
-  const ticketId = payload.context?.ticketId;
-  if (payload.context?.type === CUSTOMER_TICKET_CREATED_CONTEXT_TYPE && typeof ticketId === 'string') {
-    const record = upsertContextRecord(store, contextRecordId, CUSTOMER_TICKET_CREATED_CONTEXT_TYPENAME);
-    record.setValue(CUSTOMER_TICKET_CREATED_CONTEXT_TYPE, 'type');
-    record.setValue(ticketId, 'ticketId');
     return record;
   }
 
@@ -288,6 +278,7 @@ export function NotificationsDataProvider({ children }: { children: ReactNode })
   const isAuthenticated = useAuthStore(s => s.isAuthenticated);
   const userId = useAuthStore(s => s.user?.id);
   const [showPopups, setShowPopups] = useLocalStorage<boolean>(SHOW_POPUPS_STORAGE_KEY, true);
+  const [showDesktopPopups, setShowDesktopPopups] = useLocalStorage<boolean>(SHOW_DESKTOP_POPUPS_STORAGE_KEY, false);
   const notificationsEnabled = featureFlags.notifications.enabled();
 
   return (
@@ -295,6 +286,8 @@ export function NotificationsDataProvider({ children }: { children: ReactNode })
       userId={notificationsEnabled && isAuthenticated ? (userId ?? null) : null}
       showPopups={showPopups}
       onShowPopupsChange={setShowPopups}
+      showDesktopPopups={showDesktopPopups}
+      onShowDesktopPopupsChange={setShowDesktopPopups}
     >
       {children}
     </NotificationsDataInner>
@@ -305,10 +298,19 @@ interface NotificationsDataInnerProps {
   userId: string | null;
   showPopups: boolean;
   onShowPopupsChange: (value: boolean) => void;
+  showDesktopPopups: boolean;
+  onShowDesktopPopupsChange: (value: boolean) => void;
   children: ReactNode;
 }
 
-function NotificationsDataInner({ userId, showPopups, onShowPopupsChange, children }: NotificationsDataInnerProps) {
+function NotificationsDataInner({
+  userId,
+  showPopups,
+  onShowPopupsChange,
+  showDesktopPopups,
+  onShowDesktopPopupsChange,
+  children,
+}: NotificationsDataInnerProps) {
   const router = useRouter();
   const [pagination, setPagination] = useState<PaginationState>(EMPTY_PAGINATION);
   const enabled = userId !== null;
@@ -368,6 +370,8 @@ function NotificationsDataInner({ userId, showPopups, onShowPopupsChange, childr
       onHistoryClick={enabled ? handleHistoryClick : undefined}
       defaultShowPopups={showPopups}
       onShowPopupsChange={onShowPopupsChange}
+      defaultShowDesktopPopups={showDesktopPopups}
+      onShowDesktopPopupsChange={onShowDesktopPopupsChange}
       maxNotifications={Number.POSITIVE_INFINITY}
       hasMore={enabled ? pagination.hasMore : false}
       isLoadingMore={enabled ? pagination.isLoadingMore : false}
@@ -376,9 +380,11 @@ function NotificationsDataInner({ userId, showPopups, onShowPopupsChange, childr
     >
       {enabled && (
         <>
-          <Suspense fallback={null}>
-            <NotificationsDrawerHydrator onPaginationChange={setPagination} />
-          </Suspense>
+          <ErrorBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <NotificationsDrawerHydrator onPaginationChange={setPagination} />
+            </Suspense>
+          </ErrorBoundary>
           <NotificationsLiveBridge userId={userId} />
           <NotificationPopups className={POPUP_OFFSET_CLASS} />
         </>
@@ -445,11 +451,67 @@ function isWatchingNotificationDialog(payload: NatsNotificationPayload): boolean
   return typeof document !== 'undefined' && document.visibilityState === 'visible';
 }
 
+/**
+ * Mirror a live notification to the OS when the user opted in, permission is
+ * granted, and the tab is hidden (visible tabs already show the in-app tile).
+ * `tag` dedupes re-deliveries; clicking focuses the tab and navigates to the
+ * notification's entity when it has one.
+ */
+function maybeShowDesktopNotification(
+  payload: NatsNotificationPayload,
+  relayId: string,
+  title: string,
+  description: string | null,
+  navigate: (route: string) => void,
+): void {
+  if (
+    typeof window === 'undefined' ||
+    !('Notification' in window) ||
+    Notification.permission !== 'granted' ||
+    document.visibilityState !== 'hidden'
+  ) {
+    return;
+  }
+
+  const route = resolveNotificationRoute({
+    id: relayId,
+    title,
+    createdAt: Date.now(),
+    meta: {
+      contextType: payload.context?.type,
+      dialogId: payload.context?.dialogId,
+      ticketId: payload.context?.ticketId,
+    },
+  });
+
+  try {
+    const notification = new Notification(title, {
+      body: description ?? undefined,
+      tag: relayId,
+      icon: DESKTOP_NOTIFICATION_ICON,
+    });
+    notification.onclick = () => {
+      window.focus();
+      if (route) navigate(route);
+      notification.close();
+    };
+  } catch {
+    // Page-context Notification construction throws on Android Chrome (service-worker only there).
+  }
+}
+
 function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   const environment = useRelayEnvironment();
+  const router = useRouter();
+  const { showDesktopPopups } = useNotifications();
   const subject = `${NOTIFICATION_SUBJECT_PREFIX}.${userId}.${NOTIFICATION_SUBJECT_SUFFIX}`;
   const environmentRef = useRef(environment);
   environmentRef.current = environment;
+  // Refs keep the NATS subscription callback dependency-free (no resubscribe on toggle/navigation).
+  const showDesktopPopupsRef = useRef(showDesktopPopups);
+  showDesktopPopupsRef.current = showDesktopPopups;
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   useNatsJsonSubscription<NatsNotificationPayload>(
     subject,
@@ -499,6 +561,10 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
           onError: () => refreshUnreadCounts(environmentRef.current),
         });
         return;
+      }
+
+      if (showDesktopPopupsRef.current) {
+        maybeShowDesktopNotification(payload, relayId, title, description, route => routerRef.current.push(route));
       }
 
       // The push payload carries no category, so re-fetch the per-category
