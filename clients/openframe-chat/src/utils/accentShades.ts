@@ -27,7 +27,7 @@ export function deriveAccentShades(color: string): AccentShades {
     return { base: color, hover: color, active: color };
   }
   return {
-    base: color,
+    base: toHexColor(rgb),
     hover: toHexColor(darken(rgb, HOVER_STEP)),
     active: toHexColor(darken(rgb, ACTIVE_STEP)),
   };
