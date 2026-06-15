@@ -36,3 +36,25 @@ export function resolveNotificationAction(notification: Notification): Notificat
 export function resolveNotificationRoute(notification: Notification): string | null {
   return resolveNotificationAction(notification)?.route ?? null;
 }
+
+/**
+ * True when the current location is the entity a notification points at — its target route's
+ * pathname matches and every query param it carries is present with the same value. Drives
+ * auto-marking a notification read once the user opens its entity, uniformly for every entity
+ * type the route mapping covers (mingo dialog, ticket, …).
+ */
+export function notificationTargetsLocation(
+  notification: Notification,
+  pathname: string,
+  searchParams: URLSearchParams,
+): boolean {
+  const route = resolveNotificationRoute(notification);
+  if (!route) return false;
+  const [routePath, routeQuery] = route.split('?');
+  if (routePath !== pathname) return false;
+  if (!routeQuery) return true;
+  for (const [key, value] of new URLSearchParams(routeQuery)) {
+    if (searchParams.get(key) !== value) return false;
+  }
+  return true;
+}

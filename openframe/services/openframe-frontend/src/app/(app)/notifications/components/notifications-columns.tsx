@@ -1,10 +1,14 @@
 'use client';
 
 import type { Notification } from '@flamingo-stack/openframe-frontend-core';
-import { CheckCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, type ColumnDef, type Row } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { format } from 'date-fns';
+import {
+  ArrowRightUpIcon,
+  CheckCircleIcon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button, type ColumnDef, type Row, SplitButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import { formatDate, formatTime } from '@/lib/format-date';
 
 export interface NotificationRow {
   id: string;
@@ -48,29 +52,36 @@ export function buildNotificationColumns({
       header: 'Time',
       enableSorting: false,
       meta: { width: 'w-[160px]' },
-      cell: ({ row }: { row: Row<NotificationRow> }) => {
-        const date = new Date(row.original.createdAt);
-        return (
-          <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-            <span className="text-h4 text-ods-text-primary">{format(date, 'hh:mm a')}</span>
-            <span className="text-h6 text-ods-text-secondary">{format(date, 'dd/MM/yyyy')}</span>
-          </div>
-        );
-      },
+      cell: ({ row }: { row: Row<NotificationRow> }) => (
+        <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+          <span className="text-h4 text-ods-text-primary">{formatTime(row.original.createdAt)}</span>
+          <span className="text-h6 text-ods-text-secondary">{formatDate(row.original.createdAt)}</span>
+        </div>
+      ),
     },
     {
       id: 'action',
       header: '',
       enableSorting: false,
-      meta: { width: 'w-[160px]', align: 'right' },
+      meta: { width: 'w-[210px]', align: 'right' },
       cell: ({ row }: { row: Row<NotificationRow> }) => {
         const action = resolveNotificationAction(row.original.notification);
         if (!action) return null;
         return (
           <div data-no-row-click className="flex w-full justify-end">
-            <Button variant="outline" className="w-full" href={action.route} openInNewTab>
+            <SplitButton
+              variant="outline"
+              href={action.route}
+              groupAriaLabel={action.label}
+              iconAction={{
+                icon: <ArrowRightUpIcon className="text-ods-text-secondary" />,
+                'aria-label': `Open ${action.label} in new tab`,
+                href: action.route,
+                openInNewTab: true,
+              }}
+            >
               {action.label}
-            </Button>
+            </SplitButton>
           </div>
         );
       },
