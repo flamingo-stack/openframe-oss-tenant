@@ -117,28 +117,31 @@ jobs:
         if: steps.should_run.outputs.run == 'true'
         with:
           build_args: ${{ toJSON(matrix.build_args) }}
-        env:
-          BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
+
 
       - name: Build and push image
         id: docker_build
-        uses: docker/build-push-action@v6
         if: steps.should_run.outputs.run == 'true'
+        uses: nick-fields/retry@v4
+        env:
+          LIB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          META_TAGS: ${{ steps.meta.outputs.tags }}
+          META_LABELS: ${{ steps.meta.outputs.labels }}
+          EXTRA_BUILD_ARGS: ${{ steps.format_args.outputs.formatted_args }}
         with:
-          # need to copy the pom.xml from the root so it builds with the lib version correctly
-          context: ${{ matrix.context || matrix.path }}
-          file: ${{ matrix.path }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: false
-          sbom: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          secrets: |
-            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
-          build-args: |
-            GITHUB_ACTOR=${{ github.actor }}
-            ${{ env.BUILD_ARGS }}
+          max_attempts: 3
+          retry_wait_seconds: 5
+          timeout_minutes: 30
+          shell: bash
+          command: |
+            args=(--platform linux/amd64,linux/arm64 --push --provenance=false --sbom=true
+                  --secret id=GITHUB_TOKEN,env=LIB_TOKEN
+                  --build-arg GITHUB_ACTOR=${{ github.actor }}
+                  -f "${{ matrix.path }}/Dockerfile")
+            while IFS= read -r t; do [ -n "$t" ] && args+=(--tag "$t"); done <<< "$META_TAGS"
+            while IFS= read -r l; do [ -n "$l" ] && args+=(--label "$l"); done <<< "$META_LABELS"
+            while IFS= read -r b; do [ -n "$b" ] && args+=(--build-arg "$b"); done <<< "$EXTRA_BUILD_ARGS"
+            docker buildx build "${args[@]}" "${{ matrix.context || matrix.path }}"
 
 
   test:
