@@ -95,7 +95,7 @@ export function ChatInitialScreen({
           <div
             aria-hidden="true"
             style={{
-              background: 'linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0.00) 100%)',
+              background: 'linear-gradient(180deg, var(--color-bg) 0%, transparent 100%)',
             }}
             className={cn(
               'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
@@ -105,7 +105,7 @@ export function ChatInitialScreen({
           <div
             aria-hidden="true"
             style={{
-              background: 'linear-gradient(180deg, rgba(22, 22, 22, 0.00) 0%, #161616 100%)',
+              background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 100%)',
             }}
             className={cn(
               'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
