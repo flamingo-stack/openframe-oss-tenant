@@ -25,8 +25,8 @@ export function AiSettingsQuickActions({ actions }: AiSettingsQuickActionsProps)
             key={action.id}
             className="flex flex-col gap-1 bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)]"
           >
-            <p className="text-h4 text-ods-text-primary">{action.name}</p>
-            <p className="text-h6 text-ods-text-secondary">{action.instructions}</p>
+            <p className="text-h4 text-ods-text-primary truncate">{action.name}</p>
+            <p className="text-h6 text-ods-text-secondary truncate">{action.instructions}</p>
           </li>
         ))}
       </ul>
