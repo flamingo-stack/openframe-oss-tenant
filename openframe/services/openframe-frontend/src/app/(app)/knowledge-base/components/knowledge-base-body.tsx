@@ -3,14 +3,16 @@
 import {
   BookBookmarkIcon,
   BoxArchiveIcon,
+  Filter02Icon,
   PlusCircleIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Button,
   type PageActionButton,
   PageLayout,
   TagSearchInput,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMdUp, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { graphql, useFragment, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
@@ -39,6 +41,7 @@ import {
   KnowledgeBaseTableSkeleton,
   readKnowledgeBaseItems,
 } from './knowledge-base-table';
+import { KnowledgeBaseTagsFilterModal } from './knowledge-base-tags-filter-modal';
 import { KnowledgeBaseTagsRow } from './knowledge-base-tags-row';
 import { NewFolderModal } from './new-folder-modal';
 
@@ -380,9 +383,13 @@ function KnowledgeBaseBodyShell({
   currentFolder,
   onCurrentFolderDeleted,
 }: KnowledgeBaseBodyShellProps) {
-  const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
+  const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, setTags, clearAll } =
     useTagSearchState();
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
+  const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  // Below `md` (phones) the inline tags row is hidden and a filter button next
+  // to the search opens the tags modal instead; tablet/desktop keep the row.
+  const isMdUp = useMdUp();
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const isSubtreeMode = parentId !== null && tagIds.length > 0;
@@ -420,17 +427,30 @@ function KnowledgeBaseBodyShell({
           ref={toolbarRef}
           className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
         >
-          <TagSearchInput<string>
-            tags={tagSearchOptions}
-            searchValue={search}
-            onSearchChange={setSearch}
-            onTagRemove={removeTag}
-            onClearAll={clearAll}
-            placeholder="Search for Articles"
-            addMorePlaceholder="Search for Articles"
-          />
+          <div className="flex items-center gap-[var(--spacing-system-m)]">
+            <div className="min-w-0 flex-1">
+              <TagSearchInput<string>
+                tags={tagSearchOptions}
+                searchValue={search}
+                onSearchChange={setSearch}
+                onTagRemove={removeTag}
+                onClearAll={clearAll}
+                placeholder="Search for Articles"
+                addMorePlaceholder="Search for Articles"
+              />
+            </div>
+            {isMdUp === false && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsTagsModalOpen(true)}
+                aria-label="Filter by tags"
+                leftIcon={<Filter02Icon />}
+              />
+            )}
+          </div>
 
-          <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />
+          {isMdUp === true && <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />}
         </div>
 
         <Suspense fallback={<KnowledgeBaseTableSkeleton />}>
@@ -458,6 +478,16 @@ function KnowledgeBaseBodyShell({
         parentFolderId={parentId}
         parentConnectionId={newFolderConnectionId}
       />
+
+      {isMdUp === false && (
+        <KnowledgeBaseTagsFilterModal
+          isOpen={isTagsModalOpen}
+          onClose={() => setIsTagsModalOpen(false)}
+          parentId={parentId}
+          selectedIds={tagIds}
+          onApply={setTags}
+        />
+      )}
 
       {currentFolder && folderActions.modals}
     </PageLayout>
