@@ -38,6 +38,7 @@ use tracing_subscriber::{
     fmt::{self},
     layer::SubscriberExt,
     prelude::*,
+    registry::LookupSpan,
     EnvFilter, Layer, Registry,
 };
 
@@ -112,14 +113,31 @@ impl JsonLayer {
     }
 }
 
+/// Fields captured from a span so events within it can include them (e.g. `tool_id`).
+struct SpanFields(serde_json::Map<String, serde_json::Value>);
+
 impl<S> Layer<S> for JsonLayer
 where
-    S: tracing::Subscriber,
+    S: tracing::Subscriber + for<'a> LookupSpan<'a>,
 {
+    fn on_new_span(
+        &self,
+        attrs: &tracing::span::Attributes<'_>,
+        id: &tracing::span::Id,
+        ctx: tracing_subscriber::layer::Context<'_, S>,
+    ) {
+        // Record the span's fields and stash them on the span for later events.
+        let mut visitor = JsonVisitor::default();
+        attrs.record(&mut visitor);
+        if let Some(span) = ctx.span(id) {
+            span.extensions_mut().insert(SpanFields(visitor.fields));
+        }
+    }
+
     fn on_event(
         &self,
         event: &tracing::Event<'_>,
-        _ctx: tracing_subscriber::layer::Context<'_, S>,
+        ctx: tracing_subscriber::layer::Context<'_, S>,
     ) {
         let mut visitor = JsonVisitor::default();
         event.record(&mut visitor);
@@ -137,6 +155,22 @@ where
         // Store message content in a separate variable before using it
         let message_content = visitor.message.clone().unwrap_or_default();
 
+        // Merge fields from enclosing spans (root -> leaf) beneath the event's own
+        // fields, so every line carries span context such as `tool_id`.
+        let mut context = serde_json::Map::new();
+        if let Some(scope) = ctx.event_scope(event) {
+            for span in scope.from_root() {
+                if let Some(fields) = span.extensions().get::<SpanFields>() {
+                    for (key, value) in &fields.0 {
+                        context.insert(key.clone(), value.clone());
+                    }
+                }
+            }
+        }
+        for (key, value) in visitor.fields {
+            context.insert(key, value);
+        }
+
         let log_entry = LogEntry {
             timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
             level,
@@ -147,7 +181,7 @@ where
             thread: format!("{:?}", std::thread::current().id()),
             message: message_content.clone(),
             error: visitor.error,
-            context: serde_json::Value::Object(visitor.fields),
+            context: serde_json::Value::Object(context),
         };
 
         if let Ok(json) = serde_json::to_string(&log_entry) {
