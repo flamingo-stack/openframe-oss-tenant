@@ -2,14 +2,15 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
-
-export const MINGO_AI_CHAT_FORM_ID = 'ai-settings-mingo-ai-chat-form';
-
-const mingoAiChatSchema = z.object({});
-
-type MingoAiChatFormValues = z.infer<typeof mingoAiChatSchema>;
+import {
+  getMingoAiChatDefaults,
+  MINGO_AI_CHAT_FORM_ID,
+  type MingoAiChatFormValues,
+  mingoAiChatSchema,
+} from '../types/mingo-ai-chat.types';
+import { AiSettingsOverview } from './ai-settings-overview';
+import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 
 interface MingoAiChatTabProps {
   settings: FaeSettings;
@@ -17,32 +18,25 @@ interface MingoAiChatTabProps {
   onSubmit: (values: UpdateFaeSettingsInput) => void;
 }
 
-export function MingoAiChatTab({ settings: _settings, isEditMode, onSubmit }: MingoAiChatTabProps) {
+export function MingoAiChatTab({ settings, isEditMode, onSubmit }: MingoAiChatTabProps) {
   const form = useForm<MingoAiChatFormValues>({
     resolver: zodResolver(mingoAiChatSchema),
-    defaultValues: {},
+    defaultValues: getMingoAiChatDefaults(settings),
   });
 
-  const handleSubmit = form.handleSubmit(() => {
-    // TODO: map form values to UpdateFaeSettingsInput once Mingo fields exist.
-    // No fields are implemented yet, so guard against sending an empty payload
-    // through the shared Save flow (which would trigger a no-op backend update).
-    const payload: UpdateFaeSettingsInput = {};
-    if (Object.keys(payload).length === 0) {
-      return;
-    }
-    onSubmit(payload);
+  // DEMO: Mingo quick actions will get their own BE query/mutation; until then
+  // they read and save the shared Fae quickActions field.
+  const handleSubmit = form.handleSubmit(values => {
+    onSubmit({ quickActions: values.quickActions });
   });
 
   if (!isEditMode) {
-    return (
-      <div className="flex flex-col gap-[var(--spacing-system-l)]">{/* TODO: Mingo AI chat read-only content */}</div>
-    );
+    return <AiSettingsOverview quickActions={settings.quickActions} />;
   }
 
   return (
     <form id={MINGO_AI_CHAT_FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-[var(--spacing-system-l)]">
-      {/* TODO: Mingo AI chat fields */}
+      <AiSettingsQuickActionsEditor control={form.control} title="Mingo Quick Actions" />
     </form>
   );
 }

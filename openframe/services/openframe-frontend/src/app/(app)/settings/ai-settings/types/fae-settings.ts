@@ -63,7 +63,7 @@ export function getDefaultFaeSettings(organizationId: string | null = null): Fae
     assistantName: 'Fae',
     assistantAvatar: null,
     llmProvider: 'ANTHROPIC',
-    providerModel: 'Claude Sonnet 4',
+    providerModel: '',
     applicationTheme: 'DARK',
     accentColor: '#F357BB',
     answerStyle: 'STANDARD',

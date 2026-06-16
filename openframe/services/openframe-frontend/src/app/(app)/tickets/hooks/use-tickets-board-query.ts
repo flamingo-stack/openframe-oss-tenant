@@ -26,12 +26,13 @@ export interface UseTicketsBoardQueryParams {
   search?: string;
   organizationIds?: string[];
   assigneeIds?: string[];
+  labelIds?: string[];
 }
 
 type BoardColumnQuery = ReturnType<typeof useBoardColumnQuery>;
 
 function useBoardColumnQuery(status: BoardStatus, params: UseTicketsBoardQueryParams) {
-  const { search, organizationIds, assigneeIds } = params;
+  const { search, organizationIds, assigneeIds, labelIds } = params;
   return useInfiniteQuery<
     TicketsPage,
     Error,
@@ -39,13 +40,14 @@ function useBoardColumnQuery(status: BoardStatus, params: UseTicketsBoardQueryPa
     ReturnType<typeof dialogsQueryKeys.boardColumn>,
     string | undefined
   >({
-    queryKey: dialogsQueryKeys.boardColumn(status, { search, organizationIds, assigneeIds }),
+    queryKey: dialogsQueryKeys.boardColumn(status, { search, organizationIds, assigneeIds, labelIds }),
     queryFn: ({ pageParam }) =>
       ticketService.fetchDialogs({
         statuses: [status],
         search: search || undefined,
         organizationIds: organizationIds?.length ? organizationIds : undefined,
         assigneeIds: assigneeIds?.length ? assigneeIds : undefined,
+        labelIds: labelIds?.length ? labelIds : undefined,
         cursor: pageParam,
         limit: BOARD_PAGE_SIZE,
       }),

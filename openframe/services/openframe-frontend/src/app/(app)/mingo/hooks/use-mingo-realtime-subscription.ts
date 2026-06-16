@@ -15,6 +15,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { registerActiveDialogView } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { useNatsAppConfig } from '@/lib/nats/nats-app-config';
 import { useAuthStore } from '@/stores';
@@ -417,6 +418,10 @@ export function DialogSubscription({
 }: DialogSubscriptionProps) {
   const { getWsUrl, onBeforeReconnect } = useNatsAppConfig();
   const [hasCaughtUp, setHasCaughtUp] = useState(false);
+
+  // While this live tail is mounted the user is watching the dialog, so the
+  // notifications pipeline suppresses popups / auto-reads for it.
+  useEffect(() => registerActiveDialogView(dialogId), [dialogId]);
 
   const recordHighestStreamSeq = useMingoMessagesStore(s => s.recordHighestStreamSeq);
   const storedHighestSeq = useMingoMessagesStore(s => s.highestStreamSeqByDialog.get(dialogId) ?? 0);

@@ -33,12 +33,12 @@ export function FaeChatPreview({
   const messages = useMemo(() => buildFaeChatPreviewMessages(avatarUrl), [avatarUrl]);
 
   return (
-    <div className="fae-chat-preview grid h-[115px] w-full place-items-center overflow-hidden rounded-md border border-ods-border bg-ods-bg md:h-[296px] lg:h-[380px]">
+    <div className="fae-chat-preview grid h-[250px] w-full place-items-center overflow-hidden rounded-md border border-ods-border bg-ods-bg md:h-[296px] lg:h-[380px]">
       {/* 1:1 content in a 1112px slot, zoom-scaled to the per-breakpoint card height. */}
       <div
         // accent re-points flamingo-pink so the lib's Fae name follows it.
         style={{ '--ods-flamingo-pink-base': accentColor } as CSSProperties}
-        className="flex h-[1112px] w-[650px] max-w-none flex-col p-[var(--spacing-system-m)] [zoom:0.103] md:[zoom:0.266] lg:[zoom:0.342]"
+        className="flex h-[1112px] w-[650px] max-w-none flex-col p-[var(--spacing-system-m)] [zoom:0.225] md:[zoom:0.266] lg:[zoom:0.342]"
       >
         <ChatHeader
           fullWidth

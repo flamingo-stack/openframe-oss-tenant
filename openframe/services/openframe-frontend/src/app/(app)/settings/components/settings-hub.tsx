@@ -22,7 +22,7 @@ import { handleApiError } from '@/lib/handle-api-error';
 import { EditProfileModal } from './edit-profile-modal';
 import { EmailVerificationModal } from './email-verification-modal';
 import { ProfileCard } from './profile-card';
-import { SettingsNavCard } from './settings-nav-card';
+import { SettingMenuItem } from './setting-menu-item';
 
 const SETTINGS_NAV_ITEMS = [
   {
@@ -150,7 +150,7 @@ export function SettingsHub() {
         )
           .filter(item => item.href !== '/settings/architecture' || isOssTenantMode())
           .map(item => (
-            <SettingsNavCard
+            <SettingMenuItem
               key={item.href}
               href={item.href}
               icon={<item.icon size={24} />}

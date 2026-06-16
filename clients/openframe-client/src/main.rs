@@ -64,6 +64,8 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
+    openframe::platform::configure_console();
+
     let cli = Cli::parse();
     let rt = Runtime::new()?;
 

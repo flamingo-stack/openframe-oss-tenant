@@ -1,4 +1,5 @@
 pub mod binary_writer;
+pub mod console;
 pub mod directories;
 pub mod dmg_extractor;
 pub mod file_acl;
@@ -24,6 +25,7 @@ pub mod powershell;
 
 // Re-export commonly used items
 pub use binary_writer::{write_executable, set_executable_permissions};
+pub use console::configure_console;
 pub use directories::{DirectoryError, DirectoryManager};
 #[cfg(target_os = "macos")]
 pub use directories::{remove_app_bundle, remove_app_bundle_path};

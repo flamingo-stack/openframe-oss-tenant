@@ -18,28 +18,6 @@ export const LLM_PROVIDER_ICON: Record<AIProvider, IconComponent> = {
 
 export const LLM_PROVIDER_OPTIONS: AIProvider[] = ['ANTHROPIC', 'OPENAI', 'GOOGLE_GEMINI'];
 
-export interface ProviderModelOption {
-  value: string;
-  label: string;
-}
-
-// Placeholder model lists per provider. Replace with the backend-provided
-// `supportedModels` once the FaeSettings schema lands.
-export const PROVIDER_MODELS: Record<AIProvider, ProviderModelOption[]> = {
-  ANTHROPIC: [
-    { value: 'Claude Opus 4.1', label: 'Claude Opus 4.1' },
-    { value: 'Claude Sonnet 4', label: 'Claude Sonnet 4' },
-  ],
-  OPENAI: [
-    { value: 'GPT-4o', label: 'GPT-4o' },
-    { value: 'GPT-4.1', label: 'GPT-4.1' },
-  ],
-  GOOGLE_GEMINI: [
-    { value: 'Gemini 2.5 Pro', label: 'Gemini 2.5 Pro' },
-    { value: 'Gemini 2.5 Flash', label: 'Gemini 2.5 Flash' },
-  ],
-};
-
 export const APPLICATION_THEME_LABEL: Record<ApplicationTheme, string> = {
   DARK: 'Dark',
   LIGHT: 'Light',

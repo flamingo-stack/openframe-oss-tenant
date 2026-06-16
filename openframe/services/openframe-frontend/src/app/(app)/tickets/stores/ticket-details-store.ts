@@ -18,6 +18,10 @@ interface SideState {
   accumulator: MessageSegmentAccumulator;
   tokenUsage: TokenUsageData | null;
   isTyping: boolean;
+  // Highest chunk `streamSeq` this client has consumed for the side (live or replayed). Compared
+  // against history's max persisted seq in mergeHistoryWithRealtime to drop replayed synthetics
+  // whose turns are already in history.
+  highestStreamSeq: number;
 }
 
 function createSideState(): SideState {
@@ -27,6 +31,7 @@ function createSideState(): SideState {
     accumulator: createMessageSegmentAccumulator(),
     tokenUsage: null,
     isTyping: false,
+    highestStreamSeq: 0,
   };
 }
 
@@ -89,6 +94,10 @@ interface TicketDetailsStore {
 
   // Typing
   setTypingIndicator: (side: ChatSide, typing: boolean) => void;
+
+  // Stream-seq coverage tracking (history/realtime dedupe)
+  recordHighestStreamSeq: (side: ChatSide, seq: number) => void;
+  getHighestStreamSeq: (side: ChatSide) => number;
 
   // Reset one side (e.g. on dialog switch)
   clearSide: (side: ChatSide) => void;
@@ -375,6 +384,13 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
   getTokenUsage: side => get()[side].tokenUsage,
 
   setTypingIndicator: (side, typing) => set(state => produceSide(state, side, s => ({ ...s, isTyping: typing }))),
+
+  recordHighestStreamSeq: (side, seq) =>
+    set(state =>
+      seq <= state[side].highestStreamSeq ? state : produceSide(state, side, s => ({ ...s, highestStreamSeq: seq })),
+    ),
+
+  getHighestStreamSeq: side => get()[side].highestStreamSeq,
 
   clearSide: side => set(state => produceSide(state, side, _s => createSideState())),
 }));
