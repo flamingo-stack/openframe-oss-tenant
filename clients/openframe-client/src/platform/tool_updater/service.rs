@@ -48,8 +48,9 @@ impl ToolUpdater for ServiceToolUpdater {
         info!(tool_id = %tool_agent_id, "Preparing Service tool for update");
 
         info!(tool_id = %tool_agent_id, "Stopping service");
-        self.deps.tool_kill_service.stop_installed_tool(tool).await
-            .with_context(|| format!("Failed to stop service: {}", tool_agent_id))?;
+        if let Err(e) = self.deps.tool_kill_service.stop_installed_tool(tool).await {
+            warn!(tool_id = %tool_agent_id, "Failed to stop service (non-fatal): {:#}", e);
+        }
 
         // Also kill any managed processes (ToolRunManager may have spawned agent.exe
         // if the tool was previously installed as Standard)
