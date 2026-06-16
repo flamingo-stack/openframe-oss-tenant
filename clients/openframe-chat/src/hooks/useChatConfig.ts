@@ -44,5 +44,9 @@ export function useChatConfig() {
   return {
     quickActions,
     faeSettings: query.data ?? null,
+    // True while we still expect a FaeSettings result from the server (flag on
+    // and the query hasn't settled - including the brief wait for the token).
+    // Lets callers hold off on bundled fallbacks until the server answers.
+    isSettingsLoading: customizationEnabled && query.isPending,
   };
 }
