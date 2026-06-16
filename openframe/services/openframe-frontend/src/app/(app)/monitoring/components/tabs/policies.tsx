@@ -33,6 +33,7 @@ import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
@@ -76,6 +77,7 @@ function PolicyStatusCell({ policy }: { policy: Policy }) {
 
 export function Policies() {
   const router = useRouter();
+  const askMingo = useAskMingo();
 
   const { params, setParams } = useApiParams({
     search: { type: 'string', default: '' },
@@ -289,6 +291,7 @@ export function Policies() {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('policies')}
         />
       ) : (
         <>

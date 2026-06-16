@@ -13,6 +13,7 @@ import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-co
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { useCustomers } from '../hooks/use-customers';
 import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
@@ -23,6 +24,7 @@ interface CustomersTableProps {
 
 export function CustomersTable({ status }: CustomersTableProps) {
   const router = useRouter();
+  const askMingo = useAskMingo();
 
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
@@ -100,6 +102,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('customers')}
         />
       ) : (
         <div>

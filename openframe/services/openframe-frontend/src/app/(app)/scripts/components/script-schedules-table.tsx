@@ -29,6 +29,7 @@ import {
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
@@ -53,6 +54,7 @@ function getRepeatLabelFromTaskType(taskType: ScriptScheduleTaskType): string {
 
 export function ScriptSchedulesTable() {
   const router = useRouter();
+  const askMingo = useAskMingo();
 
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
@@ -261,6 +263,7 @@ export function ScriptSchedulesTable() {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('script-schedules')}
         />
       ) : (
         <>
