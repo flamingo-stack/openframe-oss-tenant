@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "enabledManagers": ["maven", "npm", "helmv3", "regex", "cargo"],
   "labels": ["dependencies", "openframe-libs"],
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
   "prCreation": "immediate",
   "rangeStrategy": "replace",
   "semanticCommits": "enabled",
@@ -136,7 +137,8 @@
       "groupName": "openframe-client deps",
       "groupSlug": "openframe-client-deps",
       "commitMessageTopic": "openframe-client deps",
-      "labels": ["dependencies", "clients", "openframe-client"]
+      "labels": ["dependencies", "clients", "openframe-client"],
+      "prPriority": 20
     },
     {
       "description": "Track ALL deps for openframe-chat (npm + Tauri/cargo) — one grouped PR",
@@ -145,7 +147,8 @@
       "groupName": "openframe-chat deps",
       "groupSlug": "openframe-chat-deps",
       "commitMessageTopic": "openframe-chat deps",
-      "labels": ["dependencies", "clients", "openframe-chat"]
+      "labels": ["dependencies", "clients", "openframe-chat"],
+      "prPriority": 20
     }
   ],
 
