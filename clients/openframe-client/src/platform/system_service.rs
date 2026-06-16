@@ -7,8 +7,8 @@ use tracing::{error, info, warn};
 use tokio::time::{sleep, Duration};
 #[cfg(target_os = "windows")]
 use crate::config::service_stop::{
-    PROCESS_CHECK_INTERVAL_MS, SERVICE_FORCE_KILL_MAX_ATTEMPTS, SERVICE_STOP_CALL_TIMEOUT_SECS,
-    SERVICE_STOP_MAX_ATTEMPTS,
+    PROCESS_CHECK_INTERVAL_MS, SERVICE_FORCE_KILL_MAX_ATTEMPTS, SERVICE_START_MAX_ATTEMPTS,
+    SERVICE_STOP_CALL_TIMEOUT_SECS, SERVICE_STOP_MAX_ATTEMPTS,
 };
 
 /// Start a macOS service via launchctl load
@@ -32,34 +32,72 @@ pub async fn start_service(service_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Start a Windows service via the Service Control Manager.
+/// Start a Windows service via the Service Control Manager, retrying transient failures.
 #[cfg(target_os = "windows")]
 pub async fn start_service(service_name: &str) -> Result<()> {
+    info!("Starting Windows service via SCM: {}", service_name);
+
+    let mut last_err = String::new();
+    for attempt in 1..=SERVICE_START_MAX_ATTEMPTS {
+        match try_start_service_windows(service_name) {
+            Ok(()) if wait_for_service_running_windows(service_name).await => {
+                info!("Service {} confirmed running", service_name);
+                return Ok(());
+            }
+            Ok(()) => {
+                last_err = "service did not reach RUNNING after start".to_string();
+                warn!("Start attempt {}/{} for service {}: {}",
+                      attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err);
+            }
+            Err(e) => {
+                last_err = e;
+                warn!("Start attempt {}/{} for service {} failed: {}",
+                      attempt, SERVICE_START_MAX_ATTEMPTS, service_name, last_err);
+            }
+        }
+        if attempt < SERVICE_START_MAX_ATTEMPTS {
+            sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
+        }
+    }
+
+    anyhow::bail!("Failed to start service {} after {} attempts: {}",
+                  service_name, SERVICE_START_MAX_ATTEMPTS, last_err)
+}
+
+#[cfg(target_os = "windows")]
+async fn wait_for_service_running_windows(service_name: &str) -> bool {
+    use windows_service::service::ServiceState;
+    for _ in 1..=SERVICE_STOP_MAX_ATTEMPTS {
+        sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
+        if let Ok(status) = query_service_status_windows(service_name) {
+            if status.current_state == ServiceState::Running {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+#[cfg(target_os = "windows")]
+fn try_start_service_windows(service_name: &str) -> std::result::Result<(), String> {
     use winapi::shared::winerror::ERROR_SERVICE_ALREADY_RUNNING;
     use windows_service::service::ServiceAccess;
     use windows_service::service_manager::{ServiceManager, ServiceManagerAccess};
 
-    info!("Starting Windows service via SCM: {}", service_name);
-
     let manager = ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CONNECT)
-        .context("Failed to connect to the service control manager")?;
+        .map_err(|e| format!("connect to SCM: {}", e))?;
     let service = manager
         .open_service(service_name, ServiceAccess::START | ServiceAccess::QUERY_STATUS)
-        .with_context(|| format!("Failed to open service: {}", service_name))?;
+        .map_err(|e| format!("open service: {}", e))?;
 
     match service.start::<&std::ffi::OsStr>(&[]) {
-        Ok(()) => {
-            info!("Service started: {}", service_name);
-            Ok(())
-        }
-        // Ignore "already running".
+        Ok(()) => Ok(()),
         Err(windows_service::Error::Winapi(e))
             if e.raw_os_error() == Some(ERROR_SERVICE_ALREADY_RUNNING as i32) =>
         {
-            info!("Service {} already running", service_name);
             Ok(())
         }
-        Err(e) => anyhow::bail!("Failed to start service {}: {}", service_name, e),
+        Err(e) => Err(format!("{}", e)),
     }
 }
 

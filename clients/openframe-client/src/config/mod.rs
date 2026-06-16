@@ -21,6 +21,8 @@ pub mod service_stop {
     pub const SERVICE_FORCE_KILL_MAX_ATTEMPTS: u32 = 6;
     /// Cap on a blocking SCM `stop()` before force-killing (else hangs ~4 min).
     pub const SERVICE_STOP_CALL_TIMEOUT_SECS: u64 = 10;
+    /// Start attempts for a service before giving up.
+    pub const SERVICE_START_MAX_ATTEMPTS: u32 = 3;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

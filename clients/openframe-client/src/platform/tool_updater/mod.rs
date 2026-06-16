@@ -104,13 +104,16 @@ pub async fn run_update(
         .with_context(|| format!("Failed to prepare update for: {}", tool_id))?;
 
     info!(tool_id = %tool_id, "Phase 2: Applying update");
-    match updater.apply(tool, config, &ctx).await {
+    let outcome = match updater.apply(tool, config, &ctx).await {
         Ok(()) => {
             info!(tool_id = %tool_id, "Phase 3: Finalizing update");
             updater.finalize(tool, &ctx).await
-                .with_context(|| format!("Failed to finalize update for: {}", tool_id))?;
-            Ok(())
         }
+        Err(e) => Err(e),
+    };
+
+    match outcome {
+        Ok(()) => Ok(()),
         Err(e) => {
             error!(tool_id = %tool_id, error = %e, "Update failed, rolling back");
             if let Err(rollback_err) = updater.rollback(tool, &ctx).await {
