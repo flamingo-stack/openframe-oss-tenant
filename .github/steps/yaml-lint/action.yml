@@ -1,0 +1,32 @@
+name: "YAML Lint"
+description: "Validate YAML syntax only (yq parse check). Fails on broken YAML, ignores formatting."
+
+inputs:
+  path:
+    description: "Root path to scan recursively for *.yml / *.yaml files."
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    # yq (mikefarah, Go) is preinstalled on GitHub-hosted ubuntu runners. It only
+    # parses YAML, so it fails on syntactically broken files and ignores formatting.
+    # Silent + exit 0 when everything parses; on a broken file it prints file:line
+    # and exits 1. The host job must check out the repo before calling this step.
+    - name: Validate YAML syntax
+      shell: bash
+      env:
+        SCAN_PATH: ${{ inputs.path }}
+      run: |
+        set -uo pipefail
+        rc=0
+        while IFS= read -r -d '' f; do
+          if ! err=$(yq e 'true' "$f" 2>&1 >/dev/null); then
+            line=$(printf '%s' "$err" | grep -oiE 'line [0-9]+' | head -1 | grep -oE '[0-9]+' || true)
+            echo "::error file=${f}${line:+,line=${line}}::${err}"
+            echo "INVALID  ${f}: ${err}"
+            rc=1
+          fi
+        done < <(find "$SCAN_PATH" -type f \( -name '*.yml' -o -name '*.yaml' \) -not -path '*/.git/*')
+        exit $rc

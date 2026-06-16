@@ -92,6 +92,7 @@ interface BaseListViewProps {
   isLoadingNext: boolean;
   onLoadMore: () => void;
   emptyMessage: string;
+  stickyHeaderOffset?: string;
 }
 
 interface StandardListViewProps extends BaseListViewProps {
@@ -108,7 +109,7 @@ interface ArchiveListViewProps extends BaseListViewProps {
 export type ListViewProps = StandardListViewProps | ArchiveListViewProps;
 
 export function KnowledgeBaseItemsListView(props: ListViewProps) {
-  const { items, filteredCount, hasNext, isLoadingNext, onLoadMore, emptyMessage, mode } = props;
+  const { items, filteredCount, hasNext, isLoadingNext, onLoadMore, emptyMessage, mode, stickyHeaderOffset } = props;
   const standardProps = mode === 'standard' ? (props as StandardListViewProps) : null;
   const folderActions = useFolderRowActions({
     sourceConnectionId: standardProps?.foldersConnectionId ?? '',
@@ -197,6 +198,7 @@ export function KnowledgeBaseItemsListView(props: ListViewProps) {
         emptyMessage={emptyMessage}
         actionsColumn={actionsColumn}
         totalCount={filteredCount}
+        stickyHeaderOffset={stickyHeaderOffset}
         footerSlot={
           <DataTable.InfiniteFooter
             hasNextPage={hasNext}
@@ -258,12 +260,14 @@ interface ArchivedArticlesTableProps {
   search: string;
   tagIds?: ReadonlyArray<string>;
   emptyMessage?: string;
+  stickyHeaderOffset?: string;
 }
 
 function ArchivedArticlesTableContent({
   search,
   tagIds,
   emptyMessage = 'No archived articles.',
+  stickyHeaderOffset,
 }: ArchivedArticlesTableProps) {
   const { toast } = useToast();
   const normalizedTagIds = tagIds && tagIds.length > 0 ? [...tagIds] : null;
@@ -313,6 +317,7 @@ function ArchivedArticlesTableContent({
       isLoadingNext={isLoadingNext}
       onLoadMore={onLoadMore}
       emptyMessage={emptyMessage}
+      stickyHeaderOffset={stickyHeaderOffset}
     />
   );
 }

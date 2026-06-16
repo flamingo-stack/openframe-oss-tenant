@@ -126,8 +126,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const { deviceDetails, isLoading: isDeviceLoading } = useDeviceDetails(machineId);
   const { items: deviceMenuItems } = useDeviceActionsMenu(deviceDetails, { deviceId: machineId });
 
-  const { client, admin, clearChatState, setAccumulatorCallbacks, updateApprovalStatusInMessages } =
-    useTicketDetailsStore();
+  const {
+    client,
+    admin,
+    clearChatState,
+    setAccumulatorCallbacks,
+    updateApprovalStatusInMessages,
+    recordHighestStreamSeq,
+  } = useTicketDetailsStore();
   const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
 
   const { messages: clientMessages, isTyping: isClientChatTyping } = client;
@@ -244,10 +250,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const dispatchChunk = useCallback(
     (chunk: unknown, messageType: NatsMessageType) => {
-      if (messageType === 'admin-message') processAdminChunk(chunk);
+      const isAdmin = messageType === 'admin-message';
+      const seq = (chunk as { streamSeq?: number }).streamSeq;
+      if (typeof seq === 'number') recordHighestStreamSeq(isAdmin ? 'admin' : 'client', seq);
+      if (isAdmin) processAdminChunk(chunk);
       else processClientChunk(chunk);
     },
-    [processClientChunk, processAdminChunk],
+    [processClientChunk, processAdminChunk, recordHighestStreamSeq],
   );
 
   const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({

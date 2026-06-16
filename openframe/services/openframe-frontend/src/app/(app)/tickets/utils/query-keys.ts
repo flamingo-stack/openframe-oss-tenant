@@ -9,6 +9,7 @@ export interface DialogsQueryParams {
   statusIds?: string[];
   organizationIds?: string[];
   assigneeIds?: string[];
+  labelIds?: string[];
 }
 
 export const dialogsQueryKeys = {
@@ -29,6 +30,7 @@ export const dialogsQueryKeys = {
         statusIds: params.statusIds || [],
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
+        labelIds: params.labelIds || [],
       },
     ] as const,
 
@@ -36,7 +38,10 @@ export const dialogsQueryKeys = {
   boardColumns: () => [...dialogsQueryKeys.all, 'boardColumn'] as const,
 
   // Specific board column keyed by status + search + filters
-  boardColumn: (status: string, params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] }) =>
+  boardColumn: (
+    status: string,
+    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[]; labelIds?: string[] },
+  ) =>
     [
       ...dialogsQueryKeys.boardColumns(),
       status,
@@ -44,6 +49,7 @@ export const dialogsQueryKeys = {
         search: params.search || '',
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
+        labelIds: params.labelIds || [],
       },
     ] as const,
 
@@ -53,7 +59,7 @@ export const dialogsQueryKeys = {
 
   boardColumnLifecycle: (
     statusId: string,
-    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] },
+    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[]; labelIds?: string[] },
   ) =>
     [
       ...dialogsQueryKeys.boardColumnsLifecycle(),
@@ -62,6 +68,7 @@ export const dialogsQueryKeys = {
         search: params.search || '',
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
+        labelIds: params.labelIds || [],
       },
     ] as const,
 } as const;

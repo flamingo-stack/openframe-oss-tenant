@@ -8,6 +8,7 @@ export const FEATURE_FLAG_NAMES = [
   'billings',
   'thinking',
   'knowledge-base',
+  'help-center',
   'notifications',
   'tickets-board',
   'batch-approval',
@@ -50,6 +51,11 @@ export const featureFlags = {
   knowledgeBase: {
     enabled(): boolean {
       return getFlagValue('knowledge-base', () => false);
+    },
+  },
+  helpCenter: {
+    enabled(): boolean {
+      return getFlagValue('help-center', () => false);
     },
   },
   notifications: {

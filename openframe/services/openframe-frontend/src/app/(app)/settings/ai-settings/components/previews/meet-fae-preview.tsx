@@ -55,9 +55,9 @@ export function MeetFaePreview({
   ];
 
   return (
-    <div className="grid h-[115px] w-full place-items-center overflow-hidden rounded-md border border-ods-border bg-ods-bg md:h-[296px] lg:h-[380px]">
+    <div className="grid h-[250px] w-full place-items-center overflow-hidden rounded-md border border-ods-border bg-ods-bg md:h-[296px] lg:h-[380px]">
       {/* 1:1 content in a 945px slot, zoom-scaled to the per-breakpoint card height. */}
-      <div className="flex h-[945px] w-[600px] max-w-none flex-col p-[var(--spacing-system-l)] [zoom:0.122] md:[zoom:0.313] lg:[zoom:0.402]">
+      <div className="flex h-[945px] w-[600px] max-w-none flex-col p-[var(--spacing-system-l)] [zoom:0.264] md:[zoom:0.313] lg:[zoom:0.402]">
         <div className="flex flex-1 flex-col items-center justify-center gap-[var(--spacing-system-l)]">
           <SquareAvatar src={avatarUrl} alt={assistantName} fallback={shortName.charAt(0)} size="xl" variant="round" />
 

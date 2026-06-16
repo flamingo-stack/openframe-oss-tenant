@@ -10,6 +10,7 @@ import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/compo
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { performLogout } from '@/app/(auth)/auth/utils/auth-actions';
@@ -44,7 +45,14 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // in-layout `AppLayoutDrawer` + `OpenframeEmbeddableChatEntry` in the
   // `drawer` slot. The chat runs shell-less inside the drawer, so the drawer
   // (not the chat) owns the panel chrome.
-  const [chatOpen, setChatOpen] = useState(false);
+  //
+  // Lifted into a global store (`mingo-launcher-store`) so pages can open the
+  // drawer from anywhere — e.g. the EmptyState "Ask Mingo about X" buttons call
+  // `askMingo(source)`, which flips `isOpen` here and queues a prompt the chat
+  // embedder auto-sends on open.
+  const chatOpen = useMingoLauncherStore(state => state.isOpen);
+  const setChatOpen = useMingoLauncherStore(state => state.setOpen);
+  const toggleChat = useMingoLauncherStore(state => state.toggle);
 
   const handleNavigate = useCallback(
     (path: string) => {
@@ -61,18 +69,20 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     router.push('/settings');
   }, [router]);
 
-  // Toggle the Mingo chat drawer from the header's "Mingo AI" launcher.
-  const toggleChat = useCallback(() => setChatOpen(prev => !prev), []);
-
   // Close the drawer on route navigation. The drawer is non-modal (header +
   // sidebar stay interactive while it's open), so clicking a nav link or an
   // in-chat link that routes should land the user on the new page rather than
   // leaving the panel covering it. The lib's EmbeddableChat leaves this
   // pathname-driven close to the embedder (it has no router), so we own it
   // here. Runs on `pathname` change; the initial no-op (already closed) is
-  // harmless — React bails on a same-value `setState`.
+  // harmless - React bails on a same-value `setState`.
+  //
+  // `pathname` is the intentional trigger but isn't read in the body (we pull
+  // the store action imperatively via getState() so it isn't a dependency), so
+  // biome's exhaustive-deps rule sees it as "extra". That's deliberate.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the intentional re-run trigger; the close() action is read imperatively
   useEffect(() => {
-    setChatOpen(false);
+    useMingoLauncherStore.getState().close();
   }, [pathname]);
 
   const { isLocked } = useSubscriptionLock();

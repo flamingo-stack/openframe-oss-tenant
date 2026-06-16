@@ -1,11 +1,12 @@
 'use client';
 
 import {
-  type ApprovalBatchData,
   ApprovalBatchMessage,
+  approvalMetaToBatchData,
   type ChatApprovalStatus,
   getApprovalMeta,
   type Notification,
+  resolutionToStatus,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useMemo, useState } from 'react';
 import { useApproveRequest } from '@/app/components/notifications/use-approve-request';
@@ -19,44 +20,36 @@ interface NotificationApprovalSubRowProps {
 /** The expandable approval block for an approval-request notification row: commands + explanation + approve/reject. */
 export function NotificationApprovalSubRow({ notification, onResolved }: NotificationApprovalSubRowProps) {
   const approveRequest = useApproveRequest();
-  const [status, setStatus] = useState<ChatApprovalStatus>('pending');
+  // Optimistic status for this user's own click; backend resolution (below) wins once it arrives.
+  const [localStatus, setLocalStatus] = useState<ChatApprovalStatus | null>(null);
   const approval = getApprovalMeta(notification);
+  const resolvedStatus = resolutionToStatus(approval?.resolution);
+  const status: ChatApprovalStatus = resolvedStatus !== 'pending' ? resolvedStatus : (localStatus ?? 'pending');
 
-  const batchData = useMemo<ApprovalBatchData | null>(() => {
-    if (!approval) return null;
-    return {
-      approvalRequestId: approval.approvalRequestId,
-      approvalType: approval.approvalType ?? '',
-      toolCalls: approval.toolCalls.map((tc, index) => ({
-        toolExecutionRequestId: tc.toolExecutionRequestId ?? `${approval.approvalRequestId}:${index}`,
-        toolName: tc.toolName,
-        toolTitle: tc.toolTitle ?? undefined,
-        toolExplanation: tc.toolExplanation ?? undefined,
-        toolType: tc.toolType ?? undefined,
-        requiresApproval: tc.requiresApproval ?? true,
-        approvalType: tc.approvalType ?? null,
-        toolCallArguments: tc.toolCallArguments ?? null,
-      })),
-    };
-  }, [approval]);
+  const batchData = useMemo(() => (approval ? approvalMetaToBatchData(approval) : null), [approval]);
 
   const decide = useCallback(
     async (approve: boolean) => {
       if (!approval) return;
-      if (!(await approveRequest(approval.approvalRequestId, approve))) return;
-      setStatus(approve ? 'approved' : 'rejected');
-      onResolved?.(notification.id);
+      setLocalStatus(approve ? 'approved' : 'rejected');
+      if (await approveRequest(approval.approvalRequestId, approve)) {
+        onResolved?.(notification.id);
+      } else {
+        setLocalStatus(null); // roll back the optimistic flip; the request failed
+      }
     },
     [approval, approveRequest, onResolved, notification.id],
   );
 
-  if (!batchData) return null;
+  if (!approval || !batchData) return null;
 
   return (
     <div data-no-row-click className="bg-ods-bg p-[var(--spacing-system-m)]">
       <ApprovalBatchMessage
         data={batchData}
         status={status}
+        resolvedByName={approval.resolvedByName}
+        showExecutionStatus={false}
         onApprove={() => decide(true)}
         onReject={() => decide(false)}
         className="mb-0 rounded-none border-0"

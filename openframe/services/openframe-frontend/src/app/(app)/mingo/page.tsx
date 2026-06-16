@@ -45,6 +45,20 @@ export default function Mingo() {
 
   const { resetDialog } = useMingoDialog();
 
+  // Reset the active dialog on leave. `activeDialogId` is module-level store
+  // state with no persistence, so without this it survives the SPA unmount and
+  // a return via direct URL would short-circuit the
+  // re-selection effect below — skipping the clean reselect the sidebar gets by
+  // passing through `null`. The streaming pointer is deliberately left intact:
+  // `ensureAssistantMessage`/`incompleteState` use it to resume an interrupted
+  // stream in the same bubble on return.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: store action is stable; this must run only on unmount.
+  useEffect(() => {
+    return () => {
+      setActiveDialogId(null);
+    };
+  }, []);
+
   const { dialogs, isLoading: isLoadingDialogs, hasNextPage, fetchNextPage, isFetchingNextPage } = useMingoDialogs();
 
   const {

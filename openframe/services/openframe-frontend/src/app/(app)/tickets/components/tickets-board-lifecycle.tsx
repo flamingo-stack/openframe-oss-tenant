@@ -1,15 +1,17 @@
 'use client';
 
+import { useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
 import {
   Board,
   type BoardChange,
   type BoardColumnDef,
   type BoardTicket,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
 import { useMoveTicketLifecycle, useMovingTicketIdsLifecycle } from '../hooks/use-move-ticket-lifecycle';
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
@@ -21,6 +23,7 @@ import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
 import { OrganizationFilter } from './organization-filter';
+import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
 
 interface TicketsBoardLifecycleProps {
   selector?: ReactNode;
@@ -28,6 +31,8 @@ interface TicketsBoardLifecycleProps {
   onOrganizationIdsChange?: (ids: string[]) => void;
   assigneeIds?: string[];
   onAssigneeIdsChange?: (ids: string[]) => void;
+  labelIds?: string[];
+  onLabelIdsChange?: (ids: string[]) => void;
   search: string;
   onSearchChange: (value: string) => void;
 }
@@ -38,7 +43,7 @@ function initialsOf(name?: string): string | undefined {
   return parts.map(p => p.charAt(0).toUpperCase()).join('') || undefined;
 }
 
-function dialogToBoardTicket(dialog: Dialog): BoardTicket {
+function dialogToBoardTicket(dialog: Dialog, hasNewMessage = false): BoardTicket {
   return {
     id: dialog.id,
     title: dialog.title,
@@ -58,6 +63,7 @@ function dialogToBoardTicket(dialog: Dialog): BoardTicket {
       : undefined,
     tags: dialog.labels?.map(l => l.key),
     createdAt: dialog.createdAt,
+    hasNewMessage,
   };
 }
 
@@ -67,6 +73,8 @@ export function TicketsBoardLifecycle({
   onOrganizationIdsChange,
   assigneeIds,
   onAssigneeIdsChange,
+  labelIds,
+  onLabelIdsChange,
   search,
   onSearchChange,
 }: TicketsBoardLifecycleProps) {
@@ -76,6 +84,19 @@ export function TicketsBoardLifecycle({
   const { data: transitionRules } = useTicketStatusTransitionRules();
   const { mutate: moveTicket } = useMoveTicketLifecycle();
   const movingIds = useMovingTicketIdsLifecycle();
+  const notifications = useOptionalNotifications();
+
+  // Tickets have no unread field of their own; unread state comes from notifications (a separate
+  // entity) matched by ticket id.
+  const ticketIdsWithUnread = useMemo(() => {
+    const ids = new Set<string>();
+    for (const notification of notifications?.notifications ?? []) {
+      if (notification.read) continue;
+      const ticketId = notification.meta?.ticketId;
+      if (typeof ticketId === 'string') ids.add(ticketId);
+    }
+    return ids;
+  }, [notifications?.notifications]);
   const {
     actions,
     menuActions,
@@ -96,8 +117,8 @@ export function TicketsBoardLifecycle({
   }, []);
 
   const params = useMemo(
-    () => ({ search: debouncedSearch, organizationIds, assigneeIds }),
-    [debouncedSearch, organizationIds, assigneeIds],
+    () => ({ search: debouncedSearch, organizationIds, assigneeIds, labelIds }),
+    [debouncedSearch, organizationIds, assigneeIds, labelIds],
   );
 
   const statuses = useMemo(() => (statusesData?.snapshot ?? []).filter(s => s.kind !== 'ARCHIVED'), [statusesData]);
@@ -129,7 +150,9 @@ export function TicketsBoardLifecycle({
           statusKey: useCanonicalStyle ? mapDefinitionToSystem(status).statusKey : undefined,
           label: status.name,
           color: status.color,
-          tickets: (state?.tickets ?? []).map(dialogToBoardTicket),
+          tickets: (state?.tickets ?? []).map(ticket =>
+            dialogToBoardTicket(ticket, ticketIdsWithUnread.has(ticket.id)),
+          ),
           total: state?.total,
           hasMore: state?.hasMore,
           isLoading,
@@ -139,7 +162,7 @@ export function TicketsBoardLifecycle({
           archivable: status.kind === 'RESOLVED' && canArchiveResolved,
         };
       }),
-    [statuses, columnUpdates, allowedFromByStatusId, isLoading, canArchiveResolved],
+    [statuses, columnUpdates, allowedFromByStatusId, isLoading, canArchiveResolved, ticketIdsWithUnread],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
@@ -160,6 +183,15 @@ export function TicketsBoardLifecycle({
     },
     [moveTicket],
   );
+
+  const showEmptyState =
+    !isLoading &&
+    !debouncedSearch &&
+    (organizationIds?.length ?? 0) === 0 &&
+    (assigneeIds?.length ?? 0) === 0 &&
+    (labelIds?.length ?? 0) === 0 &&
+    boardColumns.length > 0 &&
+    boardColumns.every(column => column.tickets.length === 0);
 
   if (statusesError) {
     return <PageError message={statusesError.message} />;
@@ -190,12 +222,15 @@ export function TicketsBoardLifecycle({
         contentClassName="flex flex-col min-h-0"
       >
         <div className="flex flex-col gap-[var(--spacing-system-l)]">
-          <Input
-            placeholder="Search for Ticket"
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-          />
+          <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+            <TicketLabelSearchInput
+              search={search}
+              onSearchChange={onSearchChange}
+              labelIds={labelIds ?? []}
+              onLabelIdsChange={ids => onLabelIdsChange?.(ids)}
+            />
+            <TicketLabelsRow selectedIds={labelIds ?? []} onAdd={id => onLabelIdsChange?.([...(labelIds ?? []), id])} />
+          </div>
           <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
             <OrganizationFilter
               value={organizationIds ?? []}
@@ -210,18 +245,26 @@ export function TicketsBoardLifecycle({
           </div>
         </div>
 
-        <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
-          <Board
-            columns={boardColumns}
-            onChange={handleChange}
-            onLoadMore={loadMore}
-            onArchiveColumn={openArchiveResolvedConfirm}
-            getTicketHref={getTicketHref}
-            renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
-            collapseStorageKey="tickets-board-lifecycle"
-            className="h-full px-[var(--spacing-system-l)]"
+        {showEmptyState ? (
+          <EmptyState
+            icon={<TagIcon />}
+            title="Ticket history empty"
+            description="Tickets will appear here when available"
           />
-        </div>
+        ) : (
+          <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+            <Board
+              columns={boardColumns}
+              onChange={handleChange}
+              onLoadMore={loadMore}
+              onArchiveColumn={openArchiveResolvedConfirm}
+              getTicketHref={getTicketHref}
+              renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+              collapseStorageKey="tickets-board-lifecycle"
+              className="h-full px-[var(--spacing-system-l)]"
+            />
+          </div>
+        )}
       </PageLayout>
       {ticketsActionsDialog}
     </>

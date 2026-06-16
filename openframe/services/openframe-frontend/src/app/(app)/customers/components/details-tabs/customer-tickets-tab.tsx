@@ -13,6 +13,7 @@ import {
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { getTicketTableColumns } from '../../../tickets/components/ticket-table-columns';
 import { useTicketsQuery } from '../../../tickets/hooks/use-tickets-query';
@@ -36,6 +37,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
   const router = useRouter();
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 300);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const {
     dialogs: tickets,
@@ -95,7 +97,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
   }
 
   return (
-    <div className="flex flex-col gap-[var(--spacing-system-l)]">
+    <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
       <CustomerTabHeader
         title="Tickets"
         rightActions={
@@ -113,14 +115,17 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
           and below without adding layout space. When pinned, the bar has
           breathing room on top, and the DataTable header (sticky at top-[96px]
           = 24 + 48 + 24) docks flush below. */}
-      <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+      <div
+        ref={toolbarRef}
+        className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
+      >
         <SearchInput value={search} onChange={setSearch} placeholder="Search for Tickets" />
       </div>
 
       <DataTable table={table}>
         <DataTable.Header
           stickyHeader
-          stickyHeaderOffset="top-[96px]"
+          stickyHeaderOffset={stickyHeaderOffset}
           rightSlot={<DataTable.RowCount itemName="ticket" totalCount={orgTickets.length} />}
         />
         <DataTable.Body
