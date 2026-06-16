@@ -75,7 +75,7 @@ impl ToolInstallationMessageListener {
             .await?;
         let js = jetstream::new((*client).clone());
 
-        let machine_id = self.config_service.get_machine_id().await?;
+        let machine_id = self.config_service.get_machine_id()?;
 
         let consumer = self.create_consumer(&js, &machine_id).await;
 

@@ -351,7 +351,7 @@ impl ToolAgentUpdateService {
 
     async fn publish_installed_agent_message(&self, id: &str, version: &str) {
         info!(id = %id, "Publishing installed agent message");
-        match self.config_service.get_machine_id().await {
+        match self.config_service.get_machine_id() {
             Ok(machine_id) => {
                 if let Err(e) = self.installed_agent_publisher
                     .publish(machine_id, id.to_string(), version.to_string())

@@ -5,8 +5,8 @@ use tracing::{info, warn};
 use crate::platform::DirectoryManager;
 use crate::service_adapter::{CrossPlatformServiceManager, ServiceConfig};
 use crate::services::{
-    InitialConfigurationService, InstalledToolsService, ToolCommandParamsResolver,
-    ToolKillService, ToolUninstallService,
+    AgentConfigurationService, InitialConfigurationService, InstalledToolsService,
+    ToolCommandParamsResolver, ToolKillService, ToolUninstallService,
 };
 
 const SERVICE_NAME: &str = "client";
@@ -225,8 +225,11 @@ pub async fn uninstall_integrated_tools(dir_manager: &DirectoryManager) -> Resul
     let initial_config_service = InitialConfigurationService::new(dir_manager.clone())
         .context("Failed to initialize InitialConfigurationService")?;
 
+    let agent_config_service = AgentConfigurationService::new(dir_manager.clone())
+        .context("Failed to initialize AgentConfigurationService")?;
+
     let command_params_resolver =
-        ToolCommandParamsResolver::new(dir_manager.clone(), initial_config_service);
+        ToolCommandParamsResolver::new(dir_manager.clone(), initial_config_service, agent_config_service);
 
     let tool_kill_service = ToolKillService::new();
 
