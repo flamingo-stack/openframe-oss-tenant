@@ -1,12 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "enabledManagers": ["maven", "npm", "helmv3", "regex"],
+  "enabledManagers": ["maven", "npm", "helmv3", "regex", "cargo"],
   "labels": ["dependencies", "openframe-libs"],
   "prConcurrentLimit": 3,
   "prCreation": "immediate",
   "rangeStrategy": "replace",
   "semanticCommits": "enabled",
   "timezone": "UTC",
+  "commitMessageAction": "",
   "commitMessageExtra": "to {{{newVersion}}}",
   "commitMessagePrefix": "chore(deps):",
 
@@ -127,6 +128,24 @@
       "matchManagers": ["helmv3"],
       "matchPackageNames": ["!fleet"],
       "enabled": false
+    },
+    {
+      "description": "Track ALL deps for openframe-client (Rust/cargo) — one grouped PR",
+      "matchFileNames": ["clients/openframe-client/**"],
+      "enabled": true,
+      "groupName": "openframe-client deps",
+      "groupSlug": "openframe-client-deps",
+      "commitMessageTopic": "openframe-client deps",
+      "labels": ["dependencies", "clients", "openframe-client"]
+    },
+    {
+      "description": "Track ALL deps for openframe-chat (npm + Tauri/cargo) — one grouped PR",
+      "matchFileNames": ["clients/openframe-chat/**"],
+      "enabled": true,
+      "groupName": "openframe-chat deps",
+      "groupSlug": "openframe-chat-deps",
+      "commitMessageTopic": "openframe-chat deps",
+      "labels": ["dependencies", "clients", "openframe-chat"]
     }
   ],
 
