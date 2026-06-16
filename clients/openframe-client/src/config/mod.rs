@@ -7,23 +7,19 @@ pub mod update_config;
 
 /// Timing and retry budget for stopping tool processes and OS services.
 pub mod service_stop {
-    /// Interval between process/service state polls, in milliseconds.
+    /// Poll interval for process/service state (ms).
     pub const PROCESS_CHECK_INTERVAL_MS: u64 = 500;
-    /// Seconds to wait for a graceful termination before escalating to force-kill.
+    /// Grace period before escalating a process to force-kill (s).
     pub const GRACEFUL_SHUTDOWN_TIMEOUT_SECS: u64 = 5;
-    /// Seconds to wait for a force-killed process to disappear.
+    /// Wait for a force-killed process to exit (s).
     pub const FORCE_KILL_TIMEOUT_SECS: u64 = 3;
-    /// Number of force-kill attempts for a single process.
+    /// Force-kill attempts per process.
     pub const MAX_KILL_RETRIES: u32 = 3;
-    /// Max polls while waiting for a Windows service to report STOPPED
-    /// (≈10s at `PROCESS_CHECK_INTERVAL_MS`).
+    /// Polls awaiting a Windows service to report STOPPED (~10s).
     pub const SERVICE_STOP_MAX_ATTEMPTS: u32 = 20;
-    /// Max force-kill attempts for a stuck Windows service. Windows restarts a
-    /// failed service up to 3 times by default, so allow a margin above that.
+    /// Force-kill rounds for a stuck service (margin over Windows' 3 auto-restarts).
     pub const SERVICE_FORCE_KILL_MAX_ATTEMPTS: u32 = 6;
-    /// Max time to wait for a single blocking `service.stop()` SCM call before
-    /// treating it as wedged and going straight to force-kill. `ControlService`
-    /// can otherwise hang for ~4 minutes on a frozen/unresponsive service.
+    /// Cap on a blocking SCM `stop()` before force-killing (else hangs ~4 min).
     pub const SERVICE_STOP_CALL_TIMEOUT_SECS: u64 = 10;
 }
 
