@@ -408,9 +408,9 @@ const BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT = `
 `;
 
 export const GET_BOARD_COLUMN_TICKETS_QUERY = `
-  query GetBoardColumnTickets($statusId: ID!, $limit: Int!, $cursor: String, $search: String, $organizationIds: [ID!], $assigneeIds: [ID!]) {
+  query GetBoardColumnTickets($statusId: ID!, $limit: Int!, $cursor: String, $search: String, $organizationIds: [ID!], $assigneeIds: [ID!], $labelIds: [ID!]) {
     tickets(
-      filter: { statusIds: [$statusId], organizationIds: $organizationIds, assigneeIds: $assigneeIds }
+      filter: { statusIds: [$statusId], organizationIds: $organizationIds, assigneeIds: $assigneeIds, labelIds: $labelIds }
       pagination: { limit: $limit, cursor: $cursor }
       search: $search
       sort: { field: "order", direction: ASC }
@@ -701,6 +701,7 @@ export const GET_TICKET_STATISTICS_QUERY = `
       statusDefinitionCounts {
         status {
           kind
+          color
         }
         count
       }

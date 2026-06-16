@@ -6,6 +6,7 @@ import {
   ClipboardListIcon,
   IdCardIcon,
   MonitorIcon,
+  QuestionCircleIcon,
   RadarIcon,
   Settings02Icon,
   TagIcon,
@@ -107,6 +108,17 @@ export const getNavigationItems = (
       path: '/knowledge-base',
       section: 'secondary',
       isActive: pathname.startsWith('/knowledge-base'),
+    });
+  }
+
+  if (featureFlags.helpCenter.enabled()) {
+    baseItems.push({
+      id: 'help-center',
+      label: 'Help Center',
+      icon: <QuestionCircleIcon size={24} />,
+      path: '/help-center',
+      section: 'secondary',
+      isActive: pathname.startsWith('/help-center'),
     });
   }
 

@@ -56,6 +56,7 @@ export function useTicketsOverview() {
     aiAssistance: query.data?.aiAssistance ?? 0,
     techRequired: query.data?.techRequired ?? 0,
     otherStatuses: query.data?.otherStatuses ?? 0,
+    techRequiredColor: query.data?.techRequiredColor,
     isLoading: query.isLoading,
     error: query.error?.message ?? null,
     refetch: query.refetch,

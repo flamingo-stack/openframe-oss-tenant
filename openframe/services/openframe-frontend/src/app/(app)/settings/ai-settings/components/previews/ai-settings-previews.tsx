@@ -33,7 +33,7 @@ export function AiSettingsPreviews({
   const themeClass = cn('ai-preview-theme', resolved === 'light' ? 'theme-light' : 'theme-dark');
 
   return (
-    <div className="grid grid-cols-2 items-start gap-[var(--spacing-system-l)] rounded-md bg-ods-bg">
+    <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-[var(--spacing-system-l)] rounded-md bg-ods-bg">
       <div className={themeClass}>
         <MeetFaePreview assistantName={assistantName} avatarUrl={avatarUrl} accentColor={accentColor} />
       </div>

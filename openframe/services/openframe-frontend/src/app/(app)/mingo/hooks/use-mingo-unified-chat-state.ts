@@ -68,6 +68,12 @@ export interface MingoSubscriptionBindings {
 export interface MingoUnifiedChat {
   state: UnifiedChatState;
   subscription: MingoSubscriptionBindings;
+  /**
+   * Create a brand-new dialog and send `text` into it, regardless of any
+   * currently-active dialog. Used by external launchers (e.g. the "Ask Mingo
+   * about X" EmptyState buttons) that always want a fresh conversation.
+   */
+  sendInNewDialog: (text: string) => Promise<void>;
 }
 
 export function useMingoUnifiedChatState(): MingoUnifiedChat {
@@ -207,6 +213,33 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     [activeDialogId, setActiveDialogId, resetUnread, subscribeToDialog, selectDialogMut],
   );
 
+  // ─── Create a fresh dialog and send into it (always-new) ──────────────────
+  // Shared by the draft branch of `sendMessage` and external launchers that
+  // want a brand-new conversation regardless of what's currently active.
+  const sendInNewDialog = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const newId = await createDialog();
+      if (!newId) return;
+      addMessage(newId, {
+        id: `welcome-${newId}`,
+        role: 'assistant',
+        name: 'Mingo',
+        timestamp: new Date(),
+        content: WELCOME_TEXT,
+        assistantType: 'mingo',
+      });
+      setActiveDialogId(newId);
+      resetUnread(newId);
+      subscribeToDialog(newId);
+      selectDialogMut(newId);
+      await sendMingoMessage(trimmed, newId);
+    },
+    [createDialog, addMessage, setActiveDialogId, resetUnread, subscribeToDialog, selectDialogMut, sendMingoMessage],
+  );
+
   // ─── Send: create-on-first-send when no dialog is active (draft) ──────────
   const sendMessage = useCallback(
     async (text: string) => {
@@ -214,36 +247,13 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       if (!trimmed) return;
 
       if (!activeDialogId) {
-        const newId = await createDialog();
-        if (!newId) return;
-        addMessage(newId, {
-          id: `welcome-${newId}`,
-          role: 'assistant',
-          name: 'Mingo',
-          timestamp: new Date(),
-          content: WELCOME_TEXT,
-          assistantType: 'mingo',
-        });
-        setActiveDialogId(newId);
-        resetUnread(newId);
-        subscribeToDialog(newId);
-        selectDialogMut(newId);
-        await sendMingoMessage(trimmed, newId);
+        await sendInNewDialog(trimmed);
         return;
       }
 
       await sendMingoMessage(trimmed);
     },
-    [
-      activeDialogId,
-      createDialog,
-      addMessage,
-      setActiveDialogId,
-      resetUnread,
-      subscribeToDialog,
-      selectDialogMut,
-      sendMingoMessage,
-    ],
+    [activeDialogId, sendInNewDialog, sendMingoMessage],
   );
 
   const stopMessage = useCallback(() => {
@@ -387,5 +397,5 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     ],
   );
 
-  return { state, subscription };
+  return { state, subscription, sendInNewDialog };
 }
