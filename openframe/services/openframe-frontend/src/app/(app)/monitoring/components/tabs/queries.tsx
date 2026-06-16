@@ -1,19 +1,32 @@
 'use client';
 
-import { ArrowRightUpIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  ArrowRightUpIcon,
+  BracketCurlyEllipsisVrIcon,
+  DatabaseIcon,
+  HourglassClockIcon,
+  HourglassIcon,
+  PlusCircleIcon,
+  SearchIcon,
+  TimerIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageLayout,
   MoreActionsMenu,
+  PageError,
+  PageLayout,
   type Row,
+  SearchInput,
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
@@ -36,18 +49,15 @@ export function Queries() {
     search: { type: 'string', default: '' },
   });
 
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearchInput = useDebounce(searchInput, 300);
-  const lastSearchRef = React.useRef(params.search);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
-  useEffect(() => {
-    if (debouncedSearchInput !== lastSearchRef.current) {
-      lastSearchRef.current = debouncedSearchInput;
-      setParams({ search: debouncedSearchInput });
+  const handleSearch = useCallback(
+    (term: string) => {
+      setParams({ search: term });
       setVisibleCount(PAGE_SIZE);
-    }
-  }, [debouncedSearchInput, setParams]);
+    },
+    [setParams],
+  );
 
   const { queries, isLoading, error, deleteQuery } = useQueries();
   const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
@@ -159,41 +169,70 @@ export function Queries() {
     [handleAddQuery],
   );
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no queries.
+  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
+
+  if (error) {
+    return <PageError message={error} />;
+  }
+
   return (
-    <ListPageLayout
-      title="Queries"
-      actions={actions}
-      searchPlaceholder="Search for Queries"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
-      error={error}
-      background="default"
-      padding="none"
-      className="pt-6"
-      stickyHeader
-    >
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={PAGE_SIZE}
-          emptyMessage={
-            params.search
-              ? `No queries found matching "${params.search}". Try adjusting your search.`
-              : 'No queries found.'
+    <PageLayout title="Queries" actions={actions}>
+      {showEmptyState ? (
+        <EmptyState
+          icon={<BracketCurlyEllipsisVrIcon />}
+          title="No queries yet"
+          description="Real-time questions you ask across your fleet (which devices have Chrome installed, who is on an outdated OS, which machines are low on disk) will be displayed here."
+          actions={[
+            { icon: <SearchIcon />, label: 'Get answers across all devices in seconds' },
+            { icon: <DatabaseIcon />, label: 'Use SQL-like syntax or natural language via Mingo' },
+            { icon: <HourglassClockIcon />, label: 'Save queries to rerun later or schedule them' },
+          ]}
+          buttonLabel="Ask Mingo about Queries"
+          buttonIcon={
+            <MingoIcon
+              className="size-5"
+              eyesColor="var(--ods-flamingo-cyan-base)"
+              cornerColor="var(--ods-flamingo-cyan-base)"
+            />
           }
-          rowClassName="mb-1"
-          rowHref={queryRowHref}
         />
-        {visibleCount < filteredQueries.length && (
-          <DataTable.InfiniteFooter
-            hasNextPage
-            isFetchingNextPage={false}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
-        )}
-      </DataTable>
+      ) : (
+        <>
+          <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+            <SearchInput
+              value={params.search}
+              onChange={handleSearch}
+              placeholder="Search for Queries"
+              debounceMs={500}
+            />
+          </div>
+
+          <DataTable table={table}>
+            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Body
+              loading={isLoading}
+              skeletonRows={PAGE_SIZE}
+              emptyMessage={
+                params.search
+                  ? `No queries found matching "${params.search}". Try adjusting your search.`
+                  : 'No queries found.'
+              }
+              rowClassName="mb-1"
+              rowHref={queryRowHref}
+            />
+            {visibleCount < filteredQueries.length && (
+              <DataTable.InfiniteFooter
+                hasNextPage
+                isFetchingNextPage={false}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            )}
+          </DataTable>
+        </>
+      )}
       <ConfirmDeleteMonitoringModal
         open={!!queryToDelete}
         onOpenChange={open => {
@@ -209,6 +248,6 @@ export function Queries() {
           }
         }}
       />
-    </ListPageLayout>
+    </PageLayout>
   );
 }

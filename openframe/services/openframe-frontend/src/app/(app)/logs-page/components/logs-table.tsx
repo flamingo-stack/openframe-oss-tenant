@@ -1,10 +1,16 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  ClipboardListIcon,
+  EyeAltIcon,
   EyeIcon,
+  Filter01ListIcon,
   Refresh02HrIcon,
+  ScanIcon,
+  SearchIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
@@ -33,7 +39,7 @@ import { graphql, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { logsTableRelay_query$key as LogsFragmentKey } from '@/__generated__/logsTableRelay_query.graphql';
 import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@/__generated__/logsTableRelayPaginationQuery.graphql';
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
-import { LogDrawer } from '@/app/components/shared';
+import { EmptyState, LogDrawer } from '@/app/components/shared';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -466,6 +472,40 @@ function LogsTableContent({
   const handleCloseModal = useCallback(() => {
     setSelectedLog(null);
   }, []);
+
+  const hasActiveFilters = Object.values(tableFilters).some(values => values.length > 0);
+  // Show the empty state only on the standalone Logs page when there is genuinely
+  // no data: no device/org scope, no search, no filters, and not pending.
+  const showEmptyState =
+    !deviceId &&
+    !organizationLocked &&
+    !debouncedSearch &&
+    !hasActiveFilters &&
+    !isPending &&
+    transformedLogs.length === 0;
+
+  if (!showEmptyState) {
+    return (
+      <EmptyState
+        icon={<ClipboardListIcon />}
+        title="No logs yet"
+        description="A timeline of every action taken across the platform (scripts run, policies applied, devices connected, tickets updated) will be displayed here."
+        actions={[
+          { icon: <EyeAltIcon />, label: 'Track who did what, when, and on which device' },
+          { icon: <Filter01ListIcon />, label: 'Filter by user, action type, Customer, or date range' },
+          { icon: <SearchIcon />, label: 'Investigate incidents and audit security events' },
+        ]}
+        buttonLabel="Ask Mingo about Logs"
+        buttonIcon={
+          <MingoIcon
+            className="size-5"
+            eyesColor="var(--ods-flamingo-cyan-base)"
+            cornerColor="var(--ods-flamingo-cyan-base)"
+          />
+        }
+      />
+    );
+  }
 
   return (
     <>

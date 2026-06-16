@@ -6,11 +6,19 @@ import {
   ShellTypeBadge,
   ToolBadge,
 } from '@flamingo-stack/openframe-frontend-core/components';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  BookPlayIcon,
+  BracketCurlyIcon,
   ClipboardListIcon,
+  CodeAIIcon,
+  Filter02Icon,
   PenEditIcon,
+  PlayCircleIcon,
+  PlayIcon,
   PlusCircleIcon,
+  SearchIcon,
   TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
@@ -20,8 +28,11 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
-  ListPageLayout,
+  FilterModal,
+  Input,
   multiSelectFilterFn,
+  PageError,
+  PageLayout,
   type Row,
   TruncateText,
   useDataTable,
@@ -30,6 +41,7 @@ import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-co
 import { getOSLabel, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScripts } from '../hooks/use-scripts';
 
@@ -62,6 +74,7 @@ export function ScriptsTable() {
   // Local state for debounced input
   const [searchInput, setSearchInput] = useState(params.search);
   const [visibleCount, setVisibleCount] = useState(pageSize);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const debouncedSearchInput = useDebounce(searchInput, 300);
 
   // Sync debounced search to URL (only when value actually changed)
@@ -400,44 +413,108 @@ export function ScriptsTable() {
     [uniqueShellTypes, uniquePlatforms, uniqueCategories],
   );
 
+  const hasMobileFilter = filterGroups.length > 0;
+
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search/filters, and no scripts.
+  const showEmptyState =
+    !isLoading &&
+    !params.search.trim() &&
+    params.shellType.length === 0 &&
+    params.category.length === 0 &&
+    params.supportedPlatforms.length === 0 &&
+    scripts.length === 0;
+
+  if (error) {
+    return <PageError message={error} />;
+  }
+
   return (
-    <ListPageLayout
-      title="Scripts"
-      actions={actions}
-      searchPlaceholder="Search for Scripts"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
-      error={error}
-      background="default"
-      padding="none"
-      className="pt-6"
-      onMobileFilterChange={handleMobileFilterChange}
-      mobileFilterGroups={filterGroups}
-      currentMobileFilters={mobileFilters}
-      stickyHeader
-    >
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={pageSize}
-          emptyMessage={
-            params.search
-              ? `No scripts found matching "${params.search}". Try adjusting your search.`
-              : 'No scripts found. Try adjusting your filters or add a new script.'
+    <PageLayout title="Scripts" actions={actions}>
+      {!showEmptyState ? (
+        <EmptyState
+          icon={<BracketCurlyIcon />}
+          title="No scripts yet"
+          description="Reusable code snippets you run on devices to automate tasks, fix issues, or collect data will be displayed here."
+          actions={[
+            { icon: <PlayIcon />, label: 'Run on one device or push to many at once' },
+            { icon: <TerminalIcon />, label: 'Write in PowerShell, Bash, Python, or Batch' },
+            {
+              icon: (
+                <MingoIcon
+                  className="size-5"
+                  eyesColor="var(--ods-flamingo-cyan-base)"
+                  cornerColor="var(--ods-flamingo-cyan-base)"
+                />
+              ),
+              label: 'Let Mingo suggest or generate scripts for you',
+            },
+          ]}
+          buttonLabel="Ask Mingo about Scripts"
+          buttonIcon={
+            <MingoIcon
+              className="size-5"
+              eyesColor="var(--ods-flamingo-cyan-base)"
+              cornerColor="var(--ods-flamingo-cyan-base)"
+            />
           }
-          rowClassName="mb-1"
-          rowHref={scriptRowHref}
         />
-        {visibleCount < filteredScripts.length && (
-          <DataTable.InfiniteFooter
-            hasNextPage
-            isFetchingNextPage={false}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
-        )}
-      </DataTable>
-    </ListPageLayout>
+      ) : (
+        <>
+          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+            <Input
+              placeholder="Search for Scripts"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="flex-1"
+              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+            />
+            {hasMobileFilter && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setMobileFilterOpen(true)}
+                aria-label="Open filters"
+                leftIcon={<Filter02Icon />}
+              />
+            )}
+          </div>
+
+          {hasMobileFilter && (
+            <FilterModal
+              isOpen={mobileFilterOpen}
+              onClose={() => setMobileFilterOpen(false)}
+              filterGroups={filterGroups}
+              onFilterChange={handleMobileFilterChange}
+              currentFilters={mobileFilters}
+            />
+          )}
+
+          <DataTable table={table}>
+            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Body
+              loading={isLoading}
+              skeletonRows={pageSize}
+              emptyMessage={
+                params.search
+                  ? `No scripts found matching "${params.search}". Try adjusting your search.`
+                  : 'No scripts found. Try adjusting your filters or add a new script.'
+              }
+              rowClassName="mb-1"
+              rowHref={scriptRowHref}
+            />
+            {visibleCount < filteredScripts.length && (
+              <DataTable.InfiniteFooter
+                hasNextPage
+                isFetchingNextPage={false}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            )}
+          </DataTable>
+        </>
+      )}
+    </PageLayout>
   );
 }

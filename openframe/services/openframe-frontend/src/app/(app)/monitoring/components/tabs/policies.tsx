@@ -1,7 +1,19 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { ArrowRightUpIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import {
+  ArcheryTargetIcon,
+  ArrowRightUpIcon,
+  BellCheckIcon,
+  BellIcon,
+  FolderShieldIcon,
+  Hierarchy01Icon,
+  Hierarchy02Icon,
+  PlusCircleIcon,
+  RadarIcon,
+  ShareIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
@@ -21,6 +33,7 @@ import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
@@ -80,6 +93,10 @@ export function Policies() {
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
   const summary = useMemo(() => computePolicySummary(policies), [policies]);
+
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no policies.
+  const showEmptyState = !isLoading && !params.search.trim() && policies.length === 0;
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
@@ -254,34 +271,62 @@ export function Policies() {
         )}
       </div>
 
-      {/* Sticky Search Bar */}
-      <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
-        <SearchInput value={params.search} onChange={handleSearch} placeholder="Search for Policies" debounceMs={500} />
-      </div>
-
-      {/* Table */}
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={PAGE_SIZE}
-          emptyMessage={
-            params.search
-              ? `No policies found matching "${params.search}". Try adjusting your search.`
-              : 'No policies found.'
+      {showEmptyState ? (
+        <EmptyState
+          icon={<FolderShieldIcon />}
+          title="No policies yet"
+          description="Rules that automatically enforce settings, configurations, and security standards across devices will be displayed here."
+          actions={[
+            { icon: <Hierarchy02Icon />, label: 'Apply settings to many devices at once' },
+            { icon: <RadarIcon />, label: 'Target devices by Customer, OS, or tag' },
+            { icon: <BellCheckIcon />, label: 'Get alerts when devices fall out of compliance' },
+          ]}
+          buttonLabel="Ask Mingo about Policies"
+          buttonIcon={
+            <MingoIcon
+              className="size-5"
+              eyesColor="var(--ods-flamingo-cyan-base)"
+              cornerColor="var(--ods-flamingo-cyan-base)"
+            />
           }
-          rowClassName="mb-1"
-          rowHref={policyRowHref}
         />
-        {visibleCount < filteredPolicies.length && (
-          <DataTable.InfiniteFooter
-            hasNextPage
-            isFetchingNextPage={false}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
-        )}
-      </DataTable>
+      ) : (
+        <>
+          {/* Sticky Search Bar */}
+          <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+            <SearchInput
+              value={params.search}
+              onChange={handleSearch}
+              placeholder="Search for Policies"
+              debounceMs={500}
+            />
+          </div>
+
+          {/* Table */}
+          <DataTable table={table}>
+            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Body
+              loading={isLoading}
+              skeletonRows={PAGE_SIZE}
+              emptyMessage={
+                params.search
+                  ? `No policies found matching "${params.search}". Try adjusting your search.`
+                  : 'No policies found.'
+              }
+              rowClassName="mb-1"
+              rowHref={policyRowHref}
+            />
+            {visibleCount < filteredPolicies.length && (
+              <DataTable.InfiniteFooter
+                hasNextPage
+                isFetchingNextPage={false}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            )}
+          </DataTable>
+        </>
+      )}
       <ConfirmDeleteMonitoringModal
         open={!!policyToDelete}
         onOpenChange={open => {

@@ -1,11 +1,17 @@
 'use client';
 
 import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  HourglassClockIcon,
   LaptopIcon,
+  ListBulletIcon,
   PenEditIcon,
   PlusCircleIcon,
+  RadarIcon,
+  SearchIcon,
+  TimerIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   ActionsMenuDropdown,
@@ -13,7 +19,9 @@ import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageLayout,
+  Input,
+  PageError,
+  PageLayout,
   type Row,
   TruncateText,
   useDataTable,
@@ -21,6 +29,7 @@ import {
 import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
 import type { ScriptScheduleListItem, ScriptScheduleTaskType } from '../types/script-schedule.types';
@@ -224,41 +233,71 @@ export function ScriptSchedulesTable() {
     [handleAddSchedule],
   );
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no schedules.
+  const showEmptyState = !isLoading && !params.search.trim() && schedules.length === 0;
+
+  if (error) {
+    return <PageError message={error} />;
+  }
+
   return (
-    <ListPageLayout
-      title="Scripts Schedules"
-      actions={actions}
-      searchPlaceholder="Search for Schedule"
-      searchValue={searchInput}
-      onSearch={setSearchInput}
-      error={error}
-      background="default"
-      padding="none"
-      className="pt-6"
-      stickyHeader
-    >
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={pageSize}
-          emptyMessage={
-            params.search
-              ? `No schedules found matching "${params.search}". Try adjusting your search.`
-              : 'No schedules found. Create a new schedule to get started.'
+    <PageLayout title="Scripts Schedules" actions={actions}>
+      {showEmptyState ? (
+        <EmptyState
+          icon={<TimerIcon />}
+          title="No scripts schedules yet"
+          description="Scripts set to run automatically on a schedule (daily maintenance, weekly cleanups, monthly audits) will be displayed here."
+          actions={[
+            { icon: <HourglassClockIcon />, label: 'Run hourly, daily, weekly, or on custom cron' },
+            { icon: <RadarIcon />, label: 'Target specific devices, Customers, or tags' },
+            { icon: <ListBulletIcon />, label: 'View execution history and success rates' },
+          ]}
+          buttonLabel="Ask Mingo about Script Schedules"
+          buttonIcon={
+            <MingoIcon
+              className="size-5"
+              eyesColor="var(--ods-flamingo-cyan-base)"
+              cornerColor="var(--ods-flamingo-cyan-base)"
+            />
           }
-          rowClassName="mb-1"
-          rowHref={scheduleRowHref}
         />
-        {visibleCount < filteredSchedules.length && (
-          <DataTable.InfiniteFooter
-            hasNextPage
-            isFetchingNextPage={false}
-            onLoadMore={handleLoadMore}
-            skeletonRows={2}
-          />
-        )}
-      </DataTable>
-    </ListPageLayout>
+      ) : (
+        <>
+          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+            <Input
+              placeholder="Search for Schedule"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="flex-1"
+              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+            />
+          </div>
+
+          <DataTable table={table}>
+            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Body
+              loading={isLoading}
+              skeletonRows={pageSize}
+              emptyMessage={
+                params.search
+                  ? `No schedules found matching "${params.search}". Try adjusting your search.`
+                  : 'No schedules found. Create a new schedule to get started.'
+              }
+              rowClassName="mb-1"
+              rowHref={scheduleRowHref}
+            />
+            {visibleCount < filteredSchedules.length && (
+              <DataTable.InfiniteFooter
+                hasNextPage
+                isFetchingNextPage={false}
+                onLoadMore={handleLoadMore}
+                skeletonRows={2}
+              />
+            )}
+          </DataTable>
+        </>
+      )}
+    </PageLayout>
   );
 }

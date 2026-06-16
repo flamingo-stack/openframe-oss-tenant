@@ -1,6 +1,10 @@
 'use client';
 
-import { BoxArchiveIcon, PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  BookBookmarkIcon,
+  BoxArchiveIcon,
+  PlusCircleIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type PageActionButton,
   PageLayout,
@@ -18,6 +22,7 @@ import type { knowledgeBaseBodyFoldersRelayQuery as FoldersQueryType } from '@/_
 import type { knowledgeBaseBodySubtreeRelay_query$key as SubtreeFragmentKey } from '@/__generated__/knowledgeBaseBodySubtreeRelay_query.graphql';
 import type { knowledgeBaseBodySubtreeRelayPaginationQuery as SubtreePaginationQueryType } from '@/__generated__/knowledgeBaseBodySubtreeRelayPaginationQuery.graphql';
 import type { knowledgeBaseBodySubtreeRelayQuery as SubtreeQueryType } from '@/__generated__/knowledgeBaseBodySubtreeRelayQuery.graphql';
+import { EmptyState } from '@/app/components/shared';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import {
@@ -272,6 +277,19 @@ function FoldersAndArticlesContent({ parentId, search, tagIds }: ContentProps) {
     search: normalizedSearch,
     tagIds,
   });
+
+  // Genuinely empty (no items, no search, no tags): show the onboarding empty
+  // state instead of the list. A search/tag filter with no results keeps the
+  // inline "No knowledge base items found." message below.
+  if (items.length === 0 && !search && tagIds.length === 0) {
+    return (
+      <EmptyState
+        icon={<BookBookmarkIcon />}
+        title="No articles or folders yet"
+        description="Create your first article or folder to start building your knowledge base"
+      />
+    );
+  }
 
   return (
     <KnowledgeBaseItemsListView
