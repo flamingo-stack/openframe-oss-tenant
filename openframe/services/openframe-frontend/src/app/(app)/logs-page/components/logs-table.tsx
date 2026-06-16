@@ -39,6 +39,7 @@ import { graphql, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { logsTableRelay_query$key as LogsFragmentKey } from '@/__generated__/logsTableRelay_query.graphql';
 import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@/__generated__/logsTableRelayPaginationQuery.graphql';
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState, LogDrawer } from '@/app/components/shared';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
@@ -169,6 +170,7 @@ function LogsTableContent({
   onRefreshRef,
 }: LogsTableContentProps) {
   const { toast } = useToast();
+  const askMingo = useAskMingo();
   const [isPending, startTransition] = useTransition();
   const [selectedLog, setSelectedLog] = useState<UiLogEntry | null>(null);
 
@@ -503,6 +505,7 @@ function LogsTableContent({
             cornerColor="var(--ods-flamingo-cyan-base)"
           />
         }
+        onButtonClick={() => askMingo('logs')}
       />
     );
   }

@@ -29,8 +29,10 @@
 
 import { EmbeddableChat } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useEffect } from 'react';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
+import { useMingoLauncherStore } from '../(app)/mingo/stores/mingo-launcher-store';
 
 /** The two transports the in-panel toggle switches between. Mirrors the lib's
  *  `ChatMode` (not re-exported from the chat barrel) — structurally identical,
@@ -52,7 +54,22 @@ interface OpenframeEmbeddableChatEntryProps {
 }
 
 export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEmbeddableChatEntryProps) {
-  const { state, subscription } = useMingoUnifiedChatState();
+  const { state, subscription, sendInNewDialog } = useMingoUnifiedChatState();
+
+  // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
+  // "Ask Mingo about X" button). The drawer unmounts this entry on close and
+  // remounts on open, so this effect runs on every open; it also re-fires if a
+  // new prompt is queued while the drawer is already open. `consumePendingPrompt`
+  // nulls the prompt as it reads it, so a manual header open (no prompt) and
+  // React StrictMode's double-invoke are both no-ops.
+  const pendingPrompt = useMingoLauncherStore(s => s.pendingPrompt);
+  const consumePendingPrompt = useMingoLauncherStore(s => s.consumePendingPrompt);
+  useEffect(() => {
+    if (!pendingPrompt) return;
+    const text = consumePendingPrompt();
+    if (!text) return;
+    void sendInNewDialog(text);
+  }, [pendingPrompt, consumePendingPrompt, sendInNewDialog]);
 
   // Controlled active mode persisted across drawer open/close (and reloads):
   // the drawer unmounts its content on close, so an uncontrolled mode would
