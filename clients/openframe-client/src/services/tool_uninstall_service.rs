@@ -64,8 +64,9 @@ impl ToolUninstallService {
     }
 
     /// Uninstall a single tool by running its uninstallation command
-    /// 
+    ///
     /// Fails immediately if any step fails (stop process, run uninstall command, remove files)
+    #[tracing::instrument(skip_all, fields(tool_id = %tool.tool_agent_id))]
     async fn uninstall_tool(&self, tool: &crate::models::InstalledTool) -> Result<()> {
         let tool_agent_id = &tool.tool_agent_id;
 
