@@ -281,13 +281,13 @@ async fn stop_service_macos(service_name: &str) -> Result<()> {
 
 #[cfg(target_os = "linux")]
 async fn stop_service_linux(service_name: &str) -> Result<()> {
-    info!("Stopping Linux service via systemctl stop: {}", service_name);
+    info!("Stopping Linux service via sudo systemctl stop: {}", service_name);
 
-    let output = Command::new("systemctl")
-        .args(["stop", service_name])
+    let output = Command::new("sudo")
+        .args(["systemctl", "stop", service_name])
         .output()
         .await
-        .with_context(|| format!("Failed to execute systemctl stop for service: {}", service_name))?;
+        .with_context(|| format!("Failed to execute sudo systemctl stop for service: {}", service_name))?;
 
     let stderr = String::from_utf8_lossy(&output.stderr);
 
