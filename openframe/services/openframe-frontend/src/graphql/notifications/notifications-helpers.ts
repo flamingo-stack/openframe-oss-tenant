@@ -257,7 +257,7 @@ export interface NotificationNodeShape {
     readonly approvalRequestId?: string;
     readonly approvalType?: string;
     readonly dialogId?: string;
-    readonly ticketId?: string;
+    readonly ticketId?: string | null;
     readonly approvalTicketId?: string | null;
     readonly resolution?: string | null;
     readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
