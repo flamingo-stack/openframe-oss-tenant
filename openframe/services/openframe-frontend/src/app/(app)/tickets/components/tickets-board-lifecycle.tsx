@@ -6,10 +6,11 @@ import {
   type BoardColumnDef,
   type BoardTicket,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { SearchIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
 import { useMoveTicketLifecycle, useMovingTicketIdsLifecycle } from '../hooks/use-move-ticket-lifecycle';
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
@@ -161,6 +162,14 @@ export function TicketsBoardLifecycle({
     [moveTicket],
   );
 
+  const showEmptyState =
+    !isLoading &&
+    !debouncedSearch &&
+    (organizationIds?.length ?? 0) === 0 &&
+    (assigneeIds?.length ?? 0) === 0 &&
+    boardColumns.length > 0 &&
+    boardColumns.every(column => column.tickets.length === 0);
+
   if (statusesError) {
     return <PageError message={statusesError.message} />;
   }
@@ -210,18 +219,26 @@ export function TicketsBoardLifecycle({
           </div>
         </div>
 
-        <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
-          <Board
-            columns={boardColumns}
-            onChange={handleChange}
-            onLoadMore={loadMore}
-            onArchiveColumn={openArchiveResolvedConfirm}
-            getTicketHref={getTicketHref}
-            renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
-            collapseStorageKey="tickets-board-lifecycle"
-            className="h-full px-[var(--spacing-system-l)]"
+        {showEmptyState ? (
+          <EmptyState
+            icon={<TagIcon />}
+            title="Ticket history empty"
+            description="Tickets will appear here when available"
           />
-        </div>
+        ) : (
+          <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+            <Board
+              columns={boardColumns}
+              onChange={handleChange}
+              onLoadMore={loadMore}
+              onArchiveColumn={openArchiveResolvedConfirm}
+              getTicketHref={getTicketHref}
+              renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+              collapseStorageKey="tickets-board-lifecycle"
+              className="h-full px-[var(--spacing-system-l)]"
+            />
+          </div>
+        )}
       </PageLayout>
       {ticketsActionsDialog}
     </>

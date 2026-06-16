@@ -3,6 +3,7 @@ export type { DeviceSelectorProps, InfiniteScrollConfig } from './device-selecto
 export { DeviceSelector } from './device-selector';
 export { DevicesFilterToolbar, type DevicesFilterToolbarProps } from './devices-filter-toolbar';
 export { DevicesPanel, type DevicesPanelProps } from './devices-panel';
+export { EmptyState, type EmptyStateProps } from './empty-state';
 export { LogDrawer, type LogDrawerInfoField } from './log-drawer';
 export { OrgAvatar } from './org-avatar';
 export * from './tags';

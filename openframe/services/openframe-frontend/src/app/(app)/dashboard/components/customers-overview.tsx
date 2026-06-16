@@ -1,7 +1,9 @@
 'use client';
 
 import { DashboardInfoCard, OrganizationCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { IdCardIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useCustomersOverview } from '../hooks/use-customers-overview';
 
@@ -53,6 +55,16 @@ export function CustomersOverviewSection() {
 
     if (error) {
       return <div className="text-ods-error font-['DM_Sans'] text-[14px]">{error}</div>;
+    }
+
+    if (rows.length === 0) {
+      return (
+        <EmptyState
+          icon={<IdCardIcon />}
+          title="No Customers added yet"
+          description="Add your first Customer to get started"
+        />
+      );
     }
 
     return rows.map(org => {

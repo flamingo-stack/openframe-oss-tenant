@@ -140,7 +140,7 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
       <DataTable.Header rightSlot={<DataTable.RowCount itemName="result" />} />
       {isEmpty ? (
         <div className="flex min-h-0 flex-1 items-center justify-center">
-          <DataTable.Empty icon={emptyIcon} message={emptyMessage} className="w-full" />
+          <DataTable.Empty icon={emptyIcon} title={emptyMessage} description={undefined} className="w-full" />
         </div>
       ) : (
         <>
