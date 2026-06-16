@@ -23,16 +23,6 @@
         "closable": true,
         "visible": false,
         "dragDropEnabled": false
-      },
-      {
-        "label": "invisible",
-        "title": "",
-        "width": 1,
-        "height": 1,
-        "visible": false,
-        "decorations": false,
-        "skipTaskbar": true,
-        "alwaysOnTop": false
       }
     ],
     "security": {
