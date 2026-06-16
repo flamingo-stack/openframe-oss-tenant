@@ -75,10 +75,13 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   // leaving the panel covering it. The lib's EmbeddableChat leaves this
   // pathname-driven close to the embedder (it has no router), so we own it
   // here. Runs on `pathname` change; the initial no-op (already closed) is
-  // harmless — React bails on a same-value `setState`.
+  // harmless - React bails on a same-value `setState`.
+  //
+  // `pathname` is the intentional trigger but isn't read in the body (we pull
+  // the store action imperatively via getState() so it isn't a dependency), so
+  // biome's exhaustive-deps rule sees it as "extra". That's deliberate.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pathname is the intentional re-run trigger; the close() action is read imperatively
   useEffect(() => {
-    // Read the action off the store imperatively so this effect's only
-    // dependency stays `pathname` (the trigger) — matches the original shape.
     useMingoLauncherStore.getState().close();
   }, [pathname]);
 
