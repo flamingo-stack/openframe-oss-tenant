@@ -5,21 +5,6 @@ use serde::{Deserialize, Serialize};
 
 pub mod update_config;
 
-/// Windows Service Control Manager error codes, as they appear in the
-/// stdout/stderr of `sc` commands (e.g. `[SC] ControlService FAILED 1061`).
-pub mod windows_service_error {
-    /// 1056 — an instance of the service is already running.
-    pub const ALREADY_RUNNING: &str = "1056";
-    /// 1060 — the specified service does not exist.
-    pub const DOES_NOT_EXIST: &str = "1060";
-    /// 1061 — `ERROR_SERVICE_CANNOT_ACCEPT_CTRL`: the service is in a
-    /// start-pending / stop-pending state and can't accept a control message
-    /// right now (commonly the Mesh Agent on Windows Server).
-    pub const CANNOT_ACCEPT_CTRL: &str = "1061";
-    /// 1062 — the service has not been started.
-    pub const NOT_STARTED: &str = "1062";
-}
-
 /// Timing and retry budget for stopping tool processes and OS services.
 pub mod service_stop {
     /// Interval between process/service state polls, in milliseconds.
