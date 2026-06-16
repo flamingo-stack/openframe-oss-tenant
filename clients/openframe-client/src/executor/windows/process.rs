@@ -17,7 +17,7 @@ pub(super) async fn run_normal(
     tmp_file: &Path,
     params: &ScriptParams<'_>,
 ) -> ExecResult {
-    let mut cmd = Command::new(interpreter.exe);
+    let mut cmd = Command::new(&interpreter.exe);
     for &flag in interpreter.flags {
         cmd.arg(flag);
     }

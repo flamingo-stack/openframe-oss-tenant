@@ -22,12 +22,14 @@ impl JobHandle {
                 },
                 ..Default::default()
             };
-            let _ = SetInformationJobObject(
+            if let Err(e) = SetInformationJobObject(
                 job,
                 JobObjectExtendedLimitInformation,
                 &info as *const _ as *const c_void,
                 core::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
-            );
+            ) {
+                tracing::warn!(error = %e, "SetInformationJobObject(KILL_ON_JOB_CLOSE) failed; kill-on-close disabled");
+            }
             Some(job)
         }
     }
@@ -42,7 +44,9 @@ impl JobHandle {
         unsafe {
             match OpenProcess(PROCESS_TERMINATE | PROCESS_SET_QUOTA, false, pid) {
                 Ok(process) => {
-                    let _ = AssignProcessToJobObject(job, process);
+                    if let Err(e) = AssignProcessToJobObject(job, process) {
+                        tracing::warn!(pid, error = %e, "AssignProcessToJobObject failed; process not in job (tree-kill degraded to single process)");
+                    }
                     let _ = CloseHandle(process);
                 }
                 Err(e) => tracing::warn!(pid, error = %e, "OpenProcess for job assignment failed"),
@@ -56,7 +60,9 @@ impl JobHandle {
             return JobHandle(None);
         };
         unsafe {
-            let _ = AssignProcessToJobObject(job, process);
+            if let Err(e) = AssignProcessToJobObject(job, process) {
+                tracing::warn!(error = %e, "AssignProcessToJobObject failed; process not in job (tree-kill degraded to single process)");
+            }
         }
         JobHandle(Some(job))
     }

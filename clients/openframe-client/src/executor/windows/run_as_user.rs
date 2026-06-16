@@ -54,7 +54,7 @@ pub(super) async fn run_as_interactive(
 }
 
 fn build_command_line(interpreter: &Interpreter, tmp_file: &Path, args: &[String]) -> String {
-    let mut parts = vec![quote(interpreter.exe)];
+    let mut parts = vec![quote(&interpreter.exe)];
     for &flag in interpreter.flags {
         parts.push(flag.to_string());
     }
@@ -268,9 +268,11 @@ unsafe fn collect_block(mut ptr: *const u16) -> Vec<String> {
 }
 
 fn read_capped_file(path: &Path) -> String {
-    match std::fs::read(path) {
-        Ok(mut bytes) => {
-            bytes.truncate(MAX_OUTPUT_SIZE);
+    use std::io::Read;
+    match std::fs::File::open(path) {
+        Ok(file) => {
+            let mut bytes = Vec::new();
+            let _ = file.take(MAX_OUTPUT_SIZE as u64).read_to_end(&mut bytes);
             clean_string(&bytes)
         }
         Err(_) => String::new(),

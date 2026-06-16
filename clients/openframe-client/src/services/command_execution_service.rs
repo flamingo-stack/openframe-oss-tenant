@@ -38,7 +38,7 @@ impl CommandExecutionService {
                 shell: &message.shell,
                 args: &message.args,
                 timeout_secs,
-                run_as_user: None,
+                run_as_user: message.run_as_user.as_deref(),
                 env_vars: &message.env_vars,
             })
             .await;
@@ -89,6 +89,7 @@ mod tests {
             args: Vec::new(),
             timeout,
             env_vars: Vec::new(),
+            run_as_user: None,
         }
     }
 
@@ -142,5 +143,79 @@ mod tests {
         assert!(v.get("exitCode").is_some());
         assert!(v.get("timedOut").is_some());
         assert!(v.get("executionTimeMs").is_some());
+    }
+}
+
+#[cfg(all(test, windows))]
+mod windows_tests {
+    use super::*;
+
+    fn msg(shell: &str, code: &str, timeout: u64) -> CommandExecutionMessage {
+        CommandExecutionMessage {
+            execution_id: "exec-1".to_string(),
+            code: code.to_string(),
+            shell: shell.to_string(),
+            args: Vec::new(),
+            timeout,
+            env_vars: Vec::new(),
+            run_as_user: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn maps_successful_powershell_execution() {
+        let svc = CommandExecutionService::new();
+        let r = svc
+            .execute(&msg("powershell", "Write-Output hi", 30), "machine-1")
+            .await;
+        assert_eq!(r.execution_id, "exec-1");
+        assert_eq!(r.machine_id, "machine-1");
+        assert_eq!(r.stdout.trim_end(), "hi");
+        assert_eq!(r.exit_code, 0);
+        assert!(!r.timed_out);
+        assert!(r.error.is_none());
+    }
+
+    #[tokio::test]
+    async fn maps_script_exit_code() {
+        let svc = CommandExecutionService::new();
+        let r = svc.execute(&msg("powershell", "exit 7", 30), "m").await;
+        assert_eq!(r.exit_code, 7);
+        assert!(r.error.is_none());
+    }
+
+    #[tokio::test]
+    async fn maps_timeout() {
+        let svc = CommandExecutionService::new();
+        let r = svc
+            .execute(&msg("powershell", "Start-Sleep -Seconds 60", 2), "m")
+            .await;
+        assert_eq!(r.exit_code, 98);
+        assert!(r.timed_out);
+    }
+
+    #[tokio::test]
+    async fn maps_unsupported_shell_to_error() {
+        let svc = CommandExecutionService::new();
+        let r = svc.execute(&msg("bash", "echo hi", 30), "m").await;
+        assert_eq!(r.exit_code, 85);
+        assert!(r.error.is_some());
+        assert!(!r.timed_out);
+    }
+
+    #[test]
+    fn message_deserializes_run_as_user_camel_case() {
+        let m: CommandExecutionMessage = serde_json::from_str(
+            r#"{"executionId":"e","code":"x","shell":"powershell","runAsUser":"alice"}"#,
+        )
+        .unwrap();
+        assert_eq!(m.run_as_user.as_deref(), Some("alice"));
+    }
+
+    #[test]
+    fn message_run_as_user_defaults_none() {
+        let m: CommandExecutionMessage =
+            serde_json::from_str(r#"{"executionId":"e","code":"x","shell":"cmd"}"#).unwrap();
+        assert!(m.run_as_user.is_none());
     }
 }

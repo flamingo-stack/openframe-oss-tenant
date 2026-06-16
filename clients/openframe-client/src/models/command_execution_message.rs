@@ -13,6 +13,8 @@ pub struct CommandExecutionMessage {
     pub timeout: u64,
     #[serde(default)]
     pub env_vars: Vec<String>,
+    #[serde(default)]
+    pub run_as_user: Option<String>,
 }
 
 fn default_shell() -> String {
