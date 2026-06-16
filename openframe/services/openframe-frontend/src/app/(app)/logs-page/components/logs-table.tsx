@@ -486,7 +486,7 @@ function LogsTableContent({
     !isPending &&
     transformedLogs.length === 0;
 
-  if (!showEmptyState) {
+  if (showEmptyState) {
     return (
       <EmptyState
         icon={<ClipboardListIcon />}
