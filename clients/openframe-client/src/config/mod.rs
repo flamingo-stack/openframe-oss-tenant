@@ -21,6 +21,10 @@ pub mod service_stop {
     /// Max force-kill attempts for a stuck Windows service. Windows restarts a
     /// failed service up to 3 times by default, so allow a margin above that.
     pub const SERVICE_FORCE_KILL_MAX_ATTEMPTS: u32 = 6;
+    /// Max time to wait for a single blocking `service.stop()` SCM call before
+    /// treating it as wedged and going straight to force-kill. `ControlService`
+    /// can otherwise hang for ~4 minutes on a frozen/unresponsive service.
+    pub const SERVICE_STOP_CALL_TIMEOUT_SECS: u64 = 10;
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
