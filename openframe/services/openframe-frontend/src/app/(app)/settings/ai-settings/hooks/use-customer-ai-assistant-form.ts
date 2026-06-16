@@ -3,7 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
 import {
@@ -83,10 +83,6 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
     }
   };
 
-  const quickActions = useFieldArray({ control: form.control, name: 'quickActions' });
-
-  const addQuickAction = () => quickActions.append({ name: '', instructions: '' });
-
   const handleSubmit = form.handleSubmit(values => onSubmit(values));
 
   return {
@@ -94,9 +90,6 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
     avatarUrl,
     handleAvatarChange,
     handleAvatarRemove,
-    quickActionFields: quickActions.fields,
-    addQuickAction,
-    removeQuickAction: quickActions.remove,
     handleSubmit,
   };
 }

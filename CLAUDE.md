@@ -83,7 +83,7 @@ OpenFrame is a distributed microservices platform with the following core archit
 #### Frontend
 - **Framework**: Next.js 16 + React 19 with TypeScript 5.8 (App Router)
 - **UI Library**: `@flamingo-stack/openframe-frontend-core` — external shared design system. No custom UI primitives.
-- **Data Fetching**: `@tanstack/react-query` (no Apollo Client)
+- **Data Fetching**: `react-relay` for GraphQL (gradual migration — use it wherever possible); `@tanstack/react-query` for REST (no Apollo Client)
 - **State**: Zustand with immer
 - **Forms**: react-hook-form + zod
 - **Code Quality**: Biome (primary linter + formatter), Husky pre-commit
@@ -182,7 +182,7 @@ The documentation has been restructured into a comprehensive, flat hierarchy:
 - React 19 functional components; hooks at the top of the component, unconditionally (no hooks after early returns, no hooks inside try/catch)
 - TypeScript strict mode for all new code
 - Use components from `@flamingo-stack/openframe-frontend-core` — never create custom UI primitives
-- `@tanstack/react-query` for all server-state fetching; `useToast` (from core lib) is mandatory for API feedback
+- `react-relay` for GraphQL fetching wherever possible (codebase is migrating to it gradually); `@tanstack/react-query` for REST; `useToast` (from core lib) is mandatory for API feedback
 - `react-hook-form` + `zod` for forms
 - Zustand stores for client state
 - ODS design tokens only — no hardcoded colors, hex values, or raw font sizes

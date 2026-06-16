@@ -12,7 +12,7 @@ import {
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
 import { DevicesGridFilters } from '@/app/(app)/devices/components/devices-grid-filters';
 import {
@@ -50,6 +50,12 @@ export interface DevicesPanelProps {
    * already provides padding).
    */
   className?: string;
+  /**
+   * Empty state rendered instead of the toolbar + list when there are
+   * no devices and no active search/filters. Pass from the standalone Devices
+   * page; omit in embedded contexts to keep the inline "no results" message.
+   */
+  emptyState?: ReactNode;
 }
 
 export function DevicesPanel({
@@ -60,6 +66,7 @@ export function DevicesPanel({
   hideFilters,
   defaultStatuses,
   className = '',
+  emptyState,
 }: DevicesPanelProps) {
   const router = useRouter();
 
@@ -86,6 +93,17 @@ export function DevicesPanel({
     useDevices(filters, debouncedSearch);
 
   const { data: deviceFilters, isLoading: isDeviceFiltersLoading } = useDeviceFilters(filters);
+
+  const hasActiveDeviceFilters =
+    params.statuses.length > 0 ||
+    params.osTypes.length > 0 ||
+    params.organizationIds.length > 0 ||
+    params.tags.length > 0;
+
+  // Pristine, genuinely-empty view (no search, no filters, no devices): show the
+  // empty state instead of the toolbar + list, when one is provided.
+  const showEmptyState =
+    !!emptyState && !isLoading && !debouncedSearch && !hasActiveDeviceFilters && devices.length === 0;
 
   const filterColumns = useMemo(() => {
     const hidden = new Set(hideFilters ?? []);
@@ -188,66 +206,70 @@ export function DevicesPanel({
         ]}
         contentClassName="flex flex-col"
       >
-        <div>
-          <DevicesFilterToolbar
-            searchValue={localSearch}
-            onSearchChange={setLocalSearch}
-            tags={tagOptions}
-            onTagRemove={handleTagRemove}
-            onClearAll={handleClearAll}
-            onSubmit={handleTagSubmit}
-            isMdUp={isMdUp}
-            onOpenFilterModal={openFilterModal}
-            isFilterModalOpen={filterModalOpen}
-            onCloseFilterModal={closeFilterModal}
-            filterGroups={filterGroups}
-            onFilterChange={handleModalFilterChange}
-            currentFilters={!isMdUp ? tableFilters : undefined}
-            tagFilterKeys={tagFilterKeys}
-            selectedTags={selectedTags}
-            onTagsChange={handleModalTagsChange}
-            isLoading={isDeviceFiltersLoading}
-          />
-          {params.viewMode === 'table' ? (
-            <DevicesTableBody
-              devices={devices}
-              isLoading={isLoading || isDeviceFiltersLoading}
-              emptyMessage="No devices found. Try adjusting your search or filters."
-              skeletonRows={10}
-              stickyHeaderOffset="top-[96px]"
-              deviceFilters={deviceFilters ?? null}
-              columnFilters={columnFilters}
-              onColumnFiltersChange={onColumnFiltersChange}
-              actionsColumn={actionsColumn}
-              hideColumns={hideColumns}
-              totalCount={filteredCount}
-              footerSlot={
-                <DataTable.InfiniteFooter
+        {showEmptyState ? (
+          emptyState
+        ) : (
+          <div>
+            <DevicesFilterToolbar
+              searchValue={localSearch}
+              onSearchChange={setLocalSearch}
+              tags={tagOptions}
+              onTagRemove={handleTagRemove}
+              onClearAll={handleClearAll}
+              onSubmit={handleTagSubmit}
+              isMdUp={isMdUp}
+              onOpenFilterModal={openFilterModal}
+              isFilterModalOpen={filterModalOpen}
+              onCloseFilterModal={closeFilterModal}
+              filterGroups={filterGroups}
+              onFilterChange={handleModalFilterChange}
+              currentFilters={!isMdUp ? tableFilters : undefined}
+              tagFilterKeys={tagFilterKeys}
+              selectedTags={selectedTags}
+              onTagsChange={handleModalTagsChange}
+              isLoading={isDeviceFiltersLoading}
+            />
+            {params.viewMode === 'table' ? (
+              <DevicesTableBody
+                devices={devices}
+                isLoading={isLoading || isDeviceFiltersLoading}
+                emptyMessage="No devices found. Try adjusting your search or filters."
+                skeletonRows={10}
+                stickyHeaderOffset="top-[96px]"
+                deviceFilters={deviceFilters ?? null}
+                columnFilters={columnFilters}
+                onColumnFiltersChange={onColumnFiltersChange}
+                actionsColumn={actionsColumn}
+                hideColumns={hideColumns}
+                totalCount={filteredCount}
+                footerSlot={
+                  <DataTable.InfiniteFooter
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                    onLoadMore={handleLoadMore}
+                    skeletonRows={2}
+                  />
+                }
+              />
+            ) : (
+              <>
+                <DevicesGridFilters
+                  filterColumns={filterColumns}
+                  currentFilters={tableFilters}
+                  onFilterChange={handleFilterChange}
+                  totalCount={filteredCount}
+                />
+                <DevicesGrid
+                  devices={devices}
+                  isLoading={isLoading}
                   hasNextPage={hasNextPage}
                   isFetchingNextPage={isFetchingNextPage}
-                  onLoadMore={handleLoadMore}
-                  skeletonRows={2}
+                  sentinelRef={gridSentinelRef}
                 />
-              }
-            />
-          ) : (
-            <>
-              <DevicesGridFilters
-                filterColumns={filterColumns}
-                currentFilters={tableFilters}
-                onFilterChange={handleFilterChange}
-                totalCount={filteredCount}
-              />
-              <DevicesGrid
-                devices={devices}
-                isLoading={isLoading}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                sentinelRef={gridSentinelRef}
-              />
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
       </PageLayout>
     </>
   );

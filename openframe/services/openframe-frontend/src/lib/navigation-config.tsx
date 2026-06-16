@@ -6,15 +6,32 @@ import {
   ClipboardListIcon,
   IdCardIcon,
   MonitorIcon,
+  QuestionCircleIcon,
   RadarIcon,
   Settings02Icon,
   TagIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { NavigationSidebarItem } from '@flamingo-stack/openframe-frontend-core/types/navigation';
+import type { UnreadCountsByCategory } from '@/app/components/notifications/unread-counts-hydrator';
+import { NotificationCategory } from '@/generated/schema-enums';
 import { isAuthOnlyMode, isSaasTenantMode } from './app-mode';
 import { featureFlags } from './feature-flags';
 
-export const getNavigationItems = (pathname: string): NavigationSidebarItem[] => {
+const CATEGORY_BY_NAV_ID: Record<string, NotificationCategory> = {
+  dashboard: NotificationCategory.DASHBOARD,
+  organizations: NotificationCategory.CUSTOMERS,
+  devices: NotificationCategory.DEVICES,
+  scripts: NotificationCategory.SCRIPTS,
+  monitoring: NotificationCategory.MONITORING,
+  logs: NotificationCategory.LOGS,
+  tickets: NotificationCategory.TICKETS,
+  mingo: NotificationCategory.MINGO,
+};
+
+export const getNavigationItems = (
+  pathname: string,
+  unreadCounts?: UnreadCountsByCategory,
+): NavigationSidebarItem[] => {
   if (isAuthOnlyMode()) {
     return [];
   }
@@ -94,6 +111,17 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
     });
   }
 
+  if (featureFlags.helpCenter.enabled()) {
+    baseItems.push({
+      id: 'help-center',
+      label: 'Help Center',
+      icon: <QuestionCircleIcon size={24} />,
+      path: '/help-center',
+      section: 'secondary',
+      isActive: pathname.startsWith('/help-center'),
+    });
+  }
+
   baseItems.push({
     id: 'settings',
     label: 'Settings',
@@ -103,5 +131,9 @@ export const getNavigationItems = (pathname: string): NavigationSidebarItem[] =>
     isActive: pathname.startsWith('/settings'),
   });
 
-  return baseItems;
+  return baseItems.map(item => {
+    const category = CATEGORY_BY_NAV_ID[item.id];
+    const unreadCount = category ? unreadCounts?.[category] : undefined;
+    return unreadCount ? { ...item, unreadCount } : item;
+  });
 };

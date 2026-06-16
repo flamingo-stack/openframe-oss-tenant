@@ -2,7 +2,7 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useRef } from 'react';
-import { useMutation } from 'react-relay';
+import { useMutation, useRelayEnvironment } from 'react-relay';
 import type { deleteAllReadNotificationsMutation as DeleteAllReadNotificationsMutationType } from '@/__generated__/deleteAllReadNotificationsMutation.graphql';
 import type { deleteNotificationMutation as DeleteNotificationMutationType } from '@/__generated__/deleteNotificationMutation.graphql';
 import type { markAllNotificationsReadMutation as MarkAllReadMutationType } from '@/__generated__/markAllNotificationsReadMutation.graphql';
@@ -18,6 +18,7 @@ import {
   makeMarkReadUpdater,
   type NotificationConnectionPair,
 } from './notifications-helpers';
+import { refreshUnreadCounts } from './unread-counts-relay';
 
 export type NotificationMutation = 'markRead' | 'markAllRead' | 'delete' | 'deleteAllRead';
 
@@ -35,6 +36,7 @@ export function useNotificationMutations({
   onDeleteAllReadCompleted,
 }: UseNotificationMutationsOptions) {
   const { toast } = useToast();
+  const environment = useRelayEnvironment();
   const [markReadCommit] = useMutation<MarkReadMutationType>(markNotificationReadMutation);
   const [markAllReadCommit, isMarkingAllRead] = useMutation<MarkAllReadMutationType>(markAllNotificationsReadMutation);
   const [deleteCommit] = useMutation<DeleteNotificationMutationType>(deleteNotificationMutation);
@@ -53,13 +55,16 @@ export function useNotificationMutations({
         variables: { id },
         optimisticUpdater: updater,
         updater,
+        onCompleted: () => {
+          refreshUnreadCounts(environment);
+        },
         onError: err => {
           toast({ title: 'Failed to mark as read', description: err.message, variant: 'destructive' });
           onError?.('markRead', err);
         },
       });
     },
-    [markReadCommit, onError, toast],
+    [environment, markReadCommit, onError, toast],
   );
 
   const markAllRead = useCallback(() => {
@@ -70,6 +75,7 @@ export function useNotificationMutations({
       optimisticUpdater: updater,
       updater,
       onCompleted: () => {
+        refreshUnreadCounts(environment);
         onMarkAllReadCompleted?.();
       },
       onError: err => {
@@ -77,7 +83,7 @@ export function useNotificationMutations({
         onError?.('markAllRead', err);
       },
     });
-  }, [markAllReadCommit, onError, onMarkAllReadCompleted, toast]);
+  }, [environment, markAllReadCommit, onError, onMarkAllReadCompleted, toast]);
 
   const removeNotification = useCallback(
     (id: string) => {
@@ -87,13 +93,17 @@ export function useNotificationMutations({
         variables: { id },
         optimisticUpdater: updater,
         updater,
+        onCompleted: () => {
+          // Deleting an unread notification changes per-category counts.
+          refreshUnreadCounts(environment);
+        },
         onError: err => {
           toast({ title: 'Failed to delete notification', description: err.message, variant: 'destructive' });
           onError?.('delete', err);
         },
       });
     },
-    [deleteCommit, onError, toast],
+    [deleteCommit, environment, onError, toast],
   );
 
   const removeAllRead = useCallback(() => {

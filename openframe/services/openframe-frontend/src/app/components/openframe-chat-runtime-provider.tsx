@@ -158,6 +158,13 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // (2026-05-29 endpoint table).
         chatStreamUrl: content('/api/docs/chat'),
         approvalToolUrl: content('/api/chat/agent/confirm-tool'),
+        // Help Center ticket agent endpoints — proxied under `/content` like
+        // every other endpoint, so they route through the existing `/content/*`
+        // rewrite (dev) + platform reverse-proxy (prod). No bare `/api/chat/agent/*`
+        // hatch needed.
+        findTicketUrl: content('/api/chat/agent/find-ticket'),
+        ticketActionUrl: content('/api/chat/agent/ticket-action'),
+        listEngagementsUrl: content('/api/chat/agent/list-engagements'),
         commandsUrl: content('/api/docs/commands'),
         // Fetch-mode entity cards (blog, roadmap, case study, release,
         // podcast/webinar/event, …) expand their `[card://<type>:<id>]`
@@ -170,13 +177,14 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         buildListUrl: (type, ids) => buildEntityCardListUrl(type, ids, '/content'),
         attachmentUploadUrl: content('/api/storage/generate-upload-url'),
         attachmentViewUrlPrefix: content('/api/storage/view/chat-attachments/'),
-        // SOURCE-VS-DEPLOYED GAP: MPH source has `/api/auth/identity`
-        // (at `app/api/auth/identity/route.ts`). The deployed instance
-        // also serves `/api/chat/identity` per the live endpoint table
-        // verified 2026-05-29. We use the deployed path because it's
-        // the one verified to work end-to-end; if 404, swap to
-        // `/api/auth/identity`.
-        identityUrl: content('/api/chat/identity'),
+        // Identity endpoint = the MPH source route `app/api/auth/identity/route.ts`
+        // (served at `/api/auth/identity`, proxied here under `/content`). The
+        // previously-used `/api/chat/identity` returns the content app's
+        // `/_not-found` (200 HTML) on this tenant host — verified 2026-06-15 via
+        // `/help-center/tickets`: the authed GET reached MPH but matched no route,
+        // so `useChatIdentity` fell back to `anon` and the signed-in ticket form
+        // never showed. `/api/auth/identity` is the lib's documented hub default.
+        identityUrl: content('/api/auth/identity'),
         imageProxyUrlPrefix: content('/api/image-proxy'),
       },
       navigation: {

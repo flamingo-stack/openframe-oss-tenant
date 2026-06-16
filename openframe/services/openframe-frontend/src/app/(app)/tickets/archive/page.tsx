@@ -13,8 +13,10 @@ export default function TicketsArchive() {
   const handleBack = useCallback(() => router.replace('/tickets'), [router]);
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
+    labelIds: { type: 'array', default: [] },
   });
   const handleSearchChange = useCallback((value: string) => setParam('search', value), [setParam]);
+  const handleLabelIdsChange = useCallback((ids: string[]) => setParam('labelIds', ids), [setParam]);
 
   useEffect(() => {
     if (!isSaasTenantMode()) {
@@ -32,6 +34,8 @@ export default function TicketsArchive() {
       backButton={{ label: 'Back', onClick: handleBack }}
       search={params.search}
       onSearchChange={handleSearchChange}
+      labelIds={params.labelIds}
+      onLabelIdsChange={handleLabelIdsChange}
     />
   );
 }

@@ -42,7 +42,7 @@ export function TicketsOverviewSection() {
               href="/tickets"
             />
             <DashboardInfoCard
-              titleSlot={<TicketStatusTag status="TECH_REQUIRED" />}
+              titleSlot={<TicketStatusTag status="TECH_REQUIRED" color={tickets.techRequiredColor} />}
               value={tickets.techRequired}
               href="/tickets"
             />

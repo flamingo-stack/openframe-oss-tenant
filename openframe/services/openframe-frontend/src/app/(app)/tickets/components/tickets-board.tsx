@@ -1,5 +1,6 @@
 'use client';
 
+import { useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
 import {
   Board,
   type BoardChange,
@@ -7,10 +8,11 @@ import {
   type BoardTicket,
   columnFromTicketStatus,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo } from 'react';
+import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
 import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
@@ -21,6 +23,7 @@ import type { Dialog } from '../types/dialog.types';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { OrganizationFilter } from './organization-filter';
+import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
 
 interface TicketsBoardProps {
   selector?: ReactNode;
@@ -28,6 +31,8 @@ interface TicketsBoardProps {
   onOrganizationIdsChange?: (ids: string[]) => void;
   assigneeIds?: string[];
   onAssigneeIdsChange?: (ids: string[]) => void;
+  labelIds?: string[];
+  onLabelIdsChange?: (ids: string[]) => void;
   search: string;
   onSearchChange: (value: string) => void;
 }
@@ -38,7 +43,7 @@ function initialsOf(name?: string): string | undefined {
   return parts.map(p => p.charAt(0).toUpperCase()).join('') || undefined;
 }
 
-function dialogToBoardTicket(dialog: Dialog): BoardTicket {
+function dialogToBoardTicket(dialog: Dialog, hasNewMessage = false): BoardTicket {
   return {
     id: dialog.id,
     title: dialog.title,
@@ -57,6 +62,7 @@ function dialogToBoardTicket(dialog: Dialog): BoardTicket {
         ]
       : undefined,
     tags: dialog.labels?.map(l => l.key),
+    hasNewMessage,
   };
 }
 
@@ -66,6 +72,8 @@ export function TicketsBoard({
   onOrganizationIdsChange,
   assigneeIds,
   onAssigneeIdsChange,
+  labelIds,
+  onLabelIdsChange,
   search,
   onSearchChange,
 }: TicketsBoardProps) {
@@ -75,9 +83,23 @@ export function TicketsBoard({
     search: debouncedSearch,
     organizationIds,
     assigneeIds,
+    labelIds,
   });
   const { mutate: moveTicket } = useMoveTicket();
   const movingIds = useMovingTicketIds();
+  const notifications = useOptionalNotifications();
+
+  // Tickets have no unread field of their own; unread state comes from notifications (a separate
+  // entity) matched by ticket id.
+  const ticketIdsWithUnread = useMemo(() => {
+    const ids = new Set<string>();
+    for (const notification of notifications?.notifications ?? []) {
+      if (notification.read) continue;
+      const ticketId = notification.meta?.ticketId;
+      if (typeof ticketId === 'string') ids.add(ticketId);
+    }
+    return ids;
+  }, [notifications?.notifications]);
   const { data: statusTransitions } = useTicketStatusTransitions();
   const {
     actions,
@@ -104,17 +126,21 @@ export function TicketsBoard({
     () =>
       BOARD_STATUSES.map(status => {
         const state = columns[status];
-        return columnFromTicketStatus(status, state.tickets.map(dialogToBoardTicket), {
-          total: state.total,
-          hasMore: state.hasMore,
-          isLoading,
-          isLoadingMore: state.isLoadingMore,
-          system: ['ACTIVE', 'TECH_REQUIRED', 'RESOLVED'].includes(status),
-          allowedFromColumns: allowedFromByStatus[status],
-          archivable: status === 'RESOLVED' && canArchiveResolved,
-        });
+        return columnFromTicketStatus(
+          status,
+          state.tickets.map(ticket => dialogToBoardTicket(ticket, ticketIdsWithUnread.has(ticket.id))),
+          {
+            total: state.total,
+            hasMore: state.hasMore,
+            isLoading,
+            isLoadingMore: state.isLoadingMore,
+            system: ['ACTIVE', 'TECH_REQUIRED', 'RESOLVED'].includes(status),
+            allowedFromColumns: allowedFromByStatus[status],
+            archivable: status === 'RESOLVED' && canArchiveResolved,
+          },
+        );
       }),
-    [columns, allowedFromByStatus, isLoading, canArchiveResolved],
+    [columns, allowedFromByStatus, isLoading, canArchiveResolved, ticketIdsWithUnread],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
@@ -132,6 +158,14 @@ export function TicketsBoard({
     [moveTicket],
   );
 
+  const showEmptyState =
+    !isLoading &&
+    !debouncedSearch &&
+    (organizationIds?.length ?? 0) === 0 &&
+    (assigneeIds?.length ?? 0) === 0 &&
+    (labelIds?.length ?? 0) === 0 &&
+    BOARD_STATUSES.every(status => columns[status].tickets.length === 0);
+
   if (error) {
     return <PageError message={error} />;
   }
@@ -148,12 +182,15 @@ export function TicketsBoard({
         contentClassName="flex flex-col min-h-0"
       >
         <div className="flex flex-col gap-[var(--spacing-system-l)]">
-          <Input
-            placeholder="Search for Ticket"
-            value={search}
-            onChange={e => onSearchChange(e.target.value)}
-            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-          />
+          <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+            <TicketLabelSearchInput
+              search={search}
+              onSearchChange={onSearchChange}
+              labelIds={labelIds ?? []}
+              onLabelIdsChange={ids => onLabelIdsChange?.(ids)}
+            />
+            <TicketLabelsRow selectedIds={labelIds ?? []} onAdd={id => onLabelIdsChange?.([...(labelIds ?? []), id])} />
+          </div>
           <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
             <OrganizationFilter
               value={organizationIds ?? []}
@@ -168,18 +205,26 @@ export function TicketsBoard({
           </div>
         </div>
 
-        <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
-          <Board
-            columns={boardColumns}
-            onChange={handleChange}
-            onLoadMore={loadMore}
-            onArchiveColumn={openArchiveResolvedConfirm}
-            getTicketHref={getTicketHref}
-            renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
-            collapseStorageKey="tickets-board"
-            className="h-full px-[var(--spacing-system-l)]"
+        {showEmptyState ? (
+          <EmptyState
+            icon={<TagIcon />}
+            title="Ticket history empty"
+            description="Tickets will appear here when available"
           />
-        </div>
+        ) : (
+          <div aria-busy={isLoading || movingIds.size > 0} className="flex-1 min-h-0 -mx-[var(--spacing-system-l)]">
+            <Board
+              columns={boardColumns}
+              onChange={handleChange}
+              onLoadMore={loadMore}
+              onArchiveColumn={openArchiveResolvedConfirm}
+              getTicketHref={getTicketHref}
+              renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+              collapseStorageKey="tickets-board"
+              className="h-full px-[var(--spacing-system-l)]"
+            />
+          </div>
+        )}
       </PageLayout>
       {ticketsActionsDialog}
     </>

@@ -6,12 +6,14 @@ import { ArchivedArticlesTable } from '@/app/(app)/knowledge-base/components/kno
 import { KnowledgeBaseTagsRow } from '@/app/(app)/knowledge-base/components/knowledge-base-tags-row';
 import { useTagSearchState } from '@/app/(app)/knowledge-base/hooks/use-tag-search-state';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { featureFlags } from '@/lib/feature-flags';
 
 export default function ArchivePage() {
   const handleBack = useSafeBack('/knowledge-base');
   const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
     useTagSearchState();
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   if (!featureFlags.knowledgeBase.enabled()) {
     notFound();
@@ -25,25 +27,31 @@ export default function ArchivePage() {
       backButton={{ label: 'Back', onClick: handleBack }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-        <TagSearchInput<string>
-          tags={tagSearchOptions}
-          searchValue={search}
-          onSearchChange={setSearch}
-          onTagRemove={removeTag}
-          onClearAll={clearAll}
-          placeholder="Search archived articles"
-          addMorePlaceholder="Search archived articles"
+      <div style={containerStyle} className="flex flex-col">
+        <div
+          ref={toolbarRef}
+          className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
+        >
+          <TagSearchInput<string>
+            tags={tagSearchOptions}
+            searchValue={search}
+            onSearchChange={setSearch}
+            onTagRemove={removeTag}
+            onClearAll={clearAll}
+            placeholder="Search archived articles"
+            addMorePlaceholder="Search archived articles"
+          />
+
+          <KnowledgeBaseTagsRow parentId={null} selectedIds={tagIds} onAdd={addTag} archived />
+        </div>
+
+        <ArchivedArticlesTable
+          search={debouncedSearch}
+          tagIds={tagIds}
+          emptyMessage={hasFilters ? 'No archived articles match your filters.' : 'No archived articles.'}
+          stickyHeaderOffset={stickyHeaderOffset}
         />
-
-        <KnowledgeBaseTagsRow parentId={null} selectedIds={tagIds} onAdd={addTag} archived />
       </div>
-
-      <ArchivedArticlesTable
-        search={debouncedSearch}
-        tagIds={tagIds}
-        emptyMessage={hasFilters ? 'No archived articles match your filters.' : 'No archived articles.'}
-      />
     </PageLayout>
   );
 }
