@@ -41,6 +41,7 @@ import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-co
 import { getOSLabel, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScripts } from '../hooks/use-scripts';
@@ -61,6 +62,7 @@ interface UiScriptEntry {
  */
 export function ScriptsTable() {
   const router = useRouter();
+  const askMingo = useAskMingo();
 
   // URL state management - search, filters, and pagination persist in URL
   const { params, setParam, setParams } = useApiParams({
@@ -431,7 +433,7 @@ export function ScriptsTable() {
 
   return (
     <PageLayout title="Scripts" actions={actions}>
-      {!showEmptyState ? (
+      {showEmptyState ? (
         <EmptyState
           icon={<BracketCurlyIcon />}
           title="No scripts yet"
@@ -458,6 +460,7 @@ export function ScriptsTable() {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('scripts')}
         />
       ) : (
         <>

@@ -9,9 +9,11 @@ import {
   MonitorIcon,
   TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { DevicesPanel, EmptyState } from '@/app/components/shared';
 
 export default function Devices() {
+  const askMingo = useAskMingo();
   return (
     <DevicesPanel
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
@@ -33,6 +35,7 @@ export default function Devices() {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('devices')}
         />
       }
     />

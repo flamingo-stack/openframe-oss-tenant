@@ -26,6 +26,7 @@ import {
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
@@ -44,6 +45,7 @@ function formatInterval(seconds: number): string {
 
 export function Queries() {
   const router = useRouter();
+  const askMingo = useAskMingo();
 
   const { params, setParams } = useApiParams({
     search: { type: 'string', default: '' },
@@ -197,6 +199,7 @@ export function Queries() {
               cornerColor="var(--ods-flamingo-cyan-base)"
             />
           }
+          onButtonClick={() => askMingo('queries')}
         />
       ) : (
         <>
