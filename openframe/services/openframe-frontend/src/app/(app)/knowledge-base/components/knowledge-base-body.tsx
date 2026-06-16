@@ -439,7 +439,7 @@ function KnowledgeBaseBodyShell({
                 addMorePlaceholder="Search for Articles"
               />
             </div>
-            {isMdUp === false && (
+            {!isMdUp && (
               <Button
                 variant="outline"
                 size="icon"
@@ -450,7 +450,7 @@ function KnowledgeBaseBodyShell({
             )}
           </div>
 
-          {isMdUp === true && <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />}
+          {isMdUp && <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />}
         </div>
 
         <Suspense fallback={<KnowledgeBaseTableSkeleton />}>
@@ -479,7 +479,7 @@ function KnowledgeBaseBodyShell({
         parentConnectionId={newFolderConnectionId}
       />
 
-      {isMdUp === false && (
+      {!isMdUp && (
         <KnowledgeBaseTagsFilterModal
           isOpen={isTagsModalOpen}
           onClose={() => setIsTagsModalOpen(false)}
