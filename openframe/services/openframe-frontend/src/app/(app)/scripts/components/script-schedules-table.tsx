@@ -4,14 +4,14 @@ import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/compon
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
-  BracketCurlyIcon,
-  CodeAIIcon,
+  HourglassClockIcon,
   LaptopIcon,
+  ListBulletIcon,
   PenEditIcon,
-  PlayCircleIcon,
   PlusCircleIcon,
+  RadarIcon,
   SearchIcon,
-  TerminalIcon,
+  TimerIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   ActionsMenuDropdown,
@@ -245,15 +245,15 @@ export function ScriptSchedulesTable() {
     <PageLayout title="Scripts Schedules" actions={actions}>
       {showEmptyState ? (
         <EmptyState
-          icon={<BracketCurlyIcon />}
-          title="No scripts yet"
-          description="Reusable code snippets you run on devices to automate tasks, fix issues, or collect data will be displayed here."
+          icon={<TimerIcon />}
+          title="No scripts schedules yet"
+          description="Scripts set to run automatically on a schedule (daily maintenance, weekly cleanups, monthly audits) will be displayed here."
           actions={[
-            { icon: <PlayCircleIcon />, label: 'Run on one device or push to many at once' },
-            { icon: <TerminalIcon />, label: 'Write in PowerShell, Bash, Python, or Batch' },
-            { icon: <CodeAIIcon />, label: 'Let Mingo suggest or generate scripts for you' },
+            { icon: <HourglassClockIcon />, label: 'Run hourly, daily, weekly, or on custom cron' },
+            { icon: <RadarIcon />, label: 'Target specific devices, Customers, or tags' },
+            { icon: <ListBulletIcon />, label: 'View execution history and success rates' },
           ]}
-          buttonLabel="Ask Mingo about Scripts"
+          buttonLabel="Ask Mingo about Script Schedules"
           buttonIcon={
             <MingoIcon
               className="size-5"

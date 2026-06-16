@@ -5,9 +5,13 @@ import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/ic
 import {
   ArcheryTargetIcon,
   ArrowRightUpIcon,
+  BellCheckIcon,
   BellIcon,
   FolderShieldIcon,
+  Hierarchy01Icon,
+  Hierarchy02Icon,
   PlusCircleIcon,
+  RadarIcon,
   ShareIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
@@ -273,9 +277,9 @@ export function Policies() {
           title="No policies yet"
           description="Rules that automatically enforce settings, configurations, and security standards across devices will be displayed here."
           actions={[
-            { icon: <ShareIcon />, label: 'Apply settings to many devices at once' },
-            { icon: <ArcheryTargetIcon />, label: 'Target devices by Customer, OS, or tag' },
-            { icon: <BellIcon />, label: 'Get alerts when devices fall out of compliance' },
+            { icon: <Hierarchy02Icon />, label: 'Apply settings to many devices at once' },
+            { icon: <RadarIcon />, label: 'Target devices by Customer, OS, or tag' },
+            { icon: <BellCheckIcon />, label: 'Get alerts when devices fall out of compliance' },
           ]}
           buttonLabel="Ask Mingo about Policies"
           buttonIcon={

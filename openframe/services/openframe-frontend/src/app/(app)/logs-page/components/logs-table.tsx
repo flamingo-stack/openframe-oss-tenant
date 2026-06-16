@@ -5,8 +5,9 @@ import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/ic
 import {
   ArrowRightUpIcon,
   ClipboardListIcon,
+  EyeAltIcon,
   EyeIcon,
-  Filter02Icon,
+  Filter01ListIcon,
   Refresh02HrIcon,
   ScanIcon,
   SearchIcon,
@@ -483,15 +484,15 @@ function LogsTableContent({
     !isPending &&
     transformedLogs.length === 0;
 
-  if (showEmptyState) {
+  if (!showEmptyState) {
     return (
       <EmptyState
         icon={<ClipboardListIcon />}
         title="No logs yet"
         description="A timeline of every action taken across the platform (scripts run, policies applied, devices connected, tickets updated) will be displayed here."
         actions={[
-          { icon: <ScanIcon />, label: 'Track who did what, when, and on which device' },
-          { icon: <Filter02Icon />, label: 'Filter by user, action type, Customer, or date range' },
+          { icon: <EyeAltIcon />, label: 'Track who did what, when, and on which device' },
+          { icon: <Filter01ListIcon />, label: 'Filter by user, action type, Customer, or date range' },
           { icon: <SearchIcon />, label: 'Investigate incidents and audit security events' },
         ]}
         buttonLabel="Ask Mingo about Logs"

@@ -5,6 +5,8 @@ import {
   ArrowRightUpIcon,
   BracketCurlyEllipsisVrIcon,
   DatabaseIcon,
+  HourglassClockIcon,
+  HourglassIcon,
   PlusCircleIcon,
   SearchIcon,
   TimerIcon,
@@ -185,7 +187,7 @@ export function Queries() {
           actions={[
             { icon: <SearchIcon />, label: 'Get answers across all devices in seconds' },
             { icon: <DatabaseIcon />, label: 'Use SQL-like syntax or natural language via Mingo' },
-            { icon: <TimerIcon />, label: 'Save queries to rerun later or schedule them' },
+            { icon: <HourglassClockIcon />, label: 'Save queries to rerun later or schedule them' },
           ]}
           buttonLabel="Ask Mingo about Queries"
           buttonIcon={

@@ -9,12 +9,14 @@ import {
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  BookPlayIcon,
   BracketCurlyIcon,
   ClipboardListIcon,
   CodeAIIcon,
   Filter02Icon,
   PenEditIcon,
   PlayCircleIcon,
+  PlayIcon,
   PlusCircleIcon,
   SearchIcon,
   TerminalIcon,
@@ -429,15 +431,24 @@ export function ScriptsTable() {
 
   return (
     <PageLayout title="Scripts" actions={actions}>
-      {showEmptyState ? (
+      {!showEmptyState ? (
         <EmptyState
           icon={<BracketCurlyIcon />}
           title="No scripts yet"
           description="Reusable code snippets you run on devices to automate tasks, fix issues, or collect data will be displayed here."
           actions={[
-            { icon: <PlayCircleIcon />, label: 'Run on one device or push to many at once' },
+            { icon: <PlayIcon />, label: 'Run on one device or push to many at once' },
             { icon: <TerminalIcon />, label: 'Write in PowerShell, Bash, Python, or Batch' },
-            { icon: <CodeAIIcon />, label: 'Let Mingo suggest or generate scripts for you' },
+            {
+              icon: (
+                <MingoIcon
+                  className="size-5"
+                  eyesColor="var(--ods-flamingo-cyan-base)"
+                  cornerColor="var(--ods-flamingo-cyan-base)"
+                />
+              ),
+              label: 'Let Mingo suggest or generate scripts for you',
+            },
           ]}
           buttonLabel="Ask Mingo about Scripts"
           buttonIcon={
