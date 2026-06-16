@@ -39,10 +39,25 @@ export const notificationsSectionRelayFragment = graphql`
             ... on AdminAiMessageContext {
               dialogId
             }
+            ... on AdminAiTicketMessageContext {
+              ticketId
+            }
+            ... on TicketStatusChangedContext {
+              ticketId
+            }
+            ... on TicketAssignedContext {
+              ticketId
+            }
+            ... on CustomerMessagePublishedContext {
+              ticketId
+            }
+            ... on AdminMessagePublishedContext {
+              ticketId
+            }
             ... on AdminApprovalRequestContext {
               approvalRequestId
               dialogId
-              ticketId
+              approvalTicketId: ticketId
               approvalType
               resolution
               toolCalls {

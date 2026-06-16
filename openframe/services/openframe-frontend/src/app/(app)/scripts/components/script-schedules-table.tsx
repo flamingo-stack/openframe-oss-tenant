@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScriptSchedules } from '../hooks/use-script-schedule';
 import type { ScriptScheduleListItem, ScriptScheduleTaskType } from '../types/script-schedule.types';
@@ -64,6 +65,7 @@ export function ScriptSchedulesTable() {
   const [searchInput, setSearchInput] = useState(params.search);
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const debouncedSearchInput = useDebounce(searchInput, 300);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   useEffect(() => {
     if (debouncedSearchInput !== params.search) {
@@ -266,8 +268,11 @@ export function ScriptSchedulesTable() {
           onButtonClick={() => askMingo('script-schedules')}
         />
       ) : (
-        <>
-          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+        <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"
+          >
             <Input
               placeholder="Search for Schedule"
               value={searchInput}
@@ -278,7 +283,7 @@ export function ScriptSchedulesTable() {
           </div>
 
           <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
             <DataTable.Body
               loading={isLoading}
               skeletonRows={pageSize}
@@ -299,7 +304,7 @@ export function ScriptSchedulesTable() {
               />
             )}
           </DataTable>
-        </>
+        </div>
       )}
     </PageLayout>
   );

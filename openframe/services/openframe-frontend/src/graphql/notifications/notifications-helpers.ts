@@ -257,9 +257,9 @@ export interface NotificationNodeShape {
     readonly approvalRequestId?: string;
     readonly approvalType?: string;
     readonly dialogId?: string;
-    readonly ticketId?: string | null;
+    readonly ticketId?: string;
+    readonly approvalTicketId?: string | null;
     readonly resolution?: string | null;
-    readonly resolvedByName?: string | null;
     readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
   };
 }
@@ -271,19 +271,17 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
     contextType: context.type,
     contextTypename: context.__typename,
   };
-  let category: string | undefined;
 
-  if (context.__typename === 'AdminAiMessageContext' && context.dialogId) {
-    category = 'mingo';
-    meta.dialogId = context.dialogId;
-  } else if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
-    category = 'approval';
+  // Entity ids drive navigation/auto-read uniformly across context types (see
+  // resolveNotificationAction); every context that carries one selects it in the query fragment.
+  const ticketId = context.ticketId ?? context.approvalTicketId ?? undefined;
+  if (context.dialogId) meta.dialogId = context.dialogId;
+  if (ticketId) meta.ticketId = ticketId;
+
+  if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
     meta.approvalRequestId = context.approvalRequestId;
-    meta.dialogId = context.dialogId;
-    meta.ticketId = context.ticketId ?? null;
     meta.approvalType = context.approvalType ?? null;
     meta.resolution = context.resolution ?? null;
-    meta.resolvedByName = context.resolvedByName ?? null;
     meta.toolCalls = (context.toolCalls ?? []).map(call => ({
       toolExecutionRequestId: call.toolExecutionRequestId,
       toolName: call.toolName,
@@ -304,7 +302,6 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
     read: node.read,
     severity,
     variant: severityToVariant(severity),
-    category,
     meta,
   };
 }

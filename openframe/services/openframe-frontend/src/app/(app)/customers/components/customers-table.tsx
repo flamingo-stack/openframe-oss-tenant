@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { useCustomers } from '../hooks/use-customers';
 import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
 
@@ -32,6 +33,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
 
   const [localSearch, setLocalSearch] = useState(params.search);
   const debouncedSearch = useDebounce(localSearch, 500);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const setParamRef = useRef(setParam);
   setParamRef.current = setParam;
@@ -105,8 +107,9 @@ export function CustomersTable({ status }: CustomersTableProps) {
           onButtonClick={() => askMingo('customers')}
         />
       ) : (
-        <div>
+        <div style={containerStyle}>
           <div
+            ref={toolbarRef}
             className={cn(
               'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
               'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
@@ -122,7 +125,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
             isLoading={isLoading}
             emptyMessage="No customers found. Try adjusting your search."
             skeletonRows={10}
-            stickyHeaderOffset="top-[96px]"
+            stickyHeaderOffset={stickyHeaderOffset}
             footerSlot={
               hasNextPage && (
                 <DataTable.InfiniteFooter

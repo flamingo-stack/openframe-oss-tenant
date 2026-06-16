@@ -13,7 +13,14 @@ const TICKETS_PAGE_SIZE = 20;
 // Legacy non-archived status set — the default filter when no lifecycle statusIds are available.
 const NON_ARCHIVED_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
-export function useTicketsQuery({ archived, search, statusFilters, organizationIds, assigneeIds }: DialogsQueryParams) {
+export function useTicketsQuery({
+  archived,
+  search,
+  statusFilters,
+  organizationIds,
+  assigneeIds,
+  labelIds,
+}: DialogsQueryParams) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -35,7 +42,15 @@ export function useTicketsQuery({ archived, search, statusFilters, organizationI
   const waitingForStatusIds = lifecycleEnabled && statusesQuery.isLoading;
 
   const query = useInfiniteQuery<TicketsPage, Error>({
-    queryKey: dialogsQueryKeys.list({ archived, search, statusFilters, statusIds, organizationIds, assigneeIds }),
+    queryKey: dialogsQueryKeys.list({
+      archived,
+      search,
+      statusFilters,
+      statusIds,
+      organizationIds,
+      assigneeIds,
+      labelIds,
+    }),
     enabled: !waitingForStatusIds,
     queryFn: async ({ pageParam }) => {
       // `statuses` is the enum fallback; fetchDialogs prefers `statusIds` whenever it's non-empty.
@@ -62,6 +77,7 @@ export function useTicketsQuery({ archived, search, statusFilters, organizationI
         search: search || undefined,
         organizationIds: organizationIds?.length ? organizationIds : undefined,
         assigneeIds: assigneeIds?.length ? assigneeIds : undefined,
+        labelIds: labelIds?.length ? labelIds : undefined,
         cursor: pageParam as string | undefined,
         limit: TICKETS_PAGE_SIZE,
       });
@@ -88,9 +104,17 @@ export function useTicketsQuery({ archived, search, statusFilters, organizationI
 
   const resetToFirstPage = useCallback(() => {
     queryClient.resetQueries({
-      queryKey: dialogsQueryKeys.list({ archived, search, statusFilters, statusIds, organizationIds, assigneeIds }),
+      queryKey: dialogsQueryKeys.list({
+        archived,
+        search,
+        statusFilters,
+        statusIds,
+        organizationIds,
+        assigneeIds,
+        labelIds,
+      }),
     });
-  }, [queryClient, archived, search, statusFilters, statusIds, organizationIds, assigneeIds]);
+  }, [queryClient, archived, search, statusFilters, statusIds, organizationIds, assigneeIds, labelIds]);
 
   return {
     dialogs,

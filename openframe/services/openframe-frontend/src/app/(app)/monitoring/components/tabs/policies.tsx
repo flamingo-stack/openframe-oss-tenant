@@ -35,6 +35,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
@@ -84,6 +85,7 @@ export function Policies() {
   });
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -294,9 +296,12 @@ export function Policies() {
           onButtonClick={() => askMingo('policies')}
         />
       ) : (
-        <>
+        <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
           {/* Sticky Search Bar */}
-          <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
+          >
             <SearchInput
               value={params.search}
               onChange={handleSearch}
@@ -307,7 +312,7 @@ export function Policies() {
 
           {/* Table */}
           <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
             <DataTable.Body
               loading={isLoading}
               skeletonRows={PAGE_SIZE}
@@ -328,7 +333,7 @@ export function Policies() {
               />
             )}
           </DataTable>
-        </>
+        </div>
       )}
       <ConfirmDeleteMonitoringModal
         open={!!policyToDelete}

@@ -24,6 +24,7 @@ import type { knowledgeBaseBodySubtreeRelayPaginationQuery as SubtreePaginationQ
 import type { knowledgeBaseBodySubtreeRelayQuery as SubtreeQueryType } from '@/__generated__/knowledgeBaseBodySubtreeRelayQuery.graphql';
 import { EmptyState } from '@/app/components/shared';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
 import {
   getKnowledgeBaseArticlesConnectionId,
@@ -204,9 +205,10 @@ interface ContentProps {
   parentId: string | null;
   search: string;
   tagIds: ReadonlyArray<string>;
+  stickyHeaderOffset: string;
 }
 
-function FoldersAndArticlesContent({ parentId, search, tagIds }: ContentProps) {
+function FoldersAndArticlesContent({ parentId, search, tagIds, stickyHeaderOffset }: ContentProps) {
   const { toast } = useToast();
   const normalizedTagIds = tagIds.length > 0 ? [...tagIds] : null;
   const normalizedSearch = search || null;
@@ -302,11 +304,12 @@ function FoldersAndArticlesContent({ parentId, search, tagIds }: ContentProps) {
       isLoadingNext={isLoadingNext}
       onLoadMore={onLoadMore}
       emptyMessage="No knowledge base items found."
+      stickyHeaderOffset={stickyHeaderOffset}
     />
   );
 }
 
-function SubtreeArticlesContent({ parentId, search, tagIds }: ContentProps) {
+function SubtreeArticlesContent({ parentId, search, tagIds, stickyHeaderOffset }: ContentProps) {
   const { toast } = useToast();
   const normalizedTagIds = tagIds.length > 0 ? [...tagIds] : null;
   const normalizedSearch = search || null;
@@ -365,6 +368,7 @@ function SubtreeArticlesContent({ parentId, search, tagIds }: ContentProps) {
       isLoadingNext={isLoadingNext}
       onLoadMore={onLoadMore}
       emptyMessage="No matching articles in this subtree."
+      stickyHeaderOffset={stickyHeaderOffset}
     />
   );
 }
@@ -379,6 +383,7 @@ function KnowledgeBaseBodyShell({
   const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
     useTagSearchState();
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const isSubtreeMode = parentId !== null && tagIds.length > 0;
 
@@ -410,27 +415,42 @@ function KnowledgeBaseBodyShell({
       actions={buildActions(parentId, () => setIsNewFolderOpen(true))}
       menuActions={menuActions}
     >
-      <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-        <TagSearchInput<string>
-          tags={tagSearchOptions}
-          searchValue={search}
-          onSearchChange={setSearch}
-          onTagRemove={removeTag}
-          onClearAll={clearAll}
-          placeholder="Search for Articles"
-          addMorePlaceholder="Search for Articles"
-        />
+      <div style={containerStyle} className="flex flex-col">
+        <div
+          ref={toolbarRef}
+          className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
+        >
+          <TagSearchInput<string>
+            tags={tagSearchOptions}
+            searchValue={search}
+            onSearchChange={setSearch}
+            onTagRemove={removeTag}
+            onClearAll={clearAll}
+            placeholder="Search for Articles"
+            addMorePlaceholder="Search for Articles"
+          />
 
-        <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />
+          <KnowledgeBaseTagsRow parentId={parentId} selectedIds={tagIds} onAdd={addTag} />
+        </div>
+
+        <Suspense fallback={<KnowledgeBaseTableSkeleton />}>
+          {isSubtreeMode ? (
+            <SubtreeArticlesContent
+              parentId={parentId}
+              search={debouncedSearch}
+              tagIds={tagIds}
+              stickyHeaderOffset={stickyHeaderOffset}
+            />
+          ) : (
+            <FoldersAndArticlesContent
+              parentId={parentId}
+              search={debouncedSearch}
+              tagIds={tagIds}
+              stickyHeaderOffset={stickyHeaderOffset}
+            />
+          )}
+        </Suspense>
       </div>
-
-      <Suspense fallback={<KnowledgeBaseTableSkeleton />}>
-        {isSubtreeMode ? (
-          <SubtreeArticlesContent parentId={parentId} search={debouncedSearch} tagIds={tagIds} />
-        ) : (
-          <FoldersAndArticlesContent parentId={parentId} search={debouncedSearch} tagIds={tagIds} />
-        )}
-      </Suspense>
 
       <NewFolderModal
         isOpen={isNewFolderOpen}
@@ -489,7 +509,7 @@ function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       actions={buildActions(parentId, () => {})}
     >
-      <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <div className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]">
         <TagSearchInput<string>
           tags={[]}
           searchValue=""
