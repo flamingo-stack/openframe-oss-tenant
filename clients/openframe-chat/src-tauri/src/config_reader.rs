@@ -51,12 +51,16 @@ impl AppConfig {
         let mut machine_id: Option<String> = None;
         let mut debug_mode = false;
 
-        // The next token is a value only if it isn't flag-shaped — otherwise
-        // a flag with a missing value would swallow the following flag
-        // (e.g. `--machineId --devMode` making "--devMode" the machine id).
+        const KNOWN_FLAGS: &[&str] = &[
+            "--openframe-token-path",
+            "--openframe-secret",
+            "--serverUrl",
+            "--machineId",
+            "--devMode",
+        ];
         let value_after = |i: usize| -> Option<String> {
             let v = args.get(i + 1)?;
-            if v.is_empty() || v.starts_with('-') {
+            if v.is_empty() || KNOWN_FLAGS.contains(&v.as_str()) {
                 return None;
             }
             Some(v.clone())

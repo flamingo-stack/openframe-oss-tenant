@@ -105,38 +105,45 @@ impl TokenWatcher {
             // cache-based comparison swallow the rotation event.
             let mut last_emitted: Option<String> = None;
 
+            let mut missing_polls: u32 = 0;
+            const CLEAR_AFTER_MISSING_POLLS: u32 = 3;
+
             loop {
                 let mtime = fs::metadata(&path).and_then(|m| m.modified()).ok();
-                // Re-decrypt only when the file mtime moved (or stat failed).
-                if mtime.is_none() || mtime != last_mtime {
+                if mtime.is_none() || mtime != last_mtime || missing_polls > 0 {
                     last_mtime = mtime;
 
-                    let new = source.read_fresh();
-                    if new != last_emitted {
-                        match &new {
-                            Some(token) => {
+                    match source.read_fresh() {
+                        Some(token) => {
+                            missing_polls = 0;
+                            if last_emitted.as_deref() != Some(token.as_str()) {
                                 match last_emitted {
                                     None => log::info!(
                                         "token watcher: first token received ({})",
-                                        mask_token(token)
+                                        mask_token(&token)
                                     ),
                                     Some(_) => log::info!(
                                         "token watcher: token refreshed ({})",
-                                        mask_token(token)
+                                        mask_token(&token)
                                     ),
                                 }
-                                emit_token_to_frontend(&app_handle, Some(token));
-                            }
-                            // Only reachable from Some → None (startup None
-                            // equals the initial last_emitted).
-                            None => {
-                                log::warn!(
-                                    "token watcher: token unavailable (removed/empty/undecryptable) — clearing frontend cache"
-                                );
-                                emit_token_to_frontend(&app_handle, None);
+                                emit_token_to_frontend(&app_handle, Some(&token));
+                                last_emitted = Some(token);
                             }
                         }
-                        last_emitted = new;
+                        None => {
+                            if last_emitted.is_some() {
+                                missing_polls += 1;
+                                if missing_polls >= CLEAR_AFTER_MISSING_POLLS {
+                                    log::warn!(
+                                        "token watcher: token unavailable (removed/empty/undecryptable) — clearing frontend cache"
+                                    );
+                                    emit_token_to_frontend(&app_handle, None);
+                                    last_emitted = None;
+                                    missing_polls = 0;
+                                }
+                            }
+                        }
                     }
                 }
 
