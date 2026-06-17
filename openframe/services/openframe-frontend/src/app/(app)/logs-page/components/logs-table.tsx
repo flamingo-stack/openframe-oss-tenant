@@ -468,7 +468,7 @@ function LogsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [logFilters, getLogDetailsUrl, organizationLocked],
+    [severityOptions, toolOptions, organizationOptions, getLogDetailsUrl, organizationLocked],
   );
 
   // Mobile filter groups reuse the same column filter options (built from
