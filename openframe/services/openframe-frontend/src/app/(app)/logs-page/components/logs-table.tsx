@@ -313,31 +313,6 @@ function LogsTableContent({
     return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`;
   }, []);
 
-  const severityOptions = useMemo(() => {
-    const values = new Set<string>(logFilters?.severities ?? []);
-    for (const log of logs) if (log.severity) values.add(log.severity);
-    return Array.from(values, severity => ({
-      id: severity,
-      label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
-      value: severity,
-    }));
-  }, [logFilters, logs]);
-
-  const toolOptions = useMemo(() => {
-    const values = new Set<string>(logFilters?.toolTypes ?? []);
-    for (const log of logs) if (log.toolType) values.add(log.toolType);
-    return Array.from(values, toolType => ({ id: toolType, label: toToolLabel(toolType), value: toolType }));
-  }, [logFilters, logs]);
-
-  const organizationOptions = useMemo(() => {
-    const byId = new Map<string, string>();
-    for (const org of logFilters?.organizations ?? []) byId.set(org.id, org.name);
-    for (const log of logs) {
-      if (log.organizationId) byId.set(log.organizationId, log.organizationName || log.organizationId);
-    }
-    return Array.from(byId, ([id, name]) => ({ id, label: name, value: id }));
-  }, [logFilters, logs]);
-
   const columns = useMemo<ColumnDef<UiLogEntry>[]>(
     () => [
       {
@@ -367,7 +342,12 @@ function LogsTableContent({
         meta: {
           width: 'w-[120px]',
           filter: {
-            options: severityOptions,
+            options:
+              logFilters?.severities?.map((severity: string) => ({
+                id: severity,
+                label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
+                value: severity,
+              })) || [],
           },
         },
       },
@@ -386,7 +366,12 @@ function LogsTableContent({
           width: 'w-[150px]',
           hideAt: 'md',
           filter: {
-            options: toolOptions,
+            options:
+              logFilters?.toolTypes?.map((toolType: string) => ({
+                id: toolType,
+                label: toToolLabel(toolType),
+                value: toolType,
+              })) || [],
           },
         },
       },
@@ -415,7 +400,7 @@ function LogsTableContent({
           filter: organizationLocked
             ? undefined
             : {
-                options: organizationOptions,
+                options: transformOrganizationFilters(logFilters?.organizations),
               },
         },
       },
@@ -468,7 +453,7 @@ function LogsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [severityOptions, toolOptions, organizationOptions, getLogDetailsUrl, organizationLocked],
+    [logFilters, getLogDetailsUrl, organizationLocked],
   );
 
   // Mobile filter groups reuse the same column filter options (built from
