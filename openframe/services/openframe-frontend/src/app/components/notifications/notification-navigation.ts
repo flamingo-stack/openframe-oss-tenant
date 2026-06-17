@@ -1,7 +1,36 @@
 import { ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE, type Notification } from '@flamingo-stack/openframe-frontend-core';
 
-/** Context discriminator for a Mingo admin-chat AI message. */
+// Backend `NotificationContext.type` discriminators (the string `type` field; the same set the
+// concrete `__typename` subtypes carry in schema.graphql). NATS payloads carry only this string,
+// so it is the single source of truth for both routing and reconstructing store records live.
 export const ADMIN_AI_MESSAGE_CONTEXT_TYPE = 'ADMIN_AI_MESSAGE';
+export const ADMIN_AI_TICKET_MESSAGE_CONTEXT_TYPE = 'ADMIN_AI_TICKET_MESSAGE';
+export const CLIENT_AI_MESSAGE_CONTEXT_TYPE = 'CLIENT_AI_MESSAGE';
+export const TICKET_STATUS_CHANGED_CONTEXT_TYPE = 'TICKET_STATUS_CHANGED';
+export const TICKET_ASSIGNED_CONTEXT_TYPE = 'TICKET_ASSIGNED';
+export const CUSTOMER_MESSAGE_PUBLISHED_CONTEXT_TYPE = 'CUSTOMER_MESSAGE_PUBLISHED';
+export const ADMIN_MESSAGE_PUBLISHED_CONTEXT_TYPE = 'ADMIN_MESSAGE_PUBLISHED';
+
+/** Context `type` → GraphQL `__typename`, so the NATS live path can rebuild typed context records. */
+export const CONTEXT_TYPENAME_BY_TYPE: Record<string, string> = {
+  [ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE]: 'AdminApprovalRequestContext',
+  [ADMIN_AI_MESSAGE_CONTEXT_TYPE]: 'AdminAiMessageContext',
+  [ADMIN_AI_TICKET_MESSAGE_CONTEXT_TYPE]: 'AdminAiTicketMessageContext',
+  [CLIENT_AI_MESSAGE_CONTEXT_TYPE]: 'ClientAiMessageContext',
+  [TICKET_STATUS_CHANGED_CONTEXT_TYPE]: 'TicketStatusChangedContext',
+  [TICKET_ASSIGNED_CONTEXT_TYPE]: 'TicketAssignedContext',
+  [CUSTOMER_MESSAGE_PUBLISHED_CONTEXT_TYPE]: 'CustomerMessagePublishedContext',
+  [ADMIN_MESSAGE_PUBLISHED_CONTEXT_TYPE]: 'AdminMessagePublishedContext',
+};
+
+/** Context types whose entity is a ticket; they navigate to the ticket dialog via `ticketId`. */
+const TICKET_CONTEXT_TYPES = new Set<string>([
+  ADMIN_AI_TICKET_MESSAGE_CONTEXT_TYPE,
+  TICKET_STATUS_CHANGED_CONTEXT_TYPE,
+  TICKET_ASSIGNED_CONTEXT_TYPE,
+  CUSTOMER_MESSAGE_PUBLISHED_CONTEXT_TYPE,
+  ADMIN_MESSAGE_PUBLISHED_CONTEXT_TYPE,
+]);
 
 export interface NotificationAction {
   label: string;
@@ -13,19 +42,26 @@ const ticketRoute = (ticketId: string) => `/tickets/dialog?id=${encodeURICompone
 
 /**
  * Resolve the navigation action a notification offers (button label + route), or null when it
- * points at no entity.
+ * points at no entity the admin UI can open (e.g. a client-side AI dialog).
  */
 export function resolveNotificationAction(notification: Notification): NotificationAction | null {
   const meta = notification.meta ?? {};
+  const contextType = typeof meta.contextType === 'string' ? meta.contextType : null;
   const dialogId = typeof meta.dialogId === 'string' ? meta.dialogId : null;
+  const ticketId = typeof meta.ticketId === 'string' ? meta.ticketId : null;
 
-  if (meta.contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
-    const ticketId = typeof meta.ticketId === 'string' ? meta.ticketId : null;
+  // Approval requests live in their ticket when one exists, otherwise the mingo dialog.
+  if (contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
     if (ticketId) return { label: 'Open Ticket', route: ticketRoute(ticketId) };
     if (dialogId) return { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+    return null;
   }
 
-  if (meta.contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
+  if (contextType && TICKET_CONTEXT_TYPES.has(contextType) && ticketId) {
+    return { label: 'Open Ticket', route: ticketRoute(ticketId) };
+  }
+
+  if (contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
     return { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
   }
 

@@ -18,6 +18,7 @@ export function TicketsView() {
     status: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
     assigneeIds: { type: 'array', default: [] },
+    labelIds: { type: 'array', default: [] },
     search: { type: 'string', default: '' },
     viewMode: { type: 'string', default: isBoardEnabled ? 'board' : 'table' },
   });
@@ -27,6 +28,7 @@ export function TicketsView() {
   const handleStatusFilterChange = useCallback((status: string[]) => setParam('status', status), [setParam]);
   const handleOrganizationIdsChange = useCallback((ids: string[]) => setParam('organizationIds', ids), [setParam]);
   const handleAssigneeIdsChange = useCallback((ids: string[]) => setParam('assigneeIds', ids), [setParam]);
+  const handleLabelIdsChange = useCallback((ids: string[]) => setParam('labelIds', ids), [setParam]);
   const handleSearchChange = useCallback((value: string) => setParam('search', value), [setParam]);
 
   const tabs = useMemo(
@@ -53,6 +55,8 @@ export function TicketsView() {
         onOrganizationIdsChange={handleOrganizationIdsChange}
         assigneeIds={params.assigneeIds}
         onAssigneeIdsChange={handleAssigneeIdsChange}
+        labelIds={params.labelIds}
+        onLabelIdsChange={handleLabelIdsChange}
         search={params.search}
         onSearchChange={handleSearchChange}
       />
@@ -64,6 +68,8 @@ export function TicketsView() {
       statusFilters={params.status}
       onStatusFilterChange={handleStatusFilterChange}
       selector={tabs}
+      labelIds={params.labelIds}
+      onLabelIdsChange={handleLabelIdsChange}
       search={params.search}
       onSearchChange={handleSearchChange}
     />

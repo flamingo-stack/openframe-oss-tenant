@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
@@ -52,6 +53,7 @@ export function Queries() {
   });
 
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const handleSearch = useCallback(
     (term: string) => {
@@ -159,21 +161,26 @@ export function Queries() {
     router.push('/monitoring/query/edit/new');
   }, [router]);
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no queries.
+  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Query',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleAddQuery,
       },
     ],
-    [handleAddQuery],
+    [handleAddQuery, showEmptyState],
   );
-
-  // Show the empty state instead of the search bar + table only when there is
-  // genuinely no data: loading finished, no active search, and no queries.
-  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
 
   if (error) {
     return <PageError message={error} />;
@@ -202,8 +209,11 @@ export function Queries() {
           onButtonClick={() => askMingo('queries')}
         />
       ) : (
-        <>
-          <div className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+        <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
+          >
             <SearchInput
               value={params.search}
               onChange={handleSearch}
@@ -213,7 +223,7 @@ export function Queries() {
           </div>
 
           <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
             <DataTable.Body
               loading={isLoading}
               skeletonRows={PAGE_SIZE}
@@ -234,7 +244,7 @@ export function Queries() {
               />
             )}
           </DataTable>
-        </>
+        </div>
       )}
       <ConfirmDeleteMonitoringModal
         open={!!queryToDelete}

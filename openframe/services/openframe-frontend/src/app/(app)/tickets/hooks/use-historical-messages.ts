@@ -7,6 +7,7 @@ import {
   flattenMessagePagesChronological,
   type HistoricalMessage,
   type MessageSegment,
+  maxPersistedStreamSeq,
   mergeHistoryWithRealtime,
   processHistoricalMessagesWithErrors,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -55,6 +56,7 @@ export function useHistoricalMessages({
   const prependWithBoundaryMerge = useTicketDetailsStore(s => s.prependWithBoundaryMerge);
   const approvalStatuses = useTicketDetailsStore(s => s.approvalStatuses);
   const mergeApprovalStatuses = useTicketDetailsStore(s => s.mergeApprovalStatuses);
+  const getHighestStreamSeq = useTicketDetailsStore(s => s.getHighestStreamSeq);
 
   const approvalStatusesRef = useRef(approvalStatuses);
   approvalStatusesRef.current = approvalStatuses;
@@ -139,6 +141,8 @@ export function useHistoricalMessages({
         existingMessages: getMessages(side),
         streamingMessageId,
         historyFetchedAt: dataUpdatedAt,
+        historyMaxStreamSeq: maxPersistedStreamSeq(pages),
+        realtimeSeenStreamSeq: getHighestStreamSeq(side),
       });
       setMessages(side, merged);
     } else {
@@ -163,5 +167,6 @@ export function useHistoricalMessages({
     setMessages,
     prependWithBoundaryMerge,
     mergeApprovalStatuses,
+    getHighestStreamSeq,
   ]);
 }

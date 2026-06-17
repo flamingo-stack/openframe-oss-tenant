@@ -43,6 +43,7 @@ import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScripts } from '../hooks/use-scripts';
 
@@ -78,6 +79,7 @@ export function ScriptsTable() {
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const debouncedSearchInput = useDebounce(searchInput, 300);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   // Sync debounced search to URL (only when value actually changed)
   useEffect(() => {
@@ -394,16 +396,31 @@ export function ScriptsTable() {
     [params.shellType, params.category, params.supportedPlatforms],
   );
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search/filters, and no scripts.
+  const showEmptyState =
+    !isLoading &&
+    !params.search.trim() &&
+    params.shellType.length === 0 &&
+    params.category.length === 0 &&
+    params.supportedPlatforms.length === 0 &&
+    scripts.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Script',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleNewScript,
       },
     ],
-    [handleNewScript],
+    [handleNewScript, showEmptyState],
   );
 
   const filterGroups = useMemo(
@@ -416,16 +433,6 @@ export function ScriptsTable() {
   );
 
   const hasMobileFilter = filterGroups.length > 0;
-
-  // Show the empty state instead of the search bar + table only when there is
-  // genuinely no data: loading finished, no active search/filters, and no scripts.
-  const showEmptyState =
-    !isLoading &&
-    !params.search.trim() &&
-    params.shellType.length === 0 &&
-    params.category.length === 0 &&
-    params.supportedPlatforms.length === 0 &&
-    scripts.length === 0;
 
   if (error) {
     return <PageError message={error} />;
@@ -463,8 +470,11 @@ export function ScriptsTable() {
           onButtonClick={() => askMingo('scripts')}
         />
       ) : (
-        <>
-          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
+        <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"
+          >
             <Input
               placeholder="Search for Scripts"
               value={searchInput}
@@ -495,7 +505,7 @@ export function ScriptsTable() {
           )}
 
           <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
             <DataTable.Body
               loading={isLoading}
               skeletonRows={pageSize}
@@ -516,7 +526,7 @@ export function ScriptsTable() {
               />
             )}
           </DataTable>
-        </>
+        </div>
       )}
     </PageLayout>
   );

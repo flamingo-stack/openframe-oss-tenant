@@ -23,6 +23,24 @@ interface UseTicketsActionsParams {
   enabled?: boolean;
 }
 
+/**
+ * Promote the "New Ticket" action to the accent (yellow) variant while the page
+ * shows its empty state, so the primary CTA stands out. Re-colors the icon to the
+ * on-accent token to match. No-op when `emphasize` is false (keeps the outline).
+ */
+export function emphasizeNewTicketAction(actions: PageActionButton[], emphasize: boolean): PageActionButton[] {
+  if (!emphasize) return actions;
+  return actions.map(action =>
+    action.label === 'New Ticket'
+      ? {
+          ...action,
+          variant: 'accent',
+          icon: <span className="inline-flex [&_svg]:!text-ods-text-on-accent">{action.icon}</span>,
+        }
+      : action,
+  );
+}
+
 export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActionsParams) {
   const router = useRouter();
   const archiveResolvedMutation = useArchiveResolvedMutation();

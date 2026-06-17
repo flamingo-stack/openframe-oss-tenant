@@ -6,7 +6,7 @@ import { LogsTable } from './components/logs-table';
 
 export default function Logs() {
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       <LogsTable />
     </div>
   );

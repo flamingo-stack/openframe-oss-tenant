@@ -125,23 +125,39 @@ export function getTicketTableColumns(options: TicketTableColumnsOptions = {}): 
 
 export const ticketRowHref = (ticket: Dialog): string => `/tickets/dialog?id=${ticket.id}`;
 
-export const TICKET_OPEN_COLUMN: ColumnDef<Dialog> = {
-  id: 'open',
-  cell: ({ row }: { row: Row<Dialog> }) => (
-    <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-      <Button
-        onClick={openInNewTab(ticketRowHref(row.original))}
-        variant="outline"
-        size="icon"
-        leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
-        aria-label="Open in new tab"
-        className="bg-ods-card"
-      />
-    </div>
-  ),
-  enableSorting: false,
-  meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-};
+export function getTicketOpenColumn(getUnreadCount?: (ticket: Dialog) => number | undefined): ColumnDef<Dialog> {
+  return {
+    id: 'open',
+    cell: ({ row }: { row: Row<Dialog> }) => {
+      // This trailing slot shows the unread-message count when there is one, otherwise the open action.
+      const unread = getUnreadCount?.(row.original);
+      if (unread) {
+        return (
+          <span
+            className="inline-flex h-12 min-w-12 items-center justify-center rounded-md bg-ods-accent px-[var(--spacing-system-xsf)] text-h3 font-bold text-ods-text-on-accent"
+            aria-label={`${unread} unread ${unread === 1 ? 'message' : 'messages'}`}
+          >
+            {unread > 99 ? '99+' : unread}
+          </span>
+        );
+      }
+      return (
+        <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+          <Button
+            onClick={openInNewTab(ticketRowHref(row.original))}
+            variant="outline"
+            size="icon"
+            leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+            aria-label="Open in new tab"
+            className="bg-ods-card"
+          />
+        </div>
+      );
+    },
+    enableSorting: false,
+    meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
+  };
+}
 
 interface TicketTableBodyProps {
   tickets: Dialog[];
@@ -155,6 +171,7 @@ interface TicketTableBodyProps {
   columnFilters?: ColumnFiltersState;
   onColumnFiltersChange?: OnChangeFn<ColumnFiltersState>;
   statusOptions?: StatusFilterOption[];
+  getUnreadCount?: (ticket: Dialog) => number | undefined;
 }
 
 export function TicketTableBody({
@@ -169,11 +186,13 @@ export function TicketTableBody({
   columnFilters,
   onColumnFiltersChange,
   statusOptions,
+  getUnreadCount,
 }: TicketTableBodyProps) {
   const columns = useMemo<ColumnDef<Dialog>[]>(() => {
     const base = getTicketTableColumns({ isArchived, statusOptions });
-    return actionsColumn ? [...base, actionsColumn, TICKET_OPEN_COLUMN] : [...base, TICKET_OPEN_COLUMN];
-  }, [isArchived, actionsColumn, statusOptions]);
+    const openColumn = getTicketOpenColumn(getUnreadCount);
+    return actionsColumn ? [...base, actionsColumn, openColumn] : [...base, openColumn];
+  }, [isArchived, actionsColumn, statusOptions, getUnreadCount]);
 
   const table = useDataTable<Dialog>({
     data: tickets,

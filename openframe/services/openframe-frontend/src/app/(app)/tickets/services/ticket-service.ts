@@ -233,6 +233,9 @@ export class TicketService implements TicketServiceInterface {
     if (params.assigneeIds?.length) {
       filter.assigneeIds = params.assigneeIds;
     }
+    if (params.labelIds?.length) {
+      filter.labelIds = params.labelIds;
+    }
 
     const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
       query: GET_TICKETS_QUERY,
@@ -302,6 +305,7 @@ export class TicketService implements TicketServiceInterface {
         search: params.search || undefined,
         organizationIds: params.organizationIds?.length ? params.organizationIds : undefined,
         assigneeIds: params.assigneeIds?.length ? params.assigneeIds : undefined,
+        labelIds: params.labelIds?.length ? params.labelIds : undefined,
       },
     });
 

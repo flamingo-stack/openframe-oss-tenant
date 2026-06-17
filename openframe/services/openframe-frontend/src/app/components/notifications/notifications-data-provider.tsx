@@ -66,6 +66,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
 import {
   ADMIN_AI_MESSAGE_CONTEXT_TYPE,
+  CONTEXT_TYPENAME_BY_TYPE,
   notificationTargetsLocation,
   resolveNotificationRoute,
 } from './notification-navigation';
@@ -82,7 +83,6 @@ const POPUP_OFFSET_CLASS = 'top-16 md:top-[4.5rem]';
 const DRAWER_FILTER_PAIRS = [UNFILTERED_NOTIFICATION_PAIR];
 const NATS_CONTEXT_TYPENAME = 'GenericContext';
 const APPROVAL_CONTEXT_TYPENAME = 'AdminApprovalRequestContext';
-const ADMIN_AI_MESSAGE_CONTEXT_TYPENAME = 'AdminAiMessageContext';
 
 /** Extract the approval payload from a raw NATS notification context, or null if it isn't one. */
 function parseApprovalContext(context: NatsNotificationPayload['context']): ApprovalNotificationMeta | null {
@@ -96,7 +96,6 @@ function parseApprovalContext(context: NatsNotificationPayload['context']): Appr
     ticketId: typeof context.ticketId === 'string' ? context.ticketId : null,
     approvalType: typeof context.approvalType === 'string' ? context.approvalType : null,
     resolution: typeof context.resolution === 'string' ? context.resolution : null,
-    resolvedByName: typeof context.resolvedByName === 'string' ? context.resolvedByName : null,
     toolCalls: rawToolCalls.map(raw => {
       const call = (raw ?? {}) as Record<string, unknown>;
       return {
@@ -145,7 +144,7 @@ function writeToolCallRecord(
   return record;
 }
 
-/** Build the Notification.context record for a NATS payload: approval, AI-message, or a generic fallback. */
+/** Build the Notification.context record for a NATS payload: approval, any typed context, or a generic fallback. */
 function writeNotificationContext(
   store: RecordSourceSelectorProxy,
   contextRecordId: string,
@@ -160,7 +159,6 @@ function writeNotificationContext(
     record.setValue(approval.ticketId ?? null, 'ticketId');
     record.setValue(approval.approvalType ?? null, 'approvalType');
     record.setValue(approval.resolution ?? null, 'resolution');
-    record.setValue(approval.resolvedByName ?? null, 'resolvedByName');
     record.setLinkedRecords(
       approval.toolCalls.map((call, i) => writeToolCallRecord(store, `${contextRecordId}:toolCall:${i}`, call)),
       'toolCalls',
@@ -168,16 +166,22 @@ function writeNotificationContext(
     return record;
   }
 
-  const dialogId = payload.context?.dialogId;
-  if (payload.context?.type === ADMIN_AI_MESSAGE_CONTEXT_TYPE && typeof dialogId === 'string') {
-    const record = upsertContextRecord(store, contextRecordId, ADMIN_AI_MESSAGE_CONTEXT_TYPENAME);
-    record.setValue(ADMIN_AI_MESSAGE_CONTEXT_TYPE, 'type');
-    record.setValue(dialogId, 'dialogId');
+  // Any other known context: rebuild a typed record carrying the entity ids the route mapping reads
+  // (dialogId / ticketId), so the live tile navigates and auto-reads exactly like a fetched one.
+  const type = payload.context?.type;
+  const typename = type ? CONTEXT_TYPENAME_BY_TYPE[type] : undefined;
+  if (type && typename) {
+    const record = upsertContextRecord(store, contextRecordId, typename);
+    record.setValue(type, 'type');
+    const dialogId = payload.context?.dialogId;
+    const ticketId = payload.context?.ticketId;
+    if (typeof dialogId === 'string') record.setValue(dialogId, 'dialogId');
+    if (typeof ticketId === 'string') record.setValue(ticketId, 'ticketId');
     return record;
   }
 
   const record = upsertContextRecord(store, contextRecordId, NATS_CONTEXT_TYPENAME);
-  record.setValue(payload.context?.type ?? 'UNKNOWN', 'type');
+  record.setValue(type ?? 'UNKNOWN', 'type');
   return record;
 }
 
@@ -206,7 +210,7 @@ interface NatsNotificationPayload {
   // CREATED is the initial push; UPDATED supersedes an earlier push with the same id
   // (e.g. an approval request whose status changed). Absent → treat as CREATED.
   eventType?: 'CREATED' | 'UPDATED';
-  context?: { type?: string; resolution?: string; resolvedByName?: string; [k: string]: unknown };
+  context?: { type?: string; resolution?: string; [k: string]: unknown };
 }
 
 interface PaginationState {
@@ -565,14 +569,6 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   useNatsJsonSubscription<NatsNotificationPayload>(
     subject,
     useCallback(payload => {
-      // TEMP DEBUG: notification realtime chunks
-      console.log('[notif-nats]', payload.eventType ?? 'CREATED', {
-        id: payload.id ?? payload.notificationId,
-        category: payload.category,
-        resolution: payload.context?.resolution,
-        type: payload.context?.type,
-        payload,
-      });
       const rawId = payload.notificationId ?? payload.id;
       if (!rawId) return;
       const relayId = notificationGlobalId(rawId);

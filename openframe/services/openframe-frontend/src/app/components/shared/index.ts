@@ -6,4 +6,5 @@ export { DevicesPanel, type DevicesPanelProps } from './devices-panel';
 export { EmptyState, type EmptyStateProps } from './empty-state';
 export { LogDrawer, type LogDrawerInfoField } from './log-drawer';
 export { OrgAvatar } from './org-avatar';
+export { type SelectableTag, SelectableTagsRow } from './selectable-tags-row';
 export * from './tags';
