@@ -222,12 +222,17 @@ export function Policies() {
     () => [
       {
         label: 'Add Policy',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleAddPolicy,
       },
     ],
-    [handleAddPolicy],
+    [handleAddPolicy, showEmptyState],
   );
 
   if (error) {

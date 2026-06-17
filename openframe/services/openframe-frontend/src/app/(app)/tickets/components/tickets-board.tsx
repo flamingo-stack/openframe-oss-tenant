@@ -16,7 +16,7 @@ import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
 import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
 import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
-import { useTicketsActions } from '../hooks/use-tickets-actions';
+import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
 import { BOARD_STATUSES, useTicketsBoardQuery } from '../hooks/use-tickets-board-query';
 import type { BoardStatus } from '../services/ticket-service.types';
 import type { Dialog } from '../types/dialog.types';
@@ -102,7 +102,7 @@ export function TicketsBoard({
   }, [notifications?.notifications]);
   const { data: statusTransitions } = useTicketStatusTransitions();
   const {
-    actions,
+    actions: baseActions,
     menuActions,
     dialog: ticketsActionsDialog,
     canArchiveResolved,
@@ -165,6 +165,8 @@ export function TicketsBoard({
     (assigneeIds?.length ?? 0) === 0 &&
     (labelIds?.length ?? 0) === 0 &&
     BOARD_STATUSES.every(status => columns[status].tickets.length === 0);
+
+  const actions = useMemo(() => emphasizeNewTicketAction(baseActions, showEmptyState), [baseActions, showEmptyState]);
 
   if (error) {
     return <PageError message={error} />;

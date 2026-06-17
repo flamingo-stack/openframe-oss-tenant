@@ -161,21 +161,26 @@ export function Queries() {
     router.push('/monitoring/query/edit/new');
   }, [router]);
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no queries.
+  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Query',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleAddQuery,
       },
     ],
-    [handleAddQuery],
+    [handleAddQuery, showEmptyState],
   );
-
-  // Show the empty state instead of the search bar + table only when there is
-  // genuinely no data: loading finished, no active search, and no queries.
-  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
 
   if (error) {
     return <PageError message={error} />;

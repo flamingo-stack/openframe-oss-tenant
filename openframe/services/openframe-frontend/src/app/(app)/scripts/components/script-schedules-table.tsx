@@ -225,21 +225,26 @@ export function ScriptSchedulesTable() {
     router.push('/scripts/schedules/create');
   }, [router]);
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search, and no schedules.
+  const showEmptyState = !isLoading && !params.search.trim() && schedules.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Schedule',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleAddSchedule,
       },
     ],
-    [handleAddSchedule],
+    [handleAddSchedule, showEmptyState],
   );
-
-  // Show the empty state instead of the search bar + table only when there is
-  // genuinely no data: loading finished, no active search, and no schedules.
-  const showEmptyState = !isLoading && !params.search.trim() && schedules.length === 0;
 
   if (error) {
     return <PageError message={error} />;

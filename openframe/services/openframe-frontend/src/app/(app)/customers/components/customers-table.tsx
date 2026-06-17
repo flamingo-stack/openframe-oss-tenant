@@ -62,19 +62,24 @@ export function CustomersTable({ status }: CustomersTableProps) {
     router.push('/customers/edit/new');
   }, [router]);
 
+  const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Customer',
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleAddCustomer,
-        variant: 'outline' as const,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
       },
     ],
-    [handleAddCustomer],
+    [handleAddCustomer, showEmptyState],
   );
-
-  const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;
 
   return (
     <PageLayout

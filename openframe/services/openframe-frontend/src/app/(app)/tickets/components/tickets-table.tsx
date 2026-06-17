@@ -16,7 +16,7 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { featureFlags } from '@/lib/feature-flags';
-import { useTicketsActions } from '../hooks/use-tickets-actions';
+import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
 import type { Dialog } from '../types/dialog.types';
@@ -64,7 +64,11 @@ export function TicketsTable({
     labelIds,
   });
 
-  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading, enabled: !isArchived });
+  const {
+    actions: baseActions,
+    menuActions,
+    dialog: ticketsActionsDialog,
+  } = useTicketsActions({ isLoading, enabled: !isArchived });
 
   // Tickets have no unread field of their own; the per-row count comes from notifications (a
   // separate entity) matched by ticket id, mirroring how the Mingo sidebar derives per-dialog
@@ -143,6 +147,8 @@ export function TicketsTable({
     (statusFilters?.length ?? 0) === 0 &&
     labelIds.length === 0 &&
     tickets.length === 0;
+
+  const actions = useMemo(() => emphasizeNewTicketAction(baseActions, showEmptyState), [baseActions, showEmptyState]);
 
   if (error) {
     return <PageError message={error} />;

@@ -200,8 +200,12 @@ export function DevicesPanel({
           {
             label: 'Add Device',
             onClick: () => router.push(addDeviceHref),
-            icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
-            variant: 'outline',
+            icon: (
+              <PlusCircleIcon
+                className={`w-5 h-5 ${showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`}
+              />
+            ),
+            variant: showEmptyState ? 'accent' : 'outline',
           },
         ]}
         contentClassName="flex flex-col"

@@ -14,7 +14,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useMdUp, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { notFound } from 'next/navigation';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { graphql, useFragment, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { knowledgeBaseBodyArticlesRelay_query$key as ArticlesFragmentKey } from '@/__generated__/knowledgeBaseBodyArticlesRelay_query.graphql';
 import type { knowledgeBaseBodyArticlesRelayPaginationQuery as ArticlesPaginationQueryType } from '@/__generated__/knowledgeBaseBodyArticlesRelayPaginationQuery.graphql';
@@ -73,7 +73,11 @@ const ROOT_TITLE = 'Knowledge Base';
 // so this is a safe ceiling rather than a real page size.
 const FOLDERS_PAGE_SIZE = 100;
 
-function buildActions(parentId: string | null, onNewFolder: () => void): PageActionButton[] {
+function buildActions(
+  parentId: string | null,
+  onNewFolder: () => void,
+  emphasizeAddArticle = false,
+): PageActionButton[] {
   const newArticleHref = parentId ? `/knowledge-base/new?folderId=${parentId}` : '/knowledge-base/new';
   const actions: PageActionButton[] = [
     {
@@ -85,8 +89,13 @@ function buildActions(parentId: string | null, onNewFolder: () => void): PageAct
     {
       label: 'Add Article',
       href: newArticleHref,
-      icon: <PlusCircleIcon size={24} className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />,
-      variant: 'outline',
+      icon: (
+        <PlusCircleIcon
+          size={24}
+          className={`size-[var(--icon-size-icon-size)] ${emphasizeAddArticle ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`}
+        />
+      ),
+      variant: emphasizeAddArticle ? 'accent' : 'outline',
     },
   ];
   if (parentId === null) {
@@ -209,9 +218,11 @@ interface ContentProps {
   search: string;
   tagIds: ReadonlyArray<string>;
   stickyHeaderOffset: string;
+  /** Reports whether the onboarding empty state is showing, so the shell can accent the CTA. */
+  onEmptyChange?: (isEmpty: boolean) => void;
 }
 
-function FoldersAndArticlesContent({ parentId, search, tagIds, stickyHeaderOffset }: ContentProps) {
+function FoldersAndArticlesContent({ parentId, search, tagIds, stickyHeaderOffset, onEmptyChange }: ContentProps) {
   const { toast } = useToast();
   const normalizedTagIds = tagIds.length > 0 ? [...tagIds] : null;
   const normalizedSearch = search || null;
@@ -286,7 +297,13 @@ function FoldersAndArticlesContent({ parentId, search, tagIds, stickyHeaderOffse
   // Genuinely empty (no items, no search, no tags): show the onboarding empty
   // state instead of the list. A search/tag filter with no results keeps the
   // inline "No knowledge base items found." message below.
-  if (items.length === 0 && !search && tagIds.length === 0) {
+  const isEmpty = items.length === 0 && !search && tagIds.length === 0;
+
+  useEffect(() => {
+    onEmptyChange?.(isEmpty);
+  }, [isEmpty, onEmptyChange]);
+
+  if (isEmpty) {
     return (
       <EmptyState
         icon={<BookBookmarkIcon />}
@@ -387,6 +404,8 @@ function KnowledgeBaseBodyShell({
     useTagSearchState();
   const [isNewFolderOpen, setIsNewFolderOpen] = useState(false);
   const [isTagsModalOpen, setIsTagsModalOpen] = useState(false);
+  // Reported by the content Suspense child; drives the accent CTA on the empty state.
+  const [isContentEmpty, setIsContentEmpty] = useState(false);
   // Below `md` (phones) the inline tags row is hidden and a filter button next
   // to the search opens the tags modal instead; tablet/desktop keep the row.
   const isMdUp = useMdUp();
@@ -419,7 +438,7 @@ function KnowledgeBaseBodyShell({
       backButton={backButton}
       actionsVariant="menu-primary"
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      actions={buildActions(parentId, () => setIsNewFolderOpen(true))}
+      actions={buildActions(parentId, () => setIsNewFolderOpen(true), !isSubtreeMode && isContentEmpty)}
       menuActions={menuActions}
     >
       <div style={containerStyle} className="flex flex-col">
@@ -467,6 +486,7 @@ function KnowledgeBaseBodyShell({
               search={debouncedSearch}
               tagIds={tagIds}
               stickyHeaderOffset={stickyHeaderOffset}
+              onEmptyChange={setIsContentEmpty}
             />
           )}
         </Suspense>

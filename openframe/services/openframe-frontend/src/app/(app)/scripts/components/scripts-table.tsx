@@ -396,16 +396,31 @@ export function ScriptsTable() {
     [params.shellType, params.category, params.supportedPlatforms],
   );
 
+  // Show the empty state instead of the search bar + table only when there is
+  // genuinely no data: loading finished, no active search/filters, and no scripts.
+  const showEmptyState =
+    !isLoading &&
+    !params.search.trim() &&
+    params.shellType.length === 0 &&
+    params.category.length === 0 &&
+    params.supportedPlatforms.length === 0 &&
+    scripts.length === 0;
+
   const actions = useMemo(
     () => [
       {
         label: 'Add Script',
-        variant: 'outline' as const,
-        icon: <PlusCircleIcon size={24} className="text-ods-text-secondary" />,
+        variant: (showEmptyState ? 'accent' : 'outline') as 'accent' | 'outline',
+        icon: (
+          <PlusCircleIcon
+            size={24}
+            className={showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}
+          />
+        ),
         onClick: handleNewScript,
       },
     ],
-    [handleNewScript],
+    [handleNewScript, showEmptyState],
   );
 
   const filterGroups = useMemo(
@@ -418,16 +433,6 @@ export function ScriptsTable() {
   );
 
   const hasMobileFilter = filterGroups.length > 0;
-
-  // Show the empty state instead of the search bar + table only when there is
-  // genuinely no data: loading finished, no active search/filters, and no scripts.
-  const showEmptyState =
-    !isLoading &&
-    !params.search.trim() &&
-    params.shellType.length === 0 &&
-    params.category.length === 0 &&
-    params.supportedPlatforms.length === 0 &&
-    scripts.length === 0;
 
   if (error) {
     return <PageError message={error} />;
