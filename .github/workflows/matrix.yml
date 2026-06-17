@@ -87,7 +87,7 @@ jobs:
             {
               "name": "openframe-chat",
               "path": "./clients/openframe-chat",
-              "os": "macos",
+              "os": "macos-26",
               "target": "universal-apple-darwin",
               "archs": "aarch64-apple-darwin,x86_64-apple-darwin",
               "target_path": "./clients/openframe-chat/src-tauri/target"
