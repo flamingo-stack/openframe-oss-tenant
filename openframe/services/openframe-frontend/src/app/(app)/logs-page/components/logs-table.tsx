@@ -704,9 +704,21 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   // the query and the URL param (so history isn't spammed on every keystroke).
   const [searchInput, setSearchInput] = useState(params.search);
   const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Write the debounced value back to the URL. Keyed on the debounced value only
+  // (the setter is read from a ref) so an external `params.search` change does
+  // NOT trigger a write-back that would fight the sync-down effect below.
+  const setParamRef = useRef(setParam);
+  setParamRef.current = setParam;
   useEffect(() => {
-    if (debouncedSearch !== params.search) setParam('search', debouncedSearch);
-  }, [debouncedSearch, params.search, setParam]);
+    setParamRef.current('search', debouncedSearch);
+  }, [debouncedSearch]);
+
+  // Sync the input down when `params.search` changes externally (e.g. browser
+  // back/forward), so the field doesn't go stale against the active query param.
+  useEffect(() => {
+    setSearchInput(params.search);
+  }, [params.search]);
 
   // Whether the inner content is in the genuinely-empty onboarding state; when
   // true the search toolbar is hidden (the header + actions stay).
@@ -775,7 +787,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   return (
     <PageLayout title="Logs" actions={actions}>
-      {/* Search toolbar — outside the Suspense boundary so it keeps focus across
+      {/* Search toolbar - outside the Suspense boundary so it keeps focus across
           re-queries, and hidden while the empty state is shown. */}
       {!isEmpty && (
         <div className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
