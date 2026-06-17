@@ -393,13 +393,7 @@ export function ChatView() {
             onLoadMore={loadMoreMessages}
           />
         ) : (
-          <ChatInitialScreen
-            tickets={displayTickets}
-            onTicketClick={handleTicketClick}
-            quickActions={quickActions}
-            onQuickAction={handleQuickAction}
-            isDisconnected={isDisconnected}
-          />
+          <ChatInitialScreen tickets={displayTickets} onTicketClick={handleTicketClick} />
         )}
       </ChatContent>
 

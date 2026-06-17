@@ -1,5 +1,9 @@
+import {
+  deriveActiveColor,
+  deriveHoverColor,
+  getReadableTextColor,
+} from '@flamingo-stack/openframe-frontend-core/utils';
 import { useEffect } from 'react';
-import { deriveAccentShades } from '../utils/accentShades';
 import { useChatConfig } from './useChatConfig';
 
 // Maps each overridden ODS custom property to which accent shade it gets.
@@ -60,16 +64,28 @@ export function useApplyFaeAppearance() {
     if (!accentColor) return;
 
     const root = document.documentElement;
-    const shades = deriveAccentShades(accentColor);
+    // Shades reuse the design-system math (hover/active = base darkened by a
+    // fixed per-channel step) instead of a chat-local copy.
+    const shades = {
+      base: accentColor,
+      hover: deriveHoverColor(accentColor),
+      active: deriveActiveColor(accentColor),
+    };
+    // Contrast-correct color for initials/text rendered ON the accent fill
+    // (assistant avatar), so a very dark or very light accent stays legible.
+    const onAccent = getReadableTextColor(accentColor);
     const cssVars = Object.keys(ACCENT_VAR_SHADES) as Array<keyof typeof ACCENT_VAR_SHADES>;
 
     for (const cssVar of cssVars) {
       root.style.setProperty(cssVar, shades[ACCENT_VAR_SHADES[cssVar]]);
     }
+    root.style.setProperty('--ods-avatar-initials', onAccent);
+
     return () => {
       for (const cssVar of cssVars) {
         root.style.removeProperty(cssVar);
       }
+      root.style.removeProperty('--ods-avatar-initials');
     };
   }, [accentColor]);
 }
