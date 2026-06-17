@@ -33,12 +33,12 @@ impl TokenWatcher {
         secret: String,
         app_handle: AppHandle,
         current_token: Arc<Mutex<Option<String>>>,
-    ) {
+    ) -> bool {
         let decryption_service = match TokenDecryptionService::new(secret) {
             Ok(service) => service,
             Err(e) => {
                 log::error!("token watcher: failed to create decryption service: {}", e);
-                return;
+                return false;
             }
         };
 
@@ -55,6 +55,8 @@ impl TokenWatcher {
                 std::thread::sleep(Duration::from_secs(5));
             }
         });
+
+        true
     }
 
     /// Reads the encrypted token from file, decrypts it, and returns it
