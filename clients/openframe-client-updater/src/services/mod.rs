@@ -12,10 +12,6 @@ pub mod update_progress_publisher;
 pub mod updater_orchestrator;
 pub mod updater_state_service;
 
-// Kept but no longer wired into the main flow — available for future use.
-pub mod agent_auth_service;
-pub mod shared_token_service;
-
 pub use agent_configuration_service::AgentConfigurationService;
 pub use client_update_service::ClientUpdateService;
 pub use encryption_service::EncryptionService;
