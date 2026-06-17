@@ -3,6 +3,7 @@ import {
   type ChunkData,
   extractIncompleteMessageState,
   type Message,
+  mergeHistoryWithRealtime,
   type MessageSegment,
   type NatsMessageType,
   type PendingToolCallData,
@@ -122,6 +123,8 @@ export function useChat({
     isLoading: isLoadingHistoricalMessages,
     isFetched: isHistoryFetched,
     initialOptStartSeq,
+    rawHistoryIds,
+    dataUpdatedAt: historyFetchedAt,
     fetchNextPage,
     escalatedApprovals,
     reset: resetDialogMessages,
@@ -138,23 +141,31 @@ export function useChat({
     }
   }, [escalatedApprovals]);
 
-  const allMessages = useMemo(() => {
-    if (messages.messages.length === 0) return historicalMessages;
+  // Id of the in-flight streaming synthetic (the trailing assistant bubble
+  // while a stream is live). Exempted from the merge's dedup so a still-growing
+  // turn is never trimmed against history that doesn't contain it yet.
+  const streamingMessageId = useMemo(() => {
+    if (!natsStreaming) return null;
+    const last = messages.messages[messages.messages.length - 1];
+    return last?.role === 'assistant' ? last.id : null;
+  }, [natsStreaming, messages.messages]);
 
-    if (isResumedDialog && messages.messages[0]?.role === 'assistant') {
-      let cutIndex = historicalMessages.length;
-      for (let i = historicalMessages.length - 1; i >= 0; i--) {
-        if (historicalMessages[i].role === 'assistant') {
-          cutIndex = i;
-        } else {
-          break;
-        }
-      }
-      return [...historicalMessages.slice(0, cutIndex), ...messages.messages];
-    }
-
-    return [...historicalMessages, ...messages.messages];
-  }, [historicalMessages, messages.messages, isResumedDialog]);
+  // Reconcile persisted history with realtime synthetics via the shared lib
+  // merge instead of a hand-rolled positional cut. 
+  // Per-message `streamSeq` lets it drop a synthetic once history has
+  // persisted past it, while keeping any not-yet-persisted (or in-flight) turn.
+  const allMessages = useMemo(
+    () =>
+      mergeHistoryWithRealtime<Message>({
+        processedHistory: historicalMessages,
+        existingMessages: messages.messages,
+        streamingMessageId,
+        historyFetchedAt,
+        historyMaxStreamSeq: initialOptStartSeq,
+        rawHistoryIds,
+      }),
+    [historicalMessages, messages.messages, streamingMessageId, historyFetchedAt, initialOptStartSeq, rawHistoryIds],
+  );
 
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
@@ -197,10 +208,10 @@ export function useChat({
           setNatsStreaming(true);
         }
         if (metadata?.append) {
-          messagesRef.current.appendSegmentsToLastAssistant(segments);
+          messagesRef.current.appendSegmentsToLastAssistant(segments, metadata?.streamSeq);
         } else {
           messagesRef.current.ensureAssistantMessage();
-          messagesRef.current.updateSegments(segments);
+          messagesRef.current.updateSegments(segments, metadata?.streamSeq);
         }
       },
       onError: (_errorText: string) => {

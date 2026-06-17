@@ -312,10 +312,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTyping(dialogId, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(dialogId, segments);
+          appendSegmentsToLastAssistant(dialogId, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(dialogId, segments);
+          updateStreamingMessageSegments(dialogId, segments, metadata?.streamSeq);
         }
       },
 

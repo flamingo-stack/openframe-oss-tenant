@@ -152,10 +152,10 @@ export function useSideChunkProcessor(
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTypingIndicator(side, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(side, segments);
+          appendSegmentsToLastAssistant(side, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(side, segments);
+          updateStreamingMessageSegments(side, segments, metadata?.streamSeq);
         }
       },
       onError: (error: string) => {
