@@ -42,6 +42,10 @@ data:
   WEBSOCKETS_BIND_HOST: "tactical-websockets"
   WEBSOCKET_PORT: "8383"
   PUBLIC_DIR: "/usr/share/nginx/html"
-  TACTICAL_READY_FILE: "/opt/tactical/tmp/tactical/ready"
+  # Must match the marker file the upstream image's entrypoint touches in
+  # set_ready_status(). The image's create_directories() only creates
+  # ${TACTICAL_DIR}/tmp (not a tmp/tactical/ subdir), so this is a file in
+  # tmp/, not a path with an extra directory component.
+  TACTICAL_READY_FILE: "/opt/tactical/tmp/tactical.ready"
   NGINX_HOST_IP: "tactical-nginx-0.tactical-nginx.integrated-tools.svc.cluster.local"
   NGINX_HOST_PORT: "8080"
