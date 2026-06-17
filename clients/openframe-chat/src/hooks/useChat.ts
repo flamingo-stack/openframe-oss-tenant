@@ -3,8 +3,8 @@ import {
   type ChunkData,
   extractIncompleteMessageState,
   type Message,
-  mergeHistoryWithRealtime,
   type MessageSegment,
+  mergeHistoryWithRealtime,
   type NatsMessageType,
   type PendingToolCallData,
   type SegmentsUpdateMetadata,
@@ -93,7 +93,7 @@ export function useChat({
   >(new Map());
 
   const { debugMode } = useDebugMode();
-  const { quickActions } = useChatConfig();
+  const { quickActions, isSettingsLoading } = useChatConfig();
   const { assistantName, assistantAvatar } = useAssistantBranding();
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
@@ -151,7 +151,7 @@ export function useChat({
   }, [natsStreaming, messages.messages]);
 
   // Reconcile persisted history with realtime synthetics via the shared lib
-  // merge instead of a hand-rolled positional cut. 
+  // merge instead of a hand-rolled positional cut.
   // Per-message `streamSeq` lets it drop a synthetic once history has
   // persisted past it, while keeping any not-yet-persisted (or in-flight) turn.
   const allMessages = useMemo(
@@ -725,6 +725,7 @@ export function useChat({
     resumeDialog,
     showTicketPreview,
     quickActions,
+    isSettingsLoading,
     hasMessages: allMessages.length > 0,
     isTicketPreview,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,

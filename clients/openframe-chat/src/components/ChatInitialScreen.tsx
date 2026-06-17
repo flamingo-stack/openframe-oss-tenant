@@ -6,12 +6,11 @@ import { useDocumentTheme } from '../hooks/useDocumentTheme';
 interface ChatInitialScreenProps {
   tickets: ChatTicketItemData[];
   onTicketClick: (ticketId: string) => void | Promise<void>;
+  /** While true, show skeleton ticket rows instead of the loaded list. */
+  isLoadingTickets?: boolean;
 }
 
-export function ChatInitialScreen({
-  tickets,
-  onTicketClick,
-}: ChatInitialScreenProps) {
+export function ChatInitialScreen({ tickets, onTicketClick, isLoadingTickets = false }: ChatInitialScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBottomFade, setShowBottomFade] = useState(false);
   const [showTopFade, setShowTopFade] = useState(false);
@@ -53,12 +52,16 @@ export function ChatInitialScreen({
             <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
           </div>
 
-          {hasTickets && (
-            <ChatTicketList
-              className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
-              tickets={tickets}
-              onTicketClick={onTicketClick}
-            />
+          {isLoadingTickets ? (
+            <ChatTicketList className="w-full max-w-ods-content-narrow" tickets={[]} isLoading skeletonCount={5} />
+          ) : (
+            hasTickets && (
+              <ChatTicketList
+                className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
+                tickets={tickets}
+                onTicketClick={onTicketClick}
+              />
+            )
           )}
         </div>
       </div>

@@ -8,12 +8,14 @@ import {
   type ChatHeaderTicketInfo,
   ChatInput,
   ChatQuickActionRow,
+  ChatQuickActionRowSkeleton,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
   type Message,
   type MessageSegment,
   ModelDisplay,
+  ModelDisplaySkeleton,
   type TokenUsageData,
 } from '@flamingo-stack/openframe-frontend-core';
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -104,6 +106,7 @@ export function ChatView() {
     stopGeneration,
     handleQuickAction,
     quickActions,
+    isSettingsLoading,
     hasMessages,
     clearMessages,
     resumeDialog,
@@ -393,7 +396,11 @@ export function ChatView() {
             onLoadMore={loadMoreMessages}
           />
         ) : (
-          <ChatInitialScreen tickets={displayTickets} onTicketClick={handleTicketClick} />
+          <ChatInitialScreen
+            tickets={displayTickets}
+            onTicketClick={handleTicketClick}
+            isLoadingTickets={ticketsHook.isLoading}
+          />
         )}
       </ChatContent>
 
@@ -405,10 +412,14 @@ export function ChatView() {
         ) : (
           <>
             {/* Quick-action chips above the composer — initial screen only.
-                As many as fit render inline; the rest collapse under a "⋯" menu. */}
-            {!isDialogActive && !isDisconnected && quickActions.length > 0 && (
+                Skeleton while settings load (so we don't flash bundled defaults
+                before the configured actions resolve), then the real row. */}
+            {!isDialogActive && !isDisconnected && isSettingsLoading && (
+              <ChatQuickActionRowSkeleton className="mb-[var(--spacing-system-s)]" />
+            )}
+            {!isDialogActive && !isDisconnected && !isSettingsLoading && quickActions.length > 0 && (
               <ChatQuickActionRow
-                className="mb-[var(--spacing-system-xs)]"
+                className="mb-[var(--spacing-system-s)]"
                 chips={quickActions.map(action => ({
                   id: action.id,
                   label: action.name,
@@ -426,16 +437,21 @@ export function ChatView() {
             />
           </>
         )}
-        {!isActiveTicketResolved && ((displayModel && isFullyLoaded) || tokenUsage) && (
-          <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-sf)]">
-            {displayModel && isFullyLoaded && (
-              <ModelDisplay
-                provider={displayModel.provider}
-                modelName={displayModel.modelName}
-                displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
-                usedTokens={tokenUsage?.totalTokensSize}
-                contextWindow={tokenUsage?.contextSize}
-              />
+        {!isActiveTicketResolved && (!isFullyLoaded || displayModel || tokenUsage) && (
+          <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-s)]">
+            {!isFullyLoaded ? (
+              // Model metadata still loading — placeholder so the footer doesn't shift.
+              <ModelDisplaySkeleton />
+            ) : (
+              displayModel && (
+                <ModelDisplay
+                  provider={displayModel.provider}
+                  modelName={displayModel.modelName}
+                  displayName={supportedModelsService.getModelDisplayName(displayModel.modelName)}
+                  usedTokens={tokenUsage?.totalTokensSize}
+                  contextWindow={tokenUsage?.contextSize}
+                />
+              )
             )}
           </div>
         )}
