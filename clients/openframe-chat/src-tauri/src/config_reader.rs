@@ -18,7 +18,16 @@ impl AppConfig {
         };
 
         #[cfg(not(target_os = "macos"))]
-        let cfg = Self::from_cli_args();
+        let cfg = {
+            let args: Vec<String> = std::env::args().collect();
+            #[allow(unused_mut)]
+            let mut cfg = Self::from_args(&args);
+            #[cfg(windows)]
+            if !cfg.is_valid() {
+                cfg.fill_missing_from_registry();
+            }
+            cfg
+        };
 
         println!(
             "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, debug: {})",
@@ -31,11 +40,8 @@ impl AppConfig {
         cfg
     }
 
-    /// Parses configuration from command line arguments (for Windows/Linux).
-    #[cfg(not(target_os = "macos"))]
-    fn from_cli_args() -> Self {
-        let args: Vec<String> = std::env::args().collect();
-
+    /// Parses configuration from a list of CLI-style arguments.
+    pub fn from_args(args: &[String]) -> Self {
         let mut token_path: Option<String> = None;
         let mut secret: Option<String> = None;
         let mut server_url: Option<String> = None;
@@ -58,6 +64,22 @@ impl AppConfig {
             secret,
             server_url,
             debug_mode,
+        }
+    }
+
+    #[cfg(windows)]
+    fn fill_missing_from_registry(&mut self) {
+        if self.token_path.is_none() {
+            self.token_path = windows::read_string("openframe-token-path");
+        }
+        if self.secret.is_none() {
+            self.secret = windows::read_string("openframe-secret");
+        }
+        if self.server_url.is_none() {
+            self.server_url = windows::read_string("serverUrl");
+        }
+        if !self.debug_mode {
+            self.debug_mode = windows::read_bool("devMode");
         }
     }
 
@@ -101,6 +123,34 @@ mod macos {
             .to_string();
 
         if value.is_empty() { None } else { Some(value) }
+    }
+
+    pub fn read_bool(key: &str) -> bool {
+        read_string(key)
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false)
+    }
+}
+
+#[cfg(windows)]
+mod windows {
+    use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ, KEY_WOW64_64KEY};
+    use winreg::RegKey;
+
+    const CONFIG_KEY_PATH: &str = r"SOFTWARE\OpenFrame\openframe-chat";
+
+    pub fn read_string(key: &str) -> Option<String> {
+        let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+        let subkey = hklm
+            .open_subkey_with_flags(CONFIG_KEY_PATH, KEY_READ | KEY_WOW64_64KEY)
+            .ok()?;
+        let value: String = subkey.get_value(key).ok()?;
+        let value = value.trim().to_string();
+        if value.is_empty() {
+            None
+        } else {
+            Some(value)
+        }
     }
 
     pub fn read_bool(key: &str) -> bool {

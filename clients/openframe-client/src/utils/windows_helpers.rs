@@ -10,6 +10,9 @@ const AUTORUN_KEY_PATH: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 // 32-bit (WOW64) mirror — checked only to delete any stale entry; Windows fires both at logon.
 const AUTORUN_KEY_WOW64_PATH: &str = r"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run";
 
+// Persistent per-tool config store, read by the tool as a fallback when launched without CLI args.
+const APP_CONFIG_KEY_BASE: &str = r"SOFTWARE\OpenFrame";
+
 /// Convert a Rust `&str` to a null-terminated UTF-16 buffer suitable for passing to Win32 wide APIs.
 pub(crate) fn to_wide(s: &str) -> Vec<u16> {
     use std::iter::once;
@@ -113,6 +116,25 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
         }
     }
 
+    Ok(())
+}
+
+/// Persist a tool's resolved config under `HKLM\SOFTWARE\OpenFrame\<value_name>` so the tool
+/// can recover its configuration when Windows relaunches it without CLI arguments.
+pub(crate) fn write_app_config(value_name: &str, prefs: &[(&str, &str)]) -> Result<()> {
+    let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
+    let path = format!(r"{}\{}", APP_CONFIG_KEY_BASE, value_name);
+    let (key, _disp) = hklm
+        .create_subkey_with_flags(
+            &path,
+            winreg::enums::KEY_WRITE | winreg::enums::KEY_WOW64_64KEY,
+        )
+        .with_context(|| format!("Failed to open/create HKLM\\{}", path))?;
+    for (k, v) in prefs {
+        key.set_value(*k, v)
+            .with_context(|| format!("Failed to set HKLM\\{}\\{}", path, k))?;
+    }
+    info!("Wrote app config: HKLM\\{} ({} keys)", path, prefs.len());
     Ok(())
 }
 
