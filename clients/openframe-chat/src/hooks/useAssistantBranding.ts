@@ -1,4 +1,3 @@
-import faeAvatar from '../assets/fae-avatar.png';
 import { getFaeAvatarUrl } from '../utils/image-url';
 import { useChatConfig } from './useChatConfig';
 
@@ -7,13 +6,17 @@ export interface AssistantBranding {
    *  apply their own fallback (both header and message bubbles default to
    *  "Fae" via `assistantName ?? 'Fae'`). */
   assistantName: string | undefined;
-  /** Avatar image src - the configured avatar endpoint, the bundled default,
-   *  or `undefined` while settings are still loading (so the avatar never
-   *  flashes bundled→custom before the configured one resolves). */
+  /** Avatar image src - the configured avatar endpoint, or `undefined` when no
+   *  avatar is configured / on error. We never fall back to a bundled default:
+   *  the header shows a skeleton while `isLoading`, then either the configured
+   *  avatar or the name initials. */
   assistantAvatar: string | undefined;
+  /** True while FaeSettings is still loading - drives the header skeleton so
+   *  we don't flash initials/avatar before the real value resolves. */
+  isLoading: boolean;
 }
 
-/** Assistant identity from FaeSettings with bundled fallbacks. */
+/** Assistant identity from FaeSettings. */
 export function useAssistantBranding(): AssistantBranding {
   const { faeSettings, isSettingsLoading } = useChatConfig();
   const configuredName = faeSettings?.assistantName?.trim();
@@ -21,13 +24,13 @@ export function useAssistantBranding(): AssistantBranding {
 
   // Configured avatar lives behind a public redirect endpoint keyed by the
   // FaeSettings id; only build it when an avatar is actually configured.
+  // When absent (no avatar configured or an error), stay `undefined` so the
+  // consumer renders the name initials rather than a bundled default.
   const customAvatarUrl = avatar ? getFaeAvatarUrl(faeSettings?.id, avatar.hash) : undefined;
 
   return {
     assistantName: configuredName || undefined,
-    // While settings are still loading, hold off on the bundled fallback so the
-    // avatar doesn't flash bundled→custom; reveal the bundled one only once we
-    // know no custom avatar is configured.
-    assistantAvatar: customAvatarUrl ?? (isSettingsLoading ? undefined : faeAvatar),
+    assistantAvatar: customAvatarUrl,
+    isLoading: isSettingsLoading,
   };
 }

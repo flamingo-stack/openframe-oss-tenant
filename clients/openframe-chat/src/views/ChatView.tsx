@@ -72,7 +72,7 @@ export function ChatView() {
     statusKind?: string;
   } | null>(null);
   const { showWelcome, completeWelcome } = useWelcomeScreen();
-  const { assistantName, assistantAvatar } = useAssistantBranding();
+  const { assistantName, assistantAvatar, isLoading: isAssistantLoading } = useAssistantBranding();
   useApplyFaeAppearance();
 
   const handleTokenUsage = useCallback((data: TokenUsageData) => {
@@ -329,6 +329,7 @@ export function ChatView() {
   return (
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
+        isLoading={isAssistantLoading}
         userName={assistantName ?? 'Fae'}
         userAvatar={assistantAvatar}
         connectionStatus={status}
