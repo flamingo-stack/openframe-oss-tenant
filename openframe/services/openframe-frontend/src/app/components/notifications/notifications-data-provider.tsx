@@ -96,6 +96,7 @@ function parseApprovalContext(context: NatsNotificationPayload['context']): Appr
     ticketId: typeof context.ticketId === 'string' ? context.ticketId : null,
     approvalType: typeof context.approvalType === 'string' ? context.approvalType : null,
     resolution: typeof context.resolution === 'string' ? context.resolution : null,
+    resolvedByName: typeof context.resolvedByName === 'string' ? context.resolvedByName : null,
     toolCalls: rawToolCalls.map(raw => {
       const call = (raw ?? {}) as Record<string, unknown>;
       return {
@@ -159,6 +160,7 @@ function writeNotificationContext(
     record.setValue(approval.ticketId ?? null, 'ticketId');
     record.setValue(approval.approvalType ?? null, 'approvalType');
     record.setValue(approval.resolution ?? null, 'resolution');
+    record.setValue(approval.resolvedByName ?? null, 'resolvedByName');
     record.setLinkedRecords(
       approval.toolCalls.map((call, i) => writeToolCallRecord(store, `${contextRecordId}:toolCall:${i}`, call)),
       'toolCalls',

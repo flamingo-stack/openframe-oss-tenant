@@ -330,9 +330,14 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTokenUsage(dialogId, data);
       },
 
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
-          updateApprovalStatusInMessages(dialogId, requestId, status);
+          updateApprovalStatusInMessages(dialogId, requestId, status, resolvedByName);
         }
       },
 

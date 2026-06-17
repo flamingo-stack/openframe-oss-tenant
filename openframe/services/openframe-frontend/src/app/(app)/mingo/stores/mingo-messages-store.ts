@@ -59,7 +59,12 @@ interface MingoMessagesStore {
   addMessage: (dialogId: string, message: Message) => void;
   updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (dialogId: string, messageId: string) => void;
-  updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
+  updateApprovalStatusInMessages: (
+    dialogId: string,
+    requestId: string,
+    status: 'approved' | 'rejected',
+    resolvedByName?: string | null,
+  ) => void;
   updateToolExecutionInMessages: (
     dialogId: string,
     executionRequestId: string,
@@ -233,7 +238,12 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         });
       },
 
-      updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
+      updateApprovalStatusInMessages: (
+        dialogId: string,
+        requestId: string,
+        status: 'approved' | 'rejected',
+        resolvedByName?: string | null,
+      ) => {
         set(state => {
           const currentMessages = state.messagesByDialog.get(dialogId) || [];
           let matched = false;
@@ -250,7 +260,11 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
               if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
                 matched = true;
                 changed = true;
-                return { ...segment, status } as ApprovalBatchSegment;
+                return {
+                  ...segment,
+                  status,
+                  resolvedByName: resolvedByName ?? segment.resolvedByName,
+                } as ApprovalBatchSegment;
               }
               return segment;
             });

@@ -69,7 +69,12 @@ interface TicketDetailsStore {
   appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[]) => void;
 
   // Approvals
-  updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
+  updateApprovalStatusInMessages: (
+    side: ChatSide,
+    requestId: string,
+    status: ApprovalStatus,
+    resolvedByName?: string | null,
+  ) => void;
   updateToolExecutionInMessages: (
     side: ChatSide,
     executionRequestId: string,
@@ -236,7 +241,7 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
     );
   },
 
-  updateApprovalStatusInMessages: (side, requestId, status) =>
+  updateApprovalStatusInMessages: (side, requestId, status, resolvedByName) =>
     set(state => {
       let matched = false;
       const nextSides = produceSide(state, side, s => {
@@ -252,14 +257,18 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
             if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
               matched = true;
               changed = true;
-              return { ...segment, status } as ApprovalBatchSegment;
+              return {
+                ...segment,
+                status,
+                resolvedByName: resolvedByName ?? segment.resolvedByName,
+              } as ApprovalBatchSegment;
             }
             return segment;
           });
           return changed ? { ...message, content: updatedContent } : message;
         });
 
-        const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status);
+        const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status, resolvedByName);
         const updatedStreaming =
           s.streaming && Array.isArray(s.streaming.content)
             ? { ...s.streaming, content: updatedSegments }

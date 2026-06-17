@@ -147,6 +147,7 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
               approvalRequestId
               approved
               approvalType
+              resolvedByName
             }
 
             ... on ContextCompactionStartData {
