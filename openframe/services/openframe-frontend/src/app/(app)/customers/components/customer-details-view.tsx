@@ -21,6 +21,8 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { getFullImageUrl } from '@/lib/image-url';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useCustomerArchive } from '../hooks/use-customer-archive';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { customersQueryKeys } from '../hooks/use-customers';
@@ -57,6 +59,10 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
   );
 
   const { organization, isLoading, error } = useCustomerDetails(id);
+  // Register this organization as the Mingo "open view".
+  useTrackOpenView(
+    organization ? { type: CONTEXT_ENTITY_KIND.ORGANIZATION, id, label: organization.name || id } : null,
+  );
   const { checkCanArchive, archiveOrganization, restoreOrganization } = useCustomerArchive();
   const queryClient = useQueryClient();
   const { toast } = useToast();

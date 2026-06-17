@@ -17,6 +17,8 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import type { Device } from '../types/device.types';
@@ -123,6 +125,18 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   }, [searchParams, isLoading, deviceId, router]);
 
   const normalizedDevice = deviceDetails;
+
+  // Register this device as the Mingo "open view" so the agent gets the user's
+  // working context on the next message (cleared on unmount → recent views).
+  useTrackOpenView(
+    normalizedDevice
+      ? {
+          type: CONTEXT_ENTITY_KIND.DEVICE,
+          id: deviceId,
+          label: normalizedDevice.displayName || normalizedDevice.hostname || deviceId,
+        }
+      : null,
+  );
 
   const handleBack = useSafeBack('/devices');
 

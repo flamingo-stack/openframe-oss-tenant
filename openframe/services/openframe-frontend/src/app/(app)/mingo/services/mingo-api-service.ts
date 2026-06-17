@@ -27,10 +27,24 @@ export interface CreateDialogRequest {
   agentType: 'ADMIN';
 }
 
+/** Minimal entity ref carried in the message payload. */
+export interface MessageContextRef {
+  type: string;
+  id: string;
+}
+
 export interface SendMessageRequest {
   dialogId: string;
   content: string;
   chatType: 'ADMIN_AI_CHAT';
+  // Field names mirror the chat service OpenAPI `SendMessageRequest`
+  // (GET /chat/v3/api-docs): contextItems[≤10], currentView, recentViews[≤5].
+  /** Entity-context items the user attached via the composer (max 10). */
+  contextItems?: MessageContextRef[];
+  /** The entity page currently open when the message was sent (or omitted). */
+  currentView?: MessageContextRef;
+  /** Up to 5 previously-open entity views, most-recent-first. */
+  recentViews?: MessageContextRef[];
 }
 
 /**
@@ -66,11 +80,28 @@ export function useCreateDialogMutation() {
  */
 export function useSendMessageMutation() {
   return useMutation({
-    mutationFn: async ({ dialogId, content }: { dialogId: string; content: string }) => {
+    mutationFn: async ({
+      dialogId,
+      content,
+      contextItems,
+      currentView,
+      recentViews,
+    }: {
+      dialogId: string;
+      content: string;
+      contextItems?: MessageContextRef[];
+      currentView?: MessageContextRef;
+      recentViews?: MessageContextRef[];
+    }) => {
+      // Omit the context fields entirely when empty so the payload stays the
+      // legacy shape for plain messages.
       const response = await apiClient.post('/chat/api/v1/messages', {
         dialogId,
         content,
         chatType: 'ADMIN_AI_CHAT',
+        ...(contextItems && contextItems.length > 0 ? { contextItems } : {}),
+        ...(currentView ? { currentView } : {}),
+        ...(recentViews && recentViews.length > 0 ? { recentViews } : {}),
       } as SendMessageRequest);
 
       if (!response.ok) {

@@ -18,6 +18,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
 import { getNavigationItems } from '../../lib/navigation-config';
+import { MingoContextDebugWindow } from '../(app)/mingo/context/mingo-context-debug-window';
 import { AppShellSkeleton } from './app-shell-skeleton';
 import { type UnreadCountsByCategory, UnreadCountsHydrator } from './notifications/unread-counts-hydrator';
 import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry';
@@ -211,6 +212,9 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       >
         {showLockContent ? <SubscriptionLockContent /> : children}
       </CoreAppLayout>
+      {/* Floating debug panel for the live Mingo openView/recentViews. Hidden in
+          every env by default; opt-in via the `mingoDebug()` console command. */}
+      <MingoContextDebugWindow />
     </>
   );
 }

@@ -9,6 +9,8 @@ import {
 import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { useScriptDetails } from '../../hooks/use-script-details';
 import { ScriptArgumentsCard } from './script-arguments-card';
 import { ScriptDetailsSkeleton } from './script-details-skeleton';
@@ -21,6 +23,11 @@ interface ScriptDetailsViewProps {
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const { scriptDetails, isLoading, error } = useScriptDetails(scriptId);
   const handleBack = useSafeBack('/scripts');
+
+  // Register this script as the Mingo "open view" (cleared → recent on unmount).
+  useTrackOpenView(
+    scriptDetails ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptId, label: scriptDetails.name || scriptId } : null,
+  );
 
   const editHref = `/scripts/edit/${scriptId}`;
   const runHref = scriptDetails?.id ? `/scripts/details/${scriptDetails.id}/run` : undefined;
