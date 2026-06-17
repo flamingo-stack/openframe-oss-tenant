@@ -66,7 +66,12 @@ spec:
           done &&
           echo "Backend port is ready!" &&
           echo "Checking Backend health endpoint..." &&
-          until wget -q --spider ${TRMM_PROTO}://$API_HOST 2>/dev/null; do
+          # Probe via the short tactical-backend service name. The pod-FQDN form in
+          # $API_HOST is not present in the backend's Django ALLOWED_HOSTS, so a
+          # Host: pod-FQDN:8000 request gets a 400 Bad Request and the probe loops
+          # forever even though Django is actually serving. The short name is what
+          # the backend itself bakes into ALLOWED_HOSTS.
+          until wget -q --spider ${TRMM_PROTO}://tactical-backend:${TACTICAL_BACKEND_PORT} 2>/dev/null; do
             echo "Waiting for backend health endpoint...";
             sleep 2;
           done &&

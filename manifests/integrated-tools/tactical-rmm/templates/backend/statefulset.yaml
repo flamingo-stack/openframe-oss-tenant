@@ -62,6 +62,8 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
+        - secretRef:
+            name: tactical-secret
 
         volumeMounts:
         - name: backend-data
