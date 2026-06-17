@@ -25,6 +25,7 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-single-instance = "2"
 aes-gcm = "0.10"
 base64 = "0.21"
 notify = "6.1"

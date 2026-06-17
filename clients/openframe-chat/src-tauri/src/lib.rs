@@ -136,6 +136,28 @@ fn register_app_id() {
     }
 }
 
+fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
+    if let Some(url) = cfg.server_url {
+        if let Some(state) = app.try_state::<ServerUrlState>() {
+            *state.url.lock().unwrap() = Some(url.clone());
+            log::info!("server URL configured: {}", url);
+        }
+    }
+    if let Some(state) = app.try_state::<DebugModeState>() {
+        *state.enabled.lock().unwrap() = cfg.debug_mode;
+    }
+    if let (Some(path), Some(secret)) = (cfg.token_path, cfg.secret) {
+        if let Some(state) = app.try_state::<TokenState>() {
+            let mut started = state.started.lock().unwrap();
+            if !*started {
+                TokenWatcher::start(path, secret, app.clone(), state.current_token.clone());
+                *started = true;
+                log::info!("token watcher initialized");
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "windows")]
@@ -155,12 +177,6 @@ pub fn run() {
     // --background is the only CLI argument (indicates launch mode from daemon)
     let background_mode = std::env::args().any(|arg| arg == "--background");
 
-    // Extract config values
-    let token_path = config.token_path;
-    let secret = config.secret;
-    let server_url = config.server_url;
-    let debug_mode = config.debug_mode;
-    
     // When launched from the SYSTEM service via CreateProcessAsUserW, the process
     // inherits SYSTEM's USERPROFILE env var (C:\WINDOWS\system32\config\systemprofile)
     // even though it has the actual user's token. The Windows shell dialog reads
@@ -182,18 +198,29 @@ pub fn run() {
     }
 
     let mut builder = tauri::Builder::default();
-    
-    // Prepare token watcher parameters if both are available
-    let token_params = match (token_path, secret) {
-        (Some(path), Some(secret_key)) => Some((path, secret_key)),
-        _ => None,
-    };
-    
-    let server_url_clone = server_url.clone();
-    let debug_mode_clone = debug_mode;
+
     let background_mode_clone = background_mode;
 
     builder = builder
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            log::info!("single-instance: second launch intercepted");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = app.set_activation_policy(ActivationPolicy::Regular);
+                restore_dock_icon();
+            }
+            let mut cfg = config_reader::AppConfig::from_args(&argv);
+            if !cfg.is_valid() {
+                cfg = config_reader::AppConfig::from_preferences();
+            }
+            if cfg.is_valid() {
+                apply_config(app, cfg);
+            }
+        }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(move |app| {
@@ -228,36 +255,28 @@ pub fn run() {
                 }
             }
 
-            // Manage server URL state
-            let url_state = ServerUrlState {
-                url: Arc::new(Mutex::new(server_url_clone.clone()))
-            };
-            app.manage(url_state);
+            app.manage(ServerUrlState { url: Arc::new(Mutex::new(None)) });
+            app.manage(DebugModeState { enabled: Arc::new(Mutex::new(false)) });
+            app.manage(TokenState {
+                current_token: Arc::new(Mutex::new(None)),
+                started: Arc::new(Mutex::new(false)),
+            });
 
-            if let Some(url) = &server_url_clone {
-                log::info!("server URL configured: {}", url);
-            } else {
-                log::warn!("no server URL provided at startup");
-            }
+            let startup_valid = config.is_valid();
+            apply_config(app.handle(), config);
 
-            // Manage debug mode state
-            let debug_state = DebugModeState {
-                enabled: Arc::new(Mutex::new(debug_mode_clone))
-            };
-            app.manage(debug_state);
-            log::info!("debug mode: {}", debug_mode_clone);
-
-            // Start token watcher with app handle if parameters were provided
-            if let Some((token_path, secret_key)) = token_params {
-                let state = TokenWatcher::start(token_path, secret_key, app.handle().clone());
-                app.manage(state);
-                log::info!("token watcher initialized");
-            } else {
-                // Still create and manage empty state so commands don't fail
-                let empty_state = TokenState {
-                    current_token: Arc::new(Mutex::new(None))
-                };
-                app.manage(empty_state);
+            if !startup_valid {
+                log::warn!("config incomplete at startup — starting recovery watcher");
+                let handle = app.handle().clone();
+                std::thread::spawn(move || loop {
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    let cfg = config_reader::AppConfig::from_preferences();
+                    if cfg.is_valid() {
+                        log::info!("config recovered — applying");
+                        apply_config(&handle, cfg);
+                        break;
+                    }
+                });
             }
             
             let show_i = MenuItem::with_id(app, "show", "Show", true, None::<&str>)?;

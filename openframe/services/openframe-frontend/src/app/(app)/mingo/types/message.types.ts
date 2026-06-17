@@ -24,6 +24,9 @@ export interface CoreMessage {
   assistantType?: AssistantType;
   timestamp?: Date;
   avatar?: string | null;
+  /** Highest content chunk streamSeq that composed this message; stamped on
+   *  realtime synthetics for per-message history-coverage dedup. */
+  streamSeq?: number;
 }
 
 export type Message = CoreMessage;

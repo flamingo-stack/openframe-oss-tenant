@@ -65,11 +65,16 @@ interface TicketDetailsStore {
   // Streaming
   setStreamingMessage: (side: ChatSide, message: ChatMessage | null) => void;
   getStreamingMessage: (side: ChatSide) => ChatMessage | null;
-  updateStreamingMessageSegments: (side: ChatSide, segments: MessageSegment[]) => void;
-  appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[]) => void;
+  updateStreamingMessageSegments: (side: ChatSide, segments: MessageSegment[], streamSeq?: number) => void;
+  appendSegmentsToLastAssistant: (side: ChatSide, segments: MessageSegment[], streamSeq?: number) => void;
 
   // Approvals
-  updateApprovalStatusInMessages: (side: ChatSide, requestId: string, status: ApprovalStatus) => void;
+  updateApprovalStatusInMessages: (
+    side: ChatSide,
+    requestId: string,
+    status: ApprovalStatus,
+    resolvedByName?: string | null,
+  ) => void;
   updateToolExecutionInMessages: (
     side: ChatSide,
     executionRequestId: string,
@@ -188,19 +193,23 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
 
   getStreamingMessage: side => get()[side].streaming,
 
-  updateStreamingMessageSegments: (side, segments) =>
+  updateStreamingMessageSegments: (side, segments, streamSeq) =>
     set(state =>
       produceSide(state, side, s => {
         if (!s.streaming) return s;
         const processed = s.accumulator.replaySegments(segments);
-        const updatedMessage: ChatMessage = { ...s.streaming, content: processed };
+        const updatedMessage: ChatMessage = {
+          ...s.streaming,
+          content: processed,
+          streamSeq: streamSeq != null ? Math.max(s.streaming.streamSeq ?? 0, streamSeq) : s.streaming.streamSeq,
+        };
         const idx = s.messages.findIndex(m => m.id === updatedMessage.id);
         const nextMessages = idx !== -1 ? s.messages.map((m, i) => (i === idx ? updatedMessage : m)) : s.messages;
         return { ...s, streaming: updatedMessage, messages: nextMessages };
       }),
     ),
 
-  appendSegmentsToLastAssistant: (side, segments) => {
+  appendSegmentsToLastAssistant: (side, segments, streamSeq) => {
     const incomingCompaction = [...segments]
       .reverse()
       .find((seg): seg is Extract<MessageSegment, { type: 'context_compaction' }> => seg.type === 'context_compaction');
@@ -228,7 +237,11 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
           }
 
           const updated = [...s.messages];
-          updated[i] = { ...updated[i], content: nextContent };
+          updated[i] = {
+            ...updated[i],
+            content: nextContent,
+            streamSeq: streamSeq != null ? Math.max(updated[i].streamSeq ?? 0, streamSeq) : updated[i].streamSeq,
+          };
           return { ...s, messages: updated };
         }
         return s;
@@ -236,7 +249,7 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
     );
   },
 
-  updateApprovalStatusInMessages: (side, requestId, status) =>
+  updateApprovalStatusInMessages: (side, requestId, status, resolvedByName) =>
     set(state => {
       let matched = false;
       const nextSides = produceSide(state, side, s => {
@@ -252,14 +265,18 @@ export const useTicketDetailsStore = create<TicketDetailsStore>((set, get) => ({
             if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
               matched = true;
               changed = true;
-              return { ...segment, status } as ApprovalBatchSegment;
+              return {
+                ...segment,
+                status,
+                resolvedByName: resolvedByName ?? segment.resolvedByName,
+              } as ApprovalBatchSegment;
             }
             return segment;
           });
           return changed ? { ...message, content: updatedContent } : message;
         });
 
-        const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status);
+        const updatedSegments = s.accumulator.updateApprovalStatus(requestId, status, resolvedByName);
         const updatedStreaming =
           s.streaming && Array.isArray(s.streaming.content)
             ? { ...s.streaming, content: updatedSegments }

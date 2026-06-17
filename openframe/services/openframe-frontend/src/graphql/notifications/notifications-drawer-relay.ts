@@ -52,6 +52,7 @@ export const notificationsDrawerRelayFragment = graphql`
               approvalTicketId: ticketId
               approvalType
               resolution
+              resolvedByName
               toolCalls {
                 toolExecutionRequestId
                 toolName

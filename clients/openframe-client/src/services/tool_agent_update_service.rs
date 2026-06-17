@@ -386,6 +386,11 @@ impl ToolAgentUpdateService {
             ) {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to register GuiApp autorun");
             }
+            if let Err(e) =
+                crate::utils::windows_helpers::write_app_config(tool_agent_id, &launch_args)
+            {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
+            }
         }
     }
 }

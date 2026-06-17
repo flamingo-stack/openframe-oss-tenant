@@ -102,6 +102,7 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
               approvalRequestId
               approved
               approvalType
+              resolvedByName
             }
 
             ... on ContextCompactionStartData {
