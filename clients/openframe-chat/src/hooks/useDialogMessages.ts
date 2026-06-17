@@ -24,7 +24,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
   const { assistantName, assistantAvatar } = useAssistantBranding();
   const { onApprove, onReject, approvalStatuses } = options;
 
-  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage } = useInfiniteQuery({
+  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
       const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
@@ -55,6 +55,18 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       }
     }
     return max;
+  }, [data?.pages]);
+
+  // Raw persisted (Mongo) ids across all fetched pages — passed to
+  // mergeHistoryWithRealtime so synthetics that have been adopted under a
+  // persisted id are deduped too.
+  const rawHistoryIds = useMemo(() => {
+    const idSet = new Set<string>();
+    if (!data?.pages) return idSet;
+    for (const page of data.pages) {
+      for (const edge of page.edges) idSet.add(edge.node.id);
+    }
+    return idSet;
   }, [data?.pages]);
 
   const { historicalMessages, escalatedApprovals } = useMemo(() => {
@@ -103,6 +115,8 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     fetchNextPage,
     escalatedApprovals,
     initialOptStartSeq,
+    rawHistoryIds,
+    dataUpdatedAt,
     reset,
   };
 }

@@ -59,7 +59,12 @@ interface MingoMessagesStore {
   addMessage: (dialogId: string, message: Message) => void;
   updateMessage: (dialogId: string, messageId: string, updates: Partial<Message>) => void;
   removeMessage: (dialogId: string, messageId: string) => void;
-  updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => void;
+  updateApprovalStatusInMessages: (
+    dialogId: string,
+    requestId: string,
+    status: 'approved' | 'rejected',
+    resolvedByName?: string | null,
+  ) => void;
   updateToolExecutionInMessages: (
     dialogId: string,
     executionRequestId: string,
@@ -77,9 +82,9 @@ interface MingoMessagesStore {
   // Streaming Messages
   setStreamingMessage: (dialogId: string, message: Message | null) => void;
   getStreamingMessage: (dialogId: string) => Message | null;
-  updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[]) => void;
+  updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[], streamSeq?: number) => void;
 
-  appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[]) => void;
+  appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[], streamSeq?: number) => void;
 
   // Segment Accumulators
   getOrCreateAccumulator: (
@@ -233,7 +238,12 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         });
       },
 
-      updateApprovalStatusInMessages: (dialogId: string, requestId: string, status: 'approved' | 'rejected') => {
+      updateApprovalStatusInMessages: (
+        dialogId: string,
+        requestId: string,
+        status: 'approved' | 'rejected',
+        resolvedByName?: string | null,
+      ) => {
         set(state => {
           const currentMessages = state.messagesByDialog.get(dialogId) || [];
           let matched = false;
@@ -250,7 +260,11 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
               if (segment.type === 'approval_batch' && segment.data?.approvalRequestId === requestId) {
                 matched = true;
                 changed = true;
-                return { ...segment, status } as ApprovalBatchSegment;
+                return {
+                  ...segment,
+                  status,
+                  resolvedByName: resolvedByName ?? segment.resolvedByName,
+                } as ApprovalBatchSegment;
               }
               return segment;
             });
@@ -405,7 +419,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         return state.streamingMessages.get(dialogId) || null;
       },
 
-      updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[]) => {
+      updateStreamingMessageSegments: (dialogId: string, segments: MessageSegment[], streamSeq?: number) => {
         set(state => {
           const currentStreaming = state.streamingMessages.get(dialogId);
           if (!currentStreaming) return state;
@@ -420,6 +434,8 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
           const updatedMessage = {
             ...currentStreaming,
             content: processedSegments,
+            streamSeq:
+              streamSeq != null ? Math.max(currentStreaming.streamSeq ?? 0, streamSeq) : currentStreaming.streamSeq,
           };
 
           const newStreamingMap = new Map(state.streamingMessages);
@@ -442,7 +458,7 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
         });
       },
 
-      appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[]) => {
+      appendSegmentsToLastAssistant: (dialogId: string, segments: MessageSegment[], streamSeq?: number) => {
         const incomingCompaction = [...segments]
           .reverse()
           .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
@@ -479,7 +495,14 @@ export const useMingoMessagesStore = create<MingoMessagesStore>()(
                   : [...existing, ...segments];
               }
 
-              updatedMessages[i] = { ...updatedMessages[i], content: nextContent };
+              updatedMessages[i] = {
+                ...updatedMessages[i],
+                content: nextContent,
+                streamSeq:
+                  streamSeq != null
+                    ? Math.max(updatedMessages[i].streamSeq ?? 0, streamSeq)
+                    : updatedMessages[i].streamSeq,
+              };
               newMap.set(dialogId, updatedMessages);
               return { messagesByDialog: newMap };
             }

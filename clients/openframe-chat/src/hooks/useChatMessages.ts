@@ -23,7 +23,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
     setMessages(prev => [...prev, message]);
   }, []);
 
-  const updateLastAssistantMessage = useCallback((segments: MessageSegment[]) => {
+  const updateLastAssistantMessage = useCallback((segments: MessageSegment[], streamSeq?: number) => {
     setMessages(prev => {
       const newMessages = [...prev];
       const lastMessage = newMessages[newMessages.length - 1];
@@ -31,6 +31,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
         newMessages[newMessages.length - 1] = {
           ...lastMessage,
           content: segments.length > 0 ? segments : '',
+          streamSeq: streamSeq != null ? Math.max(lastMessage.streamSeq ?? 0, streamSeq) : lastMessage.streamSeq,
         };
       }
       return newMessages;
@@ -107,7 +108,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   }, [segmentAccumulator]);
 
   const appendSegmentsToLastAssistant = useCallback(
-    (segments: MessageSegment[]) => {
+    (segments: MessageSegment[], streamSeq?: number) => {
       const incomingCompaction = [...segments]
         .reverse()
         .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
@@ -136,7 +137,11 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
               nextContent = segmentAccumulator.replaySegments([...existing, ...segments]);
             }
 
-            newMessages[i] = { ...newMessages[i], content: nextContent };
+            newMessages[i] = {
+              ...newMessages[i],
+              content: nextContent,
+              streamSeq: streamSeq != null ? Math.max(newMessages[i].streamSeq ?? 0, streamSeq) : newMessages[i].streamSeq,
+            };
             return newMessages;
           }
         }
@@ -147,9 +152,9 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   );
 
   const updateSegments = useCallback(
-    (segments: MessageSegment[]) => {
+    (segments: MessageSegment[], streamSeq?: number) => {
       const processed = segmentAccumulator.replaySegments(segments);
-      updateLastAssistantMessage(processed);
+      updateLastAssistantMessage(processed, streamSeq);
     },
     [segmentAccumulator, updateLastAssistantMessage],
   );

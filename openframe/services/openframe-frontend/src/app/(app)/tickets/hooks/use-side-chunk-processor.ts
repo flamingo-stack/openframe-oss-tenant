@@ -152,10 +152,10 @@ export function useSideChunkProcessor(
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTypingIndicator(side, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(side, segments);
+          appendSegmentsToLastAssistant(side, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(side, segments);
+          updateStreamingMessageSegments(side, segments, metadata?.streamSeq);
         }
       },
       onError: (error: string) => {
@@ -164,10 +164,15 @@ export function useSideChunkProcessor(
         setStreamingMessage(side, null);
       },
       onTokenUsage: (data: TokenUsageData) => setTokenUsage(side, data),
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
-          updateApprovalStatusInMessages('client', requestId, status);
-          updateApprovalStatusInMessages('admin', requestId, status);
+          updateApprovalStatusInMessages('client', requestId, status, resolvedByName);
+          updateApprovalStatusInMessages('admin', requestId, status, resolvedByName);
         }
       },
       onToolExecuted: (segment: ToolExecutionSegment) => {
