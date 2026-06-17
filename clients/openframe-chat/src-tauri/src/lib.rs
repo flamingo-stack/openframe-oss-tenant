@@ -149,8 +149,9 @@ fn apply_config(app: &tauri::AppHandle, cfg: config_reader::AppConfig) {
     if let (Some(path), Some(secret)) = (cfg.token_path, cfg.secret) {
         if let Some(state) = app.try_state::<TokenState>() {
             let mut started = state.started.lock().unwrap();
-            if !*started {
-                TokenWatcher::start(path, secret, app.clone(), state.current_token.clone());
+            if !*started
+                && TokenWatcher::start(path, secret, app.clone(), state.current_token.clone())
+            {
                 *started = true;
                 log::info!("token watcher initialized");
             }
