@@ -87,9 +87,12 @@ spec:
             name: tactical-postgres
 
       containers:
-      - name: tactical-base
-        image: "{{ .Values.tactical.base.image.registry }}/{{ .Values.tactical.base.image.repository }}:{{ .Values.tactical.base.image.tag }}"
-        args: ["tactical-nats"]
+      # tactical-nats is its own dedicated image (nats-server + the Go nats-api
+      # binary under supervisord). The base tactical image's entrypoint only
+      # knows the backend/celery/celerybeat/websockets roles and aborts with
+      # "ERROR: unknown entrypoint role: tactical-nats" if used here.
+      - name: tactical-nats
+        image: "{{ .Values.tactical.base.natsImage.registry }}/{{ .Values.tactical.base.natsImage.repository }}:{{ .Values.tactical.base.natsImage.tag }}"
         ports:
         - containerPort: 9235
         - containerPort: 4222
@@ -102,13 +105,19 @@ spec:
             name: tactical-redis
         - secretRef:
             name: tactical-postgres
+        # The dedicated tactical-nats image never writes the shared tactical.ready
+        # marker. Probe the NATS client port directly — supervisord exposes it as
+        # soon as nats-server comes up.
         livenessProbe:
-          exec:
-            command:
-            - cat
-            - /opt/tactical/tmp/tactical/ready
+          tcpSocket:
+            port: 4222
           initialDelaySeconds: 30
           periodSeconds: 15
+        readinessProbe:
+          tcpSocket:
+            port: 4222
+          initialDelaySeconds: 5
+          periodSeconds: 5
 
         volumeMounts:
         - name: nats-data

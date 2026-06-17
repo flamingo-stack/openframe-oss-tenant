@@ -47,6 +47,13 @@ tactical:
       registry: ghcr.io/flamingo-stack/tacticalrmm
       repository: tactical
       tag: "0.0.23"
+    # Dedicated tactical-nats image: nats-server + nats-api under supervisord.
+    # Distinct from the tactical base image whose entrypoint only knows the
+    # backend/celery/celerybeat/websockets roles.
+    natsImage:
+      registry: ghcr.io/flamingo-stack/tacticalrmm
+      repository: tactical-nats
+      tag: "0.0.23"
     podAnnotations:
       loki.grafana.com/scrape: "true"
       prometheus.io/scrape: "true"
