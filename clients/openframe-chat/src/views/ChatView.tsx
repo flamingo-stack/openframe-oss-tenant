@@ -125,6 +125,17 @@ export function ChatView() {
 
   const { toast } = useToast();
 
+  // Fire-and-forget so ChatInput clears the draft immediately on send. Returning
+  // sendMessage's promise directly would make the lib defer clearing until it
+  // resolves - which only happens once the full response arrives - leaving the
+  // sent text sitting in the (disabled) input until then.
+  const handleSend = useCallback(
+    (text: string) => {
+      void sendMessage(text);
+    },
+    [sendMessage],
+  );
+
   // Pre-process messages for rendering: filter pending approvals (they
   // render in the sticky footer), dedupe approval_request/approval_batch
   // segments across bubbles by requestId (first occurrence wins — agent
@@ -411,7 +422,7 @@ export function ChatView() {
               />
             )}
             <ChatInput
-              onSend={sendMessage}
+              onSend={handleSend}
               onStop={isStreaming ? stopGeneration : undefined}
               sending={isStreaming || isCompacting}
               awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
