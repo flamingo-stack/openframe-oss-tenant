@@ -8,6 +8,7 @@ import {
   EyeAltIcon,
   EyeIcon,
   Filter01ListIcon,
+  Filter02Icon,
   Refresh02HrIcon,
   ScanIcon,
   SearchIcon,
@@ -16,8 +17,10 @@ import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageLayout,
+  FilterModal,
+  Input,
   multiSelectFilterFn,
+  PageLayout,
   type Row,
   Tag,
   TruncateText,
@@ -29,6 +32,7 @@ import {
   forwardRef,
   Suspense,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -154,6 +158,13 @@ interface LogsTableContentProps {
   tableFilters: Record<string, string[]>;
   onFilterChange: (filters: Record<string, any[]>) => void;
   onRefreshRef: React.RefObject<(() => void) | null>;
+  /** Reports the genuinely-empty (onboarding) state up so the outer layout can
+   *  hide the search field while the empty state is shown. */
+  onEmptyChange: (isEmpty: boolean) => void;
+  /** Mobile filter modal open state (the trigger lives in the outer toolbar, but
+   *  the filter options come from this component's logFilters query). */
+  mobileFilterOpen: boolean;
+  onMobileFilterClose: () => void;
 }
 
 // ----------------------------------------------------------------
@@ -168,6 +179,9 @@ function LogsTableContent({
   tableFilters,
   onFilterChange,
   onRefreshRef,
+  onEmptyChange,
+  mobileFilterOpen,
+  onMobileFilterClose,
 }: LogsTableContentProps) {
   const { toast } = useToast();
   const askMingo = useAskMingo();
@@ -299,6 +313,31 @@ function LogsTableContent({
     return `/log-details?id=${id}&ingestDay=${original.ingestDay}&toolType=${original.toolType}&eventType=${original.eventType}&timestamp=${encodeURIComponent(original.timestamp || '')}`;
   }, []);
 
+  const severityOptions = useMemo(() => {
+    const values = new Set<string>(logFilters?.severities ?? []);
+    for (const log of logs) if (log.severity) values.add(log.severity);
+    return Array.from(values, severity => ({
+      id: severity,
+      label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
+      value: severity,
+    }));
+  }, [logFilters, logs]);
+
+  const toolOptions = useMemo(() => {
+    const values = new Set<string>(logFilters?.toolTypes ?? []);
+    for (const log of logs) if (log.toolType) values.add(log.toolType);
+    return Array.from(values, toolType => ({ id: toolType, label: toToolLabel(toolType), value: toolType }));
+  }, [logFilters, logs]);
+
+  const organizationOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const org of logFilters?.organizations ?? []) byId.set(org.id, org.name);
+    for (const log of logs) {
+      if (log.organizationId) byId.set(log.organizationId, log.organizationName || log.organizationId);
+    }
+    return Array.from(byId, ([id, name]) => ({ id, label: name, value: id }));
+  }, [logFilters, logs]);
+
   const columns = useMemo<ColumnDef<UiLogEntry>[]>(
     () => [
       {
@@ -328,12 +367,7 @@ function LogsTableContent({
         meta: {
           width: 'w-[120px]',
           filter: {
-            options:
-              logFilters?.severities?.map((severity: string) => ({
-                id: severity,
-                label: severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase(),
-                value: severity,
-              })) || [],
+            options: severityOptions,
           },
         },
       },
@@ -352,12 +386,7 @@ function LogsTableContent({
           width: 'w-[150px]',
           hideAt: 'md',
           filter: {
-            options:
-              logFilters?.toolTypes?.map((toolType: string) => ({
-                id: toolType,
-                label: toToolLabel(toolType),
-                value: toolType,
-              })) || [],
+            options: toolOptions,
           },
         },
       },
@@ -386,7 +415,7 @@ function LogsTableContent({
           filter: organizationLocked
             ? undefined
             : {
-                options: transformOrganizationFilters(logFilters?.organizations),
+                options: organizationOptions,
               },
         },
       },
@@ -442,6 +471,20 @@ function LogsTableContent({
     [logFilters, getLogDetailsUrl, organizationLocked],
   );
 
+  // Mobile filter groups reuse the same column filter options (built from
+  // logFilters) as the desktop column headers, so the modal isn't empty.
+  const filterGroups = useMemo(
+    () =>
+      columns
+        .filter(column => column.meta?.filter?.options)
+        .map(column => ({
+          id: String(column.id ?? (column as { accessorKey?: string }).accessorKey ?? ''),
+          title: typeof column.header === 'string' ? column.header : '',
+          options: column.meta?.filter?.options || [],
+        })),
+    [columns],
+  );
+
   const columnFilters = useMemo(
     () =>
       Object.entries(tableFilters)
@@ -485,6 +528,12 @@ function LogsTableContent({
     !hasActiveFilters &&
     !isPending &&
     transformedLogs.length === 0;
+
+  // Search lives in the outer layout (outside this Suspense boundary, to keep
+  // focus across re-queries), so push the empty flag up to gate its visibility.
+  useEffect(() => {
+    onEmptyChange(showEmptyState);
+  }, [showEmptyState, onEmptyChange]);
 
   if (showEmptyState) {
     return (
@@ -532,6 +581,14 @@ function LogsTableContent({
           skeletonRows={2}
         />
       </DataTable>
+
+      <FilterModal
+        isOpen={mobileFilterOpen}
+        onClose={onMobileFilterClose}
+        filterGroups={filterGroups}
+        onFilterChange={onFilterChange}
+        currentFilters={tableFilters}
+      />
 
       <LogDrawer
         isOpen={Boolean(selectedLog)}
@@ -643,7 +700,18 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     organizationIds: { type: 'array', default: [] },
   });
 
-  const debouncedSearch = useDebounce(params.search, 300);
+  // Local search input keeps typing responsive; the debounced value drives both
+  // the query and the URL param (so history isn't spammed on every keystroke).
+  const [searchInput, setSearchInput] = useState(params.search);
+  const debouncedSearch = useDebounce(searchInput, 300);
+  useEffect(() => {
+    if (debouncedSearch !== params.search) setParam('search', debouncedSearch);
+  }, [debouncedSearch, params.search, setParam]);
+
+  // Whether the inner content is in the genuinely-empty onboarding state; when
+  // true the search toolbar is hidden (the header + actions stay).
+  const [isEmpty, setIsEmpty] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const lockedOrgIds = useMemo(() => (organizationId ? [organizationId] : undefined), [organizationId]);
 
@@ -705,45 +773,44 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     [handleRefresh],
   );
 
-  const filterGroups = useMemo(
-    () => [
-      { id: 'status', title: 'Status', options: [] },
-      { id: 'tool', title: 'Tool', options: [] },
-      { id: 'source', title: 'SOURCE', options: [] },
-    ],
-    [],
-  );
-
-  const content = (
-    <Suspense fallback={<LogsTableSkeleton />}>
-      <LogsTableContent
-        deviceId={deviceId}
-        organizationLocked={Boolean(organizationId)}
-        backendFilters={backendFilters}
-        debouncedSearch={debouncedSearch}
-        tableFilters={tableFilters}
-        onFilterChange={handleFilterChange}
-        onRefreshRef={refreshRef}
-      />
-    </Suspense>
-  );
-
   return (
-    <ListPageLayout
-      title="Logs"
-      actions={actions}
-      searchPlaceholder="Search for Logs"
-      searchValue={params.search}
-      onSearch={value => setParam('search', value)}
-      error={null}
-      background="default"
-      padding="none"
-      onMobileFilterChange={handleFilterChange}
-      mobileFilterGroups={filterGroups}
-      currentMobileFilters={tableFilters}
-      stickyHeader
-    >
-      {content}
-    </ListPageLayout>
+    <PageLayout title="Logs" actions={actions}>
+      {/* Search toolbar — outside the Suspense boundary so it keeps focus across
+          re-queries, and hidden while the empty state is shown. */}
+      {!isEmpty && (
+        <div className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+          <Input
+            placeholder="Search for Logs"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            className="flex-1"
+            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileFilterOpen(true)}
+            aria-label="Open filters"
+            leftIcon={<Filter02Icon />}
+          />
+        </div>
+      )}
+
+      <Suspense fallback={<LogsTableSkeleton />}>
+        <LogsTableContent
+          deviceId={deviceId}
+          organizationLocked={Boolean(organizationId)}
+          backendFilters={backendFilters}
+          debouncedSearch={debouncedSearch}
+          tableFilters={tableFilters}
+          onFilterChange={handleFilterChange}
+          onRefreshRef={refreshRef}
+          onEmptyChange={setIsEmpty}
+          mobileFilterOpen={mobileFilterOpen}
+          onMobileFilterClose={() => setMobileFilterOpen(false)}
+        />
+      </Suspense>
+    </PageLayout>
   );
 });
