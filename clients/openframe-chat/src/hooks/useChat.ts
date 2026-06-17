@@ -14,13 +14,13 @@ import {
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
 import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
 import { tokenService } from '../services/tokenService';
 import { overrideToolTitle } from '../utils/applyToolTitle';
 import { log } from '../utils/log';
+import { useAssistantBranding } from './useAssistantBranding';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
@@ -93,6 +93,7 @@ export function useChat({
 
   const { debugMode } = useDebugMode();
   const { quickActions } = useChatConfig();
+  const { assistantName, assistantAvatar } = useAssistantBranding();
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
   if (!apiServiceRef.current) {
@@ -312,7 +313,7 @@ export function useChat({
         id: lastAssistantId,
         role: 'assistant' as const,
         content: assistantSegments,
-        name: 'Fae',
+        name: assistantName ?? 'Fae',
         timestamp: lastAssistantTimestamp,
       };
 
@@ -320,7 +321,7 @@ export function useChat({
     }
 
     return undefined;
-  }, [allMessages, isResumedDialog]);
+  }, [allMessages, isResumedDialog, assistantName]);
 
   const isCompacting = useMemo(() => {
     const lastMsg = allMessages[allMessages.length - 1];
@@ -657,15 +658,15 @@ export function useChat({
       const syntheticMessage: Message = {
         id: `ticket-preview-${Date.now()}`,
         role: 'assistant',
-        name: 'Fae',
+        name: assistantName ?? 'Fae',
         content,
         timestamp: new Date(),
-        avatar: faeAvatar,
+        avatar: assistantAvatar,
       };
 
       messages.addMessage(syntheticMessage);
     },
-    [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages],
+    [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages, assistantName, assistantAvatar],
   );
 
   const resumeDialog = useCallback(

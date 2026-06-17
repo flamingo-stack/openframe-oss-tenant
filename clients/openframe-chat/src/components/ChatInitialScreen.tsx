@@ -2,6 +2,7 @@ import { ChatQuickAction, type ChatTicketItemData, ChatTicketList } from '@flami
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { QuickAction } from '../hooks/useChatConfig';
+import { useDocumentTheme } from '../hooks/useDocumentTheme';
 
 interface ChatInitialScreenProps {
   tickets: ChatTicketItemData[];
@@ -21,6 +22,7 @@ export function ChatInitialScreen({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBottomFade, setShowBottomFade] = useState(false);
   const [showTopFade, setShowTopFade] = useState(false);
+  const isLightTheme = useDocumentTheme() === 'light';
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
@@ -57,8 +59,8 @@ export function ChatInitialScreen({
           <ChatQuickAction
             className="bg-ods-card"
             key={action.id}
-            text={action.text}
-            onAction={onQuickAction}
+            text={action.name}
+            onAction={() => onQuickAction(action.instructions)}
             disabled={isDisconnected}
           />
         ))}
@@ -88,26 +90,30 @@ export function ChatInitialScreen({
           )}
         </div>
       </div>
-      <div
-        aria-hidden="true"
-        style={{
-          background: 'linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0.00) 100%)',
-        }}
-        className={cn(
-          'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
-          showTopFade ? 'opacity-100' : 'opacity-0',
-        )}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          background: 'linear-gradient(180deg, rgba(22, 22, 22, 0.00) 0%, #161616 100%)',
-        }}
-        className={cn(
-          'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
-          showBottomFade ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {!isLightTheme && (
+        <>
+          <div
+            aria-hidden="true"
+            style={{
+              background: 'linear-gradient(180deg, var(--color-bg) 0%, transparent 100%)',
+            }}
+            className={cn(
+              'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
+              showTopFade ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 100%)',
+            }}
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
+              showBottomFade ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </>
+      )}
     </div>
   );
 }
