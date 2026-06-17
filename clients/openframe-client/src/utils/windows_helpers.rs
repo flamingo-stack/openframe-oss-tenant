@@ -119,9 +119,10 @@ pub(crate) fn register_autorun(value_name: &str, command_path: &str, args: &[Str
     Ok(())
 }
 
-/// Persist a tool's resolved config under `HKLM\SOFTWARE\OpenFrame\<value_name>` so the tool
+/// Persist a tool's resolved launch args under `HKLM\SOFTWARE\OpenFrame\<value_name>` so the tool
 /// can recover its configuration when Windows relaunches it without CLI arguments.
-pub(crate) fn write_app_config(value_name: &str, prefs: &[(&str, &str)]) -> Result<()> {
+/// `["--serverUrl", "https://...", "--devMode"]` -> values `serverUrl = https://...`, `devMode = 1`.
+pub(crate) fn write_app_config(value_name: &str, args: &[String]) -> Result<()> {
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
     let path = format!(r"{}\{}", APP_CONFIG_KEY_BASE, value_name);
     let (key, _disp) = hklm
@@ -130,11 +131,30 @@ pub(crate) fn write_app_config(value_name: &str, prefs: &[(&str, &str)]) -> Resu
             winreg::enums::KEY_WRITE | winreg::enums::KEY_WOW64_64KEY,
         )
         .with_context(|| format!("Failed to open/create HKLM\\{}", path))?;
-    for (k, v) in prefs {
-        key.set_value(*k, v)
-            .with_context(|| format!("Failed to set HKLM\\{}\\{}", path, k))?;
+
+    let mut i = 0;
+    let mut count = 0;
+    while i < args.len() {
+        if let Some(k) = args[i].strip_prefix("--") {
+            let v = match args.get(i + 1) {
+                Some(val) if !val.starts_with("--") => {
+                    i += 2;
+                    val.as_str()
+                }
+                _ => {
+                    i += 1;
+                    "1"
+                }
+            };
+            key.set_value(k, &v)
+                .with_context(|| format!("Failed to set HKLM\\{}\\{}", path, k))?;
+            count += 1;
+        } else {
+            i += 1;
+        }
     }
-    info!("Wrote app config: HKLM\\{} ({} keys)", path, prefs.len());
+
+    info!("Wrote app config: HKLM\\{} ({} keys)", path, count);
     Ok(())
 }
 
