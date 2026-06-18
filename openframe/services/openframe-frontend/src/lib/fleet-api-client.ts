@@ -205,7 +205,9 @@ class FleetApiClient {
     if (params?.order_key) queryParams.append('order_key', params.order_key);
     if (params?.order_direction) queryParams.append('order_direction', params.order_direction);
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
-    if (params?.page) queryParams.append('page', params.page.toString());
+    // `!== undefined` (not truthiness): page 0 is a valid first page — `if (page)`
+    // would drop it and silently fall back to Fleet's default page.
+    if (params?.page !== undefined) queryParams.append('page', params.page.toString());
 
     const queryString = queryParams.toString();
     const path = queryString ? `/api/latest/fleet/queries?${queryString}` : '/api/latest/fleet/queries';
