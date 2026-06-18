@@ -17,7 +17,6 @@ export interface Customer {
     name: string;
     email: string;
   };
-  tier: 'Basic' | 'Premium' | 'Enterprise';
   industry: string;
   mrrUsd: number;
   numberOfEmployees: number;
@@ -55,7 +54,6 @@ export function mapOrganizationNode(node: OrganizationNode): Customer {
       name: primaryContact?.contactName ?? '',
       email: primaryContact?.email ?? '',
     },
-    tier: 'Basic',
     industry: node.category ?? '-',
     mrrUsd: node.monthlyRevenue ?? 0,
     numberOfEmployees: node.numberOfEmployees ?? 0,
