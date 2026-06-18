@@ -9,16 +9,20 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { type InfiniteData, useQueryClient } from '@tanstack/react-query';
 import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
+import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useMoveTicketLifecycle, useMovingTicketIdsLifecycle } from '../hooks/use-move-ticket-lifecycle';
 import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
 import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
+import type { TicketsPage } from '../services/ticket-service.types';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
 import { mapDefinitionToSystem, usesCanonicalStatusStyle } from '../statuses/types/ticket-statuses.types';
 import type { Dialog } from '../types/dialog.types';
+import { dialogsQueryKeys, ticketsQueryKeys } from '../utils/query-keys';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
@@ -69,6 +73,7 @@ function dialogToBoardTicket(dialog: Dialog, hasNewMessage = false): BoardTicket
     tags: dialog.labels?.map(l => l.key),
     createdAt: dialog.createdAt,
     hasNewMessage,
+    pendingApproval: dialog.pendingApproval,
   };
 }
 
@@ -90,6 +95,45 @@ export function TicketsBoardLifecycle({
   const { mutate: moveTicket } = useMoveTicketLifecycle();
   const movingIds = useMovingTicketIdsLifecycle();
   const notifications = useOptionalNotifications();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
+
+  const handleApprovalAction = useCallback(
+    async (ticketId: string, requestId: string | undefined, approve: boolean) => {
+      if (!requestId) return;
+      try {
+        if (approve) await handleApproveRequest(requestId);
+        else await handleRejectRequest(requestId);
+        toast({
+          title: approve ? 'Request approved' : 'Request rejected',
+          description: approve ? 'The pending request has been approved.' : 'The pending request has been rejected.',
+          variant: 'success',
+        });
+        queryClient.setQueriesData<InfiniteData<TicketsPage>>(
+          { queryKey: dialogsQueryKeys.boardColumnsLifecycle() },
+          prev => {
+            if (!prev?.pages.some(p => p.dialogs.some(d => d.id === ticketId && d.pendingApproval))) return prev;
+            return {
+              ...prev,
+              pages: prev.pages.map(page => ({
+                ...page,
+                dialogs: page.dialogs.map(d => (d.id === ticketId ? { ...d, pendingApproval: undefined } : d)),
+              })),
+            };
+          },
+        );
+        queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to update approval request',
+          variant: 'destructive',
+        });
+      }
+    },
+    [handleApproveRequest, handleRejectRequest, toast, queryClient],
+  );
 
   // Tickets have no unread field of their own; unread state comes from notifications (a separate
   // entity) matched by ticket id.
@@ -268,6 +312,8 @@ export function TicketsBoardLifecycle({
               onArchiveColumn={openArchiveResolvedConfirm}
               getTicketHref={getTicketHref}
               renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+              onApprove={(ticketId, requestId) => handleApprovalAction(ticketId, requestId, true)}
+              onReject={(ticketId, requestId) => handleApprovalAction(ticketId, requestId, false)}
               collapseStorageKey="tickets-board-lifecycle"
               className="h-full px-[var(--spacing-system-l)]"
             />
