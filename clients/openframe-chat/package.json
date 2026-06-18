@@ -1,9 +1,9 @@
 {
-  "name": "fae-chat-client",
+  "name": "openframe-chat-client",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Fae Chat Desktop Client - Tauri + React",
+  "description": "OpenFrame Chat Desktop Client - Tauri + React",
   "scripts": {
     "dev": "tauri dev",
     "frontend:dev": "vite",

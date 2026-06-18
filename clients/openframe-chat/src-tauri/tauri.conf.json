@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Fae Chat",
+  "productName": "OpenFrame",
   "version": "0.1.0",
   "identifier": "com.openframe.chat",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Fae Chat",
+        "title": "OpenFrame",
         "width": 1000,
         "height": 800,
         "minWidth": 800,
