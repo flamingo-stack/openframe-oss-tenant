@@ -1,8 +1,9 @@
 import type { ChatTicketItemData } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQlService';
+import { tokenService } from '../services/tokenService';
 import { log } from '../utils/log';
 
 function formatTimeAgo(dateString: string): string {
@@ -48,6 +49,22 @@ export function useTickets() {
   const lifecycle = flags['ticket-statuses'];
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
+
+  // Gate the query on the token: an unauthenticated first fetch resolves empty
+  // and React Query caches it as success for `staleTime`, blanking the list.
+  const [hasToken, setHasToken] = useState(() => !!tokenService.getCurrentToken());
+  useEffect(() => {
+    if (hasToken) return;
+    // Use the resolved value too — requestToken can return a token that was
+    // cached after the useState initializer ran, without a token-update event.
+    tokenService
+      .requestToken()
+      .then(token => {
+        if (token) setHasToken(true);
+      })
+      .catch(() => null);
+    return tokenService.onTokenUpdate(() => setHasToken(true));
+  }, [hasToken]);
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
     queryKey: ['tickets', lifecycle],
@@ -98,6 +115,7 @@ export function useTickets() {
       }
       return undefined;
     },
+    enabled: hasToken,
     staleTime: 60_000,
     retry: 2,
     refetchInterval: 60_000,

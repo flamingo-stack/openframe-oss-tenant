@@ -131,7 +131,11 @@ export const getNavigationItems = (
     isActive: pathname.startsWith('/settings'),
   });
 
+  // TODO: re-enable sidebar unread count badges — flip this flag back to true.
+  const showUnreadBadges: boolean = false;
+
   return baseItems.map(item => {
+    if (!showUnreadBadges) return item;
     const category = CATEGORY_BY_NAV_ID[item.id];
     const unreadCount = category ? unreadCounts?.[category] : undefined;
     return unreadCount ? { ...item, unreadCount } : item;

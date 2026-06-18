@@ -7,6 +7,11 @@ import { apiClient } from '@/lib/api-client';
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries';
 import type { DialogNode, DialogsResponse, UseMingoDialogsOptions } from '../types';
 
+// TODO(unread-from-entity): re-enable per-dialog unread highlighting once the backend exposes
+// unread counts on the dialog entity itself. Matching unread notifications to dialogs by id is a
+// temporary workaround — disabled for now; flip this flag to restore it.
+const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
+
 function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): DialogItem {
   return {
     id: dialog.id,
@@ -25,6 +30,7 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
   // which clears the badge in lockstep with the drawer and the sidebar nav count.
   const unreadByDialog = useMemo(() => {
     const counts = new Map<string, number>();
+    if (!HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS) return counts;
     for (const notification of notifications?.notifications ?? []) {
       if (notification.read) continue;
       const dialogId = notification.meta?.dialogId;

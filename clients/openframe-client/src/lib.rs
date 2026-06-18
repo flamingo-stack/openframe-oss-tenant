@@ -304,7 +304,7 @@ impl Client {
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool command params resolver
-        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone());
+        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone(), config_service.clone());
 
         // Initialize tool URL params resolver
         let tool_url_params_resolver = ToolUrlParamsResolver::new(initial_configuration_service.clone());

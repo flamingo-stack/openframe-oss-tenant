@@ -4,31 +4,35 @@ import {
   extractIncompleteMessageState,
   type Message,
   type MessageSegment,
-  type NatsMessageType,
+  mergeHistoryWithRealtime,
   type PendingToolCallData,
   type SegmentsUpdateMetadata,
   type TokenUsageData,
   type ToolExecutionSegment,
   useJetStreamDialogSubscription,
-  useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
 import { useDebugMode } from '../contexts/DebugModeContext';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { ChatApiService } from '../services/chatApiService';
+import { useTauriDialogSubscription } from '../services/natsTauri';
 import { tokenService } from '../services/tokenService';
 import { overrideToolTitle } from '../utils/applyToolTitle';
 import { log } from '../utils/log';
+import { isTauri } from '../utils/runtime';
+import { useAssistantBranding } from './useAssistantBranding';
 import { useChatApprovals } from './useChatApprovals';
 import { useChatConfig } from './useChatConfig';
 import { useChatMessages } from './useChatMessages';
 import { CHAT_NATS_CLIENT_CONFIG, useChatNatsConfig } from './useChatNatsConfig';
-import { useChunkCatchup } from './useChunkCatchup';
 import { useDialogMessages } from './useDialogMessages';
 
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
+
+// Rejection sentinel for a deliberately-cancelled subscription wait (view
+// switch); the send flow treats it as a silent stop, not an error.
+const SUBSCRIPTION_WAIT_CANCELLED = 'Subscription wait cancelled';
 
 // Scan messages newest-to-oldest for the most recent pending approval
 // (single or batch). Returns its requestId / approvalRequestId, or
@@ -69,7 +73,6 @@ export function useChat({
   onDialogClosed,
 }: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
-  const [useJetstream] = useState(() => !!flags['ai-streaming-jetstream']);
 
   // Core state
   const [isTyping, setIsTyping] = useState(false);
@@ -82,7 +85,6 @@ export function useChat({
 
   // Refs for stream management
   const natsDoneResolverRef = useRef<null | (() => void)>(null);
-  const hasCaughtUp = useRef(false);
   const subscriptionPromiseRef = useRef<{
     resolve: () => void;
     reject: (error: Error) => void;
@@ -92,7 +94,8 @@ export function useChat({
   >(new Map());
 
   const { debugMode } = useDebugMode();
-  const { quickActions } = useChatConfig();
+  const { quickActions, isSettingsLoading } = useChatConfig();
+  const { assistantName, assistantAvatar } = useAssistantBranding();
 
   const apiServiceRef = useRef<ChatApiService | null>(null);
   if (!apiServiceRef.current) {
@@ -121,6 +124,8 @@ export function useChat({
     isLoading: isLoadingHistoricalMessages,
     isFetched: isHistoryFetched,
     initialOptStartSeq,
+    rawHistoryIds,
+    dataUpdatedAt: historyFetchedAt,
     fetchNextPage,
     escalatedApprovals,
     reset: resetDialogMessages,
@@ -137,23 +142,31 @@ export function useChat({
     }
   }, [escalatedApprovals]);
 
-  const allMessages = useMemo(() => {
-    if (messages.messages.length === 0) return historicalMessages;
+  // Id of the in-flight streaming synthetic (the trailing assistant bubble
+  // while a stream is live). Exempted from the merge's dedup so a still-growing
+  // turn is never trimmed against history that doesn't contain it yet.
+  const streamingMessageId = useMemo(() => {
+    if (!natsStreaming) return null;
+    const last = messages.messages[messages.messages.length - 1];
+    return last?.role === 'assistant' ? last.id : null;
+  }, [natsStreaming, messages.messages]);
 
-    if (isResumedDialog && messages.messages[0]?.role === 'assistant') {
-      let cutIndex = historicalMessages.length;
-      for (let i = historicalMessages.length - 1; i >= 0; i--) {
-        if (historicalMessages[i].role === 'assistant') {
-          cutIndex = i;
-        } else {
-          break;
-        }
-      }
-      return [...historicalMessages.slice(0, cutIndex), ...messages.messages];
-    }
-
-    return [...historicalMessages, ...messages.messages];
-  }, [historicalMessages, messages.messages, isResumedDialog]);
+  // Reconcile persisted history with realtime synthetics via the shared lib
+  // merge instead of a hand-rolled positional cut.
+  // Per-message `streamSeq` lets it drop a synthetic once history has
+  // persisted past it, while keeping any not-yet-persisted (or in-flight) turn.
+  const allMessages = useMemo(
+    () =>
+      mergeHistoryWithRealtime<Message>({
+        processedHistory: historicalMessages,
+        existingMessages: messages.messages,
+        streamingMessageId,
+        historyFetchedAt,
+        historyMaxStreamSeq: initialOptStartSeq,
+        rawHistoryIds,
+      }),
+    [historicalMessages, messages.messages, streamingMessageId, historyFetchedAt, initialOptStartSeq, rawHistoryIds],
+  );
 
   const messagesRef = useRef(messages);
   const approvalsRef = useRef(approvals);
@@ -174,12 +187,14 @@ export function useChat({
   const realtimeCallbacks = useMemo(
     () => ({
       onStreamStart: () => {
+        log.info('nats:chat', 'stream started');
         setNatsStreaming(true);
         setIsTyping(true);
         messagesRef.current.resetCurrentMessageSegments();
         messagesRef.current.ensureAssistantMessage();
       },
       onStreamEnd: () => {
+        log.info('nats:chat', 'stream ended');
         setNatsStreaming(false);
         setIsTyping(false);
         const resolve = natsDoneResolverRef.current;
@@ -196,10 +211,10 @@ export function useChat({
           setNatsStreaming(true);
         }
         if (metadata?.append) {
-          messagesRef.current.appendSegmentsToLastAssistant(segments);
+          messagesRef.current.appendSegmentsToLastAssistant(segments, metadata?.streamSeq);
         } else {
           messagesRef.current.ensureAssistantMessage();
-          messagesRef.current.updateSegments(segments);
+          messagesRef.current.updateSegments(segments, metadata?.streamSeq);
         }
       },
       onError: (_errorText: string) => {
@@ -312,7 +327,7 @@ export function useChat({
         id: lastAssistantId,
         role: 'assistant' as const,
         content: assistantSegments,
-        name: 'Fae',
+        name: assistantName ?? 'Fae',
         timestamp: lastAssistantTimestamp,
       };
 
@@ -320,7 +335,7 @@ export function useChat({
     }
 
     return undefined;
-  }, [allMessages, isResumedDialog]);
+  }, [allMessages, isResumedDialog, assistantName]);
 
   const isCompacting = useMemo(() => {
     const lastMsg = allMessages[allMessages.length - 1];
@@ -347,72 +362,26 @@ export function useChat({
     batchApprovalsEnabled: flags['batch-approval'],
   });
 
-  const handleRealtimeEvent = useCallback(
-    (chunk: any) => {
-      processRealtimeChunk(overrideToolTitle(chunk));
-    },
-    [processRealtimeChunk],
-  );
-
-  const {
-    catchUpChunks,
-    processChunk: catchupProcessChunk,
-    resetChunkTracking,
-    startInitialBuffering,
-    resetAndCatchUp,
-  } = useChunkCatchup({
-    dialogId: natsDialogId,
-    onChunkReceived: handleRealtimeEvent,
-  });
-
-  const handleNatsEvent = useCallback(
-    (chunk: any, messageType: NatsMessageType) => {
-      catchupProcessChunk(chunk, messageType);
-    },
-    [catchupProcessChunk],
-  );
-
   const natsDialogIdRef = useRef(natsDialogId);
 
   useEffect(() => {
     natsDialogIdRef.current = natsDialogId;
   }, [natsDialogId]);
 
-  useEffect(() => {
-    if (useJetstream) return;
-    if (!natsDialogId) return;
-
-    resetChunkTracking();
-    startInitialBuffering();
-    hasCaughtUp.current = false;
-  }, [useJetstream, natsDialogId, resetChunkTracking, startInitialBuffering]);
-
-  const handleNatsSubscribed = useCallback(async () => {
-    if (subscriptionPromiseRef.current) {
-      subscriptionPromiseRef.current.resolve();
-      subscriptionPromiseRef.current = null;
-    }
-
-    if (useJetstream) return;
-    if (!hasCaughtUp.current && natsDialogId) {
-      hasCaughtUp.current = true;
-      try {
-        await catchUpChunks();
-      } catch (error) {
-        log.warn('chat', 'catch-up after NATS subscribe failed', String(error));
-        hasCaughtUp.current = false;
-      }
-    }
-  }, [useJetstream, natsDialogId, catchUpChunks]);
-
   // JetStream may redeliver an already-applied streamSeq during reconnect; drop dupes.
   const lastAppliedStreamSeqRef = useRef<number>(-1);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: dialog change is the reset trigger
   useEffect(() => {
-    if (!useJetstream) return;
     lastAppliedStreamSeqRef.current = -1;
-  }, [useJetstream, natsDialogId]);
+    hasAppliedChunkRef.current = false;
+  }, [natsDialogId]);
+
+  // Wall-clock time of the last applied chunk, for the stall watchdog below.
+  const lastChunkAtRef = useRef<number>(Date.now());
+  const [isStalled, setIsStalled] = useState(false);
+
+  const hasAppliedChunkRef = useRef(false);
 
   const handleJetStreamEvent = useCallback(
     (payload: unknown) => {
@@ -421,6 +390,12 @@ export function useChat({
         if (chunk.streamSeq <= lastAppliedStreamSeqRef.current) return;
         lastAppliedStreamSeqRef.current = chunk.streamSeq;
       }
+      if (!hasAppliedChunkRef.current) {
+        hasAppliedChunkRef.current = true;
+        log.info('nats:chat', 'first chunk applied', { streamSeq: chunk.streamSeq });
+      }
+      lastChunkAtRef.current = Date.now();
+      setIsStalled(false);
       processRealtimeChunk(overrideToolTitle(chunk));
     },
     [processRealtimeChunk],
@@ -433,24 +408,21 @@ export function useChat({
     }
   }, []);
 
-  const topics = useMemo((): NatsMessageType[] => ['message'], []);
-
-  const { isSubscribed: legacyIsSubscribed, reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
-    enabled: useNats && !useJetstream && !!natsDialogId,
-    dialogId: natsDialogId,
-    topics,
-    onEvent: handleNatsEvent,
-    onSubscribed: handleNatsSubscribed,
-    onBeforeReconnect,
-    getNatsWsUrl: getWsUrl,
-    clientConfig: CHAT_NATS_CLIENT_CONFIG,
-  });
-
   const isInitialOptStartSeqReady = !isResumedDialog || isHistoryFetched;
 
-  const { isSubscribed: jetstreamIsSubscribed } = useJetStreamDialogSubscription({
-    enabled: useNats && useJetstream && !!natsDialogId && isInitialOptStartSeqReady,
-    dialogId: natsDialogId,
+  // Tauri path: Rust owns the JetStream consumer, webview consumes via IPC.
+  const { isSubscribed: tauriIsSubscribed } = useTauriDialogSubscription({
+    enabled: isTauri && useNats && !!natsDialogId && isInitialOptStartSeqReady,
+    dialogId: isTauri ? natsDialogId : null,
+    optStartSeq: initialOptStartSeq,
+    onEvent: handleJetStreamEvent,
+    onSubscribed: handleJetStreamSubscribed,
+  });
+
+  // Vite-only fallback: legacy WS-based JetStream hook from the core lib.
+  const { isSubscribed: wsIsSubscribed } = useJetStreamDialogSubscription({
+    enabled: !isTauri && useNats && !!natsDialogId && isInitialOptStartSeqReady,
+    dialogId: !isTauri ? natsDialogId : null,
     streamName: CHAT_CHUNKS_STREAM,
     topic: 'message',
     optStartSeq: initialOptStartSeq,
@@ -461,17 +433,36 @@ export function useChat({
     clientConfig: CHAT_NATS_CLIENT_CONFIG,
   });
 
-  const isSubscribed = useJetstream ? jetstreamIsSubscribed : legacyIsSubscribed;
+  const isSubscribed = isTauri ? tauriIsSubscribed : wsIsSubscribed;
 
+  // Stall watchdog: while streaming and visible, surface `isStalled` if no
+  // chunks have arrived for 30s. Hidden tabs suppress the timer because the
+  // IPC queue still drains; chunks resume on focus.
   useEffect(() => {
-    if (useJetstream) return;
-    if (legacyReconnectionCount > 0 && natsDialogId) {
-      log.info('nats:chat', `reconnected (count: ${legacyReconnectionCount}) — catching up missed messages`);
-      resetAndCatchUp().catch((error: unknown) => {
-        log.error('nats:chat', 'failed to catch up after reconnection', String(error));
-      });
+    if (!natsStreaming) {
+      setIsStalled(false);
+      return;
     }
-  }, [useJetstream, legacyReconnectionCount, natsDialogId, resetAndCatchUp]);
+    lastChunkAtRef.current = Date.now();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        lastChunkAtRef.current = Date.now();
+        setIsStalled(false);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastChunkAtRef.current > 30_000) {
+        log.warn('nats:chat', 'stream stalled — no chunks for 30s');
+        setIsStalled(true);
+      }
+    }, 5_000);
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [natsStreaming]);
 
   const waitForNatsSubscription = useCallback(
     async (expectedDialogId: string): Promise<void> => {
@@ -606,6 +597,17 @@ export function useChat({
     [sendMessage],
   );
 
+  // Settle any pending waitForNatsSubscription before switching views: its
+  // 30s timeout rejects whatever the ref points to *at firing time*, so an
+  // abandoned wait would kill a fresh one and surface a stale
+  // "Subscription timeout" in the new view.
+  const cancelSubscriptionWait = useCallback(() => {
+    if (subscriptionPromiseRef.current) {
+      subscriptionPromiseRef.current.reject(new Error(SUBSCRIPTION_WAIT_CANCELLED));
+      subscriptionPromiseRef.current = null;
+    }
+  }, []);
+
   const clearMessages = useCallback(() => {
     messages.clearMessages();
     setIsTyping(false);
@@ -614,18 +616,13 @@ export function useChat({
     setNatsDialogId(null);
     setIsResumedDialog(false);
     setIsTicketPreview(false);
-    hasCaughtUp.current = false;
     escalatedApprovalsRef.current.clear();
     approvals.clearApprovals();
-    resetChunkTracking();
     resetChunkProcessor();
     resetDialogMessages();
     apiServiceRef.current?.reset();
-    if (subscriptionPromiseRef.current) {
-      subscriptionPromiseRef.current.reject(new Error('Chat cleared'));
-      subscriptionPromiseRef.current = null;
-    }
-  }, [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages]);
+    cancelSubscriptionWait();
+  }, [messages, approvals, resetChunkProcessor, resetDialogMessages, cancelSubscriptionWait]);
 
   const showTicketPreview = useCallback(
     (ticket: { title: string; description?: string }) => {
@@ -636,13 +633,12 @@ export function useChat({
       setNatsDialogId(null);
       setIsResumedDialog(false);
       setIsTicketPreview(true);
-      hasCaughtUp.current = false;
       escalatedApprovalsRef.current.clear();
       approvals.clearApprovals();
-      resetChunkTracking();
       resetChunkProcessor();
       resetDialogMessages();
       apiServiceRef.current?.reset();
+      cancelSubscriptionWait();
 
       const content = [
         'Your request has been received. We will contact you shortly.',
@@ -657,20 +653,29 @@ export function useChat({
       const syntheticMessage: Message = {
         id: `ticket-preview-${Date.now()}`,
         role: 'assistant',
-        name: 'Fae',
+        name: assistantName ?? 'Fae',
         content,
         timestamp: new Date(),
-        avatar: faeAvatar,
+        avatar: assistantAvatar,
       };
 
       messages.addMessage(syntheticMessage);
     },
-    [messages, approvals, resetChunkTracking, resetChunkProcessor, resetDialogMessages],
+    [
+      messages,
+      approvals,
+      resetChunkProcessor,
+      resetDialogMessages,
+      assistantName,
+      assistantAvatar,
+      cancelSubscriptionWait,
+    ],
   );
 
   const resumeDialog = useCallback(
     async (dialogId: string): Promise<boolean> => {
       try {
+        cancelSubscriptionWait();
         setError(null);
         messages.clearMessages();
         setIsTyping(false);
@@ -690,19 +695,24 @@ export function useChat({
 
         return true;
       } catch (error) {
+        // A newer view switch cancelled this resume — its state is no longer
+        // ours to clobber.
+        if (error instanceof Error && error.message === SUBSCRIPTION_WAIT_CANCELLED) {
+          return false;
+        }
         setError(error instanceof Error ? error.message : 'Failed to resume dialog');
         setIsResumedDialog(false);
-        hasCaughtUp.current = false;
         return false;
       }
     },
-    [messages, approvals, waitForNatsSubscription],
+    [messages, approvals, waitForNatsSubscription, cancelSubscriptionWait],
   );
 
   return {
     messages: allMessages,
     isTyping,
     isStreaming: natsStreaming,
+    isStalled,
     isCompacting,
     error,
     dialogId: natsDialogId,
@@ -713,6 +723,7 @@ export function useChat({
     resumeDialog,
     showTicketPreview,
     quickActions,
+    isSettingsLoading,
     hasMessages: allMessages.length > 0,
     isTicketPreview,
     awaitingTechnicianResponse: approvals.awaitingTechnicianResponse,

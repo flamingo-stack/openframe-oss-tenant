@@ -30,7 +30,7 @@ impl MachineHeartbeatPublisher {
     }
 
     pub async fn publish_heartbeat(&self) -> Result<()> {
-        let machine_id = self.config_service.get_machine_id().await?;
+        let machine_id = self.config_service.get_machine_id()?;
 
         let heartbeat_message = MachineHeartbeatMessage::new();
         let message_json = serde_json::to_string(&heartbeat_message)?;

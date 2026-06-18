@@ -64,7 +64,7 @@ impl CommandExecutionListener {
             }
         };
 
-        let machine_id = match self.config_service.get_machine_id().await {
+        let machine_id = match self.config_service.get_machine_id() {
             Ok(id) => id,
             Err(e) => return ListenOutcome::FatalError(format!("Failed to get machine ID: {}", e)),
         };

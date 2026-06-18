@@ -59,6 +59,23 @@ interface TicketNode {
   assignedName?: string;
   assigneeImage?: { imageUrl: string; hash?: string };
   labels?: Array<{ id: string; key: string; color?: string }>;
+  pendingApproval?: {
+    id: string;
+    approvalType?: string;
+    command?: string;
+    explanation?: string;
+    createdAt?: string;
+    toolCalls?: Array<{
+      toolExecutionRequestId: string;
+      toolName: string;
+      toolTitle?: string;
+      toolExplanation?: string;
+      toolType?: string;
+      requiresApproval: boolean;
+      approvalType?: string | null;
+      toolCallArguments?: Record<string, any> | null;
+    }>;
+  } | null;
   notes?: Array<{
     id: string;
     ticketId: string;
@@ -178,6 +195,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     assigneeImageUrl: ticket.assigneeImage?.imageUrl,
     assigneeImageHash: ticket.assigneeImage?.hash,
     labels: ticket.labels,
+    pendingApproval: ticket.pendingApproval ?? undefined,
     attachments: ticket.attachments,
     tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
     notes: ticket.notes?.map(note => ({

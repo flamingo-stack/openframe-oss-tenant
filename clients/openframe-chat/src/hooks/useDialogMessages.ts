@@ -6,10 +6,10 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { dialogGraphQlService } from '../services/dialogGraphQLService';
 import { applyToolTitleToMessage } from '../utils/applyToolTitle';
+import { useAssistantBranding } from './useAssistantBranding';
 
 interface UseDialogMessagesOptions {
   enabled?: boolean;
@@ -21,9 +21,10 @@ interface UseDialogMessagesOptions {
 export function useDialogMessages(dialogId: string | null, options: UseDialogMessagesOptions = {}) {
   const queryClient = useQueryClient();
   const { flags } = useFeatureFlags();
+  const { assistantName, assistantAvatar } = useAssistantBranding();
   const { onApprove, onReject, approvalStatuses } = options;
 
-  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage } = useInfiniteQuery({
+  const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
       const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
@@ -56,6 +57,18 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     return max;
   }, [data?.pages]);
 
+  // Raw persisted (Mongo) ids across all fetched pages — passed to
+  // mergeHistoryWithRealtime so synthetics that have been adopted under a
+  // persisted id are deduped too.
+  const rawHistoryIds = useMemo(() => {
+    const idSet = new Set<string>();
+    if (!data?.pages) return idSet;
+    for (const page of data.pages) {
+      for (const edge of page.edges) idSet.add(edge.node.id);
+    }
+    return idSet;
+  }, [data?.pages]);
+
   const { historicalMessages, escalatedApprovals } = useMemo(() => {
     if (!data?.pages) {
       return {
@@ -80,13 +93,14 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
       onApprove,
       onReject,
       approvalStatuses,
-      assistantAvatar: faeAvatar,
+      assistantName: assistantName ?? 'Fae',
+      assistantAvatar,
       displayApprovalTypes: ['CLIENT'],
       batchApprovalsEnabled: flags['batch-approval'],
     });
 
     return { historicalMessages: result.messages, escalatedApprovals: result.escalatedApprovals };
-  }, [data?.pages, onApprove, onReject, approvalStatuses, flags]);
+  }, [data?.pages, onApprove, onReject, approvalStatuses, flags, assistantName, assistantAvatar]);
 
   const reset = useCallback(() => {
     queryClient.removeQueries({ queryKey: ['dialog-messages'] });
@@ -101,6 +115,8 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
     fetchNextPage,
     escalatedApprovals,
     initialOptStartSeq,
+    rawHistoryIds,
+    dataUpdatedAt,
     reset,
   };
 }

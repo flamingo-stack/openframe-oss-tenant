@@ -312,10 +312,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTyping(dialogId, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(dialogId, segments);
+          appendSegmentsToLastAssistant(dialogId, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(dialogId, segments);
+          updateStreamingMessageSegments(dialogId, segments, metadata?.streamSeq);
         }
       },
 
@@ -330,9 +330,14 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTokenUsage(dialogId, data);
       },
 
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
-          updateApprovalStatusInMessages(dialogId, requestId, status);
+          updateApprovalStatusInMessages(dialogId, requestId, status, resolvedByName);
         }
       },
 

@@ -7,7 +7,7 @@ import {
   type ToolExecutionSegment,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useRef, useState } from 'react';
-import faeAvatar from '../assets/fae-avatar.png';
+import { useAssistantBranding } from './useAssistantBranding';
 
 interface UseChatMessagesOptions {
   onApprove?: (requestId?: string) => Promise<void> | void;
@@ -15,6 +15,7 @@ interface UseChatMessagesOptions {
 }
 
 export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions = {}) {
+  const { assistantName, assistantAvatar } = useAssistantBranding();
   const [messages, setMessages] = useState<Message[]>([]);
   const segmentAccumulator = useRef(createMessageSegmentAccumulator({ onApprove, onReject })).current;
 
@@ -22,7 +23,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
     setMessages(prev => [...prev, message]);
   }, []);
 
-  const updateLastAssistantMessage = useCallback((segments: MessageSegment[]) => {
+  const updateLastAssistantMessage = useCallback((segments: MessageSegment[], streamSeq?: number) => {
     setMessages(prev => {
       const newMessages = [...prev];
       const lastMessage = newMessages[newMessages.length - 1];
@@ -30,6 +31,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
         newMessages[newMessages.length - 1] = {
           ...lastMessage,
           content: segments.length > 0 ? segments : '',
+          streamSeq: streamSeq != null ? Math.max(lastMessage.streamSeq ?? 0, streamSeq) : lastMessage.streamSeq,
         };
       }
       return newMessages;
@@ -44,36 +46,39 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        name: 'Fae',
+        name: assistantName ?? 'Fae',
         content: [],
         timestamp: new Date(),
-        avatar: faeAvatar,
+        avatar: assistantAvatar,
       };
       return [...prev, assistantMessage];
     });
-  }, []);
+  }, [assistantName, assistantAvatar]);
 
-  const addErrorMessage = useCallback((errorText: string) => {
-    const errorMessage: Message = {
-      id: `error-${Date.now()}`,
-      role: 'error',
-      name: 'Fae',
-      timestamp: new Date(),
-      avatar: faeAvatar,
-      content: errorText,
-    };
+  const addErrorMessage = useCallback(
+    (errorText: string) => {
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'error',
+        name: assistantName ?? 'Fae',
+        timestamp: new Date(),
+        avatar: assistantAvatar,
+        content: errorText,
+      };
 
-    setMessages(prev => {
-      const lastMessage = prev[prev.length - 1];
-      if (
-        lastMessage?.role === 'assistant' &&
-        (lastMessage.content === '' || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
-      ) {
-        return [...prev.slice(0, -1), errorMessage];
-      }
-      return [...prev, errorMessage];
-    });
-  }, []);
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (
+          lastMessage?.role === 'assistant' &&
+          (lastMessage.content === '' || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
+        ) {
+          return [...prev.slice(0, -1), errorMessage];
+        }
+        return [...prev, errorMessage];
+      });
+    },
+    [assistantName, assistantAvatar],
+  );
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -103,7 +108,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   }, [segmentAccumulator]);
 
   const appendSegmentsToLastAssistant = useCallback(
-    (segments: MessageSegment[]) => {
+    (segments: MessageSegment[], streamSeq?: number) => {
       const incomingCompaction = [...segments]
         .reverse()
         .find((s): s is Extract<MessageSegment, { type: 'context_compaction' }> => s.type === 'context_compaction');
@@ -132,7 +137,11 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
               nextContent = segmentAccumulator.replaySegments([...existing, ...segments]);
             }
 
-            newMessages[i] = { ...newMessages[i], content: nextContent };
+            newMessages[i] = {
+              ...newMessages[i],
+              content: nextContent,
+              streamSeq: streamSeq != null ? Math.max(newMessages[i].streamSeq ?? 0, streamSeq) : newMessages[i].streamSeq,
+            };
             return newMessages;
           }
         }
@@ -143,9 +152,9 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
   );
 
   const updateSegments = useCallback(
-    (segments: MessageSegment[]) => {
+    (segments: MessageSegment[], streamSeq?: number) => {
       const processed = segmentAccumulator.replaySegments(segments);
-      updateLastAssistantMessage(processed);
+      updateLastAssistantMessage(processed, streamSeq);
     },
     [segmentAccumulator, updateLastAssistantMessage],
   );

@@ -166,6 +166,13 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         ticketActionUrl: content('/api/chat/agent/ticket-action'),
         listEngagementsUrl: content('/api/chat/agent/list-engagements'),
         commandsUrl: content('/api/docs/commands'),
+        // Per-platform empty-state config (greeting + try-asking quick-action
+        // chips + RAG-source filter), admin-edited in MPH's `/admin/chat-config`.
+        // Same-origin relative `/content/*` path (see `commandsUrl`), proxied to
+        // MPH. The lib fetches it at runtime because, as a cross-origin embedder,
+        // we have no SSR hop to inject these as props the way MPH's in-app chat
+        // does. Drives `emptyStateGreeting` + the Guide/Mingo quick-action chips.
+        emptyStateUrl: content('/api/docs/empty-state'),
         // Fetch-mode entity cards (blog, roadmap, case study, release,
         // podcast/webinar/event, …) expand their `[card://<type>:<id>]`
         // markers by GETting the type's list endpoint. The lib owns the

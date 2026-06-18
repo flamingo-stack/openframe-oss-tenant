@@ -1,26 +1,20 @@
-import { ChatQuickAction, type ChatTicketItemData, ChatTicketList } from '@flamingo-stack/openframe-frontend-core';
+import { type ChatTicketItemData, ChatTicketList } from '@flamingo-stack/openframe-frontend-core';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { QuickAction } from '../hooks/useChatConfig';
+import { useDocumentTheme } from '../hooks/useDocumentTheme';
 
 interface ChatInitialScreenProps {
   tickets: ChatTicketItemData[];
   onTicketClick: (ticketId: string) => void | Promise<void>;
-  quickActions: QuickAction[];
-  onQuickAction: (text: string) => void;
-  isDisconnected: boolean;
+  /** While true, show skeleton ticket rows instead of the loaded list. */
+  isLoadingTickets?: boolean;
 }
 
-export function ChatInitialScreen({
-  tickets,
-  onTicketClick,
-  quickActions,
-  onQuickAction,
-  isDisconnected,
-}: ChatInitialScreenProps) {
+export function ChatInitialScreen({ tickets, onTicketClick, isLoadingTickets = false }: ChatInitialScreenProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showBottomFade, setShowBottomFade] = useState(false);
   const [showTopFade, setShowTopFade] = useState(false);
+  const isLightTheme = useDocumentTheme() === 'light';
 
   const updateScrollState = useCallback(() => {
     const el = scrollRef.current;
@@ -47,25 +41,6 @@ export function ChatInitialScreen({
     };
   }, [updateScrollState]);
 
-  const quickHelp = quickActions.length > 0 && (
-    <div className="w-full max-w-ods-content-narrow">
-      <h3 className="text-xs uppercase tracking-wider text-ods-text-secondary mb-[var(--spacing-system-sf)]">
-        Quick Help
-      </h3>
-      <div className="space-y-[var(--spacing-system-xxs)]">
-        {quickActions.map(action => (
-          <ChatQuickAction
-            className="bg-ods-card"
-            key={action.id}
-            text={action.text}
-            onAction={onQuickAction}
-            disabled={isDisconnected}
-          />
-        ))}
-      </div>
-    </div>
-  );
-
   const hasTickets = tickets.length > 0;
 
   return (
@@ -77,37 +52,43 @@ export function ChatInitialScreen({
             <p className="text-h4 text-ods-text-secondary">Describe what's happening and I'll take a look.</p>
           </div>
 
-          {hasTickets ? (
-            <ChatTicketList
-              className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
-              tickets={tickets}
-              onTicketClick={onTicketClick}
-            />
+          {isLoadingTickets ? (
+            <ChatTicketList className="w-full max-w-ods-content-narrow" tickets={[]} isLoading skeletonCount={5} />
           ) : (
-            quickHelp
+            hasTickets && (
+              <ChatTicketList
+                className="w-full max-w-ods-content-narrow [&_button:last-child]:border-b-0"
+                tickets={tickets}
+                onTicketClick={onTicketClick}
+              />
+            )
           )}
         </div>
       </div>
-      <div
-        aria-hidden="true"
-        style={{
-          background: 'linear-gradient(180deg, #161616 0%, rgba(22, 22, 22, 0.00) 100%)',
-        }}
-        className={cn(
-          'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
-          showTopFade ? 'opacity-100' : 'opacity-0',
-        )}
-      />
-      <div
-        aria-hidden="true"
-        style={{
-          background: 'linear-gradient(180deg, rgba(22, 22, 22, 0.00) 0%, #161616 100%)',
-        }}
-        className={cn(
-          'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
-          showBottomFade ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {!isLightTheme && (
+        <>
+          <div
+            aria-hidden="true"
+            style={{
+              background: 'linear-gradient(180deg, var(--color-bg) 0%, transparent 100%)',
+            }}
+            className={cn(
+              'pointer-events-none absolute inset-x-0 top-0 h-10 transition-opacity duration-200',
+              showTopFade ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+          <div
+            aria-hidden="true"
+            style={{
+              background: 'linear-gradient(180deg, transparent 0%, var(--color-bg) 100%)',
+            }}
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0 h-10 transition-opacity duration-200',
+              showBottomFade ? 'opacity-100' : 'opacity-0',
+            )}
+          />
+        </>
+      )}
     </div>
   );
 }

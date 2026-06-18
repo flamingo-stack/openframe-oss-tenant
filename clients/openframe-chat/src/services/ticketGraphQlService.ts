@@ -229,31 +229,29 @@ class TicketGraphQlService {
     search?: string;
     lifecycle?: boolean;
   }): Promise<TicketsConnection | null> {
-    try {
-      await tokenService.ensureTokenReady();
+    // Errors propagate to the caller (React Query) so a failed fetch becomes a
+    // rejected query that retries — rather than a swallowed `null` that the
+    // queryFn would cache as a successful empty list.
+    await tokenService.ensureTokenReady();
 
-      const variables: Record<string, unknown> = { lifecycle: params.lifecycle ?? false };
+    const variables: Record<string, unknown> = { lifecycle: params.lifecycle ?? false };
 
-      if (params.statuses?.length) {
-        variables.filter = { statuses: params.statuses };
-      }
-
-      const pagination: Record<string, unknown> = { limit: params.limit ?? 20 };
-      if (params.cursor) {
-        pagination.cursor = params.cursor;
-      }
-      variables.pagination = pagination;
-
-      if (params.search) {
-        variables.search = params.search;
-      }
-
-      const data = await this.request<{ tickets: TicketsConnection }>(GET_TICKETS_QUERY, variables);
-      return data.tickets || null;
-    } catch (error) {
-      console.error('Failed to fetch tickets:', error);
-      return null;
+    if (params.statuses?.length) {
+      variables.filter = { statuses: params.statuses };
     }
+
+    const pagination: Record<string, unknown> = { limit: params.limit ?? 20 };
+    if (params.cursor) {
+      pagination.cursor = params.cursor;
+    }
+    variables.pagination = pagination;
+
+    if (params.search) {
+      variables.search = params.search;
+    }
+
+    const data = await this.request<{ tickets: TicketsConnection }>(GET_TICKETS_QUERY, variables);
+    return data.tickets || null;
   }
 
   async getTicket(id: string, lifecycle = false): Promise<TicketNode | null> {

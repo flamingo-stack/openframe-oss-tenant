@@ -351,7 +351,7 @@ impl ToolAgentUpdateService {
 
     async fn publish_installed_agent_message(&self, id: &str, version: &str) {
         info!(id = %id, "Publishing installed agent message");
-        match self.config_service.get_machine_id().await {
+        match self.config_service.get_machine_id() {
             Ok(machine_id) => {
                 if let Err(e) = self.installed_agent_publisher
                     .publish(machine_id, id.to_string(), version.to_string())
@@ -385,6 +385,11 @@ impl ToolAgentUpdateService {
                 tool_agent_id, &command_path, &launch_args,
             ) {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to register GuiApp autorun");
+            }
+            if let Err(e) =
+                crate::utils::windows_helpers::write_app_config(tool_agent_id, &launch_args)
+            {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
             }
         }
     }

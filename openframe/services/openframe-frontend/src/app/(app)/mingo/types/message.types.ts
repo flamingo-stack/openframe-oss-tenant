@@ -1,4 +1,5 @@
 import type { AssistantType, AuthorType, MessageContent } from '@flamingo-stack/openframe-frontend-core';
+import type { ChatContextItem } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import type { ChatType, OwnerType } from '../../tickets/constants';
 
 export interface GraphQlMessage {
@@ -24,6 +25,12 @@ export interface CoreMessage {
   assistantType?: AssistantType;
   timestamp?: Date;
   avatar?: string | null;
+  /** Highest content chunk streamSeq that composed this message; stamped on
+   *  realtime synthetics for per-message history-coverage dedup. */
+  streamSeq?: number;
+  /** Entity-context items attached to this (user) message via the composer's
+   *  context picker. Rendered as read-only chips under the bubble. */
+  contextItems?: ChatContextItem[];
 }
 
 export type Message = CoreMessage;

@@ -400,6 +400,23 @@ const BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT = `
       key
       color
     }
+    pendingApproval {
+      id
+      approvalType
+      command
+      explanation
+      createdAt
+      toolCalls {
+        toolExecutionRequestId
+        toolName
+        toolTitle
+        toolExplanation
+        toolType
+        requiresApproval
+        approvalType
+        toolCallArguments
+      }
+    }
     createdAt
     updatedAt
     resolvedAt

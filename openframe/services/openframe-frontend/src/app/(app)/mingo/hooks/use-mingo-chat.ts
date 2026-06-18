@@ -1,6 +1,7 @@
 'use client';
 
 import { AuthorType, type MessageSegment } from '@flamingo-stack/openframe-frontend-core';
+import type { ChatContextItem } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useRef } from 'react';
@@ -15,11 +16,22 @@ import {
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { CoreMessage } from '../types/message.types';
 
+/** Context attached to an outgoing message: the picker selection plus the
+ *  current navigation context (resolved by the caller from the context store).
+ *  `openView`/`recentViews` carry the minimal `{ type, id }` wire shape. */
+export interface MingoSendContext {
+  contextItems?: ChatContextItem[];
+  openView?: { type: string; id: string } | null;
+  recentViews?: Array<{ type: string; id: string }>;
+}
+
 interface ProcessedMessage {
   id: string;
   content: string | MessageSegment[];
   role: 'user' | 'assistant' | 'error';
   name: string;
+  /** Entity-context chips for user bubbles (optimistic send only). */
+  contextItems?: ChatContextItem[];
   /** Author avatar, resolved to a full/absolute URL (relative `imageUrl`s from
    *  GraphQL/the auth store are prefixed via `getFullImageUrl`). */
   avatar?: string | null;
@@ -35,7 +47,7 @@ interface UseMingoChat {
 
   // Actions
   createDialog: () => Promise<string | null>;
-  sendMessage: (content: string, targetDialogId?: string) => Promise<boolean>;
+  sendMessage: (content: string, targetDialogId?: string, context?: MingoSendContext) => Promise<boolean>;
   stopGeneration: () => Promise<void>;
 
   // Approval system
@@ -71,6 +83,9 @@ function isSameProcessedMessage(a: ProcessedMessage, b: ProcessedMessage): boole
     a.authorType === b.authorType &&
     a.assistantType === b.assistantType &&
     a.timestamp.getTime() === b.timestamp.getTime() &&
+    // Reference equality — contextItems is set once on the optimistic send and
+    // never mutated, so a stable reference means the chips are unchanged.
+    a.contextItems === b.contextItems &&
     isContentEqual(a.content, b.content)
   );
 }
@@ -166,6 +181,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
         avatar: getFullImageUrl(msg.avatar) ?? null,
         assistantType: msg.assistantType as 'fae' | 'mingo' | undefined,
         timestamp: msg.timestamp || new Date(),
+        contextItems: msg.contextItems,
       });
     }
 
@@ -241,7 +257,7 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
   }, [isCreatingDialog, setCreatingDialog, createDialogMutation, queryClient]);
 
   const sendMessage = useCallback(
-    async (content: string, targetDialogId?: string): Promise<boolean> => {
+    async (content: string, targetDialogId?: string, context?: MingoSendContext): Promise<boolean> => {
       const effectiveDialogId = targetDialogId || dialogId;
       if (!effectiveDialogId || !content.trim()) return false;
       if (isTyping) return false;
@@ -268,10 +284,20 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
           // Relative `imageUrl` with cache-bust hash; resolved to a full URL in the processed mapping.
           avatar: appendImageHash(user?.image?.imageUrl, user?.image?.hash) ?? null,
           timestamp: new Date(),
+          // Attach the picked context so the optimistic bubble renders its chips.
+          contextItems: context?.contextItems?.length ? context.contextItems : undefined,
         };
 
         addMessage(effectiveDialogId, optimisticMessage);
-        await sendMessageMutation.mutateAsync({ dialogId: effectiveDialogId, content: content.trim() });
+        await sendMessageMutation.mutateAsync({
+          dialogId: effectiveDialogId,
+          content: content.trim(),
+          // Strip to the `{ type, id }` wire shape; mutation omits empties.
+          // Internal `openView` maps to the API's `currentView` field.
+          contextItems: context?.contextItems?.map(i => ({ type: i.type, id: i.id })),
+          currentView: context?.openView ?? undefined,
+          recentViews: context?.recentViews,
+        });
 
         return true;
       } catch (error) {

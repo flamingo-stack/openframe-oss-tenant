@@ -260,6 +260,7 @@ export interface NotificationNodeShape {
     readonly ticketId?: string | null;
     readonly approvalTicketId?: string | null;
     readonly resolution?: string | null;
+    readonly resolvedByName?: string | null;
     readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
   };
 }
@@ -282,6 +283,7 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
     meta.approvalRequestId = context.approvalRequestId;
     meta.approvalType = context.approvalType ?? null;
     meta.resolution = context.resolution ?? null;
+    meta.resolvedByName = context.resolvedByName ?? null;
     meta.toolCalls = (context.toolCalls ?? []).map(call => ({
       toolExecutionRequestId: call.toolExecutionRequestId,
       toolName: call.toolName,

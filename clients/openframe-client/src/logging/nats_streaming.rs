@@ -301,7 +301,7 @@ async fn log_streaming_loop(
             continue;
         }
 
-        let machine_id = agent_config_service.get_machine_id().await.ok();
+        let machine_id = agent_config_service.get_machine_id().ok();
 
         let batch = LogBatchMessage {
             machine_id,
