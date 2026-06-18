@@ -23,7 +23,6 @@ export interface UiCustomerEntry {
   organizationId: string;
   name: string;
   email: string;
-  tier: string;
   deviceCount: number | null;
   numberOfEmployees: number;
   lastActivityDate: string;
@@ -56,7 +55,6 @@ export function transformCustomerToEntry(org: Customer, deviceCount: number | nu
     organizationId: org.organizationId,
     name: org.name,
     email: org.contact.email,
-    tier: org.tier,
     deviceCount,
     numberOfEmployees: org.numberOfEmployees,
     lastActivityDate: new Date(org.lastActivity).toLocaleString(),
@@ -72,12 +70,6 @@ export const CUSTOMERS_COLUMNS: ColumnDef<UiCustomerEntry>[] = [
     header: 'Name',
     cell: ({ row }: { row: Row<UiCustomerEntry> }) => <CustomerNameCell org={row.original} />,
     meta: { width: 'flex-1 min-w-0' },
-  },
-  {
-    accessorKey: 'tier',
-    header: 'Tier',
-    cell: ({ row }: { row: Row<UiCustomerEntry> }) => <TruncateText>{row.original.tier}</TruncateText>,
-    meta: { width: 'w-[200px] shrink-0', hideAt: 'md' },
   },
   {
     accessorKey: 'deviceCount',
