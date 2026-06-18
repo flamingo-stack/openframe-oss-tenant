@@ -254,7 +254,7 @@ export function useChat({
       ) => {
         approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data);
       },
-      onDirectMessage: (text: string, metadata?: { ownerType?: string; displayName?: string }) => {
+      onDirectMessage: (text: string, metadata?: { ownerType?: string; displayName?: string; streamSeq?: number }) => {
         if (metadata?.ownerType === 'CLIENT') {
           // Echo of own message in direct mode — resolve the send flow
           setNatsStreaming(false);
@@ -271,13 +271,14 @@ export function useChat({
           authorType: 'admin',
           content: text,
           timestamp: new Date(),
+          streamSeq: metadata?.streamSeq,
         };
         messagesRef.current.addMessage(directMessage);
       },
       onDialogClosed: () => {
         onDialogClosed?.();
       },
-      onSystemMessage: (text: string) => {
+      onSystemMessage: (text: string, metadata?: { streamSeq?: number }) => {
         const systemMessage: Message = {
           id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -285,6 +286,7 @@ export function useChat({
           authorType: 'system',
           content: '',
           timestamp: new Date(),
+          streamSeq: metadata?.streamSeq,
         };
         messagesRef.current.addMessage(systemMessage);
       },

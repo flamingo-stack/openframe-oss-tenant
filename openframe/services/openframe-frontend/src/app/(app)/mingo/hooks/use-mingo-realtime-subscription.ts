@@ -346,7 +346,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         if (execId) updateToolExecutionInMessages(dialogId, execId, segment.data);
       },
 
-      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+      onUserMessage: (
+        text: string,
+        meta?: { ownerType?: string; displayName?: string; userId?: string; streamSeq?: number },
+      ) => {
         if (meta?.userId && meta.userId === currentUserId) return;
         addMessage(dialogId, {
           id: `user-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -356,6 +359,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
           name: meta?.displayName || (meta?.ownerType === 'ADMIN' ? 'Admin' : 'You'),
           avatar: null,
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
 

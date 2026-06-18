@@ -182,7 +182,10 @@ export function useSideChunkProcessor(
           updateToolExecutionInMessages('admin', execId, segment.data);
         }
       },
-      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+      onUserMessage: (
+        text: string,
+        meta?: { ownerType?: string; displayName?: string; userId?: string; streamSeq?: number },
+      ) => {
         if (meta?.userId && meta.userId === currentUserId) return;
 
         const isAdminAuthor = meta?.ownerType === 'ADMIN';
@@ -195,9 +198,10 @@ export function useSideChunkProcessor(
           name,
           authorType: isAdminAuthor ? 'admin' : 'user',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
-      onDirectMessage: (text: string, meta?: { ownerType?: string; displayName?: string }) => {
+      onDirectMessage: (text: string, meta?: { ownerType?: string; displayName?: string; streamSeq?: number }) => {
         const isAdminAuthor = meta?.ownerType === 'ADMIN';
         const name = isAdminAuthor ? meta?.displayName : (userDisplayName ?? meta?.displayName);
 
@@ -208,9 +212,10 @@ export function useSideChunkProcessor(
           name,
           authorType: isAdminAuthor ? 'admin' : 'user',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
-      onSystemMessage: (text: string) => {
+      onSystemMessage: (text: string, meta?: { streamSeq?: number }) => {
         addMessage(side, {
           id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -218,6 +223,7 @@ export function useSideChunkProcessor(
           name: text,
           authorType: 'system',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
       onMetadata,

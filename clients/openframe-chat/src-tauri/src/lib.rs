@@ -53,6 +53,21 @@ fn restore_dock_icon() {
     }
 }
 
+pub(crate) fn activate_main_window(app: &tauri::AppHandle) {
+    let handle = app.clone();
+    let _ = app.run_on_main_thread(move || {
+        #[cfg(target_os = "macos")]
+        {
+            let _ = handle.set_activation_policy(ActivationPolicy::Regular);
+            restore_dock_icon();
+        }
+        if let Some(window) = handle.get_webview_window("main") {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    });
+}
+
 mod config_reader;
 mod nats_bridge;
 mod token_watcher;

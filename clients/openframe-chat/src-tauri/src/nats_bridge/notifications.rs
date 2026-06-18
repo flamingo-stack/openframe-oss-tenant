@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 
 use futures::StreamExt;
 use tauri::{async_runtime, AppHandle, Emitter, Manager};
-use tauri_plugin_notification::NotificationExt;
 
 use super::{current_client, Inner, NatsBridge};
 
@@ -147,36 +146,32 @@ struct ParsedNotification {
     target: Option<NotificationTarget>,
 }
 
-/// Generic, type-agnostic parsing: every envelope on this subject is
-/// user-displayable by contract, so any payload with a `title` fires as-is —
-/// the backend can introduce new notification kinds without a client change.
-/// `None` only for envelopes with no title (not meant for display).
-///
-/// The click target is derived structurally from the context's entity keys
-/// rather than `context.type`, so new kinds carrying a known entity deep-link
-/// for free; unknown entities degrade to focus-the-window.
+/// Generic parsing: every envelope on this subject is user-displayable by
+/// contract, so any payload with a `title` fires as-is. `None` only for
+/// envelopes with no title (not meant for display).
 ///
 /// Envelope shape:
 ///   `{ id, severity, title, description, createdAt, context: { type, .. } }`
 fn parse_notification(payload: &serde_json::Value) -> Option<ParsedNotification> {
     let title = string_field(payload, "title")?;
-    let context = payload.get("context");
-
-    let target = context.and_then(|c| {
-        if let Some(ticket_id) = string_field(c, "ticketId") {
-            Some(NotificationTarget::Ticket { ticket_id })
-        } else {
-            string_field(c, "dialogId").map(|dialog_id| NotificationTarget::Dialog { dialog_id })
-        }
-    });
-
     Some(ParsedNotification {
         title,
         body: string_field(payload, "description")
             .map(|t| truncate_for_notification(&t, 140))
             .unwrap_or_default(),
-        target,
+        target: payload.get("context").and_then(parse_target),
     })
+}
+
+fn parse_target(context: &serde_json::Value) -> Option<NotificationTarget> {
+    let ticket = || string_field(context, "ticketId").map(|ticket_id| NotificationTarget::Ticket { ticket_id });
+    let dialog = || string_field(context, "dialogId").map(|dialog_id| NotificationTarget::Dialog { dialog_id });
+
+    match string_field(context, "type").as_deref() {
+        Some("CLIENT_AI_MESSAGE") => dialog(),
+        Some("ADMIN_MESSAGE_PUBLISHED") | Some("TICKET_STATUS_CHANGED") => ticket(),
+        _ => ticket().or_else(dialog),
+    }
 }
 
 fn string_field(value: &serde_json::Value, key: &str) -> Option<String> {
@@ -222,11 +217,44 @@ fn maybe_notify(inner: &Arc<Inner>, payload: &serde_json::Value) {
     let n = inner.unread_count.fetch_add(1, Ordering::Relaxed) + 1;
     set_badge(inner, n);
 
-    let app = app.clone();
     let ParsedNotification { title, body, .. } = parsed;
+    fire_notification(app.clone(), title, body);
+}
+
+fn fire_notification(app: AppHandle, title: String, body: String) {
     std::thread::spawn(move || {
-        match app.notification().builder().title(&title).body(&body).show() {
-            Ok(()) => tracing::info!("[NATS] notification fired: {title}"),
+        let mut notification = notify_rust::Notification::new();
+        notification.summary(&title);
+        if !body.is_empty() {
+            notification.body(&body);
+        }
+        notification.action("open", "Open");
+
+        #[cfg(target_os = "macos")]
+        {
+            let identifier = if tauri::is_dev() {
+                "com.apple.Terminal".to_string()
+            } else {
+                app.config().identifier.clone()
+            };
+            let _ = notify_rust::set_application(&identifier);
+        }
+        #[cfg(target_os = "windows")]
+        if !tauri::is_dev() {
+            notification.app_id(&app.config().identifier);
+        }
+
+        match notification.show() {
+            Ok(handle) => {
+                tracing::info!("[NATS] notification fired: {title}");
+                use notify_rust::NotificationResponse;
+                let _ = handle.wait_for_response(|response: &NotificationResponse| {
+                    if !matches!(response, NotificationResponse::Closed(_)) {
+                        tracing::info!("[NATS] notification activated — opening window");
+                        crate::activate_main_window(&app);
+                    }
+                });
+            }
             Err(err) => tracing::warn!("[NATS] notification show failed: {err}"),
         }
     });
