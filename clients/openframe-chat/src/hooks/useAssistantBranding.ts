@@ -13,16 +13,16 @@ export interface AssistantBranding {
    *  the header shows a skeleton while `isLoading`, then either the configured
    *  avatar or the name initials. */
   assistantAvatar: string | undefined;
-  /** True while FaeSettings is still loading - drives the header skeleton so
+  /** True while AiSettings is still loading - drives the header skeleton so
    *  we don't flash initials/avatar before the real value resolves. */
   isLoading: boolean;
 }
 
-/** Assistant identity from FaeSettings. */
+/** Assistant identity from AiSettings. */
 export function useAssistantBranding(): AssistantBranding {
-  const { faeSettings, isSettingsLoading } = useChatConfig();
-  const configuredName = faeSettings?.assistantName?.trim();
-  const avatar = faeSettings?.assistantAvatar;
+  const { aiSettings, isSettingsLoading } = useChatConfig();
+  const configuredName = aiSettings?.assistantName?.trim();
+  const avatar = aiSettings?.assistantAvatar;
 
   const rawAvatarUrl = avatar ? getFullImageUrl(avatar.imageUrl, avatar.hash) : faeAvatar;
   const customAvatarUrl = useAuthenticatedImage(rawAvatarUrl);

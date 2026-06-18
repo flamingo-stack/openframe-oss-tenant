@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export type DocumentTheme = 'light' | 'dark';
 
-// `data-theme` on <html> is the resolved theme (set by useApplyFaeAppearance,
+// `data-theme` on <html> is the resolved theme (set by useApplyAiAppearance,
 // including SYSTEM). Absent attribute means ODS default = dark.
 function readDocumentTheme(): DocumentTheme {
   return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';

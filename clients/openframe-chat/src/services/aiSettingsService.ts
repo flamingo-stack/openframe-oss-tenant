@@ -1,15 +1,22 @@
 import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
 import { tokenService } from './tokenService';
 
-export interface FaeQuickAction {
+/** Which AI agent the settings belong to. The chat client is the customer-facing
+ *  assistant, so it always reads the CLIENT agent's settings. */
+export type AgentType = 'CLIENT' | 'ADMIN';
+
+const CHAT_AGENT_TYPE: AgentType = 'CLIENT';
+
+export interface AiQuickAction {
   id: string;
   name: string;
   instructions: string;
 }
 
-export interface FaeSettingsResponse {
+export interface AiSettingsResponse {
   id: string;
   organizationId: string | null;
+  agentType: AgentType;
   assistantName: string;
   assistantAvatar: { imageUrl: string; hash: string | null } | null;
   llmProvider: string;
@@ -18,17 +25,18 @@ export interface FaeSettingsResponse {
   accentColor: string;
   answerStyle: string | null;
   customPrompt: string | null;
-  quickActions: FaeQuickAction[] | null;
+  quickActions: AiQuickAction[] | null;
   createdAt: string;
   updatedAt: string | null;
 }
 
-// (`faeSettings` on /chat/graphql)
-const FAE_SETTINGS_QUERY = gql`
-  query FaeSettings($organizationId: ID) {
-    faeSettings(organizationId: $organizationId) {
+// (`aiSettings` on /chat/graphql — settings are scoped per agent)
+const AI_SETTINGS_QUERY = gql`
+  query AiSettings($organizationId: ID, $agentType: AgentType!) {
+    aiSettings(organizationId: $organizationId, agentType: $agentType) {
       id
       organizationId
+      agentType
       assistantName
       assistantAvatar {
         imageUrl
@@ -51,7 +59,7 @@ const FAE_SETTINGS_QUERY = gql`
   }
 `;
 
-class FaeSettingsService {
+class AiSettingsService {
   private graphQlClient: GraphQLClient | null = null;
   private currentEndpoint: string | null = null;
 
@@ -92,14 +100,15 @@ class FaeSettingsService {
     return client.request<T>(document, variables);
   }
 
-  /** Returns the FaeSettings record, or `null` when none exists yet. Throws on transport/GraphQL errors. */
-  async fetchFaeSettings(organizationId: string | null = null): Promise<FaeSettingsResponse | null> {
+  /** Returns the CLIENT agent's AiSettings record, or `null` when none exists yet. Throws on transport/GraphQL errors. */
+  async fetchAiSettings(organizationId: string | null = null): Promise<AiSettingsResponse | null> {
     await tokenService.ensureTokenReady();
-    const data = await this.request<{ faeSettings: FaeSettingsResponse | null }>(FAE_SETTINGS_QUERY, {
+    const data = await this.request<{ aiSettings: AiSettingsResponse | null }>(AI_SETTINGS_QUERY, {
       organizationId,
+      agentType: CHAT_AGENT_TYPE,
     });
-    return data.faeSettings ?? null;
+    return data.aiSettings ?? null;
   }
 }
 
-export const faeSettingsService = new FaeSettingsService();
+export const aiSettingsService = new AiSettingsService();

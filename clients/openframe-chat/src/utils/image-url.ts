@@ -28,17 +28,17 @@ export function appendImageHash<T extends string | null | undefined>(imageUrl: T
 }
 
 /**
- * Build the Fae avatar download URL served by the chat backend. The endpoint
- * is public and 302-redirects to a presigned bucket URL, so it can be used
- * directly as an `<img src>`. `hash` is appended as `?v=` for cache-busting.
- * Returns undefined when there is no FaeSettings id.
+ * Build the AI assistant avatar download URL served by the chat backend. The
+ * endpoint is public and 302-redirects to a presigned bucket URL, so it can be
+ * used directly as an `<img src>`. `hash` is appended as `?v=` for
+ * cache-busting. Returns undefined when there is no AiSettings id.
  */
-export function getFaeAvatarUrl(faeSettingsId: string | null | undefined, hash?: string | null): string | undefined {
-  if (!faeSettingsId) {
+export function getAiAvatarUrl(aiSettingsId: string | null | undefined, hash?: string | null): string | undefined {
+  if (!aiSettingsId) {
     return undefined;
   }
   const tenantHost = tokenService.getCurrentApiBaseUrl() ?? '';
-  return appendImageHash(`${tenantHost}/chat/fae-settings/${encodeURIComponent(faeSettingsId)}/image/url`, hash);
+  return appendImageHash(`${tenantHost}/chat/ai-settings/${encodeURIComponent(aiSettingsId)}/image/url`, hash);
 }
 
 function buildFullUrl(imageUrl: string): string {
