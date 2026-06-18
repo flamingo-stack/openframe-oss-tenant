@@ -168,25 +168,38 @@ fn register_app_id() {
     }
 }
 
-/// Points the AUMID at a real icon image. notify-rust ignores per-notification
-/// icons on Windows, so the AUMID's registered `IconUri` is the only logo source
-/// for toasts and the Action Center.
+/// Materializes the embedded app icon to a user-writable path and points the
+/// AUMID's `IconUri` at it. The agent ships only the chat executable — no Tauri
+/// `resources/` on disk — so a bundled-resource path never exists; and
+/// notify-rust ignores per-notification icons on Windows, leaving this registry
+/// icon as the only logo source for toasts and the Action Center.
 #[cfg(target_os = "windows")]
-fn register_notification_icon(icon_path: &std::path::Path) {
+fn register_notification_icon(app: &tauri::AppHandle) {
     use winreg::{enums::*, RegKey};
-    if !icon_path.exists() {
-        log::warn!(
-            "notification icon missing at {} — Windows toasts will show no icon",
-            icon_path.display()
-        );
+
+    const ICON_BYTES: &[u8] = include_bytes!("../icons/128x128.png");
+
+    let icon_dir = match app.path().app_local_data_dir() {
+        Ok(dir) => dir,
+        Err(e) => {
+            log::warn!("notification icon: no app data dir ({e}) — toasts will show no icon");
+            return;
+        }
+    };
+    let icon_path = icon_dir.join("notification-icon.png");
+    // Rewritten each launch so an app update ships a refreshed icon.
+    if let Err(e) =
+        std::fs::create_dir_all(&icon_dir).and_then(|_| std::fs::write(&icon_path, ICON_BYTES))
+    {
+        log::warn!("notification icon: failed to write {} ({e})", icon_path.display());
         return;
     }
+
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     if let Ok((key, _)) =
         hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
     {
-        let icon = icon_path.to_string_lossy().into_owned();
-        let _ = key.set_value("IconUri", &icon);
+        let _ = key.set_value("IconUri", &icon_path.to_string_lossy().into_owned());
         // Some Windows builds only render the registered icon when a background
         // color is present; transparent preserves the PNG's own alpha.
         let _ = key.set_value("IconBackgroundColor", &"#00000000");
@@ -395,10 +408,11 @@ pub fn run() {
                 .unwrap_or_else(|_| std::path::PathBuf::from(""))
                 .join("icons");
 
-            // Windows takes a toast's app logo from the AUMID's registered icon,
-            // so point it at a bundled PNG now that resource_dir is resolved.
+            // Windows takes a toast's app logo from the AUMID's registered icon;
+            // materialize the embedded PNG to disk and register it (the agent
+            // ships no resources/, so resource_dir has no icon file).
             #[cfg(target_os = "windows")]
-            register_notification_icon(&icons_dir.join("128x128.png"));
+            register_notification_icon(app.handle());
 
             #[cfg(target_os = "macos")]
             let primary_tray_path = icons_dir.join("tray-macos44x44.png");
