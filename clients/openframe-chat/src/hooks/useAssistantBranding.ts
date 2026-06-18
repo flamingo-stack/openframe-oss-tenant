@@ -1,4 +1,6 @@
-import { getFaeAvatarUrl } from '../utils/image-url';
+import faeAvatar from '../assets/fae-avatar.png';
+import { getFullImageUrl } from '../utils/image-url';
+import { useAuthenticatedImage } from './useAuthenticatedImage';
 import { useChatConfig } from './useChatConfig';
 
 export interface AssistantBranding {
@@ -22,11 +24,8 @@ export function useAssistantBranding(): AssistantBranding {
   const configuredName = faeSettings?.assistantName?.trim();
   const avatar = faeSettings?.assistantAvatar;
 
-  // Configured avatar lives behind a public redirect endpoint keyed by the
-  // FaeSettings id; only build it when an avatar is actually configured.
-  // When absent (no avatar configured or an error), stay `undefined` so the
-  // consumer renders the name initials rather than a bundled default.
-  const customAvatarUrl = avatar ? getFaeAvatarUrl(faeSettings?.id, avatar.hash) : undefined;
+  const rawAvatarUrl = avatar ? getFullImageUrl(avatar.imageUrl, avatar.hash) : faeAvatar;
+  const customAvatarUrl = useAuthenticatedImage(rawAvatarUrl);
 
   return {
     assistantName: configuredName || undefined,
