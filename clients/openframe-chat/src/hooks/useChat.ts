@@ -508,7 +508,7 @@ export function useChat({
   }, []);
 
   const sendMessage = useCallback(
-    (text: string): Promise<boolean> => {
+    async (text: string) => {
       setError(null);
 
       // Sending a message while an approval is pending is an interrupt —
@@ -535,61 +535,39 @@ export function useChat({
       setNatsStreaming(true);
       messages.resetCurrentMessageSegments();
 
-      // ChatInput clears the draft when this promise resolves (false keeps
-      // it for retry), so resolve at backend acceptance — not after the full
-      // response streamed, which would hold the typed text in the disabled
-      // input for the whole generation.
-      let resolveAccepted!: (accepted: boolean) => void;
-      const accepted = new Promise<boolean>(resolve => {
-        resolveAccepted = resolve;
-      });
-
-      void (async () => {
-        try {
-          if (!useNats) {
-            throw new Error('NATS is required for incoming messages (SSE removed)');
-          }
-
-          const api = apiServiceRef.current;
-          if (!api) throw new Error('API service not initialized');
-
-          const dialogId = natsDialogId || (await api.createDialog());
-          if (dialogId !== natsDialogId) {
-            setNatsDialogId(dialogId);
-          }
-
-          await waitForNatsSubscription(dialogId);
-
-          const waitForNatsDone = new Promise<void>(resolve => {
-            natsDoneResolverRef.current = resolve;
-          });
-
-          await api.sendMessage({ dialogId, content: text, chatType: 'CLIENT_CHAT' });
-          log.info('chat', 'message accepted by backend', { dialogId });
-          resolveAccepted(true);
-
-          await waitForNatsDone;
-          log.info('chat', 'stream done resolved', { dialogId });
-        } catch (err) {
-          resolveAccepted(false);
-          const errorText = err instanceof Error ? err.message : String(err);
-          if (errorText === SUBSCRIPTION_WAIT_CANCELLED) {
-            log.info('chat', 'send cancelled — view switched while waiting for subscription');
-          } else {
-            log.error('chat', `sendMessage failed: ${errorText}`);
-            if (!errorText.toLowerCase().includes('network error')) {
-              setError(errorText);
-              messages.addErrorMessage(errorText);
-            }
-          }
-        } finally {
-          setIsTyping(false);
-          setNatsStreaming(false);
-          natsDoneResolverRef.current = null;
+      try {
+        if (!useNats) {
+          throw new Error('NATS is required for incoming messages (SSE removed)');
         }
-      })();
 
-      return accepted;
+        const api = apiServiceRef.current;
+        if (!api) throw new Error('API service not initialized');
+
+        const dialogId = natsDialogId || (await api.createDialog());
+        if (dialogId !== natsDialogId) {
+          setNatsDialogId(dialogId);
+        }
+
+        await waitForNatsSubscription(dialogId);
+
+        const waitForNatsDone = new Promise<void>(resolve => {
+          natsDoneResolverRef.current = resolve;
+        });
+
+        await api.sendMessage({ dialogId, content: text, chatType: 'CLIENT_CHAT' });
+
+        await waitForNatsDone;
+      } catch (err) {
+        const errorText = err instanceof Error ? err.message : String(err);
+        if (!errorText.toLowerCase().includes('network error')) {
+          setError(errorText);
+          messages.addErrorMessage(errorText);
+        }
+      } finally {
+        setIsTyping(false);
+        setNatsStreaming(false);
+        natsDoneResolverRef.current = null;
+      }
     },
     [messages, useNats, natsDialogId, waitForNatsSubscription],
   );
