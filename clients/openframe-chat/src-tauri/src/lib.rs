@@ -162,10 +162,34 @@ fn register_app_id() {
         hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
     {
         let _ = key.set_value("DisplayName", &"OpenFrame Chat");
-        if let Ok(exe) = std::env::current_exe() {
-            let icon = exe.to_string_lossy().into_owned();
-            let _ = key.set_value("IconUri", &icon.as_str());
-        }
+        // IconUri is written later from setup() once resource_dir() resolves to
+        // a real PNG (see register_notification_icon). The exe path that used to
+        // go here doesn't render as a toast logo.
+    }
+}
+
+/// Points the AUMID at a real icon image. notify-rust ignores per-notification
+/// icons on Windows, so the AUMID's registered `IconUri` is the only logo source
+/// for toasts and the Action Center.
+#[cfg(target_os = "windows")]
+fn register_notification_icon(icon_path: &std::path::Path) {
+    use winreg::{enums::*, RegKey};
+    if !icon_path.exists() {
+        log::warn!(
+            "notification icon missing at {} — Windows toasts will show no icon",
+            icon_path.display()
+        );
+        return;
+    }
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    if let Ok((key, _)) =
+        hkcu.create_subkey(r"Software\Classes\AppUserModelId\com.openframe.chat")
+    {
+        let icon = icon_path.to_string_lossy().into_owned();
+        let _ = key.set_value("IconUri", &icon);
+        // Some Windows builds only render the registered icon when a background
+        // color is present; transparent preserves the PNG's own alpha.
+        let _ = key.set_value("IconBackgroundColor", &"#00000000");
     }
 }
 
@@ -370,6 +394,11 @@ pub fn run() {
             let icons_dir = app.path().resource_dir()
                 .unwrap_or_else(|_| std::path::PathBuf::from(""))
                 .join("icons");
+
+            // Windows takes a toast's app logo from the AUMID's registered icon,
+            // so point it at a bundled PNG now that resource_dir is resolved.
+            #[cfg(target_os = "windows")]
+            register_notification_icon(&icons_dir.join("128x128.png"));
 
             #[cfg(target_os = "macos")]
             let primary_tray_path = icons_dir.join("tray-macos44x44.png");

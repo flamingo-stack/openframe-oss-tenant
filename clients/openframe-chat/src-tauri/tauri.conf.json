@@ -43,7 +43,8 @@
       "icons/tray-windows32x32.png",
       "icons/tray-windows16x16.png",
       "icons/tray-macos22x22.png",
-      "icons/tray-macos44x44.png"
+      "icons/tray-macos44x44.png",
+      "icons/128x128.png"
     ],
     "windows": {
       "certificateThumbprint": null,
