@@ -7,9 +7,9 @@ use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
 use windows::core::PWSTR;
-use windows::Win32::Foundation::{CloseHandle, HANDLE};
+use windows::Win32::Foundation::{CloseHandle, ERROR_NO_TOKEN, HANDLE};
 use windows::Win32::System::RemoteDesktop::{
-    WTSActive, WTSEnumerateProcessesW, WTSEnumerateSessionsW, WTSFreeMemory,
+    WTSActive, WTSEnumerateProcessesW, WTSEnumerateSessionsW, WTSFreeMemory, WTSQueryUserToken,
     WTS_CURRENT_SERVER_HANDLE, WTS_PROCESS_INFOW, WTS_SESSION_INFOW,
 };
 use windows::Win32::System::Threading::{
@@ -22,6 +22,7 @@ use crate::utils::windows_helpers::wcslen;
 
 const RETRY_DELAY_SECONDS: u64 = 5;
 const SESSION_STARTUP_DELAY_SECONDS: u64 = 60 * 5;
+const TOKEN_NOT_READY_DELAY_SECONDS: u64 = 30;
 
 /// Translated from `windows_service::service::ServiceControl::SessionChange`
 #[derive(Debug)]
@@ -162,6 +163,29 @@ impl WindowsSessionManager {
     }
 }
 
+/// True if `session_id` has a queryable user token (a user is logged on)
+fn is_user_session_ready(session_id: u32) -> bool {
+    unsafe {
+        let mut token = HANDLE(0);
+        match WTSQueryUserToken(session_id, &mut token) {
+            Ok(()) => {
+                let _ = CloseHandle(token);
+                true
+            }
+            // Expected when the session sits at the login/lock screen with no logged-on user.
+            Err(e) if e.code() == ERROR_NO_TOKEN.to_hresult() => {
+                debug!(session_id, "No interactive user token yet (login/lock screen)");
+                false
+            }
+            Err(e) => {
+                warn!(session_id, error = ?e,
+                      "WTSQueryUserToken failed - treating session as not ready");
+                false
+            }
+        }
+    }
+}
+
 /// One spawned task per (tool_id, session_id). Runs `find pid → attach OR launch → wait → restart`
 /// until either the session is no longer active or the tool is no longer registered
 async fn waiter_task(
@@ -172,6 +196,9 @@ async fn waiter_task(
     waiters: Arc<RwLock<HashSet<(String, u32)>>>,
 ) {
     info!(tool_id = %tool_id, session_id, "Per-session process waiter starting");
+
+    // Whether the "no user token yet" state was already logged for the current streak.
+    let mut logged_not_ready = false;
 
     loop {
         // Exit if the session is no longer active (LOGOFF removed it)
@@ -205,6 +232,18 @@ async fn waiter_task(
                 }
             }
             None => {
+                // An active session with no user token (login/lock screen) can't launch a GUI app.
+                if !is_user_session_ready(session_id) {
+                    if !logged_not_ready {
+                        info!(tool_id = %tool_id, session_id,
+                              "Session active but no interactive user token yet - deferring launch until a user logs on");
+                        logged_not_ready = true;
+                    }
+                    sleep(Duration::from_secs(TOKEN_NOT_READY_DELAY_SECONDS)).await;
+                    continue;
+                }
+                logged_not_ready = false;
+
                 info!(tool_id = %tool_id, session_id, "Process not running - launching");
                 match launch_process_in_target_session(&reg.command_path, &reg.launch_args, session_id) {
                     Ok((pid, h)) => {
