@@ -1,14 +1,22 @@
 'use client';
 
 import { getApprovalMeta, isApprovalNotification } from '@flamingo-stack/openframe-frontend-core';
-import { BellOffIcon, ClockHistoryIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { DataTable, SearchInput, useDataTable } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { BellCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  DataTable,
+  type NoDataProps,
+  type PageActionButton,
+  PageLayout,
+  SearchInput,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { type ReactNode, Suspense, useCallback, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { type PreloadedQuery, usePaginationFragment, usePreloadedQuery } from 'react-relay';
 import type { notificationsSectionRelay_query$key as NotificationsSectionFragmentKey } from '@/__generated__/notificationsSectionRelay_query.graphql';
 import type { notificationsSectionRelayPaginationQuery as NotificationsSectionPaginationQueryType } from '@/__generated__/notificationsSectionRelayPaginationQuery.graphql';
 import type { notificationsSectionRelayQuery as NotificationsSectionRelayQueryType } from '@/__generated__/notificationsSectionRelayQuery.graphql';
+import { EmptyState } from '@/app/components/shared';
 import { mapNotificationNode, parseCreatedAt } from '@/graphql/notifications/notifications-helpers';
 import {
   notificationsSectionRelayFragment,
@@ -19,13 +27,14 @@ import { buildNotificationColumns, type NotificationRow } from './notifications-
 
 export const NOTIFICATIONS_SECTION_PAGE_SIZE = 50;
 const EMPTY_ROWS: NotificationRow[] = [];
+const HISTORY_RETENTION_NOTE = 'Notification history is retained for 30 days, then permanently deleted.';
 
 interface NotificationsSectionProps {
   title: string;
   queryRef: PreloadedQuery<NotificationsSectionRelayQueryType> | null | undefined;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  rightAction?: ReactNode;
+  actions?: PageActionButton[];
   rowVariant: 'unread' | 'read';
   onMarkRead?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -36,41 +45,45 @@ export function NotificationsSection({
   queryRef,
   searchValue,
   onSearchChange,
-  rightAction,
+  actions,
   rowVariant,
   onMarkRead,
   onDelete,
 }: NotificationsSectionProps) {
-  return (
-    <section className="flex min-h-0 flex-1 flex-col gap-[var(--spacing-system-m)]">
-      <div className="flex flex-wrap items-baseline justify-between gap-[var(--spacing-system-m)]">
-        <h2 className="text-h2 text-ods-text-primary">{title}</h2>
-        {rightAction}
-      </div>
+  const [isEmpty, setIsEmpty] = useState(true);
 
+  return (
+    <PageLayout title={title} actions={isEmpty ? undefined : actions}>
       <SearchInput placeholder="Search for Notification" value={searchValue} onChange={onSearchChange} debounceMs={0} />
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <Suspense fallback={<SectionTableSkeleton rowVariant={rowVariant} />}>
-          {queryRef ? (
-            <SectionTable queryRef={queryRef} rowVariant={rowVariant} onMarkRead={onMarkRead} onDelete={onDelete} />
-          ) : (
-            <SectionTableSkeleton rowVariant={rowVariant} />
-          )}
-        </Suspense>
-      </div>
-    </section>
+      <Suspense fallback={<SectionTableSkeleton rowVariant={rowVariant} />}>
+        {queryRef ? (
+          <SectionTable
+            queryRef={queryRef}
+            rowVariant={rowVariant}
+            searchValue={searchValue}
+            onMarkRead={onMarkRead}
+            onDelete={onDelete}
+            onEmptyChange={setIsEmpty}
+          />
+        ) : (
+          <SectionTableSkeleton rowVariant={rowVariant} />
+        )}
+      </Suspense>
+    </PageLayout>
   );
 }
 
 interface SectionTableProps {
   queryRef: PreloadedQuery<NotificationsSectionRelayQueryType>;
   rowVariant: 'unread' | 'read';
+  searchValue: string;
   onMarkRead?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onEmptyChange: (isEmpty: boolean) => void;
 }
 
-function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTableProps) {
+function SectionTable({ queryRef, rowVariant, searchValue, onMarkRead, onDelete, onEmptyChange }: SectionTableProps) {
   const { toast } = useToast();
   const queryData = usePreloadedQuery(notificationsSectionRelayQuery, queryRef);
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
@@ -127,33 +140,41 @@ function SectionTable({ queryRef, rowVariant, onMarkRead, onDelete }: SectionTab
   }, [hasNext, isLoadingNext, loadNext, toast]);
 
   const isEmpty = rows.length === 0;
-  const emptyIcon =
-    rowVariant === 'unread' ? (
-      <BellOffIcon size={24} className="text-ods-text-secondary" />
-    ) : (
-      <ClockHistoryIcon size={24} className="text-ods-text-secondary" />
-    );
-  const emptyMessage = rowVariant === 'unread' ? 'No new notifications' : 'No notification history';
+  useEffect(() => {
+    onEmptyChange(isEmpty);
+  }, [isEmpty, onEmptyChange]);
+
+  const trimmedSearch = searchValue.trim();
+  const emptyState: NoDataProps = trimmedSearch
+    ? {
+        title: `No notifications found matching "${trimmedSearch}".`,
+        description: 'Try adjusting your search.',
+      }
+    : {
+        icon: <BellCheckIcon size={24} className="text-ods-text-secondary" />,
+        title: rowVariant === 'unread' ? 'No new notifications' : 'No notifications history',
+        description:
+          rowVariant === 'read' ? HISTORY_RETENTION_NOTE : "You're all up to date with system alerts and messages.",
+      };
+
+  if (isEmpty) {
+    return <EmptyState {...emptyState} />;
+  }
 
   return (
-    <DataTable table={table} className="flex min-h-0 flex-1 flex-col">
-      <DataTable.Header rightSlot={<DataTable.RowCount itemName="result" />} />
-      {isEmpty ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center">
-          <DataTable.Empty icon={emptyIcon} title={emptyMessage} description={undefined} className="w-full" />
-        </div>
-      ) : (
-        <>
-          <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} />
-          <DataTable.InfiniteFooter
-            hasNextPage={hasNext}
-            isFetchingNextPage={isLoadingNext}
-            onLoadMore={onLoadMore}
-            skeletonRows={2}
-          />
-        </>
-      )}
-    </DataTable>
+    <>
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount itemName="result" />} />
+        <DataTable.Body rowClassName="mb-1" renderSubRow={renderSubRow} />
+        <DataTable.InfiniteFooter
+          hasNextPage={hasNext}
+          isFetchingNextPage={isLoadingNext}
+          onLoadMore={onLoadMore}
+          skeletonRows={2}
+        />
+      </DataTable>
+      {rowVariant === 'read' && <p className="text-center text-h6 text-ods-text-secondary">{HISTORY_RETENTION_NOTE}</p>}
+    </>
   );
 }
 
@@ -166,7 +187,7 @@ function SectionTableSkeleton({ rowVariant }: { rowVariant: 'unread' | 'read' })
   });
 
   return (
-    <DataTable table={table} className="flex min-h-0 flex-1 flex-col">
+    <DataTable table={table}>
       <DataTable.Header rightSlot={<DataTable.RowCount itemName="result" />} />
       <DataTable.Body loading skeletonRows={4} />
     </DataTable>
