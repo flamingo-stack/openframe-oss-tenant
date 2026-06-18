@@ -44,7 +44,7 @@ impl AgentConfigurationService {
         Ok(())
     }
 
-    pub async fn get_machine_id(&self) -> Result<String> {
+    pub fn get_machine_id(&self) -> Result<String> {
         let config = self.get()?;
         Ok(config.machine_id.clone())
     }

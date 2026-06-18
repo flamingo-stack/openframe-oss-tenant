@@ -3,6 +3,7 @@ pub struct AppConfig {
     pub token_path: Option<String>,
     pub secret: Option<String>,
     pub server_url: Option<String>,
+    pub machine_id: Option<String>,
     pub debug_mode: bool,
 }
 
@@ -14,6 +15,7 @@ impl AppConfig {
             token_path: macos::read_string("openframe-token-path"),
             secret: macos::read_string("openframe-secret"),
             server_url: macos::read_string("serverUrl"),
+            machine_id: macos::read_string("machineId"),
             debug_mode: macos::read_bool("devMode"),
         };
 
@@ -30,10 +32,11 @@ impl AppConfig {
         };
 
         println!(
-            "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, debug: {})",
+            "[startup] config_reader: loaded (token_path: {}, secret: {}, server_url: {}, machine_id: {}, debug: {})",
             cfg.token_path.is_some(),
             cfg.secret.is_some(),
             cfg.server_url.is_some(),
+            cfg.machine_id.is_some(),
             cfg.debug_mode,
         );
 
@@ -45,15 +48,41 @@ impl AppConfig {
         let mut token_path: Option<String> = None;
         let mut secret: Option<String> = None;
         let mut server_url: Option<String> = None;
+        let mut machine_id: Option<String> = None;
         let mut debug_mode = false;
 
+        const KNOWN_FLAGS: &[&str] = &[
+            "--openframe-token-path",
+            "--openframe-secret",
+            "--serverUrl",
+            "--machineId",
+            "--devMode",
+        ];
+        let value_after = |i: usize| -> Option<String> {
+            let v = args.get(i + 1)?;
+            if v.is_empty() || KNOWN_FLAGS.contains(&v.as_str()) {
+                return None;
+            }
+            Some(v.clone())
+        };
+
         for i in 0..args.len() {
-            if args[i] == "--openframe-token-path" && i + 1 < args.len() {
-                token_path = Some(args[i + 1].clone());
-            } else if args[i] == "--openframe-secret" && i + 1 < args.len() {
-                secret = Some(args[i + 1].clone());
-            } else if args[i] == "--serverUrl" && i + 1 < args.len() {
-                server_url = Some(args[i + 1].clone());
+            if args[i] == "--openframe-token-path" {
+                if let Some(v) = value_after(i) {
+                    token_path = Some(v);
+                }
+            } else if args[i] == "--openframe-secret" {
+                if let Some(v) = value_after(i) {
+                    secret = Some(v);
+                }
+            } else if args[i] == "--serverUrl" {
+                if let Some(v) = value_after(i) {
+                    server_url = Some(v);
+                }
+            } else if args[i] == "--machineId" {
+                if let Some(v) = value_after(i) {
+                    machine_id = Some(v);
+                }
             } else if args[i] == "--devMode" {
                 debug_mode = true;
             }
@@ -63,6 +92,7 @@ impl AppConfig {
             token_path,
             secret,
             server_url,
+            machine_id,
             debug_mode,
         }
     }

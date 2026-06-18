@@ -26,9 +26,16 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-notification = "2"
 aes-gcm = "0.10"
 base64 = "0.21"
-notify = "6.1"
+async-nats = { git = "https://github.com/flamingo-stack/nats.rs.git", branch = "main", features = ["websockets"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+futures = "0.3"
+uuid = { version = "1", features = ["v4"] }
+tracing = { version = "0.1", features = ["log"] }
+percent-encoding = "2"
+rand = "0.8"
 
 [target.'cfg(windows)'.dependencies]
 dirs = "5"

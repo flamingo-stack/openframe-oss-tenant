@@ -21,7 +21,8 @@ import {
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
@@ -35,6 +36,7 @@ import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { ticketGraphQlService } from '../services/ticketGraphQlService';
+import { isTauri } from '../utils/runtime';
 
 function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsageData | null {
   if (!usage) return null;
@@ -192,6 +194,12 @@ export function ChatView() {
 
   const handleTicketClick = useCallback(
     async (ticketId: string) => {
+      // Already viewing this dialog (e.g. clicking its own notification): the
+      // live NATS subscription already holds the latest messages. Reloading
+      // would clear them and fall back to stale cached history.
+      const openDialogId = ticketsHook.getDialogId(ticketId);
+      if (openDialogId && openDialogId === dialogId) return;
+
       setFaeFormTicket(null);
       setPreviewTicketId(null);
       setActiveTicket(null);
@@ -217,8 +225,7 @@ export function ChatView() {
         statusKind: ticketDetails.statusKind,
       });
 
-      const dialogId = ticketsHook.getDialogId(ticketId);
-      if (!dialogId) {
+      if (!openDialogId) {
         setPreviewTicketId(ticketId);
         showTicketPreview(ticketDetails);
         return;
@@ -233,9 +240,9 @@ export function ChatView() {
         });
       }
 
-      await resumeDialog(dialogId);
+      await resumeDialog(openDialogId);
     },
-    [ticketsHook, resumeDialog, showTicketPreview, toast],
+    [ticketsHook, resumeDialog, showTicketPreview, toast, dialogId],
   );
 
   useEffect(() => {
@@ -322,6 +329,31 @@ export function ChatView() {
 
     return () => clearInterval(interval);
   }, [isTicketPreview, previewTicketId, resumeDialog]);
+
+  // Rust emits notification:click when the window gains focus shortly after a
+  // NATS-driven OS notification; open the entity it came from. The ref keeps
+  // the Tauri listener registered once instead of churning per render.
+  const notificationClickRef = useRef({ handleTicketClick, resumeDialog, dialogId });
+  notificationClickRef.current = { handleTicketClick, resumeDialog, dialogId };
+
+  useEffect(() => {
+    if (!isTauri) return;
+    type NotificationClickPayload = { kind: string; id: string };
+    const unlistenPromise = listen<NotificationClickPayload>('notification:click', event => {
+      const { kind, id } = event.payload;
+      if (!id) return;
+      if (kind === 'ticket') {
+        void notificationClickRef.current.handleTicketClick(id);
+      } else if (kind === 'dialog') {
+        const { resumeDialog, dialogId } = notificationClickRef.current;
+        // Already viewing this dialog — the live subscription has the message.
+        if (id !== dialogId) void resumeDialog(id);
+      }
+    });
+    return () => {
+      unlistenPromise.then(unlisten => unlisten()).catch(() => undefined);
+    };
+  }, []);
 
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;

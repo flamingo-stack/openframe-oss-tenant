@@ -3,7 +3,8 @@ import { listen } from '@tauri-apps/api/event';
 import { log, maskToken } from '../utils/log';
 
 interface TokenUpdatePayload {
-  token: string;
+  /** null = the daemon's token file is gone/unreadable; drop the cache. */
+  token: string | null;
 }
 
 class TokenService {
@@ -11,6 +12,10 @@ class TokenService {
   private currentApiBaseUrl: string | null = null;
   private listeners: Set<(token: string) => void> = new Set();
   private apiUrlListeners: Set<(apiUrl: string) => void> = new Set();
+  // In-flight dedup: several hooks request the token / API URL on mount;
+  // without it each concurrent caller fires its own invoke (and log line).
+  private tokenRequest: Promise<string | null> | null = null;
+  private apiUrlRequest: Promise<void> | null = null;
 
   constructor() {
     this.initTokenListener();
@@ -65,12 +70,20 @@ class TokenService {
     try {
       await listen<TokenUpdatePayload>('token-update', event => {
         const { token } = event.payload;
-        console.log('[TOKEN SERVICE] Token received from Rust event:', maskToken(token));
+        if (!token) {
+          // Clear the cache so requests stop carrying a revoked token, but
+          // don't notify onTokenUpdate listeners — they treat every callback
+          // as "token available" (e.g. enabling queries).
+          log.warn('token', 'token cleared by daemon — dropping cached token');
+          this.currentToken = null;
+          return;
+        }
+        log.info('token', `token-update event received from Rust (${maskToken(token)})`);
 
         this.setToken(token);
       });
 
-      console.log('[TOKEN SERVICE] Token listener initialized');
+      log.info('token', 'token-update listener initialized');
     } catch (error) {
       console.error('[TOKEN SERVICE] Failed to initialize token listener:', error);
     }
@@ -82,6 +95,15 @@ class TokenService {
   async requestToken(): Promise<string | null> {
     if (this.currentToken) return this.currentToken;
 
+    if (!this.tokenRequest) {
+      this.tokenRequest = this.doRequestToken().finally(() => {
+        this.tokenRequest = null;
+      });
+    }
+    return this.tokenRequest;
+  }
+
+  private async doRequestToken(): Promise<string | null> {
     try {
       const token = await invoke<string | null>('get_token');
 
@@ -153,15 +175,29 @@ class TokenService {
    * Initialize API base URL from Tauri
    */
   async initApiUrl() {
+    if (this.currentApiBaseUrl) return;
+
+    if (!this.apiUrlRequest) {
+      this.apiUrlRequest = this.doInitApiUrl().finally(() => {
+        this.apiUrlRequest = null;
+      });
+    }
+    return this.apiUrlRequest;
+  }
+
+  private async doInitApiUrl(): Promise<void> {
     try {
       const serverUrl = await invoke<string>('get_server_url');
 
       if (serverUrl) {
         const apiUrl = this.normalizeApiUrl(serverUrl);
         this.setApiBaseUrl(apiUrl);
+        log.info('token', `api base url resolved from Rust: ${apiUrl}`);
+      } else {
+        log.warn('token', 'get_server_url returned empty');
       }
     } catch (error) {
-      console.error('[TOKEN SERVICE] Failed to get API base URL:', error);
+      log.error('token', 'failed to get api base url from Rust', String(error));
     }
   }
 

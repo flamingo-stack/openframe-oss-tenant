@@ -25,6 +25,11 @@ import { BoardAssigneePicker } from './board-assignee-picker';
 import { OrganizationFilter } from './organization-filter';
 import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
 
+// TODO(unread-from-entity): re-enable per-ticket unread highlighting once the backend exposes
+// unread counts on the ticket entity itself. Matching unread notifications to tickets by id is a
+// temporary workaround — disabled for now; flip this flag to restore it.
+const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
+
 interface TicketsBoardProps {
   selector?: ReactNode;
   organizationIds?: string[];
@@ -93,6 +98,7 @@ export function TicketsBoard({
   // entity) matched by ticket id.
   const ticketIdsWithUnread = useMemo(() => {
     const ids = new Set<string>();
+    if (!HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS) return ids;
     for (const notification of notifications?.notifications ?? []) {
       if (notification.read) continue;
       const ticketId = notification.meta?.ticketId;

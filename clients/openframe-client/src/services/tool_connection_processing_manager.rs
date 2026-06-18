@@ -224,7 +224,7 @@ impl ToolConnectionProcessingManager {
                 };
 
                 // Publish tool connection message
-                match config_service.get_machine_id().await {
+                match config_service.get_machine_id() {
                     Ok(machine_id) => {
                         if let Err(e) = tool_connection_publisher
                             .publish(machine_id, agent_tool_id.clone(), tool.tool_type.clone())
