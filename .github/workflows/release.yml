@@ -349,7 +349,7 @@ jobs:
           - **macOS** (Universal): \`openframe-client_macos.tar.gz\`
           - **Windows** (x64): \`openframe-client_windows.zip\`
 
-          ## Fae Chat
+          ## OpenFrame
           - **macOS** (Universal): \`openframe-chat_universal.dmg\`
           - **Windows** (x64): \`openframe-chat_windows.zip\`
 

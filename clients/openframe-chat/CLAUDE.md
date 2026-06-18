@@ -1,4 +1,4 @@
-# OpenFrame Chat (Fae Chat Desktop Client) — Claude Development Guide
+# OpenFrame Chat Desktop Client — Claude Development Guide
 
 **Tauri 2 + React 19 + TypeScript 5 + Vite 5 + @flamingo-stack/openframe-frontend-core**
 
