@@ -496,6 +496,20 @@ impl Client {
         // Start tool run manager
         self.tool_run_manager.run().await?;
 
+        // Start mesh self-heal watcher: if the meshcentral-agent is held/orphaned by
+        // the server (stale device-group MeshID), re-fetch the current .msh and bounce
+        // the agent so it re-enrolls. Detection is log-based (no agent change needed).
+        {
+            let mesh_self_heal = crate::services::mesh_self_heal_service::MeshSelfHealService::new(
+                self.directory_manager.clone(),
+                self.installed_tools_service.clone(),
+                crate::services::tool_kill_service::ToolKillService::new(),
+                self.initial_configuration_service.clone(),
+                self.agent_configuration_service.clone(),
+            );
+            tokio::spawn(mesh_self_heal.run());
+        }
+
         // Start tool connection processing manager
         self.tool_connection_processing_manager.run().await?;
 
