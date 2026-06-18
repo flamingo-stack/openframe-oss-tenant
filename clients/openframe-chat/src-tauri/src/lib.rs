@@ -452,7 +452,7 @@ pub fn run() {
                 .icon_as_template(cfg!(target_os = "macos"))
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .tooltip("OpenFrame Chat")
+                .tooltip("OpenFrame")
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
                         button: MouseButton::Left,
@@ -509,7 +509,7 @@ pub fn run() {
                     true,
                     Some("CmdOrCtrl+Q"),
                 )?;
-                let app_submenu = Submenu::with_items(app, "Fae Chat", true, &[
+                let app_submenu = Submenu::with_items(app, "OpenFrame", true, &[
                     &PredefinedMenuItem::about(app, None, None)?,
                     &PredefinedMenuItem::separator(app)?,
                     &quit_to_tray_i,
