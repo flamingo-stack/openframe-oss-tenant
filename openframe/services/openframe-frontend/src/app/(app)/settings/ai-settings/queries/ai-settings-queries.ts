@@ -1,8 +1,9 @@
-export const GET_FAE_SETTINGS_QUERY = `
-  query FaeSettings($organizationId: ID) {
-    faeSettings(organizationId: $organizationId) {
+export const GET_AI_SETTINGS_QUERY = `
+  query AiSettings($organizationId: ID, $agentType: AgentType!) {
+    aiSettings(organizationId: $organizationId, agentType: $agentType) {
       id
       organizationId
+      agentType
       assistantName
       assistantAvatar {
         imageUrl
@@ -25,12 +26,13 @@ export const GET_FAE_SETTINGS_QUERY = `
   }
 `;
 
-export const UPDATE_FAE_SETTINGS_MUTATION = `
-  mutation UpdateFaeSettings($input: UpdateFaeSettingsInput!) {
-    updateFaeSettings(input: $input) {
-      faeSettings {
+export const UPDATE_AI_SETTINGS_MUTATION = `
+  mutation UpdateAiSettings($input: UpdateAiSettingsInput!) {
+    updateAiSettings(input: $input) {
+      aiSettings {
         id
         organizationId
+        agentType
         assistantName
         assistantAvatar {
           imageUrl

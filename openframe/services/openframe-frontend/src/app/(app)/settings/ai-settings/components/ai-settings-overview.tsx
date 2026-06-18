@@ -1,18 +1,18 @@
 'use client';
 
 import { getFullImageUrl } from '@/lib/image-url';
-import type { FaeQuickAction, FaeSettings } from '../types/fae-settings';
+import type { AiQuickAction, AiSettings } from '../types/ai-settings';
 import { AiSettingsCustomerCard } from './ai-settings-customer-card';
 import { AiSettingsQuickActions } from './ai-settings-quick-actions';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
 interface AiSettingsOverviewProps {
   /** Renders the assistant card + previews when provided. */
-  settings?: FaeSettings;
+  settings?: AiSettings;
   /** Display label for the provider model (resolved via useSupportedModels). */
   providerModelLabel?: string;
   /** Renders the quick actions list when provided. */
-  quickActions?: FaeQuickAction[];
+  quickActions?: AiQuickAction[];
 }
 
 /**

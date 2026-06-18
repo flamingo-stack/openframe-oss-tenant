@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { FaeSettings } from './fae-settings';
+import type { AiSettings } from './ai-settings';
 import { quickActionSchema } from './quick-action.types';
 
 export const CUSTOMER_AI_ASSISTANT_FORM_ID = 'ai-settings-customer-ai-assistant-form';
@@ -22,7 +22,7 @@ export const customerAiAssistantSchema = z
 
 export type CustomerAiAssistantFormValues = z.infer<typeof customerAiAssistantSchema>;
 
-export function getCustomerAiAssistantDefaults(settings: FaeSettings): CustomerAiAssistantFormValues {
+export function getCustomerAiAssistantDefaults(settings: AiSettings): CustomerAiAssistantFormValues {
   return {
     assistantName: settings.assistantName,
     llmProvider: settings.llmProvider,

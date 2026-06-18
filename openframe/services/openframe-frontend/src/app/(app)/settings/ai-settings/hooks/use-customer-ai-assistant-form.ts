@@ -6,16 +6,16 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
+import type { AiSettings, AiSettingsFormInput } from '../types/ai-settings';
 import {
   type CustomerAiAssistantFormValues,
   customerAiAssistantSchema,
   getCustomerAiAssistantDefaults,
 } from '../types/customer-ai-assistant.types';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
 
 interface UseCustomerAiAssistantFormOptions {
-  settings: FaeSettings;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  settings: AiSettings;
+  onSubmit: (values: AiSettingsFormInput) => void;
 }
 
 export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAiAssistantFormOptions) {
@@ -27,7 +27,7 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
 
   // The avatar is stored via a separate REST endpoint, not the settings GraphQL.
   // imageUrl from the API is relative (/images/...), so resolve it for <img src>.
-  const imageEndpoint = `/api/fae-settings/${settings.id}/image`;
+  const imageEndpoint = `/api/ai-settings/${settings.id}/image`;
   const [avatarUrl, setAvatarUrl] = useState(
     getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash),
   );

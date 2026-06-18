@@ -1,9 +1,9 @@
 'use client';
 
-import type { FaeQuickAction } from '../types/fae-settings';
+import type { AiQuickAction } from '../types/ai-settings';
 
 interface AiSettingsQuickActionsProps {
-  actions: FaeQuickAction[];
+  actions: AiQuickAction[];
 }
 
 export function AiSettingsQuickActions({ actions }: AiSettingsQuickActionsProps) {

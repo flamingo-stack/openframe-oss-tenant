@@ -1,6 +1,6 @@
 import { ClaudeIcon, GoogleGeminiIcon, OpenAiIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import type { ComponentType, SVGProps } from 'react';
-import type { AIProvider, AnswerStyle, ApplicationTheme } from '../types/fae-settings';
+import type { AIProvider, AnswerStyle, ApplicationTheme } from '../types/ai-settings';
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 

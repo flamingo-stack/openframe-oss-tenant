@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
+import type { AiSettings, AiSettingsFormInput } from '../types/ai-settings';
 import {
   getMingoAiChatDefaults,
   MINGO_AI_CHAT_FORM_ID,
@@ -13,9 +13,9 @@ import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 
 interface MingoAiChatTabProps {
-  settings: FaeSettings;
+  settings: AiSettings;
   isEditMode: boolean;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  onSubmit: (values: AiSettingsFormInput) => void;
 }
 
 export function MingoAiChatTab({ settings, isEditMode, onSubmit }: MingoAiChatTabProps) {
@@ -24,8 +24,7 @@ export function MingoAiChatTab({ settings, isEditMode, onSubmit }: MingoAiChatTa
     defaultValues: getMingoAiChatDefaults(settings),
   });
 
-  // DEMO: Mingo quick actions will get their own BE query/mutation; until then
-  // they read and save the shared Fae quickActions field.
+  // Mingo edits the ADMIN agent's quick actions; only that field is submitted.
   const handleSubmit = form.handleSubmit(values => {
     onSubmit({ quickActions: values.quickActions });
   });

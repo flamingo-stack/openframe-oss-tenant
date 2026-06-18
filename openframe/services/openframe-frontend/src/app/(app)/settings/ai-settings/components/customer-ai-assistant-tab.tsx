@@ -17,14 +17,14 @@ import {
 import { Controller } from 'react-hook-form';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
 import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
+import type { AiSettings, AiSettingsFormInput } from '../types/ai-settings';
 import { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
 import {
   ANSWER_STYLE_OPTIONS,
   LLM_PROVIDER_ICON,
   LLM_PROVIDER_LABEL,
   LLM_PROVIDER_OPTIONS,
-} from '../utils/fae-settings-display';
+} from '../utils/ai-settings-display';
 import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
@@ -33,9 +33,9 @@ export type { CustomerAiAssistantFormValues } from '../types/customer-ai-assista
 export { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
 
 interface CustomerAiAssistantTabProps {
-  settings: FaeSettings;
+  settings: AiSettings;
   isEditMode: boolean;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  onSubmit: (values: AiSettingsFormInput) => void;
 }
 
 export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: CustomerAiAssistantTabProps) {

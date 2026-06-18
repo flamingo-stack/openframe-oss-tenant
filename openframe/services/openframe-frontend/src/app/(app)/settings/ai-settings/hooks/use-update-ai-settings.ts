@@ -3,28 +3,31 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { UPDATE_FAE_SETTINGS_MUTATION } from '../queries/fae-settings-queries';
-import type { UpdateFaeSettingsInput } from '../types/fae-settings';
-import { faeSettingsQueryKeys } from './use-fae-settings';
+import { UPDATE_AI_SETTINGS_MUTATION } from '../queries/ai-settings-queries';
+import type { AgentType, AiSettingsFormInput } from '../types/ai-settings';
+import { aiSettingsQueryKeys } from './use-ai-settings';
 
-interface UpdateFaeSettingsResponse {
+interface UpdateAiSettingsResponse {
   data?: {
-    updateFaeSettings: {
-      faeSettings: { id: string } | null;
+    updateAiSettings: {
+      aiSettings: { id: string } | null;
       userErrors: { message: string }[];
     };
   };
   errors?: { message: string }[];
 }
 
-export function useUpdateFaeSettings(organizationId: string | null = null) {
+export function useUpdateAiSettings(agentType: AgentType, organizationId: string | null = null) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (input: UpdateFaeSettingsInput) => {
-      const response = await apiClient.post<UpdateFaeSettingsResponse>('/chat/graphql', {
-        query: UPDATE_FAE_SETTINGS_MUTATION,
+    mutationFn: async (values: AiSettingsFormInput) => {
+      // The agent scope (and tenant vs. organization) is owned here, not by the
+      // forms, so every save targets the agent currently being edited.
+      const input = { ...values, agentType, organizationId };
+      const response = await apiClient.post<UpdateAiSettingsResponse>('/chat/graphql', {
+        query: UPDATE_AI_SETTINGS_MUTATION,
         variables: { input },
       });
 
@@ -35,13 +38,13 @@ export function useUpdateFaeSettings(organizationId: string | null = null) {
         throw new Error(response.data.errors.map(e => e.message).join(', '));
       }
 
-      const userErrors = response.data.data?.updateFaeSettings.userErrors ?? [];
+      const userErrors = response.data.data?.updateAiSettings.userErrors ?? [];
       if (userErrors.length > 0) {
         throw new Error(userErrors.map(e => e.message).join(', '));
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: faeSettingsQueryKeys.detail(organizationId) });
+      queryClient.invalidateQueries({ queryKey: aiSettingsQueryKeys.detail(organizationId, agentType) });
       toast({ title: 'Saved', description: 'AI assistant settings updated', variant: 'success' });
     },
     onError: error => {
@@ -53,7 +56,7 @@ export function useUpdateFaeSettings(organizationId: string | null = null) {
     },
   });
 
-  const update = (input: UpdateFaeSettingsInput, onSuccess?: () => void) =>
+  const update = (input: AiSettingsFormInput, onSuccess?: () => void) =>
     mutation.mutate(input, { onSuccess: () => onSuccess?.() });
 
   return { update, isPending: mutation.isPending };

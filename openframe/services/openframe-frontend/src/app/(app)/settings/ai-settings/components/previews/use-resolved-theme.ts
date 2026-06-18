@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { ApplicationTheme } from '../../types/fae-settings';
+import type { ApplicationTheme } from '../../types/ai-settings';
 
 export type ResolvedTheme = 'dark' | 'light';
 

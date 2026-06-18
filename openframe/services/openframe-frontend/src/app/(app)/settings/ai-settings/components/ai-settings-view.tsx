@@ -2,10 +2,10 @@
 
 import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useState } from 'react';
-import { useFaeSettings } from '../hooks/use-fae-settings';
+import { useAiSettings } from '../hooks/use-ai-settings';
 import { useUpdateAiConfiguration } from '../hooks/use-update-ai-configuration';
-import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
-import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
+import { useUpdateAiSettings } from '../hooks/use-update-ai-settings';
+import { type AgentType, type AiSettingsFormInput, getDefaultAiSettings } from '../types/ai-settings';
 import { MINGO_AI_CHAT_FORM_ID } from '../types/mingo-ai-chat.types';
 import { useAiSettingsActions } from './ai-settings-actions';
 import { AiSettingsLayout } from './ai-settings-layout';
@@ -20,13 +20,14 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
   guardrails: GUARDRAILS_FORM_ID,
 };
 
-export function AiSettings() {
-  const { settings: loadedSettings, isLoading, error, refetch } = useFaeSettings();
-  const { update } = useUpdateFaeSettings();
-  const { updateAiConfiguration } = useUpdateAiConfiguration();
+// Settings are scoped per agent on the BE; each tab edits its own agent.
+const AGENT_TYPE_BY_TAB: Partial<Record<AiSettingsTabId, AgentType>> = {
+  customer: 'CLIENT',
+  mingo: 'ADMIN',
+};
 
-  // No record yet → start from defaults so the first save creates one.
-  const settings = loadedSettings ?? getDefaultFaeSettings();
+export function AiSettings() {
+  const { updateAiConfiguration } = useUpdateAiConfiguration();
 
   // Tabs are feature-flag gated; default to the first one that's visible.
   const visibleTabs = getVisibleAiSettingsTabs();
@@ -37,6 +38,15 @@ export function AiSettings() {
 
   // Fall back to a visible tab if the active one is hidden by a flag.
   const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
+
+  // Guardrails has no per-agent settings; default to CLIENT so the hooks stay
+  // unconditional. Switching tabs re-keys the query to the right agent.
+  const agentType = AGENT_TYPE_BY_TAB[effectiveTab] ?? 'CLIENT';
+  const { settings: loadedSettings, isLoading, error, refetch } = useAiSettings(agentType);
+  const { update } = useUpdateAiSettings(agentType);
+
+  // No record yet → start from defaults so the first save creates one.
+  const settings = loadedSettings ?? getDefaultAiSettings(agentType);
 
   const handleEdit = useCallback(() => setIsEditMode(true), []);
   const handleCancel = useCallback(() => setIsEditMode(false), []);
@@ -54,7 +64,7 @@ export function AiSettings() {
   }, [effectiveTab]);
 
   const handleFormSubmit = useCallback(
-    (values: UpdateFaeSettingsInput) => {
+    (values: AiSettingsFormInput) => {
       update(values, () => {
         if (
           values.llmProvider &&
