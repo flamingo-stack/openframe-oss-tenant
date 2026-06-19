@@ -12,12 +12,18 @@ pub use unix::execute_script;
 #[cfg(windows)]
 pub use windows::execute_script;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Privilege {
+    Agent,
+    User,
+}
+
 pub struct ScriptParams<'a> {
     pub code: &'a str,
     pub shell: &'a str,
     pub args: &'a [String],
     pub timeout_secs: u32,
-    pub run_as_user: Option<&'a str>,
+    pub privilege: Privilege,
     pub env_vars: &'a [String],
 }
 

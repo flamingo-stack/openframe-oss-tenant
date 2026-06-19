@@ -26,11 +26,7 @@ pub async fn execute_script(params: ScriptParams<'_>) -> ExecResult {
         }
     };
 
-    let wants_run_as = params
-        .run_as_user
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .is_some();
+    let wants_run_as = matches!(params.privilege, crate::executor::Privilege::User);
 
     let tmp_file = match create_temp_script(params.code, interpreter.ext) {
         Ok(path) => path,
@@ -59,7 +55,10 @@ fn spawn_error(msg: String) -> ExecResult {
 fn resolve_interpreter(shell: &str) -> Option<Interpreter> {
     match shell {
         "powershell" => Some(Interpreter {
-            exe: resolve_exe(r"System32\WindowsPowerShell\v1.0\powershell.exe", "powershell.exe"),
+            exe: resolve_exe(
+                r"System32\WindowsPowerShell\v1.0\powershell.exe",
+                "powershell.exe",
+            ),
             flags: &[
                 "-NonInteractive",
                 "-NoProfile",
@@ -157,7 +156,7 @@ mod tests {
             shell: "bash",
             args: &[],
             timeout_secs: 30,
-            run_as_user: None,
+            privilege: crate::executor::Privilege::Agent,
             env_vars: &[],
         })
         .await;
@@ -165,13 +164,19 @@ mod tests {
         assert!(r.stderr.contains("unsupported shell"));
     }
 
-    async fn run(shell: &str, code: &str, args: &[String], env: &[String], timeout: u32) -> ExecResult {
+    async fn run(
+        shell: &str,
+        code: &str,
+        args: &[String],
+        env: &[String],
+        timeout: u32,
+    ) -> ExecResult {
         execute_script(ScriptParams {
             code,
             shell,
             args,
             timeout_secs: timeout,
-            run_as_user: None,
+            privilege: crate::executor::Privilege::Agent,
             env_vars: env,
         })
         .await
@@ -202,12 +207,23 @@ mod tests {
     #[tokio::test]
     async fn powershell_exit_code() {
         let r = run("powershell", "exit 42", &[], &[], 30).await;
-        assert_eq!(r.retcode, 42, "stdout: {:?} stderr: {:?}", r.stdout, r.stderr);
+        assert_eq!(
+            r.retcode, 42,
+            "stdout: {:?} stderr: {:?}",
+            r.stdout, r.stderr
+        );
     }
 
     #[tokio::test]
     async fn powershell_stderr_captured() {
-        let r = run("powershell", "[Console]::Error.WriteLine('boom')", &[], &[], 30).await;
+        let r = run(
+            "powershell",
+            "[Console]::Error.WriteLine('boom')",
+            &[],
+            &[],
+            30,
+        )
+        .await;
         assert!(r.stderr.contains("boom"), "stderr: {:?}", r.stderr);
     }
 
@@ -221,7 +237,14 @@ mod tests {
     #[tokio::test]
     async fn powershell_passes_args() {
         let args = vec!["alpha".to_string(), "beta".to_string()];
-        let r = run("powershell", "Write-Output \"$($args[0]) $($args[1])\"", &args, &[], 30).await;
+        let r = run(
+            "powershell",
+            "Write-Output \"$($args[0]) $($args[1])\"",
+            &args,
+            &[],
+            30,
+        )
+        .await;
         assert_eq!(r.stdout.trim_end(), "alpha beta", "stderr: {}", r.stderr);
     }
 
@@ -297,7 +320,7 @@ mod tests {
             shell: "powershell",
             args: &[],
             timeout_secs: 30,
-            run_as_user: Some("anyone"),
+            privilege: crate::executor::Privilege::User,
             env_vars: &[],
         })
         .await;
@@ -306,6 +329,10 @@ mod tests {
             "expected hard-fail 85 (no silent fallback); got {} stdout={:?} stderr={:?}",
             r.retcode, r.stdout, r.stderr
         );
-        assert!(r.stdout.is_empty(), "must not have run anything: {:?}", r.stdout);
+        assert!(
+            r.stdout.is_empty(),
+            "must not have run anything: {:?}",
+            r.stdout
+        );
     }
 }

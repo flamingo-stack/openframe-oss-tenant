@@ -11,7 +11,10 @@ use windows::Win32::Security::{
     DuplicateTokenEx, SecurityImpersonation, TokenPrimary, TOKEN_ALL_ACCESS,
 };
 use windows::Win32::System::Environment::{CreateEnvironmentBlock, DestroyEnvironmentBlock};
-use windows::Win32::System::RemoteDesktop::{WTSGetActiveConsoleSessionId, WTSQueryUserToken};
+use windows::Win32::System::RemoteDesktop::{
+    WTSActive, WTSEnumerateSessionsW, WTSFreeMemory, WTSGetActiveConsoleSessionId,
+    WTSQueryUserToken, WTS_CURRENT_SERVER_HANDLE, WTS_SESSION_INFOW,
+};
 use windows::Win32::System::Threading::{
     CreateProcessAsUserW, GetExitCodeProcess, ResumeThread, WaitForSingleObject, CREATE_NO_WINDOW,
     CREATE_SUSPENDED, CREATE_UNICODE_ENVIRONMENT, PROCESS_INFORMATION, STARTF_USESHOWWINDOW,
@@ -283,17 +286,29 @@ struct InteractiveToken(HANDLE);
 
 impl InteractiveToken {
     fn acquire() -> Result<Self> {
-        unsafe {
-            let session = WTSGetActiveConsoleSessionId();
-            if session == 0xFFFF_FFFF {
-                return Err(anyhow!(
-                    "run_as_user requested but no active interactive session"
-                ));
-            }
-            let mut user_token = HANDLE::default();
-            WTSQueryUserToken(session, &mut user_token)
-                .map_err(|e| anyhow!("no interactive session token: {e}"))?;
+        if let Some(token) = Self::token_for_active_session() {
+            return Self::to_primary(token);
+        }
+        Err(anyhow!(
+            "run_as_user requested but no active interactive session"
+        ))
+    }
 
+    fn token_for_active_session() -> Option<HANDLE> {
+        unsafe {
+            let console = WTSGetActiveConsoleSessionId();
+            if console != 0xFFFF_FFFF {
+                let mut token = HANDLE::default();
+                if WTSQueryUserToken(console, &mut token).is_ok() {
+                    return Some(token);
+                }
+            }
+            first_active_session_token()
+        }
+    }
+
+    fn to_primary(user_token: HANDLE) -> Result<Self> {
+        unsafe {
             let mut primary = HANDLE::default();
             let dup = DuplicateTokenEx(
                 user_token,
@@ -308,6 +323,26 @@ impl InteractiveToken {
             Ok(InteractiveToken(primary))
         }
     }
+}
+
+unsafe fn first_active_session_token() -> Option<HANDLE> {
+    let mut sessions: *mut WTS_SESSION_INFOW = core::ptr::null_mut();
+    let mut count: u32 = 0;
+    WTSEnumerateSessionsW(WTS_CURRENT_SERVER_HANDLE, 0, 1, &mut sessions, &mut count).ok()?;
+
+    let mut result = None;
+    let slice = core::slice::from_raw_parts(sessions, count as usize);
+    for info in slice {
+        if info.State == WTSActive {
+            let mut token = HANDLE::default();
+            if WTSQueryUserToken(info.SessionId, &mut token).is_ok() {
+                result = Some(token);
+                break;
+            }
+        }
+    }
+    WTSFreeMemory(sessions as *mut core::ffi::c_void);
+    result
 }
 
 impl Drop for InteractiveToken {

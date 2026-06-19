@@ -5,6 +5,8 @@ use anyhow::{anyhow, Result};
 use nix::unistd::User;
 use tokio::process::Command;
 
+use crate::executor::Privilege;
+
 pub(crate) enum RunAs {
     Current,
     User(UserInfo),
@@ -17,10 +19,10 @@ pub(crate) struct UserInfo {
     pub home_dir: PathBuf,
 }
 
-pub(crate) fn resolve_run_as(requested: Option<&str>) -> Result<RunAs> {
-    match requested.map(str::trim).filter(|name| !name.is_empty()) {
-        None => Ok(RunAs::Current),
-        Some(name) => Ok(RunAs::User(lookup_user(name)?)),
+pub(crate) fn resolve_run_as(privilege: Privilege) -> Result<RunAs> {
+    match privilege {
+        Privilege::Agent => Ok(RunAs::Current),
+        Privilege::User => Ok(RunAs::User(lookup_user(&resolve_active_user()?)?)),
     }
 }
 
@@ -34,6 +36,46 @@ fn lookup_user(username: &str) -> Result<UserInfo> {
         gid: user.gid.as_raw(),
         home_dir: user.dir,
     })
+}
+
+#[cfg(target_os = "macos")]
+fn resolve_active_user() -> Result<String> {
+    let output = std::process::Command::new("stat")
+        .args(["-f", "%Su", "/dev/console"])
+        .output()
+        .map_err(|e| anyhow!("failed to query console user: {e}"))?;
+    let user = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if user.is_empty() || user == "root" {
+        return Err(anyhow!("no active interactive user (USER privilege)"));
+    }
+    Ok(user)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn resolve_active_user() -> Result<String> {
+    if let Ok(output) = std::process::Command::new("loginctl")
+        .args(["list-sessions", "--no-legend"])
+        .output()
+    {
+        let text = String::from_utf8_lossy(&output.stdout);
+        for line in text.lines() {
+            let fields: Vec<&str> = line.split_whitespace().collect();
+            if fields.len() >= 4 && fields[3].starts_with("seat") {
+                return Ok(fields[2].to_string());
+            }
+        }
+    }
+
+    let output = std::process::Command::new("who")
+        .output()
+        .map_err(|e| anyhow!("failed to query active user: {e}"))?;
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .next()
+        .and_then(|line| line.split_whitespace().next())
+        .filter(|user| !user.is_empty())
+        .map(|user| user.to_string())
+        .ok_or_else(|| anyhow!("no active interactive user (USER privilege)"))
 }
 
 pub(crate) fn configure_preexec(cmd: &mut Command, run_as: &RunAs) -> Result<()> {
@@ -83,127 +125,51 @@ pub(crate) fn configure_preexec(cmd: &mut Command, run_as: &RunAs) -> Result<()>
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::executor::{execute_script, ScriptParams};
+    use crate::executor::{execute_script, Privilege, ScriptParams};
 
-    fn current_uid() -> u32 {
-        unsafe { libc::geteuid() }
-    }
-
-    fn current_username() -> String {
-        User::from_uid(nix::unistd::Uid::from_raw(current_uid()))
-            .unwrap()
-            .unwrap()
-            .name
-    }
-
-    #[test]
-    fn resolve_none_is_current() {
-        assert!(matches!(resolve_run_as(None).unwrap(), RunAs::Current));
+    fn params<'a>(code: &'a str, privilege: Privilege) -> ScriptParams<'a> {
+        ScriptParams {
+            code,
+            shell: "/bin/sh",
+            args: &[],
+            timeout_secs: 30,
+            privilege,
+            env_vars: &[],
+        }
     }
 
     #[test]
-    fn resolve_blank_is_current() {
+    fn agent_privilege_is_current() {
         assert!(matches!(
-            resolve_run_as(Some("   ")).unwrap(),
+            resolve_run_as(Privilege::Agent).unwrap(),
             RunAs::Current
         ));
     }
 
-    #[test]
-    fn resolve_unknown_user_errors() {
-        assert!(resolve_run_as(Some("ofcmd_no_such_user_xyz")).is_err());
-    }
-
     #[tokio::test]
-    async fn unknown_user_hard_fails() {
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\necho hi\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some("ofcmd_no_such_user_xyz"),
-            env_vars: &[],
-        })
-        .await;
-        assert_eq!(r.retcode, 85);
-    }
-
-    #[tokio::test]
-    async fn current_user_is_noop() {
-        let name = current_username();
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\necho hi\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some(&name),
-            env_vars: &[],
-        })
-        .await;
+    async fn agent_privilege_runs_as_agent() {
+        let r = execute_script(params("#!/bin/sh\necho hi\n", Privilege::Agent)).await;
         assert_eq!(r.stdout, "hi\n");
         assert_eq!(r.retcode, 0);
+        assert!(!r.timed_out);
     }
 
     #[tokio::test]
-    async fn non_root_switch_preflight_fails() {
-        if current_uid() == 0 {
-            return;
-        }
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\necho hi\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some("root"),
-            env_vars: &[],
-        })
-        .await;
-        assert_eq!(r.retcode, 85);
+    async fn user_privilege_runs_or_hard_fails() {
+        let r = execute_script(params("#!/bin/sh\nid -u\n", Privilege::User)).await;
+        assert!(
+            r.retcode == 0 || r.retcode == 85,
+            "retcode was {}",
+            r.retcode
+        );
+        assert!(!r.timed_out);
     }
 
     #[tokio::test]
-    #[ignore = "requires root"]
-    async fn runs_as_named_user() {
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\nid -un\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some("nobody"),
-            env_vars: &[],
-        })
-        .await;
+    #[ignore = "requires root + an active interactive session"]
+    async fn user_privilege_drops_privilege() {
+        let r = execute_script(params("#!/bin/sh\nid -u\n", Privilege::User)).await;
         assert_eq!(r.retcode, 0);
-        assert_eq!(r.stdout.trim(), "nobody");
-    }
-
-    #[tokio::test]
-    #[ignore = "requires root"]
-    async fn named_user_env_is_set() {
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\nprintf '%s' \"$USER\"\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some("nobody"),
-            env_vars: &[],
-        })
-        .await;
-        assert_eq!(r.stdout, "nobody");
-    }
-
-    #[tokio::test]
-    #[ignore = "requires root"]
-    async fn named_user_drops_privilege() {
-        let r = execute_script(ScriptParams {
-            code: "#!/bin/sh\nid -u\n",
-            shell: "/bin/sh",
-            args: &[],
-            timeout_secs: 30,
-            run_as_user: Some("nobody"),
-            env_vars: &[],
-        })
-        .await;
         let uid: u32 = r.stdout.trim().parse().unwrap();
         assert_ne!(uid, 0);
     }

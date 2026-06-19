@@ -14,7 +14,7 @@ use process::execute_with_timeout;
 use run_as_user::{configure_preexec, resolve_run_as, RunAs};
 
 pub async fn execute_script(params: ScriptParams<'_>) -> ExecResult {
-    let run_as = match resolve_run_as(params.run_as_user) {
+    let run_as = match resolve_run_as(params.privilege) {
         Ok(run_as) => run_as,
         Err(e) => return spawn_error(e),
     };
@@ -88,7 +88,7 @@ mod tests {
             shell: "/bin/sh",
             args,
             timeout_secs: 30,
-            run_as_user: None,
+            privilege: crate::executor::Privilege::Agent,
             env_vars: env,
         })
         .await

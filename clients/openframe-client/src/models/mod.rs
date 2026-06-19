@@ -17,9 +17,12 @@ pub mod installed_agent_message;
 pub mod update_state;
 pub mod device_tag;
 pub mod tool_version_overrides;
-pub mod command_execution_message;
+pub mod execution;
 
-pub use command_execution_message::{CommandExecutionMessage, CommandExecutionResult};
+pub use execution::{
+    CommandMessage, ExecutionMessage, ExecutionRequest, PrivilegeLevel, RmmResult, ScriptEnvVar,
+    ScriptMessage, ScriptShell,
+};
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;
