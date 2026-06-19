@@ -14,7 +14,7 @@ use process::execute_with_timeout;
 use run_as_user::{configure_preexec, resolve_run_as, RunAs};
 
 pub async fn execute_script(params: ScriptParams<'_>) -> ExecResult {
-    let run_as = match resolve_run_as(params.privilege) {
+    let run_as = match resolve_run_as(params.privilege).await {
         Ok(run_as) => run_as,
         Err(e) => return spawn_error(e),
     };

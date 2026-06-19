@@ -19,10 +19,10 @@ pub(crate) struct UserInfo {
     pub home_dir: PathBuf,
 }
 
-pub(crate) fn resolve_run_as(privilege: Privilege) -> Result<RunAs> {
+pub(crate) async fn resolve_run_as(privilege: Privilege) -> Result<RunAs> {
     match privilege {
         Privilege::Agent => Ok(RunAs::Current),
-        Privilege::User => Ok(RunAs::User(lookup_user(&resolve_active_user()?)?)),
+        Privilege::User => Ok(RunAs::User(lookup_user(&resolve_active_user().await?)?)),
     }
 }
 
@@ -39,10 +39,11 @@ fn lookup_user(username: &str) -> Result<UserInfo> {
 }
 
 #[cfg(target_os = "macos")]
-fn resolve_active_user() -> Result<String> {
-    let output = std::process::Command::new("stat")
+async fn resolve_active_user() -> Result<String> {
+    let output = Command::new("stat")
         .args(["-f", "%Su", "/dev/console"])
         .output()
+        .await
         .map_err(|e| anyhow!("failed to query console user: {e}"))?;
     let user = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if user.is_empty() || user == "root" {
@@ -52,28 +53,32 @@ fn resolve_active_user() -> Result<String> {
 }
 
 #[cfg(not(target_os = "macos"))]
-fn resolve_active_user() -> Result<String> {
-    if let Ok(output) = std::process::Command::new("loginctl")
+async fn resolve_active_user() -> Result<String> {
+    if let Ok(output) = Command::new("loginctl")
         .args(["list-sessions", "--no-legend"])
         .output()
+        .await
     {
         let text = String::from_utf8_lossy(&output.stdout);
         for line in text.lines() {
             let fields: Vec<&str> = line.split_whitespace().collect();
             if fields.len() >= 4 && fields[3].starts_with("seat") {
-                return Ok(fields[2].to_string());
+                let user = fields[2];
+                if !user.is_empty() && user != "root" {
+                    return Ok(user.to_string());
+                }
             }
         }
     }
 
-    let output = std::process::Command::new("who")
+    let output = Command::new("who")
         .output()
+        .await
         .map_err(|e| anyhow!("failed to query active user: {e}"))?;
     String::from_utf8_lossy(&output.stdout)
         .lines()
-        .next()
-        .and_then(|line| line.split_whitespace().next())
-        .filter(|user| !user.is_empty())
+        .filter_map(|line| line.split_whitespace().next())
+        .find(|user| !user.is_empty() && *user != "root")
         .map(|user| user.to_string())
         .ok_or_else(|| anyhow!("no active interactive user (USER privilege)"))
 }
@@ -140,10 +145,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn agent_privilege_is_current() {
+    #[tokio::test]
+    async fn agent_privilege_is_current() {
         assert!(matches!(
-            resolve_run_as(Privilege::Agent).unwrap(),
+            resolve_run_as(Privilege::Agent).await.unwrap(),
             RunAs::Current
         ));
     }
