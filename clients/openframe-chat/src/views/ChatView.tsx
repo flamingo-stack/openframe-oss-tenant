@@ -130,15 +130,27 @@ export function ChatView() {
 
   const { toast } = useToast();
 
-  // Fire-and-forget so ChatInput clears the draft immediately on send. Returning
-  // sendMessage's promise directly would make the lib defer clearing until it
-  // resolves - which only happens once the full response arrives - leaving the
-  // sent text sitting in the (disabled) input until then.
+  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
+  const isDisconnected = status !== 'connected';
+
+  // Connected: fire-and-forget so ChatInput clears the draft immediately. Returning
+  // sendMessage's promise would make the lib defer clearing until it resolves (once
+  // the full response arrives), leaving the sent text in the input until then.
+  // Disconnected: toast and return false so the lib keeps the user's draft instead
+  // of clearing it on a send that can't go through.
   const handleSend = useCallback(
     (text: string) => {
+      if (isDisconnected) {
+        toast({
+          title: 'Connection lost',
+          description: 'Your message was not sent. Please try again shortly.',
+          variant: 'destructive',
+        });
+        return false;
+      }
       void sendMessage(text);
     },
-    [sendMessage],
+    [sendMessage, isDisconnected, toast],
   );
 
   // Pre-process messages for rendering: filter pending approvals (they
@@ -252,9 +264,6 @@ export function ChatView() {
       if (usage) setTokenUsage(toTokenUsageData(usage));
     });
   }, [dialogId, tokenUsage]);
-
-  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
-  const isDisconnected = status !== 'connected';
 
   const isActiveTicketResolved = activeTicket?.status === 'RESOLVED' || activeTicket?.statusKind === 'RESOLVED';
 
@@ -465,7 +474,6 @@ export function ChatView() {
               sending={isStreaming || isCompacting}
               awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
               placeholder="Enter your request here..."
-              disabled={isDisconnected}
             />
           </>
         )}

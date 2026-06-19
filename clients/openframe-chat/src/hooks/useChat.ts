@@ -562,7 +562,7 @@ export function useChat({
         const errorText = err instanceof Error ? err.message : String(err);
         if (!errorText.toLowerCase().includes('network error')) {
           setError(errorText);
-          messages.addErrorMessage(errorText);
+          messages.addErrorMessage();
         }
       } finally {
         setIsTyping(false);
