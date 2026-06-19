@@ -1,9 +1,8 @@
 'use client';
 
-import { notFound, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { isSaasTenantMode } from '@/lib/app-mode';
-import { featureFlags } from '@/lib/feature-flags';
 import { TicketStatusesView } from './components/ticket-statuses-view';
 
 export const dynamic = 'force-dynamic';
@@ -17,10 +16,6 @@ export default function TicketStatusesPage() {
       return;
     }
   }, [router]);
-
-  if (!featureFlags.ticketStatuses.enabled()) {
-    notFound();
-  }
 
   if (!isSaasTenantMode()) {
     return null;

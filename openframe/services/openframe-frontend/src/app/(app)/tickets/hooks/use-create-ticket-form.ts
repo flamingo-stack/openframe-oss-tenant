@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useApplyAssignmentsDiff, useAssignedItems } from '@/components/assignments';
 import { apiClient } from '@/lib/api-client';
-import { featureFlags } from '@/lib/feature-flags';
 import { API_ENDPOINTS, CREATION_SOURCE } from '../constants';
 import { GET_TICKET_QUERY } from '../queries/ticket-queries';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
@@ -50,8 +49,7 @@ export function useCreateTicketForm({ ticketId }: UseCreateTicketFormOptions = {
 
   // Resolve the ticket's current status (statusDefinition, or the legacy-status fallback
   // for tickets with no statusId) so edit mode can prefill it.
-  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && isEditMode });
+  const statusesQuery = useTicketStatusesQuery({ enabled: isEditMode });
   const currentStatus = resolveCurrentStatus(ticket, statusesQuery.data?.snapshot);
 
   const form = useForm<CreateTicketFormData>({

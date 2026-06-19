@@ -9,11 +9,9 @@ export const FEATURE_FLAG_NAMES = [
   'help-center',
   'notifications',
   'batch-approval',
-  'ai-streaming-jetstream',
   'debug-nats-chunks',
   'mingo-sidebar',
   'mingo-sidebar-context',
-  'ticket-statuses',
   'mingo-ai-chat-settings',
   'customer-ai-assistant-settings',
 ] as const;
@@ -56,11 +54,6 @@ export const featureFlags = {
       return getFlagValue('batch-approval', () => false);
     },
   },
-  aiStreamingJetstream: {
-    enabled(): boolean {
-      return getFlagValue('ai-streaming-jetstream', () => false);
-    },
-  },
   debugNatsChunks: {
     enabled(): boolean {
       return getFlagValue('debug-nats-chunks', () => false);
@@ -74,11 +67,6 @@ export const featureFlags = {
   mingoSidebarContext: {
     enabled(): boolean {
       return getFlagValue('mingo-sidebar-context', () => false);
-    },
-  },
-  ticketStatuses: {
-    enabled(): boolean {
-      return getFlagValue('ticket-statuses', () => false);
     },
   },
   mingoAiChatSettings: {

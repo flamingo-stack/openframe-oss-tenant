@@ -265,96 +265,10 @@ export const GET_TICKETS_QUERY = `
   }
 `;
 
-const BOARD_CARD_TICKET_FRAGMENT = `
-  fragment BoardCardTicket on Ticket {
-    id
-    ticketNumber
-    title
-    status
-    owner {
-      ... on ClientTicketOwner {
-        type
-        machineId
-        machine {
-          id
-          machineId
-          hostname
-          organizationId
-        }
-      }
-      ... on AdminTicketOwner {
-        type
-        userId
-        user {
-          id
-          firstName
-          lastName
-        }
-      }
-    }
-    deviceId
-    deviceHostname
-    organizationId
-    organizationName
-    assignedTo
-    assignedName
-    assigneeImage {
-      imageUrl
-      hash
-    }
-    labels {
-      id
-      key
-      color
-    }
-    createdAt
-    updatedAt
-    resolvedAt
-    order
-  }
-`;
-
-const BOARD_COLUMN_CONNECTION_FRAGMENT = `
-  fragment BoardColumnConnection on TicketConnection {
-    edges {
-      cursor
-      node {
-        ...BoardCardTicket
-      }
-    }
-    pageInfo {
-      hasNextPage
-      hasPreviousPage
-      startCursor
-      endCursor
-    }
-    filteredCount
-  }
-`;
-
-export const GET_TICKETS_BOARD_QUERY = `
-  query GetTicketsBoard($limit: Int!, $search: String, $organizationIds: [ID!], $assigneeIds: [ID!]) {
-    active: tickets(filter: { statuses: [ACTIVE], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
-      ...BoardColumnConnection
-    }
-    techRequired: tickets(filter: { statuses: [TECH_REQUIRED], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
-      ...BoardColumnConnection
-    }
-    onHold: tickets(filter: { statuses: [ON_HOLD], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
-      ...BoardColumnConnection
-    }
-    resolved: tickets(filter: { statuses: [RESOLVED], organizationIds: $organizationIds, assigneeIds: $assigneeIds }, pagination: { limit: $limit }, search: $search, sort: { field: "order", direction: ASC }) {
-      ...BoardColumnConnection
-    }
-  }
-  ${BOARD_COLUMN_CONNECTION_FRAGMENT}
-  ${BOARD_CARD_TICKET_FRAGMENT}
-`;
-
-// ===== Lifecycle board (custom statuses) — gated by featureFlags.ticketStatuses =====
+// ===== Lifecycle board (custom statuses) =====
 
 const BOARD_CARD_TICKET_LIFECYCLE_FRAGMENT = `
-  fragment BoardCardTicketLifecycle on Ticket {
+  fragment BoardCardTicket on Ticket {
     id
     ticketNumber
     title
@@ -435,7 +349,7 @@ export const GET_BOARD_COLUMN_TICKETS_QUERY = `
       edges {
         cursor
         node {
-          ...BoardCardTicketLifecycle
+          ...BoardCardTicket
         }
       }
       pageInfo {

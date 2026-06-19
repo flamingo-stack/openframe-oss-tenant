@@ -1,7 +1,6 @@
 import type { ChatTicketItemData } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
 import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQlService';
 import { tokenService } from '../services/tokenService';
 import { log } from '../utils/log';
@@ -26,8 +25,6 @@ function formatTimeAgo(dateString: string): string {
 }
 
 function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
-  // statusDefinition is only present when the ticket-statuses flag is on (it's
-  // fetched behind @include), so mapping it unconditionally is safe.
   const def = ticket.statusDefinition;
   return {
     id: ticket.id,
@@ -45,8 +42,6 @@ function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
 const TICKET_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
 export function useTickets() {
-  const { flags } = useFeatureFlags();
-  const lifecycle = flags['ticket-statuses'];
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
 
@@ -67,12 +62,11 @@ export function useTickets() {
   }, [hasToken]);
 
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
-    queryKey: ['tickets', lifecycle],
+    queryKey: ['tickets'],
     queryFn: async ({ pageParam }) => {
       const startedAt = Date.now();
       log.info('useTickets', 'polling request', {
         cursor: pageParam,
-        lifecycle,
         statuses: TICKET_STATUSES,
         limit: 20,
         refetchIntervalMs: 60_000,
@@ -82,7 +76,6 @@ export function useTickets() {
         statuses: TICKET_STATUSES,
         cursor: pageParam,
         limit: 20,
-        lifecycle,
       });
 
       log.info('useTickets', 'polling response', {
@@ -159,7 +152,7 @@ export function useTickets() {
       timeAgo?: string;
     } | null> => {
       try {
-        const ticket = await ticketGraphQlService.getTicket(ticketId, lifecycle);
+        const ticket = await ticketGraphQlService.getTicket(ticketId);
         if (ticket) {
           const def = ticket.statusDefinition;
           return {
@@ -182,7 +175,7 @@ export function useTickets() {
         return null;
       }
     },
-    [lifecycle],
+    [],
   );
 
   return {

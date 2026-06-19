@@ -40,7 +40,6 @@ import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingApprovals } from '@/lib/chat-history';
-import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -57,7 +56,6 @@ import {
 } from '../constants';
 import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useAssignTicket } from '../hooks/use-assign-ticket';
-import { useChunkCatchup } from '../hooks/use-chunk-catchup';
 import { useDirectChat } from '../hooks/use-direct-chat';
 import { useHistoricalMessages } from '../hooks/use-historical-messages';
 import { useSendAdminMessage } from '../hooks/use-send-admin-message';
@@ -214,16 +212,14 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const clientChat = useTicketMessages(messageDialogId, CHAT_TYPE.CLIENT);
   const adminChat = useTicketMessages(messageDialogId, CHAT_TYPE.ADMIN);
 
-  const { putOnHold, resolve, activate, archive, isUpdating } = useTicketStatus();
+  const { activate, archive, isUpdating } = useTicketStatus();
   const transitionTicket = useTransitionTicket();
-  const isLifecycleStatuses = featureFlags.ticketStatuses.enabled();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState<boolean | null>(null);
   const defaultTicketInfoExpanded =
     dialog?.creationSource === CREATION_SOURCE.FAE_FORM || dialog?.creationSource === CREATION_SOURCE.ADMIN_DASHBOARD;
   const ticketInfoExpanded = isTicketInfoExpanded ?? defaultTicketInfoExpanded;
   const [activeChatTab, setActiveChatTab] = useState('client');
-  const hasCaughtUp = useRef(false);
 
   const clientDisplayName =
     dialog?.deviceHostname ||
@@ -259,21 +255,11 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     [processClientChunk, processAdminChunk, recordHighestStreamSeq],
   );
 
-  const { catchUpChunks, processChunk, resetChunkTracking, startInitialBuffering, resetAndCatchUp } = useChunkCatchup({
-    dialogId: messageDialogId ?? '',
-    onChunkReceived: dispatchChunk,
-  });
-
   const { stopGeneration: handleStopGeneration } = useStopGeneration(messageDialogId);
 
   const { sendAdminMessage: rawSendAdminMessage, isSendingAdminMessage } = useSendAdminMessage({
     ticketId,
     messageDialogId,
-    onBeforeDialogCreated: () => {
-      resetChunkTracking();
-      startInitialBuffering();
-      hasCaughtUp.current = false;
-    },
   });
 
   // Sending while an approval is pending is an interrupt — backend cancels
@@ -302,16 +288,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   useEffect(() => {
     if (!ticketId) return;
 
-    resetChunkTracking();
-    startInitialBuffering();
-    hasCaughtUp.current = false;
-
     return () => {
       clearChatState();
-      resetChunkTracking();
-      hasCaughtUp.current = false;
     };
-  }, [ticketId, clearChatState, resetChunkTracking, startInitialBuffering]);
+  }, [ticketId, clearChatState]);
 
   useEffect(() => {
     if (!initialAiModel) return;
@@ -338,23 +318,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     },
     [queryClient, ticketId],
   );
-
-  const handlePutOnHold = useCallback(async () => {
-    if (!dialog || isUpdating) return;
-
-    const nextStatus = await putOnHold(ticketId);
-    if (nextStatus) applyStatus(nextStatus);
-  }, [dialog, isUpdating, putOnHold, ticketId, applyStatus]);
-
-  const handleResolve = useCallback(async () => {
-    if (!dialog || isUpdating) return;
-
-    const nextStatus = await resolve(ticketId);
-    if (nextStatus) {
-      trackDashboardActivity(EVENT_SUBTYPE.RESOLVE_TICKET);
-      applyStatus(nextStatus);
-    }
-  }, [dialog, isUpdating, resolve, ticketId, applyStatus]);
 
   const handleArchive = useCallback(async () => {
     if (!dialog || isUpdating) return;
@@ -530,31 +493,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
     const isResolved = dialog.status === DIALOG_STATUS.RESOLVED;
     const isArchived = dialog.status === DIALOG_STATUS.ARCHIVED;
-    const isOnHold = dialog.status === DIALOG_STATUS.ON_HOLD;
-    const isClosed = isResolved || isArchived;
     const actions: PageActionButton[] = [];
-
-    // With lifecycle statuses, Put On Hold / Resolve are handled by the inline
-    // status changer in the info section, so they're dropped from the action bar.
-    if (!isLifecycleStatuses && !isOnHold && !isClosed) {
-      actions.push({
-        label: isUpdating ? 'Updating...' : 'Put On Hold',
-        variant: 'outline',
-        icon: <HourglassClockIcon className="text-ods-text-secondary" />,
-        onClick: handlePutOnHold,
-        disabled: isUpdating,
-      });
-    }
-
-    if (!isLifecycleStatuses && !isClosed) {
-      actions.push({
-        label: isUpdating ? 'Updating...' : 'Resolve',
-        variant: 'outline',
-        icon: <CheckCircleIcon className="text-ods-text-secondary" />,
-        onClick: handleResolve,
-        disabled: isUpdating,
-      });
-    }
 
     if (isResolved) {
       actions.push({
@@ -577,7 +516,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     }
 
     return actions;
-  }, [dialog, isLifecycleStatuses, isUpdating, handlePutOnHold, handleResolve, handleArchive, handleUnarchive]);
+  }, [dialog, isUpdating, handleArchive, handleUnarchive]);
 
   if (isLoading) {
     return <TicketDetailsSkeleton onBack={handleBackToTickets} />;
@@ -599,8 +538,8 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const adminTokenUsage = dialog.tokenUsage?.find(t => t.chatType === CHAT_TYPE.ADMIN);
   const showTokenMemory = !isClosed;
 
-  // With the lifecycle flag on, the status tag becomes an inline changer driven
-  // by the ticket's available transitions. resolveStatusTagProps applies the
+  // The status tag is an inline changer driven by the ticket's available
+  // transitions. resolveStatusTagProps applies the
   // unified design (AI_ASSISTANCE/RESOLVED → canonical styling like the board;
   // TECH_REQUIRED and custom → backend color), shared with the chat surfaces.
   const statusTag = resolveStatusTagProps({
@@ -609,25 +548,20 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     statusName: dialog.statusName,
     statusColor: dialog.statusColor,
   });
-  const statusInfoProps = isLifecycleStatuses
-    ? {
-        status: statusTag.status,
-        statusLabel: statusTag.label,
-        statusColor: statusTag.color,
-        statusOptions: dialog.availableTransitions,
-        onStatusSelect: handleTransition,
-        isStatusPending: transitionTicket.isPending,
-      }
-    : {};
+  const statusInfoProps = {
+    status: statusTag.status,
+    statusLabel: statusTag.label,
+    statusColor: statusTag.color,
+    statusOptions: dialog.availableTransitions,
+    onStatusSelect: handleTransition,
+    isStatusPending: transitionTicket.isPending,
+  };
 
   return (
     <>
       <TicketDialogSubscription
         dialogId={messageDialogId}
         dispatchChunk={dispatchChunk}
-        legacyProcessChunk={processChunk}
-        catchUpChunks={catchUpChunks}
-        resetAndCatchUp={resetAndCatchUp}
         clientInitialOptStartSeq={clientInitialOptStartSeq}
         adminInitialOptStartSeq={adminInitialOptStartSeq}
         isInitialOptStartSeqReady={isInitialOptStartSeqReady}
@@ -664,7 +598,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             icon: <MonitorIcon className="size-4" />,
             onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
           }}
-          status={dialog.status}
           {...statusInfoProps}
           onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
           expanded={ticketInfoExpanded}
@@ -747,7 +680,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   icon: <MonitorIcon className="size-4" />,
                   onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
                 }}
-                status={dialog.status}
                 {...statusInfoProps}
                 expanded={true}
                 assigned={{

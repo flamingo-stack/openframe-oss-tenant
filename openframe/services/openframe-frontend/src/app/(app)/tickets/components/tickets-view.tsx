@@ -4,9 +4,7 @@ import { TableCellIcon, TableColIcon } from '@flamingo-stack/openframe-frontend-
 import { TabSelector } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { TicketsBoard } from './tickets-board';
-import { TicketsBoardLifecycle } from './tickets-board-lifecycle';
 import { CurrentTickets } from './tickets-table';
 
 type ViewMode = 'table' | 'board';
@@ -44,9 +42,8 @@ export function TicketsView() {
   );
 
   if (viewMode === 'board') {
-    const BoardComponent = featureFlags.ticketStatuses.enabled() ? TicketsBoardLifecycle : TicketsBoard;
     return (
-      <BoardComponent
+      <TicketsBoard
         selector={tabs}
         organizationIds={params.organizationIds}
         onOrganizationIdsChange={handleOrganizationIdsChange}
