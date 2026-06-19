@@ -7,7 +7,8 @@ import {
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, type ColumnDef, type Row, SplitButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import { isPendingApproval, resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import { openMingoDialogInDrawer } from '@/app/components/notifications/open-mingo-dialog';
 import { formatDate, formatTime } from '@/lib/format-date';
 
 export interface NotificationRow {
@@ -67,17 +68,33 @@ export function buildNotificationColumns({
       cell: ({ row }: { row: Row<NotificationRow> }) => {
         const action = resolveNotificationAction(row.original.notification);
         if (!action) return null;
+        // A Mingo dialog has no URL (it lives in the in-layout drawer once the
+        // `/mingo` page is retired), so it opens via click instead of an href +
+        // new tab. Route actions keep the open-in-new-tab anchor behavior.
+        const isRoute = 'route' in action;
+        // Opening clears unread (the drawer has no URL, so the location-based
+        // auto-reader can't) — except a pending approval, which stays unread
+        // until it's approved/rejected. `onMarkRead` is only wired for the
+        // unread variant; it's a no-op for already-read rows.
+        const openDrawer = isRoute
+          ? undefined
+          : () => {
+              openMingoDialogInDrawer(action.mingoDialogId);
+              if (!isPendingApproval(row.original.notification)) onMarkRead?.(row.original.id);
+            };
         return (
           <div data-no-row-click className="flex w-full justify-end">
             <SplitButton
               variant="outline"
-              href={action.route}
+              href={isRoute ? action.route : undefined}
+              onClick={openDrawer}
               groupAriaLabel={action.label}
               iconAction={{
                 icon: <ArrowRightUpIcon className="text-ods-text-secondary" />,
-                'aria-label': `Open ${action.label} in new tab`,
-                href: action.route,
-                openInNewTab: true,
+                'aria-label': isRoute ? `Open ${action.label} in new tab` : `Open ${action.label}`,
+                href: isRoute ? action.route : undefined,
+                onClick: openDrawer,
+                openInNewTab: isRoute,
               }}
             >
               {action.label}

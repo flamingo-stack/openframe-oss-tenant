@@ -58,12 +58,7 @@ export const GET_MINGO_DIALOG_QUERY = `
   }
 `;
 
-const THINKING_FRAGMENT = `
-            ... on ThinkingData {
-              text
-            }`;
-
-export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
+export function getMingoDialogMessagesQuery() {
   return `
   query GetAllMessages($dialogId: ID!, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -98,9 +93,15 @@ export function getMingoDialogMessagesQuery({ includeThinking = false } = {}) {
             type
             ... on TextData {
               text
+              contextItems {
+                type
+                id
+              }
             }
 
-            ${includeThinking ? THINKING_FRAGMENT : ''}
+            ... on ThinkingData {
+              text
+            }
 
             ... on ExecutingToolData {
               type

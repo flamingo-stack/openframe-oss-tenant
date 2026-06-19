@@ -256,7 +256,6 @@ export function useSideChunkProcessor(
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     initialState: incompleteState,
     approvalStatuses,
-    enableThinking: featureFlags.thinking.enabled(),
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
     isDirectMode,
   });

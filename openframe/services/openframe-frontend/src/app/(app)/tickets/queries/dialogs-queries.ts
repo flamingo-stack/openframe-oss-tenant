@@ -12,12 +12,7 @@ export const GET_DIALOG_STATISTICS_QUERY = `
   }
 `;
 
-const THINKING_FRAGMENT = `
-            ... on ThinkingData {
-              text
-            }`;
-
-export function getDialogMessagesQuery({ includeThinking = false } = {}) {
+export function getDialogMessagesQuery() {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -51,7 +46,9 @@ export function getDialogMessagesQuery({ includeThinking = false } = {}) {
               text
             }
 
-            ${includeThinking ? THINKING_FRAGMENT : ''}
+            ... on ThinkingData {
+              text
+            }
 
             ... on SystemData {
               text

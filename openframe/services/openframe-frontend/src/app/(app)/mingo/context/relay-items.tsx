@@ -29,7 +29,7 @@ const DEVICES_FRAGMENT = graphql`
   @refetchable(queryName: "relayItemsDevicesPaginationQuery")
   @argumentDefinitions(search: { type: "String" }, first: { type: "Int", defaultValue: 10 }, after: { type: "String" }) {
     devices(search: $search, first: $first, after: $after) @connection(key: "relayItemsDevices_devices") {
-      edges { node { id hostname displayName status } }
+      edges { node { id machineId hostname displayName status } }
     }
   }
 `;
@@ -56,8 +56,11 @@ export function DeviceItems({ query, selectedKeys, onToggle, atLimit }: ContextI
           ? [
               {
                 type: CONTEXT_ENTITY_KIND.DEVICE,
-                id: e.node.id,
-                label: e.node.displayName || e.node.hostname || e.node.id,
+                // Use `machineId` (not the GraphQL/relay node id) — it's the id
+                // the backend's DEVICE context resolver + `@device:<id>` mention
+                // marker expect (ContextItemType.DEVICE idHint = "machineId").
+                id: e.node.machineId,
+                label: e.node.displayName || e.node.hostname || e.node.machineId,
                 description: e.node.status ?? undefined,
               },
             ]

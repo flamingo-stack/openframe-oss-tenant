@@ -23,15 +23,11 @@ import {
   ChatRuntimeContext,
   EndpointsRuntimeContext,
 } from '@flamingo-stack/openframe-frontend-core/contexts';
-import {
-  DEFAULT_CONTENT_SUFFIXES,
-  DEV_SECTION_PARAM_KEYS,
-  makeComposeContentUrl,
-} from '@flamingo-stack/openframe-frontend-core/utils';
 import { notFound } from 'next/navigation';
 import { type ReactNode, useContext, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
-import { HELP_CENTER_BASE, HELP_CENTER_ENDPOINTS } from './endpoints';
+import { HELP_CENTER_ENDPOINTS } from './endpoints';
+import { composeOpenframeContentUrl } from './help-center-content-href';
 
 // NOTE: the lib `PageShell`'s padding is overridden with OpenFrame's host grid
 // spacing via the `--page-shell-*` CSS vars set on the section wrapper in
@@ -42,17 +38,6 @@ import { HELP_CENTER_BASE, HELP_CENTER_ENDPOINTS } from './endpoints';
 // (`openframe-chat-runtime-provider.tsx`) — so `/content/api/*` GET/POSTs carry the
 // same bearer + 401-refresh as the chat with zero help-center-specific setup.
 
-/** Public origin of the Flamingo content hub — fallback for content types Help
- *  Center does NOT host in-app (blog / podcast / case-study / …). */
-const CONTENT_HUB_ORIGIN = 'https://www.flamingo.run';
-
-/** Types Help Center hosts on its own slugged detail routes → relative in-app
- *  href `/<suffix>/<slug>` (soft-nav). The list-filter types (roadmap, delivery)
- *  are NOT here — they have no detail route and use `overrides` instead. */
-const HOSTED_TYPES = new Set(['onboarding_guide', 'product_release']);
-
-const HC = HELP_CENTER_BASE.replace(/^\//, ''); // 'help-center' (suffixes are slash-less)
-
 export function HelpCenterRuntimeProvider({ children }: { children: ReactNode }) {
   const parent = useContext(ChatRuntimeContext);
 
@@ -60,30 +45,11 @@ export function HelpCenterRuntimeProvider({ children }: { children: ReactNode })
     () => ({
       ...(parent as ChatRuntime),
       navigation: { mode: 'host' },
-      composeContentUrl: makeComposeContentUrl({
-        hostedTypes: HOSTED_TYPES,
-        // Prefix the two hosted types' suffixes with the section base so their
-        // in-app href is `/help-center/onboarding-guides/<slug>` etc.; keep the
-        // lib defaults for every other type (used with `contentOrigin` below).
-        suffixes: {
-          ...DEFAULT_CONTENT_SUFFIXES,
-          onboarding_guide: `${HC}/onboarding-guides`,
-          product_release: `${HC}/releases`,
-        },
-        contentOrigin: CONTENT_HUB_ORIGIN,
-        // List-filter types deep-link into their EXISTING in-app list route with
-        // the `?search=<id>` param `DevSectionView` writes and the views read.
-        overrides: {
-          roadmap_item: id => ({
-            href: `${HELP_CENTER_BASE}/roadmap?${DEV_SECTION_PARAM_KEYS.search}=${encodeURIComponent(id)}`,
-            targetPlatform: null,
-          }),
-          delivery_item: id => ({
-            href: `${HELP_CENTER_BASE}/bug-fixes-and-enhancements?${DEV_SECTION_PARAM_KEYS.search}=${encodeURIComponent(id)}`,
-            targetPlatform: null,
-          }),
-        },
-      }),
+      // `mode: 'host'` → relative `/help-center/...` hrefs soft-nav in-app. The
+      // type→route map is shared with the app-wide chat runtime (the single
+      // source of truth in `help-center-content-href.ts`) so a card lands in the
+      // SAME place whether it's rendered on a Help Center page or in the chat.
+      composeContentUrl: composeOpenframeContentUrl,
     }),
     [parent],
   );

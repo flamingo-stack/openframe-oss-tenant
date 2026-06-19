@@ -19,25 +19,56 @@ import {
   TagIcon,
   UserIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { CONTEXT_ENTITY_KIND } from './context-types';
+import { CONTEXT_ENTITY_KIND, CONTEXT_ENTITY_MARKER } from './context-types';
 
 /**
- * Entity types in picker display order.
- *
- * POLICY and QUERY are offered alongside the rest. ⚠️ The backend
- * `ContextItemReference.type` enum (POST /chat/api/v1/messages) did not include
- * them as of the last verified spec — they are exposed ahead of the backend
- * landing the enum values (expected imminently). Until then, attaching a
- * Policy/Query and sending may 400 the whole message; if the backend rollout
- * slips, drop these two rows again.
+ * Entity types in picker display order. `marker` is the backend mention short
+ * form (from `CONTEXT_ENTITY_MARKER`) — the lib uses it to commit `@marker:id`
+ * tokens that match the backend's `MentionParser`. All eight kinds (incl. POLICY
+ * and QUERY) resolve server-side.
  */
 export const MINGO_CONTEXT_ENTITY_TYPES: ChatContextEntityType[] = [
-  { type: CONTEXT_ENTITY_KIND.DEVICE, label: 'Device', icon: <MonitorIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.SCRIPT, label: 'Script', icon: <BracketCurlyIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.TICKET, label: 'Ticket', icon: <TagIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.ORGANIZATION, label: 'Customer', icon: <IdCardIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.USER, label: 'User', icon: <UserIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.KB_ARTICLE, label: 'Knowledge Article', icon: <BookBookmarkIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.POLICY, label: 'Policy', icon: <FolderShieldIcon size={24} /> },
-  { type: CONTEXT_ENTITY_KIND.QUERY, label: 'Query', icon: <BracketCurlyEllipsisVrIcon size={24} /> },
+  {
+    type: CONTEXT_ENTITY_KIND.DEVICE,
+    label: 'Device',
+    marker: CONTEXT_ENTITY_MARKER.DEVICE,
+    icon: <MonitorIcon size={24} />,
+  },
+  {
+    type: CONTEXT_ENTITY_KIND.SCRIPT,
+    label: 'Script',
+    marker: CONTEXT_ENTITY_MARKER.SCRIPT,
+    icon: <BracketCurlyIcon size={24} />,
+  },
+  {
+    type: CONTEXT_ENTITY_KIND.TICKET,
+    label: 'Ticket',
+    marker: CONTEXT_ENTITY_MARKER.TICKET,
+    icon: <TagIcon size={24} />,
+  },
+  {
+    type: CONTEXT_ENTITY_KIND.ORGANIZATION,
+    label: 'Customer',
+    marker: CONTEXT_ENTITY_MARKER.ORGANIZATION,
+    icon: <IdCardIcon size={24} />,
+  },
+  { type: CONTEXT_ENTITY_KIND.USER, label: 'User', marker: CONTEXT_ENTITY_MARKER.USER, icon: <UserIcon size={24} /> },
+  {
+    type: CONTEXT_ENTITY_KIND.KB_ARTICLE,
+    label: 'Knowledge Article',
+    marker: CONTEXT_ENTITY_MARKER.KB_ARTICLE,
+    icon: <BookBookmarkIcon size={24} />,
+  },
+  {
+    type: CONTEXT_ENTITY_KIND.POLICY,
+    label: 'Policy',
+    marker: CONTEXT_ENTITY_MARKER.POLICY,
+    icon: <FolderShieldIcon size={24} />,
+  },
+  {
+    type: CONTEXT_ENTITY_KIND.QUERY,
+    label: 'Query',
+    marker: CONTEXT_ENTITY_MARKER.QUERY,
+    icon: <BracketCurlyEllipsisVrIcon size={24} />,
+  },
 ];
