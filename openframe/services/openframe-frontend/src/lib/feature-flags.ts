@@ -6,7 +6,6 @@ import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
  */
 export const FEATURE_FLAG_NAMES = [
   'billings',
-  'knowledge-base',
   'help-center',
   'notifications',
   'tickets-board',
@@ -41,11 +40,6 @@ export const featureFlags = {
   subscription: {
     enabled(): boolean {
       return getFlagValue('billings', () => false);
-    },
-  },
-  knowledgeBase: {
-    enabled(): boolean {
-      return getFlagValue('knowledge-base', () => false);
     },
   },
   helpCenter: {

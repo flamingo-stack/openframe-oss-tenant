@@ -100,16 +100,14 @@ export const getNavigationItems = (
     );
   }
 
-  if (featureFlags.knowledgeBase.enabled()) {
-    baseItems.push({
-      id: 'knowledge-base',
-      label: 'Knowledge Base',
-      icon: <BookBookmarkIcon size={24} />,
-      path: '/knowledge-base',
-      section: 'secondary',
-      isActive: pathname.startsWith('/knowledge-base'),
-    });
-  }
+  baseItems.push({
+    id: 'knowledge-base',
+    label: 'Knowledge Base',
+    icon: <BookBookmarkIcon size={24} />,
+    path: '/knowledge-base',
+    section: 'secondary',
+    isActive: pathname.startsWith('/knowledge-base'),
+  });
 
   if (featureFlags.helpCenter.enabled()) {
     baseItems.push({
