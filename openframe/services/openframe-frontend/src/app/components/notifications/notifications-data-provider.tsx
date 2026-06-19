@@ -349,7 +349,7 @@ function NotificationsDataInner({
   );
 
   const handleHistoryClick = useCallback(() => {
-    router.push('/notifications');
+    router.push('/notifications?tab=history');
   }, [router]);
 
   const approveRequest = useApproveRequest();
