@@ -11,8 +11,6 @@ export type CustomPolicyState = {
 };
 
 export type EditSnapshot = {
-  provider: string;
-  model: string;
   templateId: string | null;
   policyGroups: Map<string, PermissionCategory[]>;
   customBaseTemplateId: string | null;
