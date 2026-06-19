@@ -23,6 +23,8 @@ const HEALTHY_MARKER: &str = "Received CoreOk from server";
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How long continuously stuck before we act; also the sole rate-limiter (streak resets after each attempt). Cooldown may return after dev testing.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
+/// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
+const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
 pub struct MeshSelfHealService {
     directory_manager: DirectoryManager,
@@ -47,7 +49,10 @@ impl MeshSelfHealService {
             tool_kill,
             initial_config,
             agent_config,
-            http: reqwest::Client::new(),
+            http: reqwest::Client::builder()
+                .timeout(HTTP_TIMEOUT)
+                .build()
+                .expect("failed to build mesh self-heal HTTP client"),
         }
     }
 

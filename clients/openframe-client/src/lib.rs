@@ -507,7 +507,10 @@ impl Client {
                 self.initial_configuration_service.clone(),
                 self.agent_configuration_service.clone(),
             );
-            tokio::spawn(mesh_self_heal.run());
+            tokio::spawn(async move {
+                mesh_self_heal.run().await;
+                error!("mesh self-heal watcher exited unexpectedly");
+            });
         }
 
         // Start tool connection processing manager
