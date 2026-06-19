@@ -8,7 +8,6 @@ export const FEATURE_FLAG_NAMES = [
   'billings',
   'help-center',
   'notifications',
-  'tickets-board',
   'batch-approval',
   'ai-streaming-jetstream',
   'debug-nats-chunks',
@@ -50,11 +49,6 @@ export const featureFlags = {
   notifications: {
     enabled(): boolean {
       return getFlagValue('notifications', () => false);
-    },
-  },
-  ticketsBoard: {
-    enabled(): boolean {
-      return getFlagValue('tickets-board', () => false);
     },
   },
   batchApproval: {

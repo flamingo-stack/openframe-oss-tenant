@@ -12,18 +12,16 @@ import { CurrentTickets } from './tickets-table';
 type ViewMode = 'table' | 'board';
 
 export function TicketsView() {
-  const isBoardEnabled = featureFlags.ticketsBoard.enabled();
-
   const { params, setParam } = useApiParams({
     status: { type: 'array', default: [] },
     organizationIds: { type: 'array', default: [] },
     assigneeIds: { type: 'array', default: [] },
     labelIds: { type: 'array', default: [] },
     search: { type: 'string', default: '' },
-    viewMode: { type: 'string', default: isBoardEnabled ? 'board' : 'table' },
+    viewMode: { type: 'string', default: 'board' },
   });
 
-  const viewMode: ViewMode = isBoardEnabled && params.viewMode === 'board' ? 'board' : 'table';
+  const viewMode: ViewMode = params.viewMode === 'board' ? 'board' : 'table';
 
   const handleStatusFilterChange = useCallback((status: string[]) => setParam('status', status), [setParam]);
   const handleOrganizationIdsChange = useCallback((ids: string[]) => setParam('organizationIds', ids), [setParam]);
@@ -32,18 +30,17 @@ export function TicketsView() {
   const handleSearchChange = useCallback((value: string) => setParam('search', value), [setParam]);
 
   const tabs = useMemo(
-    () =>
-      isBoardEnabled ? (
-        <TabSelector
-          value={viewMode}
-          onValueChange={v => setParam('viewMode', v as ViewMode)}
-          items={[
-            { id: 'table', icon: <TableCellIcon className="w-6 h-6" /> },
-            { id: 'board', icon: <TableColIcon className="w-6 h-6" /> },
-          ]}
-        />
-      ) : null,
-    [isBoardEnabled, viewMode, setParam],
+    () => (
+      <TabSelector
+        value={viewMode}
+        onValueChange={v => setParam('viewMode', v as ViewMode)}
+        items={[
+          { id: 'table', icon: <TableCellIcon className="w-6 h-6" /> },
+          { id: 'board', icon: <TableColIcon className="w-6 h-6" /> },
+        ]}
+      />
+    ),
+    [viewMode, setParam],
   );
 
   if (viewMode === 'board') {
