@@ -12,8 +12,8 @@ interface AiSettingsLayoutProps {
   selector?: ReactNode;
   /**
    * When true, actions render in a fixed bottom bar on mobile (full-width
-   * buttons) instead of icon-only in the header. Use for edit-mode pages
-   * with Save + Cancel; leave false when there's a single Edit action.
+   * buttons) instead of icon-only in the header. Use for the edit-mode Save
+   * action; leave false when there's a single Edit action.
    */
   mobileBottomActions?: boolean;
 }

@@ -4,7 +4,6 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { ticketService } from '../services';
-import type { BoardStatus } from '../services/ticket-service.types';
 import {
   applyOptimisticMove,
   type OptimisticMoveInput,
@@ -15,8 +14,8 @@ import { dialogsQueryKeys, ticketsQueryKeys } from '../utils/query-keys';
 
 export interface MoveTicketParams {
   ticketId: string;
-  sourceStatus: BoardStatus;
-  targetStatus: BoardStatus;
+  sourceStatusId: string;
+  targetStatusId: string;
   afterTicketId: string | null;
   beforeTicketId: string | null;
 }
@@ -24,11 +23,11 @@ export interface MoveTicketParams {
 const MOVE_TICKET_MUTATION_KEY = ['tickets-board', 'move'] as const;
 
 async function moveTicketRequest(params: MoveTicketParams): Promise<void> {
-  const isCrossColumn = params.sourceStatus !== params.targetStatus;
+  const isCrossColumn = params.sourceStatusId !== params.targetStatusId;
   const hasAnchor = params.afterTicketId !== null || params.beforeTicketId !== null;
 
   if (isCrossColumn && !hasAnchor) {
-    await ticketService.mutateStatus(params.ticketId, params.targetStatus);
+    await ticketService.transitionTicket(params.ticketId, params.targetStatusId);
     return;
   }
 
@@ -36,7 +35,7 @@ async function moveTicketRequest(params: MoveTicketParams): Promise<void> {
     id: params.ticketId,
     afterTicketId: params.afterTicketId,
     beforeTicketId: params.beforeTicketId,
-    status: isCrossColumn ? params.targetStatus : undefined,
+    statusId: isCrossColumn ? params.targetStatusId : undefined,
   });
 }
 
@@ -52,8 +51,8 @@ export function useMoveTicket() {
       await queryClient.cancelQueries({ queryKey: dialogsQueryKeys.boardColumns() });
       const input: OptimisticMoveInput = {
         ticketId: params.ticketId,
-        sourceStatus: params.sourceStatus,
-        targetStatus: params.targetStatus,
+        sourceStatusId: params.sourceStatusId,
+        targetStatusId: params.targetStatusId,
         afterTicketId: params.afterTicketId,
         beforeTicketId: params.beforeTicketId,
       };
@@ -70,6 +69,9 @@ export function useMoveTicket() {
     },
     onSettled: (_data, _err, params) => {
       queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(params.ticketId) });
+      if (params.sourceStatusId !== params.targetStatusId) {
+        queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.statistics() });
+      }
     },
   });
 }

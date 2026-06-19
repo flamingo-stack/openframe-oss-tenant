@@ -1,23 +1,17 @@
 'use client';
 
 import { PageLayout, TagSearchInput } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { notFound } from 'next/navigation';
 import { ArchivedArticlesTable } from '@/app/(app)/knowledge-base/components/knowledge-base-table';
 import { KnowledgeBaseTagsRow } from '@/app/(app)/knowledge-base/components/knowledge-base-tags-row';
 import { useTagSearchState } from '@/app/(app)/knowledge-base/hooks/use-tag-search-state';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { featureFlags } from '@/lib/feature-flags';
 
 export default function ArchivePage() {
   const handleBack = useSafeBack('/knowledge-base');
   const { search, debouncedSearch, setSearch, tagIds, tagSearchOptions, addTag, removeTag, clearAll } =
     useTagSearchState();
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
-
-  if (!featureFlags.knowledgeBase.enabled()) {
-    notFound();
-  }
 
   const hasFilters = search.length > 0 || tagIds.length > 0;
 

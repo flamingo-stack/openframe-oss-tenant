@@ -30,7 +30,7 @@ export function AiSettingsCustomerCard({ settings, providerModelLabel }: AiSetti
       <EntityImage
         src={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
         alt={settings.assistantName}
-        className="size-10 rounded-full"
+        className="size-10 md:size-10 rounded-full"
       />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         <p className="text-ods-text-primary text-h4 truncate">{settings.assistantName}</p>

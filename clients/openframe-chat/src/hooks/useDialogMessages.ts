@@ -27,9 +27,7 @@ export function useDialogMessages(dialogId: string | null, options: UseDialogMes
   const { data, hasNextPage, isFetchingNextPage, isLoading, isFetched, fetchNextPage, dataUpdatedAt } = useInfiniteQuery({
     queryKey: ['dialog-messages', dialogId],
     queryFn: async ({ pageParam }) => {
-      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50, {
-        includeThinking: flags.thinking,
-      });
+      const connection = await dialogGraphQlService.getDialogMessagesPage(dialogId!, pageParam, 50);
       if (!connection || !connection.edges) {
         return { edges: [], pageInfo: { hasNextPage: false, endCursor: null } };
       }

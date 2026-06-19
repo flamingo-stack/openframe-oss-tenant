@@ -184,9 +184,15 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       // send time AND its memoized message keeps a stable `getTime()` across
       // realtime chunks (a missing/`new Date()` timestamp would re-render the
       // whole list and collapse open menus on every chunk).
+      // Forward attached entity-context items on user messages so the lib
+      // renders the read-only chip strip under the bubble (Figma 1:6437). They
+      // ride the optimistic message (full `ChatContextItem` with labels) and the
+      // realtime `MESSAGE_REQUEST` echo; the lib resolves each chip's icon from
+      // `contextPicker.entityTypes` by `type`.
+      const context = role === 'user' && m.contextItems?.length ? { contextItems: m.contextItems } : {};
       const unified: UnifiedChatMessage = Array.isArray(m.content)
-        ? { id: m.id, role, content: '', segments: m.content, timestamp: m.timestamp, ...identity }
-        : { id: m.id, role, content: m.content, timestamp: m.timestamp, ...identity };
+        ? { id: m.id, role, content: '', segments: m.content, timestamp: m.timestamp, ...identity, ...context }
+        : { id: m.id, role, content: m.content, timestamp: m.timestamp, ...identity, ...context };
       cache.set(m, unified);
       return unified;
     });

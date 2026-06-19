@@ -8,13 +8,15 @@ export interface AssistantBranding {
    *  apply their own fallback (both header and message bubbles default to
    *  "Fae" via `assistantName ?? 'Fae'`). */
   assistantName: string | undefined;
-  /** Avatar image src - the configured avatar endpoint, or `undefined` when no
-   *  avatar is configured / on error. We never fall back to a bundled default:
-   *  the header shows a skeleton while `isLoading`, then either the configured
-   *  avatar or the name initials. */
+  /** Avatar image src. While still resolving (settings loading or the avatar
+   *  fetch in flight) this is `undefined` so the header shows a skeleton rather
+   *  than flashing a fallback. Once resolved it is either the configured avatar
+   *  or, when none came from the backend (not configured / fetch failed), the
+   *  bundled default avatar. */
   assistantAvatar: string | undefined;
-  /** True while FaeSettings is still loading - drives the header skeleton so
-   *  we don't flash initials/avatar before the real value resolves. */
+  /** True while the assistant identity is still resolving (FaeSettings loading
+   *  or the avatar fetch in flight) - drives the header skeleton so we don't
+   *  flash the default avatar before the real value resolves. */
   isLoading: boolean;
 }
 
@@ -24,12 +26,25 @@ export function useAssistantBranding(): AssistantBranding {
   const configuredName = faeSettings?.assistantName?.trim();
   const avatar = faeSettings?.assistantAvatar;
 
-  const rawAvatarUrl = avatar ? getFullImageUrl(avatar.imageUrl, avatar.hash) : faeAvatar;
-  const customAvatarUrl = useAuthenticatedImage(rawAvatarUrl);
+  const rawAvatarUrl = avatar ? getFullImageUrl(avatar.imageUrl, avatar.hash) : undefined;
+  const { url: customAvatarUrl, isLoading: isAvatarLoading } = useAuthenticatedImage(rawAvatarUrl);
+
+  // Still resolving while settings load or the avatar fetch is in flight.
+  const isResolving = isSettingsLoading || isAvatarLoading;
+  // With a configured avatar: show it once resolved, skeleton while resolving,
+  // default on failure. With none, don't read `customAvatarUrl` — it lags one
+  // render behind `rawAvatarUrl` (its object URL is cleared in an effect), so it
+  // would briefly flash the just-removed avatar; go straight to skeleton (while
+  // settings load) or the bundled default.
+  const assistantAvatar = rawAvatarUrl
+    ? (customAvatarUrl ?? (isResolving ? undefined : faeAvatar))
+    : isSettingsLoading
+      ? undefined
+      : faeAvatar;
 
   return {
     assistantName: configuredName || undefined,
-    assistantAvatar: customAvatarUrl,
-    isLoading: isSettingsLoading,
+    assistantAvatar,
+    isLoading: isResolving,
   };
 }
