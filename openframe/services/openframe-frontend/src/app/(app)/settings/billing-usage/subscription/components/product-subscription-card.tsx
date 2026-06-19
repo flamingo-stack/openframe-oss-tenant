@@ -3,13 +3,12 @@
 import { QuestionCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Card,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
   Input,
   RadioGroupBlock,
   TabSelector,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
@@ -19,7 +18,12 @@ import type { productSubscriptionCardSubscriptionFragment$key } from '@/__genera
 import { useProductSelection } from '../hooks/use-product-selection';
 import type { ProductUpdates } from '../types/subscription.types';
 import { buildPackageRadioOptions } from '../utils/build-package-radio-options';
-import { CUSTOM_OPTION_ID, calculateCustomQuantityPrice, formatMoney } from '../utils/subscription.utils';
+import {
+  CUSTOM_OPTION_ID,
+  calculateCustomQuantityPrice,
+  formatCompact,
+  formatMoney,
+} from '../utils/subscription.utils';
 
 export const productSubscriptionCardProductFragment = graphql`
   fragment productSubscriptionCardProductFragment on Product {
@@ -59,7 +63,11 @@ interface ProductSubscriptionCardProps {
   productRef: productSubscriptionCardProductFragment$key;
   subscriptionProductRef: productSubscriptionCardSubscriptionFragment$key | null;
   title: string;
-  description: string;
+  /**
+   * Static text, or a builder receiving the selected billing-period label
+   * ("monthly" / "yearly") so copy reflects the chosen package type.
+   */
+  description: string | ((periodLabel: string) => string);
   packageUnitLabel: string;
   customLabel: string;
   customSubtitle: string;
@@ -73,25 +81,33 @@ interface ProductSubscriptionCardProps {
   onUpdatesChange: (updates: ProductUpdates) => void;
 }
 
+/**
+ * Click-triggered help popover. A hover Tooltip is wrong for this content: it
+ * opens after a delay, dismisses on click, and can't scroll — but the rates
+ * panel is interactive and can be long. DropdownMenu opens instantly on click,
+ * stays open while interacting, and closes only on outside-click / Escape.
+ */
 function HelpTooltip({ content }: { content: ReactNode }) {
   const isText = typeof content === 'string';
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-label="More information"
-            className="shrink-0 text-ods-text-secondary hover:text-ods-text-primary transition-colors"
-          >
-            <QuestionCircleIcon className="size-6" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent align="end" sideOffset={8} className={isText ? 'max-w-xs' : 'p-0 bg-transparent border-0'}>
-          {content}
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label="More information"
+          className="shrink-0 text-ods-text-secondary hover:text-ods-text-primary transition-colors"
+        >
+          <QuestionCircleIcon className="size-6" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className={isText ? 'max-w-xs' : 'p-0 bg-transparent border-0 shadow-none'}
+      >
+        {content}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -125,16 +141,17 @@ export function ProductSubscriptionCard({
     setCustomQuantity,
   } = useProductSelection({ product, subscriptionProduct, onUpdatesChange });
 
-  // customQuantity is the real product count the user typed; it must be a whole
-  // multiple of unitSize. Tier pricing works in units, so divide before pricing.
+  // customQuantity is the real product count the user typed (same unit the
+  // backend stores and prices in); unitSize only constrains its granularity —
+  // it must be a positive whole multiple of unitSize.
   const isCustom = selection.selectedPackageId === CUSTOM_OPTION_ID;
   const customQty = selection.customQuantity;
-  const customNotDivisible = isCustom && customQty != null && customQty > 0 && customQty % unitSize !== 0;
-  const customUnits = customQty != null && customQty > 0 && customQty % unitSize === 0 ? customQty / unitSize : null;
+  const customDivisible = customQty != null && customQty > 0 && customQty % unitSize === 0;
+  const customNotDivisible = isCustom && customQty != null && customQty > 0 && !customDivisible;
 
   const customPrice =
-    isCustom && customUnits != null
-      ? calculateCustomQuantityPrice(customUnits, allTiers, baselineUnitPrice, months)
+    isCustom && customDivisible && customQty != null
+      ? calculateCustomQuantityPrice(customQty, allTiers, baselineUnitPrice, months)
       : null;
 
   const radioOptions = buildPackageRadioOptions({
@@ -146,9 +163,12 @@ export function ProductSubscriptionCard({
     customLabel,
     customSubtitle,
     payAsYouGoOption: product.payAsYouGoOption ?? null,
-    unitSize,
-    showPayg: selection.billingPeriod === 'MONTHLY',
   });
+
+  // "MONTHLY" → "monthly" / "YEARLY" → "yearly", so period-aware copy matches
+  // the selected package type.
+  const periodLabel = selection.billingPeriod.toLowerCase();
+  const resolvedDescription = typeof description === 'function' ? description(periodLabel) : description;
 
   return (
     <Card
@@ -163,7 +183,7 @@ export function ProductSubscriptionCard({
         {helpText && <HelpTooltip content={helpText} />}
       </div>
 
-      <p className="text-h4 text-ods-text-primary">{description}</p>
+      <p className="text-h4 text-ods-text-primary">{resolvedDescription}</p>
 
       {billingPeriodItems.length > 1 ? (
         <TabSelector
@@ -212,7 +232,7 @@ export function ProductSubscriptionCard({
                 />
                 {customNotDivisible ? (
                   <p className="text-h6 text-ods-error">
-                    {`Must be a multiple of ${formatMoney(unitSize)} ${packageUnitLabel}`}
+                    {`Must be a multiple of ${formatCompact(unitSize)} ${packageUnitLabel}`}
                   </p>
                 ) : (
                   customPrice && (
