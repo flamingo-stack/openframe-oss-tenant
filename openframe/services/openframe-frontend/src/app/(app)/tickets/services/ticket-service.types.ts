@@ -36,15 +36,6 @@ export interface FetchBoardColumnByStatusIdParams {
 
 export type BoardStatus = 'ACTIVE' | 'TECH_REQUIRED' | 'ON_HOLD' | 'RESOLVED';
 
-export interface FetchTicketsBoardParams {
-  search?: string;
-  organizationIds?: string[];
-  assigneeIds?: string[];
-  limit: number;
-}
-
-export type TicketsBoardPage = Record<BoardStatus, TicketsPage>;
-
 export interface ReorderTicketParams {
   id: string;
   afterTicketId: string | null;
@@ -75,7 +66,6 @@ export interface FetchMessagesParams {
 
 export interface TicketService {
   fetchDialogs(params: FetchTicketsParams): Promise<TicketsPage>;
-  fetchTicketsBoard(params: FetchTicketsBoardParams): Promise<TicketsBoardPage>;
   fetchBoardColumnByStatusId(params: FetchBoardColumnByStatusIdParams): Promise<TicketsPage>;
   fetchDialog(id: string): Promise<Dialog | null>;
   fetchMessages(params: FetchMessagesParams): Promise<MessagePage>;

@@ -134,9 +134,8 @@ export function useMingoDialogSelection() {
     queryFn: async ({ pageParam }: { pageParam: string | undefined }): Promise<MessagePage> => {
       if (!activeDialogId) return { messages: [], pageInfo: { hasNextPage: false, hasPreviousPage: false } };
 
-      const includeThinking = featureFlags.thinking.enabled();
       const response = await apiClient.post<MessagesResponse>('/chat/graphql', {
-        query: getMingoDialogMessagesQuery({ includeThinking }),
+        query: getMingoDialogMessagesQuery(),
         variables: {
           dialogId: activeDialogId,
           cursor: pageParam,

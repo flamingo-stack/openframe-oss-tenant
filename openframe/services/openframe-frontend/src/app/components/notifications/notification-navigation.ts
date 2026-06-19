@@ -1,4 +1,9 @@
-import { ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE, type Notification } from '@flamingo-stack/openframe-frontend-core';
+import {
+  ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE,
+  getApprovalMeta,
+  type Notification,
+} from '@flamingo-stack/openframe-frontend-core';
+import { featureFlags } from '@/lib/feature-flags';
 
 // Backend `NotificationContext.type` discriminators (the string `type` field; the same set the
 // concrete `__typename` subtypes carry in schema.graphql). NATS payloads carry only this string,
@@ -32,13 +37,27 @@ const TICKET_CONTEXT_TYPES = new Set<string>([
   ADMIN_MESSAGE_PUBLISHED_CONTEXT_TYPE,
 ]);
 
-export interface NotificationAction {
-  label: string;
-  route: string;
-}
+/**
+ * A notification's primary action. Either a plain `route` the host pushes onto
+ * the router, or — for a Mingo dialog once the standalone `/mingo` page is
+ * retired behind `mingo-sidebar` — a `mingoDialogId` the host opens in the
+ * in-layout chat drawer (the drawer has no URL, so it can't be a route).
+ */
+export type NotificationAction = { label: string; route: string } | { label: string; mingoDialogId: string };
 
 const mingoDialogRoute = (dialogId: string) => `/mingo?dialogId=${encodeURIComponent(dialogId)}`;
 const ticketRoute = (ticketId: string) => `/tickets/dialog?id=${encodeURIComponent(ticketId)}`;
+
+/**
+ * Action for a Mingo dialog. With `mingo-sidebar` ON the `/mingo` page is gone
+ * (it redirects to the dashboard), so the dialog opens in the in-layout drawer
+ * via `mingoDialogId`; the consumer drives the shared Mingo store. Legacy (flag
+ * OFF) still routes to the page. Tickets are unaffected — they always route.
+ */
+const mingoDialogAction = (dialogId: string): NotificationAction =>
+  featureFlags.mingoSidebar.enabled()
+    ? { label: 'Open in Mingo', mingoDialogId: dialogId }
+    : { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
 
 /**
  * Resolve the navigation action a notification offers (button label + route), or null when it
@@ -53,7 +72,7 @@ export function resolveNotificationAction(notification: Notification): Notificat
   // Approval requests live in their ticket when one exists, otherwise the mingo dialog.
   if (contextType === ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) {
     if (ticketId) return { label: 'Open Ticket', route: ticketRoute(ticketId) };
-    if (dialogId) return { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+    if (dialogId) return mingoDialogAction(dialogId);
     return null;
   }
 
@@ -62,15 +81,29 @@ export function resolveNotificationAction(notification: Notification): Notificat
   }
 
   if (contextType === ADMIN_AI_MESSAGE_CONTEXT_TYPE && dialogId) {
-    return { label: 'Open in Mingo', route: mingoDialogRoute(dialogId) };
+    return mingoDialogAction(dialogId);
   }
 
   return null;
 }
 
-/** Convenience for callers that only need the route (e.g. tile body navigation). */
+/**
+ * A still-open approval request — its entity should NOT be auto-marked read when
+ * merely opened (it clears only when approved/rejected). Shared by every place
+ * that marks a notification read on open (the location auto-reader, the drawer
+ * tile/table, the desktop click) so the rule stays uniform.
+ */
+export function isPendingApproval(notification: Notification): boolean {
+  const approval = getApprovalMeta(notification);
+  if (!approval) return false;
+  const resolution = approval.resolution?.toUpperCase();
+  return !resolution || resolution === 'PENDING';
+}
+
+/** Convenience for callers that only need a router route (drawer actions yield null). */
 export function resolveNotificationRoute(notification: Notification): string | null {
-  return resolveNotificationAction(notification)?.route ?? null;
+  const action = resolveNotificationAction(notification);
+  return action && 'route' in action ? action.route : null;
 }
 
 /**

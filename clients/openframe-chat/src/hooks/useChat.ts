@@ -360,7 +360,6 @@ export function useChat({
     displayApprovalTypes: ['CLIENT'],
     approvalStatuses: approvals.approvalStatuses,
     initialState: enhancedInitialState,
-    enableThinking: flags.thinking,
     batchApprovalsEnabled: flags['batch-approval'],
   });
 

@@ -3,7 +3,6 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
 import { ticketService } from '../services';
 import type { TicketsPage } from '../services/ticket-service.types';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
@@ -24,12 +23,10 @@ export function useTicketsQuery({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled });
-  // Under lifecycle, the table filters by status id (selected ids, the archived id, or all
-  // non-archived ids when nothing is selected). Legacy enum strings are used only when the flag is off.
+  const statusesQuery = useTicketStatusesQuery({ enabled: true });
+  // The table filters by status id (selected ids, the archived id, or all
+  // non-archived ids when nothing is selected).
   const statusIds = useMemo(() => {
-    if (!lifecycleEnabled) return undefined;
     const snapshot = statusesQuery.data?.snapshot;
     if (archived) {
       const archivedId = snapshot?.find(s => s.kind === 'ARCHIVED')?.id;
@@ -37,9 +34,9 @@ export function useTicketsQuery({
     }
     if (statusFilters && statusFilters.length > 0) return statusFilters;
     return snapshot?.filter(s => s.kind !== 'ARCHIVED').map(s => s.id);
-  }, [lifecycleEnabled, archived, statusFilters, statusesQuery.data]);
+  }, [archived, statusFilters, statusesQuery.data]);
 
-  const waitingForStatusIds = lifecycleEnabled && statusesQuery.isLoading;
+  const waitingForStatusIds = statusesQuery.isLoading;
 
   const query = useInfiniteQuery<TicketsPage, Error>({
     queryKey: dialogsQueryKeys.list({
@@ -54,18 +51,10 @@ export function useTicketsQuery({
     enabled: !waitingForStatusIds,
     queryFn: async ({ pageParam }) => {
       // `statuses` is the enum fallback; fetchDialogs prefers `statusIds` whenever it's non-empty.
-      // Under lifecycle it's only used when the snapshot can't resolve ids (e.g. its fetch errored),
+      // It's only used when the snapshot can't resolve ids (e.g. its fetch errored),
       // keeping the non-archived list scoped instead of sending an empty filter that leaks archived.
       let statuses: string[] = [];
-      if (!lifecycleEnabled) {
-        if (statusFilters && statusFilters.length > 0) {
-          statuses = statusFilters;
-        } else if (archived) {
-          statuses = ['ARCHIVED'];
-        } else {
-          statuses = NON_ARCHIVED_STATUSES;
-        }
-      } else if (archived) {
+      if (archived) {
         statuses = ['ARCHIVED'];
       } else if (!statusIds?.length) {
         statuses = NON_ARCHIVED_STATUSES;
