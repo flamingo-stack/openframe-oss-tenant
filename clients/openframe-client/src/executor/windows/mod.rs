@@ -335,4 +335,41 @@ mod tests {
             r.stdout
         );
     }
+
+    #[tokio::test]
+    #[ignore = "requires agent running as SYSTEM with an active interactive session"]
+    async fn run_as_user_impersonates_interactive_user() {
+        let r = execute_script(ScriptParams {
+            code: "whoami",
+            shell: "cmd",
+            args: &[],
+            timeout_secs: 30,
+            privilege: crate::executor::Privilege::User,
+            env_vars: &[],
+        })
+        .await;
+        assert_eq!(r.retcode, 0, "stderr: {}", r.stderr);
+        let who = r.stdout.trim().to_lowercase();
+        assert!(
+            !who.ends_with("\\system") && who != "nt authority\\system",
+            "expected the interactive user, not SYSTEM; got {who:?}"
+        );
+    }
+
+    #[tokio::test]
+    #[ignore = "requires agent running as SYSTEM with an active interactive session"]
+    async fn run_as_user_sees_env_vars() {
+        let env = vec!["OF_RUNAS_PROBE=present".to_string()];
+        let r = execute_script(ScriptParams {
+            code: "Write-Output $env:OF_RUNAS_PROBE",
+            shell: "powershell",
+            args: &[],
+            timeout_secs: 30,
+            privilege: crate::executor::Privilege::User,
+            env_vars: &env,
+        })
+        .await;
+        assert_eq!(r.retcode, 0, "stderr: {}", r.stderr);
+        assert_eq!(r.stdout.trim_end(), "present", "stderr: {}", r.stderr);
+    }
 }
