@@ -31,9 +31,16 @@ export function useAssistantBranding(): AssistantBranding {
 
   // Still resolving while settings load or the avatar fetch is in flight.
   const isResolving = isSettingsLoading || isAvatarLoading;
-  // Show the configured avatar; while resolving keep `undefined` (skeleton);
-  // once resolved with no backend avatar, fall back to the bundled default.
-  const assistantAvatar = customAvatarUrl ?? (isResolving ? undefined : faeAvatar);
+  // With a configured avatar: show it once resolved, skeleton while resolving,
+  // default on failure. With none, don't read `customAvatarUrl` — it lags one
+  // render behind `rawAvatarUrl` (its object URL is cleared in an effect), so it
+  // would briefly flash the just-removed avatar; go straight to skeleton (while
+  // settings load) or the bundled default.
+  const assistantAvatar = rawAvatarUrl
+    ? (customAvatarUrl ?? (isResolving ? undefined : faeAvatar))
+    : isSettingsLoading
+      ? undefined
+      : faeAvatar;
 
   return {
     assistantName: configuredName || undefined,
