@@ -20,8 +20,10 @@
  * resolve on the hub origin — those routes don't exist in openframe. Embed
  * mode makes the lib (a) absolutize every relative card/chip href against
  * `defaultContentOrigin` and (b) always open it in a new tab, so a click
- * lands on the real page on the hub instead of 404-ing in-app. Mingo emits
- * no openframe-internal links, so there's no same-tab `navigate` to wire.
+ * lands on the real page on the hub instead of 404-ing in-app. The in-app
+ * entity cards openframe DOES host (tickets / FAQ, via `composeContentUrl`)
+ * are emitted as same-origin absolute URLs and soft-nav in-app; the `navigate`
+ * hook below handles the one case the router can't — a same-page hash deep-link.
  */
 
 /** Public origin of the Flamingo content hub where the chat's content
@@ -182,9 +184,37 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // Embedder, not host — see the file header. Relative content-card
         // hrefs get absolutized against `defaultContentOrigin` and opened in
         // a new tab (the lib's `computeIsNewTab` short-circuits to new-tab in
-        // embed mode), so there's no in-app `navigate` to wire.
+        // embed mode). The one same-tab case we DO handle is a same-page hash
+        // deep-link (see `navigate` below).
         mode: 'embed',
         defaultContentOrigin: CONTENT_HUB_ORIGIN,
+        // Same-page hash deep-links — e.g. a FAQ card → `/help-center/faqs#faq-item-<id>`
+        // clicked while ALREADY on `/faqs`. The lib's same-tab fallback router-pushes
+        // the same pathname, which doesn't emit a `hashchange`; but the FAQ page
+        // dispatches its "expand + scroll to the cited question" on `hashchange`, so
+        // the item wouldn't open. Set the hash directly here to fire that event.
+        // Everything else (cross-page in-app, hub links, query-only deep-links like
+        // `?ticket=`) returns false so the lib's default nav handles it unchanged.
+        navigate: ({ href }) => {
+          if (typeof window === 'undefined') return false;
+          let url: URL;
+          try {
+            url = new URL(href, window.location.origin);
+          } catch {
+            return false;
+          }
+          const samePageHash =
+            url.origin === window.location.origin && url.pathname === window.location.pathname && !!url.hash;
+          if (!samePageHash) return false;
+          if (window.location.hash === url.hash) {
+            // Re-clicking the same anchor fires no native hashchange — re-dispatch
+            // so the page re-runs its scroll/open for the already-selected row.
+            window.dispatchEvent(new HashChangeEvent('hashchange'));
+          } else {
+            window.location.hash = url.hash;
+          }
+          return true;
+        },
       },
       // Unified content-href seam (shared with Help Center pages): the four
       // in-app-hosted types soft-nav into `/help-center/...`; every other type
