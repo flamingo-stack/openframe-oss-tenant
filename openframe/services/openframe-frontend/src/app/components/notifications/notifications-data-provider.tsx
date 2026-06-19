@@ -67,6 +67,7 @@ import { notificationGlobalId } from '@/lib/relay-id';
 import {
   ADMIN_AI_MESSAGE_CONTEXT_TYPE,
   CONTEXT_TYPENAME_BY_TYPE,
+  isPendingApproval,
   notificationTargetsLocation,
   resolveNotificationAction,
 } from './notification-navigation';
@@ -424,14 +425,6 @@ function NotificationsDataInner({
   );
 }
 
-/** A still-actionable approval request: stays unread until the user actually approves/rejects it. */
-function isPendingApproval(notification: Notification): boolean {
-  const approval = getApprovalMeta(notification);
-  if (!approval) return false;
-  const resolution = approval.resolution?.toUpperCase();
-  return !resolution || resolution === 'PENDING';
-}
-
 /**
  * Marks an unread notification read once the user opens the entity it points at (the mingo
  * dialog, the ticket, …). Works off the shared route mapping so it stays consistent across
@@ -527,6 +520,7 @@ function maybeShowDesktopNotification(
   title: string,
   description: string | null,
   navigate: (route: string) => void,
+  markRead: (notificationId: string) => void,
 ): void {
   if (
     typeof window === 'undefined' ||
@@ -558,8 +552,15 @@ function maybeShowDesktopNotification(
       window.focus();
       // A Mingo dialog opens in the drawer (no URL); everything else is a route.
       if (action) {
-        if ('mingoDialogId' in action) openMingoDialogInDrawer(action.mingoDialogId);
-        else navigate(action.route);
+        if ('mingoDialogId' in action) {
+          openMingoDialogInDrawer(action.mingoDialogId);
+          // No route change → the location auto-reader can't clear it; mark read
+          // here. Approval requests are the exception (they clear on decision,
+          // not on open) — leave those unread.
+          if (payload.context?.type !== ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) markRead(relayId);
+        } else {
+          navigate(action.route);
+        }
       }
       notification.close();
     };
@@ -571,13 +572,15 @@ function maybeShowDesktopNotification(
 function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   const environment = useRelayEnvironment();
   const router = useRouter();
-  const { showDesktopPopups } = useNotifications();
+  const { showDesktopPopups, markRead } = useNotifications();
   const subject = `${NOTIFICATION_SUBJECT_PREFIX}.${userId}.${NOTIFICATION_SUBJECT_SUFFIX}`;
   const environmentRef = useRef(environment);
   environmentRef.current = environment;
   // Refs keep the NATS subscription callback dependency-free (no resubscribe on toggle/navigation).
   const showDesktopPopupsRef = useRef(showDesktopPopups);
   showDesktopPopupsRef.current = showDesktopPopups;
+  const markReadRef = useRef(markRead);
+  markReadRef.current = markRead;
   const routerRef = useRef(router);
   routerRef.current = router;
 
@@ -652,7 +655,14 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
       }
 
       if (showDesktopPopupsRef.current) {
-        maybeShowDesktopNotification(payload, relayId, title, description, route => routerRef.current.push(route));
+        maybeShowDesktopNotification(
+          payload,
+          relayId,
+          title,
+          description,
+          route => routerRef.current.push(route),
+          id => markReadRef.current(id),
+        );
       }
 
       // The bucket was already bumped locally (above) so the sidebar is instantly consistent

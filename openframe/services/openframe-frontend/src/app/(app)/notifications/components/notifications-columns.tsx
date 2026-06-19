@@ -7,7 +7,7 @@ import {
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, type ColumnDef, type Row, SplitButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import { isPendingApproval, resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
 import { openMingoDialogInDrawer } from '@/app/components/notifications/open-mingo-dialog';
 import { formatDate, formatTime } from '@/lib/format-date';
 
@@ -72,7 +72,16 @@ export function buildNotificationColumns({
         // `/mingo` page is retired), so it opens via click instead of an href +
         // new tab. Route actions keep the open-in-new-tab anchor behavior.
         const isRoute = 'route' in action;
-        const openDrawer = isRoute ? undefined : () => openMingoDialogInDrawer(action.mingoDialogId);
+        // Opening clears unread (the drawer has no URL, so the location-based
+        // auto-reader can't) — except a pending approval, which stays unread
+        // until it's approved/rejected. `onMarkRead` is only wired for the
+        // unread variant; it's a no-op for already-read rows.
+        const openDrawer = isRoute
+          ? undefined
+          : () => {
+              openMingoDialogInDrawer(action.mingoDialogId);
+              if (!isPendingApproval(row.original.notification)) onMarkRead?.(row.original.id);
+            };
         return (
           <div data-no-row-click className="flex w-full justify-end">
             <SplitButton
