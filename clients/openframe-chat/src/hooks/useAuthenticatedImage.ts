@@ -8,23 +8,34 @@ import { tokenService } from '../services/tokenService';
  * the Bearer token, wraps them in an `object URL`, and returns that — safe to
  * feed straight into an `<img src>` (no auth needed on a blob URL).
  *
- * Returns `undefined` until the image resolves (or on error), so callers fall
- * back to initials / skeleton exactly as they do for a missing avatar.
+ * `url` is `undefined` until the image resolves (or on error). `isLoading`
+ * stays `true` while the fetch is in flight so callers can keep showing a
+ * skeleton instead of flashing a fallback before the real image arrives, and
+ * only apply their fallback once `isLoading` is `false` and `url` is undefined.
  *
  * @param url Fully-built image URL (same origin as the API). `undefined`/`null`
  *            disables the fetch.
  */
-export function useAuthenticatedImage(url: string | null | undefined): string | undefined {
+export interface AuthenticatedImage {
+  url: string | undefined;
+  isLoading: boolean;
+}
+
+export function useAuthenticatedImage(url: string | null | undefined): AuthenticatedImage {
   const [objectUrl, setObjectUrl] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!url) {
       setObjectUrl(undefined);
+      setIsLoading(false);
       return;
     }
 
     let cancelled = false;
     let createdUrl: string | undefined;
+    setIsLoading(true);
+    setObjectUrl(undefined);
 
     (async () => {
       try {
@@ -42,6 +53,8 @@ export function useAuthenticatedImage(url: string | null | undefined): string | 
         setObjectUrl(createdUrl);
       } catch (_error) {
         if (!cancelled) setObjectUrl(undefined);
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     })();
 
@@ -51,5 +64,5 @@ export function useAuthenticatedImage(url: string | null | undefined): string | 
     };
   }, [url]);
 
-  return objectUrl;
+  return { url: objectUrl, isLoading };
 }

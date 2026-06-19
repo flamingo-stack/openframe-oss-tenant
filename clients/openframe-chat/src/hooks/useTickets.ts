@@ -5,6 +5,22 @@ import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQl
 import { tokenService } from '../services/tokenService';
 import { log } from '../utils/log';
 
+export interface TicketDetails {
+  title: string;
+  description?: string;
+  creationSource?: string;
+  createdAt?: string;
+  status?: string;
+  statusName?: string;
+  statusColor?: string;
+  statusKind?: string;
+  dialogMode?: string;
+  dialogStatus?: string;
+  ticketNumber?: string;
+  category?: string;
+  timeAgo?: string;
+}
+
 function formatTimeAgo(dateString: string): string {
   const now = Date.now();
   const then = new Date(dateString).getTime();
@@ -135,48 +151,33 @@ export function useTickets() {
     return creationSourceMapRef.current.get(ticketId) ?? null;
   }, []);
 
-  const getTicketDetails = useCallback(
-    async (
-      ticketId: string,
-    ): Promise<{
-      title: string;
-      description?: string;
-      creationSource?: string;
-      createdAt?: string;
-      status?: string;
-      statusName?: string;
-      statusColor?: string;
-      statusKind?: string;
-      ticketNumber?: string;
-      category?: string;
-      timeAgo?: string;
-    } | null> => {
-      try {
-        const ticket = await ticketGraphQlService.getTicket(ticketId);
-        if (ticket) {
-          const def = ticket.statusDefinition;
-          return {
-            title: ticket.title,
-            description: ticket.description,
-            creationSource: ticket.creationSource,
-            createdAt: ticket.createdAt,
-            status: ticket.status,
-            statusName: def?.name,
-            statusColor: def?.color,
-            statusKind: def?.kind,
-            ticketNumber: String(ticket.ticketNumber),
-            category: ticket.labels?.[0]?.key,
-            timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
-          };
-        }
-        return null;
-      } catch (error) {
-        console.error('Failed to fetch ticket details:', error);
-        return null;
+  const getTicketDetails = useCallback(async (ticketId: string): Promise<TicketDetails | null> => {
+    try {
+      const ticket = await ticketGraphQlService.getTicket(ticketId);
+      if (ticket) {
+        const def = ticket.statusDefinition;
+        return {
+          title: ticket.title,
+          description: ticket.description,
+          creationSource: ticket.creationSource,
+          createdAt: ticket.createdAt,
+          status: ticket.status,
+          statusName: def?.name,
+          statusColor: def?.color,
+          statusKind: def?.kind,
+          dialogMode: ticket.dialog?.currentMode,
+          dialogStatus: ticket.dialog?.status,
+          ticketNumber: String(ticket.ticketNumber),
+          category: ticket.labels?.[0]?.key,
+          timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
+        };
       }
-    },
-    [],
-  );
+      return null;
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      return null;
+    }
+  }, []);
 
   return {
     tickets,

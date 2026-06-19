@@ -63,6 +63,7 @@ interface UseChatOptions {
   onMetadataUpdate?: (metadata: { modelName: string; providerName: string; contextWindow: number }) => void;
   onTokenUsage?: (data: TokenUsageData) => void;
   onDialogClosed?: () => void;
+  onDirectModeDetected?: () => void;
 }
 
 export function useChat({
@@ -71,6 +72,7 @@ export function useChat({
   onMetadataUpdate,
   onTokenUsage,
   onDialogClosed,
+  onDirectModeDetected,
 }: UseChatOptions = {}) {
   const { flags } = useFeatureFlags();
 
@@ -255,6 +257,7 @@ export function useChat({
         approvalsRef.current.handleEscalatedApprovalResult(requestId, approved, data);
       },
       onDirectMessage: (text: string, metadata?: { ownerType?: string; displayName?: string; streamSeq?: number }) => {
+        onDirectModeDetected?.();
         if (metadata?.ownerType === 'CLIENT') {
           // Echo of own message in direct mode — resolve the send flow
           setNatsStreaming(false);
@@ -291,7 +294,7 @@ export function useChat({
         messagesRef.current.addMessage(systemMessage);
       },
     }),
-    [onMetadataUpdate, onTokenUsage, onDialogClosed],
+    [onMetadataUpdate, onTokenUsage, onDialogClosed, onDirectModeDetected],
   );
 
   const incompleteState = useMemo(() => {
@@ -562,7 +565,7 @@ export function useChat({
         const errorText = err instanceof Error ? err.message : String(err);
         if (!errorText.toLowerCase().includes('network error')) {
           setError(errorText);
-          messages.addErrorMessage(errorText);
+          messages.addErrorMessage();
         }
       } finally {
         setIsTyping(false);
