@@ -24,7 +24,7 @@ export interface TicketNode {
   statusDefinition?: TicketStatusDefinition | null;
   creationSource?: string;
   labels: TicketLabel[];
-  dialog: { id: string } | null;
+  dialog: { id: string; currentMode?: string; status?: string } | null;
   createdAt: string;
 }
 
@@ -172,6 +172,8 @@ const GET_TICKET_QUERY = gql`
       }
       dialog {
         id
+        currentMode
+        status
       }
       createdAt
     }
