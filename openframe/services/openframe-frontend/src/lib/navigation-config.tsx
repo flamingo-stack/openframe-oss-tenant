@@ -82,22 +82,25 @@ export const getNavigationItems = (
   ];
 
   if (isSaasTenantMode()) {
-    baseItems.push(
-      {
-        id: 'tickets',
-        label: 'Tickets',
-        icon: <TagIcon size={24} />,
-        path: '/tickets',
-        isActive: pathname.startsWith('/tickets'),
-      },
-      {
+    baseItems.push({
+      id: 'tickets',
+      label: 'Tickets',
+      icon: <TagIcon size={24} />,
+      path: '/tickets',
+      isActive: pathname.startsWith('/tickets'),
+    });
+    // The legacy standalone `/mingo` page is fully superseded by the in-layout
+    // Mingo sidebar when `mingo-sidebar` is on — hide its nav entry so the old
+    // route is unreachable (the page itself also redirects, see mingo/page.tsx).
+    if (!featureFlags.mingoSidebar.enabled()) {
+      baseItems.push({
         id: 'mingo',
         label: 'Mingo',
         icon: <MingoIcon className="w-6 h-6" />,
         path: '/mingo',
         isActive: pathname.startsWith('/mingo'),
-      },
-    );
+      });
+    }
   }
 
   baseItems.push({

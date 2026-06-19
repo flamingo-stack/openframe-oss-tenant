@@ -93,6 +93,10 @@ export function getMingoDialogMessagesQuery() {
             type
             ... on TextData {
               text
+              contextItems {
+                type
+                id
+              }
             }
 
             ... on ThinkingData {

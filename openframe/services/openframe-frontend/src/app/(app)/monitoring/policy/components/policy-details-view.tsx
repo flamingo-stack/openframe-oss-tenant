@@ -13,6 +13,8 @@ import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
@@ -38,6 +40,12 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
   const { policyDetails, isLoading, error } = usePolicyDetails(isValidId ? numericId : null);
   const { deletePolicy, isDeleting } = usePolicies();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Register this policy as the Mingo "open view" (passive context) so the agent
+  // gets the user's working context on the next message; cleared → recent views.
+  useTrackOpenView(
+    policyDetails ? { type: CONTEXT_ENTITY_KIND.POLICY, id: policyId, label: policyDetails.name } : null,
+  );
 
   const handleBack = useSafeBack('/monitoring?tab=policies');
 

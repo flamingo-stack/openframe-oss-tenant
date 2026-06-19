@@ -345,9 +345,21 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
 
       onUserMessage: (
         text: string,
-        meta?: { ownerType?: string; displayName?: string; userId?: string; streamSeq?: number },
+        meta?: {
+          ownerType?: string;
+          displayName?: string;
+          userId?: string;
+          streamSeq?: number;
+          contextItems?: Array<{ type: string; id: string }>;
+        },
       ) => {
         if (meta?.userId && meta.userId === currentUserId) return;
+        // The `MESSAGE_REQUEST` chunk carries only `{ type, id }` — no label.
+        // Fall back to the id as the chip text; the lib resolves the icon by
+        // `type` from `contextPicker.entityTypes`.
+        const contextItems = meta?.contextItems?.length
+          ? meta.contextItems.map(i => ({ type: i.type, id: i.id, label: i.id }))
+          : undefined;
         addMessage(dialogId, {
           id: `user-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -357,6 +369,7 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
           avatar: null,
           timestamp: new Date(),
           streamSeq: meta?.streamSeq,
+          contextItems,
         });
       },
 
