@@ -23,7 +23,8 @@
  * lands on the real page on the hub instead of 404-ing in-app. The in-app
  * entity cards openframe DOES host (tickets / FAQ, via `composeContentUrl`)
  * are emitted as same-origin absolute URLs and soft-nav in-app; the `navigate`
- * hook below handles the one case the router can't — a same-page hash deep-link.
+ * hook below handles the same-PAGE deep-link cases a plain router push can't
+ * (a hash for FAQ, a `?ticket=` query for tickets).
  */
 
 /** Public origin of the Flamingo content hub where the chat's content
@@ -38,6 +39,7 @@ import {
   type EmbedAuthAdapter,
   setEmbedAuthAdapter,
 } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useRouter } from 'next/navigation';
 import { type ReactNode, useMemo } from 'react';
 import { composeOpenframeChatContentUrl } from '@/app/(app)/help-center/help-center-content-href';
 import { runtimeEnv } from '@/lib/runtime-config';
@@ -128,6 +130,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const runtime = useMemo<ChatRuntime>(() => {
     // Guide-mode endpoints are SAME-ORIGIN relative `/content/*` paths. The
     // lib's `embedAuthedFetch` rejects cross-origin URLs in production builds
@@ -184,17 +187,20 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // Embedder, not host — see the file header. Relative content-card
         // hrefs get absolutized against `defaultContentOrigin` and opened in
         // a new tab (the lib's `computeIsNewTab` short-circuits to new-tab in
-        // embed mode). The one same-tab case we DO handle is a same-page hash
-        // deep-link (see `navigate` below).
+        // embed mode). The same-tab cases we DO own are same-PAGE deep-links —
+        // see `navigate` below.
         mode: 'embed',
         defaultContentOrigin: CONTENT_HUB_ORIGIN,
-        // Same-page hash deep-links — e.g. a FAQ card → `/help-center/faqs#faq-item-<id>`
-        // clicked while ALREADY on `/faqs`. The lib's same-tab fallback router-pushes
-        // the same pathname, which doesn't emit a `hashchange`; but the FAQ page
-        // dispatches its "expand + scroll to the cited question" on `hashchange`, so
-        // the item wouldn't open. Set the hash directly here to fire that event.
-        // Everything else (cross-page in-app, hub links, query-only deep-links like
-        // `?ticket=`) returns false so the lib's default nav handles it unchanged.
+        // Same-PAGE deep-links — a card clicked while ALREADY on its target page:
+        //   - FAQ  → `/help-center/faqs#faq-item-<id>`   (hash deep-link)
+        //   - ticket → `/help-center/tickets?ticket=<id>` (query deep-link)
+        // The lib's same-tab fallback router-pushes the same pathname, which
+        // neither emits a `hashchange` (the FAQ page expands+scrolls on it) nor
+        // re-opens the ticket drawer the tickets page derives from `?ticket=`. So
+        // drive each page's own re-sync here: the query via the real router (the
+        // same `replace` the ticket list's row-click uses) so `useSearchParams`
+        // re-derives, and the hash via `location.hash` so `hashchange` fires.
+        // Cross-page / hub links return false → the lib's default nav is unchanged.
         navigate: ({ href }) => {
           if (typeof window === 'undefined') return false;
           let url: URL;
@@ -203,14 +209,24 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
           } catch {
             return false;
           }
-          const samePageHash =
-            url.origin === window.location.origin && url.pathname === window.location.pathname && !!url.hash;
-          if (!samePageHash) return false;
-          if (window.location.hash === url.hash) {
-            // Re-clicking the same anchor fires no native hashchange — re-dispatch
-            // so the page re-runs its scroll/open for the already-selected row.
-            window.dispatchEvent(new HashChangeEvent('hashchange'));
-          } else {
+          const samePage = url.origin === window.location.origin && url.pathname === window.location.pathname;
+          if (!samePage) return false;
+          const hashChanged = url.hash !== window.location.hash;
+          const searchChanged = url.search !== window.location.search;
+          if (!hashChanged && !searchChanged) {
+            // Re-clicking the same target — re-fire the hash event so a hash page
+            // re-runs its scroll/open (a query page is already in the right state).
+            if (url.hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
+            return true;
+          }
+          // Query deep-link (e.g. `?ticket=<id>`) → real router so the page's
+          // `useSearchParams` re-derives the open drawer (matches its row-click).
+          if (searchChanged) {
+            router.replace(`${url.pathname}${url.search}`, { scroll: false });
+          }
+          // Hash deep-link (e.g. `#faq-item-<id>`) → a router nav to the same
+          // pathname emits no `hashchange`, which the page listens for; set it.
+          if (hashChanged) {
             window.location.hash = url.hash;
           }
           return true;
@@ -222,7 +238,9 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
       composeContentUrl: composeOpenframeChatContentUrl,
       source: CHAT_SOURCE,
     };
-  }, []);
+    // `router` is the only reactive dep; Next returns a stable instance, so the
+    // runtime object is effectively built once.
+  }, [router]);
 
   return <ChatRuntimeContext.Provider value={runtime}>{children}</ChatRuntimeContext.Provider>;
 }
