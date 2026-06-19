@@ -8,6 +8,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, type ColumnDef, type Row, SplitButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { resolveNotificationAction } from '@/app/components/notifications/notification-navigation';
+import { openMingoDialogInDrawer } from '@/app/components/notifications/open-mingo-dialog';
 import { formatDate, formatTime } from '@/lib/format-date';
 
 export interface NotificationRow {
@@ -67,17 +68,24 @@ export function buildNotificationColumns({
       cell: ({ row }: { row: Row<NotificationRow> }) => {
         const action = resolveNotificationAction(row.original.notification);
         if (!action) return null;
+        // A Mingo dialog has no URL (it lives in the in-layout drawer once the
+        // `/mingo` page is retired), so it opens via click instead of an href +
+        // new tab. Route actions keep the open-in-new-tab anchor behavior.
+        const isRoute = 'route' in action;
+        const openDrawer = isRoute ? undefined : () => openMingoDialogInDrawer(action.mingoDialogId);
         return (
           <div data-no-row-click className="flex w-full justify-end">
             <SplitButton
               variant="outline"
-              href={action.route}
+              href={isRoute ? action.route : undefined}
+              onClick={openDrawer}
               groupAriaLabel={action.label}
               iconAction={{
                 icon: <ArrowRightUpIcon className="text-ods-text-secondary" />,
-                'aria-label': `Open ${action.label} in new tab`,
-                href: action.route,
-                openInNewTab: true,
+                'aria-label': isRoute ? `Open ${action.label} in new tab` : `Open ${action.label}`,
+                href: isRoute ? action.route : undefined,
+                onClick: openDrawer,
+                openInNewTab: isRoute,
               }}
             >
               {action.label}

@@ -68,8 +68,9 @@ import {
   ADMIN_AI_MESSAGE_CONTEXT_TYPE,
   CONTEXT_TYPENAME_BY_TYPE,
   notificationTargetsLocation,
-  resolveNotificationRoute,
+  resolveNotificationAction,
 } from './notification-navigation';
+import { openMingoDialogInDrawer } from './open-mingo-dialog';
 import { useApproveRequest } from './use-approve-request';
 
 const DRAWER_PAGE_SIZE = 30;
@@ -238,14 +239,14 @@ interface NavigationTileWrapperProps {
 /** Wraps a tile so its body navigates to the notification's target entity; inner buttons keep their own clicks. */
 function NavigationTileWrapper({ notification, helpers, children }: NavigationTileWrapperProps) {
   const router = useRouter();
-  const { close } = useNotifications();
-  const route = resolveNotificationRoute(notification);
+  const { close, markRead } = useNotifications();
+  const action = resolveNotificationAction(notification);
 
   const navigate = useCallback(
     (event: ReactMouseEvent<HTMLDivElement> | ReactKeyboardEvent<HTMLDivElement>) => {
       // Inner controls (Approve/Reject, expand toggle, dismiss) own their own clicks.
       if ((event.target as HTMLElement).closest('button')) return;
-      if (!route) return;
+      if (!action) return;
       if ('key' in event) {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
@@ -253,12 +254,20 @@ function NavigationTileWrapper({ notification, helpers, children }: NavigationTi
       close();
       // Settle (dismiss the live tile) but keep it unread until the user acts on the entity.
       helpers.onSettle(notification.id);
-      router.push(route);
+      if ('mingoDialogId' in action) {
+        openMingoDialogInDrawer(action.mingoDialogId);
+        // The drawer changes no URL, so the location-based `EntityViewAutoReader`
+        // can't clear this one — mark it read here to match the route flow.
+        // Pending approvals stay unread until decided (same rule as the reader).
+        if (!isPendingApproval(notification)) markRead(notification.id);
+      } else {
+        router.push(action.route);
+      }
     },
-    [route, close, helpers, notification.id, router],
+    [action, close, markRead, helpers, notification, router],
   );
 
-  if (!route) return <>{children}</>;
+  if (!action) return <>{children}</>;
 
   return (
     <div
@@ -366,8 +375,8 @@ function NotificationsDataInner({
       if (isApprovalNotification(notification) && getApprovalMeta(notification)) {
         return <ApprovalTileWithNavigation notification={notification} helpers={helpers} onDecide={decideApproval} />;
       }
-      // Non-approval tiles get the default look, made clickable only when they resolve to a route.
-      if (resolveNotificationRoute(notification)) {
+      // Non-approval tiles get the default look, made clickable only when they resolve to an action.
+      if (resolveNotificationAction(notification)) {
         return (
           <NavigationTileWrapper notification={notification} helpers={helpers}>
             <NotificationTile
@@ -528,7 +537,7 @@ function maybeShowDesktopNotification(
     return;
   }
 
-  const route = resolveNotificationRoute({
+  const action = resolveNotificationAction({
     id: relayId,
     title,
     createdAt: Date.now(),
@@ -547,7 +556,11 @@ function maybeShowDesktopNotification(
     });
     notification.onclick = () => {
       window.focus();
-      if (route) navigate(route);
+      // A Mingo dialog opens in the drawer (no URL); everything else is a route.
+      if (action) {
+        if ('mingoDialogId' in action) openMingoDialogInDrawer(action.mingoDialogId);
+        else navigate(action.route);
+      }
       notification.close();
     };
   } catch {
