@@ -204,6 +204,8 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
   );
 
   const tagsActive = selectedTags.length > 0;
+  const hasActiveFilters = search.trim().length > 0 || tagsActive || table.getState().columnFilters.length > 0;
+  const emptyMessage = hasActiveFilters ? 'No devices match the current filters' : 'No devices assigned to this query';
 
   return (
     <div className="flex flex-col gap-[var(--spacing-system-m)]">
@@ -244,12 +246,7 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
 
       <DataTable table={table}>
         <DataTable.Header rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isLoading}
-          skeletonRows={5}
-          emptyMessage="No devices assigned to this query"
-          rowHref={rowHref}
-        />
+        <DataTable.Body loading={isLoading} skeletonRows={5} emptyState={{ title: emptyMessage }} rowHref={rowHref} />
       </DataTable>
     </div>
   );

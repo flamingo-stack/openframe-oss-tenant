@@ -55,18 +55,33 @@ async function fetchAllDevices(): Promise<Device[]> {
   while (hasMore) {
     const page = await fetchDevicesPage(cursor);
     allDevices.push(...page.devices);
-    hasMore = page.hasNextPage;
+    // Stop if the cursor can't advance, even when the API still reports a next
+    // page — otherwise a null `endCursor` would refetch page one indefinitely.
+    hasMore = page.hasNextPage && page.endCursor !== null;
     cursor = page.endCursor;
   }
   return allDevices;
 }
 
+const QUERY_HOSTS_PAGE_SIZE = 100;
+
+/** Fetch all hosts assigned to a query, following Fleet's page-based pagination. */
 async function fetchQueryHosts(queryId: number): Promise<Array<{ id: number; hostname: string }>> {
-  const res = await fleetApiClient.getQueryHosts(queryId, { per_page: 100 });
-  if (!res.ok) {
-    throw new Error(res.error || `Failed to load assigned devices (${res.status})`);
+  const allHosts: Array<{ id: number; hostname: string }> = [];
+  let page = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const res = await fleetApiClient.getQueryHosts(queryId, { page, per_page: QUERY_HOSTS_PAGE_SIZE });
+    if (!res.ok) {
+      throw new Error(res.error || `Failed to load assigned devices (${res.status})`);
+    }
+    const hosts = res.data?.hosts ?? [];
+    allHosts.push(...hosts);
+    // Guard against an infinite loop if the API reports more pages but returns none.
+    hasMore = (res.data?.meta?.has_next_results ?? false) && hosts.length > 0;
+    page += 1;
   }
-  return res.data?.hosts ?? [];
+  return allHosts;
 }
 
 /**
