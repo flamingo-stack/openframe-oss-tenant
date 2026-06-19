@@ -13,7 +13,8 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
-import { performLogout } from '@/app/(auth)/auth/utils/auth-actions';
+import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-store';
+import { LogoutConfirmModal } from '@/app/components/shared/logout-confirm-modal';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { isAuthOnlyMode, isOssTenantMode, isSaasTenantMode } from '../../lib/app-mode';
@@ -62,9 +63,11 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     [router],
   );
 
+  const openLogoutConfirm = useLogoutConfirmStore(state => state.open);
+
   const handleLogout = useCallback(() => {
-    performLogout();
-  }, []);
+    openLogoutConfirm();
+  }, [openLogoutConfirm]);
 
   const handleProfile = useCallback(() => {
     router.push('/settings');
@@ -212,6 +215,9 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
       >
         {showLockContent ? <SubscriptionLockContent /> : children}
       </CoreAppLayout>
+      {/* Logout confirmation modal — opened from the nav user menu and the
+          Settings "Log Out" button via `useLogoutConfirmStore`. */}
+      <LogoutConfirmModal />
       {/* Floating debug panel for the live Mingo openView/recentViews. Hidden in
           every env by default; opt-in via the `mingoDebug()` console command. */}
       <MingoContextDebugWindow />
