@@ -55,7 +55,7 @@ pub(crate) async fn execute_with_timeout(mut cmd: Command, timeout_secs: u32) ->
         Err(_) => {
             kill_process_tree(pid);
             let (out, err) = join_reads(stdout_task, stderr_task, pid).await;
-            let _ = child.wait().await;
+            let _ = timeout(READ_GRACE, child.wait()).await;
             ExecResult {
                 stdout: clean_string(&out),
                 stderr: format!(
@@ -116,7 +116,7 @@ async fn join_reads(
                 "output streams still open after exit (backgrounded child?), killing process group"
             );
             kill_process_tree(pid);
-            pair.await
+            timeout(READ_GRACE, &mut pair).await.unwrap_or_default()
         }
     }
 }

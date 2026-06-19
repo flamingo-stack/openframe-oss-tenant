@@ -108,7 +108,9 @@ pub(crate) fn configure_preexec(cmd: &mut Command, run_as: &RunAs) -> Result<()>
                 return Err(std::io::Error::last_os_error());
             }
             if let Some((uid, gid, ref username)) = switch {
-                libc::initgroups(username.as_ptr(), gid as _);
+                if libc::initgroups(username.as_ptr(), gid as _) == -1 {
+                    return Err(std::io::Error::last_os_error());
+                }
                 if libc::setgid(gid) == -1 {
                     return Err(std::io::Error::last_os_error());
                 }

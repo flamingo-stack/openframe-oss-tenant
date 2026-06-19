@@ -7,11 +7,11 @@ pub(crate) fn split_env(var: &str) -> Option<(&str, &str)> {
 pub(crate) fn apply_env_vars(cmd: &mut Command, env_vars: &[String]) {
     for var in env_vars {
         match split_env(var) {
-            Some((key, value)) => {
+            Some((key, value)) if !key.is_empty() => {
                 cmd.env(key, value);
             }
-            None => {
-                tracing::warn!(var = %var, "skipping env var without '='");
+            _ => {
+                tracing::warn!(var = %var, "skipping malformed env var (empty name or missing '=')");
             }
         }
     }
