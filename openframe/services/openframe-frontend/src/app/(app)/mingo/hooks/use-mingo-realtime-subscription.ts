@@ -391,7 +391,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
-    enableThinking: featureFlags.thinking.enabled(),
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
   });
 

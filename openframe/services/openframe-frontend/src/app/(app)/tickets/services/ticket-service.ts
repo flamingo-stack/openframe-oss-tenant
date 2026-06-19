@@ -1,6 +1,5 @@
 import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
-import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import { API_ENDPOINTS } from '../constants';
 import { getDialogMessagesQuery } from '../queries/dialogs-queries';
@@ -355,13 +354,12 @@ export class TicketService implements TicketServiceInterface {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
-    const includeThinking = featureFlags.thinking.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: getDialogMessagesQuery({ includeThinking }),
+      query: getDialogMessagesQuery(),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,
