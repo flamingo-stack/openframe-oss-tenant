@@ -144,15 +144,30 @@ export function TicketsBoard({
     }
     return ids;
   }, [notifications?.notifications]);
+  const [columnUpdates, setColumnUpdates] = useState<Record<string, BoardColumnUpdate>>({});
+
+  const statuses = useMemo(() => (statusesData?.snapshot ?? []).filter(s => s.kind !== 'ARCHIVED'), [statusesData]);
+
+  const archiveFilter = useMemo(
+    () => ({ organizationIds, assigneeIds, labelIds }),
+    [organizationIds, assigneeIds, labelIds],
+  );
+  const filteredResolvedTotal = useMemo(() => {
+    const resolvedId = statuses.find(s => s.kind === 'RESOLVED')?.id;
+    return resolvedId ? columnUpdates[resolvedId]?.state.total : undefined;
+  }, [statuses, columnUpdates]);
   const {
     actions: baseActions,
     menuActions,
     dialog: ticketsActionsDialog,
     canArchiveResolved,
     openArchiveResolvedConfirm,
-  } = useTicketsActions({ isLoading: statusesLoading });
+  } = useTicketsActions({
+    isLoading: statusesLoading,
+    filter: archiveFilter,
+    resolvedCountOverride: filteredResolvedTotal,
+  });
 
-  const [columnUpdates, setColumnUpdates] = useState<Record<string, BoardColumnUpdate>>({});
   const loadMoreRef = useRef<Record<string, () => void>>({});
 
   const onUpdate = useCallback((statusId: string, update: BoardColumnUpdate) => {
@@ -167,8 +182,6 @@ export function TicketsBoard({
     () => ({ search: debouncedSearch, organizationIds, assigneeIds, labelIds }),
     [debouncedSearch, organizationIds, assigneeIds, labelIds],
   );
-
-  const statuses = useMemo(() => (statusesData?.snapshot ?? []).filter(s => s.kind !== 'ARCHIVED'), [statusesData]);
 
   const allowedFromByStatusId = useMemo<Record<string, string[]>>(() => {
     if (!transitionRules) return {};
@@ -205,11 +218,19 @@ export function TicketsBoard({
           isLoading,
           isLoadingMore: state?.isLoadingMore,
           system: status.isSystem,
-          allowedFromColumns: allowedFromByStatusId[status.id],
+          allowedFromColumns: transitionRules ? (allowedFromByStatusId[status.id] ?? []) : undefined,
           archivable: status.kind === 'RESOLVED' && canArchiveResolved,
         };
       }),
-    [statuses, columnUpdates, allowedFromByStatusId, isLoading, canArchiveResolved, ticketIdsWithUnread],
+    [
+      statuses,
+      columnUpdates,
+      transitionRules,
+      allowedFromByStatusId,
+      isLoading,
+      canArchiveResolved,
+      ticketIdsWithUnread,
+    ],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);

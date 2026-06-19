@@ -643,8 +643,8 @@ export const GET_TICKET_STATISTICS_QUERY = `
 `;
 
 export const ARCHIVE_RESOLVED_TICKETS_MUTATION = `
-  mutation ArchiveResolvedTickets {
-    archiveResolvedTickets {
+  mutation ArchiveResolvedTickets($filter: TicketFilterInput) {
+    archiveResolvedTickets(filter: $filter) {
       count
       userErrors {
         field

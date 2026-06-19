@@ -68,11 +68,12 @@ export function TicketsTable({
     labelIds,
   });
 
+  const archiveFilter = useMemo(() => ({ labelIds }), [labelIds]);
   const {
     actions: baseActions,
     menuActions,
     dialog: ticketsActionsDialog,
-  } = useTicketsActions({ isLoading, enabled: !isArchived });
+  } = useTicketsActions({ isLoading, enabled: !isArchived, filter: archiveFilter });
 
   // Tickets have no unread field of their own; the per-row count comes from notifications (a
   // separate entity) matched by ticket id, mirroring how the Mingo sidebar derives per-dialog
