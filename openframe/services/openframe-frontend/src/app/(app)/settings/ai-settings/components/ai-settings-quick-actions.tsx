@@ -1,35 +1,55 @@
 'use client';
 
+import {
+  type ColumnDef,
+  DataTable,
+  type Row,
+  TruncateText,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useMemo } from 'react';
 import type { FaeQuickAction } from '../types/fae-settings';
 
 interface AiSettingsQuickActionsProps {
   actions: FaeQuickAction[];
 }
 
+/**
+ * Read-only Quick Actions table (shown in `!isEditMode`). Single-column
+ * `DataTable` mirroring the shared table pattern used across the app (e.g.
+ * monitoring Policies): the column header doubles as the section title and the
+ * row count renders in the header's right slot ("3 results").
+ */
 export function AiSettingsQuickActions({ actions }: AiSettingsQuickActionsProps) {
-  return (
-    <section className="flex flex-col gap-[var(--spacing-system-m)]">
-      <header className="flex items-center gap-2">
-        <h3 className="text-h5 text-ods-text-secondary uppercase tracking-[-0.02em] whitespace-nowrap">
-          Quick Actions
-        </h3>
-        <div className="flex-1 h-px bg-ods-border min-w-4" />
-        <span className="text-h6 text-ods-text-secondary whitespace-nowrap">
-          {actions.length} {actions.length === 1 ? 'result' : 'results'}
-        </span>
-      </header>
+  const columns = useMemo<ColumnDef<FaeQuickAction>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: 'Quick Actions',
+        cell: ({ row }: { row: Row<FaeQuickAction> }) => (
+          <div className="flex flex-col justify-center min-h-[60px]">
+            <TruncateText>{row.original.name}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
+              {row.original.instructions}
+            </TruncateText>
+          </div>
+        ),
+      },
+    ],
+    [],
+  );
 
-      <ul className="flex flex-col gap-[var(--spacing-system-s)]">
-        {actions.map(action => (
-          <li
-            key={action.id}
-            className="flex flex-col gap-1 bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)]"
-          >
-            <p className="text-h4 text-ods-text-primary truncate">{action.name}</p>
-            <p className="text-h6 text-ods-text-secondary truncate">{action.instructions}</p>
-          </li>
-        ))}
-      </ul>
-    </section>
+  const table = useDataTable<FaeQuickAction>({
+    data: actions,
+    columns,
+    getRowId: (row: FaeQuickAction) => row.id,
+    enableSorting: false,
+  });
+
+  return (
+    <DataTable table={table}>
+      <DataTable.Header rightSlot={<DataTable.RowCount />} />
+      <DataTable.Body emptyMessage="No quick actions configured." rowClassName="mb-1" />
+    </DataTable>
   );
 }

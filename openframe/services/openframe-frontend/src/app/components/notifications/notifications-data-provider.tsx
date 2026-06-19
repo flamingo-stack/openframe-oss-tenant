@@ -81,6 +81,7 @@ const DESKTOP_NOTIFICATION_ICON = '/assets/openframe/android-chrome-192x192.png'
 const NOTIFICATION_SUBJECT_PREFIX = 'user';
 const NOTIFICATION_SUBJECT_SUFFIX = 'notification';
 const POPUP_OFFSET_CLASS = 'top-16 md:top-[4.5rem]';
+const NOTIFICATIONS_HISTORY_HREF = '/notifications?tab=history';
 
 const DRAWER_FILTER_PAIRS = [UNFILTERED_NOTIFICATION_PAIR];
 const NATS_CONTEXT_TYPENAME = 'GenericContext';
@@ -359,7 +360,7 @@ function NotificationsDataInner({
   );
 
   const handleHistoryClick = useCallback(() => {
-    router.push('/notifications?tab=history');
+    router.push(NOTIFICATIONS_HISTORY_HREF);
   }, [router]);
 
   const approveRequest = useApproveRequest();
@@ -398,6 +399,7 @@ function NotificationsDataInner({
     <NotificationsProvider
       actions={enabled ? actions : undefined}
       onHistoryClick={enabled ? handleHistoryClick : undefined}
+      historyHref={enabled ? NOTIFICATIONS_HISTORY_HREF : undefined}
       defaultShowPopups={showPopups}
       onShowPopupsChange={onShowPopupsChange}
       defaultShowDesktopPopups={showDesktopPopups}
