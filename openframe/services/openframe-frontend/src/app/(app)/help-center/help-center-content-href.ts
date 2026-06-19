@@ -40,11 +40,12 @@ const HC = HELP_CENTER_BASE.replace(/^\//, '');
  *  are NOT here — they have no detail route and use `overrides` instead. */
 const HOSTED_TYPES = new Set(['onboarding_guide', 'product_release']);
 
-/** In-app ticket-dialog href for a HubSpot-ticket card. The ticket `identifier`
- *  is the same id `/tickets/dialog` keys on (the id the notifications + mention
- *  chips already route with). Shared by every `hubspot_ticket*` override. */
-const ticketDialogHref = (id: string): { href: string; targetPlatform: string | null } => ({
-  href: `/tickets/dialog?id=${encodeURIComponent(id)}`,
+/** In-app href for a HubSpot-ticket card → the Help Center tickets list with the
+ *  ticket pre-opened. `?ticket=<external_id>` is the deep-link param `HelpCenterList`
+ *  reads to auto-open that ticket's drawer (the same id the hub URL used). Shared
+ *  by every `hubspot_ticket*` override. */
+const helpCenterTicketHref = (id: string): { href: string; targetPlatform: string | null } => ({
+  href: `${HELP_CENTER_BASE}/tickets?ticket=${encodeURIComponent(id)}`,
   targetPlatform: null,
 });
 
@@ -52,7 +53,7 @@ const ticketDialogHref = (id: string): { href: string; targetPlatform: string | 
  * The unified `composeContentUrl` for OpenFrame. Returns RELATIVE in-app hrefs
  * for the four hosted types and the hub URL for everything else — exactly what
  * the `host`-mode help-center subtree needs. The embed-mode chat wraps this via
- * {@link toSameOriginInAppHref} to absolutize the in-app branch.
+ * {@link toSameOriginHelpCenterHref} to absolutize the in-app branch.
  */
 export const composeOpenframeContentUrl: ComposeContentUrl = makeComposeContentUrl({
   hostedTypes: HOSTED_TYPES,
@@ -78,41 +79,36 @@ export const composeOpenframeContentUrl: ComposeContentUrl = makeComposeContentU
     }),
     // Mingo entity cards with a real in-app destination → soft-nav in the chat
     // (and same-origin nav on the pages) instead of bouncing to the content hub.
-    // A HubSpot-ticket card opens the internal ticket dialog (every variant the
-    // RAG can emit); FAQ has no per-item detail route, so it deep-links to the
-    // in-app FAQ list. These hrefs leave `/help-center`, so `isInAppHref` (below)
-    // must recognize `/tickets` too for the embed-mode same-origin soft-nav.
-    hubspot_ticket: ticketDialogHref,
-    hubspot_ticket_anon: ticketDialogHref,
-    hubspot_ticket_self: ticketDialogHref,
+    // A HubSpot-ticket card opens the Help Center tickets list with that ticket
+    // pre-opened (every variant the RAG can emit); FAQ has no per-item detail
+    // route, so it deep-links to the in-app FAQ list. Both live under
+    // `/help-center`, so `isInAppHelpCenterHref` already covers them.
+    hubspot_ticket: helpCenterTicketHref,
+    hubspot_ticket_anon: helpCenterTicketHref,
+    hubspot_ticket_self: helpCenterTicketHref,
     faq: () => ({ href: `${HELP_CENTER_BASE}/faqs`, targetPlatform: null }),
   },
 });
 
-/** Relative-route prefixes the embedder serves IN-APP (soft-nav, same origin)
- *  rather than bouncing out to the content hub: the `/help-center` content
- *  subtree plus the internal `/tickets` dialog a HubSpot-ticket card opens. */
-const IN_APP_ROUTE_PREFIXES = [HELP_CENTER_BASE, '/tickets'] as const;
-
-/** True when a composed href points at an in-app route (the relative-same-origin
- *  branch of {@link composeOpenframeContentUrl}) — `/help-center…` or `/tickets…`. */
-export function isInAppHref(href: string): boolean {
-  return IN_APP_ROUTE_PREFIXES.some(
-    prefix => href === prefix || href.startsWith(`${prefix}/`) || href.startsWith(`${prefix}?`),
-  );
+/** True when a composed href points at an in-app `/help-center` route (i.e. the
+ *  relative-same-origin branch of {@link composeOpenframeContentUrl}). Every
+ *  in-app target — content detail routes, the roadmap/delivery list filters, the
+ *  ticket list, the FAQ list — lives under `/help-center`. */
+export function isInAppHelpCenterHref(href: string): boolean {
+  return href === HELP_CENTER_BASE || href.startsWith(`${HELP_CENTER_BASE}/`);
 }
 
 /**
- * Embed-mode adapter: absolutize an in-app href (`/help-center/…` or `/tickets/…`)
- * against the CURRENT origin so the lib's `computeIsNewTab` recognizes it as
- * same-origin in-app (same-tab soft-nav) instead of absolutizing it against the
- * hub origin and opening a new tab. Non-in-app (already-absolute hub) hrefs pass
- * through. SSR-safe: with no `window` it returns the href unchanged (cards only
- * ever render client-side, so the relative form never reaches the user).
+ * Embed-mode adapter: absolutize an in-app `/help-center/...` href against the
+ * CURRENT origin so the lib's `computeIsNewTab` recognizes it as same-origin
+ * in-app (same-tab soft-nav) instead of absolutizing it against the hub origin
+ * and opening a new tab. Non-hosted (already-absolute hub) hrefs pass through.
+ * SSR-safe: with no `window` it returns the href unchanged (cards only ever
+ * render client-side, so the relative form never reaches the user).
  */
-export function toSameOriginInAppHref(href: string): string {
+export function toSameOriginHelpCenterHref(href: string): string {
   if (typeof window === 'undefined') return href;
-  if (!isInAppHref(href)) return href;
+  if (!isInAppHelpCenterHref(href)) return href;
   return window.location.origin + href;
 }
 
@@ -120,5 +116,5 @@ export function toSameOriginInAppHref(href: string): string {
  *  but in-app hrefs are absolutized to the current origin for the embedded chat. */
 export const composeOpenframeChatContentUrl: ComposeContentUrl = input => {
   const resolved = composeOpenframeContentUrl(input);
-  return { href: toSameOriginInAppHref(resolved.href), targetPlatform: resolved.targetPlatform };
+  return { href: toSameOriginHelpCenterHref(resolved.href), targetPlatform: resolved.targetPlatform };
 };
