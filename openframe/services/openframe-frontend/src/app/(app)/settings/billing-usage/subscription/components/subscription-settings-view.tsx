@@ -9,7 +9,7 @@ import { SubscriptionStatus } from '@/app/components/subscription-lock/subscript
 import { TrialEndedBanner } from '@/app/components/subscription-lock/trial-ended-banner';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import type { OpenframeProduct, PlanLine, ProductUpdates } from '../types/subscription.types';
-import { buildProductCancelUpdates } from '../utils/subscription.utils';
+import { buildProductCancelUpdates, isPlanChanged } from '../utils/subscription.utils';
 import { ModelTokenRates } from './model-token-rates';
 import { PlanChangeSummary, type PlanChangeSummaryItem } from './plan-change-summary';
 import { ProductSubscriptionCard } from './product-subscription-card';
@@ -18,7 +18,8 @@ import { SubscriptionSubmitButton } from './subscription-submit-button';
 
 interface ProductDisplay {
   title: string;
-  description: string;
+  /** Static text, or a builder receiving the selected period label ("monthly"/"yearly"). */
+  description: string | ((periodLabel: string) => string);
   /** Short label used in the Current/New plan comparison block. */
   rowLabel: string;
   packageUnitLabel: string;
@@ -31,12 +32,13 @@ interface ProductDisplay {
 const PAYG_PLAN_LINE: PlanLine = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
 
 const ADDITIONAL_DEVICES_HELPER_TEXT =
-  'You can add more devices anytime. Additional devices beyond your package are charged at $5/device and added to your next invoice.';
+  'You can add more devices anytime. Additional devices beyond your package are charged at pay-as-you-go rates and added to your next invoice.';
 
 const PRODUCT_DISPLAY: Partial<Record<OpenframeProduct, ProductDisplay>> = {
   MANAGED_DEVICES: {
     title: 'Device Management Plan',
-    description: "Select the number of devices you'd like to include in your monthly subscription plan:",
+    description: periodLabel =>
+      `Select the number of devices you'd like to include in your ${periodLabel} subscription plan:`,
     rowLabel: 'Devices',
     packageUnitLabel: 'devices',
     customLabel: 'Custom Amount',
@@ -143,8 +145,11 @@ function SubscriptionSettingsContent() {
     return [{ label: display.rowLabel, comparison: effective }];
   });
 
-  // Only meaningful for the update flow (active subscription) once something changed.
-  const showPlanChange = !needsCheckout && packageUpdates.length > 0 && summaryItems.length > 0;
+  // Only meaningful for the update flow (active subscription). Driven by the
+  // comparison, not `packageUpdates`, so a valid selection that differs from the
+  // current plan always previews — even when the change can't yet be expressed
+  // as a mutation (see isPlanChanged).
+  const showPlanChange = !needsCheckout && summaryItems.some(item => isPlanChanged(item.comparison));
 
   return (
     <PageLayout

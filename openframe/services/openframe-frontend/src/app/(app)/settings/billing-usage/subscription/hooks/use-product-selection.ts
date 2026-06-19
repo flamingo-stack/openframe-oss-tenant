@@ -34,8 +34,9 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
   onUpdatesChangeRef.current = onUpdatesChange;
 
   useEffect(() => {
-    // customQuantity is the real product count; it must be a positive multiple
-    // of unitSize (devices: 1, AI tokens: 100_000).
+    // customQuantity is the real product count the user typed; unitSize only
+    // constrains granularity — it must be a positive multiple of unitSize
+    // (devices: 1, AI tokens: 100_000).
     const unitSize = Number(product.unitSize ?? 1) || 1;
     const valid =
       selection.selectedPackageId !== CUSTOM_OPTION_ID ||
@@ -65,9 +66,8 @@ export function useProductSelection({ product, subscriptionProduct, onUpdatesCha
   const baselineUnitPrice = allTiers[0]?.unitPrice ?? product.payAsYouGoOption?.price ?? null;
   const tiers = allTiers.slice(1);
   const isYearly = selection.billingPeriod === 'YEARLY';
-  // Products per billable unit (devices: 1, AI tokens: 100_000). tier.from and
-  // mutation quantity are in units; the Custom input holds the real product
-  // count and must be a whole multiple of unitSize.
+  // Granularity for the Custom input (devices: 1, AI tokens: 100_000): the
+  // entered real product count must be a whole multiple of unitSize.
   const unitSize = Number(product.unitSize ?? 1) || 1;
 
   return {

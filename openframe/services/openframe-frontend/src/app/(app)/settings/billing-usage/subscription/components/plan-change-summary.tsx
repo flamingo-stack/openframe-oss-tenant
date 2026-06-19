@@ -4,7 +4,7 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
 import { BillingRow, SectionBlock } from '../../components/billing-section';
 import type { BillingPeriod, PlanComparison, PlanLine } from '../types/subscription.types';
-import { formatCompact, formatMoney } from '../utils/subscription.utils';
+import { formatCompact, formatMoney, isPlanChanged } from '../utils/subscription.utils';
 
 export interface PlanChangeSummaryItem {
   /** Short row label, e.g. "Devices" / "AI Tokens". */
@@ -112,9 +112,19 @@ export function PlanChangeSummary({ items }: PlanChangeSummaryProps) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <SectionBlock title="Current Plan">
         {items.map(item => (
-          <BillingRow key={item.label} label={item.label} value={currentValueText(item.comparison.current)} muted />
+          <BillingRow
+            key={item.label}
+            label={item.label}
+            value={currentValueText(item.comparison.current)}
+            // Mute only changed rows; unchanged rows stay white to match the New side.
+            muted={isPlanChanged(item.comparison)}
+          />
         ))}
-        <BillingRow label="Total" value={totalText(currentTotal)} muted />
+        <BillingRow
+          label="Total"
+          value={totalText(currentTotal)}
+          muted={totalDirection(currentTotal, nextTotal) !== 'same'}
+        />
       </SectionBlock>
 
       <SectionBlock title="New Plan">
