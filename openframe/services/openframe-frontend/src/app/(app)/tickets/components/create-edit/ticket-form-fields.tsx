@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { AssignmentsField } from '@/components/assignments';
-import { featureFlags } from '@/lib/feature-flags';
 import type { useTempAttachments } from '../../hooks/use-temp-attachments';
 import { useAssigneeOptions, useDeviceOptions, useOrganizationOptions } from '../../hooks/use-ticket-options';
 import { useTicketStatusesQuery } from '../../statuses/hooks/use-ticket-statuses-query';
@@ -68,10 +67,8 @@ export function TicketFormFields({
     return [{ label: ticket?.deviceHostname || currentId, value: currentId }, ...options];
   }, [deviceOptions.options, ticket?.deviceId, ticket?.deviceHostname]);
 
-  const statusFlag = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: statusFlag });
+  const statusesQuery = useTicketStatusesQuery({ enabled: true });
   const statusOptions = useMemo<StatusOption[]>(() => {
-    if (!statusFlag) return [];
     if (isEditMode) {
       const current = resolveCurrentStatus(ticket, statusesQuery.data?.snapshot);
       const transitions = ticket?.availableTransitions ?? [];
@@ -81,15 +78,15 @@ export function TicketFormFields({
       return [...byId.values()];
     }
     return (statusesQuery.data?.customStatuses ?? []).map(s => ({ label: s.name, value: s.id, color: s.color }));
-  }, [statusFlag, isEditMode, ticket, statusesQuery.data]);
+  }, [isEditMode, ticket, statusesQuery.data]);
 
   const selectedStatusId = watch('statusId');
   // New ticket: pre-select the first status once options load.
   useEffect(() => {
-    if (statusFlag && !isEditMode && !selectedStatusId && statusOptions.length > 0) {
+    if (!isEditMode && !selectedStatusId && statusOptions.length > 0) {
       setValue('statusId', statusOptions[0].value);
     }
-  }, [statusFlag, isEditMode, selectedStatusId, statusOptions, setValue]);
+  }, [isEditMode, selectedStatusId, statusOptions, setValue]);
   const renderPreview = useCallback(
     (source: string) => (
       <div className="custom-preview-wrapper" style={{ height: '100%', overflow: 'auto' }}>
@@ -213,31 +210,29 @@ export function TicketFormFields({
           }}
         />
 
-        {/* Status — custom-status lifecycle only */}
-        {statusFlag && (
-          <Controller
-            name="statusId"
-            control={control}
-            render={({ field, fieldState }) => {
-              const selectedStatus = statusOptions.find(o => o.value === field.value);
-              return (
-                <Autocomplete
-                  label="Status"
-                  options={statusOptions}
-                  value={field.value ?? null}
-                  onChange={val => field.onChange(val)}
-                  placeholder="Select Status"
-                  loading={!isEditMode && statusesQuery.isLoading}
-                  disabled={isFaeForm}
-                  error={fieldState.error?.message}
-                  invalid={!!fieldState.error}
-                  startAdornment={statusStartAdornment(selectedStatus)}
-                  renderOption={renderStatusOption}
-                />
-              );
-            }}
-          />
-        )}
+        {/* Status — custom-status lifecycle */}
+        <Controller
+          name="statusId"
+          control={control}
+          render={({ field, fieldState }) => {
+            const selectedStatus = statusOptions.find(o => o.value === field.value);
+            return (
+              <Autocomplete
+                label="Status"
+                options={statusOptions}
+                value={field.value ?? null}
+                onChange={val => field.onChange(val)}
+                placeholder="Select Status"
+                loading={!isEditMode && statusesQuery.isLoading}
+                disabled={isFaeForm}
+                error={fieldState.error?.message}
+                invalid={!!fieldState.error}
+                startAdornment={statusStartAdornment(selectedStatus)}
+                renderOption={renderStatusOption}
+              />
+            );
+          }}
+        />
       </div>
 
       {/* Labels / Tags */}

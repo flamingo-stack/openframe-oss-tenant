@@ -6,22 +6,26 @@ import {
   type BoardChange,
   type BoardColumnDef,
   type BoardTicket,
-  columnFromTicketStatus,
 } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { type ReactNode, useCallback, useMemo } from 'react';
+import { useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { type InfiniteData, useQueryClient } from '@tanstack/react-query';
+import { type ReactNode, useCallback, useMemo, useRef, useState } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { appendImageHash } from '@/lib/image-url';
+import { useApprovalRequests } from '../hooks/use-approval-requests';
 import { useMoveTicket, useMovingTicketIds } from '../hooks/use-move-ticket';
-import { useTicketStatusTransitions } from '../hooks/use-ticket-status-transitions';
+import { useTicketStatusTransitionRules } from '../hooks/use-ticket-status-transition-rules';
 import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
-import { BOARD_STATUSES, useTicketsBoardQuery } from '../hooks/use-tickets-board-query';
-import type { BoardStatus } from '../services/ticket-service.types';
+import type { TicketsPage } from '../services/ticket-service.types';
+import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
+import { mapDefinitionToSystem, usesCanonicalStatusStyle } from '../statuses/types/ticket-statuses.types';
 import type { Dialog } from '../types/dialog.types';
+import { dialogsQueryKeys, ticketsQueryKeys } from '../utils/query-keys';
 import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
+import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
 import { OrganizationFilter } from './organization-filter';
 import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
 
@@ -53,7 +57,7 @@ function dialogToBoardTicket(dialog: Dialog, hasNewMessage = false): BoardTicket
     id: dialog.id,
     title: dialog.title,
     ticketNumber: dialog.ticketNumber !== undefined ? String(dialog.ticketNumber) : '',
-    status: dialog.status,
+    status: dialog.statusName ?? dialog.status,
     deviceHostnames: dialog.deviceHostname ? [dialog.deviceHostname] : undefined,
     organizationName: dialog.organizationName,
     assignees: dialog.assignedTo
@@ -67,7 +71,9 @@ function dialogToBoardTicket(dialog: Dialog, hasNewMessage = false): BoardTicket
         ]
       : undefined,
     tags: dialog.labels?.map(l => l.key),
+    createdAt: dialog.createdAt,
     hasNewMessage,
+    pendingApproval: dialog.pendingApproval,
   };
 }
 
@@ -84,15 +90,47 @@ export function TicketsBoard({
 }: TicketsBoardProps) {
   const debouncedSearch = useDebounce(search, 300);
 
-  const { columns, loadMore, isLoading, error } = useTicketsBoardQuery({
-    search: debouncedSearch,
-    organizationIds,
-    assigneeIds,
-    labelIds,
-  });
+  const { data: statusesData, isLoading: statusesLoading, error: statusesError } = useTicketStatusesQuery();
+  const { data: transitionRules } = useTicketStatusTransitionRules();
   const { mutate: moveTicket } = useMoveTicket();
   const movingIds = useMovingTicketIds();
   const notifications = useOptionalNotifications();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
+
+  const handleApprovalAction = useCallback(
+    async (ticketId: string, requestId: string | undefined, approve: boolean) => {
+      if (!requestId) return;
+      try {
+        if (approve) await handleApproveRequest(requestId);
+        else await handleRejectRequest(requestId);
+        toast({
+          title: approve ? 'Request approved' : 'Request rejected',
+          description: approve ? 'The pending request has been approved.' : 'The pending request has been rejected.',
+          variant: 'success',
+        });
+        queryClient.setQueriesData<InfiniteData<TicketsPage>>({ queryKey: dialogsQueryKeys.boardColumns() }, prev => {
+          if (!prev?.pages.some(p => p.dialogs.some(d => d.id === ticketId && d.pendingApproval))) return prev;
+          return {
+            ...prev,
+            pages: prev.pages.map(page => ({
+              ...page,
+              dialogs: page.dialogs.map(d => (d.id === ticketId ? { ...d, pendingApproval: undefined } : d)),
+            })),
+          };
+        });
+        queryClient.invalidateQueries({ queryKey: ticketsQueryKeys.detail(ticketId) });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: error instanceof Error ? error.message : 'Failed to update approval request',
+          variant: 'destructive',
+        });
+      }
+    },
+    [handleApproveRequest, handleRejectRequest, toast, queryClient],
+  );
 
   // Tickets have no unread field of their own; unread state comes from notifications (a separate
   // entity) matched by ticket id.
@@ -106,57 +144,86 @@ export function TicketsBoard({
     }
     return ids;
   }, [notifications?.notifications]);
-  const { data: statusTransitions } = useTicketStatusTransitions();
   const {
     actions: baseActions,
     menuActions,
     dialog: ticketsActionsDialog,
     canArchiveResolved,
     openArchiveResolvedConfirm,
-  } = useTicketsActions({ isLoading });
+  } = useTicketsActions({ isLoading: statusesLoading });
 
-  const allowedFromByStatus = useMemo<Partial<Record<BoardStatus, string[]>>>(() => {
-    if (!statusTransitions) return {};
-    const map: Partial<Record<BoardStatus, string[]>> = {};
-    for (const { from, to } of statusTransitions) {
+  const [columnUpdates, setColumnUpdates] = useState<Record<string, BoardColumnUpdate>>({});
+  const loadMoreRef = useRef<Record<string, () => void>>({});
+
+  const onUpdate = useCallback((statusId: string, update: BoardColumnUpdate) => {
+    setColumnUpdates(prev => ({ ...prev, [statusId]: update }));
+  }, []);
+
+  const registerLoadMore = useCallback((statusId: string, loadMore: () => void) => {
+    loadMoreRef.current[statusId] = loadMore;
+  }, []);
+
+  const params = useMemo(
+    () => ({ search: debouncedSearch, organizationIds, assigneeIds, labelIds }),
+    [debouncedSearch, organizationIds, assigneeIds, labelIds],
+  );
+
+  const statuses = useMemo(() => (statusesData?.snapshot ?? []).filter(s => s.kind !== 'ARCHIVED'), [statusesData]);
+
+  const allowedFromByStatusId = useMemo<Record<string, string[]>>(() => {
+    if (!transitionRules) return {};
+    const map: Record<string, string[]> = {};
+    for (const { from, to } of transitionRules) {
       for (const target of to) {
-        if (!BOARD_STATUSES.includes(target as BoardStatus)) continue;
-        const targetKey = target as BoardStatus;
-        (map[targetKey] ??= []).push(from);
+        (map[target] ??= []).push(from);
       }
     }
     return map;
-  }, [statusTransitions]);
+  }, [transitionRules]);
+
+  const isLoading = statusesLoading || statuses.some(s => columnUpdates[s.id]?.isLoading ?? true);
+  const columnError = statuses.map(s => columnUpdates[s.id]?.error).find(Boolean) ?? null;
 
   const boardColumns = useMemo<BoardColumnDef[]>(
     () =>
-      BOARD_STATUSES.map(status => {
-        const state = columns[status];
-        return columnFromTicketStatus(
-          status,
-          state.tickets.map(ticket => dialogToBoardTicket(ticket, ticketIdsWithUnread.has(ticket.id))),
-          {
-            total: state.total,
-            hasMore: state.hasMore,
-            isLoading,
-            isLoadingMore: state.isLoadingMore,
-            system: ['ACTIVE', 'TECH_REQUIRED', 'RESOLVED'].includes(status),
-            allowedFromColumns: allowedFromByStatus[status],
-            archivable: status === 'RESOLVED' && canArchiveResolved,
-          },
-        );
+      statuses.map(status => {
+        const state = columnUpdates[status.id]?.state;
+        // AI_ASSISTANCE/RESOLVED style their header from the canonical status key
+        // (icon/variant). TECH_REQUIRED and custom statuses render from the backend
+        // `color`. `id` stays the statusId regardless.
+        const useCanonicalStyle = usesCanonicalStatusStyle(status.kind);
+        return {
+          id: status.id,
+          statusKey: useCanonicalStyle ? mapDefinitionToSystem(status).statusKey : undefined,
+          label: status.name,
+          color: status.color,
+          tickets: (state?.tickets ?? []).map(ticket =>
+            dialogToBoardTicket(ticket, ticketIdsWithUnread.has(ticket.id)),
+          ),
+          total: state?.total,
+          hasMore: state?.hasMore,
+          isLoading,
+          isLoadingMore: state?.isLoadingMore,
+          system: status.isSystem,
+          allowedFromColumns: allowedFromByStatusId[status.id],
+          archivable: status.kind === 'RESOLVED' && canArchiveResolved,
+        };
       }),
-    [columns, allowedFromByStatus, isLoading, canArchiveResolved, ticketIdsWithUnread],
+    [statuses, columnUpdates, allowedFromByStatusId, isLoading, canArchiveResolved, ticketIdsWithUnread],
   );
 
   const getTicketHref = useCallback((id: string) => `/tickets/dialog?id=${id}`, []);
+
+  const loadMore = useCallback((columnId: string) => {
+    loadMoreRef.current[columnId]?.();
+  }, []);
 
   const handleChange = useCallback(
     (change: BoardChange) => {
       moveTicket({
         ticketId: change.ticketId,
-        sourceStatus: change.fromColumnId as BoardStatus,
-        targetStatus: change.toColumnId as BoardStatus,
+        sourceStatusId: change.fromColumnId,
+        targetStatusId: change.toColumnId,
         afterTicketId: change.afterTicketId,
         beforeTicketId: change.beforeTicketId,
       });
@@ -170,16 +237,30 @@ export function TicketsBoard({
     (organizationIds?.length ?? 0) === 0 &&
     (assigneeIds?.length ?? 0) === 0 &&
     (labelIds?.length ?? 0) === 0 &&
-    BOARD_STATUSES.every(status => columns[status].tickets.length === 0);
+    boardColumns.length > 0 &&
+    boardColumns.every(column => column.tickets.length === 0);
 
   const actions = useMemo(() => emphasizeNewTicketAction(baseActions, showEmptyState), [baseActions, showEmptyState]);
 
-  if (error) {
-    return <PageError message={error} />;
+  if (statusesError) {
+    return <PageError message={statusesError.message} />;
+  }
+  if (columnError) {
+    return <PageError message={columnError.message} />;
   }
 
   return (
     <>
+      {statuses.map(status => (
+        <BoardColumnSubscriber
+          key={status.id}
+          statusId={status.id}
+          params={params}
+          onUpdate={onUpdate}
+          registerLoadMore={registerLoadMore}
+        />
+      ))}
+
       <PageLayout
         title="Tickets"
         actions={actions.length > 0 ? actions : undefined}
@@ -228,6 +309,8 @@ export function TicketsBoard({
               onArchiveColumn={openArchiveResolvedConfirm}
               getTicketHref={getTicketHref}
               renderAssignSlot={ticket => <BoardAssigneePicker ticket={ticket} />}
+              onApprove={(ticketId, requestId) => handleApprovalAction(ticketId, requestId, true)}
+              onReject={(ticketId, requestId) => handleApprovalAction(ticketId, requestId, false)}
               collapseStorageKey="tickets-board"
               className="h-full px-[var(--spacing-system-l)]"
             />

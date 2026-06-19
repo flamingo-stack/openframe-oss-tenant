@@ -20,7 +20,7 @@ export interface TicketNode {
   title: string;
   description?: string;
   status: string;
-  // Lifecycle (custom-status) definition — only fetched when the ticket-statuses flag is on.
+  // Lifecycle (custom-status) definition.
   statusDefinition?: TicketStatusDefinition | null;
   creationSource?: string;
   labels: TicketLabel[];
@@ -64,7 +64,7 @@ export interface TempAttachment {
 // --- Queries ---
 
 const GET_TICKETS_QUERY = gql`
-  query GetTickets($filter: TicketFilterInput, $pagination: CursorPaginationInput, $search: String, $lifecycle: Boolean!) {
+  query GetTickets($filter: TicketFilterInput, $pagination: CursorPaginationInput, $search: String) {
     tickets(filter: $filter, pagination: $pagination, search: $search) {
       edges {
         cursor
@@ -73,7 +73,7 @@ const GET_TICKETS_QUERY = gql`
           ticketNumber
           title
           status
-          statusDefinition @include(if: $lifecycle) {
+          statusDefinition {
             id
             name
             color
@@ -153,14 +153,14 @@ const DELETE_TEMP_ATTACHMENT = gql`
 `;
 
 const GET_TICKET_QUERY = gql`
-  query GetTicket($id: ID!, $lifecycle: Boolean!) {
+  query GetTicket($id: ID!) {
     ticket(id: $id) {
       id
       ticketNumber
       title
       description
       status
-      statusDefinition @include(if: $lifecycle) {
+      statusDefinition {
         id
         name
         color
@@ -227,14 +227,13 @@ class TicketGraphQlService {
     cursor?: string | null;
     limit?: number;
     search?: string;
-    lifecycle?: boolean;
   }): Promise<TicketsConnection | null> {
     // Errors propagate to the caller (React Query) so a failed fetch becomes a
     // rejected query that retries — rather than a swallowed `null` that the
     // queryFn would cache as a successful empty list.
     await tokenService.ensureTokenReady();
 
-    const variables: Record<string, unknown> = { lifecycle: params.lifecycle ?? false };
+    const variables: Record<string, unknown> = {};
 
     if (params.statuses?.length) {
       variables.filter = { statuses: params.statuses };
@@ -254,10 +253,10 @@ class TicketGraphQlService {
     return data.tickets || null;
   }
 
-  async getTicket(id: string, lifecycle = false): Promise<TicketNode | null> {
+  async getTicket(id: string): Promise<TicketNode | null> {
     try {
       await tokenService.ensureTokenReady();
-      const data = await this.request<{ ticket: TicketNode }>(GET_TICKET_QUERY, { id, lifecycle });
+      const data = await this.request<{ ticket: TicketNode }>(GET_TICKET_QUERY, { id });
       return data.ticket || null;
     } catch (error) {
       console.error('Failed to fetch ticket:', error);

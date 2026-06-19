@@ -67,9 +67,11 @@ import { notificationGlobalId } from '@/lib/relay-id';
 import {
   ADMIN_AI_MESSAGE_CONTEXT_TYPE,
   CONTEXT_TYPENAME_BY_TYPE,
+  isPendingApproval,
   notificationTargetsLocation,
-  resolveNotificationRoute,
+  resolveNotificationAction,
 } from './notification-navigation';
+import { openMingoDialogInDrawer } from './open-mingo-dialog';
 import { useApproveRequest } from './use-approve-request';
 
 const DRAWER_PAGE_SIZE = 30;
@@ -238,14 +240,14 @@ interface NavigationTileWrapperProps {
 /** Wraps a tile so its body navigates to the notification's target entity; inner buttons keep their own clicks. */
 function NavigationTileWrapper({ notification, helpers, children }: NavigationTileWrapperProps) {
   const router = useRouter();
-  const { close } = useNotifications();
-  const route = resolveNotificationRoute(notification);
+  const { close, markRead } = useNotifications();
+  const action = resolveNotificationAction(notification);
 
   const navigate = useCallback(
     (event: ReactMouseEvent<HTMLDivElement> | ReactKeyboardEvent<HTMLDivElement>) => {
       // Inner controls (Approve/Reject, expand toggle, dismiss) own their own clicks.
       if ((event.target as HTMLElement).closest('button')) return;
-      if (!route) return;
+      if (!action) return;
       if ('key' in event) {
         if (event.key !== 'Enter' && event.key !== ' ') return;
         event.preventDefault();
@@ -253,12 +255,20 @@ function NavigationTileWrapper({ notification, helpers, children }: NavigationTi
       close();
       // Settle (dismiss the live tile) but keep it unread until the user acts on the entity.
       helpers.onSettle(notification.id);
-      router.push(route);
+      if ('mingoDialogId' in action) {
+        openMingoDialogInDrawer(action.mingoDialogId);
+        // The drawer changes no URL, so the location-based `EntityViewAutoReader`
+        // can't clear this one — mark it read here to match the route flow.
+        // Pending approvals stay unread until decided (same rule as the reader).
+        if (!isPendingApproval(notification)) markRead(notification.id);
+      } else {
+        router.push(action.route);
+      }
     },
-    [route, close, helpers, notification.id, router],
+    [action, close, markRead, helpers, notification, router],
   );
 
-  if (!route) return <>{children}</>;
+  if (!action) return <>{children}</>;
 
   return (
     <div
@@ -349,7 +359,7 @@ function NotificationsDataInner({
   );
 
   const handleHistoryClick = useCallback(() => {
-    router.push('/notifications');
+    router.push('/notifications?tab=history');
   }, [router]);
 
   const approveRequest = useApproveRequest();
@@ -366,8 +376,8 @@ function NotificationsDataInner({
       if (isApprovalNotification(notification) && getApprovalMeta(notification)) {
         return <ApprovalTileWithNavigation notification={notification} helpers={helpers} onDecide={decideApproval} />;
       }
-      // Non-approval tiles get the default look, made clickable only when they resolve to a route.
-      if (resolveNotificationRoute(notification)) {
+      // Non-approval tiles get the default look, made clickable only when they resolve to an action.
+      if (resolveNotificationAction(notification)) {
         return (
           <NavigationTileWrapper notification={notification} helpers={helpers}>
             <NotificationTile
@@ -413,14 +423,6 @@ function NotificationsDataInner({
       {children}
     </NotificationsProvider>
   );
-}
-
-/** A still-actionable approval request: stays unread until the user actually approves/rejects it. */
-function isPendingApproval(notification: Notification): boolean {
-  const approval = getApprovalMeta(notification);
-  if (!approval) return false;
-  const resolution = approval.resolution?.toUpperCase();
-  return !resolution || resolution === 'PENDING';
 }
 
 /**
@@ -518,6 +520,7 @@ function maybeShowDesktopNotification(
   title: string,
   description: string | null,
   navigate: (route: string) => void,
+  markRead: (notificationId: string) => void,
 ): void {
   if (
     typeof window === 'undefined' ||
@@ -528,7 +531,7 @@ function maybeShowDesktopNotification(
     return;
   }
 
-  const route = resolveNotificationRoute({
+  const action = resolveNotificationAction({
     id: relayId,
     title,
     createdAt: Date.now(),
@@ -547,7 +550,18 @@ function maybeShowDesktopNotification(
     });
     notification.onclick = () => {
       window.focus();
-      if (route) navigate(route);
+      // A Mingo dialog opens in the drawer (no URL); everything else is a route.
+      if (action) {
+        if ('mingoDialogId' in action) {
+          openMingoDialogInDrawer(action.mingoDialogId);
+          // No route change → the location auto-reader can't clear it; mark read
+          // here. Approval requests are the exception (they clear on decision,
+          // not on open) — leave those unread.
+          if (payload.context?.type !== ADMIN_APPROVAL_REQUEST_CONTEXT_TYPE) markRead(relayId);
+        } else {
+          navigate(action.route);
+        }
+      }
       notification.close();
     };
   } catch {
@@ -558,13 +572,15 @@ function maybeShowDesktopNotification(
 function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
   const environment = useRelayEnvironment();
   const router = useRouter();
-  const { showDesktopPopups } = useNotifications();
+  const { showDesktopPopups, markRead } = useNotifications();
   const subject = `${NOTIFICATION_SUBJECT_PREFIX}.${userId}.${NOTIFICATION_SUBJECT_SUFFIX}`;
   const environmentRef = useRef(environment);
   environmentRef.current = environment;
   // Refs keep the NATS subscription callback dependency-free (no resubscribe on toggle/navigation).
   const showDesktopPopupsRef = useRef(showDesktopPopups);
   showDesktopPopupsRef.current = showDesktopPopups;
+  const markReadRef = useRef(markRead);
+  markReadRef.current = markRead;
   const routerRef = useRef(router);
   routerRef.current = router;
 
@@ -639,7 +655,14 @@ function NotificationsLiveBridge({ userId }: NotificationsLiveBridgeProps) {
       }
 
       if (showDesktopPopupsRef.current) {
-        maybeShowDesktopNotification(payload, relayId, title, description, route => routerRef.current.push(route));
+        maybeShowDesktopNotification(
+          payload,
+          relayId,
+          title,
+          description,
+          route => routerRef.current.push(route),
+          id => markReadRef.current(id),
+        );
       }
 
       // The bucket was already bumped locally (above) so the sidebar is instantly consistent

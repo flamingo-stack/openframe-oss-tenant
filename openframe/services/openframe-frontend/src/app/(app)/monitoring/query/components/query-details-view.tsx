@@ -14,6 +14,8 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ScriptEditor } from '../../../scripts/components/script/script-editor';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
@@ -42,6 +44,10 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const { rows, isLoading: isReportLoading } = useQueryReport(isValidId ? numericId : null);
   const { deleteQuery, isDeleting } = useQueries();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  // Register this query as the Mingo "open view" (passive context) so the agent
+  // gets the user's working context on the next message; cleared → recent views.
+  useTrackOpenView(queryDetails ? { type: CONTEXT_ENTITY_KIND.QUERY, id: queryId, label: queryDetails.name } : null);
 
   const handleBack = useSafeBack('/monitoring?tab=queries');
 
