@@ -26,6 +26,7 @@ const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
 /// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
+#[derive(Clone)]
 pub struct MeshSelfHealService {
     directory_manager: DirectoryManager,
     installed_tools: InstalledToolsService,
@@ -56,7 +57,17 @@ impl MeshSelfHealService {
         }
     }
 
-    pub async fn run(self) {
+    /// Spawn the self-heal watcher in the background (matches tool_run_manager).
+    pub async fn run(&self) -> Result<()> {
+        let this = self.clone();
+        tokio::spawn(async move {
+            this.watch().await;
+            error!("mesh self-heal watcher exited unexpectedly");
+        });
+        Ok(())
+    }
+
+    async fn watch(self) {
         let log_path = self
             .directory_manager
             .app_support_dir()
@@ -78,7 +89,7 @@ impl MeshSelfHealService {
                 Ok(lines) => {
                     for line in &lines {
                         if line.contains(HEALTHY_MARKER) {
-                            stuck_since = None; // CoreOk -> actually managed, not stuck
+                            stuck_since = None;
                         } else if line.contains(FAILURE_MARKER) {
                             stuck_since.get_or_insert_with(Instant::now);
                         }
@@ -118,11 +129,9 @@ impl MeshSelfHealService {
 
     /// Fetch the current .msh; if its MeshID differs from the agent's, rewrite it and bounce. Ok(true) only when applied.
     async fn try_heal(&self) -> Result<bool> {
-        // Same route the installer uses for the msh asset: {base}/tools/agent/{toolId}{path}, toolId=meshcentral-server (tool_api_client.rs:23).
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
 
-        // The /tools/agent proxy is authenticated, so the Bearer token is required.
         let token = self.agent_config.get_access_token().await?;
         let resp = self
             .http
@@ -144,7 +153,7 @@ impl MeshSelfHealService {
             .and_then(|s| parse_mesh_id(&s));
 
         if current_id.as_deref() == Some(new_id.as_str()) {
-            return Ok(false); // already on the current id — nothing to do
+            return Ok(false);
         }
 
         info!(
@@ -154,7 +163,6 @@ impl MeshSelfHealService {
             msh_path.display()
         );
 
-        // Write to a temp file then rename, so the agent never reads a half-written .msh.
         let tmp_path = msh_path.with_extension("msh.tmp");
         tokio::fs::write(&tmp_path, body.as_bytes()).await?;
         tokio::fs::rename(&tmp_path, &msh_path).await?;
