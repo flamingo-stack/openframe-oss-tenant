@@ -190,9 +190,12 @@ impl ToolAgentUpdateService {
         }
 
         // Same-type update
-        run_update(installed_tool, download_config, deps).await?;
+        let new_installation = run_update(installed_tool, download_config, deps).await?;
 
         installed_tool.version = new_version.to_string();
+        if let Some(installation) = new_installation {
+            installed_tool.installation = installation;
+        }
         self.installed_tools_service.save(installed_tool.clone()).await
             .with_context(|| format!("Failed to save updated tool: {}", tool_agent_id))?;
 

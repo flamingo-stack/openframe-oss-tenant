@@ -45,7 +45,7 @@ pub trait ToolUpdater: Send + Sync {
         tool: &InstalledTool,
         config: &DownloadConfiguration,
         ctx: &UpdateContext,
-    ) -> Result<()>;
+    ) -> Result<Option<Installation>>;
 
     async fn finalize(
         &self,
@@ -95,7 +95,7 @@ pub async fn run_update(
     tool: &InstalledTool,
     config: &DownloadConfiguration,
     deps: ToolUpdaterDeps,
-) -> Result<()> {
+) -> Result<Option<Installation>> {
     let tool_id = &tool.tool_agent_id;
     let updater = create_updater(&tool.installation, deps);
 
@@ -104,24 +104,30 @@ pub async fn run_update(
         .with_context(|| format!("Failed to prepare update for: {}", tool_id))?;
 
     info!(tool_id = %tool_id, "Phase 2: Applying update");
-    let outcome = match updater.apply(tool, config, &ctx).await {
-        Ok(()) => {
-            info!(tool_id = %tool_id, "Phase 3: Finalizing update");
-            updater.finalize(tool, &ctx).await
-        }
-        Err(e) => Err(e),
-    };
-
-    match outcome {
-        Ok(()) => Ok(()),
+    let new_installation = match updater.apply(tool, config, &ctx).await {
+        Ok(new_installation) => new_installation,
         Err(e) => {
             error!(tool_id = %tool_id, error = %e, "Update failed, rolling back");
             if let Err(rollback_err) = updater.rollback(tool, &ctx).await {
                 error!(tool_id = %tool_id, error = %rollback_err, "Rollback also failed");
             }
-            Err(e).with_context(|| format!("Update failed for: {}", tool_id))
+            return Err(e).with_context(|| format!("Update failed for: {}", tool_id));
         }
-    }
+    };
+
+    info!(tool_id = %tool_id, "Phase 3: Finalizing update");
+    let finalize_tool = match &new_installation {
+        Some(installation) => {
+            let mut updated = tool.clone();
+            updated.installation = installation.clone();
+            updated
+        }
+        None => tool.clone(),
+    };
+    updater.finalize(&finalize_tool, &ctx).await
+        .with_context(|| format!("Failed to finalize update for: {}", tool_id))?;
+
+    Ok(new_installation)
 }
 
 pub async fn run_migration(
@@ -262,7 +268,7 @@ impl ToolUpdater for UnsupportedToolUpdater {
         _tool: &InstalledTool,
         _config: &DownloadConfiguration,
         _ctx: &UpdateContext,
-    ) -> Result<()> {
+    ) -> Result<Option<Installation>> {
         anyhow::bail!("{}", self.message)
     }
 
