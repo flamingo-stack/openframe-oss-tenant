@@ -50,6 +50,10 @@ export function HelpCenterRuntimeProvider({ children }: { children: ReactNode })
       // source of truth in `help-center-content-href.ts`) so a card lands in the
       // SAME place whether it's rendered on a Help Center page or in the chat.
       composeContentUrl: composeOpenframeContentUrl,
+      // NOTE: og-placeholder needs NO wiring here. The lib owns the whole
+      // og-placeholder logic and derives the route base from `imageProxyUrlPrefix`
+      // (set on the app-wide provider, inherited via `...parent`). Don't re-add a
+      // per-subtree `resolvePlaceholderUrl` callback.
     }),
     [parent],
   );
