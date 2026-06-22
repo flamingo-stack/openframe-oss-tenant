@@ -2,19 +2,23 @@
 
 import { Button } from '@flamingo-stack/openframe-frontend-core';
 import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
+import { ArrowRightUpIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type ColumnDef,
   DataTable,
-  ListPageContainer,
   MoreActionsMenu,
+  PageLayout,
   type Row,
+  SquareAvatar,
   Tag,
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo, useState } from 'react';
-import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
+import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { getFullImageUrl } from '@/lib/image-url';
+import { openInNewTab } from '@/lib/open-in-new-tab';
 import { InvitationStatus } from '../../hooks/use-invitations';
 import { UserStatus } from '../../hooks/use-users';
 import {
@@ -24,7 +28,6 @@ import {
   useUsersAndInvitations,
 } from '../../hooks/use-users-and-invitations';
 import { AddUsersModal } from '../add-users-modal';
-import { ConfirmDeleteUserModal } from '../confirm-delete-user-modal';
 import { ConfirmRemoveInvitationModal } from '../confirm-remove-invitation-modal';
 import { ConfirmResendInvitationModal } from '../confirm-resend-invitation-modal';
 import { ConfirmRevokeInvitationModal } from '../confirm-revoke-invitation-modal';
@@ -43,14 +46,15 @@ const statusToVariant = {
   [InvitationStatus.Expired]: 'error',
 } as const satisfies Record<UnifiedUserStatus, 'success' | 'grey' | 'warning' | 'error'>;
 
+const employeeRowHref = (record: UnifiedUserRecord) =>
+  record.type === RecordType.User ? employeeDetailHref(record.id) : null;
+
 export function CompanyAndUsersTab() {
   const handleBack = useSafeBack('/settings');
   const {
     records,
     isLoading,
     error,
-    deleteUser,
-    deleteUserMutation,
     revokeInvitation,
     revokeInvitationMutation,
     resendInvitation,
@@ -59,33 +63,12 @@ export function CompanyAndUsersTab() {
     // get all users and invitations without pagination TODO: add pagination in the future
   } = useUsersAndInvitations(0, 1000);
 
-  const { user: currentUser } = useAuthStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
-  const [selectedUser, setSelectedUser] = useState<UnifiedUserRecord | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedInvitation, setSelectedInvitation] = useState<UnifiedUserRecord | null>(null);
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
   const [isRemoveOpen, setIsRemoveOpen] = useState(false);
   const [isResendOpen, setIsResendOpen] = useState(false);
-
-  const handleDeleteRequest = useCallback((record: UnifiedUserRecord) => {
-    if (record.type === RecordType.Invitation) {
-      return;
-    }
-    setSelectedUser(record);
-    setIsConfirmOpen(true);
-  }, []);
-
-  const handleConfirmDelete = useCallback(async () => {
-    if (!selectedUser || selectedUser.type !== RecordType.User) return;
-    deleteUser(selectedUser.id, {
-      onSuccess: () => {
-        setIsConfirmOpen(false);
-        setSelectedUser(null);
-      },
-    });
-  }, [selectedUser, deleteUser]);
 
   const handleRevokeRequest = useCallback((record: UnifiedUserRecord) => {
     if (record.type !== RecordType.Invitation) {
@@ -146,18 +129,29 @@ export function CompanyAndUsersTab() {
       {
         accessorKey: 'user',
         header: 'USER',
-        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
-          <div className="flex flex-col min-w-0">
-            <TruncateText>
-              {row.original.firstName || row.original.lastName
-                ? `${row.original.firstName || ''} ${row.original.lastName || ''}`.trim()
-                : row.original.email}
-            </TruncateText>
-            <TruncateText variant="h6" tone="secondary" mono>
-              {row.original.email}
-            </TruncateText>
-          </div>
-        ),
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => {
+          const displayName =
+            row.original.firstName || row.original.lastName
+              ? `${row.original.firstName || ''} ${row.original.lastName || ''}`.trim()
+              : row.original.email;
+
+          return (
+            <div className="flex items-center gap-[var(--spacing-system-xs)] min-w-0">
+              <SquareAvatar
+                src={getFullImageUrl(row.original.image?.imageUrl, row.original.image?.hash)}
+                fallback={displayName}
+                size="sm"
+                variant="round"
+              />
+              <div className="flex flex-col min-w-0">
+                <TruncateText>{displayName}</TruncateText>
+                <TruncateText variant="h6" tone="secondary" mono>
+                  {row.original.email}
+                </TruncateText>
+              </div>
+            </div>
+          );
+        },
         meta: { width: 'w-1/3' },
       },
       {
@@ -228,32 +222,35 @@ export function CompanyAndUsersTab() {
             );
           }
 
-          const isDeleted = record.status === UserStatus.Deleted;
-          const isOwner = (record.roles || []).some((r: string) => r?.toLowerCase?.() === 'owner');
-          const isSelf = currentUser ? record.id === currentUser.id : false;
-          const disableDelete = isOwner || isSelf || isDeleted;
-
+          return null;
+        },
+        enableSorting: false,
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+      },
+      {
+        id: 'open',
+        cell: ({ row }: { row: Row<UnifiedUserRecord> }) => {
+          if (row.original.type !== RecordType.User) {
+            return null;
+          }
           return (
-            <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
-              <MoreActionsMenu
-                className="px-4"
-                items={[
-                  {
-                    label: 'Delete',
-                    onClick: () => handleDeleteRequest(record),
-                    danger: true,
-                    disabled: disableDelete,
-                  },
-                ]}
+            <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+              <Button
+                onClick={openInNewTab(employeeDetailHref(row.original.id))}
+                variant="outline"
+                size="icon"
+                leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+                aria-label="Open in new tab"
+                className="bg-ods-card"
               />
             </div>
           );
         },
         enableSorting: false,
-        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [currentUser, handleDeleteRequest, handleRevokeRequest, handleRemoveRequest, handleResendRequest],
+    [handleRevokeRequest, handleRemoveRequest, handleResendRequest],
   );
 
   const table = useDataTable<UnifiedUserRecord>({
@@ -263,40 +260,33 @@ export function CompanyAndUsersTab() {
     enableSorting: false,
   });
 
-  const headerActions = (
-    <Button
-      onClick={() => setIsAddOpen(true)}
-      leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}
-      className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px] h-12"
-    >
-      Add Users
-    </Button>
-  );
+  const actions = [
+    {
+      label: 'Add Users',
+      icon: <PlusCircleIcon iconSize={20} whiteOverlay />,
+      onClick: () => setIsAddOpen(true),
+      variant: 'outline' as const,
+    },
+  ];
 
-  const isMutating =
-    deleteUserMutation.isPending || revokeInvitationMutation.isPending || resendInvitationMutation.isPending;
+  const isMutating = revokeInvitationMutation.isPending || resendInvitationMutation.isPending;
 
   return (
-    <ListPageContainer
+    <PageLayout
       title="Openframe"
-      headerActions={headerActions}
-      background="default"
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      actions={actions}
+      actionsVariant="icon-buttons"
       backButton={{ label: 'Back', onClick: handleBack }}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <DataTable table={table}>
         <DataTable.Header rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body loading={isLoading || isMutating} emptyMessage={error || 'No users or invitations found.'} />
+        <DataTable.Body
+          loading={isLoading || isMutating}
+          emptyMessage={error || 'No users or invitations found.'}
+          rowHref={employeeRowHref}
+        />
       </DataTable>
-      <ConfirmDeleteUserModal
-        open={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
-        userName={
-          `${selectedUser?.firstName || ''} ${selectedUser?.lastName || ''}`.trim() || selectedUser?.email || 'user'
-        }
-        onConfirm={handleConfirmDelete}
-      />
       <ConfirmRevokeInvitationModal
         open={isRevokeOpen}
         onOpenChange={setIsRevokeOpen}
@@ -316,6 +306,6 @@ export function CompanyAndUsersTab() {
         onConfirm={handleConfirmResend}
       />
       <AddUsersModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} invite={handleInviteUsers} />
-    </ListPageContainer>
+    </PageLayout>
   );
 }

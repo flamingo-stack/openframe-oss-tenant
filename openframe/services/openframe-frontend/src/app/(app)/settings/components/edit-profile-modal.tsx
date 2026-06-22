@@ -69,8 +69,11 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
   }, [toast, updateUser]);
 
   const handleSave = useCallback(async () => {
-    await onSave({ firstName, lastName });
-    onClose();
+    const saved = await onSave({ firstName, lastName }).then(
+      () => true,
+      () => false,
+    );
+    if (saved) onClose();
   }, [firstName, lastName, onSave, onClose]);
 
   const primaryRole = user?.roles?.[0] || 'User';

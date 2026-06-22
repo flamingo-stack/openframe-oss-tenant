@@ -11,6 +11,7 @@ import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
+import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-store';
@@ -26,6 +27,7 @@ import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry'
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
 import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';
 import { useSubscriptionLock } from './subscription-lock/subscription-lock-context';
+import { TimeTrackerHostProvider } from './time-tracker-host-provider';
 import { UnauthorizedOverlay } from './unauthorized-overlay';
 
 function ContentLoading() {
@@ -36,6 +38,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const router = useRouter();
   const pathname = usePathname();
 
+  const userId = useAuthStore(state => state.user?.id);
   const userFirstName = useAuthStore(state => state.user?.firstName);
   const userLastName = useAuthStore(state => state.user?.lastName);
   const userEmail = useAuthStore(state => state.user?.email);
@@ -81,8 +84,8 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   }, [openLogoutConfirm]);
 
   const handleProfile = useCallback(() => {
-    router.push('/settings');
-  }, [router]);
+    router.push(userId ? employeeDetailHref(userId) : '/settings');
+  }, [router, userId]);
 
   // Close the drawer on route navigation. The drawer is non-modal (header +
   // sidebar stay interactive while it's open), so clicking a nav link or an
@@ -138,10 +141,12 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl, userImageHash), [userImageUrl, userImageHash]);
 
   const notificationsEnabled = featureFlags.notifications.enabled();
+  const timeTrackerEnabled = featureFlags.timeTracker.enabled();
 
   const headerProps = useMemo(
     () => ({
       showNotifications: notificationsEnabled,
+      showTimeTracker: timeTrackerEnabled,
       showUser: true,
       userName: displayName,
       userEmail,
@@ -159,6 +164,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     }),
     [
       notificationsEnabled,
+      timeTrackerEnabled,
       displayName,
       userEmail,
       avatarUrl,
@@ -215,17 +221,19 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
           <UnreadCountsHydrator onChange={setUnreadCounts} />
         </Suspense>
       )}
-      <CoreAppLayout
-        mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
-        sidebarConfig={sidebarConfig}
-        loadingFallback={<ContentLoading />}
-        mobileBurgerMenuProps={mobileBurgerMenuProps}
-        headerProps={headerProps}
-        disabled={showLockContent}
-        drawer={chatDrawer}
-      >
-        {showLockContent ? <SubscriptionLockContent /> : children}
-      </CoreAppLayout>
+      <TimeTrackerHostProvider enabled={timeTrackerEnabled}>
+        <CoreAppLayout
+          mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
+          sidebarConfig={sidebarConfig}
+          loadingFallback={<ContentLoading />}
+          mobileBurgerMenuProps={mobileBurgerMenuProps}
+          headerProps={headerProps}
+          disabled={showLockContent}
+          drawer={chatDrawer}
+        >
+          {showLockContent ? <SubscriptionLockContent /> : children}
+        </CoreAppLayout>
+      </TimeTrackerHostProvider>
       {/* Logout confirmation modal — opened from the nav user menu and the
           Settings "Log Out" button via `useLogoutConfirmStore`. */}
       <LogoutConfirmModal />
