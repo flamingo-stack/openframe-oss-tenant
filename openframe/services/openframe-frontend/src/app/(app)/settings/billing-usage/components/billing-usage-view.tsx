@@ -21,6 +21,7 @@ import { BillingRow, SectionBlock } from './billing-section';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
 import { CancelOfferModal } from './cancel-offer-modal';
 import { type CancelReason, CancelSubscriptionModal } from './cancel-subscription-modal';
+import { InvoicesHistory } from './invoices-history';
 import { SubscriptionCancelledModal } from './subscription-cancelled-modal';
 
 export function BillingUsageView() {
@@ -44,10 +45,7 @@ function BillingUsageContent() {
   const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
   const [cancelComment, setCancelComment] = useState<string>('');
 
-  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(
-    data.subscription,
-    data.billingPlan,
-  );
+  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(data.subscription);
   const { impact, isLoading: isImpactLoading } = useCancellationImpact({ enabled: cancelStep === 'reason' });
 
   const menuActions: ActionsMenuGroup[] =
@@ -115,7 +113,8 @@ function BillingUsageContent() {
         <DashboardInfoCard
           title="Device Usage"
           value={device.used}
-          percentage={device.pct}
+          // PAYG has no package limit, so no percentage — just the usage count.
+          percentage={device.isPayg ? undefined : device.pct}
           progressVariant={device.progressVariant}
           showProgress={device.showProgress}
           progressOverflow="wrap"
@@ -124,7 +123,7 @@ function BillingUsageContent() {
           <DashboardInfoCard
             title="AI Usage"
             value={ai.used}
-            percentage={ai.pct}
+            percentage={ai.isPayg ? undefined : ai.pct}
             progressVariant={ai.progressVariant}
             showProgress={ai.showProgress}
             progressOverflow="wrap"
@@ -158,9 +157,6 @@ function BillingUsageContent() {
             >
               {device.state === 'over' && <BillingRow label="Device Overage" value={formatCount(device.overage)} />}
               {flags.hasAi && ai.state === 'over' && <BillingRow label="AI Overage" value={formatCount(ai.overage)} />}
-              {billing.estimatedOverageCost > 0 && (
-                <BillingRow label="Estimated Overage" value={formatCurrency(billing.estimatedOverageCost)} />
-              )}
               <BillingRow label="Next Billing" value={formatDateOrDash(billing.nextBilling)} />
             </div>
           )}
@@ -179,7 +175,7 @@ function BillingUsageContent() {
             muted={!flags.hasAi && !ai.isPayg}
           />
           <BillingRow
-            label="Monthly Cost"
+            label="Next Payment"
             value={flags.isTrial ? 'Free' : formatCurrency(billing.monthlyCost || billing.estimatedOverageCost)}
           />
           {flags.isPendingCancellation ? (
@@ -211,7 +207,6 @@ function BillingUsageContent() {
         <SectionBlock title="Usage Overview">
           <BillingRow label="Active devices" value={formatCount(device.active)} />
           <BillingRow label="Inactive devices" value={formatCount(device.inactive)} />
-          {flags.hasAi && <BillingRow label="AI conversations" value={formatCount(0)} />}
         </SectionBlock>
       </div>
 
@@ -235,6 +230,8 @@ function BillingUsageContent() {
           </SectionBlock>
         </div>
       )}
+
+      <InvoicesHistory invoices={data.subscription?.pendingInvoices ?? []} />
 
       <CancelSubscriptionModal
         isOpen={cancelStep === 'reason'}
@@ -284,12 +281,6 @@ function BillingUsageContent() {
 
 const billingUsageViewQuery = graphql`
   query billingUsageViewQuery {
-    billingPlan {
-      products {
-        name
-        unitSize
-      }
-    }
     subscription {
       id
       status
@@ -318,6 +309,7 @@ const billingUsageViewQuery = graphql`
         amountDue
         currency
         createdAt
+        dueDate
       }
       usage {
         devicesUsed

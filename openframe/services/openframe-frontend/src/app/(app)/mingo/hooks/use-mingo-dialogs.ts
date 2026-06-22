@@ -1,12 +1,16 @@
 'use client';
 
-import type { DialogItem } from '@flamingo-stack/openframe-frontend-core';
+import { type DialogItem, useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries';
-import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogNode, DialogsResponse, UseMingoDialogsOptions } from '../types';
+
+// TODO(unread-from-entity): re-enable per-dialog unread highlighting once the backend exposes
+// unread counts on the dialog entity itself. Matching unread notifications to dialogs by id is a
+// temporary workaround — disabled for now; flip this flag to restore it.
+const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
 
 function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): DialogItem {
   return {
@@ -19,7 +23,21 @@ function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): Dia
 
 export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
   const { enabled = true, search, limit = 20 } = options;
-  const { getUnread } = useMingoMessagesStore();
+  const notifications = useOptionalNotifications();
+
+  // Per-dialog unread badge = count of unread notifications (mingo message / approval request)
+  // that carry this dialog's id. Opening a dialog marks those read (EntityViewAutoReader),
+  // which clears the badge in lockstep with the drawer and the sidebar nav count.
+  const unreadByDialog = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS) return counts;
+    for (const notification of notifications?.notifications ?? []) {
+      if (notification.read) continue;
+      const dialogId = notification.meta?.dialogId;
+      if (typeof dialogId === 'string') counts.set(dialogId, (counts.get(dialogId) ?? 0) + 1);
+    }
+    return counts;
+  }, [notifications?.notifications]);
 
   const query = useInfiniteQuery({
     queryKey: ['mingo-dialogs', { search, limit }],
@@ -65,8 +83,8 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
     if (!query.data?.pages) return [];
 
     const allDialogs = query.data.pages.flatMap(page => page.dialogs);
-    return allDialogs.map(dialog => transformToDialogItem(dialog, getUnread(dialog.id)));
-  }, [query.data?.pages, getUnread]);
+    return allDialogs.map(dialog => transformToDialogItem(dialog, unreadByDialog.get(dialog.id) ?? 0));
+  }, [query.data?.pages, unreadByDialog]);
 
   return {
     dialogs: dialogsWithUnread,

@@ -68,12 +68,7 @@ const DIALOG_TOKEN_USAGE_QUERY = `
   }
 `;
 
-const THINKING_FRAGMENT = `
-            ... on ThinkingData {
-              text
-            }`;
-
-function getDialogMessagesQuery({ includeThinking = false } = {}) {
+function getDialogMessagesQuery() {
   return `
   query GetAllMessages($dialogId: ID!, $chatType: ChatType, $cursor: String, $limit: Int, $sortField: String, $sortDirection: SortDirection) {
     messages(
@@ -107,7 +102,9 @@ function getDialogMessagesQuery({ includeThinking = false } = {}) {
               text
             }
 
-            ${includeThinking ? THINKING_FRAGMENT : ''}
+            ... on ThinkingData {
+              text
+            }
 
             ... on SystemData {
               text
@@ -233,12 +230,11 @@ export class DialogGraphQlService {
     dialogId: string,
     cursor?: string | null,
     limit: number = 50,
-    { includeThinking = false } = {},
   ): Promise<MessagesConnection | null> {
     try {
       await tokenService.ensureTokenReady();
 
-      const data = await this.request<{ messages: MessagesConnection }>(getDialogMessagesQuery({ includeThinking }), {
+      const data = await this.request<{ messages: MessagesConnection }>(getDialogMessagesQuery(), {
         dialogId,
         chatType: 'CLIENT_CHAT',
         cursor,

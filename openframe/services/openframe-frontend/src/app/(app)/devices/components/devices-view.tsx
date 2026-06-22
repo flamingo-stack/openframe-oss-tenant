@@ -22,6 +22,7 @@ import {
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { useDeviceFilters } from '../hooks/use-device-filters';
 import { useDevices } from '../hooks/use-devices';
 import { useDevicesUrlParams } from '../hooks/use-devices-url-params';
@@ -57,6 +58,7 @@ export function DevicesView() {
   );
 
   const { data: deviceFilters, isLoading: isDeviceFiltersLoading } = useDeviceFilters(filters);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const filterColumns = useMemo(() => getDeviceFilterColumns(deviceFilters ?? null), [deviceFilters]);
   const renderRowActions = useMemo(() => getDeviceTableRowActions(() => refetch()), [refetch]);
@@ -148,8 +150,9 @@ export function DevicesView() {
         ]}
         contentClassName="flex flex-col"
       >
-        <div>
+        <div style={containerStyle}>
           <div
+            ref={toolbarRef}
             className={cn(
               'sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center',
               'bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]',
@@ -193,7 +196,7 @@ export function DevicesView() {
               isLoading={isLoading || isDeviceFiltersLoading}
               emptyMessage="No devices found. Try adjusting your search or filters."
               skeletonRows={10}
-              stickyHeaderOffset="top-[96px]"
+              stickyHeaderOffset={stickyHeaderOffset}
               deviceFilters={deviceFilters ?? null}
               columnFilters={columnFilters}
               onColumnFiltersChange={onColumnFiltersChange}

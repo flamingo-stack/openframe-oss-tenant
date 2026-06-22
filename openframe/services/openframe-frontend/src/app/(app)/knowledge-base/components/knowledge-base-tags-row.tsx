@@ -1,7 +1,7 @@
 'use client';
 
-import { Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Suspense } from 'react';
+import { SelectableTagsRow } from '@/app/components/shared';
 import { useKnowledgeBaseTags } from '../hooks/use-knowledge-base-tags';
 
 export interface SelectedKnowledgeBaseTag {
@@ -18,30 +18,12 @@ interface KnowledgeBaseTagsRowProps {
 
 function KnowledgeBaseTagsRowContent({ parentId, selectedIds, onAdd, archived }: KnowledgeBaseTagsRowProps) {
   const tags = useKnowledgeBaseTags({ folderId: parentId, archived });
-  const selected = new Set(selectedIds);
-  const available = tags.filter(t => !selected.has(t.id));
-
-  if (available.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-[var(--spacing-system-xxs)]">
-      {available.map(tag => (
-        <Tag
-          key={tag.id}
-          variant="outline"
-          label={tag.key}
-          onClick={() => onAdd({ id: tag.id, key: tag.key })}
-          className="cursor-pointer hover:bg-ods-bg-hover max-w-full"
-          labelClassName="truncate"
-        />
-      ))}
-    </div>
-  );
+  return <SelectableTagsRow tags={tags} selectedIds={selectedIds} onAdd={onAdd} />;
 }
 
 function KnowledgeBaseTagsRowSkeleton() {
   return (
-    <div className="flex flex-wrap gap-[var(--spacing-system-xxs)]">
+    <div className="flex gap-[var(--spacing-system-xxs)] overflow-hidden">
       {Array.from({ length: 4 }).map((_, idx) => (
         <div key={idx} className="h-8 w-20 rounded-[6px] bg-ods-card animate-pulse" />
       ))}

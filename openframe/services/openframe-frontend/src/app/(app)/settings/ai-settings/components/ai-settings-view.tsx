@@ -39,7 +39,6 @@ export function AiSettings() {
   const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
 
   const handleEdit = useCallback(() => setIsEditMode(true), []);
-  const handleCancel = useCallback(() => setIsEditMode(false), []);
 
   // Switching tabs drops any in-progress edit back to the read-only view.
   const handleTabChange = useCallback((id: AiSettingsTabId) => {
@@ -73,7 +72,6 @@ export function AiSettings() {
     isEditMode,
     onEdit: handleEdit,
     onSave: handleSave,
-    onCancel: handleCancel,
   });
 
   if (isLoading && !loadedSettings) {

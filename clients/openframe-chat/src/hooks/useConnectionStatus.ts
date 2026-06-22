@@ -1,8 +1,10 @@
 import { useNatsDialogSubscription } from '@flamingo-stack/openframe-frontend-core';
 import { useEffect, useState } from 'react';
+import { useTauriBridgeLiveness } from '../services/natsTauri';
 import { supportedModelsService } from '../services/supportedModelsService';
 import { tokenService } from '../services/tokenService';
 import { log } from '../utils/log';
+import { isTauri } from '../utils/runtime';
 import { CHAT_NATS_CLIENT_CONFIG, CHAT_NATS_RECONNECTION_BACKOFF, useChatNatsConfig } from './useChatNatsConfig';
 
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
@@ -87,17 +89,19 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     loadAiConfiguration();
   }, [apiBaseUrl, token]);
 
-  const { isConnected } = useNatsDialogSubscription({
-    enabled: !!apiBaseUrl && !!token,
+  // Tauri path: Rust owns the connection — read state from the bridge.
+  const { isConnected: tauriConnected } = useTauriBridgeLiveness();
+
+  // Vite-only fallback: a `dialogId: null` keep-alive subscription via WS.
+  const { isConnected: wsConnected } = useNatsDialogSubscription({
+    enabled: !isTauri && !!apiBaseUrl && !!token,
     dialogId: null,
     topics: [],
     onConnect: () => {
-      log.info('nats:status', 'connected');
-      setStatus('connected');
+      log.info('nats:status', 'connected (ws)');
     },
     onDisconnect: () => {
-      log.warn('nats:status', 'disconnected');
-      setStatus('disconnected');
+      log.warn('nats:status', 'disconnected (ws)');
     },
     onBeforeReconnect,
     getNatsWsUrl: getWsUrl,
@@ -105,17 +109,14 @@ export function useConnectionStatus(): UseConnectionStatusReturn {
     reconnectionBackoff: CHAT_NATS_RECONNECTION_BACKOFF,
   });
 
+  const isConnected = isTauri ? tauriConnected : wsConnected;
+
   useEffect(() => {
     if (!apiBaseUrl || !token) {
       setStatus('connecting');
       return;
     }
-
-    if (isConnected) {
-      setStatus('connected');
-    } else {
-      setStatus('disconnected');
-    }
+    setStatus(isConnected ? 'connected' : 'disconnected');
   }, [isConnected, apiBaseUrl, token]);
 
   const displayUrl = serverUrl?.replace(/^https?:\/\//, '') || null;

@@ -1,7 +1,13 @@
 'use client';
 
-import { CheckCircleIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
+import {
+  BellIcon,
+  CheckCircleIcon,
+  ClockHistoryIcon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { type PageActionButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryLoader } from 'react-relay';
@@ -16,13 +22,21 @@ import { NOTIFICATIONS_SECTION_PAGE_SIZE, NotificationsSection } from './notific
 
 const SEARCH_DEBOUNCE_MS = 300;
 
+const NOTIFICATIONS_TABS: TabItem[] = [
+  { id: 'new', label: 'New Notifications', icon: BellIcon },
+  { id: 'history', label: 'Notifications History', icon: ClockHistoryIcon },
+];
+
 export function NotificationsPageView() {
   const { toast } = useToast();
 
   const { params, setParam } = useApiParams({
+    tab: { type: 'string', default: 'new' },
     searchNew: { type: 'string', default: '' },
     searchHistory: { type: 'string', default: '' },
   });
+
+  const handleTabChange = useCallback((tabId: string) => setParam('tab', tabId), [setParam]);
 
   const [searchNewInput, setSearchNewInput] = useState(params.searchNew);
   const [searchHistoryInput, setSearchHistoryInput] = useState(params.searchHistory);
@@ -90,49 +104,61 @@ export function NotificationsPageView() {
       onDeleteAllReadCompleted,
     });
 
+  const newActions: PageActionButton[] = [
+    {
+      label: 'Mark All as Done',
+      icon: <CheckCircleIcon className="text-ods-text-secondary" />,
+      onClick: markAllRead,
+      variant: 'outline',
+      disabled: isMarkingAllRead,
+    },
+  ];
+
+  const historyActions: PageActionButton[] = [
+    {
+      label: 'Delete All',
+      icon: <TrashIcon className="text-ods-text-secondary" />,
+      onClick: removeAllRead,
+      variant: 'outline',
+      disabled: isDeletingAllRead,
+    },
+  ];
+
+  const activeTab = params.tab === 'history' ? 'history' : 'new';
+
   return (
-    <div className="flex h-full flex-col gap-[var(--spacing-system-l)]">
-      <NotificationsSection
-        title="New Notifications"
-        queryRef={newQueryRef}
-        searchValue={searchNewInput}
-        onSearchChange={setSearchNewInput}
-        rowVariant="unread"
-        onMarkRead={markRead}
-        rightAction={
-          <Button
-            variant="outline"
-            disabled={isMarkingAllRead}
-            leftIcon={<CheckCircleIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />}
-            onClick={markAllRead}
-          >
-            Mark All as Done
-          </Button>
-        }
+    <div className="flex w-full flex-col -mt-4">
+      <TabNavigation
+        tabs={NOTIFICATIONS_TABS}
+        activeTab={activeTab}
+        urlSync={false}
+        onTabChange={handleTabChange}
+        showRightGradient
       />
 
-      <NotificationsSection
-        title="Notifications History"
-        queryRef={historyQueryRef}
-        searchValue={searchHistoryInput}
-        onSearchChange={setSearchHistoryInput}
-        rowVariant="read"
-        onDelete={removeNotification}
-        rightAction={
-          <Button
-            variant="outline"
-            disabled={isDeletingAllRead}
-            leftIcon={<TrashIcon className="size-[var(--icon-size-icon-size)] text-ods-text-secondary" />}
-            onClick={removeAllRead}
-          >
-            Delete All
-          </Button>
-        }
-      />
-
-      <p className="text-center text-h6 text-ods-text-secondary">
-        Notification history is retained for 30 days, then permanently deleted.
-      </p>
+      {activeTab === 'history' ? (
+        <NotificationsSection
+          key="history"
+          title="Notifications History"
+          queryRef={historyQueryRef}
+          searchValue={searchHistoryInput}
+          onSearchChange={setSearchHistoryInput}
+          rowVariant="read"
+          onDelete={removeNotification}
+          actions={historyActions}
+        />
+      ) : (
+        <NotificationsSection
+          key="new"
+          title="New Notifications"
+          queryRef={newQueryRef}
+          searchValue={searchNewInput}
+          onSearchChange={setSearchNewInput}
+          rowVariant="unread"
+          onMarkRead={markRead}
+          actions={newActions}
+        />
+      )}
     </div>
   );
 }

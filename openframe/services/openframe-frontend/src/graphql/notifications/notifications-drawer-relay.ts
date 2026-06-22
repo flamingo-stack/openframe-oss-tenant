@@ -24,20 +24,35 @@ export const notificationsDrawerRelayFragment = graphql`
           description
           createdAt
           read
+          category
           context {
             __typename
             type
             ... on AdminAiMessageContext {
               dialogId
             }
-            ... on CustomerTicketCreatedContext {
-              customerTicketId: ticketId
+            ... on AdminAiTicketMessageContext {
+              ticketId
+            }
+            ... on TicketStatusChangedContext {
+              ticketId
+            }
+            ... on TicketAssignedContext {
+              ticketId
+            }
+            ... on CustomerMessagePublishedContext {
+              ticketId
+            }
+            ... on AdminMessagePublishedContext {
+              ticketId
             }
             ... on AdminApprovalRequestContext {
               approvalRequestId
               dialogId
-              ticketId
+              approvalTicketId: ticketId
               approvalType
+              resolution
+              resolvedByName
               toolCalls {
                 toolExecutionRequestId
                 toolName

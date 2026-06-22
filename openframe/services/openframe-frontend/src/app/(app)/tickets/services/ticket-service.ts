@@ -1,6 +1,5 @@
 import type { ChunkData } from '@flamingo-stack/openframe-frontend-core';
 import { apiClient } from '@/lib/api-client';
-import { featureFlags } from '@/lib/feature-flags';
 import type { ChatType } from '../constants';
 import { API_ENDPOINTS } from '../constants';
 import { getDialogMessagesQuery } from '../queries/dialogs-queries';
@@ -10,7 +9,6 @@ import {
   GET_TICKET_QUERY,
   GET_TICKET_STATUS_TRANSITION_RULES_QUERY,
   GET_TICKET_STATUS_TRANSITIONS_QUERY,
-  GET_TICKETS_BOARD_QUERY,
   GET_TICKETS_QUERY,
   PUT_TICKET_ON_HOLD_MUTATION,
   REOPEN_TICKET_MUTATION,
@@ -22,17 +20,14 @@ import type { Dialog, DialogStatus, Message } from '../types/dialog.types';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import type {
-  BoardStatus,
   FetchBoardColumnByStatusIdParams,
   FetchMessagesParams,
-  FetchTicketsBoardParams,
   FetchTicketsParams,
   MessagePage,
   ReorderTicketParams,
   TicketService as TicketServiceInterface,
   TicketStatusTransition,
   TicketStatusTransitionRule,
-  TicketsBoardPage,
   TicketsPage,
 } from './ticket-service.types';
 
@@ -59,6 +54,23 @@ interface TicketNode {
   assignedName?: string;
   assigneeImage?: { imageUrl: string; hash?: string };
   labels?: Array<{ id: string; key: string; color?: string }>;
+  pendingApproval?: {
+    id: string;
+    approvalType?: string;
+    command?: string;
+    explanation?: string;
+    createdAt?: string;
+    toolCalls?: Array<{
+      toolExecutionRequestId: string;
+      toolName: string;
+      toolTitle?: string;
+      toolExplanation?: string;
+      toolType?: string;
+      requiresApproval: boolean;
+      approvalType?: string | null;
+      toolCallArguments?: Record<string, any> | null;
+    }>;
+  } | null;
   notes?: Array<{
     id: string;
     ticketId: string;
@@ -178,6 +190,7 @@ function normalizeTicketToDialog(ticket: TicketNode): Dialog {
     assigneeImageUrl: ticket.assigneeImage?.imageUrl,
     assigneeImageHash: ticket.assigneeImage?.hash,
     labels: ticket.labels,
+    pendingApproval: ticket.pendingApproval ?? undefined,
     attachments: ticket.attachments,
     tokenUsage: ticket.dialog?.tokenUsage ?? undefined,
     notes: ticket.notes?.map(note => ({
@@ -233,6 +246,9 @@ export class TicketService implements TicketServiceInterface {
     if (params.assigneeIds?.length) {
       filter.assigneeIds = params.assigneeIds;
     }
+    if (params.labelIds?.length) {
+      filter.labelIds = params.labelIds;
+    }
 
     const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
       query: GET_TICKETS_QUERY,
@@ -258,40 +274,6 @@ export class TicketService implements TicketServiceInterface {
     };
   }
 
-  async fetchTicketsBoard(params: FetchTicketsBoardParams): Promise<TicketsBoardPage> {
-    const response = await apiClient.post<
-      GraphQlResponse<Record<'active' | 'techRequired' | 'onHold' | 'resolved', TicketsResponse['tickets']>>
-    >(API_ENDPOINTS.GRAPHQL, {
-      query: GET_TICKETS_BOARD_QUERY,
-      variables: {
-        limit: params.limit,
-        search: params.search || undefined,
-        organizationIds: params.organizationIds?.length ? params.organizationIds : undefined,
-        assigneeIds: params.assigneeIds?.length ? params.assigneeIds : undefined,
-      },
-    });
-
-    const data = extractGraphQlData(response);
-    const toPage = (conn: TicketsResponse['tickets'] | undefined): TicketsPage => ({
-      dialogs: (conn?.edges || []).map(edge => normalizeTicketToDialog(edge.node)),
-      pageInfo: conn?.pageInfo || {
-        hasNextPage: false,
-        hasPreviousPage: false,
-        startCursor: null,
-        endCursor: null,
-      },
-      filteredCount: conn?.filteredCount ?? 0,
-    });
-
-    const result: Record<BoardStatus, TicketsPage> = {
-      ACTIVE: toPage(data.active),
-      TECH_REQUIRED: toPage(data.techRequired),
-      ON_HOLD: toPage(data.onHold),
-      RESOLVED: toPage(data.resolved),
-    };
-    return result;
-  }
-
   async fetchBoardColumnByStatusId(params: FetchBoardColumnByStatusIdParams): Promise<TicketsPage> {
     const response = await apiClient.post<GraphQlResponse<TicketsResponse>>(API_ENDPOINTS.GRAPHQL, {
       query: GET_BOARD_COLUMN_TICKETS_QUERY,
@@ -302,6 +284,7 @@ export class TicketService implements TicketServiceInterface {
         search: params.search || undefined,
         organizationIds: params.organizationIds?.length ? params.organizationIds : undefined,
         assigneeIds: params.assigneeIds?.length ? params.assigneeIds : undefined,
+        labelIds: params.labelIds?.length ? params.labelIds : undefined,
       },
     });
 
@@ -333,13 +316,12 @@ export class TicketService implements TicketServiceInterface {
   }
 
   async fetchMessages(params: FetchMessagesParams): Promise<MessagePage> {
-    const includeThinking = featureFlags.thinking.enabled();
     const response = await apiClient.post<
       GraphQlResponse<{
         messages: { edges: Array<{ cursor: string; node: Message }>; pageInfo: MessagePage['pageInfo'] };
       }>
     >('/chat/graphql', {
-      query: getDialogMessagesQuery({ includeThinking }),
+      query: getDialogMessagesQuery(),
       variables: {
         dialogId: params.dialogId,
         chatType: params.chatType,

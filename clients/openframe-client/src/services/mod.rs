@@ -19,6 +19,7 @@ pub mod initial_authentication_processor;
 pub mod registration_processor;
 pub mod installed_tools_service;
 pub mod tool_run_manager;
+pub mod mesh_self_heal_service;
 pub mod tool_connection_processing_manager;
 pub mod tool_connection_service;
 pub mod openframe_client_update_service;

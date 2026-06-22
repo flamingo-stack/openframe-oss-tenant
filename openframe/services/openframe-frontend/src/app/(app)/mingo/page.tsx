@@ -20,6 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiModelStatus } from '@/app/hooks/use-ai-model';
 import { EVENT_SUBTYPE, trackDashboardActivity } from '@/lib/analytics';
 import { isSaasTenantMode } from '@/lib/app-mode';
+import { featureFlags } from '@/lib/feature-flags';
 import { useMingoChat } from './hooks/use-mingo-chat';
 import { useMingoDialog } from './hooks/use-mingo-dialog';
 import { useMingoDialogSelection } from './hooks/use-mingo-dialog-selection';
@@ -44,6 +45,20 @@ export default function Mingo() {
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage } = useMingoMessagesStore();
 
   const { resetDialog } = useMingoDialog();
+
+  // Reset the active dialog on leave. `activeDialogId` is module-level store
+  // state with no persistence, so without this it survives the SPA unmount and
+  // a return via direct URL would short-circuit the
+  // re-selection effect below — skipping the clean reselect the sidebar gets by
+  // passing through `null`. The streaming pointer is deliberately left intact:
+  // `ensureAssistantMessage`/`incompleteState` use it to resume an interrupted
+  // stream in the same bubble on return.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: store action is stable; this must run only on unmount.
+  useEffect(() => {
+    return () => {
+      setActiveDialogId(null);
+    };
+  }, []);
 
   const { dialogs, isLoading: isLoadingDialogs, hasNextPage, fetchNextPage, isFetchingNextPage } = useMingoDialogs();
 
@@ -222,8 +237,13 @@ export default function Mingo() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeDialogId, isDraftChat, sidebarOpen, router]);
 
+  // The standalone `/mingo` page is the LEGACY surface. When `mingo-sidebar` is
+  // on, Mingo lives in the in-layout sidebar drawer instead, so this route is
+  // fully hidden — redirect any direct/bookmarked hit to the dashboard. (Flags
+  // are guaranteed loaded here: `FeatureFlagsGate` blocks the app shell until
+  // then, so the imperative read is stable.) Also covers the non-SaaS guard.
   useEffect(() => {
-    if (!isSaasTenantMode()) {
+    if (!isSaasTenantMode() || featureFlags.mingoSidebar.enabled()) {
       router.replace('/dashboard');
       return;
     }
@@ -335,7 +355,7 @@ export default function Mingo() {
     ],
   );
 
-  if (!isSaasTenantMode()) {
+  if (!isSaasTenantMode() || featureFlags.mingoSidebar.enabled()) {
     return null;
   }
 

@@ -6,15 +6,12 @@ import { useFeatureFlagsStore } from '@/stores/feature-flags-store';
  */
 export const FEATURE_FLAG_NAMES = [
   'billings',
-  'thinking',
-  'knowledge-base',
+  'help-center',
   'notifications',
-  'tickets-board',
   'batch-approval',
-  'ai-streaming-jetstream',
   'debug-nats-chunks',
   'mingo-sidebar',
-  'ticket-statuses',
+  'mingo-sidebar-context',
   'mingo-ai-chat-settings',
   'customer-ai-assistant-settings',
 ] as const;
@@ -42,14 +39,9 @@ export const featureFlags = {
       return getFlagValue('billings', () => false);
     },
   },
-  thinking: {
+  helpCenter: {
     enabled(): boolean {
-      return getFlagValue('thinking', () => false);
-    },
-  },
-  knowledgeBase: {
-    enabled(): boolean {
-      return getFlagValue('knowledge-base', () => false);
+      return getFlagValue('help-center', () => false);
     },
   },
   notifications: {
@@ -57,19 +49,9 @@ export const featureFlags = {
       return getFlagValue('notifications', () => false);
     },
   },
-  ticketsBoard: {
-    enabled(): boolean {
-      return getFlagValue('tickets-board', () => false);
-    },
-  },
   batchApproval: {
     enabled(): boolean {
       return getFlagValue('batch-approval', () => false);
-    },
-  },
-  aiStreamingJetstream: {
-    enabled(): boolean {
-      return getFlagValue('ai-streaming-jetstream', () => false);
     },
   },
   debugNatsChunks: {
@@ -82,9 +64,9 @@ export const featureFlags = {
       return getFlagValue('mingo-sidebar', () => false);
     },
   },
-  ticketStatuses: {
+  mingoSidebarContext: {
     enabled(): boolean {
-      return getFlagValue('ticket-statuses', () => false);
+      return getFlagValue('mingo-sidebar-context', () => false);
     },
   },
   mingoAiChatSettings: {

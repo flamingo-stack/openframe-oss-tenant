@@ -14,19 +14,44 @@ import type {
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
-import { featureFlags } from '@/lib/feature-flags';
-import { useArchiveResolvedMutation } from './use-archive-resolved-mutation';
+import { type ArchiveResolvedFilter, useArchiveResolvedMutation } from './use-archive-resolved-mutation';
 import { useTicketStatistics } from './use-ticket-statistics';
 
 interface UseTicketsActionsParams {
   isLoading: boolean;
   enabled?: boolean;
+  filter?: ArchiveResolvedFilter;
+  resolvedCountOverride?: number;
 }
 
-export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActionsParams) {
+/**
+ * Promote the "New Ticket" action to the accent (yellow) variant while the page
+ * shows its empty state, so the primary CTA stands out. Re-colors the icon to the
+ * on-accent token to match. No-op when `emphasize` is false (keeps the outline).
+ */
+export function emphasizeNewTicketAction(actions: PageActionButton[], emphasize: boolean): PageActionButton[] {
+  if (!emphasize) return actions;
+  return actions.map(action =>
+    action.label === 'New Ticket'
+      ? {
+          ...action,
+          variant: 'accent',
+          icon: <span className="inline-flex [&_svg]:!text-ods-text-on-accent">{action.icon}</span>,
+        }
+      : action,
+  );
+}
+
+export function useTicketsActions({
+  isLoading,
+  enabled = true,
+  filter,
+  resolvedCountOverride,
+}: UseTicketsActionsParams) {
   const router = useRouter();
   const archiveResolvedMutation = useArchiveResolvedMutation();
-  const { resolvedCount } = useTicketStatistics({ enabled });
+  const { resolvedCount: globalResolvedCount } = useTicketStatistics({ enabled });
+  const resolvedCount = resolvedCountOverride ?? globalResolvedCount;
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
   const handleNewTicket = useCallback(() => {
@@ -34,9 +59,9 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
   }, [router]);
 
   const handleArchiveConfirm = useCallback(async () => {
-    await archiveResolvedMutation.mutateAsync();
+    await archiveResolvedMutation.mutateAsync(filter ?? {});
     setIsArchiveConfirmOpen(false);
-  }, [archiveResolvedMutation]);
+  }, [archiveResolvedMutation, filter]);
 
   const openArchiveResolvedConfirm = useCallback(() => setIsArchiveConfirmOpen(true), []);
   const canArchiveResolved = resolvedCount > 0 && !archiveResolvedMutation.isPending && !isLoading;
@@ -56,14 +81,12 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
   const menuActions = useMemo<ActionsMenuGroup[]>(() => {
     if (!enabled) return [];
     const items: ActionsMenuItem[] = [];
-    if (featureFlags.ticketStatuses.enabled()) {
-      items.push({
-        id: 'edit-statuses',
-        label: 'Edit Statuses',
-        icon: <PenEditIcon className="text-ods-text-secondary" />,
-        href: '/tickets/statuses',
-      });
-    }
+    items.push({
+      id: 'edit-statuses',
+      label: 'Edit Statuses',
+      icon: <PenEditIcon className="text-ods-text-secondary" />,
+      href: '/tickets/statuses',
+    });
     items.push({
       id: 'tickets-archive',
       label: 'Tickets Archive',

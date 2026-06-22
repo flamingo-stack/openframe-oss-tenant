@@ -74,7 +74,7 @@ impl<M: ExecutionMessage + 'static> ExecutionListener<M> {
 
     async fn listen(&self) -> Result<()> {
         let client = self.nats_connection_manager.get_client().await?;
-        let machine_id = self.config_service.get_machine_id().await?;
+        let machine_id = self.config_service.get_machine_id()?;
 
         let subject = format!("machine.{}.{}", machine_id, M::KIND);
         let mut subscriber = client

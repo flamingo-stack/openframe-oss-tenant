@@ -152,10 +152,10 @@ export function useSideChunkProcessor(
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTypingIndicator(side, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(side, segments);
+          appendSegmentsToLastAssistant(side, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(side, segments);
+          updateStreamingMessageSegments(side, segments, metadata?.streamSeq);
         }
       },
       onError: (error: string) => {
@@ -164,10 +164,15 @@ export function useSideChunkProcessor(
         setStreamingMessage(side, null);
       },
       onTokenUsage: (data: TokenUsageData) => setTokenUsage(side, data),
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
-          updateApprovalStatusInMessages('client', requestId, status);
-          updateApprovalStatusInMessages('admin', requestId, status);
+          updateApprovalStatusInMessages('client', requestId, status, resolvedByName);
+          updateApprovalStatusInMessages('admin', requestId, status, resolvedByName);
         }
       },
       onToolExecuted: (segment: ToolExecutionSegment) => {
@@ -177,7 +182,10 @@ export function useSideChunkProcessor(
           updateToolExecutionInMessages('admin', execId, segment.data);
         }
       },
-      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+      onUserMessage: (
+        text: string,
+        meta?: { ownerType?: string; displayName?: string; userId?: string; streamSeq?: number },
+      ) => {
         if (meta?.userId && meta.userId === currentUserId) return;
 
         const isAdminAuthor = meta?.ownerType === 'ADMIN';
@@ -190,9 +198,10 @@ export function useSideChunkProcessor(
           name,
           authorType: isAdminAuthor ? 'admin' : 'user',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
-      onDirectMessage: (text: string, meta?: { ownerType?: string; displayName?: string }) => {
+      onDirectMessage: (text: string, meta?: { ownerType?: string; displayName?: string; streamSeq?: number }) => {
         const isAdminAuthor = meta?.ownerType === 'ADMIN';
         const name = isAdminAuthor ? meta?.displayName : (userDisplayName ?? meta?.displayName);
 
@@ -203,9 +212,10 @@ export function useSideChunkProcessor(
           name,
           authorType: isAdminAuthor ? 'admin' : 'user',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
-      onSystemMessage: (text: string) => {
+      onSystemMessage: (text: string, meta?: { streamSeq?: number }) => {
         addMessage(side, {
           id: `system-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -213,6 +223,7 @@ export function useSideChunkProcessor(
           name: text,
           authorType: 'system',
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
         });
       },
       onMetadata,
@@ -245,7 +256,6 @@ export function useSideChunkProcessor(
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     initialState: incompleteState,
     approvalStatuses,
-    enableThinking: featureFlags.thinking.enabled(),
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
     isDirectMode,
   });

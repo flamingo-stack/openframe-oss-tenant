@@ -25,10 +25,55 @@ export const UNFILTERED_NOTIFICATION_PAIR: NotificationConnectionPair = {
   read: notificationsConnectionFilters(true, ''),
 };
 
-export function makeMarkReadUpdater(id: string, pairs: NotificationConnectionPair[]) {
+const UNREAD_COUNTS_FIELD = 'unreadCountsByCategory';
+const UNREAD_CATEGORY_COUNT_TYPENAME = 'UnreadCategoryCount';
+
+/**
+ * Adjust the in-store per-category unread count (the `unreadCountsByCategory` root field that
+ * drives the sidebar badges) so it stays in lockstep with the drawer connection in the same
+ * local transaction — no refetch race. `category` is the backend `NotificationCategory` carried
+ * on the node / NATS payload; the bucket it lands in is the same enum value the sidebar reads.
+ * No-op when counts aren't loaded yet — the hydrator fetches authoritative values on mount.
+ */
+export function adjustUnreadCount(store: RecordSourceSelectorProxy, category: unknown, delta: number): void {
+  if (typeof category !== 'string' || delta === 0) return;
+  const buckets = store.getRoot().getLinkedRecords(UNREAD_COUNTS_FIELD);
+  if (!buckets) return;
+  const existing = buckets.find(bucket => bucket?.getValue('category') === category);
+  if (existing) {
+    const current = Number(existing.getValue('count')) || 0;
+    existing.setValue(Math.max(0, current + delta), 'count');
+    return;
+  }
+  if (delta < 0) return;
+  const bucketId = `client:${UNREAD_CATEGORY_COUNT_TYPENAME}:${category}`;
+  const bucket = store.get(bucketId) ?? store.create(bucketId, UNREAD_CATEGORY_COUNT_TYPENAME);
+  bucket.setValue(category, 'category');
+  bucket.setValue(delta, 'count');
+  store.getRoot().setLinkedRecords([...buckets, bucket], UNREAD_COUNTS_FIELD);
+}
+
+/** Zero every per-category unread bucket — used when all notifications are marked read at once. */
+export function clearUnreadCounts(store: RecordSourceSelectorProxy): void {
+  const buckets = store.getRoot().getLinkedRecords(UNREAD_COUNTS_FIELD);
+  if (!buckets) return;
+  for (const bucket of buckets) bucket?.setValue(0, 'count');
+}
+
+export function makeMarkReadUpdater(
+  id: string,
+  pairs: NotificationConnectionPair[],
+  options: { adjustCount?: boolean } = {},
+) {
   return (store: RecordSourceSelectorProxy) => {
     const node = store.get(id);
     if (!node) return;
+    // Decrement the category bucket only when the node was actually unread, and only when the
+    // caller owns the count change (the NATS auto-read path lands straight in the read connection
+    // without ever incrementing, so it must not decrement here).
+    if (options.adjustCount !== false && node.getValue('read') === false) {
+      adjustUnreadCount(store, node.getValue('category'), -1);
+    }
     node.setValue(true, 'read');
 
     const root = store.getRoot();
@@ -88,6 +133,8 @@ export function makeMarkAllReadUpdater(pairs: NotificationConnectionPair[]) {
         pageInfo.setValue(null, 'endCursor');
       }
     }
+    // Backend marks every notification read (not just the loaded ones), so clear all buckets.
+    clearUnreadCounts(store);
   };
 }
 
@@ -114,6 +161,10 @@ export function makeDeleteAllReadUpdater(pairs: NotificationConnectionPair[]) {
 
 export function makeDeleteNotificationUpdater(id: string, pairs: NotificationConnectionPair[]) {
   return (store: RecordSourceSelectorProxy) => {
+    const node = store.get(id);
+    // Deleting an unread notification frees its category bucket; capture both before removal.
+    const wasUnread = node?.getValue('read') === false;
+    const category = node?.getValue('category');
     const root = store.getRoot();
     const seen = new Set<string>();
     for (const pair of pairs) {
@@ -126,6 +177,7 @@ export function makeDeleteNotificationUpdater(id: string, pairs: NotificationCon
         ConnectionHandler.deleteNode(conn, id);
       }
     }
+    if (wasUnread) adjustUnreadCount(store, category, -1);
   };
 }
 
@@ -206,7 +258,9 @@ export interface NotificationNodeShape {
     readonly approvalType?: string;
     readonly dialogId?: string;
     readonly ticketId?: string | null;
-    readonly customerTicketId?: string | null;
+    readonly approvalTicketId?: string | null;
+    readonly resolution?: string | null;
+    readonly resolvedByName?: string | null;
     readonly toolCalls?: ReadonlyArray<ApprovalToolCallShape>;
   };
 }
@@ -218,20 +272,18 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
     contextType: context.type,
     contextTypename: context.__typename,
   };
-  let category: string | undefined;
 
-  if (context.__typename === 'AdminAiMessageContext' && context.dialogId) {
-    category = 'mingo';
-    meta.dialogId = context.dialogId;
-  } else if (context.__typename === 'CustomerTicketCreatedContext' && context.customerTicketId) {
-    category = 'ticket';
-    meta.ticketId = context.customerTicketId;
-  } else if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
-    category = 'approval';
+  // Entity ids drive navigation/auto-read uniformly across context types (see
+  // resolveNotificationAction); every context that carries one selects it in the query fragment.
+  const ticketId = context.ticketId ?? context.approvalTicketId ?? undefined;
+  if (context.dialogId) meta.dialogId = context.dialogId;
+  if (ticketId) meta.ticketId = ticketId;
+
+  if (context.__typename === 'AdminApprovalRequestContext' && context.approvalRequestId) {
     meta.approvalRequestId = context.approvalRequestId;
-    meta.dialogId = context.dialogId;
-    meta.ticketId = context.ticketId ?? null;
     meta.approvalType = context.approvalType ?? null;
+    meta.resolution = context.resolution ?? null;
+    meta.resolvedByName = context.resolvedByName ?? null;
     meta.toolCalls = (context.toolCalls ?? []).map(call => ({
       toolExecutionRequestId: call.toolExecutionRequestId,
       toolName: call.toolName,
@@ -252,7 +304,6 @@ export function mapNotificationNode(node: NotificationNodeShape): Notification {
     read: node.read,
     severity,
     variant: severityToVariant(severity),
-    category,
     meta,
   };
 }

@@ -1,9 +1,25 @@
 import type { ChatTicketItemData } from '@flamingo-stack/openframe-frontend-core';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useCallback, useMemo, useRef } from 'react';
-import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type TicketNode, ticketGraphQlService } from '../services/ticketGraphQlService';
+import { tokenService } from '../services/tokenService';
 import { log } from '../utils/log';
+
+export interface TicketDetails {
+  title: string;
+  description?: string;
+  creationSource?: string;
+  createdAt?: string;
+  status?: string;
+  statusName?: string;
+  statusColor?: string;
+  statusKind?: string;
+  dialogMode?: string;
+  dialogStatus?: string;
+  ticketNumber?: string;
+  category?: string;
+  timeAgo?: string;
+}
 
 function formatTimeAgo(dateString: string): string {
   const now = Date.now();
@@ -25,8 +41,6 @@ function formatTimeAgo(dateString: string): string {
 }
 
 function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
-  // statusDefinition is only present when the ticket-statuses flag is on (it's
-  // fetched behind @include), so mapping it unconditionally is safe.
   const def = ticket.statusDefinition;
   return {
     id: ticket.id,
@@ -44,18 +58,31 @@ function ticketToItemData(ticket: TicketNode): ChatTicketItemData | null {
 const TICKET_STATUSES = ['ACTIVE', 'TECH_REQUIRED', 'ON_HOLD', 'RESOLVED'];
 
 export function useTickets() {
-  const { flags } = useFeatureFlags();
-  const lifecycle = flags['ticket-statuses'];
   const dialogIdMapRef = useRef(new Map<string, string>());
   const creationSourceMapRef = useRef(new Map<string, string>());
 
+  // Gate the query on the token: an unauthenticated first fetch resolves empty
+  // and React Query caches it as success for `staleTime`, blanking the list.
+  const [hasToken, setHasToken] = useState(() => !!tokenService.getCurrentToken());
+  useEffect(() => {
+    if (hasToken) return;
+    // Use the resolved value too — requestToken can return a token that was
+    // cached after the useState initializer ran, without a token-update event.
+    tokenService
+      .requestToken()
+      .then(token => {
+        if (token) setHasToken(true);
+      })
+      .catch(() => null);
+    return tokenService.onTokenUpdate(() => setHasToken(true));
+  }, [hasToken]);
+
   const { data, hasNextPage, isFetchingNextPage, isLoading, fetchNextPage } = useInfiniteQuery({
-    queryKey: ['tickets', lifecycle],
+    queryKey: ['tickets'],
     queryFn: async ({ pageParam }) => {
       const startedAt = Date.now();
       log.info('useTickets', 'polling request', {
         cursor: pageParam,
-        lifecycle,
         statuses: TICKET_STATUSES,
         limit: 20,
         refetchIntervalMs: 60_000,
@@ -65,7 +92,6 @@ export function useTickets() {
         statuses: TICKET_STATUSES,
         cursor: pageParam,
         limit: 20,
-        lifecycle,
       });
 
       log.info('useTickets', 'polling response', {
@@ -98,6 +124,7 @@ export function useTickets() {
       }
       return undefined;
     },
+    enabled: hasToken,
     staleTime: 60_000,
     retry: 2,
     refetchInterval: 60_000,
@@ -124,48 +151,33 @@ export function useTickets() {
     return creationSourceMapRef.current.get(ticketId) ?? null;
   }, []);
 
-  const getTicketDetails = useCallback(
-    async (
-      ticketId: string,
-    ): Promise<{
-      title: string;
-      description?: string;
-      creationSource?: string;
-      createdAt?: string;
-      status?: string;
-      statusName?: string;
-      statusColor?: string;
-      statusKind?: string;
-      ticketNumber?: string;
-      category?: string;
-      timeAgo?: string;
-    } | null> => {
-      try {
-        const ticket = await ticketGraphQlService.getTicket(ticketId, lifecycle);
-        if (ticket) {
-          const def = ticket.statusDefinition;
-          return {
-            title: ticket.title,
-            description: ticket.description,
-            creationSource: ticket.creationSource,
-            createdAt: ticket.createdAt,
-            status: ticket.status,
-            statusName: def?.name,
-            statusColor: def?.color,
-            statusKind: def?.kind,
-            ticketNumber: String(ticket.ticketNumber),
-            category: ticket.labels?.[0]?.key,
-            timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
-          };
-        }
-        return null;
-      } catch (error) {
-        console.error('Failed to fetch ticket details:', error);
-        return null;
+  const getTicketDetails = useCallback(async (ticketId: string): Promise<TicketDetails | null> => {
+    try {
+      const ticket = await ticketGraphQlService.getTicket(ticketId);
+      if (ticket) {
+        const def = ticket.statusDefinition;
+        return {
+          title: ticket.title,
+          description: ticket.description,
+          creationSource: ticket.creationSource,
+          createdAt: ticket.createdAt,
+          status: ticket.status,
+          statusName: def?.name,
+          statusColor: def?.color,
+          statusKind: def?.kind,
+          dialogMode: ticket.dialog?.currentMode,
+          dialogStatus: ticket.dialog?.status,
+          ticketNumber: String(ticket.ticketNumber),
+          category: ticket.labels?.[0]?.key,
+          timeAgo: ticket.createdAt ? formatTimeAgo(ticket.createdAt) : undefined,
+        };
       }
-    },
-    [lifecycle],
-  );
+      return null;
+    } catch (error) {
+      console.error('Failed to fetch ticket details:', error);
+      return null;
+    }
+  }, []);
 
   return {
     tickets,

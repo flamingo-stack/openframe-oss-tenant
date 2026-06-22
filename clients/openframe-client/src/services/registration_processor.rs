@@ -24,7 +24,7 @@ impl RegistrationProcessor {
     }
 
     pub async fn process(&self) -> Result<()> {
-        let machine_id = self.config_service.get_machine_id().await?;
+        let machine_id = self.config_service.get_machine_id()?;
         if !machine_id.is_empty() {
             info!("Already registered (machine_id: {})", machine_id);
             return Ok(());

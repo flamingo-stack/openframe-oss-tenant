@@ -69,6 +69,7 @@ use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
 use crate::services::execution_service::ExecutionService;
@@ -151,6 +152,7 @@ pub struct Client {
     command_execution_listener: ExecutionListener<CommandMessage>,
     script_execution_listener: ExecutionListener<ScriptMessage>,
     tool_run_manager: ToolRunManager,
+    mesh_self_heal_service: MeshSelfHealService,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
     update_handler_service: UpdateHandlerService,
@@ -309,7 +311,7 @@ impl Client {
         let tool_connection_message_publisher = ToolConnectionMessagePublisher::new(nats_message_publisher.clone());
 
         // Initialize tool command params resolver
-        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone());
+        let tool_command_params_resolver = ToolCommandParamsResolver::new(directory_manager.clone(), initial_configuration_service.clone(), config_service.clone());
 
         // Initialize tool URL params resolver
         let tool_url_params_resolver = ToolUrlParamsResolver::new(initial_configuration_service.clone());
@@ -324,6 +326,15 @@ impl Client {
             tool_kill_service.clone(),
             #[cfg(target_os = "windows")]
             session_manager,
+        );
+
+        // Initialize mesh self-heal service
+        let mesh_self_heal_service = MeshSelfHealService::new(
+            directory_manager.clone(),
+            installed_tools_service.clone(),
+            tool_kill_service.clone(),
+            initial_configuration_service.clone(),
+            config_service.clone(),
         );
 
         // Initialize tool connection service
@@ -452,6 +463,7 @@ impl Client {
             command_execution_listener,
             script_execution_listener,
             tool_run_manager,
+            mesh_self_heal_service,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
             update_handler_service,
@@ -508,6 +520,9 @@ impl Client {
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
+
+        // Start mesh self-heal watcher (re-fetch .msh + bounce agent if held on a stale MeshID).
+        self.mesh_self_heal_service.run().await?;
 
         // Start tool connection processing manager
         self.tool_connection_processing_manager.run().await?;

@@ -20,8 +20,11 @@
  * resolve on the hub origin — those routes don't exist in openframe. Embed
  * mode makes the lib (a) absolutize every relative card/chip href against
  * `defaultContentOrigin` and (b) always open it in a new tab, so a click
- * lands on the real page on the hub instead of 404-ing in-app. Mingo emits
- * no openframe-internal links, so there's no same-tab `navigate` to wire.
+ * lands on the real page on the hub instead of 404-ing in-app. The in-app
+ * entity cards openframe DOES host (tickets / FAQ, via `composeContentUrl`)
+ * are emitted as same-origin absolute URLs and soft-nav in-app; the `navigate`
+ * hook below handles the same-PAGE deep-link cases a plain router push can't
+ * (a hash for FAQ, a `?ticket=` query for tickets).
  */
 
 /** Public origin of the Flamingo content hub where the chat's content
@@ -32,40 +35,25 @@ const CONTENT_HUB_ORIGIN = 'https://www.flamingo.run';
 import { type ChatRuntime, ChatRuntimeContext } from '@flamingo-stack/openframe-frontend-core/contexts';
 import {
   buildListUrl as buildEntityCardListUrl,
-  type ComposeContentUrl,
   clearEmbedProxyAuth,
-  DEV_SECTION_PARAM_KEYS,
   type EmbedAuthAdapter,
   setEmbedAuthAdapter,
 } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useRouter } from 'next/navigation';
 import { type ReactNode, useMemo } from 'react';
+import { composeOpenframeChatContentUrl } from '@/app/(app)/help-center/help-center-content-href';
 import { runtimeEnv } from '@/lib/runtime-config';
 
 /**
- * Unified content-href seam for the openframe embedder (the same `composeContentUrl`
- * the hub's own page-view cards + chat cards use). openframe hosts NONE of the hub's
- * content in-app, so every card opens OUT to its real home. Two cases:
- *
- *   1. roadmap / delivery — path DIFFERS per platform (openframe `/roadmap` vs
- *      flamingo `/roadmap-and-releases?tab=…`), so a verbatim `externalUrl` can't
- *      be trusted. Rebuild against the flamingo unified page from the item's id
- *      (mirrors `SECTION_PATH_BY_PLATFORM.flamingo` in
- *      `multi-platform-hub/lib/utils/dev-section-url.ts`). `internal_task` is NOT
- *      here — its `externalUrl` is a platform-agnostic `app.clickup.com` link.
- *   2. everything else (blog / release / case-study / podcast / …) — the
- *      RAG-authoritative `externalUrl` verbatim (already an absolute
- *      owning-platform URL), identical to the hub's own composer.
+ * Content-href seam for the openframe embedder. The type→route map is shared
+ * with the Help Center pages (single source of truth in
+ * `help-center-content-href.ts`): the FOUR types openframe hosts in-app
+ * (product release / onboarding guide / roadmap / delivery) resolve to
+ * `/help-center/...` ABSOLUTE same-origin URLs — so the lib's embed-mode nav
+ * recognizes them as in-app and soft-navs there instead of bouncing the card
+ * out to the hub. Every other type (blog / podcast / case-study / …) still
+ * opens OUT to its RAG-authoritative `externalUrl` on the content hub.
  */
-const composeOpenframeContentUrl: ComposeContentUrl = ({ type, identifier, externalUrl, targetPlatform }) => {
-  if (type === 'roadmap_item' || type === 'delivery_item') {
-    const tab = type === 'roadmap_item' ? 'roadmap' : 'delivery';
-    return {
-      href: `${CONTENT_HUB_ORIGIN}/roadmap-and-releases?tab=${tab}&${DEV_SECTION_PARAM_KEYS.search}=${encodeURIComponent(identifier)}`,
-      targetPlatform: null,
-    };
-  }
-  return { href: externalUrl ?? '', targetPlatform: targetPlatform ?? null };
-};
 
 import { refreshAccessToken } from '@/lib/token-refresh-manager';
 
@@ -142,6 +130,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const runtime = useMemo<ChatRuntime>(() => {
     // Guide-mode endpoints are SAME-ORIGIN relative `/content/*` paths. The
     // lib's `embedAuthedFetch` rejects cross-origin URLs in production builds
@@ -158,7 +147,21 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         // (2026-05-29 endpoint table).
         chatStreamUrl: content('/api/docs/chat'),
         approvalToolUrl: content('/api/chat/agent/confirm-tool'),
+        // Help Center ticket agent endpoints — proxied under `/content` like
+        // every other endpoint, so they route through the existing `/content/*`
+        // rewrite (dev) + platform reverse-proxy (prod). No bare `/api/chat/agent/*`
+        // hatch needed.
+        findTicketUrl: content('/api/chat/agent/find-ticket'),
+        ticketActionUrl: content('/api/chat/agent/ticket-action'),
+        listEngagementsUrl: content('/api/chat/agent/list-engagements'),
         commandsUrl: content('/api/docs/commands'),
+        // Per-platform empty-state config (greeting + try-asking quick-action
+        // chips + RAG-source filter), admin-edited in MPH's `/admin/chat-config`.
+        // Same-origin relative `/content/*` path (see `commandsUrl`), proxied to
+        // MPH. The lib fetches it at runtime because, as a cross-origin embedder,
+        // we have no SSR hop to inject these as props the way MPH's in-app chat
+        // does. Drives `emptyStateGreeting` + the Guide/Mingo quick-action chips.
+        emptyStateUrl: content('/api/docs/empty-state'),
         // Fetch-mode entity cards (blog, roadmap, case study, release,
         // podcast/webinar/event, …) expand their `[card://<type>:<id>]`
         // markers by GETting the type's list endpoint. The lib owns the
@@ -170,31 +173,74 @@ export function OpenframeChatRuntimeProvider({ children }: { children: ReactNode
         buildListUrl: (type, ids) => buildEntityCardListUrl(type, ids, '/content'),
         attachmentUploadUrl: content('/api/storage/generate-upload-url'),
         attachmentViewUrlPrefix: content('/api/storage/view/chat-attachments/'),
-        // SOURCE-VS-DEPLOYED GAP: MPH source has `/api/auth/identity`
-        // (at `app/api/auth/identity/route.ts`). The deployed instance
-        // also serves `/api/chat/identity` per the live endpoint table
-        // verified 2026-05-29. We use the deployed path because it's
-        // the one verified to work end-to-end; if 404, swap to
-        // `/api/auth/identity`.
-        identityUrl: content('/api/chat/identity'),
+        // Identity endpoint = the MPH source route `app/api/auth/identity/route.ts`
+        // (served at `/api/auth/identity`, proxied here under `/content`). The
+        // previously-used `/api/chat/identity` returns the content app's
+        // `/_not-found` (200 HTML) on this tenant host — verified 2026-06-15 via
+        // `/help-center/tickets`: the authed GET reached MPH but matched no route,
+        // so `useChatIdentity` fell back to `anon` and the signed-in ticket form
+        // never showed. `/api/auth/identity` is the lib's documented hub default.
+        identityUrl: content('/api/auth/identity'),
         imageProxyUrlPrefix: content('/api/image-proxy'),
       },
       navigation: {
         // Embedder, not host — see the file header. Relative content-card
         // hrefs get absolutized against `defaultContentOrigin` and opened in
         // a new tab (the lib's `computeIsNewTab` short-circuits to new-tab in
-        // embed mode), so there's no in-app `navigate` to wire.
+        // embed mode). The same-tab cases we DO own are same-PAGE deep-links —
+        // see `navigate` below.
         mode: 'embed',
         defaultContentOrigin: CONTENT_HUB_ORIGIN,
+        // Same-PAGE deep-links — a card clicked while ALREADY on its target page:
+        //   - FAQ  → `/help-center/faqs#faq-item-<id>`   (hash deep-link)
+        //   - ticket → `/help-center/tickets?ticket=<id>` (query deep-link)
+        // The lib's same-tab fallback router-pushes the same pathname, which
+        // neither emits a `hashchange` (the FAQ page expands+scrolls on it) nor
+        // re-opens the ticket drawer the tickets page derives from `?ticket=`. So
+        // drive each page's own re-sync here: the query via the real router (the
+        // same `replace` the ticket list's row-click uses) so `useSearchParams`
+        // re-derives, and the hash via `location.hash` so `hashchange` fires.
+        // Cross-page / hub links return false → the lib's default nav is unchanged.
+        navigate: ({ href }) => {
+          if (typeof window === 'undefined') return false;
+          let url: URL;
+          try {
+            url = new URL(href, window.location.origin);
+          } catch {
+            return false;
+          }
+          const samePage = url.origin === window.location.origin && url.pathname === window.location.pathname;
+          if (!samePage) return false;
+          const hashChanged = url.hash !== window.location.hash;
+          const searchChanged = url.search !== window.location.search;
+          if (!hashChanged && !searchChanged) {
+            // Re-clicking the same target — re-fire the hash event so a hash page
+            // re-runs its scroll/open (a query page is already in the right state).
+            if (url.hash) window.dispatchEvent(new HashChangeEvent('hashchange'));
+            return true;
+          }
+          // Query deep-link (e.g. `?ticket=<id>`) → real router so the page's
+          // `useSearchParams` re-derives the open drawer (matches its row-click).
+          if (searchChanged) {
+            router.replace(`${url.pathname}${url.search}`, { scroll: false });
+          }
+          // Hash deep-link (e.g. `#faq-item-<id>`) → a router nav to the same
+          // pathname emits no `hashchange`, which the page listens for; set it.
+          if (hashChanged) {
+            window.location.hash = url.hash;
+          }
+          return true;
+        },
       },
-      // Unified content-href seam: openframe hosts no hub content in-app, so
-      // every card opens OUT to its real home — roadmap/delivery rebuilt against
-      // the flamingo unified page, company-hub content re-based onto company-hub,
-      // everything else passed through verbatim. See `composeOpenframeContentUrl`.
-      composeContentUrl: composeOpenframeContentUrl,
+      // Unified content-href seam (shared with Help Center pages): the four
+      // in-app-hosted types soft-nav into `/help-center/...`; every other type
+      // opens OUT to its hub home. See `composeOpenframeChatContentUrl`.
+      composeContentUrl: composeOpenframeChatContentUrl,
       source: CHAT_SOURCE,
     };
-  }, []);
+    // `router` is the only reactive dep; Next returns a stable instance, so the
+    // runtime object is effectively built once.
+  }, [router]);
 
   return <ChatRuntimeContext.Provider value={runtime}>{children}</ChatRuntimeContext.Provider>;
 }

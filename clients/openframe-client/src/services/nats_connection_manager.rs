@@ -41,7 +41,7 @@ impl NatsConnectionManager {
     }
 
     pub async fn connect(&self) -> Result<()> {
-        let machine_id = self.config_service.get_machine_id().await?;
+        let machine_id = self.config_service.get_machine_id()?;
 
         info!(
             hostname = %self.nats_server_url,
