@@ -5,49 +5,37 @@ import {
   ColorPickerInput,
   ImageUploader,
   Input,
-  RadioGroupBlock,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   TabSelector,
-  Textarea,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Controller } from 'react-hook-form';
 import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-form';
 import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
-import { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
-import {
-  ANSWER_STYLE_OPTIONS,
-  LLM_PROVIDER_ICON,
-  LLM_PROVIDER_LABEL,
-  LLM_PROVIDER_OPTIONS,
-} from '../utils/fae-settings-display';
+import type { AgentAiConfig, ClientView } from '../types/ai-settings';
+import { CUSTOMER_AI_ASSISTANT_FORM_ID, type CustomerAiAssistantSubmit } from '../types/customer-ai-assistant.types';
+import { AiConfigFields } from './ai-config-fields';
 import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
-export type { CustomerAiAssistantFormValues } from '../types/customer-ai-assistant.types';
 export { CUSTOMER_AI_ASSISTANT_FORM_ID } from '../types/customer-ai-assistant.types';
 
 interface CustomerAiAssistantTabProps {
-  settings: FaeSettings;
+  aiConfig: AgentAiConfig;
+  view: ClientView;
   isEditMode: boolean;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  onSubmit: (payload: CustomerAiAssistantSubmit) => void;
 }
 
-export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: CustomerAiAssistantTabProps) {
+export function CustomerAiAssistantTab({ aiConfig, view, isEditMode, onSubmit }: CustomerAiAssistantTabProps) {
   const { form, avatarUrl, handleAvatarChange, handleAvatarRemove, handleSubmit } = useCustomerAiAssistantForm({
-    settings,
+    aiConfig,
+    view,
     onSubmit,
   });
 
   const { modelsByProvider } = useSupportedModels();
 
   const llmProvider = form.watch('llmProvider');
-  const modelOptions = modelsByProvider?.[llmProvider] ?? [];
   const answerStyle = form.watch('answerStyle');
   const assistantName = form.watch('assistantName');
   const providerModel = form.watch('providerModel');
@@ -55,12 +43,13 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
   const accentColor = form.watch('accentColor');
 
   if (!isEditMode) {
-    const settingsModelLabel = getProviderModelLabel(modelsByProvider, settings.llmProvider, settings.providerModel);
+    const modelLabel = getProviderModelLabel(modelsByProvider, aiConfig.llmProvider, aiConfig.providerModel);
     return (
       <AiSettingsOverview
-        settings={settings}
-        providerModelLabel={settingsModelLabel}
-        quickActions={settings.quickActions}
+        aiConfig={aiConfig}
+        view={view}
+        providerModelLabel={modelLabel}
+        quickActions={aiConfig.quickActions}
       />
     );
   }
@@ -80,62 +69,6 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
               <Input {...field} label="Assistant Name" error={fieldState.error?.message} />
             )}
           />
-
-          <div className="flex flex-row gap-[var(--spacing-system-l)]">
-            <div className="flex-1 min-w-0">
-              <Controller
-                name="llmProvider"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={value => {
-                      field.onChange(value);
-                      form.setValue('providerModel', '');
-                    }}
-                  >
-                    <SelectTrigger label="LLM Provider" error={fieldState.error?.message}>
-                      <SelectValue placeholder="Select a provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LLM_PROVIDER_OPTIONS.map(provider => {
-                        const Icon = LLM_PROVIDER_ICON[provider];
-                        return (
-                          <SelectItem key={provider} value={provider}>
-                            <span className="flex items-center gap-2">
-                              <Icon className="w-5 h-5" />
-                              {LLM_PROVIDER_LABEL[provider]}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <Controller
-                name="providerModel"
-                control={form.control}
-                render={({ field, fieldState }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger label="Provider Model" error={fieldState.error?.message}>
-                      <SelectValue placeholder="Select a model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modelOptions.map(model => (
-                        <SelectItem key={model.value} value={model.value}>
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
         </div>
 
         <div className="w-full md:w-[274px] shrink-0">
@@ -145,7 +78,7 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
             onChange={handleAvatarChange}
             onRemove={handleAvatarRemove}
             className="[&>div]:!h-[154px] md:[&>div]:!h-[148px] [&_button]:size-10 [&_button]:p-2 md:[&_button]:size-12 md:[&_button]:p-3"
-            alt={settings.assistantName}
+            alt={view.assistantName}
           />
         </div>
       </div>
@@ -183,46 +116,26 @@ export function CustomerAiAssistantTab({ settings, isEditMode, onSubmit }: Custo
         </div>
 
         <AiSettingsPreviews
-          assistantName={assistantName || settings.assistantName}
+          assistantName={assistantName || view.assistantName}
           avatarUrl={avatarUrl}
-          accentColor={accentColor || settings.accentColor}
+          accentColor={accentColor || view.accentColor}
           theme={applicationTheme}
           providerName={llmProvider}
           modelDisplayName={getProviderModelLabel(
             modelsByProvider,
             llmProvider,
-            providerModel || settings.providerModel,
+            providerModel || aiConfig.providerModel,
           )}
         />
       </div>
 
-      <Controller
-        name="answerStyle"
+      <AiConfigFields
         control={form.control}
-        render={({ field, fieldState }) => (
-          <div className="flex flex-col gap-1">
-            <span className="text-h4 text-ods-text-primary">Answer Style</span>
-            <RadioGroupBlock
-              variant="grouped"
-              value={field.value}
-              onValueChange={field.onChange}
-              options={ANSWER_STYLE_OPTIONS}
-              itemClassName="p-[var(--spacing-system-sf)] gap-[var(--spacing-system-s)] [&>button]:size-4 md:[&>button]:size-6"
-              error={fieldState.error?.message}
-            />
-          </div>
-        )}
+        llmProvider={llmProvider}
+        answerStyle={answerStyle}
+        modelsByProvider={modelsByProvider}
+        onProviderChange={() => form.setValue('providerModel', '')}
       />
-
-      {answerStyle === 'CUSTOM' && (
-        <Controller
-          name="customPrompt"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Textarea {...field} label="AI Model Custom Prompt" error={fieldState.error?.message} rows={6} />
-          )}
-        />
-      )}
 
       <AiSettingsQuickActionsEditor control={form.control} className="mt-8" />
     </form>

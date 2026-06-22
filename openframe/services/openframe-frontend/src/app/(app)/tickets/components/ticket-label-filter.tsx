@@ -2,7 +2,7 @@
 
 import { TagSearchInput, type TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useMemo } from 'react';
-import { SelectableTagsRow } from '@/app/components/shared';
+import { SelectableTagsRow, SelectableTagsRowSkeleton } from '@/app/components/shared';
 import { useTicketLabels } from '../hooks/use-ticket-labels';
 
 interface TicketLabelSearchInputProps {
@@ -47,6 +47,7 @@ interface TicketLabelsRowProps {
 }
 
 export function TicketLabelsRow({ selectedIds, onAdd }: TicketLabelsRowProps) {
-  const { data: labels } = useTicketLabels();
+  const { data: labels, isLoading } = useTicketLabels();
+  if (isLoading) return <SelectableTagsRowSkeleton />;
   return <SelectableTagsRow tags={labels ?? []} selectedIds={selectedIds} onAdd={tag => onAdd(tag.id)} />;
 }

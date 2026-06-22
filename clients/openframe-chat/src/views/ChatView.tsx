@@ -27,7 +27,7 @@ import { ChatDialogScreen } from '../components/ChatDialogScreen';
 import { ChatInitialScreen } from '../components/ChatInitialScreen';
 import { NewTicketModal } from '../components/NewTicketModal';
 import { WelcomeScreen } from '../components/WelcomeScreen';
-import { useApplyFaeAppearance } from '../hooks/useApplyFaeAppearance';
+import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
@@ -80,7 +80,7 @@ export function ChatView() {
   activeTicketIdRef.current = activeTicketId;
   const { showWelcome, completeWelcome } = useWelcomeScreen();
   const { assistantName, assistantAvatar, isLoading: isAssistantLoading } = useAssistantBranding();
-  useApplyFaeAppearance();
+  useApplyAiAppearance();
 
   const handleTokenUsage = useCallback((data: TokenUsageData) => {
     setTokenUsage(data);
