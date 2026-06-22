@@ -15,10 +15,9 @@ import {
 
 interface UseCustomerAppearanceFormOptions {
   view: ClientView;
-  onSubmit: (values: CustomerAppearanceFormValues) => void;
 }
 
-export function useCustomerAppearanceForm({ view, onSubmit }: UseCustomerAppearanceFormOptions) {
+export function useCustomerAppearanceForm({ view }: UseCustomerAppearanceFormOptions) {
   const { toast } = useToast();
   const form = useForm<CustomerAppearanceFormValues>({
     resolver: zodResolver(customerAppearanceSchema),
@@ -94,13 +93,10 @@ export function useCustomerAppearanceForm({ view, onSubmit }: UseCustomerAppeara
     }
   };
 
-  const handleSubmit = form.handleSubmit(values => onSubmit(values));
-
   return {
     form,
     avatarUrl,
     handleAvatarChange,
     handleAvatarRemove,
-    handleSubmit,
   };
 }

@@ -1,8 +1,6 @@
 import { z } from 'zod';
 import type { ClientView } from '@/app/(app)/settings/ai-settings/types/ai-settings';
 
-export const CUSTOMER_APPEARANCE_FORM_ID = 'customer-ai-assistant-appearance-form';
-
 /**
  * Per-customer appearance edits only the ClientView (name, avatar, theme,
  * accent) — the AI logic config (provider/model/quick actions) is tenant-wide

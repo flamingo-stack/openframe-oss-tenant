@@ -19,7 +19,10 @@ import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
 import { useCreateCustomer } from '../hooks/use-create-customer';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { useUpdateCustomer } from '../hooks/use-update-customer';
-import { CustomerAiAssistantAppearance } from './ai-assistant-appearance/customer-ai-assistant-appearance';
+import {
+  CustomerAiAssistantAppearance,
+  type CustomerAppearanceHandle,
+} from './ai-assistant-appearance/customer-ai-assistant-appearance';
 
 interface NewCustomerPageProps {
   organizationId: string | null;
@@ -101,6 +104,8 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | undefined>(undefined);
   const previewUrlRef = useRef<string | undefined>(undefined);
+  // Lets "Save Customer" also persist the AI-Assistant appearance block.
+  const appearanceRef = useRef<CustomerAppearanceHandle>(null);
 
   const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
   const showImageUploader = isSaasTenant;
@@ -240,6 +245,17 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
     try {
       setIsSubmitting(true);
 
+      // Validate the AI-Assistant appearance fields before writing anything.
+      if (appearanceRef.current && !(await appearanceRef.current.validate())) {
+        toast({
+          title: 'Check AI-Assistant appearance',
+          description: 'Fix the highlighted appearance fields before saving',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
         name: form.name.trim(),
         category: preserved.category,
@@ -277,6 +293,11 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
             variant: 'warning',
           });
         }
+      }
+
+      // Persist the AI-Assistant appearance override/reset (edit mode only).
+      if (organizationId && appearanceRef.current) {
+        await appearanceRef.current.commit();
       }
 
       await invalidateOrganizationImageQueries();
@@ -397,7 +418,7 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
         {organizationId && (
           <>
             <div className="border-t border-ods-border" />
-            <CustomerAiAssistantAppearance organizationId={organizationId} />
+            <CustomerAiAssistantAppearance ref={appearanceRef} organizationId={organizationId} />
           </>
         )}
       </div>
