@@ -1,3 +1,4 @@
+import { clearMingoContext } from '@/app/(app)/mingo/stores/mingo-context-store';
 import { authApiClient } from '@/lib/auth-api-client';
 import { clearStoredTokens } from '@/lib/force-logout';
 import { runtimeEnv } from '@/lib/runtime-config';
@@ -16,6 +17,10 @@ export async function performLogout() {
   }
 
   storeLogout();
+  // Clear the user's Mingo working context so it can't leak into the next
+  // session on a shared browser (it's persisted in localStorage + rides out on
+  // every Mingo message).
+  clearMingoContext();
   if (runtimeEnv.enableDevTicketObserver()) {
     clearStoredTokens();
   }

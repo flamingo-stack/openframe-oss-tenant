@@ -48,6 +48,12 @@ function BillingUsageContent() {
   const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(data.subscription);
   const { impact, isLoading: isImpactLoading } = useCancellationImpact({ enabled: cancelStep === 'reason' });
 
+  // `Next Payment` comes straight from the backend's server-computed
+  // `subscription.nextPayment` (projected next-invoice total). The row is
+  // omitted when there's nothing to bill (null / 0) — e.g. a trial with no
+  // upcoming charge — instead of rendering a "Free" placeholder.
+  const nextPaymentAmount = billing.nextPayment ?? 0;
+
   const menuActions: ActionsMenuGroup[] =
     status === SubscriptionStatus.ACTIVE
       ? [
@@ -107,6 +113,13 @@ function BillingUsageContent() {
       actions={[primaryAction]}
       menuActions={menuActions}
     >
+      <div className="flex items-start gap-[var(--spacing-system-s)] rounded-md bg-[var(--ods-open-yellow-base)] p-[var(--spacing-system-s)] text-ods-text-on-accent">
+        <AlertTriangleIcon className="size-6 shrink-0" />
+        <p className="flex-1 text-h3 font-bold">
+          Test mode — invoices and usage shown here are samples. No real charges are being made.
+        </p>
+      </div>
+
       <div
         className={cn('grid gap-[var(--spacing-system-m)]', flags.hasAi ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}
       >
@@ -174,10 +187,7 @@ function BillingUsageContent() {
             value={ai.isPayg ? 'Pay as you go' : flags.hasAi ? formatCount(ai.allocation) : 'None'}
             muted={!flags.hasAi && !ai.isPayg}
           />
-          <BillingRow
-            label="Next Payment"
-            value={flags.isTrial ? 'Free' : formatCurrency(billing.monthlyCost || billing.estimatedOverageCost)}
-          />
+          {nextPaymentAmount > 0 && <BillingRow label="Next Payment" value={formatCurrency(nextPaymentAmount)} />}
           {flags.isPendingCancellation ? (
             <BillingRow
               label="Plan ends on"
@@ -317,10 +327,10 @@ const billingUsageViewQuery = graphql`
         inactiveDevices
         aiTokensUsed
       }
-      currentInvoice {
-        estimatedOverage
-        currency
-      }
+      # Projected next-invoice total, computed server-side (PAYG overage accrued
+      # so far + package charges due next cycle). This is the SSOT for the
+      # "Next Payment" row — the UI no longer re-derives it from product prices.
+      nextPayment
     }
   }
 `;

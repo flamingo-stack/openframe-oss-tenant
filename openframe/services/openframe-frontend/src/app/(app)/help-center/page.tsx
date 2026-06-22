@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BookBookmarkIcon,
   CompassIcon,
   FileContentIcon,
   LifeBuoyIcon,
@@ -72,6 +73,12 @@ const ITEMS: Item[] = [
     title: 'Terms of Service',
     description: 'License agreement and acceptable-use terms.',
     Icon: FileContentIcon,
+  },
+  {
+    href: `${HELP_CENTER_BASE}/knowledge-base`,
+    title: 'Knowledge Base',
+    description: 'Comprehensive guides and references for the OpenFrame platform.',
+    Icon: BookBookmarkIcon,
   },
 ];
 
