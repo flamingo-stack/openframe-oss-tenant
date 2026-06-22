@@ -927,7 +927,8 @@ mod tests {
             DirectoryManager::with_custom_dirs(non_existent.clone(), non_existent.clone(), non_existent.clone());
 
         // This should fail on validate because we can't create the directory
-        if cfg!(unix) && unsafe { libc::geteuid() } != 0 {
+        #[cfg(unix)]
+        if unsafe { libc::geteuid() } != 0 {
             // We expect this to fail if we're not root
             assert!(manager.validate_permissions().is_err());
         }
