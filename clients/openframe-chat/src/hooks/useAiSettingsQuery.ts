@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { type FaeSettingsResponse, faeSettingsService } from '../services/faeSettingsService';
+import { type AiSettingsResponse, aiSettingsService } from '../services/aiSettingsService';
 import { tokenService } from '../services/tokenService';
 
 /** Cache key scoped to the active connection so settings from a previous
  *  server/identity are never served after the token or API URL changes. */
-export const faeSettingsQueryKey = (apiBaseUrl: string | null) => ['faeSettings', { apiBaseUrl }] as const;
+export const aiSettingsQueryKey = (apiBaseUrl: string | null) => ['aiSettings', { apiBaseUrl }] as const;
 
 interface ConnectionState {
   isReady: boolean;
@@ -19,14 +19,14 @@ function readConnectionState(): ConnectionState {
 }
 
 /**
- * Loads FaeSettings (assistant customization incl. quickActions) from
- * /chat/graphql. `data` is `null` when no record exists yet. The query waits
- * for the token/API URL to be available; readiness is recomputed on every
- * token/API update (and can flip back to false when credentials drop), and
- * the cache is keyed by the API base URL so a connection change refetches
- * instead of serving stale settings.
+ * Loads the client assistant's appearance (clientView) and quick actions
+ * (clientAiConfig) from /chat/graphql. `data` is `null` when no record exists yet.
+ * The query waits for the token/API URL to be available; readiness is
+ * recomputed on every token/API update (and can flip back to false when
+ * credentials drop), and the cache is keyed by the API base URL so a connection
+ * change refetches instead of serving stale settings.
  */
-export function useFaeSettingsQuery({ enabled }: { enabled: boolean }) {
+export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
   const [connection, setConnection] = useState<ConnectionState>(readConnectionState);
 
   useEffect(() => {
@@ -43,9 +43,9 @@ export function useFaeSettingsQuery({ enabled }: { enabled: boolean }) {
     };
   }, []);
 
-  return useQuery<FaeSettingsResponse | null>({
-    queryKey: faeSettingsQueryKey(connection.apiBaseUrl),
-    queryFn: () => faeSettingsService.fetchFaeSettings(),
+  return useQuery<AiSettingsResponse | null>({
+    queryKey: aiSettingsQueryKey(connection.apiBaseUrl),
+    queryFn: () => aiSettingsService.fetchAiSettings(),
     enabled: enabled && connection.isReady,
     retry: 1,
     staleTime: 5 * 60 * 1000,

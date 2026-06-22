@@ -25,17 +25,17 @@ const ACCENT_VAR_SHADES = {
 } as const;
 
 /**
- * Applies FaeSettings appearance to the document:
+ * Applies AiSettings appearance to the document:
  * - `applicationTheme` (DARK | LIGHT | SYSTEM) -> `data-theme` on <html>;
  *   ODS defaults to dark when the attribute is absent, SYSTEM follows the
  *   OS preference live via `prefers-color-scheme`.
  * - `accentColor` -> inline ODS accent CSS variables on <html>.
  * Everything is reverted when settings are missing (defaults win).
  */
-export function useApplyFaeAppearance() {
-  const { faeSettings } = useChatConfig();
-  const theme = faeSettings?.applicationTheme;
-  const accentColor = faeSettings?.accentColor;
+export function useApplyAiAppearance() {
+  const { aiSettings } = useChatConfig();
+  const theme = aiSettings?.applicationTheme;
+  const accentColor = aiSettings?.accentColor;
 
   useEffect(() => {
     const root = document.documentElement;

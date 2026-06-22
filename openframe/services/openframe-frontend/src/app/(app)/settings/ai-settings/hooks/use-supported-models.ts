@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { AIProvider } from '../types/fae-settings';
+import type { AIProvider } from '../types/ai-settings';
 
 interface ModelInfo {
   modelName: string;
