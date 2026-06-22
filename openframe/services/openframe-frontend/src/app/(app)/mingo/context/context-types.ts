@@ -7,19 +7,25 @@
  * alongside for display (chips + the dev window); the label is stripped when
  * building the wire payload.
  *
- * `CONTEXT_ENTITY_KIND` originally mirrored the `ContextItemReference.type`
- * enum in the chat service's OpenAPI contract (`GET /chat/v3/api-docs`) —
- * DEVICE / SCRIPT / TICKET / ORGANIZATION / USER / KB_ARTICLE. POLICY and QUERY
- * were added later on product request (Figma 31:28708 lists them). ⚠️ As of the
- * last verified spec the backend enum did NOT include POLICY/QUERY, so sending
- * a message whose `contextItems[].type` is POLICY/QUERY may be rejected by
- * `POST /chat/api/v1/messages` until the backend enum is extended. They are
- * searchable/selectable in the picker regardless.
+ * `CONTEXT_ENTITY_KIND` mirrors the backend `ContextItemType` enum
+ * (`com.openframe.data.document.chat.ContextItemType`) — DEVICE / SCRIPT /
+ * TICKET / ORGANIZATION / USER / KB_ARTICLE / POLICY / QUERY. All eight are
+ * resolved server-side (the ai-agent ships a `*ContextResolver` for each, incl.
+ * `PolicyContextResolver` + `ScheduledQueryContextResolver`).
  *
- * SINGLE SOURCE OF TRUTH — to add a kind: add one entry here, then wire its
- * label/icon in `MINGO_CONTEXT_ENTITY_TYPES` and its fetcher in `FETCHERS`
- * (both in `context-sources.tsx`). The TS `Record<ContextEntityKind, …>` on
- * `FETCHERS` makes a missing fetcher a compile error.
+ * `CONTEXT_ENTITY_MARKER` maps each kind to that enum's `marker()` — the SHORT
+ * token the backend uses for inline `@marker:id` mentions (note `KB_ARTICLE` →
+ * `kb`, not `kb_article`). The structured `contextItems[].type` wire field keeps
+ * the UPPERCASE kind (Jackson deserializes the enum by name); only the inline
+ * `@`-mention token in the message text uses the marker. The picker forwards the
+ * marker to the lib via `ChatContextEntityType.marker`, the single mapper that
+ * brings every mention to the backend's short form.
+ *
+ * SINGLE SOURCE OF TRUTH — to add a kind: add one entry here (+ its marker),
+ * then wire its label/icon in `MINGO_CONTEXT_ENTITY_TYPES` and its fetcher in
+ * `FETCHERS` (both in `context-sources.tsx`). The TS `Record<ContextEntityKind,
+ * …>` on `FETCHERS` + `CONTEXT_ENTITY_MARKER` makes a missing entry a compile
+ * error.
  */
 
 export const CONTEXT_ENTITY_KIND = {
@@ -37,6 +43,24 @@ export type ContextEntityKind = (typeof CONTEXT_ENTITY_KIND)[keyof typeof CONTEX
 
 /** All kinds as a runtime list, in declaration order. */
 export const CONTEXT_ENTITY_KINDS = Object.values(CONTEXT_ENTITY_KIND) as ContextEntityKind[];
+
+/**
+ * Backend mention markers — each kind's `ContextItemType.marker()`. This is the
+ * single mapper that reduces every `@`-mention to the backend's short form
+ * (`@device:…`, `@kb:…`, `@policy:…`). `KB_ARTICLE → 'kb'` is the only entry that
+ * isn't a plain lowercase of the kind. Fed to the lib via the picker so the
+ * committed inline token matches the backend's `MentionParser`.
+ */
+export const CONTEXT_ENTITY_MARKER: Record<ContextEntityKind, string> = {
+  DEVICE: 'device',
+  SCRIPT: 'script',
+  TICKET: 'ticket',
+  ORGANIZATION: 'organization',
+  USER: 'user',
+  KB_ARTICLE: 'kb',
+  POLICY: 'policy',
+  QUERY: 'query',
+};
 
 /** Minimal wire shape for `contextItems` / `currentView` / `recentViews`. */
 export interface ContextRef {

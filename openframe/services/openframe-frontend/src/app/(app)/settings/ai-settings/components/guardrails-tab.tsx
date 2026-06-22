@@ -5,58 +5,23 @@ import {
   Alert,
   AlertDescription,
   Button,
-  GoogleGeminiIcon,
   Label,
-  OpenAiIcon,
   RadioGroupBlock,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Skeleton,
   SlidersIcon,
 } from '@flamingo-stack/openframe-frontend-core';
 import { PolicyConfigurationPanel } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { AiRobotIcon, ClaudeIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { AlertCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { InfoCell } from '@/app/components/shared/info-cell';
 import { apiClient } from '@/lib/api-client';
-import { useAiConfiguration } from '../../hooks/use-ai-configuration';
 import { useAiPolicies } from '../../hooks/use-ai-policies';
 import { CUSTOM_CREATION_TEMPLATE_ID, type PolicyRule, type PolicyTemplateDetail } from '../../types/ai-policies';
 import type { CustomPolicyState, EditSnapshot } from '../../types/ai-settings';
 import { buildPolicyGroups, clonePolicyGroups, mapToObject } from '../../utils/ai-settings.utils';
 
 const CUSTOM_TEMPLATE_TYPE = 'CUSTOM' as const;
-
-const PROVIDER_CONFIG = {
-  ANTHROPIC: {
-    apiKey: 'anthropic',
-    label: 'Anthropic',
-    icon: ClaudeIcon,
-  },
-  OPENAI: {
-    apiKey: 'openai',
-    label: 'OpenAI',
-    icon: OpenAiIcon,
-  },
-  GOOGLE_GEMINI: {
-    apiKey: 'google-gemini',
-    label: 'Google',
-    icon: GoogleGeminiIcon,
-  },
-} as const;
-
-type ProviderKey = keyof typeof PROVIDER_CONFIG;
-
-const API_KEY_TO_PROVIDER: Record<string, ProviderKey> = {
-  anthropic: 'ANTHROPIC',
-  openai: 'OPENAI',
-  'google-gemini': 'GOOGLE_GEMINI',
-  google: 'GOOGLE_GEMINI',
-};
 
 export const GUARDRAILS_FORM_ID = 'ai-settings-guardrails-form';
 
@@ -73,8 +38,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   const { toast } = useToast();
   // Set right before `onSaved()` so the edit-mode effect skips the cancel-revert.
   const savedRef = useRef(false);
-
-  const { configuration, supportedModels, isLoading, isSaving, updateConfiguration } = useAiConfiguration();
 
   const {
     templateOptions,
@@ -104,8 +67,11 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   const canEditPolicyRules =
     isEditMode && (selectedTemplateId === CUSTOM_CREATION_TEMPLATE_ID || isSelectedCustomTemplate);
 
-  const [selectedProvider, setSelectedProvider] = useState<string>('');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  // Label of the active guardrails preset, shown in the read-only summary.
+  const selectedPresetLabel = useMemo(() => {
+    const currentTemplateId = selectedTemplateId || activeTemplateId;
+    return templateOptions.find(t => t.id === currentTemplateId)?.label || 'None';
+  }, [templateOptions, selectedTemplateId, activeTemplateId]);
 
   const [policyGroups, setPolicyGroups] = useState<Map<string, PermissionCategory[]>>(new Map());
 
@@ -133,15 +99,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
   // Which template the current policyGroups were built from; session-only UI
   // state (expansion, global permissions) must not survive a template switch.
   const groupsSourceIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (configuration) {
-      if (!isEditMode) {
-        setSelectedProvider(configuration.provider);
-        setSelectedModel(configuration.modelName);
-      }
-    }
-  }, [configuration, isEditMode]);
 
   useEffect(() => {
     const templateToDisplay =
@@ -225,26 +182,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     const savePromises: Promise<unknown>[] = [];
 
     const snapshot = editSnapshotRef.current;
-    const aiConfigChanged = !!snapshot && (selectedProvider !== snapshot.provider || selectedModel !== snapshot.model);
-
-    if (aiConfigChanged && (!selectedProvider || !selectedModel)) {
-      toast({
-        title: 'Model Required',
-        description: 'Select a provider model before saving.',
-        variant: 'destructive',
-        duration: 5000,
-      });
-      return;
-    }
-
-    if (aiConfigChanged) {
-      savePromises.push(
-        updateConfiguration({
-          provider: selectedProvider,
-          modelName: selectedModel,
-        }),
-      );
-    }
 
     const hasCustomChanges = customPolicy.changes.size > 0;
     const isEditingCustomTemplate = selectedTemplate?.type === CUSTOM_TEMPLATE_TYPE;
@@ -318,7 +255,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     }
   }, [
     isEditMode,
-    toast,
     onSaved,
     activateTemplate,
     activeTemplateId,
@@ -327,26 +263,17 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     hasCustomTemplate,
     refetchSelectedTemplate,
     resetCustomPolicyState,
-    selectedModel,
-    selectedProvider,
     selectedTemplate,
     selectedTemplateId,
     templateOptions,
-    updateConfiguration,
   ]);
 
   const revertEdits = () => {
     const snapshot = editSnapshotRef.current;
     if (snapshot) {
-      setSelectedProvider(snapshot.provider);
-      setSelectedModel(snapshot.model);
       setSelectedTemplateId(snapshot.templateId || activeTemplateId || null);
       setPolicyGroups(clonePolicyGroups(snapshot.policyGroups));
     } else {
-      if (configuration) {
-        setSelectedProvider(configuration.provider);
-        setSelectedModel(configuration.modelName);
-      }
       setSelectedTemplateId(activeTemplateId || null);
     }
 
@@ -361,8 +288,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
         : customPolicy.baseTemplateId || null;
 
     editSnapshotRef.current = {
-      provider: selectedProvider,
-      model: selectedModel,
       templateId: selectedTemplateId || activeTemplateId || null,
       policyGroups: clonePolicyGroups(policyGroups),
       customBaseTemplateId,
@@ -371,8 +296,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     activeTemplateId,
     customPolicy.baseTemplateId,
     policyGroups,
-    selectedModel,
-    selectedProvider,
     selectedTemplate,
     selectedTemplateId,
     templateOptions,
@@ -397,11 +320,6 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
       else revertEditsRef.current();
     }
   }, [isEditMode]);
-
-  const handleProviderChange = useCallback((provider: string) => {
-    setSelectedProvider(provider);
-    setSelectedModel('');
-  }, []);
 
   const setupCustomPolicy = useCallback(
     (baseTemplate: PolicyTemplateDetail) => {
@@ -554,33 +472,8 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
     }
   };
 
-  const getAvailableModels = () => {
-    if (!selectedProvider) return [];
-    const config = PROVIDER_CONFIG[selectedProvider as ProviderKey];
-    if (!config) return [];
-    return supportedModels[config.apiKey as keyof typeof supportedModels] || [];
-  };
-
-  if (isLoading) {
-    return (
-      <div className="p-[var(--spacing-system-l)] space-y-6">
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
-    );
-  }
-
-  const ProviderIcon =
-    configuration && PROVIDER_CONFIG[configuration.provider as ProviderKey]
-      ? PROVIDER_CONFIG[configuration.provider as ProviderKey].icon
-      : AiRobotIcon;
-
   return (
-    // Edit mode + Save/Cancel are owned by the shared AiSettingsLayout actions;
+    // Edit mode + Save are owned by the shared AiSettingsLayout actions;
     // the shared Save submits this form via GUARDRAILS_FORM_ID.
     <form
       id={GUARDRAILS_FORM_ID}
@@ -588,276 +481,134 @@ export function GuardrailsTab({ isEditMode, onSaved }: GuardrailsTabProps) {
         event.preventDefault();
         void handleSave();
       }}
-      className="space-y-8"
+      className="space-y-6"
     >
-      {/* AI Settings Section */}
-      <div className="space-y-6">
-        {!configuration && !isEditMode ? (
+      {/* Selected guardrails preset (read-only summary) */}
+      {!isEditMode &&
+        (isPoliciesLoading ? (
+          <Skeleton className="h-20 w-full rounded-md" />
+        ) : (
+          <div className="bg-ods-card border border-ods-border rounded-md flex items-center px-4 min-h-20">
+            <InfoCell value={selectedPresetLabel} label="Guardrails Preset" />
+          </div>
+        ))}
+
+      {/* Guardrails policies */}
+      <div className="space-y-4">
+        {isPoliciesLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : templateOptions.length === 0 ? (
           <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
             <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-            <AlertDescription className="text-ods-text-secondary">
-              No AI configuration found. Click "Edit Settings" to set up your AI provider.
-            </AlertDescription>
+            <AlertDescription className="text-ods-text-secondary">No policy templates available.</AlertDescription>
           </Alert>
         ) : (
-          <div className="bg-ods-card border border-ods-border rounded-lg p-4">
-            <div className="grid grid-cols-4 gap-6">
-              {/* Provider Selection - Column 1 */}
-              <div className="space-y-2">
-                {isEditMode ? (
-                  <>
-                    <Label htmlFor="provider" className="text-ods-text-primary">
-                      LLM Provider
-                    </Label>
-                    <Select value={selectedProvider} onValueChange={handleProviderChange} disabled={isSaving}>
-                      <SelectTrigger
-                        id="provider"
-                        className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
-                      >
-                        <SelectValue placeholder="Select a provider" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-ods-card border-ods-border">
-                        {Object.keys(supportedModels)
-                          .map(apiKey => {
-                            const providerKey = API_KEY_TO_PROVIDER[apiKey];
-                            if (!providerKey) return null;
+          <>
+            {/* Template chooser (shown only in edit mode) */}
+            {isEditMode && (
+              <RadioGroupBlock
+                name="policy-template"
+                variant="grouped"
+                value={
+                  customPolicy.enabled && !hasCustomTemplate ? CUSTOM_CREATION_TEMPLATE_ID : selectedTemplateId || ''
+                }
+                onValueChange={v => {
+                  if (v === CUSTOM_CREATION_TEMPLATE_ID) return;
 
-                            const config = PROVIDER_CONFIG[providerKey];
-                            const Icon = config.icon;
+                  const selectedOpt = templateOptions.find(t => t.id === v);
+                  const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
 
-                            return (
-                              <SelectItem
-                                key={apiKey}
-                                value={providerKey}
-                                className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Icon className="w-4 h-4" />
-                                  <span>{config.label}</span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })
-                          .filter(Boolean)}
-                      </SelectContent>
-                    </Select>
-                  </>
-                ) : (
-                  <div>
-                    <div className="flex items-center gap-2 bg-ods-system-greys-soft-grey rounded-md">
-                      <span className="text-ods-text-primary font-medium">
-                        {configuration && PROVIDER_CONFIG[configuration.provider as ProviderKey]?.label}
-                      </span>
-                      <ProviderIcon className="w-5 h-5 text-ods-accent" />
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">LLM Provider</Label>
-                  </div>
-                )}
-              </div>
+                  setSelectedTemplateId(v);
+                  if (!isSelectingCustomType) resetCustomPolicyState();
+                }}
+                disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                options={[
+                  ...templateOptions.map(opt => {
+                    const isCustomType = opt.type === CUSTOM_TEMPLATE_TYPE;
 
-              {/* Model Selection - Column 2 */}
-              <div className="space-y-2">
-                {isEditMode ? (
-                  <>
-                    <Label htmlFor="model" className="text-ods-text-primary">
-                      Provider Model
-                    </Label>
-                    <Select
-                      value={selectedModel}
-                      onValueChange={setSelectedModel}
-                      disabled={!selectedProvider || isSaving}
-                    >
-                      <SelectTrigger
-                        id="model"
-                        className="w-full bg-ods-system-greys-soft-grey border-ods-border text-ods-text-primary"
-                      >
-                        <SelectValue placeholder="Select a model" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-ods-card border-ods-border">
-                        {getAvailableModels().map(model => (
-                          <SelectItem
-                            key={model.modelName}
-                            value={model.modelName}
-                            className="text-ods-text-primary hover:bg-ods-system-greys-soft-grey-action"
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span>{model.displayName}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </>
-                ) : (
-                  <div>
-                    <div className="bg-ods-system-greys-soft-grey rounded-md">
-                      {(() => {
-                        if (!configuration) return null;
-                        const config = PROVIDER_CONFIG[configuration.provider as ProviderKey];
-                        if (!config)
-                          return <span className="text-ods-text-primary font-medium">{configuration.modelName}</span>;
-
-                        const models = supportedModels[config.apiKey as keyof typeof supportedModels] || [];
-                        const currentModel = models.find(m => m.modelName === configuration.modelName);
-
-                        return (
-                          <div className="flex items-center justify-between">
-                            <span className="text-ods-text-primary font-medium">
-                              {currentModel?.displayName || configuration.modelName}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">Provider Model</Label>
-                  </div>
-                )}
-              </div>
-
-              {/* Current Policy Template - Column 3 */}
-              <div className="space-y-2">
-                {!isEditMode && (
-                  <div>
-                    <div className="bg-ods-system-greys-soft-grey rounded-md">
-                      <span className="text-ods-text-primary font-medium">
-                        {(() => {
-                          const currentTemplateId = selectedTemplateId || activeTemplateId;
-                          const currentTemplate = templateOptions.find(t => t.id === currentTemplateId);
-                          return currentTemplate?.label || 'None';
-                        })()}
-                      </span>
-                    </div>
-                    <Label className="text-ods-text-secondary text-sm block">Guardrails</Label>
-                  </div>
-                )}
-              </div>
-
-              {/* Empty Column 4 */}
-              <div></div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* AI Guardrails Section */}
-      <div className="space-y-6 pt-4">
-        <h3 className="text-ods-text-primary font-semibold text-2xl">AI Guardrails</h3>
-        <div className="space-y-4">
-          {isPoliciesLoading ? (
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-64 w-full" />
-            </div>
-          ) : templateOptions.length === 0 ? (
-            <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
-              <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-              <AlertDescription className="text-ods-text-secondary">No policy templates available.</AlertDescription>
-            </Alert>
-          ) : (
-            <>
-              {/* Template chooser (shown only in edit mode) */}
-              {isEditMode && (
-                <RadioGroupBlock
-                  name="policy-template"
-                  variant="grouped"
-                  value={
-                    customPolicy.enabled && !hasCustomTemplate ? CUSTOM_CREATION_TEMPLATE_ID : selectedTemplateId || ''
-                  }
-                  onValueChange={v => {
-                    if (v === CUSTOM_CREATION_TEMPLATE_ID) return;
-
-                    const selectedOpt = templateOptions.find(t => t.id === v);
-                    const isSelectingCustomType = selectedOpt?.type === CUSTOM_TEMPLATE_TYPE;
-
-                    setSelectedTemplateId(v);
-                    if (!isSelectingCustomType) resetCustomPolicyState();
-                  }}
-                  disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                  options={[
-                    ...templateOptions.map(opt => {
-                      const isCustomType = opt.type === CUSTOM_TEMPLATE_TYPE;
-
-                      let labelSuffix = '';
-                      if (isCustomType) {
-                        if (customPolicy.enabled && customPolicy.baseTemplateId) {
-                          const baseTemplate = templateOptions.find(t => t.id === customPolicy.baseTemplateId);
-                          if (baseTemplate) labelSuffix = ` (based on ${baseTemplate.label})`;
-                        } else if (selectedTemplate?.sourceTemplate) {
-                          const sourceTemplate = templateOptions.find(t => t.id === selectedTemplate.sourceTemplate);
-                          if (sourceTemplate) labelSuffix = ` (based on ${sourceTemplate.label})`;
-                        }
+                    let labelSuffix = '';
+                    if (isCustomType) {
+                      if (customPolicy.enabled && customPolicy.baseTemplateId) {
+                        const baseTemplate = templateOptions.find(t => t.id === customPolicy.baseTemplateId);
+                        if (baseTemplate) labelSuffix = ` (based on ${baseTemplate.label})`;
+                      } else if (selectedTemplate?.sourceTemplate) {
+                        const sourceTemplate = templateOptions.find(t => t.id === selectedTemplate.sourceTemplate);
+                        if (sourceTemplate) labelSuffix = ` (based on ${sourceTemplate.label})`;
                       }
+                    }
 
-                      return {
-                        value: opt.id,
-                        label: `${opt.label}${labelSuffix}`,
-                        description: opt.description,
-                        trailing: !isCustomType ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={e => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleUseForCustomPolicy(opt.id);
-                            }}
-                            className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
-                            leftIcon={<SlidersIcon className="w-4 h-4" />}
-                            disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
-                          >
-                            Use for Custom Policy
-                          </Button>
-                        ) : undefined,
-                      };
-                    }),
-                    ...(customPolicy.enabled && !hasCustomTemplate
-                      ? [
-                          {
-                            value: CUSTOM_CREATION_TEMPLATE_ID,
-                            label: `Custom Policy${
-                              customPolicy.baseTemplateId
-                                ? ` (based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`
-                                : ''
-                            }`,
-                          },
-                        ]
-                      : []),
-                  ]}
-                />
-              )}
+                    return {
+                      value: opt.id,
+                      label: `${opt.label}${labelSuffix}`,
+                      description: opt.description,
+                      trailing: !isCustomType ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleUseForCustomPolicy(opt.id);
+                          }}
+                          className="md:!text-sm text-ods-text-primary bg-ods-card border-ods-border hover:bg-ods-bg-hover font-bold !px-4 py-3 h-auto"
+                          leftIcon={<SlidersIcon className="w-4 h-4" />}
+                          disabled={isPolicyTemplateLoading || isFetchingBaseTemplate}
+                        >
+                          Use for Custom Policy
+                        </Button>
+                      ) : undefined,
+                    };
+                  }),
+                  ...(customPolicy.enabled && !hasCustomTemplate
+                    ? [
+                        {
+                          value: CUSTOM_CREATION_TEMPLATE_ID,
+                          label: `Custom Policy${
+                            customPolicy.baseTemplateId
+                              ? ` (based on ${templateOptions.find(t => t.id === customPolicy.baseTemplateId)?.label})`
+                              : ''
+                          }`,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            )}
 
-              {isPolicyTemplateLoading ? (
-                <Skeleton className="h-64 w-full" />
-              ) : policyGroups.size === 0 ? (
-                <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
-                  <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
-                  <AlertDescription className="text-ods-text-secondary">
-                    This policy template has no rules.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-6">
-                  {Array.from(policyGroups.entries()).map(([policyGroupName, categories]) => (
-                    <div key={policyGroupName} className="space-y-2">
-                      <Label className="text-sm font-medium text-ods-text-secondary">{policyGroupName}</Label>
-                      <PolicyConfigurationPanel
-                        categories={categories}
-                        editMode={canEditPolicyRules}
-                        onCategoryToggle={categoryId => handlePolicyCategoryToggle(policyGroupName, categoryId)}
-                        onGlobalPermissionChange={(categoryId, level) =>
-                          handlePolicyGlobalPermissionChange(policyGroupName, categoryId, level)
-                        }
-                        onPolicyPermissionChange={(categoryId, policyId, level) =>
-                          handlePolicyPermissionChange(policyGroupName, categoryId, policyId, level)
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+            {isPolicyTemplateLoading ? (
+              <Skeleton className="h-64 w-full" />
+            ) : policyGroups.size === 0 ? (
+              <Alert className="bg-ods-system-greys-soft-grey border-ods-border">
+                <AlertCircle className="h-4 w-4 text-ods-text-secondary" />
+                <AlertDescription className="text-ods-text-secondary">
+                  This policy template has no rules.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(policyGroups.entries()).map(([policyGroupName, categories]) => (
+                  <div key={policyGroupName} className="space-y-2">
+                    <Label className="text-sm font-medium text-ods-text-secondary">{policyGroupName}</Label>
+                    <PolicyConfigurationPanel
+                      categories={categories}
+                      editMode={canEditPolicyRules}
+                      onCategoryToggle={categoryId => handlePolicyCategoryToggle(policyGroupName, categoryId)}
+                      onGlobalPermissionChange={(categoryId, level) =>
+                        handlePolicyGlobalPermissionChange(policyGroupName, categoryId, level)
+                      }
+                      onPolicyPermissionChange={(categoryId, policyId, level) =>
+                        handlePolicyPermissionChange(policyGroupName, categoryId, policyId, level)
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </form>
   );

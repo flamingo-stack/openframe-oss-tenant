@@ -56,6 +56,17 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const setChatOpen = useMingoLauncherStore(state => state.setOpen);
   const toggleChat = useMingoLauncherStore(state => state.toggle);
 
+  // Defer chat-identity resolution until the drawer is FIRST opened — the
+  // `ChatIdentityProvider` lives in the app shell (so it survives the drawer
+  // remounting), which meant it hit `/content/api/auth/identity` on every page
+  // even while the chat was closed. Latch on first open so identity still
+  // resolves ONCE and survives close/reopen, but never fetches before the user
+  // opens the chat at all.
+  const [chatIdentityEnabled, setChatIdentityEnabled] = useState(false);
+  useEffect(() => {
+    if (chatOpen) setChatIdentityEnabled(true);
+  }, [chatOpen]);
+
   const handleNavigate = useCallback(
     (path: string) => {
       router.push(path);
@@ -178,7 +189,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     // closing/reopening. Without it, EmbeddableChat self-fetches identity on
     // every open (the panel unmounts on close). Must sit inside the chat
     // runtime context (provided higher up by OpenframeChatRuntimeProvider).
-    <ChatIdentityProvider>
+    <ChatIdentityProvider enabled={chatIdentityEnabled}>
       <AppLayoutDrawer open={chatOpen} onOpenChange={setChatOpen}>
         <AppLayoutDrawerContent
           side="right"

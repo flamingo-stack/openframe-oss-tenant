@@ -59,7 +59,17 @@ export function MeetFaePreview({
       {/* 1:1 content in a 945px slot, zoom-scaled to the per-breakpoint card height. */}
       <div className="flex h-[945px] w-[600px] max-w-none flex-col p-[var(--spacing-system-l)] [zoom:0.264] md:[zoom:0.313] lg:[zoom:0.402]">
         <div className="flex flex-1 flex-col items-center justify-center gap-[var(--spacing-system-l)]">
-          <SquareAvatar src={avatarUrl} alt={assistantName} fallback={shortName.charAt(0)} size="xl" variant="round" />
+          {/* Match the ChatHeader avatar, which fills its background with the
+              accent (lib uses `bg-ods-flamingo-pink` = the re-pointed accent),
+              so transparent areas of the avatar show the accent, not bg-ods-bg. */}
+          <SquareAvatar
+            src={avatarUrl}
+            alt={assistantName}
+            fallback={shortName.charAt(0)}
+            size="xl"
+            variant="round"
+            style={{ backgroundColor: accentColor }}
+          />
 
           <p className="max-w-[504px] text-center text-h3 text-ods-text-primary">
             Meet {shortName}, your AI IT assistant. She fixes what she can right away — and hands off the rest to your

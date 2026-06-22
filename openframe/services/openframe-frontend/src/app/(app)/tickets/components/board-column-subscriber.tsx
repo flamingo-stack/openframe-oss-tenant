@@ -23,8 +23,8 @@ interface BoardColumnSubscriberProps {
 /**
  * Owns one column's infinite query so the board can host a dynamic number of
  * columns (rules of hooks forbid a variable hook count in a single component).
- * Pages accumulate in the react-query cache under boardColumnLifecycle(statusId),
- * which is exactly what applyOptimisticMoveLifecycle mutates. Renders nothing.
+ * Pages accumulate in the react-query cache under boardColumn(statusId),
+ * which is exactly what applyOptimisticMove mutates. Renders nothing.
  */
 export function BoardColumnSubscriber({ statusId, params, onUpdate, registerLoadMore }: BoardColumnSubscriberProps) {
   const { search, organizationIds, assigneeIds, labelIds } = params;
@@ -33,10 +33,10 @@ export function BoardColumnSubscriber({ statusId, params, onUpdate, registerLoad
     TicketsPage,
     Error,
     InfiniteData<TicketsPage, string | undefined>,
-    ReturnType<typeof dialogsQueryKeys.boardColumnLifecycle>,
+    ReturnType<typeof dialogsQueryKeys.boardColumn>,
     string | undefined
   >({
-    queryKey: dialogsQueryKeys.boardColumnLifecycle(statusId, { search, organizationIds, assigneeIds, labelIds }),
+    queryKey: dialogsQueryKeys.boardColumn(statusId, { search, organizationIds, assigneeIds, labelIds }),
     queryFn: ({ pageParam }) =>
       ticketService.fetchBoardColumnByStatusId({
         statusId,

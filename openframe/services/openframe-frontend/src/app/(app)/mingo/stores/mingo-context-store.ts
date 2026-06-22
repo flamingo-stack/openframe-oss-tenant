@@ -93,3 +93,19 @@ export const useMingoContextStore = create<MingoContextState>()(
     { name: 'mingo-context-store' },
   ),
 );
+
+/**
+ * Wipe the user's Mingo working context — the currently-open view AND the
+ * persisted `recentViews`. Call on logout: this context (entity refs with
+ * human labels — device names, ticket titles, customer names) rides out on
+ * every Mingo message, so leaving it in localStorage would leak one user's
+ * working context into the NEXT session on a shared browser.
+ *
+ * Resets in-memory state too (not just `persist.clearStorage()`) because not
+ * every logout path triggers a full reload — e.g. `forceLogout` in SaaS-tenant
+ * mode returns without redirecting, so the live store must be cleared directly.
+ */
+export function clearMingoContext(): void {
+  useMingoContextStore.setState({ openView: null, recentViews: [] });
+  useMingoContextStore.persist.clearStorage();
+}

@@ -21,6 +21,7 @@ import { BillingRow, SectionBlock } from './billing-section';
 import { BillingUsageSkeleton } from './billing-usage-skeleton';
 import { CancelOfferModal } from './cancel-offer-modal';
 import { type CancelReason, CancelSubscriptionModal } from './cancel-subscription-modal';
+import { InvoicesHistory } from './invoices-history';
 import { SubscriptionCancelledModal } from './subscription-cancelled-modal';
 
 export function BillingUsageView() {
@@ -44,11 +45,14 @@ function BillingUsageContent() {
   const [cancelReason, setCancelReason] = useState<CancelReason | null>(null);
   const [cancelComment, setCancelComment] = useState<string>('');
 
-  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(
-    data.subscription,
-    data.billingPlan,
-  );
+  const { status, flags, device, ai, ui, billing, updatedPlan } = useBillingSummary(data.subscription);
   const { impact, isLoading: isImpactLoading } = useCancellationImpact({ enabled: cancelStep === 'reason' });
+
+  // `Next Payment` comes straight from the backend's server-computed
+  // `subscription.nextPayment` (projected next-invoice total). The row is
+  // omitted when there's nothing to bill (null / 0) — e.g. a trial with no
+  // upcoming charge — instead of rendering a "Free" placeholder.
+  const nextPaymentAmount = billing.nextPayment ?? 0;
 
   const menuActions: ActionsMenuGroup[] =
     status === SubscriptionStatus.ACTIVE
@@ -109,13 +113,21 @@ function BillingUsageContent() {
       actions={[primaryAction]}
       menuActions={menuActions}
     >
+      <div className="flex items-start gap-[var(--spacing-system-s)] rounded-md bg-[var(--ods-open-yellow-base)] p-[var(--spacing-system-s)] text-ods-text-on-accent">
+        <AlertTriangleIcon className="size-6 shrink-0" />
+        <p className="flex-1 text-h3 font-bold">
+          Test mode — invoices and usage shown here are samples. No real charges are being made.
+        </p>
+      </div>
+
       <div
         className={cn('grid gap-[var(--spacing-system-m)]', flags.hasAi ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}
       >
         <DashboardInfoCard
           title="Device Usage"
           value={device.used}
-          percentage={device.pct}
+          // PAYG has no package limit, so no percentage — just the usage count.
+          percentage={device.isPayg ? undefined : device.pct}
           progressVariant={device.progressVariant}
           showProgress={device.showProgress}
           progressOverflow="wrap"
@@ -124,7 +136,7 @@ function BillingUsageContent() {
           <DashboardInfoCard
             title="AI Usage"
             value={ai.used}
-            percentage={ai.pct}
+            percentage={ai.isPayg ? undefined : ai.pct}
             progressVariant={ai.progressVariant}
             showProgress={ai.showProgress}
             progressOverflow="wrap"
@@ -158,9 +170,6 @@ function BillingUsageContent() {
             >
               {device.state === 'over' && <BillingRow label="Device Overage" value={formatCount(device.overage)} />}
               {flags.hasAi && ai.state === 'over' && <BillingRow label="AI Overage" value={formatCount(ai.overage)} />}
-              {billing.estimatedOverageCost > 0 && (
-                <BillingRow label="Estimated Overage" value={formatCurrency(billing.estimatedOverageCost)} />
-              )}
               <BillingRow label="Next Billing" value={formatDateOrDash(billing.nextBilling)} />
             </div>
           )}
@@ -178,10 +187,7 @@ function BillingUsageContent() {
             value={ai.isPayg ? 'Pay as you go' : flags.hasAi ? formatCount(ai.allocation) : 'None'}
             muted={!flags.hasAi && !ai.isPayg}
           />
-          <BillingRow
-            label="Monthly Cost"
-            value={flags.isTrial ? 'Free' : formatCurrency(billing.monthlyCost || billing.estimatedOverageCost)}
-          />
+          {nextPaymentAmount > 0 && <BillingRow label="Next Payment" value={formatCurrency(nextPaymentAmount)} />}
           {flags.isPendingCancellation ? (
             <BillingRow
               label="Plan ends on"
@@ -211,7 +217,6 @@ function BillingUsageContent() {
         <SectionBlock title="Usage Overview">
           <BillingRow label="Active devices" value={formatCount(device.active)} />
           <BillingRow label="Inactive devices" value={formatCount(device.inactive)} />
-          {flags.hasAi && <BillingRow label="AI conversations" value={formatCount(0)} />}
         </SectionBlock>
       </div>
 
@@ -235,6 +240,8 @@ function BillingUsageContent() {
           </SectionBlock>
         </div>
       )}
+
+      <InvoicesHistory invoices={data.subscription?.pendingInvoices ?? []} />
 
       <CancelSubscriptionModal
         isOpen={cancelStep === 'reason'}
@@ -284,12 +291,6 @@ function BillingUsageContent() {
 
 const billingUsageViewQuery = graphql`
   query billingUsageViewQuery {
-    billingPlan {
-      products {
-        name
-        unitSize
-      }
-    }
     subscription {
       id
       status
@@ -318,6 +319,7 @@ const billingUsageViewQuery = graphql`
         amountDue
         currency
         createdAt
+        dueDate
       }
       usage {
         devicesUsed
@@ -325,10 +327,10 @@ const billingUsageViewQuery = graphql`
         inactiveDevices
         aiTokensUsed
       }
-      currentInvoice {
-        estimatedOverage
-        currency
-      }
+      # Projected next-invoice total, computed server-side (PAYG overage accrued
+      # so far + package charges due next cycle). This is the SSOT for the
+      # "Next Payment" row — the UI no longer re-derives it from product prices.
+      nextPayment
     }
   }
 `;

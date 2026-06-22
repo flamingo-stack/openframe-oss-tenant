@@ -24,6 +24,12 @@ const CONTENT = `${CONTENT_BASE}/api`;
 /** The route prefix this whole section is mounted under. */
 export const HELP_CENTER_BASE = '/help-center';
 
+/** Route the knowledge-base docs hub (`<DocsHubPage>`) is mounted under — base
+ *  page + its `[...path]` deep-link route. Lives here (a dep-light module) so
+ *  both the page and the chat's doc-chip `baseRoute` share one SSOT without
+ *  pulling the client `DocsHubPage` module into the chat bundle. */
+export const KNOWLEDGE_BASE_ROUTE = `${HELP_CENTER_BASE}/knowledge-base`;
+
 /** Base the `<FaqSection>` appends `/api/faqs?…` to. */
 export const CONTENT_API_BASE = CONTENT_BASE;
 
@@ -48,6 +54,16 @@ export const EP = {
   // legal (privacy / terms)
   legal: (docType: string) => `${CONTENT}/legal/${docType}`,
   // FAQs — `<FaqSection apiBaseUrl=CONTENT_API_BASE>` self-builds `/api/faqs`.
+  // knowledge base (docs hub) — the lib `<DocsHubPage>` fetches the tree +
+  // content from `…/docs/sources/<sourceId>/{structure,content}`, resolves
+  // relative in-doc links via `…/docs/resolve-link`, and backs the in-source
+  // RAG search bar with `…/docs/search`. All four proxy through `/content` to
+  // the hub's `/api/docs/*` routes (the same path every other Help Center
+  // surface uses). `openframe-docs` is the public knowledge-hub source.
+  docsStructure: (sourceId: string) => `${CONTENT}/docs/sources/${sourceId}/structure`,
+  docsContent: (sourceId: string) => `${CONTENT}/docs/sources/${sourceId}/content`,
+  docsResolveLink: `${CONTENT}/docs/resolve-link`,
+  docsSearch: `${CONTENT}/docs/search`,
 } as const;
 
 /**

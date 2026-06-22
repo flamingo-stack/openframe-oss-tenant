@@ -468,7 +468,8 @@ impl ToolRunManager {
         let shutting_down = self.shutting_down.clone();
         let params_processor = self.params_processor.clone();
         let running_tools = self.running_tools.clone();
-        let installation = tool.installation.clone();
+        let installed_tools_service = self.installed_tools_service.clone();
+        let mut installation = tool.installation.clone();
         #[cfg(target_os = "windows")]
         let session_manager = self.session_manager.clone();
 
@@ -480,9 +481,17 @@ impl ToolRunManager {
                     break;
                 }
 
+                let mut was_updating = false;
                 while updating_tools.read().await.contains(&tool.tool_agent_id) {
+                    was_updating = true;
                     info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
                     sleep(Duration::from_secs(1)).await;
+                }
+
+                if was_updating {
+                    if let Ok(Some(fresh)) = installed_tools_service.get_by_tool_agent_id(&tool.tool_agent_id).await {
+                        installation = fresh.installation;
+                    }
                 }
 
                 let processed_args = match params_processor.process(&tool.tool_agent_id, tool.run_command_args.clone()) {
