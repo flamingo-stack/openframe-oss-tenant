@@ -27,10 +27,18 @@
  * Coexists with the old `/mingo` page route during migration.
  */
 
+import type { ChatContextPickerConfig } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { EmbeddableChat } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useEffect, useMemo } from 'react';
+import { featureFlags } from '@/lib/feature-flags';
+import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
+import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
+import { renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
+import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
+import { useMingoLauncherStore } from '../(app)/mingo/stores/mingo-launcher-store';
 
 /** The two transports the in-panel toggle switches between. Mirrors the lib's
  *  `ChatMode` (not re-exported from the chat barrel) — structurally identical,
@@ -52,13 +60,47 @@ interface OpenframeEmbeddableChatEntryProps {
 }
 
 export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEmbeddableChatEntryProps) {
-  const { state, subscription } = useMingoUnifiedChatState();
+  const { state, subscription, sendInNewDialog } = useMingoUnifiedChatState();
+
+  // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
+  // "Ask Mingo about X" button). The drawer unmounts this entry on close and
+  // remounts on open, so this effect runs on every open; it also re-fires if a
+  // new prompt is queued while the drawer is already open. `consumePendingPrompt`
+  // nulls the prompt as it reads it, so a manual header open (no prompt) and
+  // React StrictMode's double-invoke are both no-ops.
+  const pendingPrompt = useMingoLauncherStore(s => s.pendingPrompt);
+  const consumePendingPrompt = useMingoLauncherStore(s => s.consumePendingPrompt);
+  useEffect(() => {
+    if (!pendingPrompt) return;
+    const text = consumePendingPrompt();
+    if (!text) return;
+    void sendInNewDialog(text);
+  }, [pendingPrompt, consumePendingPrompt, sendInNewDialog]);
 
   // Controlled active mode persisted across drawer open/close (and reloads):
   // the drawer unmounts its content on close, so an uncontrolled mode would
   // reset to `defaultActiveMode` every reopen. `useLocalStorage` reads the
   // stored value synchronously on remount, so we reopen on the same transport.
   const [activeMode, setActiveMode] = useLocalStorage<ChatMode>(ACTIVE_MODE_KEY, 'mingo');
+
+  // Entity-context picker config (the `+` "Assign Item" menu + `@` trigger).
+  // Stable so the lib's composer doesn't re-derive its icon map each render.
+  // `renderMingoContextItems` maps each entity type to its data component
+  // (Relay / TanStack hooks); the store-backed openView/recentViews are folded
+  // in at send time by the unified hook.
+  const contextPicker = useMemo<ChatContextPickerConfig>(
+    () => ({
+      entityTypes: MINGO_CONTEXT_ENTITY_TYPES,
+      renderItems: renderMingoContextItems,
+      maxItems: CONTEXT_ITEMS_MAX,
+    }),
+    [],
+  );
+
+  // Entity-context picker (the `+` / `@`-mention flow + selected chips) is
+  // gated behind the `mingo-sidebar-context` flag. Passing `contextPicker`
+  // undefined makes the lib's composer inert (no `+`, no `@`, no chips).
+  const contextEnabled = featureFlags.mingoSidebarContext.enabled();
 
   return (
     <>
@@ -98,7 +140,16 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // the user left on instead of always snapping back to Mingo.
         activeMode={activeMode}
         onActiveModeChange={setActiveMode}
-        emptyStateGreeting="Ask Mingo anything about your fleet."
+        // Greeting + try-asking quick-action chips are now per-platform,
+        // admin-driven: the lib fetches them from `endpoints.emptyStateUrl`
+        // (`/content/api/docs/empty-state`) configured in the runtime provider.
+        // No hardcoded greeting here — a blank admin value falls back to the
+        // lib's own default copy.
+        contextPicker={contextEnabled ? contextPicker : undefined}
+        // Renders inline AI mentions (`@device:<machineId>` in Mingo's replies)
+        // as self-fetching chips — the `@marker:id` analogue of `renderEntityCard`
+        // for `[card://]`. Stable module-level fn so the message memo holds.
+        renderMention={contextEnabled ? renderMingoMention : undefined}
       />
     </>
   );

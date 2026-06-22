@@ -1,3 +1,5 @@
+import type { BoardTicketPendingApproval } from '@flamingo-stack/openframe-frontend-core/components/features';
+
 export type DialogStatus = 'ACTIVE' | 'TECH_REQUIRED' | 'ON_HOLD' | 'RESOLVED' | 'ARCHIVED';
 
 export type DialogOwnerEnum = 'CLIENT' | 'ADMIN';
@@ -62,6 +64,8 @@ export interface Dialog {
   assigneeImageUrl?: string;
   assigneeImageHash?: string;
   labels?: Array<{ id: string; key: string; color?: string }>;
+  // Latest pending tool-approval request for this ticket's dialog (from Ticket.pendingApproval).
+  pendingApproval?: BoardTicketPendingApproval;
   attachments?: Array<{
     id: string;
     ticketId: string;

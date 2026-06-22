@@ -1,13 +1,10 @@
-import { featureFlags } from '@/lib/feature-flags';
-import { TICKET_STATUS } from '../constants';
-
 export interface TicketStatusCount {
   status: string;
   count: number;
 }
 
 export interface TicketStatusDefinitionCount {
-  status: { kind: string };
+  status: { kind: string; color?: string };
   count: number;
 }
 
@@ -31,12 +28,13 @@ function sumKindCount(stats: TicketStatisticsCounts | undefined, kind: string): 
     .reduce((total, c) => total + c.count, 0);
 }
 
+export function kindColorFromStatistics(stats: TicketStatisticsCounts | undefined, kind: string): string | undefined {
+  return (stats?.statusDefinitionCounts ?? []).find(c => c.status.kind === kind)?.status.color ?? undefined;
+}
+
 export function resolvedCountFromStatistics(stats: TicketStatisticsCounts | undefined): number {
   if (!stats) return 0;
-  if (featureFlags.ticketStatuses.enabled()) {
-    return sumKindCount(stats, TICKET_STATUS_KIND.RESOLVED);
-  }
-  return (stats.statusCounts ?? []).find(c => c.status === TICKET_STATUS.RESOLVED)?.count ?? 0;
+  return sumKindCount(stats, TICKET_STATUS_KIND.RESOLVED);
 }
 
 export interface TicketKindCounts {

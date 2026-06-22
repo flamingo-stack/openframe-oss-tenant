@@ -1,17 +1,26 @@
 'use client';
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core';
+import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  ClipboardListIcon,
+  EyeAltIcon,
   EyeIcon,
+  Filter01ListIcon,
+  Filter02Icon,
   Refresh02HrIcon,
+  ScanIcon,
+  SearchIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageLayout,
+  FilterModal,
+  Input,
   multiSelectFilterFn,
+  PageLayout,
   type Row,
   Tag,
   TruncateText,
@@ -23,6 +32,7 @@ import {
   forwardRef,
   Suspense,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -33,7 +43,8 @@ import { graphql, useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { logsTableRelay_query$key as LogsFragmentKey } from '@/__generated__/logsTableRelay_query.graphql';
 import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@/__generated__/logsTableRelayPaginationQuery.graphql';
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
-import { LogDrawer } from '@/app/components/shared';
+import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
+import { EmptyState, LogDrawer } from '@/app/components/shared';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -147,6 +158,13 @@ interface LogsTableContentProps {
   tableFilters: Record<string, string[]>;
   onFilterChange: (filters: Record<string, any[]>) => void;
   onRefreshRef: React.RefObject<(() => void) | null>;
+  /** Reports the genuinely-empty (onboarding) state up so the outer layout can
+   *  hide the search field while the empty state is shown. */
+  onEmptyChange: (isEmpty: boolean) => void;
+  /** Mobile filter modal open state (the trigger lives in the outer toolbar, but
+   *  the filter options come from this component's logFilters query). */
+  mobileFilterOpen: boolean;
+  onMobileFilterClose: () => void;
 }
 
 // ----------------------------------------------------------------
@@ -161,8 +179,12 @@ function LogsTableContent({
   tableFilters,
   onFilterChange,
   onRefreshRef,
+  onEmptyChange,
+  mobileFilterOpen,
+  onMobileFilterClose,
 }: LogsTableContentProps) {
   const { toast } = useToast();
+  const askMingo = useAskMingo();
   const [isPending, startTransition] = useTransition();
   const [selectedLog, setSelectedLog] = useState<UiLogEntry | null>(null);
 
@@ -434,6 +456,20 @@ function LogsTableContent({
     [logFilters, getLogDetailsUrl, organizationLocked],
   );
 
+  // Mobile filter groups reuse the same column filter options (built from
+  // logFilters) as the desktop column headers, so the modal isn't empty.
+  const filterGroups = useMemo(
+    () =>
+      columns
+        .filter(column => column.meta?.filter?.options)
+        .map(column => ({
+          id: String(column.id ?? (column as { accessorKey?: string }).accessorKey ?? ''),
+          title: typeof column.header === 'string' ? column.header : '',
+          options: column.meta?.filter?.options || [],
+        })),
+    [columns],
+  );
+
   const columnFilters = useMemo(
     () =>
       Object.entries(tableFilters)
@@ -467,6 +503,47 @@ function LogsTableContent({
     setSelectedLog(null);
   }, []);
 
+  const hasActiveFilters = Object.values(tableFilters).some(values => values.length > 0);
+  // Show the empty state only on the standalone Logs page when there is genuinely
+  // no data: no device/org scope, no search, no filters, and not pending.
+  const showEmptyState =
+    !deviceId &&
+    !organizationLocked &&
+    !debouncedSearch &&
+    !hasActiveFilters &&
+    !isPending &&
+    transformedLogs.length === 0;
+
+  // Search lives in the outer layout (outside this Suspense boundary, to keep
+  // focus across re-queries), so push the empty flag up to gate its visibility.
+  useEffect(() => {
+    onEmptyChange(showEmptyState);
+  }, [showEmptyState, onEmptyChange]);
+
+  if (showEmptyState) {
+    return (
+      <EmptyState
+        icon={<ClipboardListIcon />}
+        title="No logs yet"
+        description="A timeline of every action taken across the platform (scripts run, policies applied, devices connected, tickets updated) will be displayed here."
+        actions={[
+          { icon: <EyeAltIcon />, label: 'Track who did what, when, and on which device' },
+          { icon: <Filter01ListIcon />, label: 'Filter by user, action type, Customer, or date range' },
+          { icon: <SearchIcon />, label: 'Investigate incidents and audit security events' },
+        ]}
+        buttonLabel="Ask Mingo about Logs"
+        buttonIcon={
+          <MingoIcon
+            className="size-5"
+            eyesColor="var(--ods-flamingo-cyan-base)"
+            cornerColor="var(--ods-flamingo-cyan-base)"
+          />
+        }
+        onButtonClick={() => askMingo('logs')}
+      />
+    );
+  }
+
   return (
     <>
       <DataTable table={table}>
@@ -489,6 +566,14 @@ function LogsTableContent({
           skeletonRows={2}
         />
       </DataTable>
+
+      <FilterModal
+        isOpen={mobileFilterOpen}
+        onClose={onMobileFilterClose}
+        filterGroups={filterGroups}
+        onFilterChange={onFilterChange}
+        currentFilters={tableFilters}
+      />
 
       <LogDrawer
         isOpen={Boolean(selectedLog)}
@@ -600,7 +685,30 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     organizationIds: { type: 'array', default: [] },
   });
 
-  const debouncedSearch = useDebounce(params.search, 300);
+  // Local search input keeps typing responsive; the debounced value drives both
+  // the query and the URL param (so history isn't spammed on every keystroke).
+  const [searchInput, setSearchInput] = useState(params.search);
+  const debouncedSearch = useDebounce(searchInput, 300);
+
+  // Write the debounced value back to the URL. Keyed on the debounced value only
+  // (the setter is read from a ref) so an external `params.search` change does
+  // NOT trigger a write-back that would fight the sync-down effect below.
+  const setParamRef = useRef(setParam);
+  setParamRef.current = setParam;
+  useEffect(() => {
+    setParamRef.current('search', debouncedSearch);
+  }, [debouncedSearch]);
+
+  // Sync the input down when `params.search` changes externally (e.g. browser
+  // back/forward), so the field doesn't go stale against the active query param.
+  useEffect(() => {
+    setSearchInput(params.search);
+  }, [params.search]);
+
+  // Whether the inner content is in the genuinely-empty onboarding state; when
+  // true the search toolbar is hidden (the header + actions stay).
+  const [isEmpty, setIsEmpty] = useState(false);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   const lockedOrgIds = useMemo(() => (organizationId ? [organizationId] : undefined), [organizationId]);
 
@@ -662,45 +770,44 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
     [handleRefresh],
   );
 
-  const filterGroups = useMemo(
-    () => [
-      { id: 'status', title: 'Status', options: [] },
-      { id: 'tool', title: 'Tool', options: [] },
-      { id: 'source', title: 'SOURCE', options: [] },
-    ],
-    [],
-  );
-
-  const content = (
-    <Suspense fallback={<LogsTableSkeleton />}>
-      <LogsTableContent
-        deviceId={deviceId}
-        organizationLocked={Boolean(organizationId)}
-        backendFilters={backendFilters}
-        debouncedSearch={debouncedSearch}
-        tableFilters={tableFilters}
-        onFilterChange={handleFilterChange}
-        onRefreshRef={refreshRef}
-      />
-    </Suspense>
-  );
-
   return (
-    <ListPageLayout
-      title="Logs"
-      actions={actions}
-      searchPlaceholder="Search for Logs"
-      searchValue={params.search}
-      onSearch={value => setParam('search', value)}
-      error={null}
-      background="default"
-      padding="none"
-      onMobileFilterChange={handleFilterChange}
-      mobileFilterGroups={filterGroups}
-      currentMobileFilters={tableFilters}
-      stickyHeader
-    >
-      {content}
-    </ListPageLayout>
+    <PageLayout title="Logs" actions={actions}>
+      {/* Search toolbar - outside the Suspense boundary so it keeps focus across
+          re-queries, and hidden while the empty state is shown. */}
+      {!isEmpty && (
+        <div className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
+          <Input
+            placeholder="Search for Logs"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            className="flex-1"
+            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileFilterOpen(true)}
+            aria-label="Open filters"
+            leftIcon={<Filter02Icon />}
+          />
+        </div>
+      )}
+
+      <Suspense fallback={<LogsTableSkeleton />}>
+        <LogsTableContent
+          deviceId={deviceId}
+          organizationLocked={Boolean(organizationId)}
+          backendFilters={backendFilters}
+          debouncedSearch={debouncedSearch}
+          tableFilters={tableFilters}
+          onFilterChange={handleFilterChange}
+          onRefreshRef={refreshRef}
+          onEmptyChange={setIsEmpty}
+          mobileFilterOpen={mobileFilterOpen}
+          onMobileFilterClose={() => setMobileFilterOpen(false)}
+        />
+      </Suspense>
+    </PageLayout>
   );
 });

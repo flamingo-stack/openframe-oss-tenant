@@ -17,14 +17,27 @@ interface ArchiveResolvedPayload {
   };
 }
 
+export interface ArchiveResolvedFilter {
+  organizationIds?: string[];
+  assigneeIds?: string[];
+  labelIds?: string[];
+}
+
 export function useArchiveResolvedMutation() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (): Promise<{ count: number }> => {
+    mutationFn: async (filter: ArchiveResolvedFilter): Promise<{ count: number }> => {
       const response = await apiClient.post<GraphQlResponse<ArchiveResolvedPayload>>(API_ENDPOINTS.GRAPHQL, {
         query: ARCHIVE_RESOLVED_TICKETS_MUTATION,
+        variables: {
+          filter: {
+            organizationIds: filter.organizationIds?.length ? filter.organizationIds : undefined,
+            assigneeIds: filter.assigneeIds?.length ? filter.assigneeIds : undefined,
+            labelIds: filter.labelIds?.length ? filter.labelIds : undefined,
+          },
+        },
       });
 
       const data = extractGraphQlData(response);

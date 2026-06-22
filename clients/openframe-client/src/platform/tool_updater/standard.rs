@@ -6,7 +6,7 @@ use super::{
     ToolUpdater, ToolUpdaterDeps, UpdateContext,
     backup_binary, download_and_write_binary, cleanup_backup, restore_from_backup,
 };
-use crate::models::{InstalledTool, DownloadConfiguration};
+use crate::models::{InstalledTool, Installation, DownloadConfiguration};
 
 pub struct StandardToolUpdater {
     deps: ToolUpdaterDeps,
@@ -42,12 +42,13 @@ impl ToolUpdater for StandardToolUpdater {
         tool: &InstalledTool,
         config: &DownloadConfiguration,
         _ctx: &UpdateContext,
-    ) -> Result<()> {
+    ) -> Result<Option<Installation>> {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Applying Standard tool update");
 
         let agent_path = self.deps.directory_manager.get_agent_path(tool_agent_id);
-        download_and_write_binary(&self.deps, config, &agent_path, tool_agent_id).await
+        download_and_write_binary(&self.deps, config, &agent_path, tool_agent_id).await?;
+        Ok(None)
     }
 
     async fn finalize(

@@ -31,11 +31,15 @@ import type {
   StreamingPhase,
   UnifiedChatMessage,
   UnifiedChatState,
+  UnifiedSendMessageOptions,
 } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAiModelStatus } from '@/app/hooks/use-ai-model';
+import { featureFlags } from '@/lib/feature-flags';
+import { CONTEXT_ITEMS_MAX, RECENT_VIEWS_MAX } from '../context/context-types';
+import { useMingoContextStore } from '../stores/mingo-context-store';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
-import { useMingoChat } from './use-mingo-chat';
+import { type MingoSendContext, useMingoChat } from './use-mingo-chat';
 import { useMingoDialogSelection } from './use-mingo-dialog-selection';
 import { useMingoDialogs } from './use-mingo-dialogs';
 import { useMingoRealtimeSubscription } from './use-mingo-realtime-subscription';
@@ -68,6 +72,12 @@ export interface MingoSubscriptionBindings {
 export interface MingoUnifiedChat {
   state: UnifiedChatState;
   subscription: MingoSubscriptionBindings;
+  /**
+   * Create a brand-new dialog and send `text` into it, regardless of any
+   * currently-active dialog. Used by external launchers (e.g. the "Ask Mingo
+   * about X" EmptyState buttons) that always want a fresh conversation.
+   */
+  sendInNewDialog: (text: string) => Promise<void>;
 }
 
 export function useMingoUnifiedChatState(): MingoUnifiedChat {
@@ -174,9 +184,15 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       // send time AND its memoized message keeps a stable `getTime()` across
       // realtime chunks (a missing/`new Date()` timestamp would re-render the
       // whole list and collapse open menus on every chunk).
+      // Forward attached entity-context items on user messages so the lib
+      // renders the read-only chip strip under the bubble (Figma 1:6437). They
+      // ride the optimistic message (full `ChatContextItem` with labels) and the
+      // realtime `MESSAGE_REQUEST` echo; the lib resolves each chip's icon from
+      // `contextPicker.entityTypes` by `type`.
+      const context = role === 'user' && m.contextItems?.length ? { contextItems: m.contextItems } : {};
       const unified: UnifiedChatMessage = Array.isArray(m.content)
-        ? { id: m.id, role, content: '', segments: m.content, timestamp: m.timestamp, ...identity }
-        : { id: m.id, role, content: m.content, timestamp: m.timestamp, ...identity };
+        ? { id: m.id, role, content: '', segments: m.content, timestamp: m.timestamp, ...identity, ...context }
+        : { id: m.id, role, content: m.content, timestamp: m.timestamp, ...identity, ...context };
       cache.set(m, unified);
       return unified;
     });
@@ -207,43 +223,77 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     [activeDialogId, setActiveDialogId, resetUnread, subscribeToDialog, selectDialogMut],
   );
 
-  // ─── Send: create-on-first-send when no dialog is active (draft) ──────────
-  const sendMessage = useCallback(
-    async (text: string) => {
+  // ─── Create a fresh dialog and send into it (always-new) ──────────────────
+  // Shared by the draft branch of `sendMessage` and external launchers that
+  // want a brand-new conversation regardless of what's currently active.
+  const sendInNewDialog = useCallback(
+    async (text: string, context?: MingoSendContext) => {
       const trimmed = text.trim();
       if (!trimmed) return;
 
+      const newId = await createDialog();
+      if (!newId) return;
+      addMessage(newId, {
+        id: `welcome-${newId}`,
+        role: 'assistant',
+        name: 'Mingo',
+        timestamp: new Date(),
+        content: WELCOME_TEXT,
+        assistantType: 'mingo',
+      });
+      setActiveDialogId(newId);
+      resetUnread(newId);
+      subscribeToDialog(newId);
+      selectDialogMut(newId);
+      await sendMingoMessage(trimmed, newId, context);
+    },
+    [createDialog, addMessage, setActiveDialogId, resetUnread, subscribeToDialog, selectDialogMut, sendMingoMessage],
+  );
+
+  // Snapshot the live navigation context (open view + recent views) from the
+  // store and fold in the picker selection from the lib's send options. Read
+  // imperatively (`getState`) so `sendMessage` doesn't re-create on every
+  // navigation — it only needs the value at send time.
+  const buildSendContext = useCallback((options?: UnifiedSendMessageOptions): MingoSendContext => {
+    // The entire entity-context feature is gated behind `mingo-sidebar-context`.
+    // When off, send NO context at all — not the picker selection, and not the
+    // background navigation context (`openView` / `recentViews`). The store keeps
+    // tracking views (harmless); it just never rides out on the message.
+    if (!featureFlags.mingoSidebarContext.enabled()) {
+      return { contextItems: undefined, openView: undefined, recentViews: [] };
+    }
+    const { openView, recentViews } = useMingoContextStore.getState();
+    return {
+      // Defense-in-depth: hard-cap at the backend's contextItems limit (10) so a
+      // selection that slipped past the picker's `atLimit` (e.g. the @-mention
+      // path) can't 400 the whole message.
+      contextItems: options?.contextItems?.slice(0, CONTEXT_ITEMS_MAX),
+      openView: openView ? { type: openView.type, id: openView.id } : undefined,
+      // Defense-in-depth: hard-cap at the backend's recentViews limit (5),
+      // mirroring the contextItems cap above — a corrupted persisted store blob
+      // with >5 entries must not 400 the whole message.
+      recentViews: recentViews.slice(0, RECENT_VIEWS_MAX).map(r => ({ type: r.type, id: r.id })),
+    };
+  }, []);
+
+  // ─── Send: create-on-first-send when no dialog is active (draft) ──────────
+  // `options.contextItems` carries the composer's picker selection; the open
+  // view + recent views come from the navigation store via `buildSendContext`.
+  const sendMessage = useCallback(
+    async (text: string, options?: UnifiedSendMessageOptions) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      const context = buildSendContext(options);
+
       if (!activeDialogId) {
-        const newId = await createDialog();
-        if (!newId) return;
-        addMessage(newId, {
-          id: `welcome-${newId}`,
-          role: 'assistant',
-          name: 'Mingo',
-          timestamp: new Date(),
-          content: WELCOME_TEXT,
-          assistantType: 'mingo',
-        });
-        setActiveDialogId(newId);
-        resetUnread(newId);
-        subscribeToDialog(newId);
-        selectDialogMut(newId);
-        await sendMingoMessage(trimmed, newId);
+        await sendInNewDialog(trimmed, context);
         return;
       }
 
-      await sendMingoMessage(trimmed);
+      await sendMingoMessage(trimmed, undefined, context);
     },
-    [
-      activeDialogId,
-      createDialog,
-      addMessage,
-      setActiveDialogId,
-      resetUnread,
-      subscribeToDialog,
-      selectDialogMut,
-      sendMingoMessage,
-    ],
+    [activeDialogId, sendInNewDialog, sendMingoMessage, buildSendContext],
   );
 
   const stopMessage = useCallback(() => {
@@ -387,5 +437,5 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     ],
   );
 
-  return { state, subscription };
+  return { state, subscription, sendInNewDialog };
 }

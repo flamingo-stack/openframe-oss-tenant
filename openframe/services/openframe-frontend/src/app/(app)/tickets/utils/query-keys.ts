@@ -9,6 +9,7 @@ export interface DialogsQueryParams {
   statusIds?: string[];
   organizationIds?: string[];
   assigneeIds?: string[];
+  labelIds?: string[];
 }
 
 export const dialogsQueryKeys = {
@@ -29,39 +30,26 @@ export const dialogsQueryKeys = {
         statusIds: params.statusIds || [],
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
+        labelIds: params.labelIds || [],
       },
     ] as const,
 
-  // All board column queries (one infinite query per status)
+  // All board column queries (one infinite query per status), keyed by statusId.
   boardColumns: () => [...dialogsQueryKeys.all, 'boardColumn'] as const,
 
-  // Specific board column keyed by status + search + filters
-  boardColumn: (status: string, params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] }) =>
-    [
-      ...dialogsQueryKeys.boardColumns(),
-      status,
-      {
-        search: params.search || '',
-        organizationIds: params.organizationIds || [],
-        assigneeIds: params.assigneeIds || [],
-      },
-    ] as const,
-
-  // Lifecycle (custom-status) board columns — parallel namespace, keyed by statusId.
-  // Kept separate from `boardColumn` so the two card shapes never share a cache entry.
-  boardColumnsLifecycle: () => [...dialogsQueryKeys.all, 'boardColumnLifecycle'] as const,
-
-  boardColumnLifecycle: (
+  // Specific board column keyed by statusId + search + filters
+  boardColumn: (
     statusId: string,
-    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[] },
+    params: { search?: string; organizationIds?: string[]; assigneeIds?: string[]; labelIds?: string[] },
   ) =>
     [
-      ...dialogsQueryKeys.boardColumnsLifecycle(),
+      ...dialogsQueryKeys.boardColumns(),
       statusId,
       {
         search: params.search || '',
         organizationIds: params.organizationIds || [],
         assigneeIds: params.assigneeIds || [],
+        labelIds: params.labelIds || [],
       },
     ] as const,
 } as const;

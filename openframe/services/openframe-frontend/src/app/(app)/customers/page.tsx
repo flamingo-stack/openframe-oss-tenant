@@ -14,9 +14,11 @@ export default function Organizations() {
   const TabComponent = getTabComponent(CUSTOMERS_TABS, params.tab);
 
   return (
-    <div className="flex flex-col w-full">
-      <CustomersTabNavigation activeTab={params.tab} onTabChange={tab => setParam('tab', tab)} />
-      {TabComponent ? <TabComponent /> : null}
+    <div className="flex flex-col w-full pt-[var(--spacing-system-l)]">
+      <div className="flex flex-col w-full -mt-4">
+        <CustomersTabNavigation activeTab={params.tab} onTabChange={tab => setParam('tab', tab)} />
+        {TabComponent ? <TabComponent /> : null}
+      </div>
     </div>
   );
 }

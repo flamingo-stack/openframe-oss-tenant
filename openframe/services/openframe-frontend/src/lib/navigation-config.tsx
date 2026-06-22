@@ -6,6 +6,7 @@ import {
   ClipboardListIcon,
   IdCardIcon,
   MonitorIcon,
+  QuestionCircleIcon,
   RadarIcon,
   Settings02Icon,
   TagIcon,
@@ -81,32 +82,44 @@ export const getNavigationItems = (
   ];
 
   if (isSaasTenantMode()) {
-    baseItems.push(
-      {
-        id: 'tickets',
-        label: 'Tickets',
-        icon: <TagIcon size={24} />,
-        path: '/tickets',
-        isActive: pathname.startsWith('/tickets'),
-      },
-      {
+    baseItems.push({
+      id: 'tickets',
+      label: 'Tickets',
+      icon: <TagIcon size={24} />,
+      path: '/tickets',
+      isActive: pathname.startsWith('/tickets'),
+    });
+    // The legacy standalone `/mingo` page is fully superseded by the in-layout
+    // Mingo sidebar when `mingo-sidebar` is on — hide its nav entry so the old
+    // route is unreachable (the page itself also redirects, see mingo/page.tsx).
+    if (!featureFlags.mingoSidebar.enabled()) {
+      baseItems.push({
         id: 'mingo',
         label: 'Mingo',
         icon: <MingoIcon className="w-6 h-6" />,
         path: '/mingo',
         isActive: pathname.startsWith('/mingo'),
-      },
-    );
+      });
+    }
   }
 
-  if (featureFlags.knowledgeBase.enabled()) {
+  baseItems.push({
+    id: 'knowledge-base',
+    label: 'Knowledge Base',
+    icon: <BookBookmarkIcon size={24} />,
+    path: '/knowledge-base',
+    section: 'secondary',
+    isActive: pathname.startsWith('/knowledge-base'),
+  });
+
+  if (featureFlags.helpCenter.enabled()) {
     baseItems.push({
-      id: 'knowledge-base',
-      label: 'Knowledge Base',
-      icon: <BookBookmarkIcon size={24} />,
-      path: '/knowledge-base',
+      id: 'help-center',
+      label: 'Help Center',
+      icon: <QuestionCircleIcon size={24} />,
+      path: '/help-center',
       section: 'secondary',
-      isActive: pathname.startsWith('/knowledge-base'),
+      isActive: pathname.startsWith('/help-center'),
     });
   }
 
@@ -119,7 +132,11 @@ export const getNavigationItems = (
     isActive: pathname.startsWith('/settings'),
   });
 
+  // TODO: re-enable sidebar unread count badges — flip this flag back to true.
+  const showUnreadBadges: boolean = false;
+
   return baseItems.map(item => {
+    if (!showUnreadBadges) return item;
     const category = CATEGORY_BY_NAV_ID[item.id];
     const unreadCount = category ? unreadCounts?.[category] : undefined;
     return unreadCount ? { ...item, unreadCount } : item;

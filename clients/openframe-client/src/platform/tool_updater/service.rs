@@ -48,8 +48,9 @@ impl ToolUpdater for ServiceToolUpdater {
         info!(tool_id = %tool_agent_id, "Preparing Service tool for update");
 
         info!(tool_id = %tool_agent_id, "Stopping service");
-        self.deps.tool_kill_service.stop_installed_tool(tool).await
-            .with_context(|| format!("Failed to stop service: {}", tool_agent_id))?;
+        if let Err(e) = self.deps.tool_kill_service.stop_installed_tool(tool).await {
+            warn!(tool_id = %tool_agent_id, "Failed to stop service (non-fatal): {:#}", e);
+        }
 
         // Also kill any managed processes (ToolRunManager may have spawned agent.exe
         // if the tool was previously installed as Standard)
@@ -81,7 +82,7 @@ impl ToolUpdater for ServiceToolUpdater {
         tool: &InstalledTool,
         config: &DownloadConfiguration,
         _ctx: &UpdateContext,
-    ) -> Result<()> {
+    ) -> Result<Option<Installation>> {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Applying Service tool update");
 
@@ -110,11 +111,12 @@ impl ToolUpdater for ServiceToolUpdater {
             }
 
             info!(tool_id = %tool_agent_id, "App bundle extracted successfully");
-            return Ok(());
+            return Ok(None);
         }
 
         // Standard single binary update
-        download_and_write_binary(&self.deps, config, &exec_path, tool_agent_id).await
+        download_and_write_binary(&self.deps, config, &exec_path, tool_agent_id).await?;
+        Ok(None)
     }
 
     async fn finalize(
@@ -125,14 +127,13 @@ impl ToolUpdater for ServiceToolUpdater {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Finalizing Service tool update");
 
-        cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
-
-        // Restart service via system service manager
         if let Installation::Service { service_name, .. } = &tool.installation {
             info!(tool_id = %tool_agent_id, "Starting service: {}", service_name);
             system_service::start_service(service_name).await
                 .with_context(|| format!("Failed to start service: {}", service_name))?;
         }
+
+        cleanup_backup(ctx.backup_path.as_ref(), tool_agent_id).await;
 
         Ok(())
     }
@@ -147,6 +148,15 @@ impl ToolUpdater for ServiceToolUpdater {
         }
 
         let exec_path = self.resolve_executable_path(tool);
-        restore_from_backup(ctx.backup_path.as_ref(), &exec_path, tool_agent_id).await
+        restore_from_backup(ctx.backup_path.as_ref(), &exec_path, tool_agent_id).await?;
+
+        if let Installation::Service { service_name, .. } = &tool.installation {
+            info!(tool_id = %tool_agent_id, "Restarting service after rollback: {}", service_name);
+            if let Err(e) = system_service::start_service(service_name).await {
+                warn!(tool_id = %tool_agent_id, "Failed to restart service after rollback (non-fatal): {:#}", e);
+            }
+        }
+
+        Ok(())
     }
 }

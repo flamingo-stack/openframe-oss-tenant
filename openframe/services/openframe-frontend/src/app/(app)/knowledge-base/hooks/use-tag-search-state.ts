@@ -14,6 +14,8 @@ export interface TagSearchState {
   tagSearchOptions: TagSearchOption<string>[];
   addTag: (tag: SelectedKnowledgeBaseTag) => void;
   removeTag: (id: string) => void;
+  /** Replace the whole selected-tag set (search text is preserved). */
+  setTags: (tags: SelectedKnowledgeBaseTag[]) => void;
   clearAll: () => void;
 }
 
@@ -37,6 +39,10 @@ export function useTagSearchState(): TagSearchState {
     setSelectedTags(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  const setTags = useCallback((tags: SelectedKnowledgeBaseTag[]) => {
+    setSelectedTags(tags);
+  }, []);
+
   const clearAll = useCallback(() => {
     setSearch('');
     setSelectedTags([]);
@@ -51,6 +57,7 @@ export function useTagSearchState(): TagSearchState {
     tagSearchOptions,
     addTag,
     removeTag,
+    setTags,
     clearAll,
   };
 }

@@ -93,7 +93,7 @@ impl UpdateHandlerService {
     }
 
     async fn send_nats_notification(&self, version: &str) {
-        match self.config_service.get_machine_id().await {
+        match self.config_service.get_machine_id() {
             Ok(machine_id) => {
                 for attempt in 1..=5 {
                     match self.installed_agent_publisher

@@ -1,7 +1,7 @@
 import { buildNatsWsUrl } from '@flamingo-stack/openframe-frontend-core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { tokenService } from '../services/tokenService';
-import { log, maskToken } from '../utils/log';
+import { log } from '../utils/log';
 
 export const CHAT_NATS_CLIENT_CONFIG = {
   name: 'openframe-chat',
@@ -39,7 +39,6 @@ export function useChatNatsConfig(): ChatNatsConfig {
 
   const getWsUrl = useCallback((): string | null => {
     if (!apiBaseUrl || !token) return null;
-    log.info('nats', `building WS URL (token: ${maskToken(token)})`);
     return buildNatsWsUrl(apiBaseUrl, {
       token,
       includeAuthParam: true,

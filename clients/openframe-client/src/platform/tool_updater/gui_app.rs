@@ -42,11 +42,11 @@ impl ToolUpdater for GuiAppToolUpdater {
         tool: &InstalledTool,
         config: &DownloadConfiguration,
         _ctx: &UpdateContext,
-    ) -> Result<()> {
+    ) -> Result<Option<Installation>> {
         let tool_agent_id = &tool.tool_agent_id;
         info!(tool_id = %tool_agent_id, "Applying GuiApp update");
 
-        let Installation::GuiApp { executable_path, .. } = &tool.installation else {
+        let Installation::GuiApp { executable_path, bundle_id } = &tool.installation else {
             anyhow::bail!("Expected GuiApp installation type for tool: {}", tool_agent_id);
         };
 
@@ -70,7 +70,10 @@ impl ToolUpdater for GuiAppToolUpdater {
         }
 
         info!(tool_id = %tool_agent_id, "GuiApp updated successfully: {}", new_app_path.display());
-        Ok(())
+        Ok(Some(Installation::GuiApp {
+            executable_path: new_app_path.to_string_lossy().to_string(),
+            bundle_id: bundle_id.clone(),
+        }))
     }
 
     async fn finalize(

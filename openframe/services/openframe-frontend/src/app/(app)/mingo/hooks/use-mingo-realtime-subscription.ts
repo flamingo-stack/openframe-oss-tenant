@@ -10,7 +10,6 @@ import {
   type TokenUsageData,
   type ToolExecutionSegment,
   useJetStreamDialogSubscription,
-  useNatsDialogSubscription,
   useRealtimeChunkProcessor,
 } from '@flamingo-stack/openframe-frontend-core';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,10 +21,8 @@ import { useAuthStore } from '@/stores';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import type { DialogNode } from '../types/dialog.types';
 import type { CoreMessage } from '../types/message.types';
-import { useMingoChunkCatchup } from './use-mingo-chunk-catchup';
 
 const MINGO_JETSTREAM_TOPIC: NatsMessageType = 'admin-message';
-const MINGO_TOPICS: NatsMessageType[] = [MINGO_JETSTREAM_TOPIC];
 const CHAT_CHUNKS_STREAM = 'CHAT_CHUNKS';
 
 function isInProgress(segments: MessageSegment[]): boolean {
@@ -312,10 +309,10 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
       onSegmentsUpdate: (segments: MessageSegment[], metadata?: SegmentsUpdateMetadata) => {
         setTyping(dialogId, !metadata?.isCompacting);
         if (metadata?.append) {
-          appendSegmentsToLastAssistant(dialogId, segments);
+          appendSegmentsToLastAssistant(dialogId, segments, metadata?.streamSeq);
         } else {
           ensureAssistantMessage();
-          updateStreamingMessageSegments(dialogId, segments);
+          updateStreamingMessageSegments(dialogId, segments, metadata?.streamSeq);
         }
       },
 
@@ -330,9 +327,14 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         setTokenUsage(dialogId, data);
       },
 
-      onApprovalResolved: (requestId: string, status: ChatApprovalStatus) => {
+      onApprovalResolved: (
+        requestId: string,
+        status: ChatApprovalStatus,
+        _approvalType: string,
+        resolvedByName?: string | null,
+      ) => {
         if (status === 'approved' || status === 'rejected') {
-          updateApprovalStatusInMessages(dialogId, requestId, status);
+          updateApprovalStatusInMessages(dialogId, requestId, status, resolvedByName);
         }
       },
 
@@ -341,8 +343,23 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
         if (execId) updateToolExecutionInMessages(dialogId, execId, segment.data);
       },
 
-      onUserMessage: (text: string, meta?: { ownerType?: string; displayName?: string; userId?: string }) => {
+      onUserMessage: (
+        text: string,
+        meta?: {
+          ownerType?: string;
+          displayName?: string;
+          userId?: string;
+          streamSeq?: number;
+          contextItems?: Array<{ type: string; id: string }>;
+        },
+      ) => {
         if (meta?.userId && meta.userId === currentUserId) return;
+        // The `MESSAGE_REQUEST` chunk carries only `{ type, id }` — no label.
+        // Fall back to the id as the chip text; the lib resolves the icon by
+        // `type` from `contextPicker.entityTypes`.
+        const contextItems = meta?.contextItems?.length
+          ? meta.contextItems.map(i => ({ type: i.type, id: i.id, label: i.id }))
+          : undefined;
         addMessage(dialogId, {
           id: `user-${Date.now()}-${Math.random().toString(16).slice(2)}`,
           role: 'user',
@@ -351,6 +368,8 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
           name: meta?.displayName || (meta?.ownerType === 'ADMIN' ? 'Admin' : 'You'),
           avatar: null,
           timestamp: new Date(),
+          streamSeq: meta?.streamSeq,
+          contextItems,
         });
       },
 
@@ -382,7 +401,6 @@ function useDialogChunkProcessor(dialogId: string, options: UseDialogChunkProces
     displayApprovalTypes: ['CLIENT', 'ADMIN'],
     approvalStatuses: approvalStatuses || {},
     initialState: incompleteState,
-    enableThinking: featureFlags.thinking.enabled(),
     batchApprovalsEnabled: featureFlags.batchApproval.enabled(),
   });
 
@@ -417,7 +435,6 @@ export function DialogSubscription({
   isInitialOptStartSeqReady,
 }: DialogSubscriptionProps) {
   const { getWsUrl, onBeforeReconnect } = useNatsAppConfig();
-  const [hasCaughtUp, setHasCaughtUp] = useState(false);
 
   // While this live tail is mounted the user is watching the dialog, so the
   // notifications pipeline suppresses popups / auto-reads for it.
@@ -426,12 +443,6 @@ export function DialogSubscription({
   const recordHighestStreamSeq = useMingoMessagesStore(s => s.recordHighestStreamSeq);
   const storedHighestSeq = useMingoMessagesStore(s => s.highestStreamSeqByDialog.get(dialogId) ?? 0);
   const effectiveOptStartSeq = Math.max(initialOptStartSeq ?? 0, storedHighestSeq);
-
-  // Resolved once per mount: switching transports mid-stream would require
-  // tearing down one subscription and recreating the other with the right
-  // offset, which complicates state ownership. Picking up a flag change on
-  // the next page load is acceptable for a runtime rollout.
-  const [useJetstream] = useState(() => featureFlags.aiStreamingJetstream.enabled());
 
   const { processChunk: processorProcessChunk } = useDialogChunkProcessor(dialogId, {
     onApprove,
@@ -445,33 +456,9 @@ export function DialogSubscription({
     processorRef.current = processorProcessChunk;
   }, [processorProcessChunk]);
 
-  const {
-    catchUpChunks,
-    resetChunkTracking,
-    startInitialBuffering,
-    processChunk: coreProcessChunk,
-    resetAndCatchUp,
-  } = useMingoChunkCatchup({
-    dialogId,
-    onChunkReceived: useCallback((chunk: ChunkData, _messageType: NatsMessageType) => {
-      processorRef.current(chunk);
-    }, []),
-  });
-
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (useJetstream) return;
-    resetChunkTracking();
-    startInitialBuffering();
-    setHasCaughtUp(false);
-
-    return () => {
-      resetChunkTracking();
-    };
-  }, [useJetstream, resetChunkTracking, startInitialBuffering]);
-
-  // Rejects out-of-order JetStream redeliveries; legacy NATS chunks lack streamSeq and bypass it.
+  // Rejects out-of-order JetStream redeliveries.
   const lastAppliedStreamSeqRef = useRef<number>(-1);
 
   const syncStreamStateFromChunk = useCallback(
@@ -492,18 +479,6 @@ export function DialogSubscription({
     [queryClient, dialogId, recordHighestStreamSeq],
   );
 
-  const handleNatsEvent = useCallback(
-    (payload: unknown, messageType: NatsMessageType) => {
-      const chunk = payload as ChunkData;
-      if (featureFlags.debugNatsChunks.enabled()) {
-        console.log('[mingo-nats] chunk received', { dialogId, messageType, chunk });
-      }
-      syncStreamStateFromChunk(chunk);
-      coreProcessChunk(chunk, messageType);
-    },
-    [coreProcessChunk, syncStreamStateFromChunk, dialogId],
-  );
-
   const handleJetStreamEvent = useCallback(
     (payload: unknown, _messageType: NatsMessageType) => {
       const chunk = payload as ChunkData;
@@ -516,12 +491,6 @@ export function DialogSubscription({
     [syncStreamStateFromChunk, dialogId],
   );
 
-  const handleLegacySubscribed = useCallback(async () => {
-    if (hasCaughtUp) return;
-    setHasCaughtUp(true);
-    await catchUpChunks();
-  }, [hasCaughtUp, catchUpChunks]);
-
   const handleConnect = useCallback(() => {
     onConnectionChange?.(dialogId, true);
   }, [dialogId, onConnectionChange]);
@@ -530,20 +499,8 @@ export function DialogSubscription({
     onConnectionChange?.(dialogId, false);
   }, [dialogId, onConnectionChange]);
 
-  const { reconnectionCount: legacyReconnectionCount } = useNatsDialogSubscription({
-    enabled: !useJetstream,
-    dialogId,
-    topics: MINGO_TOPICS,
-    onEvent: handleNatsEvent,
-    onConnect: handleConnect,
-    onDisconnect: handleDisconnect,
-    onBeforeReconnect,
-    onSubscribed: handleLegacySubscribed,
-    getNatsWsUrl: getWsUrl,
-  });
-
   useJetStreamDialogSubscription({
-    enabled: useJetstream && isInitialOptStartSeqReady,
+    enabled: isInitialOptStartSeqReady,
     dialogId,
     streamName: CHAT_CHUNKS_STREAM,
     topic: MINGO_JETSTREAM_TOPIC,
@@ -554,13 +511,6 @@ export function DialogSubscription({
     onBeforeReconnect,
     getNatsWsUrl: getWsUrl,
   });
-
-  useEffect(() => {
-    if (useJetstream) return;
-    if (legacyReconnectionCount > 0 && dialogId) {
-      resetAndCatchUp();
-    }
-  }, [useJetstream, legacyReconnectionCount, dialogId, resetAndCatchUp]);
 
   return null;
 }

@@ -21,10 +21,6 @@ interface BuildPackageRadioOptionsArgs {
   customLabel: string;
   customSubtitle: string;
   payAsYouGoOption: PayAsYouGoOption | null;
-  /** Products per billable unit (devices: 1, AI tokens: 100_000) — display only. */
-  unitSize: number;
-  /** PAYG is monthly-only; hidden on the yearly tab. */
-  showPayg: boolean;
 }
 
 export function buildPackageRadioOptions({
@@ -36,20 +32,17 @@ export function buildPackageRadioOptions({
   customLabel,
   customSubtitle,
   payAsYouGoOption,
-  unitSize,
-  showPayg,
 }: BuildPackageRadioOptionsArgs) {
-  const paygOption =
-    showPayg && payAsYouGoOption
-      ? [{ value: PAYG_OPTION_ID, label: 'Pay as you go', description: formatPaygSubtitle(payAsYouGoOption) }]
-      : [];
+  const paygOption = payAsYouGoOption
+    ? [{ value: PAYG_OPTION_ID, label: 'Pay as you go', description: formatPaygSubtitle(payAsYouGoOption) }]
+    : [];
 
   const tierOptions = tiers.map(tier => {
     const total = tier.from * tier.unitPrice * months;
     const discountPercent = baselineUnitPrice ? Math.round((1 - tier.unitPrice / baselineUnitPrice) * 100) : 0;
     return {
       value: String(tier.from),
-      label: `${formatCompact(tier.from * unitSize)} ${packageUnitLabel}`,
+      label: `${formatCompact(tier.from)} ${packageUnitLabel}`,
       description: `$${formatMoney(total)}${periodSuffix}`,
       trailing:
         discountPercent > 0 ? (

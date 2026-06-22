@@ -1,23 +1,31 @@
 'use client';
 
-import { Filter02Icon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
+import { Filter02Icon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   Button,
   type ColumnFiltersState,
   DataTable,
   FilterModal,
-  Input,
   type OnChangeFn,
   PageError,
   PageLayout,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
-import { featureFlags } from '@/lib/feature-flags';
-import { useTicketsActions } from '../hooks/use-tickets-actions';
+import { EmptyState } from '@/app/components/shared';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
+import type { Dialog } from '../types/dialog.types';
+import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
 import { getTicketTableColumns, type StatusFilterOption, TicketTableBody } from './ticket-table-columns';
+
+// TODO(unread-from-entity): re-enable per-ticket unread highlighting once the backend exposes
+// unread counts on the ticket entity itself. Matching unread notifications to tickets by id is a
+// temporary workaround — disabled for now; flip this flag to restore it.
+const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
 
 interface TicketsTableProps {
   isArchived: boolean;
@@ -27,6 +35,8 @@ interface TicketsTableProps {
   selector?: ReactNode;
   search: string;
   onSearchChange: (value: string) => void;
+  labelIds: string[];
+  onLabelIdsChange: (ids: string[]) => void;
 }
 
 export function TicketsTable({
@@ -37,9 +47,12 @@ export function TicketsTable({
   selector,
   search,
   onSearchChange,
+  labelIds,
+  onLabelIdsChange,
 }: TicketsTableProps) {
   const debouncedSearch = useDebounce(search, 300);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const {
     dialogs: tickets,
@@ -52,19 +65,40 @@ export function TicketsTable({
     archived: isArchived,
     search: debouncedSearch,
     statusFilters,
+    labelIds,
   });
 
-  const { actions, menuActions, dialog: ticketsActionsDialog } = useTicketsActions({ isLoading, enabled: !isArchived });
+  const archiveFilter = useMemo(() => ({ labelIds }), [labelIds]);
+  const {
+    actions: baseActions,
+    menuActions,
+    dialog: ticketsActionsDialog,
+  } = useTicketsActions({ isLoading, enabled: !isArchived, filter: archiveFilter });
 
-  // Lifecycle status filter options (value = status id). Legacy enum options are used when the flag is off.
-  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && !isArchived });
+  // Tickets have no unread field of their own; the per-row count comes from notifications (a
+  // separate entity) matched by ticket id, mirroring how the Mingo sidebar derives per-dialog
+  // unread badges. Opening a ticket marks those read (EntityViewAutoReader), clearing the badge.
+  const notifications = useOptionalNotifications();
+  const unreadByTicketId = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (!HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS) return counts;
+    for (const notification of notifications?.notifications ?? []) {
+      if (notification.read) continue;
+      const ticketId = notification.meta?.ticketId;
+      if (typeof ticketId === 'string') counts.set(ticketId, (counts.get(ticketId) ?? 0) + 1);
+    }
+    return counts;
+  }, [notifications?.notifications]);
+  const getUnreadCount = useCallback((ticket: Dialog) => unreadByTicketId.get(ticket.id), [unreadByTicketId]);
+
+  // Status filter options (value = status id).
+  const statusesQuery = useTicketStatusesQuery({ enabled: !isArchived });
   const statusOptions = useMemo<StatusFilterOption[] | undefined>(() => {
-    if (!lifecycleEnabled || isArchived) return undefined;
+    if (isArchived) return undefined;
     return (statusesQuery.data?.snapshot ?? [])
       .filter(s => s.kind !== 'ARCHIVED')
       .map(s => ({ id: s.id, value: s.id, label: s.name }));
-  }, [lifecycleEnabled, isArchived, statusesQuery.data]);
+  }, [isArchived, statusesQuery.data]);
 
   const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
@@ -112,6 +146,15 @@ export function TicketsTable({
 
   const hasMobileFilter = filterGroups.length > 0;
 
+  const showEmptyState =
+    !isLoading &&
+    !debouncedSearch &&
+    (statusFilters?.length ?? 0) === 0 &&
+    labelIds.length === 0 &&
+    tickets.length === 0;
+
+  const actions = useMemo(() => emphasizeNewTicketAction(baseActions, showEmptyState), [baseActions, showEmptyState]);
+
   if (error) {
     return <PageError message={error} />;
   }
@@ -128,25 +171,33 @@ export function TicketsTable({
         className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
         contentClassName="flex flex-col"
       >
-        <div>
-          <div className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
-            <Input
-              placeholder="Search for Ticket"
-              value={search}
-              onChange={e => onSearchChange(e.target.value)}
-              className="flex-1"
-              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-            />
-            {hasMobileFilter && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setMobileFilterOpen(true)}
-                aria-label="Open filters"
-                leftIcon={<Filter02Icon />}
-              />
-            )}
+        <div style={containerStyle}>
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
+          >
+            <div className="flex gap-[var(--spacing-system-m)] items-center">
+              <div className="flex-1 min-w-0">
+                <TicketLabelSearchInput
+                  search={search}
+                  onSearchChange={onSearchChange}
+                  labelIds={labelIds}
+                  onLabelIdsChange={onLabelIdsChange}
+                />
+              </div>
+              {hasMobileFilter && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setMobileFilterOpen(true)}
+                  aria-label="Open filters"
+                  leftIcon={<Filter02Icon />}
+                />
+              )}
+            </div>
+
+            <TicketLabelsRow selectedIds={labelIds} onAdd={id => onLabelIdsChange([...labelIds, id])} />
           </div>
 
           {hasMobileFilter && (
@@ -159,25 +210,34 @@ export function TicketsTable({
             />
           )}
 
-          <TicketTableBody
-            tickets={tickets}
-            isLoading={isLoading}
-            emptyMessage={emptyMessage}
-            skeletonRows={10}
-            stickyHeaderOffset="top-[96px]"
-            isArchived={isArchived}
-            statusOptions={statusOptions}
-            columnFilters={isArchived ? undefined : columnFilters}
-            onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
-            footerSlot={
-              <DataTable.InfiniteFooter
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-                onLoadMore={handleFetchNextPage}
-                skeletonRows={2}
-              />
-            }
-          />
+          {showEmptyState ? (
+            <EmptyState
+              icon={<TagIcon />}
+              title="Ticket history empty"
+              description="Tickets will appear here when available"
+            />
+          ) : (
+            <TicketTableBody
+              tickets={tickets}
+              isLoading={isLoading}
+              emptyMessage={emptyMessage}
+              skeletonRows={10}
+              stickyHeaderOffset={stickyHeaderOffset}
+              isArchived={isArchived}
+              statusOptions={statusOptions}
+              columnFilters={isArchived ? undefined : columnFilters}
+              onColumnFiltersChange={isArchived ? undefined : onColumnFiltersChange}
+              getUnreadCount={getUnreadCount}
+              footerSlot={
+                <DataTable.InfiniteFooter
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                  onLoadMore={handleFetchNextPage}
+                  skeletonRows={2}
+                />
+              }
+            />
+          )}
         </div>
       </PageLayout>
       {ticketsActionsDialog}
