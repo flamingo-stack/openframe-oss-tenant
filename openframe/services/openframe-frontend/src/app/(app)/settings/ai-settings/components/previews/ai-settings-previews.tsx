@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
-import type { ApplicationTheme } from '../../types/fae-settings';
+import type { ApplicationTheme } from '../../types/ai-settings';
 import { FaeChatPreview } from './fae-chat-preview';
 import { MeetFaePreview } from './meet-fae-preview';
 import { useResolvedTheme } from './use-resolved-theme';

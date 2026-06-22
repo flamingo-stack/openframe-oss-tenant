@@ -3,7 +3,7 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import type { AIProvider } from '../types/fae-settings';
+import type { AIProvider } from '../types/ai-settings';
 
 interface UpdateAiConfigurationInput {
   provider: AIProvider;
@@ -12,7 +12,7 @@ interface UpdateAiConfigurationInput {
 
 /**
  * Syncs the chat backend's active AI configuration with the provider/model
- * chosen in FaeSettings. Success feedback is owned by the FaeSettings save;
+ * chosen in the AI config. Success feedback is owned by the settings save;
  * this only reports failures.
  */
 export function useUpdateAiConfiguration() {

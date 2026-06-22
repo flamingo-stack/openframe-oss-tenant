@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Quick action form shape shared by the Fae and Mingo settings forms. */
+/** Quick action form shape shared by the Customer and Mingo AI settings forms. */
 export const quickActionSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, 'Action name is required'),

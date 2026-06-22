@@ -1,19 +1,25 @@
 import { z } from 'zod';
-import type { FaeSettings } from './fae-settings';
+import type { AgentAiConfig, AgentAiConfigInput } from './ai-settings';
 import { quickActionSchema } from './quick-action.types';
 
 export const MINGO_AI_CHAT_FORM_ID = 'ai-settings-mingo-ai-chat-form';
 
+// ADMIN (Mingo): the provider/model is owned by AiModelConfig (REST), so this
+// form only carries the admin quick actions, persisted via adminAiConfig.
 export const mingoAiChatSchema = z.object({
   quickActions: z.array(quickActionSchema),
 });
 
 export type MingoAiChatFormValues = z.infer<typeof mingoAiChatSchema>;
 
-// DEMO: Mingo reads the shared Fae quickActions until its own settings
-// query/mutation exists on the BE.
-export function getMingoAiChatDefaults(settings: FaeSettings): MingoAiChatFormValues {
+export function getMingoAiChatDefaults(config: AgentAiConfig): MingoAiChatFormValues {
   return {
-    quickActions: settings.quickActions ?? [],
+    quickActions: config.quickActions ?? [],
+  };
+}
+
+export function toMingoAiChatSubmit(values: MingoAiChatFormValues): AgentAiConfigInput {
+  return {
+    quickActions: values.quickActions,
   };
 }

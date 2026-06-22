@@ -1,37 +1,40 @@
 'use client';
 
 import { getFullImageUrl } from '@/lib/image-url';
-import type { FaeQuickAction, FaeSettings } from '../types/fae-settings';
+import type { AgentAiConfig, AiQuickAction, ClientView } from '../types/ai-settings';
 import { AiSettingsCustomerCard } from './ai-settings-customer-card';
 import { AiSettingsQuickActions } from './ai-settings-quick-actions';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
 
 interface AiSettingsOverviewProps {
-  /** Renders the assistant card + previews when provided. */
-  settings?: FaeSettings;
+  /** AI logic config for the active agent. */
+  aiConfig?: AgentAiConfig;
+  /** Client view (appearance). Present only for the CLIENT tab. */
+  view?: ClientView;
   /** Display label for the provider model (resolved via useSupportedModels). */
   providerModelLabel?: string;
   /** Renders the quick actions list when provided. */
-  quickActions?: FaeQuickAction[];
+  quickActions?: AiQuickAction[];
 }
 
 /**
- * Shared read-only view for the AI settings tabs. Each section renders only
- * when its data is passed, so tabs compose just the parts they need
+ * Shared read-only view for the AI settings tabs. The CLIENT tab passes both
+ * `aiConfig` and `view` (full card + previews); the ADMIN/Mingo tab passes only
+ * `quickActions` (its provider/model is rendered separately by AiModelConfig).
  */
-export function AiSettingsOverview({ settings, providerModelLabel, quickActions }: AiSettingsOverviewProps) {
+export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickActions }: AiSettingsOverviewProps) {
   return (
     <div className="flex flex-col gap-[var(--spacing-system-l)]">
-      {settings && (
+      {aiConfig && view && (
         <>
-          <AiSettingsCustomerCard settings={settings} providerModelLabel={providerModelLabel} />
+          <AiSettingsCustomerCard aiConfig={aiConfig} view={view} providerModelLabel={providerModelLabel} />
           <AiSettingsPreviews
-            assistantName={settings.assistantName}
-            avatarUrl={getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash)}
-            accentColor={settings.accentColor}
-            theme={settings.applicationTheme}
-            providerName={settings.llmProvider}
-            modelDisplayName={providerModelLabel ?? settings.providerModel}
+            assistantName={view.assistantName}
+            avatarUrl={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
+            accentColor={view.accentColor}
+            theme={view.applicationTheme}
+            providerName={aiConfig.llmProvider}
+            modelDisplayName={providerModelLabel ?? aiConfig.providerModel}
           />
         </>
       )}
