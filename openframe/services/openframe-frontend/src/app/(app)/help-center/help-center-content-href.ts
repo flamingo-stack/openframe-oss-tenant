@@ -24,6 +24,7 @@ import {
   type ComposeContentUrl,
   DEFAULT_CONTENT_SUFFIXES,
   DEV_SECTION_PARAM_KEYS,
+  faqItemAnchor,
   makeComposeContentUrl,
 } from '@flamingo-stack/openframe-frontend-core/utils';
 import { HELP_CENTER_BASE } from './endpoints';
@@ -39,6 +40,15 @@ const HC = HELP_CENTER_BASE.replace(/^\//, '');
  *  href `/<suffix>/<slug>` (soft-nav). The list-filter types (roadmap, delivery)
  *  are NOT here — they have no detail route and use `overrides` instead. */
 const HOSTED_TYPES = new Set(['onboarding_guide', 'product_release']);
+
+/** In-app href for a HubSpot-ticket card → the Help Center tickets list with the
+ *  ticket pre-opened. `?ticket=<external_id>` is the deep-link param `HelpCenterList`
+ *  reads to auto-open that ticket's drawer (the same id the hub URL used). Shared
+ *  by every `hubspot_ticket*` override. */
+const helpCenterTicketHref = (id: string): { href: string; targetPlatform: string | null } => ({
+  href: `${HELP_CENTER_BASE}/tickets?ticket=${encodeURIComponent(id)}`,
+  targetPlatform: null,
+});
 
 /**
  * The unified `composeContentUrl` for OpenFrame. Returns RELATIVE in-app hrefs
@@ -68,11 +78,24 @@ export const composeOpenframeContentUrl: ComposeContentUrl = makeComposeContentU
       href: `${HELP_CENTER_BASE}/bug-fixes-and-enhancements?${DEV_SECTION_PARAM_KEYS.search}=${encodeURIComponent(id)}`,
       targetPlatform: null,
     }),
+    // Mingo entity cards with a real in-app destination → soft-nav in the chat
+    // (and same-origin nav on the pages) instead of bouncing to the content hub.
+    // A HubSpot-ticket card opens the Help Center tickets list with that ticket
+    // pre-opened (every variant the RAG can emit); a FAQ card deep-links to its
+    // specific question via the `#faq-item-<id>` hash the FAQ page dispatches on
+    // (same anchor the hub uses) — `faqItemAnchor` is the lib's SSOT for it. Both
+    // live under `/help-center`, so `isInAppHelpCenterHref` already covers them.
+    hubspot_ticket: helpCenterTicketHref,
+    hubspot_ticket_anon: helpCenterTicketHref,
+    hubspot_ticket_self: helpCenterTicketHref,
+    faq: id => ({ href: `${HELP_CENTER_BASE}/faqs#${faqItemAnchor(id)}`, targetPlatform: null }),
   },
 });
 
 /** True when a composed href points at an in-app `/help-center` route (i.e. the
- *  relative-same-origin branch of {@link composeOpenframeContentUrl}). */
+ *  relative-same-origin branch of {@link composeOpenframeContentUrl}). Every
+ *  in-app target — content detail routes, the roadmap/delivery list filters, the
+ *  ticket list, the FAQ list — lives under `/help-center`. */
 export function isInAppHelpCenterHref(href: string): boolean {
   return href === HELP_CENTER_BASE || href.startsWith(`${HELP_CENTER_BASE}/`);
 }

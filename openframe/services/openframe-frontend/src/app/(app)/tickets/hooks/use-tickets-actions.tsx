@@ -14,12 +14,14 @@ import type {
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
-import { useArchiveResolvedMutation } from './use-archive-resolved-mutation';
+import { type ArchiveResolvedFilter, useArchiveResolvedMutation } from './use-archive-resolved-mutation';
 import { useTicketStatistics } from './use-ticket-statistics';
 
 interface UseTicketsActionsParams {
   isLoading: boolean;
   enabled?: boolean;
+  filter?: ArchiveResolvedFilter;
+  resolvedCountOverride?: number;
 }
 
 /**
@@ -40,10 +42,16 @@ export function emphasizeNewTicketAction(actions: PageActionButton[], emphasize:
   );
 }
 
-export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActionsParams) {
+export function useTicketsActions({
+  isLoading,
+  enabled = true,
+  filter,
+  resolvedCountOverride,
+}: UseTicketsActionsParams) {
   const router = useRouter();
   const archiveResolvedMutation = useArchiveResolvedMutation();
-  const { resolvedCount } = useTicketStatistics({ enabled });
+  const { resolvedCount: globalResolvedCount } = useTicketStatistics({ enabled });
+  const resolvedCount = resolvedCountOverride ?? globalResolvedCount;
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
   const handleNewTicket = useCallback(() => {
@@ -51,9 +59,9 @@ export function useTicketsActions({ isLoading, enabled = true }: UseTicketsActio
   }, [router]);
 
   const handleArchiveConfirm = useCallback(async () => {
-    await archiveResolvedMutation.mutateAsync();
+    await archiveResolvedMutation.mutateAsync(filter ?? {});
     setIsArchiveConfirmOpen(false);
-  }, [archiveResolvedMutation]);
+  }, [archiveResolvedMutation, filter]);
 
   const openArchiveResolvedConfirm = useCallback(() => setIsArchiveConfirmOpen(true), []);
   const canArchiveResolved = resolvedCount > 0 && !archiveResolvedMutation.isPending && !isLoading;
