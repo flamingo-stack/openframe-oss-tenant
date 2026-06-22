@@ -32,6 +32,18 @@ export async function forceLogout(options: ForceLogoutOptions = {}): Promise<voi
     console.error('[Force Logout] Failed to clear auth store:', error);
   }
 
+  // Clear the user's Mingo working context (persisted `recentViews` + the live
+  // store) so it can't leak into the next session. Dynamic import mirrors the
+  // auth-store one above — keeps the mingo feature out of this low-level module's
+  // static graph. In SaaS-tenant mode this path returns WITHOUT a reload below,
+  // so resetting the in-memory store here (not just localStorage) matters.
+  try {
+    const { clearMingoContext } = await import('@/app/(app)/mingo/stores/mingo-context-store');
+    clearMingoContext();
+  } catch (error) {
+    console.error('[Force Logout] Failed to clear Mingo context:', error);
+  }
+
   if (shouldRedirect && !isAuthPage) {
     if (isSaasTenantMode()) {
       return;

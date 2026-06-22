@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { billingUsageViewQuery$data } from '@/__generated__/billingUsageViewQuery.graphql';
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { OpenframeProduct, SubscriptionProductStatus } from '@/generated/schema-enums';
@@ -31,8 +30,10 @@ export function useBillingSummary(subscription: SubscriptionData) {
   const activeDevices = subscription?.usage?.activeDevices ?? 0;
   const inactiveDevices = subscription?.usage?.inactiveDevices ?? 0;
   const aiTokensUsed = subscription?.usage?.aiTokensUsed ?? 0;
-  const estimatedOverageCost =
-    subscription?.currentInvoice?.estimatedOverage != null ? subscription.currentInvoice.estimatedOverage / 100 : 0;
+  // Server-computed projected next-invoice total (PAYG overage so far + package
+  // charges due next cycle). SSOT for the "Next Payment" row — null when there's
+  // no upcoming charge (e.g. trial).
+  const nextPayment = subscription?.nextPayment ?? null;
 
   const managedDevicesProduct = subscriptionProducts.find(p => p.name === OpenframeProduct.MANAGED_DEVICES) ?? null;
   const aiProduct = subscriptionProducts.find(p => p.name === OpenframeProduct.AI_ASSISTANCE) ?? null;
@@ -107,17 +108,6 @@ export function useBillingSummary(subscription: SubscriptionData) {
   const accentClass = isOverdue ? 'text-ods-error' : 'text-ods-warning';
   const accentBorderClass = isOverdue ? 'border-ods-error' : 'border-ods-warning';
 
-  const monthlyCost = useMemo(() => {
-    let total = 0;
-    for (const product of subscriptionProducts) {
-      const active = product.packageOptions.find(o => o.status === SubscriptionProductStatus.ACTIVE);
-      if (!active?.price || !active.quantity) continue;
-      const perUnitMonthly = active.billingPeriod === 'YEARLY' ? active.price / 12 : active.price;
-      total += perUnitMonthly * active.quantity;
-    }
-    return total;
-  }, [subscriptionProducts]);
-
   const nextBilling = isPendingCancellation
     ? (subscription?.cancellationEffectiveAt ?? managedDevicesActive?.endDate ?? aiActive?.endDate ?? null)
     : (managedDevicesActive?.endDate ?? aiActive?.endDate ?? subscription?.currentPeriodEnd ?? null);
@@ -165,6 +155,6 @@ export function useBillingSummary(subscription: SubscriptionData) {
       showProgress: !aiIsPayg,
     },
     ui: { warnings, showOverageBlock, accentClass, accentBorderClass },
-    billing: { monthlyCost, nextBilling, estimatedOverageCost, latestPendingInvoice, trialExpirationDate },
+    billing: { nextPayment, nextBilling, latestPendingInvoice, trialExpirationDate },
   };
 }

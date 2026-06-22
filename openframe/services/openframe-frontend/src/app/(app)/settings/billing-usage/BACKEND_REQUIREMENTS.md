@@ -247,7 +247,7 @@ so the gap is visible; remove this item once the FE input ships.
 | Cancelled / pending-cancellation state | ✅ `status` + `cancellationEffectiveAt` | ✅ wired |
 | Real usage counters (devices / AI tokens) | ✅ `subscription.usage` | ✅ wired |
 | AI conversations counter | ❌ | ❌ shows 0 (hardcoded) |
-| Estimated overage cost | ✅ `currentInvoice.estimatedOverage` | ✅ wired |
+| Next payment (projected next invoice) | ✅ `subscription.nextPayment` | ✅ wired |
 | AI model rates table | ✅ `aiModelRates` | ✅ wired |
 | Cancellation impact stats | ❌ | ❌ hardcoded |
 | Reactivate flow | ⚠️ unclear | ⚠️ assumes `updateSubscription` |
