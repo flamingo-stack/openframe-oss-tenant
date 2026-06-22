@@ -20,11 +20,11 @@ export function formatCompact(value: number): string {
 }
 
 /**
- * Topmost selectable radio for a billing period: PAYG is monthly-only and sits
- * first when present; otherwise the first tier; otherwise Custom.
+ * Topmost selectable radio for a billing period: PAYG sits first when present
+ * (any period); otherwise the first tier; otherwise Custom.
  */
 export function topmostSelectionId(product: ProductData, period: BillingPeriod): string {
-  if (period === 'MONTHLY' && product.payAsYouGoOption) return PAYG_OPTION_ID;
+  if (product.payAsYouGoOption) return PAYG_OPTION_ID;
   const periodOption = product.packageOptions.find(o => o.billingPeriod === period) ?? product.packageOptions[0];
   const tiers = periodOption?.priceTiers?.slice(1) ?? [];
   return tiers.length > 0 ? String(tiers[0].from) : CUSTOM_OPTION_ID;
@@ -85,7 +85,7 @@ export function buildInitialSelection(
     selectedPackageId = String(matchedTier.from);
   } else if (activeQuantity != null) {
     selectedPackageId = CUSTOM_OPTION_ID;
-    customQuantity = toDisplayQuantity(activeQuantity, product.unitSize);
+    customQuantity = activeQuantity;
   } else {
     // No active tier/custom package: default to PAYG (current PAYG state, or soft-default for trial/no-plan users).
     selectedPackageId = PAYG_OPTION_ID;
@@ -116,27 +116,18 @@ function toCatalogOptionId(globalId: string): string {
 }
 
 /**
- * Backend `quantity` (and catalog `priceTier.from`) is stored in billable units
- * (devices: 1, AI tokens: 100_000). Multiply by `unitSize` to get the value the
- * user actually sees in the UI (real device count, real token count).
+ * Backend `quantity`, catalog `priceTier.from`/`upTo`, and the Custom Amount
+ * input all speak the same real product count (devices, tokens) — no unit
+ * conversion. `unitSize` (devices: 1, AI tokens: 100_000) is only a granularity
+ * constraint: the custom quantity must be a positive whole multiple of it.
+ * Returns the entered quantity when valid, else null (the UI surfaces a
+ * "must be a multiple of N" error in that case).
  */
-export function toDisplayQuantity(rawUnits: number | null | undefined, unitSize: number | null | undefined): number {
-  if (rawUnits == null) return 0;
-  const size = Number(unitSize ?? 1) || 1;
-  return rawUnits * size;
-}
-
-/**
- * The Custom Amount input holds the real product count the user typed (tokens,
- * devices, …). Tier `from` / mutation `quantity` are in units, so convert by
- * dividing by `unitSize`. Returns null when empty or not a whole multiple of
- * `unitSize` (the UI surfaces a "must be a multiple of N" error in that case).
- */
-function customUnits(product: ProductData, customQuantity: number | null): number | null {
+function validCustomQuantity(product: ProductData, customQuantity: number | null): number | null {
   if (customQuantity == null || customQuantity <= 0) return null;
   const unitSize = Number(product.unitSize ?? 1) || 1;
   if (customQuantity % unitSize !== 0) return null;
-  return customQuantity / unitSize;
+  return customQuantity;
 }
 
 /**
@@ -173,7 +164,7 @@ export function diffPackageUpdates(
 
   let nextQuantity: number | null = null;
   if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
-    nextQuantity = customUnits(product, currentSelection.customQuantity);
+    nextQuantity = validCustomQuantity(product, currentSelection.customQuantity);
   } else if (currentSelection.selectedPackageId) {
     const parsed = Number.parseInt(currentSelection.selectedPackageId, 10);
     nextQuantity = Number.isFinite(parsed) ? parsed : null;
@@ -188,6 +179,24 @@ export function diffPackageUpdates(
   }
 
   return [];
+}
+
+/**
+ * Whether a product's selection differs from its current commitment — drives the
+ * visibility of the Current/New plan-change summary. Deliberately independent of
+ * `diffPackageUpdates`: the summary is a visual preview, so any valid selection
+ * that differs from today should show it, even in catalog edge-cases where the
+ * change can't yet be expressed as a `PackageUpdateInput`. An invalid/empty
+ * custom amount (`next.quantity == null`) is not a change.
+ */
+export function isPlanChanged({ current, next }: PlanComparison): boolean {
+  const nextValid = next.payg || next.quantity != null;
+  if (!nextValid) return false;
+  if (!current) return !next.payg;
+  if (current.payg !== next.payg) return true;
+  if (next.payg) return false;
+  if (current.billingPeriod !== next.billingPeriod) return true;
+  return (current.quantity ?? null) !== (next.quantity ?? null);
 }
 
 interface CancelablePackageOption {
@@ -234,7 +243,7 @@ export function buildCheckoutProduct(
 
   let quantity: number | null = null;
   if (currentSelection.selectedPackageId === CUSTOM_OPTION_ID) {
-    quantity = customUnits(product, currentSelection.customQuantity);
+    quantity = validCustomQuantity(product, currentSelection.customQuantity);
   } else if (currentSelection.selectedPackageId) {
     const parsed = Number.parseInt(currentSelection.selectedPackageId, 10);
     quantity = Number.isFinite(parsed) ? parsed : null;
@@ -248,10 +257,10 @@ export function buildCheckoutProduct(
   };
 }
 
-/** Selected committed quantity in billable units (null for PAYG / empty Custom). */
-function selectionUnits(product: ProductData, selection: ProductSelectionState): number | null {
+/** Selected committed quantity in real product counts (null for PAYG / empty Custom). */
+function selectionQuantity(product: ProductData, selection: ProductSelectionState): number | null {
   if (selection.selectedPackageId === PAYG_OPTION_ID) return null;
-  if (selection.selectedPackageId === CUSTOM_OPTION_ID) return customUnits(product, selection.customQuantity);
+  if (selection.selectedPackageId === CUSTOM_OPTION_ID) return validCustomQuantity(product, selection.customQuantity);
   if (selection.selectedPackageId) {
     const parsed = Number.parseInt(selection.selectedPackageId, 10);
     return Number.isFinite(parsed) ? parsed : null;
@@ -260,18 +269,19 @@ function selectionUnits(product: ProductData, selection: ProductSelectionState):
 }
 
 /**
- * Annualized committed cost for `units` billable units against `tiers`.
- * `priceTier.unitPrice` is per unit per month, so a year is always × 12 — the
+ * Annualized committed cost for `quantity` real product counts against `tiers`.
+ * `priceTier.unitPrice` is per product per month, so a year is always × 12 — the
  * yearly discount is already baked into the yearly period's tiers.
  */
 function annualizedPackagePrice(
-  units: number | null,
+  quantity: number | null,
   tiers: readonly PriceTierInput[] | null | undefined,
 ): number | null {
-  if (units == null || units <= 0 || !tiers || tiers.length === 0) return null;
-  const applicable = tiers.find(t => units >= t.from && (t.upTo == null || units <= t.upTo)) ?? tiers[tiers.length - 1];
+  if (quantity == null || quantity <= 0 || !tiers || tiers.length === 0) return null;
+  const applicable =
+    tiers.find(t => quantity >= t.from && (t.upTo == null || quantity <= t.upTo)) ?? tiers[tiers.length - 1];
   if (!applicable) return null;
-  return units * applicable.unitPrice * 12;
+  return quantity * applicable.unitPrice * 12;
 }
 
 function tiersForPeriod(product: ProductData, period: BillingPeriod | null): readonly PriceTierInput[] {
@@ -297,7 +307,7 @@ export function buildPlanComparison(
       const period = (activePackage.billingPeriod ?? null) as BillingPeriod | null;
       current = {
         payg: false,
-        quantity: toDisplayQuantity(activePackage.quantity, product.unitSize),
+        quantity: activePackage.quantity,
         billingPeriod: period,
         annualTotal: annualizedPackagePrice(activePackage.quantity, tiersForPeriod(product, period)),
       };
@@ -311,12 +321,12 @@ export function buildPlanComparison(
   if (selection.selectedPackageId === PAYG_OPTION_ID) {
     next = { payg: true, quantity: null, billingPeriod: null, annualTotal: null };
   } else {
-    const units = selectionUnits(product, selection);
+    const quantity = selectionQuantity(product, selection);
     next = {
       payg: false,
-      quantity: units != null ? toDisplayQuantity(units, product.unitSize) : null,
+      quantity,
       billingPeriod: selection.billingPeriod,
-      annualTotal: annualizedPackagePrice(units, tiersForPeriod(product, selection.billingPeriod)),
+      annualTotal: annualizedPackagePrice(quantity, tiersForPeriod(product, selection.billingPeriod)),
     };
   }
 

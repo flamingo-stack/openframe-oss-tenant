@@ -44,7 +44,7 @@ export function NotificationApprovalSubRow({ notification, onResolved }: Notific
   if (!approval || !batchData) return null;
 
   return (
-    <div data-no-row-click className="bg-ods-bg p-[var(--spacing-system-m)]">
+    <div data-no-row-click className="bg-ods-bg p-0">
       <ApprovalBatchMessage
         data={batchData}
         status={status}

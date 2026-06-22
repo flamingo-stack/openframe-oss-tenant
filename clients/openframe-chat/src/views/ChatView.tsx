@@ -20,7 +20,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core';
 import { Ellipsis01Icon, PlusCircleIcon, TagIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatDialogScreen } from '../components/ChatDialogScreen';
@@ -31,7 +31,7 @@ import { useApplyFaeAppearance } from '../hooks/useApplyFaeAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
-import { useTickets } from '../hooks/useTickets';
+import { type TicketDetails, useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
 import { supportedModelsService } from '../services/supportedModelsService';
@@ -47,6 +47,15 @@ function toTokenUsageData(usage: DialogTokenUsage | null | undefined): TokenUsag
     contextSize: usage.contextSize ?? 0,
   };
 }
+
+const STATUS_POLL_INTERVAL_MS = 15_000;
+
+const isTerminalTicket = (t: { status?: string; statusKind?: string; dialogStatus?: string }) =>
+  t.status === 'RESOLVED' ||
+  t.statusKind === 'RESOLVED' ||
+  t.statusKind === 'ARCHIVED' ||
+  t.dialogStatus === 'RESOLVED' ||
+  t.dialogStatus === 'ARCHIVED';
 
 export function ChatView() {
   const queryClient = useQueryClient();
@@ -65,16 +74,10 @@ export function ChatView() {
     createdAt: string;
   } | null>(null);
   const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
-  const [activeTicket, setActiveTicket] = useState<{
-    title?: string;
-    ticketNumber?: string;
-    category?: string;
-    timeAgo?: string;
-    status?: string;
-    statusName?: string;
-    statusColor?: string;
-    statusKind?: string;
-  } | null>(null);
+  const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
+  const [isDialogClosed, setIsDialogClosed] = useState(false);
+  const activeTicketIdRef = useRef<string | null>(null);
+  activeTicketIdRef.current = activeTicketId;
   const { showWelcome, completeWelcome } = useWelcomeScreen();
   const { assistantName, assistantAvatar, isLoading: isAssistantLoading } = useAssistantBranding();
   useApplyFaeAppearance();
@@ -84,9 +87,30 @@ export function ChatView() {
   }, []);
 
   const handleDialogClosed = useCallback(() => {
-    const resolved = { status: 'RESOLVED', statusKind: 'RESOLVED', statusName: undefined, statusColor: undefined };
-    setActiveTicket(prev => (prev ? { ...prev, ...resolved } : resolved));
-  }, []);
+    setIsDialogClosed(true);
+    const id = activeTicketIdRef.current;
+    if (!id) return;
+    queryClient.setQueryData<TicketDetails | null>(['active-ticket-state', id], prev =>
+      prev
+        ? {
+            ...prev,
+            status: 'RESOLVED',
+            statusKind: 'RESOLVED',
+            dialogStatus: 'RESOLVED',
+            statusName: undefined,
+            statusColor: undefined,
+          }
+        : prev,
+    );
+  }, [queryClient]);
+
+  const handleDirectModeDetected = useCallback(() => {
+    const id = activeTicketIdRef.current;
+    if (!id) return;
+    queryClient.setQueryData<TicketDetails | null>(['active-ticket-state', id], prev =>
+      prev ? { ...prev, dialogMode: 'DIRECT' } : prev,
+    );
+  }, [queryClient]);
 
   const handleMetadataUpdate = useCallback(
     (metadata: { modelName: string; providerName: string; contextWindow: number }) => {
@@ -126,19 +150,32 @@ export function ChatView() {
     onMetadataUpdate: handleMetadataUpdate,
     onTokenUsage: handleTokenUsage,
     onDialogClosed: handleDialogClosed,
+    onDirectModeDetected: handleDirectModeDetected,
   });
 
   const { toast } = useToast();
 
-  // Fire-and-forget so ChatInput clears the draft immediately on send. Returning
-  // sendMessage's promise directly would make the lib defer clearing until it
-  // resolves - which only happens once the full response arrives - leaving the
-  // sent text sitting in the (disabled) input until then.
+  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
+  const isDisconnected = status !== 'connected';
+
+  // Connected: fire-and-forget so ChatInput clears the draft immediately. Returning
+  // sendMessage's promise would make the lib defer clearing until it resolves (once
+  // the full response arrives), leaving the sent text in the input until then.
+  // Disconnected: toast and return false so the lib keeps the user's draft instead
+  // of clearing it on a send that can't go through.
   const handleSend = useCallback(
     (text: string) => {
+      if (isDisconnected) {
+        toast({
+          title: 'Connection lost',
+          description: 'Your message was not sent. Please try again shortly.',
+          variant: 'destructive',
+        });
+        return false;
+      }
       void sendMessage(text);
     },
-    [sendMessage],
+    [sendMessage, isDisconnected, toast],
   );
 
   // Pre-process messages for rendering: filter pending approvals (they
@@ -182,7 +219,8 @@ export function ChatView() {
   const handleNewChat = useCallback(() => {
     setFaeFormTicket(null);
     setPreviewTicketId(null);
-    setActiveTicket(null);
+    setActiveTicketId(null);
+    setIsDialogClosed(false);
     clearMessages();
     queryClient.invalidateQueries({ queryKey: ['tickets'] });
     setTokenUsage(null);
@@ -202,9 +240,14 @@ export function ChatView() {
 
       setFaeFormTicket(null);
       setPreviewTicketId(null);
-      setActiveTicket(null);
+      setActiveTicketId(null);
+      setIsDialogClosed(false);
 
-      const ticketDetails = await ticketsHook.getTicketDetails(ticketId);
+      const ticketDetails = await queryClient.fetchQuery({
+        queryKey: ['active-ticket-state', ticketId],
+        queryFn: () => ticketsHook.getTicketDetails(ticketId),
+        staleTime: STATUS_POLL_INTERVAL_MS,
+      });
       if (!ticketDetails) {
         toast({
           title: 'Error',
@@ -214,16 +257,7 @@ export function ChatView() {
         return;
       }
 
-      setActiveTicket({
-        title: ticketDetails.title,
-        ticketNumber: ticketDetails.ticketNumber,
-        category: ticketDetails.category,
-        timeAgo: ticketDetails.timeAgo,
-        status: ticketDetails.status,
-        statusName: ticketDetails.statusName,
-        statusColor: ticketDetails.statusColor,
-        statusKind: ticketDetails.statusKind,
-      });
+      setActiveTicketId(ticketId);
 
       if (!openDialogId) {
         setPreviewTicketId(ticketId);
@@ -242,7 +276,7 @@ export function ChatView() {
 
       await resumeDialog(openDialogId);
     },
-    [ticketsHook, resumeDialog, showTicketPreview, toast, dialogId],
+    [ticketsHook, resumeDialog, showTicketPreview, toast, dialogId, queryClient],
   );
 
   useEffect(() => {
@@ -253,10 +287,29 @@ export function ChatView() {
     });
   }, [dialogId, tokenUsage]);
 
-  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
-  const isDisconnected = status !== 'connected';
+  const { data: activeTicket } = useQuery({
+    queryKey: ['active-ticket-state', activeTicketId],
+    queryFn: async () => {
+      if (!activeTicketId) return null;
+      const fresh = await ticketsHook.getTicketDetails(activeTicketId);
+      const current = queryClient.getQueryData<TicketDetails | null>(['active-ticket-state', activeTicketId]);
+      if (current && isTerminalTicket(current) && fresh && !isTerminalTicket(fresh)) return current;
+      return fresh;
+    },
+    enabled: !!activeTicketId && !isDialogClosed,
+    refetchInterval: query =>
+      query.state.data && isTerminalTicket(query.state.data) ? false : STATUS_POLL_INTERVAL_MS,
+    refetchIntervalInBackground: false,
+    staleTime: STATUS_POLL_INTERVAL_MS,
+  });
 
-  const isActiveTicketResolved = activeTicket?.status === 'RESOLVED' || activeTicket?.statusKind === 'RESOLVED';
+  const isChatClosed = isDialogClosed || (!!activeTicket && isTerminalTicket(activeTicket));
+
+  const isAwaitingTechnician =
+    !isChatClosed &&
+    !!activeTicket?.statusKind &&
+    activeTicket.statusKind !== 'AI_ASSISTANCE' &&
+    activeTicket.dialogMode !== 'DIRECT';
 
   const ticketInfo = useMemo<ChatHeaderTicketInfo | undefined>(() => {
     if (!activeTicket?.title || !hasMessages) return undefined;
@@ -437,7 +490,7 @@ export function ChatView() {
       </ChatContent>
 
       <ChatFooter>
-        {isActiveTicketResolved ? (
+        {isChatClosed ? (
           <p className="text-body2 text-ods-text-secondary text-center py-4">
             This chat is closed. If you have a similar problem, please create a new request.
           </p>
@@ -463,13 +516,12 @@ export function ChatView() {
               onSend={handleSend}
               onStop={isStreaming ? stopGeneration : undefined}
               sending={isStreaming || isCompacting}
-              awaitingResponse={isTicketPreview || awaitingTechnicianResponse}
+              awaitingResponse={isTicketPreview || awaitingTechnicianResponse || isAwaitingTechnician}
               placeholder="Enter your request here..."
-              disabled={isDisconnected}
             />
           </>
         )}
-        {!isActiveTicketResolved && (!isFullyLoaded || displayModel || tokenUsage) && (
+        {!isChatClosed && (!isFullyLoaded || displayModel || tokenUsage) && (
           <div className="mx-auto w-full max-w-ods-content-narrow mt-[var(--spacing-system-s)]">
             {!isFullyLoaded ? (
               // Model metadata still loading — placeholder so the footer doesn't shift.

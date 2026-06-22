@@ -34,6 +34,7 @@ import { useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
+import { renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
 import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
@@ -145,6 +146,10 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // No hardcoded greeting here — a blank admin value falls back to the
         // lib's own default copy.
         contextPicker={contextEnabled ? contextPicker : undefined}
+        // Renders inline AI mentions (`@device:<machineId>` in Mingo's replies)
+        // as self-fetching chips — the `@marker:id` analogue of `renderEntityCard`
+        // for `[card://]`. Stable module-level fn so the message memo holds.
+        renderMention={contextEnabled ? renderMingoMention : undefined}
       />
     </>
   );

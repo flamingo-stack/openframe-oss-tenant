@@ -4,6 +4,7 @@ import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import {
   CreditCardIcon,
   Hierarchy02Icon,
+  Logout01Icon,
   PasscodeIcon,
   PiggyBankIcon,
   ShieldCheckIcon,
@@ -11,9 +12,11 @@ import {
   UsersGroupIcon,
   WrenchScrewdiverIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores';
+import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-store';
 import { apiClient } from '@/lib/api-client';
 import { isOssTenantMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
@@ -65,6 +68,7 @@ const SETTINGS_NAV_ITEMS = [
 
 export function SettingsHub() {
   const { toast } = useToast();
+  const openLogoutConfirm = useLogoutConfirmStore(state => state.open);
   const user = useAuthStore(state => state.user);
   const updateUser = useAuthStore(state => state.updateUser);
   const fetchFullProfile = useAuthStore(state => state.fetchFullProfile);
@@ -136,7 +140,7 @@ export function SettingsHub() {
   }, [fetchFullProfile]);
 
   return (
-    <PageLayout title="Settings" className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
+    <PageLayout title="Settings" className="min-h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       {/* Profile Card */}
       <ProfileCard
         onEditProfile={() => setIsEditModalOpen(true)}
@@ -158,6 +162,13 @@ export function SettingsHub() {
               description={item.description}
             />
           ))}
+      </div>
+
+      {/* Log Out — pinned to the bottom-left of the page */}
+      <div className="mt-auto">
+        <Button variant="outline" onClick={openLogoutConfirm} leftIcon={<Logout01Icon className="text-ods-error" />}>
+          Log Out
+        </Button>
       </div>
 
       {/* Modals */}

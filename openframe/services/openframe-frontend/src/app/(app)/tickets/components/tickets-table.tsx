@@ -15,7 +15,6 @@ import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { EmptyState } from '@/app/components/shared';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { featureFlags } from '@/lib/feature-flags';
 import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-tickets-actions';
 import { useTicketsQuery } from '../hooks/use-tickets-query';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
@@ -69,11 +68,12 @@ export function TicketsTable({
     labelIds,
   });
 
+  const archiveFilter = useMemo(() => ({ labelIds }), [labelIds]);
   const {
     actions: baseActions,
     menuActions,
     dialog: ticketsActionsDialog,
-  } = useTicketsActions({ isLoading, enabled: !isArchived });
+  } = useTicketsActions({ isLoading, enabled: !isArchived, filter: archiveFilter });
 
   // Tickets have no unread field of their own; the per-row count comes from notifications (a
   // separate entity) matched by ticket id, mirroring how the Mingo sidebar derives per-dialog
@@ -91,15 +91,14 @@ export function TicketsTable({
   }, [notifications?.notifications]);
   const getUnreadCount = useCallback((ticket: Dialog) => unreadByTicketId.get(ticket.id), [unreadByTicketId]);
 
-  // Lifecycle status filter options (value = status id). Legacy enum options are used when the flag is off.
-  const lifecycleEnabled = featureFlags.ticketStatuses.enabled();
-  const statusesQuery = useTicketStatusesQuery({ enabled: lifecycleEnabled && !isArchived });
+  // Status filter options (value = status id).
+  const statusesQuery = useTicketStatusesQuery({ enabled: !isArchived });
   const statusOptions = useMemo<StatusFilterOption[] | undefined>(() => {
-    if (!lifecycleEnabled || isArchived) return undefined;
+    if (isArchived) return undefined;
     return (statusesQuery.data?.snapshot ?? [])
       .filter(s => s.kind !== 'ARCHIVED')
       .map(s => ({ id: s.id, value: s.id, label: s.name }));
-  }, [lifecycleEnabled, isArchived, statusesQuery.data]);
+  }, [isArchived, statusesQuery.data]);
 
   const handleFetchNextPage = useCallback(() => fetchNextPage(), [fetchNextPage]);
 

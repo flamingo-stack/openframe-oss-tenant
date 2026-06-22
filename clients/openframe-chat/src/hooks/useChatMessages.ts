@@ -9,6 +9,8 @@ import {
 import { useCallback, useRef, useState } from 'react';
 import { useAssistantBranding } from './useAssistantBranding';
 
+const GENERIC_SEND_ERROR = 'Something went wrong. Please try again.';
+
 interface UseChatMessagesOptions {
   onApprove?: (requestId?: string) => Promise<void> | void;
   onReject?: (requestId?: string) => Promise<void> | void;
@@ -55,30 +57,27 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
     });
   }, [assistantName, assistantAvatar]);
 
-  const addErrorMessage = useCallback(
-    (errorText: string) => {
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        role: 'error',
-        name: assistantName ?? 'Fae',
-        timestamp: new Date(),
-        avatar: assistantAvatar,
-        content: errorText,
-      };
+  const addErrorMessage = useCallback(() => {
+    const errorMessage: Message = {
+      id: `error-${Date.now()}`,
+      role: 'error',
+      name: assistantName ?? 'Fae',
+      timestamp: new Date(),
+      avatar: assistantAvatar,
+      content: [{ type: 'error', title: GENERIC_SEND_ERROR }],
+    };
 
-      setMessages(prev => {
-        const lastMessage = prev[prev.length - 1];
-        if (
-          lastMessage?.role === 'assistant' &&
-          (lastMessage.content === '' || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
-        ) {
-          return [...prev.slice(0, -1), errorMessage];
-        }
-        return [...prev, errorMessage];
-      });
-    },
-    [assistantName, assistantAvatar],
-  );
+    setMessages(prev => {
+      const lastMessage = prev[prev.length - 1];
+      if (
+        lastMessage?.role === 'assistant' &&
+        (lastMessage.content === '' || (Array.isArray(lastMessage.content) && lastMessage.content.length === 0))
+      ) {
+        return [...prev.slice(0, -1), errorMessage];
+      }
+      return [...prev, errorMessage];
+    });
+  }, [assistantName, assistantAvatar]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -140,7 +139,8 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
             newMessages[i] = {
               ...newMessages[i],
               content: nextContent,
-              streamSeq: streamSeq != null ? Math.max(newMessages[i].streamSeq ?? 0, streamSeq) : newMessages[i].streamSeq,
+              streamSeq:
+                streamSeq != null ? Math.max(newMessages[i].streamSeq ?? 0, streamSeq) : newMessages[i].streamSeq,
             };
             return newMessages;
           }

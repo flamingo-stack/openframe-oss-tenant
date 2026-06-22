@@ -19,6 +19,7 @@ pub mod initial_authentication_processor;
 pub mod registration_processor;
 pub mod installed_tools_service;
 pub mod tool_run_manager;
+pub mod mesh_self_heal_service;
 pub mod tool_connection_processing_manager;
 pub mod tool_connection_service;
 pub mod openframe_client_update_service;
@@ -31,7 +32,7 @@ pub mod update_state_service;
 pub mod update_cleanup_service;
 pub mod update_handler_service;
 pub mod initial_key_service;
-pub mod command_execution_service;
+pub mod execution_service;
 #[cfg(target_os = "windows")]
 pub mod windows_session_manager;
 

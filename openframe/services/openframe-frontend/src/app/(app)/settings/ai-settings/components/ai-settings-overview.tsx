@@ -2,7 +2,6 @@
 
 import { getFullImageUrl } from '@/lib/image-url';
 import type { AgentAiConfig, AiQuickAction, ClientView } from '../types/ai-settings';
-import { AiConfigSummaryCard } from './ai-config-summary-card';
 import { AiSettingsCustomerCard } from './ai-settings-customer-card';
 import { AiSettingsQuickActions } from './ai-settings-quick-actions';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
@@ -21,7 +20,7 @@ interface AiSettingsOverviewProps {
 /**
  * Shared read-only view for the AI settings tabs. The CLIENT tab passes both
  * `aiConfig` and `view` (full card + previews); the ADMIN/Mingo tab passes only
- * `aiConfig` (AI-logic summary, no appearance).
+ * `quickActions` (its provider/model is rendered separately by AiModelConfig).
  */
 export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickActions }: AiSettingsOverviewProps) {
   return (
@@ -39,7 +38,6 @@ export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickAc
           />
         </>
       )}
-      {aiConfig && !view && <AiConfigSummaryCard aiConfig={aiConfig} providerModelLabel={providerModelLabel} />}
       {quickActions && <AiSettingsQuickActions actions={quickActions} />}
     </div>
   );
