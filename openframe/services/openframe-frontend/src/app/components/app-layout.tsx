@@ -26,6 +26,7 @@ import { OpenframeEmbeddableChatEntry } from './openframe-embeddable-chat-entry'
 import { SubscriptionGuard } from './subscription-lock/subscription-guard';
 import { SubscriptionLockContent } from './subscription-lock/subscription-lock-content';
 import { useSubscriptionLock } from './subscription-lock/subscription-lock-context';
+import { TimeTrackerHostProvider } from './time-tracker-host-provider';
 import { UnauthorizedOverlay } from './unauthorized-overlay';
 
 function ContentLoading() {
@@ -138,10 +139,12 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const avatarUrl = useMemo(() => getFullImageUrl(userImageUrl, userImageHash), [userImageUrl, userImageHash]);
 
   const notificationsEnabled = featureFlags.notifications.enabled();
+  const timeTrackerEnabled = featureFlags.timeTracker.enabled();
 
   const headerProps = useMemo(
     () => ({
       showNotifications: notificationsEnabled,
+      showTimeTracker: timeTrackerEnabled,
       showUser: true,
       userName: displayName,
       userEmail,
@@ -159,6 +162,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
     }),
     [
       notificationsEnabled,
+      timeTrackerEnabled,
       displayName,
       userEmail,
       avatarUrl,
@@ -215,17 +219,19 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
           <UnreadCountsHydrator onChange={setUnreadCounts} />
         </Suspense>
       )}
-      <CoreAppLayout
-        mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
-        sidebarConfig={sidebarConfig}
-        loadingFallback={<ContentLoading />}
-        mobileBurgerMenuProps={mobileBurgerMenuProps}
-        headerProps={headerProps}
-        disabled={showLockContent}
-        drawer={chatDrawer}
-      >
-        {showLockContent ? <SubscriptionLockContent /> : children}
-      </CoreAppLayout>
+      <TimeTrackerHostProvider enabled={timeTrackerEnabled}>
+        <CoreAppLayout
+          mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
+          sidebarConfig={sidebarConfig}
+          loadingFallback={<ContentLoading />}
+          mobileBurgerMenuProps={mobileBurgerMenuProps}
+          headerProps={headerProps}
+          disabled={showLockContent}
+          drawer={chatDrawer}
+        >
+          {showLockContent ? <SubscriptionLockContent /> : children}
+        </CoreAppLayout>
+      </TimeTrackerHostProvider>
       {/* Logout confirmation modal — opened from the nav user menu and the
           Settings "Log Out" button via `useLogoutConfirmStore`. */}
       <LogoutConfirmModal />
