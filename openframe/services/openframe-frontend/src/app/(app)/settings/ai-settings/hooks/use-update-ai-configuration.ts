@@ -12,7 +12,7 @@ interface UpdateAiConfigurationInput {
 
 /**
  * Syncs the chat backend's active AI configuration with the provider/model
- * chosen in AiSettings. Success feedback is owned by the AiSettings save;
+ * chosen in the AI config. Success feedback is owned by the settings save;
  * this only reports failures.
  */
 export function useUpdateAiConfiguration() {
