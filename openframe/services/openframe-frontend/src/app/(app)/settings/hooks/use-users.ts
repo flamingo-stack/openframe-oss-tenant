@@ -2,6 +2,7 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { handleApiError } from '@/lib/handle-api-error';
 
@@ -12,6 +13,11 @@ export enum UserStatus {
   Deleted = 'DELETED',
 }
 
+export type UserImage = {
+  imageUrl: string;
+  hash: string;
+};
+
 export type UserRecord = {
   id: string;
   email: string;
@@ -19,6 +25,7 @@ export type UserRecord = {
   lastName?: string;
   roles: string[];
   status: UserStatus;
+  image?: UserImage;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -40,6 +47,7 @@ const EMPTY_USERS: UserRecord[] = [];
 export const usersQueryKeys = {
   all: ['users'] as const,
   list: (page: number, size: number) => [...usersQueryKeys.all, 'list', { page, size }] as const,
+  detail: (id: string) => [...usersQueryKeys.all, 'detail', id] as const,
 };
 
 // ============ API Functions ============
@@ -59,16 +67,21 @@ async function deleteUserApi(userId: string): Promise<void> {
   }
 }
 
+type ProfileUpdate = { firstName: string; lastName: string };
+
+async function updateUserApi(userId: string, data: ProfileUpdate): Promise<ProfileUpdate> {
+  const res = await apiClient.put(`api/users/${encodeURIComponent(userId)}`, data);
+  if (!res.ok) {
+    throw new Error(res.error || `Failed to update user (${res.status})`);
+  }
+  return data;
+}
+
 // ============ Hook ============
 
-export function useUsers(page: number = 0, size: number = 20) {
+export function useDeleteUser() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  const usersQuery = useQuery({
-    queryKey: usersQueryKeys.list(page, size),
-    queryFn: () => fetchUsers(page, size),
-  });
 
   const deleteUserMutation = useMutation({
     mutationFn: deleteUserApi,
@@ -93,6 +106,35 @@ export function useUsers(page: number = 0, size: number = 20) {
     });
   };
 
+  return { deleteUser, deleteUserMutation };
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const userId = useAuthStore(state => state.user?.id);
+  const updateAuthUser = useAuthStore(state => state.updateUser);
+
+  return useMutation({
+    mutationFn: (data: ProfileUpdate) => {
+      if (!userId) throw new Error('No authenticated user');
+      return updateUserApi(userId, data);
+    },
+    onSuccess: data => {
+      updateAuthUser(data);
+      queryClient.invalidateQueries({ queryKey: usersQueryKeys.all });
+      toast({ title: 'Profile updated', description: 'Your profile has been updated.', variant: 'success' });
+    },
+    onError: err => handleApiError(err, toast, 'Failed to update profile'),
+  });
+}
+
+export function useUsers(page: number = 0, size: number = 20) {
+  const usersQuery = useQuery({
+    queryKey: usersQueryKeys.list(page, size),
+    queryFn: () => fetchUsers(page, size),
+  });
+
   return {
     // Data
     users: usersQuery.data?.items ?? EMPTY_USERS,
@@ -111,10 +153,6 @@ export function useUsers(page: number = 0, size: number = 20) {
 
     // Refetch
     refetch: usersQuery.refetch,
-
-    // Mutations
-    deleteUser,
-    deleteUserMutation,
 
     // Raw query for advanced use cases
     usersQuery,

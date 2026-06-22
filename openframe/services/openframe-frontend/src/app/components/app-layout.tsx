@@ -11,6 +11,7 @@ import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useMingoLauncherStore } from '@/app/(app)/mingo/stores/mingo-launcher-store';
+import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useAuthSession } from '@/app/(auth)/auth/hooks/use-auth-session';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-store';
@@ -37,6 +38,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   const router = useRouter();
   const pathname = usePathname();
 
+  const userId = useAuthStore(state => state.user?.id);
   const userFirstName = useAuthStore(state => state.user?.firstName);
   const userLastName = useAuthStore(state => state.user?.lastName);
   const userEmail = useAuthStore(state => state.user?.email);
@@ -82,8 +84,8 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
   }, [openLogoutConfirm]);
 
   const handleProfile = useCallback(() => {
-    router.push('/settings');
-  }, [router]);
+    router.push(userId ? employeeDetailHref(userId) : '/settings');
+  }, [router, userId]);
 
   // Close the drawer on route navigation. The drawer is non-modal (header +
   // sidebar stay interactive while it's open), so clicking a nav link or an
