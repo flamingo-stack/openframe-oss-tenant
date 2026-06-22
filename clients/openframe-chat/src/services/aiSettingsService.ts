@@ -1,60 +1,59 @@
 import { GraphQLClient, gql, type RequestDocument, type Variables } from 'graphql-request';
 import { tokenService } from './tokenService';
 
-/** Which AI agent the settings belong to. The chat client is the customer-facing
- *  assistant, so it always reads the CLIENT agent's settings. */
-export type AgentType = 'CLIENT' | 'ADMIN';
-
-const CHAT_AGENT_TYPE: AgentType = 'CLIENT';
-
 export interface AiQuickAction {
   id: string;
   name: string;
   instructions: string;
 }
 
+/**
+ * Flattened, chat-facing view of the two backend collections the client cares
+ * about: appearance from `clientView` and quick actions from `clientAiConfig`.
+ */
 export interface AiSettingsResponse {
+  /** ClientView id (avatar entity key). */
   id: string;
-  organizationId: string | null;
-  agentType: AgentType;
   assistantName: string;
   assistantAvatar: { imageUrl: string; hash: string | null } | null;
-  llmProvider: string;
-  providerModel: string;
   applicationTheme: string;
   accentColor: string;
-  answerStyle: string | null;
-  customPrompt: string | null;
   quickActions: AiQuickAction[] | null;
-  createdAt: string;
-  updatedAt: string | null;
 }
 
-// (`aiSettings` on /chat/graphql — settings are scoped per agent)
+interface ClientViewGql {
+  id: string;
+  assistantName: string;
+  assistantAvatar: { imageUrl: string; hash: string | null } | null;
+  applicationTheme: string;
+  accentColor: string;
+}
+
+interface ClientAiConfigGql {
+  quickActions: AiQuickAction[] | null;
+}
+
+// The chat reads the client assistant's appearance (clientView) and its quick
+// actions (clientAiConfig) in a single request via two root fields. AI logic
+// (provider/model/etc.) is admin-only and not needed here.
 const AI_SETTINGS_QUERY = gql`
-  query AiSettings($organizationId: ID, $agentType: AgentType!) {
-    aiSettings(organizationId: $organizationId, agentType: $agentType) {
+  query ChatAiSettings($organizationId: ID) {
+    clientView(organizationId: $organizationId) {
       id
-      organizationId
-      agentType
       assistantName
       assistantAvatar {
         imageUrl
         hash
       }
-      llmProvider
-      providerModel
       applicationTheme
       accentColor
-      answerStyle
-      customPrompt
+    }
+    clientAiConfig {
       quickActions {
         id
         name
         instructions
       }
-      createdAt
-      updatedAt
     }
   }
 `;
@@ -100,14 +99,34 @@ class AiSettingsService {
     return client.request<T>(document, variables);
   }
 
-  /** Returns the CLIENT agent's AiSettings record, or `null` when none exists yet. Throws on transport/GraphQL errors. */
+  /**
+   * Loads the client assistant's appearance + quick actions. Returns `null`
+   * when neither collection has a record yet. Throws on transport/GraphQL errors.
+   * `organizationId` is null (tenant default); per-org overrides are not yet used.
+   */
   async fetchAiSettings(organizationId: string | null = null): Promise<AiSettingsResponse | null> {
     await tokenService.ensureTokenReady();
-    const data = await this.request<{ aiSettings: AiSettingsResponse | null }>(AI_SETTINGS_QUERY, {
-      organizationId,
-      agentType: CHAT_AGENT_TYPE,
-    });
-    return data.aiSettings ?? null;
+    const data = await this.request<{ clientView: ClientViewGql | null; clientAiConfig: ClientAiConfigGql | null }>(
+      AI_SETTINGS_QUERY,
+      { organizationId },
+    );
+
+    const view = data.clientView;
+    const aiConfig = data.clientAiConfig;
+    if (!view && !aiConfig) {
+      return null;
+    }
+
+    // Empty strings read as "not configured" by the consumers (branding falls
+    // back to the default name; appearance leaves the ODS defaults in place).
+    return {
+      id: view?.id ?? '',
+      assistantName: view?.assistantName ?? '',
+      assistantAvatar: view?.assistantAvatar ?? null,
+      applicationTheme: view?.applicationTheme ?? '',
+      accentColor: view?.accentColor ?? '',
+      quickActions: aiConfig?.quickActions ?? null,
+    };
   }
 }
 

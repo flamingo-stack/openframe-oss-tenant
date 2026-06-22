@@ -19,8 +19,8 @@ function readConnectionState(): ConnectionState {
 }
 
 /**
- * Loads the CLIENT agent's AiSettings (assistant customization incl.
- * quickActions) from /chat/graphql. `data` is `null` when no record exists yet.
+ * Loads the client assistant's appearance (clientView) and quick actions
+ * (clientAiConfig) from /chat/graphql. `data` is `null` when no record exists yet.
  * The query waits for the token/API URL to be available; readiness is
  * recomputed on every token/API update (and can flip back to false when
  * credentials drop), and the cache is keyed by the API base URL so a connection
