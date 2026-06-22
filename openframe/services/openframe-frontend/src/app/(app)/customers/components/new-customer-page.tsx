@@ -19,6 +19,7 @@ import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
 import { useCreateCustomer } from '../hooks/use-create-customer';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { useUpdateCustomer } from '../hooks/use-update-customer';
+import { CustomerAiAssistantAppearance } from './ai-assistant-appearance/customer-ai-assistant-appearance';
 
 interface NewCustomerPageProps {
   organizationId: string | null;
@@ -391,6 +392,14 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
           disabled={form.mailingSameAsPhysical}
           className="disabled:opacity-60"
         />
+
+        {/* AI-Assistant Appearance — per-customer override (edit mode only, needs an org id) */}
+        {organizationId && (
+          <>
+            <div className="border-t border-ods-border" />
+            <CustomerAiAssistantAppearance organizationId={organizationId} />
+          </>
+        )}
       </div>
     </PageLayout>
   );
