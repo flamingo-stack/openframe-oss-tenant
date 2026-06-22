@@ -66,6 +66,7 @@ use crate::services::nats_message_publisher::NatsMessagePublisher;
 use crate::services::local_tls_config_provider::LocalTlsConfigProvider;
 use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::machine_heartbeat_run_manager::MachineHeartbeatRunManager;
+use crate::services::mesh_self_heal_service::MeshSelfHealService;
 use crate::services::machine_heartbeat_publisher::MachineHeartbeatPublisher;
 use crate::services::{UpdateHandlerService, UpdateStateService, UpdateCleanupService, InitialKeyService};
 use crate::services::command_execution_service::CommandExecutionService;
@@ -146,6 +147,7 @@ pub struct Client {
     tool_agent_update_listener: ToolAgentUpdateListener,
     command_execution_listener: CommandExecutionListener,
     tool_run_manager: ToolRunManager,
+    mesh_self_heal_service: MeshSelfHealService,
     tool_connection_processing_manager: ToolConnectionProcessingManager,
     machine_heartbeat_run_manager: MachineHeartbeatRunManager,
     update_handler_service: UpdateHandlerService,
@@ -321,6 +323,15 @@ impl Client {
             session_manager,
         );
 
+        // Initialize mesh self-heal service
+        let mesh_self_heal_service = MeshSelfHealService::new(
+            directory_manager.clone(),
+            installed_tools_service.clone(),
+            tool_kill_service.clone(),
+            initial_configuration_service.clone(),
+            config_service.clone(),
+        );
+
         // Initialize tool connection service
         let tool_connection_service = ToolConnectionService::new(directory_manager.clone())
             .context("Failed to initialize tool connection service")?;
@@ -441,6 +452,7 @@ impl Client {
             tool_agent_update_listener,
             command_execution_listener,
             tool_run_manager,
+            mesh_self_heal_service,
             tool_connection_processing_manager,
             machine_heartbeat_run_manager,
             update_handler_service,
@@ -495,6 +507,9 @@ impl Client {
 
         // Start tool run manager
         self.tool_run_manager.run().await?;
+
+        // Start mesh self-heal watcher (re-fetch .msh + bounce agent if held on a stale MeshID).
+        self.mesh_self_heal_service.run().await?;
 
         // Start tool connection processing manager
         self.tool_connection_processing_manager.run().await?;
