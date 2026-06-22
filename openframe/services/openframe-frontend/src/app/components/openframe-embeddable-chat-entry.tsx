@@ -32,6 +32,7 @@ import { EmbeddableChat } from '@flamingo-stack/openframe-frontend-core/componen
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useEffect, useMemo } from 'react';
 import { featureFlags } from '@/lib/feature-flags';
+import { KNOWLEDGE_BASE_ROUTE } from '../(app)/help-center/endpoints';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
 import { renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
@@ -131,6 +132,12 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         shell="none"
         open={open}
         onOpenChange={onOpenChange}
+        // Doc-source citations from the Guide RAG (over `openframe-docs`) are the
+        // same knowledge base we host in-app at `/help-center/knowledge-base`. Point
+        // doc chips at that `[...path]` route so a cited doc opens the in-app viewer
+        // (relative → same-tab via the host router) instead of resolving Ask-only.
+        // No `chipBasePlatform`: we DO host the viewer, so chips stay in-app.
+        baseRoute={KNOWLEDGE_BASE_ROUTE}
         // Guide mode stays adapter-driven (SSE reads endpoints from the runtime
         // provider). Mingo mode is host-owned via `mingoState`, so we do NOT
         // pass `modes.mingo` — that keeps the lib's built-in NATS adapter idle.

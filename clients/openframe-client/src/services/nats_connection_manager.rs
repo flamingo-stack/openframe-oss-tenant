@@ -61,6 +61,7 @@ impl NatsConnectionManager {
             .name(machine_id.clone())
             .user_and_password(Self::NATS_DEVICE_USER.to_string(), Self::NATS_DEVICE_PASSWORD.to_string())
             .retry_on_initial_connect()
+            .max_reconnects(None)
             .reconnect_delay_callback(move |attempt| {
                 warn!(
                     attempt = attempt,
