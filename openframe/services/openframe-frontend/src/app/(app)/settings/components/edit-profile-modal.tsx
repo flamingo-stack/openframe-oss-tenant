@@ -1,11 +1,11 @@
 'use client';
 
 import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core';
-import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import type { User } from '@/app/(auth)/auth/stores';
 import { useAuthStore } from '@/app/(auth)/auth/stores';
+import { ImageUploader } from '@/app/components/shared/image-uploader';
 import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
@@ -105,7 +105,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
       }
     >
       <div style={{ maxHeight: '220px' }} className="[&>div]:min-h-0">
-        <HeroImageUploader
+        <ImageUploader
           imageUrl={displayImageUrl}
           onChange={url => setImageUrl(url)}
           uploadEndpoint="/api/users/image"
