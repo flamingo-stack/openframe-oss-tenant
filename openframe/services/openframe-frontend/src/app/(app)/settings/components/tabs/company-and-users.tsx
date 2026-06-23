@@ -152,7 +152,7 @@ export function CompanyAndUsersTab() {
             </div>
           );
         },
-        meta: { width: 'w-1/3' },
+        meta: { width: 'w-1/3 max-md:flex-[3] max-md:min-w-0' },
       },
       {
         accessorKey: 'roles',
@@ -160,7 +160,7 @@ export function CompanyAndUsersTab() {
         cell: ({ row }: { row: Row<UnifiedUserRecord> }) => (
           <TruncateText>{(row.original.roles || []).join(', ') || '—'}</TruncateText>
         ),
-        meta: { width: 'w-1/3' },
+        meta: { width: 'w-1/3 max-md:flex-[2] max-md:min-w-0' },
       },
       {
         accessorKey: 'status',
@@ -176,7 +176,7 @@ export function CompanyAndUsersTab() {
             </div>
           );
         },
-        meta: { width: 'w-1/3' },
+        meta: { width: 'w-1/3', hideAt: 'md' },
       },
       {
         id: 'actions',
@@ -225,7 +225,7 @@ export function CompanyAndUsersTab() {
           return null;
         },
         enableSorting: false,
-        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
+        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right', hideAt: 'md' },
       },
       {
         id: 'open',
