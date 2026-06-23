@@ -22,6 +22,7 @@ const CATEGORY_BY_NAV_ID: Record<string, NotificationCategory> = {
   organizations: NotificationCategory.CUSTOMERS,
   devices: NotificationCategory.DEVICES,
   scripts: NotificationCategory.SCRIPTS,
+  'scripts-v2': NotificationCategory.SCRIPTS,
   monitoring: NotificationCategory.MONITORING,
   logs: NotificationCategory.LOGS,
   tickets: NotificationCategory.TICKETS,
@@ -63,8 +64,19 @@ export const getNavigationItems = (
       label: 'Scripts',
       icon: <BracketCurlyIcon size={24} />,
       path: '/scripts',
-      isActive: pathname.startsWith('/scripts'),
+      isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
     },
+    ...(featureFlags.scriptsV2.enabled()
+      ? [
+          {
+            id: 'scripts-v2',
+            label: 'Scripts v2',
+            icon: <BracketCurlyIcon size={24} />,
+            path: '/scripts-v2',
+            isActive: pathname.startsWith('/scripts-v2'),
+          },
+        ]
+      : []),
     {
       id: 'monitoring',
       label: 'Monitoring',

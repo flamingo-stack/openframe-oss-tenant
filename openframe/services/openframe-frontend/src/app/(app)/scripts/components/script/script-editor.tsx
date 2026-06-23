@@ -90,6 +90,8 @@ interface ScriptEditorProps {
   shell?: string;
   readOnly?: boolean;
   height?: string;
+  /** Render an error border (e.g. when the bound form field is invalid). */
+  invalid?: boolean;
 }
 
 export function ScriptEditor({
@@ -98,6 +100,7 @@ export function ScriptEditor({
   shell = 'bash',
   readOnly = false,
   height = '400px',
+  invalid = false,
 }: ScriptEditorProps) {
   const editorRef = useRef<ReturnType<Monaco['editor']['create']> | null>(null);
 
@@ -119,7 +122,7 @@ export function ScriptEditor({
   );
 
   return (
-    <div className="rounded-md border border-ods-border overflow-hidden">
+    <div className={`rounded-md border overflow-hidden ${invalid ? 'border-ods-error' : 'border-ods-border'}`}>
       <Editor
         height={height}
         language={language}
