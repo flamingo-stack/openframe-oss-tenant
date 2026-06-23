@@ -94,6 +94,9 @@ impl ToolAgentUpdateService {
         // Mark as updating once for all updates
         self.tool_run_manager.mark_updating(tool_agent_id).await;
 
+        // A Standard->GuiApp migration self-relaunches, so only relaunch here if it was already a GUI app.
+        let was_gui_before_update = matches!(installed_tool.installation, Installation::GuiApp { .. });
+
         let result = self.do_updates(
             &message,
             &mut installed_tool,
@@ -105,7 +108,7 @@ impl ToolAgentUpdateService {
         self.tool_run_manager.clear_updating(tool_agent_id).await;
 
         // Windows GUI apps aren't run-manager-supervised; relaunch once after a successful update (no-op otherwise).
-        if result.is_ok() {
+        if result.is_ok() && was_gui_before_update {
             self.relaunch_windows_gui_app(&installed_tool);
         }
 
