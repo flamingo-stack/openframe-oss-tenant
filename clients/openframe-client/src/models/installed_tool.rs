@@ -55,6 +55,19 @@ pub struct InstalledAsset {
     pub executable: bool,
 }
 
+/// Lifecycle state of a registry record. `Installing` is written before the
+/// destructive phase of a (re)install and flipped to `Installed` only once the new
+/// binary/assets are in place; a record left `Installing` means a (re)install was
+/// interrupted and the tool needs repair (see self-heal). Defaults to `Installed`
+/// so pre-existing `installed_tools.json` entries (no `state` field) load as healthy.
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolRecordState {
+    Installing,
+    #[default]
+    Installed,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledTool {
     pub tool_agent_id: String,
@@ -69,6 +82,8 @@ pub struct InstalledTool {
     pub installation: Installation,
     #[serde(default)]
     pub assets: Vec<InstalledAsset>,
+    #[serde(default)]
+    pub state: ToolRecordState,
 }
 
 impl Default for InstalledTool {
@@ -83,6 +98,7 @@ impl Default for InstalledTool {
             uninstallation_command_args: None,
             installation: Installation::default(),
             assets: Vec::new(),
+            state: ToolRecordState::default(),
         }
     }
 }

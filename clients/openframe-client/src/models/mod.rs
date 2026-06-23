@@ -32,7 +32,7 @@ pub use agent_token_response::AgentTokenResponse;
 pub use tool_installation_result::ToolInstallationResult;
 pub use tool_installation_message::ToolInstallationMessage;
 pub use tool_connection_message::ToolConnectionMessage;
-pub use installed_tool::{InstalledTool, Installation, InstalledAsset};
+pub use installed_tool::{InstalledTool, Installation, InstalledAsset, ToolRecordState};
 pub use tool_connection::ToolConnection;
 pub use openframe_client_update_message::OpenFrameClientUpdateMessage;
 pub use tool_agent_update_message::{ToolAgentUpdateMessage, AssetUpdate};

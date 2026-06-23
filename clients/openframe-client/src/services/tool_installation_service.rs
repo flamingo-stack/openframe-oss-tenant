@@ -9,7 +9,7 @@ use crate::services::InstalledToolsService;
 use crate::services::GithubDownloadService;
 use crate::services::InstalledAgentMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
-use crate::models::{InstalledTool, Installation};
+use crate::models::{InstalledTool, Installation, ToolRecordState};
 use crate::platform::DirectoryManager;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
@@ -161,13 +161,19 @@ impl ToolInstallationService {
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                // Delete from both services
-                info!("Removing tool {} from services", tool_agent_id);
+                // Clear the connection record (the agent re-derives its node id after a
+                // reinstall) but KEEP the installed-tools record — mark it `Installing`
+                // instead of deleting it. A standalone delete here is the orphan hazard:
+                // if the process dies before the final save (e.g. a concurrent client
+                // self-update restart), a deleted record never comes back and the tool
+                // vanishes from the registry. With `Installing`, an interrupted reinstall
+                // leaves a repairable marker; the final save below flips it to `Installed`.
+                info!("Marking tool {} as installing for reinstall", tool_agent_id);
                 if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
-                if let Err(e) = self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await {
-                    warn!("Failed to remove from installed tools: {:#}", e);
+                if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
+                    warn!("Failed to mark tool as installing: {:#}", e);
                 }
                 
                 // Clear from both manager tracking sets to allow tool restart after reinstall
@@ -422,6 +428,9 @@ impl ToolInstallationService {
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             installation,
             assets: Vec::new(),
+            // New binary + assets are in place; record is healthy. This save upserts
+            // (flipping any prior `Installing` marker from a reinstall to `Installed`).
+            state: ToolRecordState::Installed,
         };
 
         self.installed_tools_service.save(installed_tool.clone()).await
