@@ -10,6 +10,7 @@ use tracing::{debug, error, info, warn};
 use crate::models::Installation;
 use crate::platform::{system_service, DirectoryManager};
 use crate::services::tool_kill_service::ToolKillService;
+use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::{AgentConfigurationService, InitialConfigurationService, InstalledToolsService};
 
 const MESH_TOOL_ID: &str = "meshcentral-agent";
@@ -33,6 +34,7 @@ pub struct MeshSelfHealService {
     tool_kill: ToolKillService,
     initial_config: InitialConfigurationService,
     agent_config: AgentConfigurationService,
+    tool_run_manager: ToolRunManager,
     http: reqwest::Client,
 }
 
@@ -43,6 +45,7 @@ impl MeshSelfHealService {
         tool_kill: ToolKillService,
         initial_config: InitialConfigurationService,
         agent_config: AgentConfigurationService,
+        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             directory_manager,
@@ -50,6 +53,7 @@ impl MeshSelfHealService {
             tool_kill,
             initial_config,
             agent_config,
+            tool_run_manager,
             http: reqwest::Client::builder()
                 .timeout(HTTP_TIMEOUT)
                 .build()
@@ -107,6 +111,12 @@ impl MeshSelfHealService {
                 None => continue,
             };
             if stuck_for < STUCK_DURATION {
+                continue;
+            }
+
+            if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
+                info!("meshcentral-agent is updating — skipping MeshID self-heal this cycle");
+                stuck_since = None;
                 continue;
             }
 

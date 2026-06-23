@@ -319,6 +319,7 @@ impl Client {
             tool_kill_service.clone(),
             initial_configuration_service.clone(),
             config_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize tool connection service
@@ -332,6 +333,7 @@ impl Client {
             tool_connection_message_publisher.clone(),
             config_service.clone(),
             tool_connection_service.clone(),
+            tool_run_manager.clone(),
         );
 
         // Initialize OpenFrame client info service

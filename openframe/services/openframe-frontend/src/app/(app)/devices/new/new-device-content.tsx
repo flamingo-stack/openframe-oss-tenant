@@ -11,9 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { graphql, useLazyLoadQuery } from 'react-relay';
 import { z } from 'zod';
-import type { newDeviceContentQuery as NewDeviceContentQueryType } from '@/__generated__/newDeviceContentQuery.graphql';
 import { OrgAvatar } from '@/app/components/shared';
 import { OsPlatformSelector } from '@/app/components/shared/os-platform-selector';
 import { isValidTag, type TagEntryWithId, TagsEditor } from '@/app/components/shared/tags';
@@ -21,26 +19,8 @@ import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
 import { AntivirusWarning } from '../components/antivirus-warning';
+import { useDeviceOrganizations } from '../hooks/use-device-organizations';
 import { useInstallCommand } from '../hooks/use-install-command';
-
-const newDeviceContentQuery = graphql`
-  query newDeviceContentQuery($first: Int!) {
-    organizations(first: $first) {
-      edges {
-        node {
-          id
-          organizationId
-          name
-          isDefault
-          image {
-            imageUrl
-            hash
-          }
-        }
-      }
-    }
-  }
-`;
 
 const newDeviceSchema = z.object({
   organizationId: z.string().min(1, 'Customer is required'),
@@ -57,23 +37,8 @@ export function NewDeviceContent() {
   // (e.g. `/devices/new?organizationId=<id>`), used to pre-select the dropdown.
   const preselectedOrgId = useSearchParams().get('organizationId');
 
-  // Relay query for organizations
-  const data = useLazyLoadQuery<NewDeviceContentQueryType>(
-    newDeviceContentQuery,
-    { first: 100 },
-    { fetchPolicy: 'store-or-network' },
-  );
-
-  const orgs = useMemo(() => {
-    return (data.organizations?.edges ?? []).map(edge => ({
-      id: edge.node.id,
-      organizationId: edge.node.organizationId,
-      name: edge.node.name,
-      isDefault: edge.node.isDefault,
-      imageUrl: edge.node.image?.imageUrl ?? undefined,
-      imageHash: edge.node.image?.hash ?? undefined,
-    }));
-  }, [data.organizations?.edges]);
+  // Organizations for the customer dropdown (GraphQL via TanStack Query).
+  const orgs = useDeviceOrganizations(100);
 
   const [tags, setTags] = useState<TagEntryWithId[]>([]);
 
