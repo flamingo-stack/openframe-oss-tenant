@@ -414,8 +414,10 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
           className="disabled:opacity-60"
         />
 
-        {/* AI-Assistant Appearance — per-customer override (edit mode only, needs an org id) */}
-        {organizationId && (
+        {/* AI-Assistant Appearance — per-customer override. SaaS-only: it relies on
+            the openframe-saas-ai-agent service (/chat/graphql), absent in self-hosted.
+            Edit mode only, since it needs an org id to scope the override. */}
+        {organizationId && isSaasTenant && (
           <>
             <div className="border-t border-ods-border" />
             <CustomerAiAssistantAppearance ref={appearanceRef} organizationId={organizationId} />

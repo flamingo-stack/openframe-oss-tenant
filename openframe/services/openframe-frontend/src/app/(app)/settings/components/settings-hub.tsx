@@ -18,7 +18,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores';
 import { useLogoutConfirmStore } from '@/app/(auth)/auth/stores/logout-confirm-store';
 import { apiClient } from '@/lib/api-client';
-import { isOssTenantMode } from '@/lib/app-mode';
+import { isOssTenantMode, isSaasTenantMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { handleApiError } from '@/lib/handle-api-error';
@@ -153,6 +153,9 @@ export function SettingsHub() {
           item => item.href !== '/settings/billing-usage' || featureFlags.subscription.enabled(),
         )
           .filter(item => item.href !== '/settings/architecture' || isOssTenantMode())
+          // AI Settings relies on the openframe-saas-ai-agent service (/chat/graphql),
+          // which doesn't exist in self-hosted — hide it outside saas-tenant.
+          .filter(item => item.href !== '/settings/ai-settings' || isSaasTenantMode())
           .map(item => (
             <SettingMenuItem
               key={item.href}
