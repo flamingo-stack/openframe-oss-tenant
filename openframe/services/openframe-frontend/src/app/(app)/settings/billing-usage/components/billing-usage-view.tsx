@@ -50,8 +50,8 @@ function BillingUsageContent() {
 
   // `Next Payment` comes straight from the backend's server-computed
   // `subscription.nextPayment` (projected next-invoice total). The row is
-  // omitted when there's nothing to bill (null / 0) — e.g. a trial with no
-  // upcoming charge — instead of rendering a "Free" placeholder.
+  // omitted when there's nothing to bill (null / 0) or while the user is on
+  // an active trial — instead of rendering a "Free" placeholder.
   const nextPaymentAmount = billing.nextPayment ?? 0;
 
   const menuActions: ActionsMenuGroup[] =
@@ -187,7 +187,9 @@ function BillingUsageContent() {
             value={ai.isPayg ? 'Pay as you go' : flags.hasAi ? formatCount(ai.allocation) : 'None'}
             muted={!flags.hasAi && !ai.isPayg}
           />
-          {nextPaymentAmount > 0 && <BillingRow label="Next Payment" value={formatCurrency(nextPaymentAmount)} />}
+          {!flags.isTrial && nextPaymentAmount > 0 && (
+            <BillingRow label="Next Payment" value={formatCurrency(nextPaymentAmount)} />
+          )}
           {flags.isPendingCancellation ? (
             <BillingRow
               label="Plan ends on"

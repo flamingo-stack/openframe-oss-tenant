@@ -19,8 +19,11 @@ interface EmployeeDetailsViewProps {
   userId: string;
 }
 
-const CARD_CLASS =
-  'flex items-center gap-[var(--spacing-system-m)] rounded-md border border-ods-border bg-ods-card p-[var(--spacing-system-m)]';
+const CARD_CONTAINER =
+  'flex flex-col rounded-md border border-ods-border bg-ods-card md:flex-row md:items-center md:gap-[var(--spacing-system-m)] md:p-[var(--spacing-system-m)]';
+
+const CARD_ROW =
+  'flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] py-[var(--spacing-system-s)] md:contents';
 
 function ProfileFieldSkeleton({ valueClassName }: { valueClassName: string }) {
   return (
@@ -33,14 +36,18 @@ function ProfileFieldSkeleton({ valueClassName }: { valueClassName: string }) {
 
 function EmployeeSummarySkeleton() {
   return (
-    <div className={CARD_CLASS}>
-      <div className="flex flex-1 items-center gap-[var(--spacing-system-m)] min-w-0">
-        <Skeleton className="size-12 shrink-0 rounded-full" />
-        <ProfileFieldSkeleton valueClassName="h-6 w-32" />
+    <div className={CARD_CONTAINER}>
+      <div className={CARD_ROW}>
+        <div className="flex flex-1 items-center gap-[var(--spacing-system-m)] min-w-0">
+          <Skeleton className="size-12 shrink-0 rounded-full" />
+          <ProfileFieldSkeleton valueClassName="h-6 w-32" />
+        </div>
+        <ProfileFieldSkeleton valueClassName="h-6 w-40" />
       </div>
-      <ProfileFieldSkeleton valueClassName="h-6 w-40" />
-      <ProfileFieldSkeleton valueClassName="h-6 w-24" />
-      <ProfileFieldSkeleton valueClassName="h-8 w-16 rounded-md" />
+      <div className={`${CARD_ROW} border-t border-ods-border`}>
+        <ProfileFieldSkeleton valueClassName="h-6 w-24" />
+        <ProfileFieldSkeleton valueClassName="h-8 w-16 rounded-md" />
+      </div>
     </div>
   );
 }
@@ -131,22 +138,26 @@ export function EmployeeDetailsView({ userId }: EmployeeDetailsViewProps) {
       {!user ? (
         <EmployeeSummarySkeleton />
       ) : (
-        <div className={CARD_CLASS}>
-          <div className="flex flex-1 items-center gap-[var(--spacing-system-m)] min-w-0">
-            <SquareAvatar
-              src={getFullImageUrl(user.image?.imageUrl, user.image?.hash)}
-              fallback={displayName}
-              size="lg"
-              variant="round"
-            />
-            <InfoCell value={displayName} label="Name" />
+        <div className={CARD_CONTAINER}>
+          <div className={CARD_ROW}>
+            <div className="flex flex-1 items-center gap-[var(--spacing-system-m)] min-w-0">
+              <SquareAvatar
+                src={getFullImageUrl(user.image?.imageUrl, user.image?.hash)}
+                fallback={displayName}
+                size="lg"
+                variant="round"
+              />
+              <InfoCell value={displayName} label="Name" />
+            </div>
+            <InfoCell value={user.email} label="Email" />
           </div>
-          <InfoCell value={user.email} label="Email" />
-          <InfoCell value={role} label="Role" />
-          <InfoCell
-            value={<Tag label={isActive ? 'ACTIVE' : 'DELETED'} variant={isActive ? 'success' : 'grey'} />}
-            label="Status"
-          />
+          <div className={`${CARD_ROW} border-t border-ods-border`}>
+            <InfoCell value={role} label="Role" />
+            <InfoCell
+              value={<Tag label={isActive ? 'ACTIVE' : 'DELETED'} variant={isActive ? 'success' : 'grey'} />}
+              label="Status"
+            />
+          </div>
         </div>
       )}
       <ConfirmDeleteUserModal

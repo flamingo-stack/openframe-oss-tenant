@@ -21,12 +21,20 @@ import { ScriptEditor } from './script-editor';
 
 interface ScriptFormFieldsProps {
   form: UseFormReturn<EditScriptFormData>;
+  /** Restrict the Shell Type options to these ids. Omit to show every SHELL_TYPES entry. */
+  allowedShellIds?: string[];
+  /** Hide the Category field (the native API has no such concept). */
+  hideCategory?: boolean;
+  /** Hide the "Run as User" toggle (not a stored script field on the native API). */
+  hideRunAsUser?: boolean;
 }
 
-export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
+export function ScriptFormFields({ form, allowedShellIds, hideCategory, hideRunAsUser }: ScriptFormFieldsProps) {
   const { control, watch, setValue, getValues } = form;
   const watchedSupportedPlatforms = watch('supported_platforms');
   const isMdUp = useMdUp();
+
+  const shellTypes = allowedShellIds ? SHELL_TYPES.filter(s => allowedShellIds.includes(s.value)) : SHELL_TYPES;
 
   return (
     <>
@@ -59,18 +67,20 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
               />
             );
           })}
-          <Controller
-            name="run_as_user"
-            control={control}
-            render={({ field }) => (
-              <CheckboxBlock
-                checked={field.value}
-                onCheckedChange={checked => field.onChange(checked)}
-                label="Run as User"
-                description="Windows Only"
-              />
-            )}
-          />
+          {!hideRunAsUser && (
+            <Controller
+              name="run_as_user"
+              control={control}
+              render={({ field }) => (
+                <CheckboxBlock
+                  checked={field.value}
+                  onCheckedChange={checked => field.onChange(checked)}
+                  label="Run as User"
+                  description="Windows Only"
+                />
+              )}
+            />
+          )}
         </div>
       </div>
 
@@ -105,7 +115,7 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
                   <SelectValue placeholder="Select Shell Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SHELL_TYPES.map(s => (
+                  {shellTypes.map(s => (
                     <SelectItem key={s.value} value={s.value}>
                       <div className="flex items-center gap-2">
                         <s.icon className="w-5 h-5" />
@@ -119,27 +129,29 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
           )}
         />
 
-        <Controller
-          name="category"
-          control={control}
-          render={({ field, fieldState }) => (
-            <div className="space-y-1">
-              <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Category</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger error={fieldState.error?.message} invalid={!!fieldState.error}>
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        />
+        {!hideCategory && (
+          <Controller
+            name="category"
+            control={control}
+            render={({ field, fieldState }) => (
+              <div className="space-y-1">
+                <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Category</Label>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger error={fieldState.error?.message} invalid={!!fieldState.error}>
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          />
+        )}
 
         <Controller
           name="default_timeout"
@@ -211,10 +223,21 @@ export function ScriptFormFields({ form }: ScriptFormFieldsProps) {
       <Controller
         name="script_body"
         control={control}
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <div>
             <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Syntax</Label>
-            <ScriptEditor value={field.value} onChange={field.onChange} shell={getValues('shell')} height="600px" />
+            <ScriptEditor
+              value={field.value}
+              onChange={field.onChange}
+              shell={getValues('shell')}
+              height="600px"
+              invalid={!!fieldState.error}
+            />
+            {fieldState.error && (
+              <p className="text-h6 text-ods-error truncate mt-1" title={fieldState.error.message}>
+                {fieldState.error.message}
+              </p>
+            )}
           </div>
         )}
       />
