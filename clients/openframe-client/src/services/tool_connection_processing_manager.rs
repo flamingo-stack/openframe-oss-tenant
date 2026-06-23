@@ -14,6 +14,7 @@ use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_connection_message_publisher::ToolConnectionMessagePublisher;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::tool_connection_service::ToolConnectionService;
+use crate::services::tool_run_manager::ToolRunManager;
 
 const RETRY_DELAY_SECONDS: u64 = 15;
 
@@ -25,6 +26,7 @@ pub struct ToolConnectionProcessingManager {
     tool_connection_publisher: ToolConnectionMessagePublisher,
     config_service: AgentConfigurationService,
     tool_connection_service: ToolConnectionService,
+    tool_run_manager: ToolRunManager,
     running_tools: Arc<RwLock<HashSet<String>>>,
 }
 
@@ -35,6 +37,7 @@ impl ToolConnectionProcessingManager {
         tool_connection_publisher: ToolConnectionMessagePublisher,
         config_service: AgentConfigurationService,
         tool_connection_service: ToolConnectionService,
+        tool_run_manager: ToolRunManager,
     ) -> Self {
         Self {
             installed_tools_service,
@@ -42,6 +45,7 @@ impl ToolConnectionProcessingManager {
             tool_connection_publisher,
             config_service,
             tool_connection_service,
+            tool_run_manager,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
         }
     }
@@ -124,9 +128,15 @@ impl ToolConnectionProcessingManager {
         let config_service = self.config_service.clone();
         let tool_connection_publisher = self.tool_connection_publisher.clone();
         let tool_connection_service = self.tool_connection_service.clone();
+        let tool_run_manager = self.tool_run_manager.clone();
 
         tokio::spawn(async move {
             loop {
+                while tool_run_manager.is_updating(&tool.tool_agent_id).await {
+                    info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
+                    sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                }
+
                 // If tool_agent_id_command_args is empty, use empty string as agent_tool_id
                 let agent_tool_id = if tool.tool_agent_id_command_args.is_empty() {
                     info!(

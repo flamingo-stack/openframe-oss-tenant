@@ -55,6 +55,14 @@ pub struct InstalledAsset {
     pub executable: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ToolRecordState {
+    Installing,
+    #[default]
+    Installed,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InstalledTool {
     pub tool_agent_id: String,
@@ -69,6 +77,8 @@ pub struct InstalledTool {
     pub installation: Installation,
     #[serde(default)]
     pub assets: Vec<InstalledAsset>,
+    #[serde(default)]
+    pub state: ToolRecordState,
 }
 
 impl Default for InstalledTool {
@@ -83,6 +93,7 @@ impl Default for InstalledTool {
             uninstallation_command_args: None,
             installation: Installation::default(),
             assets: Vec::new(),
+            state: ToolRecordState::default(),
         }
     }
 }
