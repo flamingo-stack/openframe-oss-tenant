@@ -66,21 +66,11 @@ impl ToolAgentUpdateService {
         let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             Some(tool) => tool,
             None => {
-                // Orphaned: no registry record at all. The TOOL_UPDATE message is lean
-                // (no run / node-id / uninstall args), so we cannot safely reconstruct a
-                // record here — a full TOOL_INSTALLATION (rich message) must restore it.
-                // Flag loudly instead of silently skipping.
                 warn!("Tool {} has no registry record (orphaned) — cannot self-heal from a lean update message; awaiting reinstall (TOOL_INSTALLATION). Skipping update", tool_agent_id);
                 return Ok(());
             }
         };
 
-        // Two conditions force a repair even when the version already matches the target:
-        // (1) the record is `Installing` (a prior (re)install was interrupted), or (2) the
-        // record's binary is missing on disk (removed out of band / interrupted install). In
-        // both cases re-download/reinstall and keep the record `Installing` for the duration,
-        // so an interrupted repair is resumed (startup recheck / next message) rather than left
-        // as `Installed` with no binary.
         let was_installing = installed_tool.state == ToolRecordState::Installing;
         let agent_path = self.directory_manager
             .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
@@ -95,8 +85,6 @@ impl ToolAgentUpdateService {
         }
         if needs_repair {
             installed_tool.state = ToolRecordState::Installing;
-            // For the binary-missing case the on-disk record still says `Installed`; persist
-            // `Installing` now so an interrupted repair is recoverable.
             if binary_missing && !was_installing {
                 if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
                     warn!("Failed to mark tool {} as installing before repair: {:#}", tool_agent_id, e);
@@ -140,9 +128,6 @@ impl ToolAgentUpdateService {
         // Clear updating flag - for Standard tools the run manager relaunches them via this flag.
         self.tool_run_manager.clear_updating(tool_agent_id).await;
 
-        // A repaired record was kept `Installing` through the work; flip it back to
-        // `Installed` only on success, so a mid-repair failure leaves it `Installing`
-        // for the next attempt.
         if result.is_ok() && needs_repair {
             if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installed).await {
                 warn!("Failed to finalize tool {} record to Installed after repair: {:#}", tool_agent_id, e);

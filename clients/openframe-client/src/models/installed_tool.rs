@@ -55,11 +55,6 @@ pub struct InstalledAsset {
     pub executable: bool,
 }
 
-/// Lifecycle state of a registry record. `Installing` is written before the
-/// destructive phase of a (re)install and flipped to `Installed` only once the new
-/// binary/assets are in place; a record left `Installing` means a (re)install was
-/// interrupted and the tool needs repair (see self-heal). Defaults to `Installed`
-/// so pre-existing `installed_tools.json` entries (no `state` field) load as healthy.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ToolRecordState {

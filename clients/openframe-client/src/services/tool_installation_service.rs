@@ -91,9 +91,6 @@ impl ToolInstallationService {
 
     #[tracing::instrument(skip_all, fields(tool_id = %tool_installation_message.tool_agent_id))]
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
-        // Mark this tool as a tool op in progress for the whole install/reinstall so
-        // (a) the run loop won't launch it against a half-written binary and (b) a
-        // concurrent client self-update defers instead of interrupting and orphaning it.
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
         self.tool_run_manager.mark_updating(&tool_agent_id).await;
         let result = self.install_inner(tool_installation_message).await;
@@ -118,11 +115,6 @@ impl ToolInstallationService {
             if reinstall {
                 info!("Reinstalling tool {} with version {}", tool_agent_id, version_clone);
 
-                // Mark `Installing` BEFORE any destructive step (uninstall command, dir
-                // removal). This brackets the whole teardown: if the process dies anywhere
-                // below, the record is already `Installing` (not `Installed`), so the startup
-                // recheck/update path will repair it instead of the run loop trying to launch
-                // a binary that's already gone.
                 if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
                     warn!("Failed to mark tool {} as installing before reinstall: {:#}", tool_agent_id, e);
                 }
@@ -196,11 +188,6 @@ impl ToolInstallationService {
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                // Clear the connection record — the agent re-derives its node id after a
-                // reinstall. The installed-tools record is intentionally NOT deleted here; it
-                // was marked `Installing` at the top of this branch and the final save below
-                // flips it back to `Installed`. (A standalone delete would be the orphan
-                // hazard: a crash before the final save would lose the record entirely.)
                 if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
@@ -211,12 +198,6 @@ impl ToolInstallationService {
                 
                 info!("Previous installation of tool {} was uninstalled", tool_agent_id);
             } else {
-                // A record alone isn't proof the tool is actually present — verify the binary
-                // on disk before trusting it. If the binary is missing (removed out of band, or
-                // a prior install/reinstall was interrupted), repair by falling through to the
-                // install path instead of skipping. Mark `Installing` first so the repair is
-                // crash-safe (an interrupted repair is then resumed by the startup recheck /
-                // next message rather than left as `Installed` with no binary).
                 let agent_path = self.directory_manager
                     .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
                 let binary_present = tokio::fs::metadata(&agent_path).await
@@ -230,7 +211,6 @@ impl ToolInstallationService {
                 if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
                     warn!("Failed to mark tool {} as installing before repair: {:#}", tool_agent_id, e);
                 }
-                // fall through to the install path below
             }
         }
 
@@ -487,8 +467,6 @@ impl ToolInstallationService {
             uninstallation_command_args: tool_installation_message.uninstallation_command_args,
             installation,
             assets: Vec::new(),
-            // New binary + assets are in place; record is healthy. This save upserts
-            // (flipping any prior `Installing` marker from a reinstall to `Installed`).
             state: ToolRecordState::Installed,
         };
 

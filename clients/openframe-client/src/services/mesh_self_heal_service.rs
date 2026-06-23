@@ -114,10 +114,6 @@ impl MeshSelfHealService {
                 continue;
             }
 
-            // Don't self-heal while the mesh agent is being installed/updated. During a tool
-            // op the agent is stopped/replaced, so a "stuck" log is expected — not an orphaned
-            // MeshID — and bouncing the service or rewriting the .msh now would fight the
-            // update. Re-arm the timer so the freshly-updated agent gets a full window.
             if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
                 info!("meshcentral-agent is updating — skipping MeshID self-heal this cycle");
                 stuck_since = None;

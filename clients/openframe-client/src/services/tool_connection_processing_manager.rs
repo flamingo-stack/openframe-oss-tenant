@@ -132,9 +132,6 @@ impl ToolConnectionProcessingManager {
 
         tokio::spawn(async move {
             loop {
-                // Don't run the node-id command against a binary that's being swapped by an
-                // in-flight update/reinstall — that yields an empty/garbage id and corrupts
-                // the device<->tool linkage. Wait until the tool op clears, then proceed.
                 while tool_run_manager.is_updating(&tool.tool_agent_id).await {
                     info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
                     sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;

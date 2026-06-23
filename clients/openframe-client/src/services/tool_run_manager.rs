@@ -349,10 +349,6 @@ pub struct ToolRunManager {
     params_processor: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
-    /// Per-tool in-flight operation count. Reference-counted (not a set) so that when
-    /// two operations run on the same tool (e.g. a reinstall via TOOL_INSTALLATION and
-    /// an update via TOOL_UPDATE, which arrive on separate listener tasks), the first
-    /// to finish doesn't clear the marker while the second is still writing files.
     updating_tools: Arc<RwLock<HashMap<String, usize>>>,
     shutting_down: Arc<AtomicBool>,
 }
@@ -404,9 +400,6 @@ impl ToolRunManager {
         self.updating_tools.read().await.contains_key(tool_id)
     }
 
-    /// True while any tool install/update/reinstall is in flight. The client
-    /// self-update consults this to defer (leave its NATS message unacked) rather
-    /// than restarting the service mid-tool-op and orphaning a half-written tool.
     pub async fn any_tool_op_in_progress(&self) -> bool {
         !self.updating_tools.read().await.is_empty()
     }
@@ -425,10 +418,6 @@ impl ToolRunManager {
             return Ok(());
         }
 
-        // D-min: proactive recheck of records left `Installing` by a (re)install that was
-        // interrupted (e.g. a client self-update restart). We only promote back to
-        // `Installed` when disk state actually proves the tool is good — never on a guess,
-        // so we don't mark a half-installed tool healthy.
         for tool in &tools {
             if tool.state != ToolRecordState::Installing {
                 continue;
@@ -444,17 +433,11 @@ impl ToolRunManager {
                 continue;
             }
 
-            // For a service-type tool a present binary does NOT prove the OS service is
-            // registered/running, so disk presence alone can't make it `Installed` — that
-            // would be a false-healthy. Leave it `Installing`; a *verified* repair clears it
-            // (the update path runs the service updater which confirms start_service, or a
-            // TOOL_INSTALLATION runs the tool's -install).
             if tool.installation.is_service() {
                 warn!(tool_id = %tool.tool_agent_id, "Record left Installing; binary present at {} but service registration can't be verified from disk — leaving Installing for a verified repair", path.display());
                 continue;
             }
 
-            // Standard/GuiApp: the binary *is* the tool, so presence is enough to adopt.
             warn!(tool_id = %tool.tool_agent_id, "Record left Installing but binary is present at {} — marking Installed", path.display());
             if let Err(e) = self.installed_tools_service.set_state(&tool.tool_agent_id, ToolRecordState::Installed).await {
                 warn!(tool_id = %tool.tool_agent_id, "Failed to mark Installed during startup recheck: {:#}", e);

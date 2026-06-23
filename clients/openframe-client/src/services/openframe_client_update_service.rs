@@ -45,10 +45,6 @@ impl OpenFrameClientUpdateService {
         let requested_version = message.version.trim();
         info!("Received update request for version: {}", requested_version);
 
-        // 0. Defer to any in-flight tool install/update/reinstall. The self-update kills
-        //    the service, so starting one mid-tool-op would orphan a half-written tool
-        //    (root cause #1). Returning Err leaves the CLIENT_UPDATE message unacked, so
-        //    NATS redelivers it (bounded by ack_wait x max_deliver) once tools are idle.
         if self.tool_run_manager.any_tool_op_in_progress().await {
             warn!("Tool operation in progress, deferring client update to version {} (will redeliver)", requested_version);
             return Err(anyhow!("Tool operation in progress, deferring client update"));
@@ -202,11 +198,6 @@ impl OpenFrameClientUpdateService {
             update_state_path: self.update_state_service.get_state_file_path(),
         };
 
-        // Final gate before the irreversible updater launch. The entry check in
-        // process_update only covers the instant the message arrived; the binary download
-        // above is a wide window in which a tool install/update could have started. If one
-        // did, abort now (clean up the archive, clear state, leave the CLIENT_UPDATE unacked
-        // to redeliver) rather than launching the updater and killing the service mid-tool-op.
         if self.tool_run_manager.any_tool_op_in_progress().await {
             warn!("Tool operation started during client download, deferring client update (will redeliver)");
             if let Err(cleanup_err) = std::fs::remove_file(&archive_path) {
