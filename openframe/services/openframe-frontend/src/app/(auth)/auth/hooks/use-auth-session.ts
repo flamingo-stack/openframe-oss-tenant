@@ -44,7 +44,10 @@ export function useAuthSession() {
       if (response.ok && response.data?.authenticated) {
         return response.data;
       }
-      if (response.status === 401) {
+      // 401 (unauthenticated) and 403 (forbidden) both mean "not signed in" —
+      // resolve to null so the user is shown the sign-in page instead of a
+      // blank screen / error state.
+      if (response.status === 401 || response.status === 403) {
         return null;
       }
       // For transient errors (500, network), throw so React Query retries
@@ -92,7 +95,7 @@ export function useAuthSession() {
       // and we're not still loading
       const currentState = useAuthStore.getState();
       if (currentState.isAuthenticated && query.fetchStatus === 'idle' && !query.isError) {
-        // Session expired (401) - clear state
+        // Session expired / forbidden (401/403) - clear state
         // Skip logout if query is in error state (transient 5xx/network errors)
         storeLogout();
       }
