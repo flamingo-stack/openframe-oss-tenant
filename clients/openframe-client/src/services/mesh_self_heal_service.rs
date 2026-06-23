@@ -22,8 +22,12 @@ const HEALTHY_MARKER: &str = "Received CoreOk from server";
 
 /// How often we scan the agent log.
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
-/// How long continuously stuck before we act; also the sole rate-limiter (streak resets after each attempt). Cooldown may return after dev testing.
+/// How long continuously stuck before we act.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
+/// After a no-op heal (MeshID unchanged / nothing to do), wait at least this long before
+/// trying again, so a persistently-unreachable mesh server doesn't trigger a heal attempt
+/// every STUCK_DURATION.
+const NOOP_HEAL_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 /// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -85,6 +89,7 @@ impl MeshSelfHealService {
 
         let mut offset: u64 = 0;
         let mut stuck_since: Option<Instant> = None;
+        let mut last_noop_heal: Option<Instant> = None;
 
         loop {
             sleep(POLL_INTERVAL).await;
@@ -114,6 +119,12 @@ impl MeshSelfHealService {
                 continue;
             }
 
+            if let Some(t) = last_noop_heal {
+                if t.elapsed() < NOOP_HEAL_COOLDOWN {
+                    continue;
+                }
+            }
+
             if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
                 info!("meshcentral-agent is updating — skipping MeshID self-heal this cycle");
                 stuck_since = None;
@@ -125,9 +136,13 @@ impl MeshSelfHealService {
                 stuck_for.as_secs()
             );
             match self.try_heal().await {
-                Ok(true) => info!("mesh self-heal: adopted a new MeshID and restarted the agent"),
+                Ok(true) => {
+                    info!("mesh self-heal: adopted a new MeshID and restarted the agent");
+                    last_noop_heal = None;
+                }
                 Ok(false) => {
-                    debug!("mesh self-heal: MeshID unchanged or server unreachable — no action taken")
+                    debug!("mesh self-heal: MeshID unchanged or server unreachable — no action taken");
+                    last_noop_heal = Some(Instant::now());
                 }
                 Err(e) => error!("mesh self-heal failed: {e:#}"),
             }
