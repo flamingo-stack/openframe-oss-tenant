@@ -4,6 +4,7 @@ import { TableCellIcon, TableColIcon } from '@flamingo-stack/openframe-frontend-
 import { TabSelector } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useMemo } from 'react';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { TicketsBoard } from './tickets-board';
 import { CurrentTickets } from './tickets-table';
 
@@ -21,11 +22,15 @@ export function TicketsView() {
 
   const viewMode: ViewMode = params.viewMode === 'board' ? 'board' : 'table';
 
+  // Local search keeps typing responsive; the shared hook debounces the write to
+  // the URL param so we don't navigate the router (and re-render the board) on
+  // every keystroke.
+  const { search, setSearch } = useSearchParam(params.search, value => setParam('search', value), 300);
+
   const handleStatusFilterChange = useCallback((status: string[]) => setParam('status', status), [setParam]);
   const handleOrganizationIdsChange = useCallback((ids: string[]) => setParam('organizationIds', ids), [setParam]);
   const handleAssigneeIdsChange = useCallback((ids: string[]) => setParam('assigneeIds', ids), [setParam]);
   const handleLabelIdsChange = useCallback((ids: string[]) => setParam('labelIds', ids), [setParam]);
-  const handleSearchChange = useCallback((value: string) => setParam('search', value), [setParam]);
 
   const tabs = useMemo(
     () => (
@@ -51,8 +56,8 @@ export function TicketsView() {
         onAssigneeIdsChange={handleAssigneeIdsChange}
         labelIds={params.labelIds}
         onLabelIdsChange={handleLabelIdsChange}
-        search={params.search}
-        onSearchChange={handleSearchChange}
+        search={search}
+        onSearchChange={setSearch}
       />
     );
   }
@@ -64,8 +69,8 @@ export function TicketsView() {
       selector={tabs}
       labelIds={params.labelIds}
       onLabelIdsChange={handleLabelIdsChange}
-      search={params.search}
-      onSearchChange={handleSearchChange}
+      search={search}
+      onSearchChange={setSearch}
     />
   );
 }

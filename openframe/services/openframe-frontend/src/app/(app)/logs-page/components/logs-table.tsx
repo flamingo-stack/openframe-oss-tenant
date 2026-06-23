@@ -26,7 +26,7 @@ import {
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 import {
   forwardRef,
@@ -45,6 +45,7 @@ import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState, LogDrawer } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -687,23 +688,13 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
 
   // Local search input keeps typing responsive; the debounced value drives both
   // the query and the URL param (so history isn't spammed on every keystroke).
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearch = useDebounce(searchInput, 300);
-
-  // Write the debounced value back to the URL. Keyed on the debounced value only
-  // (the setter is read from a ref) so an external `params.search` change does
-  // NOT trigger a write-back that would fight the sync-down effect below.
-  const setParamRef = useRef(setParam);
-  setParamRef.current = setParam;
-  useEffect(() => {
-    setParamRef.current('search', debouncedSearch);
-  }, [debouncedSearch]);
-
-  // Sync the input down when `params.search` changes externally (e.g. browser
-  // back/forward), so the field doesn't go stale against the active query param.
-  useEffect(() => {
-    setSearchInput(params.search);
-  }, [params.search]);
+  // The shared hook guards the back/forward sync-down so it can't clobber
+  // characters typed while a fetch is in flight.
+  const {
+    search: searchInput,
+    setSearch: setSearchInput,
+    debouncedSearch,
+  } = useSearchParam(params.search, value => setParam('search', value), 300);
 
   // Whether the inner content is in the genuinely-empty onboarding state; when
   // true the search toolbar is hidden (the header + actions stay).

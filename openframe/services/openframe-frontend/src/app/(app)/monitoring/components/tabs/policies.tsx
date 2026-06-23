@@ -12,6 +12,7 @@ import {
   Hierarchy02Icon,
   PlusCircleIcon,
   RadarIcon,
+  SearchIcon,
   ShareIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
@@ -19,11 +20,11 @@ import {
   type ColumnDef,
   DashboardInfoCard,
   DataTable,
+  Input,
   MoreActionsMenu,
   PageError,
   PageLayout,
   type Row,
-  SearchInput,
   Skeleton,
   Tag,
   TruncateText,
@@ -35,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
@@ -87,12 +89,20 @@ export function Policies() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
-  const handleSearch = useCallback(
-    (term: string) => {
-      setParams({ search: term });
+  // Local search keeps typing responsive; the shared hook debounces the write to
+  // the URL param so we don't navigate the router (and re-filter) on every keystroke.
+  const { search, setSearch, debouncedSearch } = useSearchParam(
+    params.search,
+    value => setParams({ search: value }),
+    300,
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
       setVisibleCount(PAGE_SIZE);
     },
-    [setParams],
+    [setSearch],
   );
 
   const { policies, isLoading, error, deletePolicy } = usePolicies();
@@ -100,18 +110,18 @@ export function Policies() {
 
   // Show the empty state instead of the search bar + table only when there is
   // genuinely no data: loading finished, no active search, and no policies.
-  const showEmptyState = !isLoading && !params.search.trim() && policies.length === 0;
+  const showEmptyState = !isLoading && !debouncedSearch.trim() && policies.length === 0;
   const [policyToDelete, setPolicyToDelete] = useState<Policy | null>(null);
 
   const filteredPolicies = useMemo(() => {
-    if (!params.search || params.search.trim() === '') return policies;
+    if (!debouncedSearch || debouncedSearch.trim() === '') return policies;
 
-    const searchLower = params.search.toLowerCase().trim();
+    const searchLower = debouncedSearch.toLowerCase().trim();
     return policies.filter(
       policy =>
         policy.name.toLowerCase().includes(searchLower) || policy.description.toLowerCase().includes(searchLower),
     );
-  }, [policies, params.search]);
+  }, [policies, debouncedSearch]);
 
   const visiblePolicies = useMemo(() => filteredPolicies.slice(0, visibleCount), [filteredPolicies, visibleCount]);
 
@@ -307,11 +317,11 @@ export function Policies() {
             ref={toolbarRef}
             className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
           >
-            <SearchInput
-              value={params.search}
-              onChange={handleSearch}
+            <Input
               placeholder="Search for Policies"
-              debounceMs={500}
+              value={search}
+              onChange={e => handleSearchChange(e.target.value)}
+              startAdornment={<SearchIcon />}
             />
           </div>
 
@@ -322,8 +332,8 @@ export function Policies() {
               loading={isLoading}
               skeletonRows={PAGE_SIZE}
               emptyMessage={
-                params.search
-                  ? `No policies found matching "${params.search}". Try adjusting your search.`
+                debouncedSearch
+                  ? `No policies found matching "${debouncedSearch}". Try adjusting your search.`
                   : 'No policies found.'
               }
               rowClassName="mb-1"
