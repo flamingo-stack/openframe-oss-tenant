@@ -37,12 +37,13 @@ import {
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { getOSLabel, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useScripts } from '../hooks/use-scripts';
@@ -74,19 +75,17 @@ export function ScriptsTable() {
   });
   const pageSize = 10;
 
-  // Local state for debounced input
-  const [searchInput, setSearchInput] = useState(params.search);
+  // Search keeps typing responsive; the shared hook debounces the write to the
+  // URL param (which drives filtering) and guards the back/forward sync-down
+  // against clobbering typing.
+  const { search: searchInput, setSearch: setSearchInput } = useSearchParam(
+    params.search,
+    value => setParam('search', value),
+    300,
+  );
   const [visibleCount, setVisibleCount] = useState(pageSize);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const debouncedSearchInput = useDebounce(searchInput, 300);
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
-
-  // Sync debounced search to URL (only when value actually changed)
-  useEffect(() => {
-    if (debouncedSearchInput !== params.search) {
-      setParam('search', debouncedSearchInput);
-    }
-  }, [debouncedSearchInput, params.search, setParam]);
 
   const { scripts, isLoading, error } = useScripts();
 

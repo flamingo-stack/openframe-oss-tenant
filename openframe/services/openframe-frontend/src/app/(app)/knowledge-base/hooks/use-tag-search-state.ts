@@ -1,8 +1,9 @@
 'use client';
 
 import type { TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useMemo, useState } from 'react';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useMemo } from 'react';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import type { SelectedKnowledgeBaseTag } from '../components/knowledge-base-tags-row';
 
 export interface TagSearchState {
@@ -19,10 +20,43 @@ export interface TagSearchState {
   clearAll: () => void;
 }
 
+// Tags persist in the URL as one `tags=<id>:<key>` entry each (repeated params,
+// so commas/colons in keys are safe). IDs never contain ':', so we split on the
+// first colon — the key may itself contain colons.
+function encodeTag(tag: SelectedKnowledgeBaseTag): string {
+  return `${tag.id}:${tag.key}`;
+}
+
+function decodeTag(entry: string): SelectedKnowledgeBaseTag | null {
+  const i = entry.indexOf(':');
+  if (i <= 0) return null;
+  return { id: entry.slice(0, i), key: entry.slice(i + 1) };
+}
+
+/**
+ * Search + tag filter state for Knowledge Base, persisted in the URL.
+ *
+ * Search is kept responsive via the shared {@link useSearchParam} hook (local
+ * input state + debounced write to the URL param), so typing never lags behind a
+ * router navigation and is never clobbered mid-fetch. Selected tags are encoded
+ * into the `tags` URL param so the whole filter survives refresh / back-forward.
+ */
 export function useTagSearchState(): TagSearchState {
-  const [search, setSearch] = useState('');
-  const debouncedSearch = useDebounce(search, 300);
-  const [selectedTags, setSelectedTags] = useState<SelectedKnowledgeBaseTag[]>([]);
+  const { params, setParam, setParams } = useApiParams({
+    search: { type: 'string', default: '' },
+    tags: { type: 'array', default: [] },
+  });
+
+  const { search, setSearch, debouncedSearch } = useSearchParam(params.search, value => setParam('search', value), 300);
+
+  const selectedTags = useMemo<SelectedKnowledgeBaseTag[]>(
+    () =>
+      params.tags.flatMap(entry => {
+        const tag = decodeTag(entry);
+        return tag ? [tag] : [];
+      }),
+    [params.tags],
+  );
 
   const tagIds = useMemo(() => selectedTags.map(t => t.id), [selectedTags]);
 
@@ -31,22 +65,35 @@ export function useTagSearchState(): TagSearchState {
     [selectedTags],
   );
 
-  const addTag = useCallback((tag: SelectedKnowledgeBaseTag) => {
-    setSelectedTags(prev => (prev.some(t => t.id === tag.id) ? prev : [...prev, tag]));
-  }, []);
+  const addTag = useCallback(
+    (tag: SelectedKnowledgeBaseTag) => {
+      if (params.tags.some(entry => decodeTag(entry)?.id === tag.id)) return;
+      setParam('tags', [...params.tags, encodeTag(tag)]);
+    },
+    [params.tags, setParam],
+  );
 
-  const removeTag = useCallback((id: string) => {
-    setSelectedTags(prev => prev.filter(t => t.id !== id));
-  }, []);
+  const removeTag = useCallback(
+    (id: string) => {
+      setParam(
+        'tags',
+        params.tags.filter(entry => decodeTag(entry)?.id !== id),
+      );
+    },
+    [params.tags, setParam],
+  );
 
-  const setTags = useCallback((tags: SelectedKnowledgeBaseTag[]) => {
-    setSelectedTags(tags);
-  }, []);
+  const setTags = useCallback(
+    (tags: SelectedKnowledgeBaseTag[]) => {
+      setParam('tags', tags.map(encodeTag));
+    },
+    [setParam],
+  );
 
   const clearAll = useCallback(() => {
     setSearch('');
-    setSelectedTags([]);
-  }, []);
+    setParams({ search: '', tags: [] });
+  }, [setSearch, setParams]);
 
   return {
     search,
