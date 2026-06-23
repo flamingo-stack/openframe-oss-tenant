@@ -4,7 +4,7 @@ use std::process::Stdio;
 use tokio::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
@@ -351,7 +351,11 @@ pub struct ToolRunManager {
     params_processor: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
-    updating_tools: Arc<RwLock<HashSet<String>>>,
+    /// Per-tool in-flight operation count. Reference-counted (not a set) so that when
+    /// two operations run on the same tool (e.g. a reinstall via TOOL_INSTALLATION and
+    /// an update via TOOL_UPDATE, which arrive on separate listener tasks), the first
+    /// to finish doesn't clear the marker while the second is still writing files.
+    updating_tools: Arc<RwLock<HashMap<String, usize>>>,
     shutting_down: Arc<AtomicBool>,
     #[cfg(target_os = "windows")]
     session_manager: Option<Arc<WindowsSessionManager>>,
@@ -369,7 +373,7 @@ impl ToolRunManager {
             params_processor,
             tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
-            updating_tools: Arc::new(RwLock::new(HashSet::new())),
+            updating_tools: Arc::new(RwLock::new(HashMap::new())),
             shutting_down: Arc::new(AtomicBool::new(false)),
             #[cfg(target_os = "windows")]
             session_manager,
@@ -384,17 +388,34 @@ impl ToolRunManager {
     }
 
     pub async fn mark_updating(&self, tool_id: &str) {
-        self.updating_tools.write().await.insert(tool_id.to_string());
-        info!("Tool {} marked as updating", tool_id);
+        let mut map = self.updating_tools.write().await;
+        let count = map.entry(tool_id.to_string()).or_insert(0);
+        *count += 1;
+        info!("Tool {} marked as updating (in-flight ops: {})", tool_id, *count);
     }
 
     pub async fn clear_updating(&self, tool_id: &str) {
-        self.updating_tools.write().await.remove(tool_id);
-        info!("Tool {} update flag cleared", tool_id);
+        let mut map = self.updating_tools.write().await;
+        if let Some(count) = map.get_mut(tool_id) {
+            *count -= 1;
+            if *count == 0 {
+                map.remove(tool_id);
+                info!("Tool {} update flag cleared", tool_id);
+            } else {
+                info!("Tool {} op finished (in-flight ops remaining: {})", tool_id, *count);
+            }
+        }
     }
 
     pub async fn is_updating(&self, tool_id: &str) -> bool {
-        self.updating_tools.read().await.contains(tool_id)
+        self.updating_tools.read().await.contains_key(tool_id)
+    }
+
+    /// True while any tool install/update/reinstall is in flight. The client
+    /// self-update consults this to defer (leave its NATS message unacked) rather
+    /// than restarting the service mid-tool-op and orphaning a half-written tool.
+    pub async fn any_tool_op_in_progress(&self) -> bool {
+        !self.updating_tools.read().await.is_empty()
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -482,7 +503,7 @@ impl ToolRunManager {
                 }
 
                 let mut was_updating = false;
-                while updating_tools.read().await.contains(&tool.tool_agent_id) {
+                while updating_tools.read().await.contains_key(&tool.tool_agent_id) {
                     was_updating = true;
                     info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
                     sleep(Duration::from_secs(1)).await;

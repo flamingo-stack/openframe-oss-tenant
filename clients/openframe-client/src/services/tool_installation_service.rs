@@ -84,6 +84,17 @@ impl ToolInstallationService {
 
     #[tracing::instrument(skip_all, fields(tool_id = %tool_installation_message.tool_agent_id))]
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
+        // Mark this tool as a tool op in progress for the whole install/reinstall so
+        // (a) the run loop won't launch it against a half-written binary and (b) a
+        // concurrent client self-update defers instead of interrupting and orphaning it.
+        let tool_agent_id = tool_installation_message.tool_agent_id.clone();
+        self.tool_run_manager.mark_updating(&tool_agent_id).await;
+        let result = self.install_inner(tool_installation_message).await;
+        self.tool_run_manager.clear_updating(&tool_agent_id).await;
+        result
+    }
+
+    async fn install_inner(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
         let tool_agent_id = &tool_installation_message.tool_agent_id;
         info!("Installing tool {} with version {}", tool_agent_id, tool_installation_message.version);
 
