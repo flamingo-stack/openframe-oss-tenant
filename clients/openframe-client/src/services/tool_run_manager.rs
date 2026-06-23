@@ -24,8 +24,6 @@ use windows::{
     Win32::Security::*,
 };
 #[cfg(target_os = "windows")]
-use crate::services::windows_session_manager::WindowsSessionManager;
-#[cfg(target_os = "windows")]
 use crate::utils::windows_helpers::{build_command_line, to_wide, wcslen};
 
 const RETRY_DELAY_SECONDS: u64 = 5;
@@ -353,8 +351,6 @@ pub struct ToolRunManager {
     running_tools: Arc<RwLock<HashSet<String>>>,
     updating_tools: Arc<RwLock<HashSet<String>>>,
     shutting_down: Arc<AtomicBool>,
-    #[cfg(target_os = "windows")]
-    session_manager: Option<Arc<WindowsSessionManager>>,
 }
 
 impl ToolRunManager {
@@ -362,7 +358,6 @@ impl ToolRunManager {
         installed_tools_service: InstalledToolsService,
         params_processor: ToolCommandParamsResolver,
         tool_kill_service: ToolKillService,
-        #[cfg(target_os = "windows")] session_manager: Option<Arc<WindowsSessionManager>>,
     ) -> Self {
         Self {
             installed_tools_service,
@@ -371,8 +366,6 @@ impl ToolRunManager {
             running_tools: Arc::new(RwLock::new(HashSet::new())),
             updating_tools: Arc::new(RwLock::new(HashSet::new())),
             shutting_down: Arc::new(AtomicBool::new(false)),
-            #[cfg(target_os = "windows")]
-            session_manager,
         }
     }
 
@@ -458,9 +451,9 @@ impl ToolRunManager {
         #[cfg(not(target_os = "windows"))]
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
-        // On Windows, GUI apps whose lifecycle is owned by the session manager
+        // Windows GUI apps are owned by the HKLM Run autorun, not us — never kill them.
         #[cfg(target_os = "windows")]
-        if !(tool.installation.is_gui_app() && self.session_manager.is_some()) {
+        if !tool.installation.is_gui_app() {
             self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
         }
 
@@ -470,8 +463,6 @@ impl ToolRunManager {
         let running_tools = self.running_tools.clone();
         let installed_tools_service = self.installed_tools_service.clone();
         let mut installation = tool.installation.clone();
-        #[cfg(target_os = "windows")]
-        let session_manager = self.session_manager.clone();
 
         tokio::spawn(async move {
             loop {
@@ -523,22 +514,30 @@ impl ToolRunManager {
                                 break;
                             }
 
-                            // Register tool in the WindowsSessionManager,
-                            // so its lifetime will be managed by it
-                            if let Some(mgr) = &session_manager {
+                            // Fresh install: launch once now (Run autorun only fires at next logon); else autorun owns it.
+                            if new_tool {
                                 let mut launch_args = processed_args.clone();
                                 // For openframe-chat, add --background flag to start in tray
                                 if tool.tool_agent_id == "openframe-chat" {
                                     launch_args.push("--background".to_string());
                                 }
-                                mgr.register_tool(
-                                    tool.tool_agent_id.clone(),
-                                    command_path.clone(),
-                                    launch_args,
-                                    new_tool,
-                                ).await;
-                                return;
+                                match launch_process_in_user_session(&command_path, &launch_args) {
+                                    Ok((pid, process_handle)) => {
+                                        info!(tool_id = %tool.tool_agent_id, pid,
+                                              "GuiApp launched once in user session after install (fire-and-forget)");
+                                        unsafe { let _ = CloseHandle(process_handle); }
+                                    }
+                                    Err(e) => {
+                                        warn!(tool_id = %tool.tool_agent_id, error = %e,
+                                              "Failed to launch GuiApp in user session after install");
+                                    }
+                                }
+                            } else {
+                                info!(tool_id = %tool.tool_agent_id,
+                                      "GuiApp launch owned by HKLM Run autorun at logon - not launching from service");
                             }
+                            running_tools.write().await.remove(&tool.tool_agent_id);
+                            return;
                         }
 
                         #[cfg(target_os = "macos")]
