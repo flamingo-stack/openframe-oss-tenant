@@ -15,11 +15,16 @@ import { useHasOrganizations } from './hooks/use-has-organizations';
 
 export default function Devices() {
   const askMingo = useAskMingo();
-  const { hasOrganizations } = useHasOrganizations();
+  const { hasOrganizations, isLoading } = useHasOrganizations();
+
+  // While checking organization status, disable Add Device as a safety measure.
+  // This prevents users from starting the flow while we're still determining eligibility.
+  const noOrganizations = isLoading || hasOrganizations === false;
+
   return (
     <DevicesPanel
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      noOrganizations={hasOrganizations === false}
+      noOrganizations={noOrganizations}
       emptyState={
         <EmptyState
           icon={<MonitorIcon />}

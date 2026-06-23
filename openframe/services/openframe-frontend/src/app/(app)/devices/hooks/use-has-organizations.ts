@@ -38,7 +38,7 @@ export function useHasOrganizations() {
         throw new Error(errors[0].message);
       }
 
-      return (response.data?.data?.organizations.edges.length ?? 0) > 0;
+      return (response.data?.data?.organizations?.edges?.length ?? 0) > 0;
     },
     staleTime: 60 * 1000,
   });

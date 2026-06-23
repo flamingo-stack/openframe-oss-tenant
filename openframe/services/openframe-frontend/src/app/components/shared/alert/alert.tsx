@@ -22,13 +22,15 @@ export function Alert({ icon, title, className }: AlertProps) {
   return (
     <div
       className={cn(
-        'flex gap-4 items-start rounded-[6px] p-4',
+        'flex gap-[var(--spacing-system-m)] items-start rounded-[6px] p-[var(--spacing-system-m)]',
         'bg-[var(--ods-attention-yellow-warning-secondary)] text-[var(--ods-attention-yellow-warning)]',
         className,
       )}
     >
       <span className="shrink-0">{icon}</span>
-      <p className="font-bold text-[16px] md:text-[18px]">{title}</p>
+      <p className="font-bold text-[length:var(--font-size\/h5---caption,16px)] md:text-[length:var(--font-size\/h3---body,18px)] leading-[var(--font-line-space\/h3---body,24px)]">
+        {title}
+      </p>
     </div>
   );
 }
