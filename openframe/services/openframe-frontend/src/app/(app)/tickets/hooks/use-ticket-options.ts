@@ -7,7 +7,7 @@ import type { Tag } from '@/app/components/shared/tags';
 import { apiClient } from '@/lib/api-client';
 import { getFullImageUrl } from '@/lib/image-url';
 import { API_ENDPOINTS } from '../constants';
-import { GET_TICKET_LABELS_QUERY } from '../queries/ticket-queries';
+import { GET_TICKET_LABELS_QUERY, GET_TICKETS_QUERY } from '../queries/ticket-queries';
 import type { GraphQlResponse } from '../utils/graphql';
 import { extractGraphQlData } from '../utils/graphql';
 import { ticketsQueryKeys } from '../utils/query-keys';
@@ -117,6 +117,39 @@ export function useTicketLabelOptions() {
   const query = useQuery({
     queryKey: ticketsQueryKeys.labels(),
     queryFn: fetchLabelOptions,
+  });
+
+  return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };
+}
+
+// --- Ticket search ---
+
+interface TicketSearchNode {
+  id: string;
+  ticketNumber: number | null;
+  title: string | null;
+}
+
+async function fetchTicketSearchOptions(search: string): Promise<AutocompleteOption[]> {
+  const response = await apiClient.post<GraphQlResponse<{ tickets: { edges: Array<{ node: TicketSearchNode }> } }>>(
+    API_ENDPOINTS.GRAPHQL,
+    {
+      query: GET_TICKETS_QUERY,
+      variables: { search: search || undefined, pagination: { limit: 50 } },
+    },
+  );
+  const data = extractGraphQlData(response);
+  return (data.tickets?.edges ?? []).map(({ node }) => {
+    const number = node.ticketNumber != null ? `#${node.ticketNumber}` : '';
+    const label = [number, node.title].filter(Boolean).join(' ') || node.id;
+    return { label, value: node.id };
+  });
+}
+
+export function useTicketSearchOptions(search = '') {
+  const query = useQuery({
+    queryKey: ['ticket-options', 'tickets', search],
+    queryFn: () => fetchTicketSearchOptions(search),
   });
 
   return { options: query.data ?? EMPTY_AUTOCOMPLETE_OPTIONS, isLoading: query.isLoading };

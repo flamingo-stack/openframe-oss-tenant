@@ -26,11 +26,11 @@ import {
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types';
 import { getOSLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import { useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { scriptsTableRelay_query$key as ScriptsFragmentKey } from '@/__generated__/scriptsTableRelay_query.graphql';
 import type { scriptsTableRelayPaginationQuery as ScriptsPaginationQueryType } from '@/__generated__/scriptsTableRelayPaginationQuery.graphql';
@@ -40,6 +40,7 @@ import type {
 } from '@/__generated__/scriptsTableRelayQuery.graphql';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { scriptsTableRelayFragment, scriptsTableRelayQuery } from '@/graphql/scripts/scripts-table-relay';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { AVAILABLE_PLATFORMS } from '@/lib/platforms';
@@ -416,18 +417,13 @@ export function ScriptsTable() {
     supportedPlatforms: { type: 'array', default: [] },
   });
 
-  const [searchInput, setSearchInput] = useState(params.search);
-  const debouncedSearch = useDebounce(searchInput, 300);
-
-  const setParamRef = useRef(setParam);
-  setParamRef.current = setParam;
-  useEffect(() => {
-    setParamRef.current('search', debouncedSearch);
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    setSearchInput(params.search);
-  }, [params.search]);
+  // Local search input keeps typing responsive; the shared hook debounces it to
+  // the URL param and guards the back/forward sync-down against clobbering typing.
+  const {
+    search: searchInput,
+    setSearch: setSearchInput,
+    debouncedSearch,
+  } = useSearchParam(params.search, value => setParam('search', value), 300);
 
   const [isEmpty, setIsEmpty] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
