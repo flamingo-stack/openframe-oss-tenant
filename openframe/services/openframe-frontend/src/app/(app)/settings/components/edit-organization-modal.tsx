@@ -1,10 +1,10 @@
 'use client';
 
 import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core';
+import { ImageUploader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
-import { ImageUploader } from '@/app/components/shared/image-uploader';
 import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
@@ -26,6 +26,7 @@ export function EditOrganizationModal({ isOpen, onClose, organization, onSave, i
   const [website, setWebsite] = useState('');
   const [imageUrl, setImageUrl] = useState<string | undefined>();
   const [imageHash, setImageHash] = useState<string | undefined>();
+  const [isImageBusy, setIsImageBusy] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,40 +37,53 @@ export function EditOrganizationModal({ isOpen, onClose, organization, onSave, i
     }
   }, [isOpen, organization]);
 
-  const handleAuthenticatedUpload = useCallback(
-    async (file: File): Promise<string> => {
-      const uploadedUrl = await uploadWithAuth(TENANT_IMAGE_ENDPOINT, file);
-      toast({
-        title: 'Upload successful',
-        description: 'Organization logo has been updated',
-        variant: 'success',
-      });
-      // The image path is stable across uploads, so push the new URL with a fresh
-      // cache-bust straight into the tenant-info query cache — this updates the org
-      // card avatar immediately without a stale-read race on a separate refetch.
-      const bust = String(Date.now());
-      setImageUrl(uploadedUrl);
-      setImageHash(bust);
-      queryClient.setQueryData(tenantInfoQueryKeys.all, (prev: { image?: TenantImage | null } | null | undefined) =>
-        prev ? { ...prev, image: { imageUrl: uploadedUrl, hash: bust } } : prev,
-      );
-      return uploadedUrl;
+  const handleImageChange = useCallback(
+    async (file: File) => {
+      setIsImageBusy(true);
+      try {
+        const uploadedUrl = await uploadWithAuth(TENANT_IMAGE_ENDPOINT, file);
+        // The image path is stable across uploads, so push the new URL with a fresh
+        // cache-bust straight into the tenant-info query cache — this updates the org
+        // card avatar immediately without a stale-read race on a separate refetch.
+        const bust = String(Date.now());
+        setImageUrl(uploadedUrl);
+        setImageHash(bust);
+        queryClient.setQueryData(tenantInfoQueryKeys.all, (prev: { image?: TenantImage | null } | null | undefined) =>
+          prev ? { ...prev, image: { imageUrl: uploadedUrl, hash: bust } } : prev,
+        );
+        toast({ title: 'Upload successful', description: 'Organization logo has been updated', variant: 'success' });
+      } catch (err) {
+        toast({
+          title: 'Upload failed',
+          description: err instanceof Error ? err.message : 'Failed to upload image',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsImageBusy(false);
+      }
     },
     [toast, queryClient],
   );
 
-  const handleAuthenticatedDelete = useCallback(async (): Promise<void> => {
-    await deleteWithAuth(TENANT_IMAGE_ENDPOINT);
-    setImageUrl(undefined);
-    setImageHash(undefined);
-    queryClient.setQueryData(tenantInfoQueryKeys.all, (prev: { image?: TenantImage | null } | null | undefined) =>
-      prev ? { ...prev, image: null } : prev,
-    );
-    toast({
-      title: 'Delete successful',
-      description: 'Organization logo has been removed',
-      variant: 'success',
-    });
+  const handleImageRemove = useCallback(async () => {
+    setIsImageBusy(true);
+    try {
+      await deleteWithAuth(TENANT_IMAGE_ENDPOINT);
+      setImageUrl(undefined);
+      setImageHash(undefined);
+      queryClient.setQueryData(tenantInfoQueryKeys.all, (prev: { image?: TenantImage | null } | null | undefined) =>
+        prev ? { ...prev, image: null } : prev,
+      );
+      toast({ title: 'Delete successful', description: 'Organization logo has been removed', variant: 'success' });
+    } catch (err) {
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Failed to remove image',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImageBusy(false);
+    }
   }, [toast, queryClient]);
 
   const handleSave = useCallback(async () => {
@@ -110,19 +124,17 @@ export function EditOrganizationModal({ isOpen, onClose, organization, onSave, i
         </>
       }
     >
-      <div style={{ maxHeight: '220px' }} className="[&>div]:min-h-0">
-        <ImageUploader
-          imageUrl={displayImageUrl}
-          onChange={url => setImageUrl(url)}
-          uploadEndpoint={TENANT_IMAGE_ENDPOINT}
-          onUpload={handleAuthenticatedUpload}
-          onDelete={handleAuthenticatedDelete}
-          height={220}
-          objectFit="cover"
-          showReplaceButton={true}
-          deferUpload={false}
-        />
-      </div>
+      <ImageUploader
+        value={displayImageUrl}
+        onChange={handleImageChange}
+        onRemove={handleImageRemove}
+        loading={isImageBusy}
+        objectFit="cover"
+        maxSize={5 * 1024 * 1024}
+        label="Upload organization logo"
+        description="Click to upload or drag and drop"
+        alt={name || 'Organization logo'}
+      />
 
       <div className="space-y-1">
         <Label htmlFor="edit-org-name" className="text-ods-text-primary text-lg font-medium">
