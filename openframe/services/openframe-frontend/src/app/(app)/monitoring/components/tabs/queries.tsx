@@ -15,11 +15,11 @@ import {
   Button,
   type ColumnDef,
   DataTable,
+  Input,
   MoreActionsMenu,
   PageError,
   PageLayout,
   type Row,
-  SearchInput,
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -28,6 +28,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
@@ -55,25 +56,33 @@ export function Queries() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
-  const handleSearch = useCallback(
-    (term: string) => {
-      setParams({ search: term });
+  // Local search keeps typing responsive; the shared hook debounces the write to
+  // the URL param so we don't navigate the router (and re-filter) on every keystroke.
+  const { search, setSearch, debouncedSearch } = useSearchParam(
+    params.search,
+    value => setParams({ search: value }),
+    300,
+  );
+
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
       setVisibleCount(PAGE_SIZE);
     },
-    [setParams],
+    [setSearch],
   );
 
   const { queries, isLoading, error, deleteQuery } = useQueries();
   const [queryToDelete, setQueryToDelete] = useState<Query | null>(null);
 
   const filteredQueries = useMemo(() => {
-    if (!params.search || params.search.trim() === '') return queries;
+    if (!debouncedSearch || debouncedSearch.trim() === '') return queries;
 
-    const searchLower = params.search.toLowerCase().trim();
+    const searchLower = debouncedSearch.toLowerCase().trim();
     return queries.filter(
       query => query.name.toLowerCase().includes(searchLower) || query.description.toLowerCase().includes(searchLower),
     );
-  }, [queries, params.search]);
+  }, [queries, debouncedSearch]);
 
   const visibleQueries = useMemo(() => filteredQueries.slice(0, visibleCount), [filteredQueries, visibleCount]);
 
@@ -163,7 +172,7 @@ export function Queries() {
 
   // Show the empty state instead of the search bar + table only when there is
   // genuinely no data: loading finished, no active search, and no queries.
-  const showEmptyState = !isLoading && !params.search.trim() && queries.length === 0;
+  const showEmptyState = !isLoading && !debouncedSearch.trim() && queries.length === 0;
 
   const actions = useMemo(
     () => [
@@ -214,11 +223,11 @@ export function Queries() {
             ref={toolbarRef}
             className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
           >
-            <SearchInput
-              value={params.search}
-              onChange={handleSearch}
+            <Input
               placeholder="Search for Queries"
-              debounceMs={500}
+              value={search}
+              onChange={e => handleSearchChange(e.target.value)}
+              startAdornment={<SearchIcon />}
             />
           </div>
 
@@ -228,8 +237,8 @@ export function Queries() {
               loading={isLoading}
               skeletonRows={PAGE_SIZE}
               emptyMessage={
-                params.search
-                  ? `No queries found matching "${params.search}". Try adjusting your search.`
+                debouncedSearch
+                  ? `No queries found matching "${debouncedSearch}". Try adjusting your search.`
                   : 'No queries found.'
               }
               rowClassName="mb-1"

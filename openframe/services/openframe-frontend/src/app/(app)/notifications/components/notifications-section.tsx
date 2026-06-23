@@ -1,13 +1,13 @@
 'use client';
 
 import { getApprovalMeta, isApprovalNotification } from '@flamingo-stack/openframe-frontend-core';
-import { BellCheckIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { BellCheckIcon, SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   DataTable,
+  Input,
   type NoDataProps,
   type PageActionButton,
   PageLayout,
-  SearchInput,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -54,7 +54,12 @@ export function NotificationsSection({
 
   return (
     <PageLayout title={title} actions={isEmpty ? undefined : actions}>
-      <SearchInput placeholder="Search for Notification" value={searchValue} onChange={onSearchChange} debounceMs={0} />
+      <Input
+        placeholder="Search for Notification"
+        value={searchValue}
+        onChange={e => onSearchChange(e.target.value)}
+        startAdornment={<SearchIcon />}
+      />
 
       <Suspense fallback={<SectionTableSkeleton rowVariant={rowVariant} />}>
         {queryRef ? (

@@ -26,7 +26,7 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
   }
 
   return (
-    <div className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)] flex items-center gap-[var(--spacing-system-m)]">
+    <div className="flex items-center gap-[var(--spacing-system-m)] p-[var(--spacing-system-m)]">
       <SquareAvatar
         src={getFullImageUrl(user.image?.imageUrl, user.image?.hash)}
         fallback={displayName}

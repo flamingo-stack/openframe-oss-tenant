@@ -22,6 +22,10 @@ export function MonitoringView() {
     (tabId: string) => {
       const params = new URLSearchParams(searchParams?.toString() ?? '');
       params.set('tab', tabId);
+      // Clear the shared search on a tab switch so each tab starts fresh. Done in
+      // the handler (a user action) — not in an effect — so deep links like
+      // `?tab=queries&search=chrome` still load with their search intact.
+      params.delete('search');
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
     [router, pathname, searchParams],
