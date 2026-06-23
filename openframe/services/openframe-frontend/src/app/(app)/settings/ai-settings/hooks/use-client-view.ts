@@ -2,7 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
-import { GET_CLIENT_VIEW_QUERY, UPDATE_CLIENT_VIEW_MUTATION } from '../queries/ai-settings-queries';
+import {
+  GET_CLIENT_VIEW_QUERY,
+  RESET_CLIENT_VIEW_MUTATION,
+  UPDATE_CLIENT_VIEW_MUTATION,
+} from '../queries/ai-settings-queries';
 import type { ApplicationTheme, ClientView, ClientViewInput } from '../types/ai-settings';
 
 export const clientViewQueryKeys = {
@@ -105,4 +109,38 @@ export function useUpdateClientView(organizationId: string | null = null) {
   });
 
   return { update: result.mutateAsync, isPending: result.isPending };
+}
+
+/**
+ * Deletes the per-organization appearance override so the customer reverts to
+ * the tenant-wide default. Feedback is owned by the caller. Requires the backend
+ * `resetClientView(organizationId: ID!)` mutation.
+ */
+export function useResetClientView(organizationId: string) {
+  const queryClient = useQueryClient();
+
+  const result = useMutation({
+    mutationFn: async () => {
+      const response = await apiClient.post<
+        GraphqlResponse<{ resetClientView: { userErrors: { message: string }[] } }>
+      >('/chat/graphql', { query: RESET_CLIENT_VIEW_MUTATION, variables: { organizationId } });
+
+      if (!response.ok || !response.data) {
+        throw new Error(response.error || 'Failed to reset client view');
+      }
+      if (response.data.errors?.length) {
+        throw new Error(response.data.errors.map(e => e.message).join(', '));
+      }
+
+      const userErrors = response.data.data?.resetClientView.userErrors ?? [];
+      if (userErrors.length > 0) {
+        throw new Error(userErrors.map(e => e.message).join(', '));
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
+    },
+  });
+
+  return { reset: result.mutateAsync, isPending: result.isPending };
 }

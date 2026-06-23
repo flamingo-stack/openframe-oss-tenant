@@ -8,11 +8,18 @@ import {
   MoreActionsMenu,
   NotFoundError,
   QueryReportTable,
+  TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
-import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  CheckCircleIcon,
+  MonitorIcon,
+  PenEditIcon,
+  TrashIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import type { TabItem } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
@@ -21,6 +28,14 @@ import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-mo
 import { useQueries } from '../../hooks/use-queries';
 import { useQueryDetails } from '../hooks/use-query-details';
 import { useQueryReport } from '../hooks/use-query-report';
+import { QueryDevicesTable } from './query-devices-table';
+
+const QUERY_TABS: TabItem[] = [
+  { id: 'results', label: 'Query Results', icon: CheckCircleIcon },
+  { id: 'devices', label: 'Assigned Devices', icon: MonitorIcon },
+];
+const QUERY_TAB_IDS = QUERY_TABS.map(t => t.id);
+const DEFAULT_QUERY_TAB = 'results';
 
 function formatInterval(seconds: number): string {
   if (seconds === 0) return 'Manual';
@@ -36,6 +51,8 @@ interface QueryDetailsViewProps {
 
 export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const numericId = parseInt(queryId, 10);
   const isValidId = !isNaN(numericId);
 
@@ -44,6 +61,19 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
   const { rows, isLoading: isReportLoading } = useQueryReport(isValidId ? numericId : null);
   const { deleteQuery, isDeleting } = useQueries();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const requestedTab = searchParams.get('tab') ?? DEFAULT_QUERY_TAB;
+  const activeTab = QUERY_TAB_IDS.includes(requestedTab) ? requestedTab : DEFAULT_QUERY_TAB;
+
+  // Controlled tabs: the URL `?tab=` param is the single source of truth.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', tabId);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
 
   // Register this query as the Mingo "open view" (passive context) so the agent
   // gets the user's working context on the next message; cleared → recent views.
@@ -132,19 +162,33 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         </div>
       )}
 
-      {/* Report */}
+      {/* Tabs: Query Results / Assigned Devices */}
       <div className="mt-6">
-        <QueryReportTable
-          title="Query Results"
-          data={rows}
-          loading={isReportLoading}
-          emptyMessage="No report results available"
-          columnOrder={['host_name', 'last_fetched']}
-          exportFilename={`query-${queryDetails.name}-report`}
-          onExport={() => {
-            toast({ title: 'Report Exported', description: 'Query report exported as CSV', variant: 'success' });
-          }}
-        />
+        <TabNavigation tabs={QUERY_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          {tabId => (
+            <div className="mt-6">
+              {tabId === 'devices' ? (
+                <QueryDevicesTable queryId={numericId} />
+              ) : (
+                <QueryReportTable
+                  title="Query Results"
+                  data={rows}
+                  loading={isReportLoading}
+                  emptyMessage="No report results available"
+                  columnOrder={['host_name', 'last_fetched']}
+                  exportFilename={`query-${queryDetails.name}-report`}
+                  onExport={() => {
+                    toast({
+                      title: 'Report Exported',
+                      description: 'Query report exported as CSV',
+                      variant: 'success',
+                    });
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </TabNavigation>
       </div>
       <ConfirmDeleteMonitoringModal
         open={isDeleteModalOpen}

@@ -2,6 +2,23 @@
  * GraphQL queries for devices
  */
 
+/**
+ * Minimal probe for whether the tenant has any organizations (customers).
+ * Used on the Devices page to gate the "Add Device" action: a device must be
+ * attached to an organization, so with none we steer the user to add a customer.
+ */
+export const HAS_ORGANIZATIONS_QUERY = `
+  query HasOrganizations {
+    organizations(first: 1) {
+      edges {
+        node {
+          id
+        }
+      }
+    }
+  }
+`;
+
 export const GET_DEVICE_FILTERS_QUERY = `
   query GetDeviceFilters($filter: DeviceFilterInput) {
     deviceFilters(filter: $filter) {
