@@ -14,17 +14,17 @@ export interface AssistantBranding {
    *  or, when none came from the backend (not configured / fetch failed), the
    *  bundled default avatar. */
   assistantAvatar: string | undefined;
-  /** True while the assistant identity is still resolving (FaeSettings loading
+  /** True while the assistant identity is still resolving (AiSettings loading
    *  or the avatar fetch in flight) - drives the header skeleton so we don't
    *  flash the default avatar before the real value resolves. */
   isLoading: boolean;
 }
 
-/** Assistant identity from FaeSettings. */
+/** Assistant identity from AiSettings. */
 export function useAssistantBranding(): AssistantBranding {
-  const { faeSettings, isSettingsLoading } = useChatConfig();
-  const configuredName = faeSettings?.assistantName?.trim();
-  const avatar = faeSettings?.assistantAvatar;
+  const { aiSettings, isSettingsLoading } = useChatConfig();
+  const configuredName = aiSettings?.assistantName?.trim();
+  const avatar = aiSettings?.assistantAvatar;
 
   const rawAvatarUrl = avatar ? getFullImageUrl(avatar.imageUrl, avatar.hash) : undefined;
   const { url: customAvatarUrl, isLoading: isAvatarLoading } = useAuthenticatedImage(rawAvatarUrl);

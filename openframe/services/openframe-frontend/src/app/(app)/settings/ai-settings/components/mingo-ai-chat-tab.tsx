@@ -3,45 +3,46 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
+import type { AgentAiConfig, AgentAiConfigInput } from '../types/ai-settings';
 import {
   getMingoAiChatDefaults,
   MINGO_AI_CHAT_FORM_ID,
   type MingoAiChatFormValues,
   mingoAiChatSchema,
+  toMingoAiChatSubmit,
 } from '../types/mingo-ai-chat.types';
 import { AiModelConfig, type AiModelConfigHandle } from './ai-model-config';
 import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 
 interface MingoAiChatTabProps {
-  settings: FaeSettings;
+  aiConfig: AgentAiConfig;
   isEditMode: boolean;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  onSubmit: (input: AgentAiConfigInput) => void;
 }
 
-export function MingoAiChatTab({ settings, isEditMode, onSubmit }: MingoAiChatTabProps) {
+export function MingoAiChatTab({ aiConfig, isEditMode, onSubmit }: MingoAiChatTabProps) {
   const form = useForm<MingoAiChatFormValues>({
     resolver: zodResolver(mingoAiChatSchema),
-    defaultValues: getMingoAiChatDefaults(settings),
+    defaultValues: getMingoAiChatDefaults(aiConfig),
   });
 
-  // Ai model config saves itself (separate BE endpoint) via this ref on submit.
+  // AiModelConfig owns the provider/model and persists it to the REST AI
+  // configuration endpoint; saved via this ref on submit. The admin quick
+  // actions are persisted separately through adminAiConfig (onSubmit).
   const aiModelRef = useRef<AiModelConfigHandle>(null);
 
-  // DEMO: Mingo quick actions will get their own BE query/mutation; until then
-  // they read and save the shared Fae quickActions field.
   const handleSubmit = form.handleSubmit(async values => {
     const ok = await aiModelRef.current?.save();
     if (ok === false) return;
-    onSubmit({ quickActions: values.quickActions });
+    onSubmit(toMingoAiChatSubmit(values));
   });
 
   if (!isEditMode) {
     return (
       <div className="flex flex-col gap-[var(--spacing-system-l)]">
         <AiModelConfig ref={aiModelRef} isEditMode={false} />
-        <AiSettingsOverview quickActions={settings.quickActions} />
+        <AiSettingsOverview quickActions={aiConfig.quickActions} />
       </div>
     );
   }

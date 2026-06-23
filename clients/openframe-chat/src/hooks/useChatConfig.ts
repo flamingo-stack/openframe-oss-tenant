@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import quickActionsData from '../config/quickActions.json';
 import { useFeatureFlags } from '../contexts/FeatureFlagsContext';
-import { useFaeSettingsQuery } from './useFaeSettingsQuery';
+import { useAiSettingsQuery } from './useAiSettingsQuery';
 
 export interface QuickAction {
   id: string;
@@ -12,7 +12,7 @@ export interface QuickAction {
 }
 
 // Bundled defaults - used while the customer-ai-assistant-settings flag is off,
-// the server has no FaeSettings record (or its quickActions is null), or the
+// the server has no AiSettings record (or its quickActions is null), or the
 // query errors out. An explicitly saved empty list does NOT fall back here.
 const FALLBACK_QUICK_ACTIONS: QuickAction[] = quickActionsData.actions.map(action => ({
   id: action.id,
@@ -23,7 +23,7 @@ const FALLBACK_QUICK_ACTIONS: QuickAction[] = quickActionsData.actions.map(actio
 export function useChatConfig() {
   const { flags } = useFeatureFlags();
   const customizationEnabled = flags['customer-ai-assistant-settings'];
-  const query = useFaeSettingsQuery({ enabled: customizationEnabled });
+  const query = useAiSettingsQuery({ enabled: customizationEnabled });
 
   const quickActions = useMemo<QuickAction[]>(() => {
     // Nullable vs empty matters here: `null`/missing means "nothing configured
@@ -43,8 +43,8 @@ export function useChatConfig() {
 
   return {
     quickActions,
-    faeSettings: query.data ?? null,
-    // True while we still expect a FaeSettings result from the server (flag on
+    aiSettings: query.data ?? null,
+    // True while we still expect an AiSettings result from the server (flag on
     // and the query hasn't settled - including the brief wait for the token).
     // Lets callers hold off on bundled fallbacks until the server answers.
     isSettingsLoading: customizationEnabled && query.isPending,

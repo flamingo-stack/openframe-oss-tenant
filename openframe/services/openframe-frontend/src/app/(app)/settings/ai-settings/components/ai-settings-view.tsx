@@ -1,11 +1,23 @@
 'use client';
 
 import { Button, CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useState } from 'react';
-import { useFaeSettings } from '../hooks/use-fae-settings';
+import {
+  useAdminAiConfig,
+  useClientAiConfig,
+  useUpdateAdminAiConfig,
+  useUpdateClientAiConfig,
+} from '../hooks/use-agent-ai-config';
+import { useClientView, useUpdateClientView } from '../hooks/use-client-view';
 import { useUpdateAiConfiguration } from '../hooks/use-update-ai-configuration';
-import { useUpdateFaeSettings } from '../hooks/use-update-fae-settings';
-import { getDefaultFaeSettings, type UpdateFaeSettingsInput } from '../types/fae-settings';
+import {
+  type AgentAiConfig,
+  type AgentAiConfigInput,
+  getDefaultAgentAiConfig,
+  getDefaultClientView,
+} from '../types/ai-settings';
+import type { CustomerAiAssistantSubmit } from '../types/customer-ai-assistant.types';
 import { MINGO_AI_CHAT_FORM_ID } from '../types/mingo-ai-chat.types';
 import { useAiSettingsActions } from './ai-settings-actions';
 import { AiSettingsLayout } from './ai-settings-layout';
@@ -21,12 +33,7 @@ const FORM_ID_BY_TAB: Record<AiSettingsTabId, string> = {
 };
 
 export function AiSettings() {
-  const { settings: loadedSettings, isLoading, error, refetch } = useFaeSettings();
-  const { update } = useUpdateFaeSettings();
-  const { updateAiConfiguration } = useUpdateAiConfiguration();
-
-  // No record yet → start from defaults so the first save creates one.
-  const settings = loadedSettings ?? getDefaultFaeSettings();
+  const { toast } = useToast();
 
   // Tabs are feature-flag gated; default to the first one that's visible.
   const visibleTabs = getVisibleAiSettingsTabs();
@@ -37,6 +44,41 @@ export function AiSettings() {
 
   // Fall back to a visible tab if the active one is hidden by a flag.
   const effectiveTab: AiSettingsTabId = visibleTabs.some(tab => tab.id === activeTab) ? activeTab : firstTabId;
+  const isCustomer = effectiveTab === 'customer';
+  const isMingo = effectiveTab === 'mingo';
+
+  // CLIENT screen needs the client AI config + client view; ADMIN needs the
+  // admin AI config. Queries are gated by tab so only the active one fetches.
+  const clientAi = useClientAiConfig({ enabled: isCustomer });
+  const clientView = useClientView(null, { enabled: isCustomer });
+  const adminAi = useAdminAiConfig({ enabled: isMingo });
+
+  const { update: updateClientAiConfig } = useUpdateClientAiConfig();
+  const { update: updateClientView } = useUpdateClientView(null);
+  const { update: updateAdminAiConfig } = useUpdateAdminAiConfig();
+  const { updateAiConfiguration } = useUpdateAiConfiguration();
+
+  // No record yet → start from defaults so the first save creates one.
+  const clientAiConfig = clientAi.config ?? getDefaultAgentAiConfig('CLIENT');
+  const view = clientView.view ?? getDefaultClientView();
+  const adminAiConfig = adminAi.config ?? getDefaultAgentAiConfig('ADMIN');
+
+  const customerLoading = (clientAi.isLoading && !clientAi.config) || (clientView.isLoading && !clientView.view);
+  const customerError = (!clientAi.config && clientAi.error) || (!clientView.view && clientView.error);
+  const mingoLoading = adminAi.isLoading && !adminAi.config;
+  const mingoError = !adminAi.config && adminAi.error;
+
+  const isLoading = isCustomer ? customerLoading : isMingo ? mingoLoading : false;
+  const hasLoadError = isCustomer ? Boolean(customerError) : isMingo ? Boolean(mingoError) : false;
+
+  const refetchActive = useCallback(() => {
+    if (isCustomer) {
+      clientAi.refetch();
+      clientView.refetch();
+    } else if (isMingo) {
+      adminAi.refetch();
+    }
+  }, [isCustomer, isMingo, clientAi.refetch, clientView.refetch, adminAi.refetch]);
 
   const handleEdit = useCallback(() => setIsEditMode(true), []);
 
@@ -45,6 +87,7 @@ export function AiSettings() {
     setActiveTab(id);
     setIsEditMode(false);
   }, []);
+
   const handleSave = useCallback(() => {
     const form = document.getElementById(FORM_ID_BY_TAB[effectiveTab]);
     if (form instanceof HTMLFormElement) {
@@ -52,20 +95,60 @@ export function AiSettings() {
     }
   }, [effectiveTab]);
 
-  const handleFormSubmit = useCallback(
-    (values: UpdateFaeSettingsInput) => {
-      update(values, () => {
-        if (
-          values.llmProvider &&
-          values.providerModel &&
-          (values.llmProvider !== settings.llmProvider || values.providerModel !== settings.providerModel)
-        ) {
-          updateAiConfiguration({ provider: values.llmProvider, modelName: values.providerModel });
-        }
-        setIsEditMode(false);
-      });
+  // The active AI configuration (provider/model) is still mirrored to the chat
+  // backend's REST endpoint, which owns the real LLM integration.
+  const syncAiConfiguration = useCallback(
+    (input: AgentAiConfigInput, current: AgentAiConfig) => {
+      if (
+        input.llmProvider &&
+        input.providerModel &&
+        (input.llmProvider !== current.llmProvider || input.providerModel !== current.providerModel)
+      ) {
+        updateAiConfiguration({ provider: input.llmProvider, modelName: input.providerModel });
+      }
     },
-    [update, updateAiConfiguration, settings.llmProvider, settings.providerModel],
+    [updateAiConfiguration],
+  );
+
+  const handleCustomerSubmit = useCallback(
+    (payload: CustomerAiAssistantSubmit) => {
+      // The CLIENT screen writes two collections; surface one combined toast.
+      void (async () => {
+        try {
+          await Promise.all([updateClientAiConfig(payload.ai), updateClientView(payload.view)]);
+          syncAiConfiguration(payload.ai, clientAiConfig);
+          toast({ title: 'Saved', description: 'AI assistant settings updated', variant: 'success' });
+          setIsEditMode(false);
+        } catch (err) {
+          toast({
+            title: 'Save failed',
+            description: err instanceof Error ? err.message : 'Failed to save settings',
+            variant: 'destructive',
+          });
+        }
+      })();
+    },
+    [updateClientAiConfig, updateClientView, syncAiConfiguration, clientAiConfig, toast],
+  );
+
+  const handleMingoSubmit = useCallback(
+    (input: AgentAiConfigInput) => {
+      void (async () => {
+        try {
+          await updateAdminAiConfig(input);
+          syncAiConfiguration(input, adminAiConfig);
+          toast({ title: 'Saved', description: 'Mingo AI settings updated', variant: 'success' });
+          setIsEditMode(false);
+        } catch (err) {
+          toast({
+            title: 'Save failed',
+            description: err instanceof Error ? err.message : 'Failed to save settings',
+            variant: 'destructive',
+          });
+        }
+      })();
+    },
+    [updateAdminAiConfig, syncAiConfiguration, adminAiConfig, toast],
   );
 
   const actions = useAiSettingsActions({
@@ -74,7 +157,7 @@ export function AiSettings() {
     onSave: handleSave,
   });
 
-  if (isLoading && !loadedSettings) {
+  if (isLoading) {
     return (
       <AiSettingsLayout actions={actions}>
         <CompactPageLoader />
@@ -84,14 +167,14 @@ export function AiSettings() {
 
   // Failed to load and nothing cached: show an error + retry instead of editable
   // defaults, so the user can't accidentally overwrite real settings on save.
-  if (error && !loadedSettings) {
+  if (hasLoadError) {
     return (
       <AiSettingsLayout>
         <div className="flex flex-col items-start gap-[var(--spacing-system-m)]">
           <p className="text-ods-text-secondary">
             Couldn't load AI settings. The service may be temporarily unavailable.
           </p>
-          <Button variant="outline" onClick={() => refetch()}>
+          <Button variant="outline" onClick={refetchActive}>
             Retry
           </Button>
         </div>
@@ -108,10 +191,17 @@ export function AiSettings() {
           }
 
           if (activeId === 'customer') {
-            return <CustomerAiAssistantTab settings={settings} isEditMode={isEditMode} onSubmit={handleFormSubmit} />;
+            return (
+              <CustomerAiAssistantTab
+                aiConfig={clientAiConfig}
+                view={view}
+                isEditMode={isEditMode}
+                onSubmit={handleCustomerSubmit}
+              />
+            );
           }
 
-          return <MingoAiChatTab settings={settings} isEditMode={isEditMode} onSubmit={handleFormSubmit} />;
+          return <MingoAiChatTab aiConfig={adminAiConfig} isEditMode={isEditMode} onSubmit={handleMingoSubmit} />;
         }}
       </AiSettingsTabs>
     </AiSettingsLayout>

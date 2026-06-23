@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { InvitationRecord, InvitationStatus } from './use-invitations';
 import { invitationsQueryKeys, useInvitations } from './use-invitations';
-import type { UserRecord, UserStatus } from './use-users';
+import type { UserImage, UserRecord, UserStatus } from './use-users';
 import { usersQueryKeys, useUsers } from './use-users';
 
 // ============ Types ============
@@ -22,6 +22,7 @@ export type UnifiedUserRecord = {
   lastName?: string;
   roles: string[];
   status: UnifiedUserStatus;
+  image?: UserImage;
   createdAt?: string;
   updatedAt?: string;
   expiresAt?: string;
@@ -44,6 +45,7 @@ function userToUnified(user: UserRecord): UnifiedUserRecord {
     lastName: user.lastName,
     roles: user.roles,
     status: user.status,
+    image: user.image,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     type: RecordType.User,
@@ -103,10 +105,6 @@ export function useUsersAndInvitations(page: number = 0, size: number = 20) {
 
     // Refetch
     refetchAll,
-
-    // User mutations
-    deleteUser: usersHook.deleteUser,
-    deleteUserMutation: usersHook.deleteUserMutation,
 
     // Invitation mutations
     revokeInvitation: invitationsHook.revokeInvitation,

@@ -6,34 +6,37 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { getFullImageUrl } from '@/lib/image-url';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
+import type { AgentAiConfig, ClientView } from '../types/ai-settings';
 import {
   type CustomerAiAssistantFormValues,
+  type CustomerAiAssistantSubmit,
   customerAiAssistantSchema,
   getCustomerAiAssistantDefaults,
+  toCustomerAiAssistantSubmit,
 } from '../types/customer-ai-assistant.types';
-import type { FaeSettings, UpdateFaeSettingsInput } from '../types/fae-settings';
 
 interface UseCustomerAiAssistantFormOptions {
-  settings: FaeSettings;
-  onSubmit: (values: UpdateFaeSettingsInput) => void;
+  aiConfig: AgentAiConfig;
+  view: ClientView;
+  onSubmit: (payload: CustomerAiAssistantSubmit) => void;
 }
 
-export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAiAssistantFormOptions) {
+export function useCustomerAiAssistantForm({ aiConfig, view, onSubmit }: UseCustomerAiAssistantFormOptions) {
   const { toast } = useToast();
   const form = useForm<CustomerAiAssistantFormValues>({
     resolver: zodResolver(customerAiAssistantSchema),
-    defaultValues: getCustomerAiAssistantDefaults(settings),
+    defaultValues: getCustomerAiAssistantDefaults(aiConfig, view),
   });
 
-  // The avatar is stored via a separate REST endpoint, not the settings GraphQL.
-  // imageUrl from the API is relative (/images/...), so resolve it for <img src>.
-  const imageEndpoint = `/api/fae-settings/${settings.id}/image`;
+  // The avatar is stored on the ClientView via a separate REST endpoint, not the
+  // GraphQL config. imageUrl from the API is relative, so resolve it for <img src>.
+  const imageEndpoint = `/api/client-agent-settings/${view.id}/image`;
   const [avatarUrl, setAvatarUrl] = useState(
-    getFullImageUrl(settings.assistantAvatar?.imageUrl, settings.assistantAvatar?.hash),
+    getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash),
   );
 
   const handleAvatarChange = async (file: File) => {
-    if (!settings.id) {
+    if (!view.id) {
       toast({
         title: 'Save settings first',
         description: 'Save the assistant before uploading an avatar',
@@ -64,7 +67,7 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
   };
 
   const handleAvatarRemove = async () => {
-    if (!settings.id) {
+    if (!view.id) {
       setAvatarUrl(undefined);
       return;
     }
@@ -83,7 +86,7 @@ export function useCustomerAiAssistantForm({ settings, onSubmit }: UseCustomerAi
     }
   };
 
-  const handleSubmit = form.handleSubmit(values => onSubmit(values));
+  const handleSubmit = form.handleSubmit(values => onSubmit(toCustomerAiAssistantSubmit(values)));
 
   return {
     form,

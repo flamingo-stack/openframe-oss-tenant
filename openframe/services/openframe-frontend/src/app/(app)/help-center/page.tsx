@@ -52,7 +52,7 @@ const ITEMS: Item[] = [
   },
   {
     href: `${HELP_CENTER_BASE}/tickets`,
-    title: 'Help Center',
+    title: 'Support Tickets',
     description: 'Open and manage your support tickets.',
     Icon: LifeBuoyIcon,
   },

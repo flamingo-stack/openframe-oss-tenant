@@ -8,10 +8,10 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useMemo } from 'react';
-import type { FaeQuickAction } from '../types/fae-settings';
+import type { AiQuickAction } from '../types/ai-settings';
 
 interface AiSettingsQuickActionsProps {
-  actions: FaeQuickAction[];
+  actions: AiQuickAction[];
 }
 
 /**
@@ -21,12 +21,12 @@ interface AiSettingsQuickActionsProps {
  * row count renders in the header's right slot ("3 results").
  */
 export function AiSettingsQuickActions({ actions }: AiSettingsQuickActionsProps) {
-  const columns = useMemo<ColumnDef<FaeQuickAction>[]>(
+  const columns = useMemo<ColumnDef<AiQuickAction>[]>(
     () => [
       {
         accessorKey: 'name',
         header: 'Quick Actions',
-        cell: ({ row }: { row: Row<FaeQuickAction> }) => (
+        cell: ({ row }: { row: Row<AiQuickAction> }) => (
           <div className="flex flex-col justify-center min-h-[60px]">
             <TruncateText>{row.original.name}</TruncateText>
             <TruncateText variant="h6" tone="secondary">
@@ -39,10 +39,10 @@ export function AiSettingsQuickActions({ actions }: AiSettingsQuickActionsProps)
     [],
   );
 
-  const table = useDataTable<FaeQuickAction>({
+  const table = useDataTable<AiQuickAction>({
     data: actions,
     columns,
-    getRowId: (row: FaeQuickAction) => row.id,
+    getRowId: (row: AiQuickAction) => row.id,
     enableSorting: false,
   });
 
