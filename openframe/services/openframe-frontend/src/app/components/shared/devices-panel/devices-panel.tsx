@@ -2,6 +2,7 @@
 
 import { GridIcon, PlusCircleIcon, TableCellIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Alert,
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
@@ -28,7 +29,6 @@ import { useDevicesUrlParams } from '@/app/(app)/devices/hooks/use-devices-url-p
 import { useGridInfiniteScroll } from '@/app/(app)/devices/hooks/use-grid-infinite-scroll';
 import { useTagFilterModal } from '@/app/(app)/devices/hooks/use-tag-filter-modal';
 import type { Device, DeviceFilterInput } from '@/app/(app)/devices/types/device.types';
-import { Alert } from '../alert';
 import { DevicesFilterToolbar } from '../devices-filter-toolbar';
 
 export interface DevicesPanelProps {
@@ -234,11 +234,14 @@ export function DevicesPanel({
         contentClassName="flex flex-col"
       >
         {noOrganizations && (
-          <Alert
-            className="mb-[var(--spacing-system-l)]"
-            icon={<AlertTriangle className="w-6 h-6" />}
-            title="Add a customer to connect a new device"
-          />
+          // Core Alert restyled to the ODS warning tokens. The icon is wrapped in a
+          // span so Alert's `[&>svg]` absolute-positioning rules don't apply.
+          <Alert className="flex items-start gap-[var(--spacing-system-m)] mb-[var(--spacing-system-l)] rounded-[6px] border-0 bg-[var(--ods-attention-yellow-warning-secondary)] text-[var(--ods-attention-yellow-warning)]">
+            <span className="shrink-0">
+              <AlertTriangle className="w-6 h-6" />
+            </span>
+            <p className="text-h3">Add a customer to connect a new device</p>
+          </Alert>
         )}
         {showEmptyState ? (
           emptyState

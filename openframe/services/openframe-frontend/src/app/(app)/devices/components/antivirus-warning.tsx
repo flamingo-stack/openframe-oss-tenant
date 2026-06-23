@@ -1,10 +1,10 @@
 'use client';
 
 import { OPENFRAME_PATHS, PathsDisplay } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { Alert } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
-import { Alert } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 
 interface AntivirusWarningProps {
@@ -31,10 +31,15 @@ export function AntivirusWarning({ platform }: AntivirusWarningProps) {
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-[6px] p-6 flex flex-col gap-4">
-      <Alert
-        icon={<AlertTriangle className="w-6 h-6" />}
-        title="Your antivirus may block OpenFrame installation. This is a false positive."
-      />
+      {/* Core Alert restyled to the ODS warning tokens. The icon is wrapped in a
+          span so Alert's `[&>svg]` absolute-positioning rules don't apply and we
+          keep a simple flex row. */}
+      <Alert className="flex items-start gap-[var(--spacing-system-m)] rounded-[6px] border-0 bg-[var(--ods-attention-yellow-warning-secondary)] text-[var(--ods-attention-yellow-warning)]">
+        <span className="shrink-0">
+          <AlertTriangle className="w-6 h-6" />
+        </span>
+        <p className="text-h3">Your antivirus may block OpenFrame installation. This is a false positive.</p>
+      </Alert>
 
       <PathsDisplay
         paths={paths}
