@@ -27,6 +27,13 @@ use std::path::{Path, PathBuf};
 #[cfg(target_family = "unix")]
 use std::os::unix::fs::PermissionsExt;
 
+/// Hard cap on how long an external install/uninstall command may run before we abort
+/// it. Prevents a hung installer from pinning the tool-op marker (and therefore the
+/// client self-update defer) indefinitely: on timeout the op fails, clears its marker,
+/// and the message redelivers. `kill_on_drop` ensures the spawned process is actually
+/// terminated when the timeout fires.
+const TOOL_COMMAND_TIMEOUT_SECS: u64 = 300;
+
 #[derive(Clone)]
 pub struct ToolInstallationService {
     github_download_service: GithubDownloadService,
@@ -131,18 +138,26 @@ impl ToolInstallationService {
                                 info!("Running uninstall command for {} before reinstall", tool_agent_id);
                                 let mut cmd = Command::new(&agent_path);
                                 cmd.args(&processed_args);
-                                match cmd.output().await {
-                                    Ok(output) if output.status.success() => {
+                                cmd.kill_on_drop(true);
+                                let uninstall_result = tokio::time::timeout(
+                                    tokio::time::Duration::from_secs(TOOL_COMMAND_TIMEOUT_SECS),
+                                    cmd.output(),
+                                ).await;
+                                match uninstall_result {
+                                    Ok(Ok(output)) if output.status.success() => {
                                         info!("Uninstall command completed for {} before reinstall", tool_agent_id);
                                     }
-                                    Ok(output) => {
+                                    Ok(Ok(output)) => {
                                         warn!("Uninstall command for {} exited with status {}: {}",
                                             tool_agent_id, output.status, String::from_utf8_lossy(&output.stderr));
                                     }
-                                    Err(e) => {
+                                    Ok(Err(e)) => {
                                         #[cfg(target_os = "windows")]
                                         log_file_lock_info(&e, &agent_path.to_string_lossy(), "execute uninstall command before reinstall");
                                         warn!("Failed to execute uninstall command for {}: {:#}", tool_agent_id, e);
+                                    }
+                                    Err(_) => {
+                                        warn!("Uninstall command for {} timed out after {}s; continuing with reinstall", tool_agent_id, TOOL_COMMAND_TIMEOUT_SECS);
                                     }
                                 }
 
@@ -402,14 +417,26 @@ impl ToolInstallationService {
 
             let mut cmd = Command::new(&file_path);
             cmd.args(&installation_command_args);
+            cmd.kill_on_drop(true);
 
-            let output = cmd.output().await
-                .map_err(|e| {
-                    #[cfg(target_os = "windows")]
-                    log_file_lock_info(&e, &file_path.to_string_lossy(), "execute installation command");
-                    e
-                })
-                .context("Failed to execute installation command for tool")?;
+            let output = match tokio::time::timeout(
+                tokio::time::Duration::from_secs(TOOL_COMMAND_TIMEOUT_SECS),
+                cmd.output(),
+            ).await {
+                Ok(result) => result
+                    .map_err(|e| {
+                        #[cfg(target_os = "windows")]
+                        log_file_lock_info(&e, &file_path.to_string_lossy(), "execute installation command");
+                        e
+                    })
+                    .context("Failed to execute installation command for tool")?,
+                Err(_) => {
+                    return Err(anyhow::anyhow!(
+                        "Installation command for {} timed out after {}s",
+                        tool_agent_id, TOOL_COMMAND_TIMEOUT_SECS
+                    ));
+                }
+            };
 
             if !output.status.success() {
                 let stderr = String::from_utf8_lossy(&output.stderr);
