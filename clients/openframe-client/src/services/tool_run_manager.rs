@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use crate::models::installed_tool::{InstalledTool, Installation};
+use crate::models::installed_tool::{InstalledTool, Installation, ToolRecordState};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
@@ -430,6 +430,30 @@ impl ToolRunManager {
         if tools.is_empty() {
             info!("No installed tools found – nothing to run");
             return Ok(());
+        }
+
+        // D-min: proactive recheck of records left `Installing` by a (re)install that was
+        // interrupted (e.g. a client self-update restart). If the binary is actually present
+        // the reinstall effectively completed — adopt it by flipping to `Installed` so it
+        // runs normally. If the binary is missing/empty, leave it `Installing` and flag it;
+        // the next update/reinstall message will repair it (the update path re-downloads).
+        for tool in &tools {
+            if tool.state != ToolRecordState::Installing {
+                continue;
+            }
+            let path = self.params_processor.directory_manager
+                .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path());
+            let healthy = tokio::fs::metadata(&path).await
+                .map(|m| m.is_file() && m.len() > 0)
+                .unwrap_or(false);
+            if healthy {
+                warn!(tool_id = %tool.tool_agent_id, "Record left Installing but binary is present at {} — marking Installed", path.display());
+                if let Err(e) = self.installed_tools_service.set_state(&tool.tool_agent_id, ToolRecordState::Installed).await {
+                    warn!(tool_id = %tool.tool_agent_id, "Failed to mark Installed during startup recheck: {:#}", e);
+                }
+            } else {
+                warn!(tool_id = %tool.tool_agent_id, "Record left Installing and binary missing/empty at {} — awaiting reinstall", path.display());
+            }
         }
 
         for tool in tools {
