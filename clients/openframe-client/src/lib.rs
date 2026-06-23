@@ -35,13 +35,6 @@ pub mod utils;
 #[cfg(any(unix, windows))]
 pub mod executor;
 
-/// Channel to pass Windows SessionChange events to WindowsSessionManager
-/// Unit on non-Windows so signatures stay flat
-#[cfg(target_os = "windows")]
-pub type SessionBus = tokio::sync::mpsc::UnboundedReceiver<crate::services::windows_session_manager::SessionEvent>;
-#[cfg(not(target_os = "windows"))]
-pub type SessionBus = ();
-
 use crate::platform::DirectoryManager;
 use crate::services::agent_configuration_service::AgentConfigurationService;
 use crate::services::{AgentAuthService, AgentRegistrationService, InitialConfigurationService, ToolCommandParamsResolver, ToolUrlParamsResolver, ToolKillService, ToolRunManager, ToolConnectionProcessingManager};
@@ -165,15 +158,8 @@ pub struct Client {
 
 impl Client {
 
-    pub fn new(session_bus: Option<SessionBus>) -> Result<Self> {
+    pub fn new() -> Result<Self> {
         let config = Arc::new(RwLock::new(ClientConfiguration::default()));
-
-        // Construct the WindowsSessionManager if session events will be processed
-        #[cfg(target_os = "windows")]
-        let session_manager = session_bus
-            .map(crate::services::windows_session_manager::WindowsSessionManager::new);
-        #[cfg(not(target_os = "windows"))]
-        let _ = session_bus;
 
         // Check if in development mode
         let directory_manager = if std::env::var("OPENFRAME_DEV_MODE").is_ok() {
@@ -324,8 +310,6 @@ impl Client {
             installed_tools_service.clone(),
             tool_command_params_resolver.clone(),
             tool_kill_service.clone(),
-            #[cfg(target_os = "windows")]
-            session_manager,
         );
 
         // Initialize mesh self-heal service

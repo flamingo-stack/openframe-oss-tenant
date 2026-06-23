@@ -19,6 +19,10 @@ import { dashboardQueryKeys } from '../../dashboard/utils/query-keys';
 import { useCreateCustomer } from '../hooks/use-create-customer';
 import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-customer-details';
 import { useUpdateCustomer } from '../hooks/use-update-customer';
+import {
+  CustomerAiAssistantAppearance,
+  type CustomerAppearanceHandle,
+} from './ai-assistant-appearance/customer-ai-assistant-appearance';
 
 interface NewCustomerPageProps {
   organizationId: string | null;
@@ -100,6 +104,8 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingPreviewUrl, setPendingPreviewUrl] = useState<string | undefined>(undefined);
   const previewUrlRef = useRef<string | undefined>(undefined);
+  // Lets "Save Customer" also persist the AI-Assistant appearance block.
+  const appearanceRef = useRef<CustomerAppearanceHandle>(null);
 
   const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
   const showImageUploader = isSaasTenant;
@@ -239,6 +245,17 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
     try {
       setIsSubmitting(true);
 
+      // Validate the AI-Assistant appearance fields before writing anything.
+      if (appearanceRef.current && !(await appearanceRef.current.validate())) {
+        toast({
+          title: 'Check AI-Assistant appearance',
+          description: 'Fix the highlighted appearance fields before saving',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
         name: form.name.trim(),
         category: preserved.category,
@@ -273,6 +290,21 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
           toast({
             title: 'Warning',
             description: 'Customer was created but logo upload failed',
+            variant: 'warning',
+          });
+        }
+      }
+
+      // Persist the AI-Assistant appearance override/reset (edit mode only).
+      // The customer is already saved at this point, so an appearance failure is
+      // a non-fatal warning — it must not surface as a full "Save failed".
+      if (organizationId && appearanceRef.current) {
+        try {
+          await appearanceRef.current.commit();
+        } catch (e) {
+          toast({
+            title: 'Customer saved, appearance not updated',
+            description: e instanceof Error ? e.message : 'Failed to save AI-Assistant appearance',
             variant: 'warning',
           });
         }
@@ -391,6 +423,16 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
           disabled={form.mailingSameAsPhysical}
           className="disabled:opacity-60"
         />
+
+        {/* AI-Assistant Appearance — per-customer override. SaaS-only: it relies on
+            the openframe-saas-ai-agent service (/chat/graphql), absent in self-hosted.
+            Edit mode only, since it needs an org id to scope the override. */}
+        {organizationId && isSaasTenant && (
+          <>
+            <div className="border-t border-ods-border" />
+            <CustomerAiAssistantAppearance ref={appearanceRef} organizationId={organizationId} />
+          </>
+        )}
       </div>
     </PageLayout>
   );

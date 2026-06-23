@@ -16,15 +16,11 @@ use windows_service::{
     define_windows_service,
     service::{
         ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus,
-        ServiceType, SessionChangeReason,
+        ServiceType,
     },
     service_control_handler::{self, ServiceControlHandlerResult, ServiceStatusHandle},
     service_dispatcher,
 };
-#[cfg(target_os = "windows")]
-use tokio::sync::mpsc;
-#[cfg(target_os = "windows")]
-use crate::services::windows_session_manager::SessionEvent;
 
 const SERVICE_NAME: &str = "client";
 const DISPLAY_NAME: &str = "OpenFrame Client Service";
@@ -52,9 +48,6 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
     let shutdown_tx = Arc::new(std::sync::Mutex::new(Some(shutdown_tx)));
 
-    // Create channel for SessionChange events for WindowsSessionManager
-    let (session_tx, session_rx) = mpsc::unbounded_channel::<SessionEvent>();
-
     // Register service control handler with PROPER stop handling
     let status_handle = match service_control_handler::register(FULL_SERVICE_NAME, {
         let shutdown_tx = Arc::clone(&shutdown_tx);
@@ -71,22 +64,6 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
                     ServiceControlHandlerResult::NoError
                 }
                 ServiceControl::Interrogate => {
-                    ServiceControlHandlerResult::NoError
-                }
-                ServiceControl::SessionChange(param) => {
-                    let sid = param.notification.session_id;
-                    let event = match param.reason {
-                        SessionChangeReason::SessionLogon       => Some(SessionEvent::Logon { session_id: sid }),
-                        SessionChangeReason::SessionLogoff      => Some(SessionEvent::Logoff { session_id: sid }),
-                        SessionChangeReason::ConsoleConnect     => Some(SessionEvent::ConsoleConnect { session_id: sid }),
-                        SessionChangeReason::ConsoleDisconnect  => Some(SessionEvent::ConsoleDisconnect { session_id: sid }),
-                        SessionChangeReason::RemoteConnect      => Some(SessionEvent::RemoteConnect { session_id: sid }),
-                        SessionChangeReason::RemoteDisconnect   => Some(SessionEvent::RemoteDisconnect { session_id: sid }),
-                        _ => None,
-                    };
-                    if let Some(e) = event {
-                        let _ = session_tx.send(e);
-                    }
                     ServiceControlHandlerResult::NoError
                 }
                 _ => ServiceControlHandlerResult::NotImplemented
@@ -116,7 +93,7 @@ fn windows_service_main(_args: Vec<std::ffi::OsString>) {
     // Run service with shutdown signal
     let result = rt.block_on(async {
         // Spawn service core
-        let service_handle = tokio::spawn(Service::run(Some(session_rx)));
+        let service_handle = tokio::spawn(Service::run());
         
         // Wait for either service completion or shutdown signal
         tokio::select! {
@@ -147,7 +124,7 @@ fn set_service_status(status_handle: &ServiceStatusHandle, state: ServiceState) 
         service_type: ServiceType::OWN_PROCESS,
         current_state: state,
         controls_accepted: if state == ServiceState::Running {
-            ServiceControlAccept::STOP | ServiceControlAccept::SHUTDOWN | ServiceControlAccept::SESSION_CHANGE
+            ServiceControlAccept::STOP | ServiceControlAccept::SHUTDOWN
         } else {
             ServiceControlAccept::empty()
         },
@@ -387,10 +364,7 @@ impl Service {
     }
 
     /// Run the service core logic.
-    ///
-    /// `session_bus` carries Windows SessionChange events; `None` on non-Windows or when
-    /// running not as a service
-    pub async fn run(session_bus: Option<crate::SessionBus>) -> Result<()> {
+    pub async fn run() -> Result<()> {
         // Common code for all platforms
         info!("Starting OpenFrame service core");
 
@@ -421,7 +395,7 @@ impl Service {
         crate::platform::windows_path_migration::run();
 
         // Initialize the client
-        let client = Client::new(session_bus)?;
+        let client = Client::new()?;
 
 
         // Start the client
@@ -487,7 +461,7 @@ impl Service {
         #[cfg(not(windows))]
         {
             let rt = Runtime::new().context("Failed to create Tokio runtime")?;
-            rt.block_on(Self::run(None))
+            rt.block_on(Self::run())
         }
     }
 
