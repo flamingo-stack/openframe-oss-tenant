@@ -117,7 +117,16 @@ impl ToolInstallationService {
         if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             if reinstall {
                 info!("Reinstalling tool {} with version {}", tool_agent_id, version_clone);
-        
+
+                // Mark `Installing` BEFORE any destructive step (uninstall command, dir
+                // removal). This brackets the whole teardown: if the process dies anywhere
+                // below, the record is already `Installing` (not `Installed`), so the startup
+                // recheck/update path will repair it instead of the run loop trying to launch
+                // a binary that's already gone.
+                if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
+                    warn!("Failed to mark tool {} as installing before reinstall: {:#}", tool_agent_id, e);
+                }
+
                 // Stop the tool process if it's running
                 info!("Stopping existing tool process for {}", tool_agent_id);
                 if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool).await {
@@ -187,21 +196,15 @@ impl ToolInstallationService {
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
-                // Clear the connection record (the agent re-derives its node id after a
-                // reinstall) but KEEP the installed-tools record — mark it `Installing`
-                // instead of deleting it. A standalone delete here is the orphan hazard:
-                // if the process dies before the final save (e.g. a concurrent client
-                // self-update restart), a deleted record never comes back and the tool
-                // vanishes from the registry. With `Installing`, an interrupted reinstall
-                // leaves a repairable marker; the final save below flips it to `Installed`.
-                info!("Marking tool {} as installing for reinstall", tool_agent_id);
+                // Clear the connection record — the agent re-derives its node id after a
+                // reinstall. The installed-tools record is intentionally NOT deleted here; it
+                // was marked `Installing` at the top of this branch and the final save below
+                // flips it back to `Installed`. (A standalone delete would be the orphan
+                // hazard: a crash before the final save would lose the record entirely.)
                 if let Err(e) = self.tool_connection_service.delete_by_tool_agent_id(tool_agent_id).await {
                     warn!("Failed to remove tool connection: {:#}", e);
                 }
-                if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
-                    warn!("Failed to mark tool as installing: {:#}", e);
-                }
-                
+
                 // Clear from both manager tracking sets to allow tool restart after reinstall
                 self.tool_connection_processing_manager.clear_running_tool(&installed_tool.tool_id).await;
                 self.tool_run_manager.clear_running_tool(&installed_tool.tool_agent_id).await;
