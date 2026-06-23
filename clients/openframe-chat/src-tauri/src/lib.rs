@@ -185,15 +185,14 @@ fn register_app_id() {
 
 #[cfg(target_os = "windows")]
 fn register_start_menu_shortcut() {
-    use std::os::windows::process::CommandExt;
-    use std::process::{Command, Stdio};
-    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+    use mslnk::ShellLink;
+
+    extern "system" {
+        fn SHChangeNotify(event_id: i32, flags: u32, item1: *const std::ffi::c_void, item2: *const std::ffi::c_void);
+    }
 
     let Some(programs) = dirs::data_dir().map(|d| {
-        d.join("Microsoft")
-            .join("Windows")
-            .join("Start Menu")
-            .join("Programs")
+        d.join("Microsoft").join("Windows").join("Start Menu").join("Programs")
     }) else {
         return;
     };
@@ -203,52 +202,35 @@ fn register_start_menu_shortcut() {
     }
 
     let exe = match std::env::current_exe() {
-        Ok(p) => p.to_string_lossy().into_owned(),
+        Ok(p) => p,
         Err(e) => {
             log::warn!("start menu shortcut: cannot resolve exe path ({e})");
             return;
         }
     };
-    let work_dir = std::path::Path::new(&exe)
-        .parent()
-        .map(|p| p.to_string_lossy().into_owned())
-        .unwrap_or_default();
 
-    // Escape single quotes for PowerShell single-quoted string literals.
-    let esc = |s: &str| s.replace('\'', "''");
-    let script = format!(
-        "$ws=New-Object -ComObject WScript.Shell; \
-         $s=$ws.CreateShortcut('{lnk}'); \
-         $s.TargetPath='{exe}'; \
-         $s.IconLocation='{exe},0'; \
-         $s.WorkingDirectory='{dir}'; \
-         $s.Description='OpenFrame Chat'; \
-         $s.Save()",
-        lnk = esc(&lnk.to_string_lossy()),
-        exe = esc(&exe),
-        dir = esc(&work_dir),
-    );
-
-    match Command::new("powershell.exe")
-        .args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-WindowStyle",
-            "Hidden",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-Command",
-            &script,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .creation_flags(CREATE_NO_WINDOW)
-        .spawn()
-    {
-        Ok(_) => log::info!("start menu shortcut: creating at {}", lnk.display()),
-        Err(e) => log::warn!("start menu shortcut: failed to spawn powershell ({e})"),
+    let mut sl = match ShellLink::new(&exe) {
+        Ok(sl) => sl,
+        Err(e) => {
+            log::warn!("start menu shortcut: ShellLink::new failed ({e:?})");
+            return;
+        }
+    };
+    sl.set_name(Some("OpenFrame Chat".to_string()));
+    sl.set_icon_location(Some(exe.to_string_lossy().into_owned()));
+    if let Some(dir) = exe.parent() {
+        sl.set_working_dir(Some(dir.to_string_lossy().into_owned()));
     }
+    if let Err(e) = sl.create_lnk(&lnk) {
+        log::warn!("start menu shortcut: failed to create {} ({e:?})", lnk.display());
+        return;
+    }
+
+    // SHChangeNotify makes Start surface the new shortcut without a reboot.
+    const SHCNE_ASSOCCHANGED: i32 = 0x0800_0000;
+    const SHCNF_IDLIST: u32 = 0;
+    unsafe { SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, std::ptr::null(), std::ptr::null()); }
+    log::info!("start menu shortcut: created at {}", lnk.display());
 }
 
 /// Materializes the embedded app icon to a user-writable path and points the
