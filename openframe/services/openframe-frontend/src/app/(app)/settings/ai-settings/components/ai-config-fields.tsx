@@ -20,92 +20,105 @@ import {
   LLM_PROVIDER_OPTIONS,
 } from '../utils/ai-settings-display';
 
-interface AiConfigFieldsProps<T extends AiLogicFormValues & FieldValues> {
+interface AiProviderModelFieldsProps<T extends AiLogicFormValues & FieldValues> {
   control: Control<T>;
   /** Watched provider; drives the model option list. */
   llmProvider: AIProvider;
-  /** Watched answer style; CUSTOM reveals the custom prompt field. */
-  answerStyle: AnswerStyle;
   modelsByProvider: SupportedModelsByProvider | undefined;
   /** Clears the selected model when the provider changes. */
   onProviderChange: () => void;
 }
 
 /**
- * Shared AI-logic fields (provider, model, answer style, custom prompt) used by
- * both the CLIENT (customer) and ADMIN (Mingo) tabs. The host form owns the
- * `quickActions` field separately via AiSettingsQuickActionsEditor.
+ * LLM Provider + Provider Model selects, rendered side by side. Split out from
+ * the answer-style fields so hosts can place it independently (e.g. the customer
+ * tab keeps it in the top block, above the previews, per design).
  */
-export function AiConfigFields<T extends AiLogicFormValues & FieldValues>({
+export function AiProviderModelFields<T extends AiLogicFormValues & FieldValues>({
   control,
   llmProvider,
-  answerStyle,
   modelsByProvider,
   onProviderChange,
-}: AiConfigFieldsProps<T>) {
+}: AiProviderModelFieldsProps<T>) {
   // The generic constraint guarantees the form has the AI-logic fields; cast
   // narrows Control to that shape for type-safe field names.
   const aiControl = control as unknown as Control<AiLogicFormValues>;
   const modelOptions = modelsByProvider?.[llmProvider] ?? [];
 
   return (
-    <>
-      <div className="flex flex-row gap-[var(--spacing-system-l)]">
-        <div className="flex-1 min-w-0">
-          <Controller
-            name="llmProvider"
-            control={aiControl}
-            render={({ field, fieldState }) => (
-              <Select
-                value={field.value}
-                onValueChange={value => {
-                  field.onChange(value);
-                  onProviderChange();
-                }}
-              >
-                <SelectTrigger label="LLM Provider" error={fieldState.error?.message}>
-                  <SelectValue placeholder="Select a provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  {LLM_PROVIDER_OPTIONS.map(provider => {
-                    const Icon = LLM_PROVIDER_ICON[provider];
-                    return (
-                      <SelectItem key={provider} value={provider}>
-                        <span className="flex items-center gap-2">
-                          <Icon className="w-5 h-5" />
-                          {LLM_PROVIDER_LABEL[provider]}
-                        </span>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Controller
-            name="providerModel"
-            control={aiControl}
-            render={({ field, fieldState }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger label="Provider Model" error={fieldState.error?.message}>
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modelOptions.map(model => (
-                    <SelectItem key={model.value} value={model.value}>
-                      {model.label}
+    <div className="flex flex-row gap-[var(--spacing-system-l)]">
+      <div className="flex-1 min-w-0">
+        <Controller
+          name="llmProvider"
+          control={aiControl}
+          render={({ field, fieldState }) => (
+            <Select
+              value={field.value}
+              onValueChange={value => {
+                field.onChange(value);
+                onProviderChange();
+              }}
+            >
+              <SelectTrigger label="LLM Provider" error={fieldState.error?.message}>
+                <SelectValue placeholder="Select a provider" />
+              </SelectTrigger>
+              <SelectContent>
+                {LLM_PROVIDER_OPTIONS.map(provider => {
+                  const Icon = LLM_PROVIDER_ICON[provider];
+                  return (
+                    <SelectItem key={provider} value={provider}>
+                      <span className="flex items-center gap-2">
+                        <Icon className="w-5 h-5" />
+                        {LLM_PROVIDER_LABEL[provider]}
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          />
-        </div>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
+      <div className="flex-1 min-w-0">
+        <Controller
+          name="providerModel"
+          control={aiControl}
+          render={({ field, fieldState }) => (
+            <Select value={field.value} onValueChange={field.onChange}>
+              <SelectTrigger label="Provider Model" error={fieldState.error?.message}>
+                <SelectValue placeholder="Select a model" />
+              </SelectTrigger>
+              <SelectContent>
+                {modelOptions.map(model => (
+                  <SelectItem key={model.value} value={model.value}>
+                    {model.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface AiAnswerStyleFieldsProps<T extends AiLogicFormValues & FieldValues> {
+  control: Control<T>;
+  /** Watched answer style; CUSTOM reveals the custom prompt field. */
+  answerStyle: AnswerStyle;
+}
+
+/** Answer Style radio group + the conditional custom-prompt textarea. */
+export function AiAnswerStyleFields<T extends AiLogicFormValues & FieldValues>({
+  control,
+  answerStyle,
+}: AiAnswerStyleFieldsProps<T>) {
+  const aiControl = control as unknown as Control<AiLogicFormValues>;
+
+  return (
+    <>
       <Controller
         name="answerStyle"
         control={aiControl}
