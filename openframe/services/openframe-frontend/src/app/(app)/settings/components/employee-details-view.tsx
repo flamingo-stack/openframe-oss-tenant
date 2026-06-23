@@ -9,11 +9,13 @@ import { useState } from 'react';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { InfoCell } from '@/app/components/shared/info-cell';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useUser } from '../hooks/use-user';
 import { UserStatus, useDeleteUser, useUpdateProfile } from '../hooks/use-users';
 import { ConfirmDeleteUserModal } from './confirm-delete-user-modal';
 import { EditProfileModal } from './edit-profile-modal';
+import { EmployeeWorkTime } from './employee-work-time';
 
 interface EmployeeDetailsViewProps {
   userId: string;
@@ -160,6 +162,7 @@ export function EmployeeDetailsView({ userId }: EmployeeDetailsViewProps) {
           </div>
         </div>
       )}
+      {featureFlags.timeTracker.enabled() && <EmployeeWorkTime userId={userId} />}
       <ConfirmDeleteUserModal
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
