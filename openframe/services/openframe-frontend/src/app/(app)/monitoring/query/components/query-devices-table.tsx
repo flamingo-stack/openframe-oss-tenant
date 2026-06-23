@@ -1,7 +1,7 @@
 'use client';
 
 import { type DeviceType, getDeviceTypeIcon } from '@flamingo-stack/openframe-frontend-core';
-import { FiltersDropdown, OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
+import { OSTypeBadge } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   ArrowRightUpIcon,
   Filter02Icon,
@@ -12,6 +12,7 @@ import {
   type ColumnDef,
   DataTable,
   EntityImage,
+  FilterModal,
   Input,
   multiSelectFilterFn,
   type Row,
@@ -19,7 +20,8 @@ import {
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { cn, formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
+import { useMdUp } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useCallback, useMemo, useState } from 'react';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -31,24 +33,29 @@ interface QueryDevicesTableProps {
   queryId: number;
 }
 
-const TAGS_FILTER_ID = 'tags';
-
 export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
   const { rows, isLoading } = useQueryDevicesTable(queryId);
+  const isMdUp = useMdUp();
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
 
-  // Unique `key:value` device tags across the assigned devices — the options for
-  // the "Device Tags" filter dropdown.
-  const tagOptions = useMemo(() => {
-    const seen = new Map<string, { id: string; label: string; value: string }>();
+  // Device tags grouped by key → values, for the "Device Tags" FilterModal
+  // (same shape the /devices tag filter modal consumes).
+  const tagFilterKeys = useMemo(() => {
+    const grouped = new Map<string, Map<string, { id: string; label: string }>>();
     for (const row of rows) {
       for (const tag of row.tags) {
-        const id = `${tag.key}:${tag.value}`;
-        if (!seen.has(id)) seen.set(id, { id, label: id, value: id });
+        if (!grouped.has(tag.key)) grouped.set(tag.key, new Map());
+        const values = grouped.get(tag.key)!;
+        if (!values.has(tag.value)) values.set(tag.value, { id: tag.value, label: tag.value });
       }
     }
-    return Array.from(seen.values()).sort((a, b) => a.label.localeCompare(b.label));
+    return Array.from(grouped, ([key, values]) => ({
+      key,
+      label: key,
+      values: Array.from(values.values()).sort((a, b) => a.label.localeCompare(b.label)),
+    })).sort((a, b) => a.label.localeCompare(b.label));
   }, [rows]);
 
   const filteredRows = useMemo(() => {
@@ -218,36 +225,41 @@ export function QueryDevicesTable({ queryId }: QueryDevicesTableProps) {
             startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
           />
         </div>
-        <FiltersDropdown
-          triggerElement={
-            <Button
-              variant="outline"
-              leftIcon={<Filter02Icon className={cn('w-6 h-6', tagsActive && 'text-ods-accent')} />}
-            >
-              Device Tags
-            </Button>
-          }
-          sections={[
-            {
-              id: TAGS_FILTER_ID,
-              title: 'Device Tags',
-              type: 'checkbox',
-              options: tagOptions,
-              allowSelectAll: true,
-            },
-          ]}
-          currentFilters={{ [TAGS_FILTER_ID]: selectedTags }}
-          onApply={applied => setSelectedTags(applied[TAGS_FILTER_ID] ?? [])}
-          onReset={() => setSelectedTags([])}
-          placement="bottom-end"
-          dropdownClassName="min-w-60"
-        />
+        {isMdUp ? (
+          <Button
+            variant="outline"
+            onClick={() => setIsFilterModalOpen(true)}
+            leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+            className="shrink-0"
+          >
+            Device Tags
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsFilterModalOpen(true)}
+            leftIcon={<Filter02Icon className="text-ods-text-secondary" />}
+            className="shrink-0"
+          />
+        )}
       </div>
 
       <DataTable table={table}>
         <DataTable.Header rightSlot={<DataTable.RowCount />} />
         <DataTable.Body loading={isLoading} skeletonRows={5} emptyState={{ title: emptyMessage }} rowHref={rowHref} />
       </DataTable>
+
+      <FilterModal
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        filterGroups={[]}
+        onFilterChange={() => {}}
+        tagFilterKeys={tagFilterKeys}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
+        className="max-w-[600px]"
+      />
     </div>
   );
 }
