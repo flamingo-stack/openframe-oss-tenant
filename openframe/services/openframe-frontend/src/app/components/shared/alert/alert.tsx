@@ -28,9 +28,7 @@ export function Alert({ icon, title, className }: AlertProps) {
       )}
     >
       <span className="shrink-0">{icon}</span>
-      <p className="font-bold text-[length:var(--font-size\/h5---caption,16px)] md:text-[length:var(--font-size\/h3---body,18px)] leading-[var(--font-line-space\/h3---body,24px)]">
-        {title}
-      </p>
+      <p className="text-h3">{title}</p>
     </div>
   );
 }
