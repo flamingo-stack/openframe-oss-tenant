@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Input, Label } from '@flamingo-stack/openframe-frontend-core';
-import { HeroImageUploader } from '@flamingo-stack/openframe-frontend-core/components';
+import { ImageUploader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useState } from 'react';
 import type { User } from '@/app/(auth)/auth/stores';
@@ -25,6 +25,7 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
   const [lastName, setLastName] = useState('');
   const [imageUrl, setImageUrl] = useState<string | undefined>();
   const [imageHash, setImageHash] = useState<string | undefined>();
+  const [isImageBusy, setIsImageBusy] = useState(false);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -35,37 +36,50 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
     }
   }, [isOpen, user]);
 
-  const handleAuthenticatedUpload = useCallback(
-    async (file: File): Promise<string> => {
-      const uploadedUrl = await uploadWithAuth('/api/users/image', file);
-      toast({
-        title: 'Upload successful',
-        description: 'Profile image has been updated',
-        variant: 'success',
-      });
-      // The image path is stable across uploads, so push the new URL with a
-      // fresh cache-bust into the auth store and the modal preview — this
-      // updates every avatar render site (header, profile card, this uploader)
-      // immediately, without a stale-read race on a separate profile GET.
-      const bust = String(Date.now());
-      setImageUrl(uploadedUrl);
-      setImageHash(bust);
-      updateUser({ image: { imageUrl: uploadedUrl, hash: bust } });
-      return uploadedUrl;
+  const handleImageChange = useCallback(
+    async (file: File) => {
+      setIsImageBusy(true);
+      try {
+        const uploadedUrl = await uploadWithAuth('/api/users/image', file);
+        // The image path is stable across uploads, so push the new URL with a
+        // fresh cache-bust into the auth store and the modal preview — this
+        // updates every avatar render site (header, profile card, this uploader)
+        // immediately, without a stale-read race on a separate profile GET.
+        const bust = String(Date.now());
+        setImageUrl(uploadedUrl);
+        setImageHash(bust);
+        updateUser({ image: { imageUrl: uploadedUrl, hash: bust } });
+        toast({ title: 'Upload successful', description: 'Profile image has been updated', variant: 'success' });
+      } catch (err) {
+        toast({
+          title: 'Upload failed',
+          description: err instanceof Error ? err.message : 'Failed to upload image',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsImageBusy(false);
+      }
     },
     [toast, updateUser],
   );
 
-  const handleAuthenticatedDelete = useCallback(async (): Promise<void> => {
-    await deleteWithAuth('/api/users/image');
-    setImageUrl(undefined);
-    setImageHash(undefined);
-    updateUser({ image: undefined });
-    toast({
-      title: 'Delete successful',
-      description: 'Profile image has been removed',
-      variant: 'success',
-    });
+  const handleImageRemove = useCallback(async () => {
+    setIsImageBusy(true);
+    try {
+      await deleteWithAuth('/api/users/image');
+      setImageUrl(undefined);
+      setImageHash(undefined);
+      updateUser({ image: undefined });
+      toast({ title: 'Delete successful', description: 'Profile image has been removed', variant: 'success' });
+    } catch (err) {
+      toast({
+        title: 'Delete failed',
+        description: err instanceof Error ? err.message : 'Failed to remove image',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsImageBusy(false);
+    }
   }, [toast, updateUser]);
 
   const handleSave = useCallback(async () => {
@@ -107,19 +121,17 @@ export function EditProfileModal({ isOpen, onClose, user, onSave, isSaving }: Ed
         </>
       }
     >
-      <div style={{ maxHeight: '220px' }} className="[&>div]:min-h-0">
-        <HeroImageUploader
-          imageUrl={displayImageUrl}
-          onChange={url => setImageUrl(url)}
-          uploadEndpoint="/api/users/image"
-          onUpload={handleAuthenticatedUpload}
-          onDelete={handleAuthenticatedDelete}
-          height={220}
-          objectFit="cover"
-          showReplaceButton={true}
-          deferUpload={false}
-        />
-      </div>
+      <ImageUploader
+        value={displayImageUrl}
+        onChange={handleImageChange}
+        onRemove={handleImageRemove}
+        loading={isImageBusy}
+        objectFit="cover"
+        maxSize={5 * 1024 * 1024}
+        label="Upload profile image"
+        description="Click to upload or drag and drop"
+        alt={[firstName, lastName].filter(Boolean).join(' ') || 'Profile image'}
+      />
 
       <div className="grid grid-cols-2 gap-6">
         <div className="space-y-1">
