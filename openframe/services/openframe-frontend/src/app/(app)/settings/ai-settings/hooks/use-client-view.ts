@@ -116,7 +116,7 @@ export function useUpdateClientView(organizationId: string | null = null) {
  * the tenant-wide default. Feedback is owned by the caller. Requires the backend
  * `resetClientView(organizationId: ID!)` mutation.
  */
-export function useResetClientView(organizationId: string | null = null) {
+export function useResetClientView(organizationId: string) {
   const queryClient = useQueryClient();
 
   const result = useMutation({

@@ -296,8 +296,18 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
       }
 
       // Persist the AI-Assistant appearance override/reset (edit mode only).
+      // The customer is already saved at this point, so an appearance failure is
+      // a non-fatal warning — it must not surface as a full "Save failed".
       if (organizationId && appearanceRef.current) {
-        await appearanceRef.current.commit();
+        try {
+          await appearanceRef.current.commit();
+        } catch (e) {
+          toast({
+            title: 'Customer saved, appearance not updated',
+            description: e instanceof Error ? e.message : 'Failed to save AI-Assistant appearance',
+            variant: 'warning',
+          });
+        }
       }
 
       await invalidateOrganizationImageQueries();
