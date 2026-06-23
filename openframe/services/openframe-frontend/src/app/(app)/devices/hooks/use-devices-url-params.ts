@@ -1,8 +1,9 @@
 'use client';
 
 import type { TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useMemo } from 'react';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { DEFAULT_DEVICES_LIST_STATUSES } from '../constants/device-statuses';
 import type { DeviceFilterInput } from '../types/device.types';
 
@@ -29,17 +30,13 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
     viewMode: { type: 'string', default: 'table' },
   });
 
-  const [localSearch, setLocalSearch] = useState(params.search);
-  const debouncedSearch = useDebounce(localSearch, 500);
-
-  // Ref to avoid infinite loop — setParam identity changes on every URL update
-  const setParamRef = useRef(setParam);
-  setParamRef.current = setParam;
-
-  // Sync debounced value to URL param
-  useEffect(() => {
-    setParamRef.current('search', debouncedSearch);
-  }, [debouncedSearch]);
+  // Local search keeps typing responsive; the shared hook debounces it to the
+  // URL param and guards the back/forward sync-down against clobbering typing.
+  const {
+    search: localSearch,
+    setSearch: setLocalSearch,
+    debouncedSearch,
+  } = useSearchParam(params.search, value => setParam('search', value), 500);
 
   // Only "key:value" pairs go to the API
   const tagValues = useMemo(
@@ -109,7 +106,7 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
   const handleClearAll = useCallback(() => {
     setLocalSearch('');
     setParams({ tags: [], search: '' });
-  }, [setParams]);
+  }, [setParams, setLocalSearch]);
 
   const handleTagSubmit = useCallback(
     (value: string) => {
@@ -120,7 +117,7 @@ export function useDevicesUrlParams(options: UseDevicesUrlParamsOptions = {}) {
         setParam('search', '');
       }
     },
-    [params.tags, setParam],
+    [params.tags, setParam, setLocalSearch],
   );
 
   return {

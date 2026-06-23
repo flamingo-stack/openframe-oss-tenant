@@ -8,10 +8,11 @@ import {
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { type PageActionButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQueryLoader } from 'react-relay';
 import type { notificationsSectionRelayQuery as NotificationsSectionRelayQueryType } from '@/__generated__/notificationsSectionRelayQuery.graphql';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import {
   notificationsConnectionFilters,
   UNFILTERED_NOTIFICATION_PAIR,
@@ -30,30 +31,29 @@ const NOTIFICATIONS_TABS: TabItem[] = [
 export function NotificationsPageView() {
   const { toast } = useToast();
 
-  const { params, setParam } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
     tab: { type: 'string', default: 'new' },
-    searchNew: { type: 'string', default: '' },
-    searchHistory: { type: 'string', default: '' },
+    search: { type: 'string', default: '' },
   });
 
-  const handleTabChange = useCallback((tabId: string) => setParam('tab', tabId), [setParam]);
+  // One shared search across both tabs; the hook keeps typing responsive and
+  // debounces the write to the URL param.
+  const { search, setSearch, debouncedSearch } = useSearchParam(
+    params.search,
+    value => setParam('search', value),
+    SEARCH_DEBOUNCE_MS,
+  );
 
-  const [searchNewInput, setSearchNewInput] = useState(params.searchNew);
-  const [searchHistoryInput, setSearchHistoryInput] = useState(params.searchHistory);
-  const debouncedSearchNew = useDebounce(searchNewInput, SEARCH_DEBOUNCE_MS);
-  const debouncedSearchHistory = useDebounce(searchHistoryInput, SEARCH_DEBOUNCE_MS);
-
-  useEffect(() => {
-    if (debouncedSearchNew !== params.searchNew) {
-      setParam('searchNew', debouncedSearchNew);
-    }
-  }, [debouncedSearchNew, params.searchNew, setParam]);
-
-  useEffect(() => {
-    if (debouncedSearchHistory !== params.searchHistory) {
-      setParam('searchHistory', debouncedSearchHistory);
-    }
-  }, [debouncedSearchHistory, params.searchHistory, setParam]);
+  // Clear the shared search on a tab switch so each tab starts fresh. Done in the
+  // handler (a user action) so deep links like `?tab=history&search=x` still load
+  // with their search intact.
+  const handleTabChange = useCallback(
+    (tabId: string) => {
+      setSearch('');
+      setParams({ tab: tabId, search: '' });
+    },
+    [setSearch, setParams],
+  );
 
   const [newQueryRef, loadNew, disposeNew] =
     useQueryLoader<NotificationsSectionRelayQueryType>(notificationsSectionRelayQuery);
@@ -61,32 +61,32 @@ export function NotificationsPageView() {
     useQueryLoader<NotificationsSectionRelayQueryType>(notificationsSectionRelayQuery);
 
   useEffect(() => {
-    const trimmed = debouncedSearchNew.trim();
+    const trimmed = debouncedSearch.trim();
     loadNew(
       { first: NOTIFICATIONS_SECTION_PAGE_SIZE, after: null, filter: { read: false }, search: trimmed || null },
       { fetchPolicy: 'network-only' },
     );
     return () => disposeNew();
-  }, [loadNew, disposeNew, debouncedSearchNew]);
+  }, [loadNew, disposeNew, debouncedSearch]);
 
   useEffect(() => {
-    const trimmed = debouncedSearchHistory.trim();
+    const trimmed = debouncedSearch.trim();
     loadHistory(
       { first: NOTIFICATIONS_SECTION_PAGE_SIZE, after: null, filter: { read: true }, search: trimmed || null },
       { fetchPolicy: 'network-only' },
     );
     return () => disposeHistory();
-  }, [loadHistory, disposeHistory, debouncedSearchHistory]);
+  }, [loadHistory, disposeHistory, debouncedSearch]);
 
   const filterPairs = useMemo(
     () => [
       {
-        unread: notificationsConnectionFilters(false, debouncedSearchNew),
-        read: notificationsConnectionFilters(true, debouncedSearchHistory),
+        unread: notificationsConnectionFilters(false, debouncedSearch),
+        read: notificationsConnectionFilters(true, debouncedSearch),
       },
       UNFILTERED_NOTIFICATION_PAIR,
     ],
-    [debouncedSearchNew, debouncedSearchHistory],
+    [debouncedSearch],
   );
 
   const onMarkAllReadCompleted = useCallback(() => {
@@ -141,8 +141,8 @@ export function NotificationsPageView() {
           key="history"
           title="Notifications History"
           queryRef={historyQueryRef}
-          searchValue={searchHistoryInput}
-          onSearchChange={setSearchHistoryInput}
+          searchValue={search}
+          onSearchChange={setSearch}
           rowVariant="read"
           onDelete={removeNotification}
           actions={historyActions}
@@ -152,8 +152,8 @@ export function NotificationsPageView() {
           key="new"
           title="New Notifications"
           queryRef={newQueryRef}
-          searchValue={searchNewInput}
-          onSearchChange={setSearchNewInput}
+          searchValue={search}
+          onSearchChange={setSearch}
           rowVariant="unread"
           onMarkRead={markRead}
           actions={newActions}
