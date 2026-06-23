@@ -428,8 +428,8 @@ impl ToolInstallationService {
             .context("Failed to save installed tool")?;
 
         // For GuiApp installations on Windows, register the HKLM autorun entry so Windows
-        // launches the app at every user's logon. WindowsSessionManager picks up the existing
-        // process via find_pid and attaches a waiter, so we don't double-launch on the active session.
+        // launches the app at every user's logon. The just-installed instance is launched once
+        // immediately by ToolRunManager::run_new_tool (the user is already logged in).
         #[cfg(target_os = "windows")]
         if let Installation::GuiApp { .. } = &installed_tool.installation {
             let mut launch_args = self.command_params_resolver
@@ -452,6 +452,13 @@ impl ToolInstallationService {
                 crate::utils::windows_helpers::write_app_config(tool_agent_id, &launch_args)
             {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
+            }
+            // Start Menu shortcut targets the bare exe (no --background) so a manual launch
+            // opens the app window rather than starting tray-only.
+            if let Err(e) = crate::utils::windows_helpers::create_start_menu_shortcut(
+                tool_agent_id, &command_path,
+            ) {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to create Start Menu shortcut");
             }
         }
 

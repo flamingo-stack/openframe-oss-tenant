@@ -101,8 +101,17 @@ impl ToolAgentUpdateService {
             &assets_to_update,
         ).await;
 
-        // Clear updating flag - tool_run_manager will restart the tool
+        // Clear updating flag - for Standard tools the run manager relaunches them via this flag.
         self.tool_run_manager.clear_updating(tool_agent_id).await;
+
+        // Windows GUI apps are not supervised by the run manager, and the update stopped the
+        // running process to replace its binary. On success, relaunch it once in the active
+        // session so the new version comes back immediately instead of waiting for the next
+        // logon. No-op for non-GUI tools and on non-Windows. (Migration self-relaunches too;
+        // the app is single-instance so a redundant launch is harmless.)
+        if result.is_ok() {
+            self.relaunch_windows_gui_app(&installed_tool);
+        }
 
         result
     }
@@ -393,6 +402,46 @@ impl ToolAgentUpdateService {
                 crate::utils::windows_helpers::write_app_config(tool_agent_id, &launch_args)
             {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
+            }
+            // Refresh the Start Menu shortcut in case the executable path changed on update/migration.
+            if let Err(e) = crate::utils::windows_helpers::create_start_menu_shortcut(
+                tool_agent_id, &command_path,
+            ) {
+                warn!(tool_id = %tool_agent_id, error = %e, "Failed to create Start Menu shortcut");
+            }
+        }
+    }
+
+    /// On Windows, relaunch a freshly-updated GUI app once in the active user session.
+    /// The update stops the running process to replace its binary, and we no longer supervise
+    /// GUI app lifetime — so without this the app would stay down until the next logon (when the
+    /// HKLM Run autorun fires). Fire-and-forget: no restart loop, no supervision. If no user is
+    /// logged on, the launch simply fails and autorun brings it back at the next logon.
+    #[allow(unused_variables)]
+    fn relaunch_windows_gui_app(&self, installed_tool: &crate::models::installed_tool::InstalledTool) {
+        #[cfg(target_os = "windows")]
+        if let Installation::GuiApp { .. } = &installed_tool.installation {
+            let tool_agent_id = &installed_tool.tool_agent_id;
+            let mut launch_args = self.command_params_resolver
+                .process(tool_agent_id, installed_tool.run_command_args.clone())
+                .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            // For openframe-chat, add --background flag to start in tray
+            if tool_agent_id == "openframe-chat" {
+                launch_args.push("--background".to_string());
+            }
+            let command_path = self.directory_manager
+                .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
+                .to_string_lossy()
+                .to_string();
+            match crate::services::tool_run_manager::launch_process_in_user_session(&command_path, &launch_args) {
+                Ok((pid, process_handle)) => {
+                    info!(tool_id = %tool_agent_id, pid, "Relaunched updated GuiApp in user session (fire-and-forget)");
+                    unsafe { let _ = windows::Win32::Foundation::CloseHandle(process_handle); }
+                }
+                Err(e) => {
+                    warn!(tool_id = %tool_agent_id, error = %e,
+                          "Failed to relaunch updated GuiApp - it will start at the next logon via autorun");
+                }
             }
         }
     }
