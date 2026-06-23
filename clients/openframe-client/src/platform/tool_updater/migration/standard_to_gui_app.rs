@@ -275,7 +275,7 @@ impl StandardToGuiAppMigrator {
                     "GuiApp launched in user session after migration, PID: {}",
                     pid
                 );
-                // Fire-and-forget — ToolRunManager picks up lifecycle on next restart
+                // Fire-and-forget — the HKLM Run autorun entry relaunches it at the next logon
                 unsafe {
                     let _ = windows::Win32::Foundation::CloseHandle(process_handle);
                 }

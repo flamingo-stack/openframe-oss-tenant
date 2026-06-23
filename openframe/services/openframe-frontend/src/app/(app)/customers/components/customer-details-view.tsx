@@ -19,8 +19,10 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { useClientView } from '@/app/(app)/settings/ai-settings/hooks/use-client-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { getFullImageUrl } from '@/lib/image-url';
+import { runtimeEnv } from '@/lib/runtime-config';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useCustomerArchive } from '../hooks/use-customer-archive';
@@ -28,21 +30,18 @@ import { customerDetailsQueryKeys, useCustomerDetails } from '../hooks/use-custo
 import { customersQueryKeys } from '../hooks/use-customers';
 import { ArchiveCustomerModal } from './archive-customer-modal';
 import { CustomerDetailsSkeleton } from './customer-details-skeleton';
-import { CUSTOMER_TABS, getCustomerTabComponent } from './details-tabs/customer-tabs';
+import { getCustomerTabComponent, getCustomerTabs } from './details-tabs/customer-tabs';
 import { RestoreCustomerModal } from './restore-customer-modal';
 
 interface CustomerDetailsViewProps {
   id: string;
 }
 
-const TAB_IDS = ['devices', 'tickets', 'logs', 'details'] as const;
-
 export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedTab = searchParams?.get('tab') ?? 'devices';
-  const activeTab = (TAB_IDS as readonly string[]).includes(requestedTab) ? requestedTab : 'devices';
 
   // Controlled mode for TabNavigation: derive activeTab from URL directly.
   // This avoids a flicker bug in TabNavigation's `urlSync` mode where its
@@ -59,6 +58,16 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
   );
 
   const { organization, isLoading, error } = useCustomerDetails(id);
+
+  // The Custom AI Assistant tab depends on the openframe-saas-ai-agent service
+  // (/chat/graphql), so it's saas-tenant only; it appears only when the customer
+  // has a custom appearance override (an org-scoped ClientView exists).
+  const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
+  const { view: clientView } = useClientView(id, { enabled: isSaasTenant && !!id });
+  const showCustomAiAssistant = isSaasTenant && !!clientView;
+  const tabs = useMemo(() => getCustomerTabs(showCustomAiAssistant), [showCustomAiAssistant]);
+  const activeTab = tabs.some(tab => tab.id === requestedTab) ? requestedTab : 'devices';
+
   // Register this organization as the Mingo "open view".
   useTrackOpenView(
     organization ? { type: CONTEXT_ENTITY_KIND.ORGANIZATION, id, label: organization.name || id } : null,
@@ -192,7 +201,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
         contentClassName="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] md:px-0 md:pb-0"
         headerVariant="card"
       >
-        <TabNavigation tabs={CUSTOMER_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
           {activeTab => (
             <TabContent
               activeTab={activeTab}

@@ -31,7 +31,9 @@ export function AiSettingsCustomerCard({ aiConfig, view, providerModelLabel }: A
       <EntityImage
         src={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
         alt={view.assistantName}
-        className="size-10 rounded-full"
+        // EntityImage defaults to size-[52px] md:size-[60px]; override both
+        // breakpoints so the avatar stays 40×40 (the md: default would otherwise win).
+        className="size-10 md:size-10 rounded-full"
       />
       <div className="flex flex-col justify-center min-w-0 flex-1">
         <p className="text-ods-text-primary text-h4 truncate">{view.assistantName}</p>
