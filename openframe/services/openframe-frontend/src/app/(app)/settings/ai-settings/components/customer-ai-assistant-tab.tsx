@@ -12,7 +12,7 @@ import { useCustomerAiAssistantForm } from '../hooks/use-customer-ai-assistant-f
 import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
 import type { AgentAiConfig, ClientView } from '../types/ai-settings';
 import { CUSTOMER_AI_ASSISTANT_FORM_ID, type CustomerAiAssistantSubmit } from '../types/customer-ai-assistant.types';
-import { AiConfigFields } from './ai-config-fields';
+import { AiAnswerStyleFields, AiProviderModelFields } from './ai-config-fields';
 import { AiSettingsOverview } from './ai-settings-overview';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
 import { AiSettingsPreviews } from './previews/ai-settings-previews';
@@ -68,6 +68,13 @@ export function CustomerAiAssistantTab({ aiConfig, view, isEditMode, onSubmit }:
             render={({ field, fieldState }) => (
               <Input {...field} label="Assistant Name" error={fieldState.error?.message} />
             )}
+          />
+
+          <AiProviderModelFields
+            control={form.control}
+            llmProvider={llmProvider}
+            modelsByProvider={modelsByProvider}
+            onProviderChange={() => form.setValue('providerModel', '')}
           />
         </div>
 
@@ -129,13 +136,7 @@ export function CustomerAiAssistantTab({ aiConfig, view, isEditMode, onSubmit }:
         />
       </div>
 
-      <AiConfigFields
-        control={form.control}
-        llmProvider={llmProvider}
-        answerStyle={answerStyle}
-        modelsByProvider={modelsByProvider}
-        onProviderChange={() => form.setValue('providerModel', '')}
-      />
+      <AiAnswerStyleFields control={form.control} answerStyle={answerStyle} />
 
       <AiSettingsQuickActionsEditor control={form.control} className="mt-8" />
     </form>
