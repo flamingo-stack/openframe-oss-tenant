@@ -38,7 +38,9 @@ export function CustomerCustomAiAssistantTab({ organizationId }: CustomerCustomA
     <div className="flex flex-col gap-[var(--spacing-system-l)]">
       <div className="rounded-md border border-ods-border bg-ods-card">
         <div className={cn(CELL, 'border-b border-ods-border')}>
-          <EntityImage src={avatarUrl} alt={view.assistantName} className="size-10 rounded-full" />
+          {/* EntityImage defaults to size-[52px] md:size-[60px]; override both
+              breakpoints so the avatar stays 40×40. */}
+          <EntityImage src={avatarUrl} alt={view.assistantName} className="size-10 md:size-10 rounded-full" />
           <InfoCell value={view.assistantName} label="Custom Assistant Name" />
         </div>
 
