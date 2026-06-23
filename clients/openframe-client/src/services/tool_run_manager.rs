@@ -424,9 +424,8 @@ impl ToolRunManager {
             }
             let path = self.params_processor.directory_manager
                 .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path());
-            let binary_present = tokio::fs::metadata(&path).await
-                .map(|m| m.is_file() && m.len() > 0)
-                .unwrap_or(false);
+            let binary_present = self.params_processor.directory_manager
+                .tool_artifact_present(&path, tool.installation.is_gui_app()).await;
 
             if !binary_present {
                 warn!(tool_id = %tool.tool_agent_id, "Record left Installing and binary missing/empty at {} — awaiting reinstall", path.display());

@@ -74,9 +74,8 @@ impl ToolAgentUpdateService {
         let was_installing = installed_tool.state == ToolRecordState::Installing;
         let agent_path = self.directory_manager
             .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
-        let binary_missing = !tokio::fs::metadata(&agent_path).await
-            .map(|m| m.is_file() && m.len() > 0)
-            .unwrap_or(false);
+        let binary_missing = !self.directory_manager
+            .tool_artifact_present(&agent_path, installed_tool.installation.is_gui_app()).await;
         let needs_repair = was_installing || binary_missing;
         if was_installing {
             warn!("Tool {} record is in Installing state (interrupted (re)install) — forcing repair", tool_agent_id);

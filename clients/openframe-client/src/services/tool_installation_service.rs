@@ -200,9 +200,8 @@ impl ToolInstallationService {
             } else {
                 let agent_path = self.directory_manager
                     .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
-                let binary_present = tokio::fs::metadata(&agent_path).await
-                    .map(|m| m.is_file() && m.len() > 0)
-                    .unwrap_or(false);
+                let binary_present = self.directory_manager
+                    .tool_artifact_present(&agent_path, installed_tool.installation.is_gui_app()).await;
                 if binary_present {
                     info!("Tool {} is already installed with version {}, skipping installation", tool_agent_id, installed_tool.version);
                     return Ok(());
