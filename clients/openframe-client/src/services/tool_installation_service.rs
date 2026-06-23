@@ -211,8 +211,26 @@ impl ToolInstallationService {
                 
                 info!("Previous installation of tool {} was uninstalled", tool_agent_id);
             } else {
-                info!("Tool {} is already installed with version {}, skipping installation", tool_agent_id, installed_tool.version);
-                return Ok(());
+                // A record alone isn't proof the tool is actually present — verify the binary
+                // on disk before trusting it. If the binary is missing (removed out of band, or
+                // a prior install/reinstall was interrupted), repair by falling through to the
+                // install path instead of skipping. Mark `Installing` first so the repair is
+                // crash-safe (an interrupted repair is then resumed by the startup recheck /
+                // next message rather than left as `Installed` with no binary).
+                let agent_path = self.directory_manager
+                    .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
+                let binary_present = tokio::fs::metadata(&agent_path).await
+                    .map(|m| m.is_file() && m.len() > 0)
+                    .unwrap_or(false);
+                if binary_present {
+                    info!("Tool {} is already installed with version {}, skipping installation", tool_agent_id, installed_tool.version);
+                    return Ok(());
+                }
+                warn!("Tool {} has a registry record (version {}) but its binary is missing at {} — repairing via install", tool_agent_id, installed_tool.version, agent_path.display());
+                if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
+                    warn!("Failed to mark tool {} as installing before repair: {:#}", tool_agent_id, e);
+                }
+                // fall through to the install path below
             }
         }
 
