@@ -451,8 +451,7 @@ impl ToolRunManager {
         #[cfg(not(target_os = "windows"))]
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
-        // On Windows, never kill a running GUI app — its lifetime is owned by Windows
-        // (launched at logon by the HKLM Run autorun entry), not by us.
+        // Windows GUI apps are owned by the HKLM Run autorun, not us — never kill them.
         #[cfg(target_os = "windows")]
         if !tool.installation.is_gui_app() {
             self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
@@ -515,11 +514,7 @@ impl ToolRunManager {
                                 break;
                             }
 
-                            // GUI apps on Windows are launched at logon by the HKLM Run autorun
-                            // entry and we do not supervise their lifetime. On a fresh install the
-                            // user is already logged in, so the Run key won't fire until the next
-                            // logon — launch once now so the app appears immediately. Otherwise
-                            // (service start/restart) do nothing and let autorun own the launch.
+                            // Fresh install: launch once now (Run autorun only fires at next logon); else autorun owns it.
                             if new_tool {
                                 let mut launch_args = processed_args.clone();
                                 // For openframe-chat, add --background flag to start in tray

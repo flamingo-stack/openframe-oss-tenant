@@ -183,11 +183,6 @@ fn register_app_id() {
     }
 }
 
-/// Creates a per-user Start Menu shortcut to this executable so the user can launch the chat
-/// manually from Start. The agent autostarts us tray-only at logon; this gives a visible entry
-/// point that opens the window. Per-user (`%APPDATA%`) needs no admin — the agent launches us
-/// as the logged-in user. Idempotent: skipped once the shortcut exists, so PowerShell is spawned
-/// at most once. Best-effort and fully detached; never blocks or fails startup.
 #[cfg(target_os = "windows")]
 fn register_start_menu_shortcut() {
     use std::os::windows::process::CommandExt;

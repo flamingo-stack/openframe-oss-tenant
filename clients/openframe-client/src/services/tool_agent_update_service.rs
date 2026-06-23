@@ -104,11 +104,7 @@ impl ToolAgentUpdateService {
         // Clear updating flag - for Standard tools the run manager relaunches them via this flag.
         self.tool_run_manager.clear_updating(tool_agent_id).await;
 
-        // Windows GUI apps are not supervised by the run manager, and the update stopped the
-        // running process to replace its binary. On success, relaunch it once in the active
-        // session so the new version comes back immediately instead of waiting for the next
-        // logon. No-op for non-GUI tools and on non-Windows. (Migration self-relaunches too;
-        // the app is single-instance so a redundant launch is harmless.)
+        // Windows GUI apps aren't run-manager-supervised; relaunch once after a successful update (no-op otherwise).
         if result.is_ok() {
             self.relaunch_windows_gui_app(&installed_tool);
         }
@@ -406,11 +402,7 @@ impl ToolAgentUpdateService {
         }
     }
 
-    /// On Windows, relaunch a freshly-updated GUI app once in the active user session.
-    /// The update stops the running process to replace its binary, and we no longer supervise
-    /// GUI app lifetime — so without this the app would stay down until the next logon (when the
-    /// HKLM Run autorun fires). Fire-and-forget: no restart loop, no supervision. If no user is
-    /// logged on, the launch simply fails and autorun brings it back at the next logon.
+    /// Relaunch a just-updated Windows GUI app once in the user session (the update killed it; autorun owns later logons).
     #[allow(unused_variables)]
     fn relaunch_windows_gui_app(&self, installed_tool: &crate::models::installed_tool::InstalledTool) {
         #[cfg(target_os = "windows")]
