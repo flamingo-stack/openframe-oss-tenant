@@ -426,26 +426,38 @@ impl ToolRunManager {
         }
 
         // D-min: proactive recheck of records left `Installing` by a (re)install that was
-        // interrupted (e.g. a client self-update restart). If the binary is actually present
-        // the reinstall effectively completed — adopt it by flipping to `Installed` so it
-        // runs normally. If the binary is missing/empty, leave it `Installing` and flag it;
-        // the next update/reinstall message will repair it (the update path re-downloads).
+        // interrupted (e.g. a client self-update restart). We only promote back to
+        // `Installed` when disk state actually proves the tool is good — never on a guess,
+        // so we don't mark a half-installed tool healthy.
         for tool in &tools {
             if tool.state != ToolRecordState::Installing {
                 continue;
             }
             let path = self.params_processor.directory_manager
                 .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path());
-            let healthy = tokio::fs::metadata(&path).await
+            let binary_present = tokio::fs::metadata(&path).await
                 .map(|m| m.is_file() && m.len() > 0)
                 .unwrap_or(false);
-            if healthy {
-                warn!(tool_id = %tool.tool_agent_id, "Record left Installing but binary is present at {} — marking Installed", path.display());
-                if let Err(e) = self.installed_tools_service.set_state(&tool.tool_agent_id, ToolRecordState::Installed).await {
-                    warn!(tool_id = %tool.tool_agent_id, "Failed to mark Installed during startup recheck: {:#}", e);
-                }
-            } else {
+
+            if !binary_present {
                 warn!(tool_id = %tool.tool_agent_id, "Record left Installing and binary missing/empty at {} — awaiting reinstall", path.display());
+                continue;
+            }
+
+            // For a service-type tool a present binary does NOT prove the OS service is
+            // registered/running, so disk presence alone can't make it `Installed` — that
+            // would be a false-healthy. Leave it `Installing`; a *verified* repair clears it
+            // (the update path runs the service updater which confirms start_service, or a
+            // TOOL_INSTALLATION runs the tool's -install).
+            if tool.installation.is_service() {
+                warn!(tool_id = %tool.tool_agent_id, "Record left Installing; binary present at {} but service registration can't be verified from disk — leaving Installing for a verified repair", path.display());
+                continue;
+            }
+
+            // Standard/GuiApp: the binary *is* the tool, so presence is enough to adopt.
+            warn!(tool_id = %tool.tool_agent_id, "Record left Installing but binary is present at {} — marking Installed", path.display());
+            if let Err(e) = self.installed_tools_service.set_state(&tool.tool_agent_id, ToolRecordState::Installed).await {
+                warn!(tool_id = %tool.tool_agent_id, "Failed to mark Installed during startup recheck: {:#}", e);
             }
         }
 
