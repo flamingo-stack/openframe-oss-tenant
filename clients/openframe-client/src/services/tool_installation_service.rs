@@ -453,13 +453,6 @@ impl ToolInstallationService {
             {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
             }
-            // Start Menu shortcut targets the bare exe (no --background) so a manual launch
-            // opens the app window rather than starting tray-only.
-            if let Err(e) = crate::utils::windows_helpers::create_start_menu_shortcut(
-                tool_agent_id, &command_path,
-            ) {
-                warn!(tool_id = %tool_agent_id, error = %e, "Failed to create Start Menu shortcut");
-            }
         }
 
         // Run the tool after successful installation

@@ -200,7 +200,6 @@ impl ToolUninstallService {
         #[cfg(target_os = "windows")]
         {
             crate::utils::windows_helpers::unregister_autorun(&tool.tool_agent_id);
-            crate::utils::windows_helpers::remove_start_menu_shortcut(&tool.tool_agent_id);
         }
     }
 }

@@ -403,12 +403,6 @@ impl ToolAgentUpdateService {
             {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
             }
-            // Refresh the Start Menu shortcut in case the executable path changed on update/migration.
-            if let Err(e) = crate::utils::windows_helpers::create_start_menu_shortcut(
-                tool_agent_id, &command_path,
-            ) {
-                warn!(tool_id = %tool_agent_id, error = %e, "Failed to create Start Menu shortcut");
-            }
         }
     }
 
