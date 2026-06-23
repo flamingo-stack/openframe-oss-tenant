@@ -2,15 +2,18 @@
 
 import { GridIcon, PlusCircleIcon, TableCellIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
+  Alert,
   type ColumnDef,
   type ColumnFiltersState,
   DataTable,
   type OnChangeFn,
+  type PageActionButton,
   PageError,
   PageLayout,
   type Row,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
 import { DevicesGrid } from '@/app/(app)/devices/components/devices-grid';
@@ -56,6 +59,13 @@ export interface DevicesPanelProps {
    * page; omit in embedded contexts to keep the inline "no results" message.
    */
   emptyState?: ReactNode;
+  /**
+   * When true, the tenant has no organizations (customers) to attach a device to.
+   * Disables "Add Device", surfaces an "Add Customer" action, and shows a banner
+   * prompting the user to add a customer first. Pass from the standalone Devices
+   * page; omit in embedded contexts where an organization always exists.
+   */
+  noOrganizations?: boolean;
 }
 
 export function DevicesPanel({
@@ -67,6 +77,7 @@ export function DevicesPanel({
   defaultStatuses,
   className = '',
   emptyState,
+  noOrganizations = false,
 }: DevicesPanelProps) {
   const router = useRouter();
 
@@ -167,6 +178,29 @@ export function DevicesPanel({
     }
   }, [isMdUp, params.viewMode, setParam]);
 
+  // A device must belong to an organization. With none, disable "Add Device"
+  // and surface an "Add Customer" action that routes to the new-customer form.
+  const actions = useMemo<PageActionButton[]>(() => {
+    const accent = showEmptyState && !noOrganizations;
+    const addDevice: PageActionButton = {
+      label: 'Add Device',
+      onClick: () => router.push(addDeviceHref),
+      disabled: noOrganizations,
+      icon: <PlusCircleIcon className={`w-5 h-5 ${accent ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`} />,
+      variant: accent ? 'accent' : 'outline',
+    };
+    if (!noOrganizations) return [addDevice];
+    return [
+      {
+        label: 'Add Customer',
+        href: '/customers/edit/new',
+        icon: <PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />,
+        variant: 'outline',
+      },
+      addDevice,
+    ];
+  }, [showEmptyState, noOrganizations, router, addDeviceHref]);
+
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const gridSentinelRef = useGridInfiniteScroll({
@@ -196,20 +230,19 @@ export function DevicesPanel({
             ]}
           />
         }
-        actions={[
-          {
-            label: 'Add Device',
-            onClick: () => router.push(addDeviceHref),
-            icon: (
-              <PlusCircleIcon
-                className={`w-5 h-5 ${showEmptyState ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`}
-              />
-            ),
-            variant: showEmptyState ? 'accent' : 'outline',
-          },
-        ]}
+        actions={actions}
         contentClassName="flex flex-col"
       >
+        {noOrganizations && (
+          // Core Alert restyled to the ODS warning tokens. The icon is wrapped in a
+          // span so Alert's `[&>svg]` absolute-positioning rules don't apply.
+          <Alert className="flex items-start gap-[var(--spacing-system-m)] mb-[var(--spacing-system-l)] rounded-[6px] border-0 bg-[var(--ods-attention-yellow-warning-secondary)] text-[var(--ods-attention-yellow-warning)]">
+            <span className="shrink-0">
+              <AlertTriangle className="w-6 h-6" />
+            </span>
+            <p className="text-h3">Add a customer to connect a new device</p>
+          </Alert>
+        )}
         {showEmptyState ? (
           emptyState
         ) : (
