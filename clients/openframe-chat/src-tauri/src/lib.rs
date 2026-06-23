@@ -183,6 +183,74 @@ fn register_app_id() {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn register_start_menu_shortcut() {
+    use std::os::windows::process::CommandExt;
+    use std::process::{Command, Stdio};
+    const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
+    let Some(programs) = dirs::data_dir().map(|d| {
+        d.join("Microsoft")
+            .join("Windows")
+            .join("Start Menu")
+            .join("Programs")
+    }) else {
+        return;
+    };
+    let lnk = programs.join("OpenFrame Chat.lnk");
+    if lnk.exists() {
+        return;
+    }
+
+    let exe = match std::env::current_exe() {
+        Ok(p) => p.to_string_lossy().into_owned(),
+        Err(e) => {
+            log::warn!("start menu shortcut: cannot resolve exe path ({e})");
+            return;
+        }
+    };
+    let work_dir = std::path::Path::new(&exe)
+        .parent()
+        .map(|p| p.to_string_lossy().into_owned())
+        .unwrap_or_default();
+
+    // Escape single quotes for PowerShell single-quoted string literals.
+    let esc = |s: &str| s.replace('\'', "''");
+    let script = format!(
+        "$ws=New-Object -ComObject WScript.Shell; \
+         $s=$ws.CreateShortcut('{lnk}'); \
+         $s.TargetPath='{exe}'; \
+         $s.IconLocation='{exe},0'; \
+         $s.WorkingDirectory='{dir}'; \
+         $s.Description='OpenFrame Chat'; \
+         $s.Save()",
+        lnk = esc(&lnk.to_string_lossy()),
+        exe = esc(&exe),
+        dir = esc(&work_dir),
+    );
+
+    match Command::new("powershell.exe")
+        .args([
+            "-NoProfile",
+            "-NonInteractive",
+            "-WindowStyle",
+            "Hidden",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            &script,
+        ])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .creation_flags(CREATE_NO_WINDOW)
+        .spawn()
+    {
+        Ok(_) => log::info!("start menu shortcut: creating at {}", lnk.display()),
+        Err(e) => log::warn!("start menu shortcut: failed to spawn powershell ({e})"),
+    }
+}
+
 /// Materializes the embedded app icon to a user-writable path and points the
 /// AUMID's `IconUri` at it. The agent ships only the chat executable — no Tauri
 /// `resources/` on disk — so a bundled-resource path never exists; and
@@ -262,7 +330,10 @@ async fn nats_register_event_channel(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "windows")]
-    register_app_id();
+    {
+        register_app_id();
+        register_start_menu_shortcut();
+    }
 
     println!("[startup] openframe-chat starting (version {})", env!("CARGO_PKG_VERSION"));
 

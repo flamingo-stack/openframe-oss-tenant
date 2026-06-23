@@ -427,9 +427,7 @@ impl ToolInstallationService {
         self.installed_tools_service.save(installed_tool.clone()).await
             .context("Failed to save installed tool")?;
 
-        // For GuiApp installations on Windows, register the HKLM autorun entry so Windows
-        // launches the app at every user's logon. WindowsSessionManager picks up the existing
-        // process via find_pid and attaches a waiter, so we don't double-launch on the active session.
+        // Register the HKLM autorun so Windows launches the GuiApp at every user's logon.
         #[cfg(target_os = "windows")]
         if let Installation::GuiApp { .. } = &installed_tool.installation {
             let mut launch_args = self.command_params_resolver
