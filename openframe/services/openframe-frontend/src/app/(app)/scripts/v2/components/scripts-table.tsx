@@ -41,6 +41,7 @@ import type {
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { scriptsTableRelayFragment, scriptsTableRelayQuery } from '@/graphql/scripts/scripts-table-relay';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { AVAILABLE_PLATFORMS } from '@/lib/platforms';
@@ -84,6 +85,7 @@ interface ScriptsTableContentProps {
   onEmptyChange: (isEmpty: boolean) => void;
   mobileFilterOpen: boolean;
   onMobileFilterClose: () => void;
+  stickyHeaderOffset: string;
 }
 
 function ScriptsTableContent({
@@ -94,6 +96,7 @@ function ScriptsTableContent({
   onEmptyChange,
   mobileFilterOpen,
   onMobileFilterClose,
+  stickyHeaderOffset,
 }: ScriptsTableContentProps) {
   const askMingo = useAskMingo();
   const [isPending] = useTransition();
@@ -332,7 +335,7 @@ function ScriptsTableContent({
   return (
     <>
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-0" rightSlot={<DataTable.RowCount />} />
+        <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
         <DataTable.Body
           loading={isPending}
           skeletonRows={PAGE_SIZE}
@@ -369,7 +372,7 @@ function ScriptsTableContent({
 
 const EMPTY_ROWS: UiScriptEntry[] = [];
 
-function ScriptsTableSkeleton() {
+function ScriptsTableSkeleton({ stickyHeaderOffset }: { stickyHeaderOffset: string }) {
   const columns = useMemo<ColumnDef<UiScriptEntry>[]>(
     () => [
       { accessorKey: 'name', header: 'Name', enableSorting: false, meta: { width: 'flex-1 min-w-0' } },
@@ -398,7 +401,7 @@ function ScriptsTableSkeleton() {
 
   return (
     <DataTable table={table}>
-      <DataTable.Header stickyHeader stickyHeaderOffset="top-0" />
+      <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} />
       <DataTable.Body loading={true} skeletonRows={PAGE_SIZE} emptyMessage="" rowClassName="mb-1" />
     </DataTable>
   );
@@ -427,6 +430,7 @@ export function ScriptsTable() {
 
   const [isEmpty, setIsEmpty] = useState(false);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
 
   const backendFilters: ScriptFilterInput = useMemo(() => {
     const shells = params.shellType.map(shellToEnum);
@@ -473,38 +477,44 @@ export function ScriptsTable() {
   );
 
   return (
-    <PageLayout title="Scripts" actions={actions}>
-      {!isEmpty && (
-        <div className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]">
-          <Input
-            placeholder="Search for Scripts"
-            value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
-            className="flex-1"
-            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-          />
-          <Button
-            variant="outline"
-            size="icon"
-            className="md:hidden"
-            onClick={() => setMobileFilterOpen(true)}
-            aria-label="Open filters"
-            leftIcon={<Filter02Icon />}
-          />
-        </div>
-      )}
+    <PageLayout title="Scripts" actions={actions} className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
+      <div className="flex flex-col" style={containerStyle}>
+        {!isEmpty && (
+          <div
+            ref={toolbarRef}
+            className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"
+          >
+            <Input
+              placeholder="Search for Scripts"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              className="flex-1"
+              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+            />
+            <Button
+              variant="outline"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMobileFilterOpen(true)}
+              aria-label="Open filters"
+              leftIcon={<Filter02Icon />}
+            />
+          </div>
+        )}
 
-      <Suspense fallback={<ScriptsTableSkeleton />}>
-        <ScriptsTableContent
-          backendFilters={backendFilters}
-          debouncedSearch={debouncedSearch}
-          tableFilters={tableFilters}
-          onFilterChange={handleFilterChange}
-          onEmptyChange={setIsEmpty}
-          mobileFilterOpen={mobileFilterOpen}
-          onMobileFilterClose={() => setMobileFilterOpen(false)}
-        />
-      </Suspense>
+        <Suspense fallback={<ScriptsTableSkeleton stickyHeaderOffset={stickyHeaderOffset} />}>
+          <ScriptsTableContent
+            backendFilters={backendFilters}
+            debouncedSearch={debouncedSearch}
+            tableFilters={tableFilters}
+            onFilterChange={handleFilterChange}
+            onEmptyChange={setIsEmpty}
+            mobileFilterOpen={mobileFilterOpen}
+            onMobileFilterClose={() => setMobileFilterOpen(false)}
+            stickyHeaderOffset={stickyHeaderOffset}
+          />
+        </Suspense>
+      </div>
     </PageLayout>
   );
 }

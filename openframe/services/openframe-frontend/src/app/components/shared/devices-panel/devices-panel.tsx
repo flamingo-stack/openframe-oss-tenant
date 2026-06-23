@@ -61,11 +61,17 @@ export interface DevicesPanelProps {
   emptyState?: ReactNode;
   /**
    * When true, the tenant has no organizations (customers) to attach a device to.
-   * Disables "Add Device", surfaces an "Add Customer" action, and shows a banner
-   * prompting the user to add a customer first. Pass from the standalone Devices
-   * page; omit in embedded contexts where an organization always exists.
+   * Surfaces an "Add Customer" action and shows a banner prompting the user to add
+   * a customer first. Pass from the standalone Devices page; omit in embedded
+   * contexts where an organization always exists.
    */
   noOrganizations?: boolean;
+  /**
+   * When true, the organization check is still in flight. "Add Device" stays
+   * disabled as a safety measure, but the "no customer" banner is suppressed so
+   * it doesn't flash before the answer is known.
+   */
+  isCheckingOrganizations?: boolean;
 }
 
 export function DevicesPanel({
@@ -78,6 +84,7 @@ export function DevicesPanel({
   className = '',
   emptyState,
   noOrganizations = false,
+  isCheckingOrganizations = false,
 }: DevicesPanelProps) {
   const router = useRouter();
 
@@ -180,12 +187,13 @@ export function DevicesPanel({
 
   // A device must belong to an organization. With none, disable "Add Device"
   // and surface an "Add Customer" action that routes to the new-customer form.
+  // While the org check is still in flight, keep "Add Device" disabled too.
   const actions = useMemo<PageActionButton[]>(() => {
     const accent = showEmptyState && !noOrganizations;
     const addDevice: PageActionButton = {
       label: 'Add Device',
       onClick: () => router.push(addDeviceHref),
-      disabled: noOrganizations,
+      disabled: noOrganizations || isCheckingOrganizations,
       icon: <PlusCircleIcon className={`w-5 h-5 ${accent ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'}`} />,
       variant: accent ? 'accent' : 'outline',
     };
@@ -199,7 +207,7 @@ export function DevicesPanel({
       },
       addDevice,
     ];
-  }, [showEmptyState, noOrganizations, router, addDeviceHref]);
+  }, [showEmptyState, noOrganizations, isCheckingOrganizations, router, addDeviceHref]);
 
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 

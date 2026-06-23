@@ -196,7 +196,7 @@ export function Queries() {
   }
 
   return (
-    <PageLayout title="Queries" actions={actions}>
+    <PageLayout title="Queries" actions={actions} className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       {showEmptyState ? (
         <EmptyState
           icon={<BracketCurlyEllipsisVrIcon />}

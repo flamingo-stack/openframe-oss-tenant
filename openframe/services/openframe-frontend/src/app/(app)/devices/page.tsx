@@ -17,14 +17,14 @@ export default function Devices() {
   const askMingo = useAskMingo();
   const { hasOrganizations, isLoading } = useHasOrganizations();
 
-  // While checking organization status, disable Add Device as a safety measure.
-  // This prevents users from starting the flow while we're still determining eligibility.
-  const noOrganizations = isLoading || hasOrganizations === false;
-
   return (
     <DevicesPanel
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-      noOrganizations={noOrganizations}
+      // Only treat the tenant as having no customers once the check resolves, so the
+      // "Add a customer" banner doesn't flash during loading. While checking, the
+      // panel still keeps "Add Device" disabled via isCheckingOrganizations.
+      noOrganizations={hasOrganizations === false}
+      isCheckingOrganizations={isLoading}
       emptyState={
         <EmptyState
           icon={<MonitorIcon />}

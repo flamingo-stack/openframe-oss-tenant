@@ -250,7 +250,11 @@ export function Policies() {
   }
 
   return (
-    <PageLayout title="Policies" actions={actions}>
+    <PageLayout
+      title="Policies"
+      actions={actions}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+    >
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (

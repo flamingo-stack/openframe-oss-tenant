@@ -438,7 +438,7 @@ export function ScriptsTable() {
   }
 
   return (
-    <PageLayout title="Scripts" actions={actions}>
+    <PageLayout title="Scripts" actions={actions} className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       {showEmptyState ? (
         <EmptyState
           icon={<BracketCurlyIcon />}
@@ -469,7 +469,7 @@ export function ScriptsTable() {
           onButtonClick={() => askMingo('scripts')}
         />
       ) : (
-        <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+        <div className="flex flex-col" style={containerStyle}>
           <div
             ref={toolbarRef}
             className="sticky top-0 z-20 flex gap-[var(--spacing-system-m)] items-center bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"

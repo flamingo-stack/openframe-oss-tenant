@@ -127,14 +127,16 @@ export function NotificationsPageView() {
   const activeTab = params.tab === 'history' ? 'history' : 'new';
 
   return (
-    <div className="flex w-full flex-col -mt-4">
-      <TabNavigation
-        tabs={NOTIFICATIONS_TABS}
-        activeTab={activeTab}
-        urlSync={false}
-        onTabChange={handleTabChange}
-        showRightGradient
-      />
+    <div className="flex w-full flex-col">
+      <div className="px-[var(--spacing-system-l)]">
+        <TabNavigation
+          tabs={NOTIFICATIONS_TABS}
+          activeTab={activeTab}
+          urlSync={false}
+          onTabChange={handleTabChange}
+          showRightGradient
+        />
+      </div>
 
       {activeTab === 'history' ? (
         <NotificationsSection

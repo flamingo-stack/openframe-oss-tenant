@@ -1,10 +1,12 @@
 'use client';
 
-import { type TabItem } from '@flamingo-stack/openframe-frontend-core';
+import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
 import {
   BracketCurlyEllipsisVrIcon,
   FolderShieldIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback } from 'react';
 import { Policies } from './policies';
 import { Queries } from './queries';
 
@@ -23,9 +25,33 @@ export const MONITORING_TABS: TabItem[] = [
   },
 ];
 
-export const getMonitoringTab = (tabId: string): TabItem | undefined => MONITORING_TABS.find(tab => tab.id === tabId);
+interface MonitoringTabNavigationProps {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
 
-export const getTabComponent = (tabId: string): React.ComponentType | null => {
-  const tab = getMonitoringTab(tabId);
-  return tab?.component || null;
-};
+export function MonitoringTabNavigation({ activeTab, onTabChange }: MonitoringTabNavigationProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const defaultHandleTabChange = useCallback(
+    (tabId: string) => {
+      router.replace(`${pathname}?tab=${tabId}`);
+    },
+    [router, pathname],
+  );
+
+  const handleTabChange = onTabChange || defaultHandleTabChange;
+
+  return (
+    <div className="px-[var(--spacing-system-l)]">
+      <TabNavigation
+        urlSync={false}
+        activeTab={activeTab || 'policies'}
+        tabs={MONITORING_TABS}
+        onTabChange={handleTabChange}
+        showRightGradient
+      />
+    </div>
+  );
+}
