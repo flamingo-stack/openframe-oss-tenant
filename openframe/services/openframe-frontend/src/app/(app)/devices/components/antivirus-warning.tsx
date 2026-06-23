@@ -4,6 +4,7 @@ import { OPENFRAME_PATHS, PathsDisplay } from '@flamingo-stack/openframe-fronten
 import type { OSPlatformId } from '@flamingo-stack/openframe-frontend-core/utils';
 import { AlertTriangle } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
+import { Alert } from '@/app/components/shared';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 
 interface AntivirusWarningProps {
@@ -30,12 +31,10 @@ export function AntivirusWarning({ platform }: AntivirusWarningProps) {
 
   return (
     <div className="bg-ods-card border border-ods-border rounded-[6px] p-6 flex flex-col gap-4">
-      <div className="bg-[var(--ods-attention-yellow-warning-secondary)] rounded-[6px] p-4 flex gap-4 items-start">
-        <AlertTriangle className="w-6 h-6 text-[var(--ods-attention-yellow-warning)] shrink-0" />
-        <p className="text-[var(--ods-attention-yellow-warning)] font-bold text-[16px] md:text-[18px]">
-          Your antivirus may block OpenFrame installation. This is a false positive.
-        </p>
-      </div>
+      <Alert
+        icon={<AlertTriangle className="w-6 h-6" />}
+        title="Your antivirus may block OpenFrame installation. This is a false positive."
+      />
 
       <PathsDisplay
         paths={paths}

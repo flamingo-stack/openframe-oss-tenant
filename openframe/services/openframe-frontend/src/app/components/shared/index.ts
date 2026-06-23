@@ -1,3 +1,4 @@
+export { Alert, type AlertProps } from './alert';
 export { DeviceInfoSection } from './device-info-section';
 export type { DeviceSelectorProps, InfiniteScrollConfig } from './device-selector';
 export { DeviceSelector } from './device-selector';
