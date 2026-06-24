@@ -1,6 +1,9 @@
 'use client';
 
-import { MspOrganizationCard } from '@flamingo-stack/openframe-frontend-core/components/chat';
+import {
+  MspOrganizationCard,
+  MspOrganizationCardSkeleton,
+} from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ClockCheckIcon,
@@ -39,7 +42,7 @@ export function MeetFaePreview({
   // Source the MSP org from the same tenant-info query the /settings card uses
   // (react-query-cached, so no extra request). Fall back to the sample copy/logo
   // so the preview still reads well before any org data is configured.
-  const { data: tenantInfo } = useTenantInfo();
+  const { data: tenantInfo, isLoading } = useTenantInfo();
   const orgName = tenantInfo?.name || mspName;
   const orgWebsite = tenantInfo?.website || mspWebsite;
   const orgLogoUrl =
@@ -107,13 +110,17 @@ export function MeetFaePreview({
             ))}
           </div>
 
-          <MspOrganizationCard
-            name={orgName}
-            website={orgWebsite}
-            logoUrl={orgLogoUrl}
-            onOpenWebsite={() => undefined}
-            className="w-full"
-          />
+          {isLoading ? (
+            <MspOrganizationCardSkeleton className="w-full" />
+          ) : (
+            <MspOrganizationCard
+              name={orgName}
+              website={orgWebsite}
+              logoUrl={orgLogoUrl}
+              onOpenWebsite={() => undefined}
+              className="w-full"
+            />
+          )}
 
           <Button type="button" variant="accent" style={{ backgroundColor: accentColor }}>
             Get Started
