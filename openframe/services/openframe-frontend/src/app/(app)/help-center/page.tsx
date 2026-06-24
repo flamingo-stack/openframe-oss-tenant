@@ -86,7 +86,7 @@ const ITEMS: Item[] = [
 // host-specific landing whose links + icons are app-owned.
 export default function HelpCenterPage() {
   return (
-    <PageLayout title="Help Center">
+    <PageLayout title="Help Center" className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-m)]">
         {ITEMS.map(({ href, title, description, Icon }) => (
           <SettingMenuItem
