@@ -35,7 +35,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { KNOWLEDGE_BASE_ROUTE } from '../(app)/help-center/endpoints';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
-import { renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
+import { renderMingoContextItem, renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
 import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
@@ -157,6 +157,10 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // as self-fetching chips — the `@marker:id` analogue of `renderEntityCard`
         // for `[card://]`. Stable module-level fn so the message memo holds.
         renderMention={contextEnabled ? renderMingoMention : undefined}
+        // Renders a user's ATTACHED context chips (`contextItems`) as the SAME
+        // self-fetching chips as inline mentions — so manually attached context
+        // resolves its live name + link instead of the lib's label-only pill.
+        renderContextItem={contextEnabled ? renderMingoContextItem : undefined}
       />
     </>
   );

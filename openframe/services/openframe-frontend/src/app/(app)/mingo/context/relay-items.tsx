@@ -19,6 +19,7 @@ import type { relayItemsKb_query$key } from '@/__generated__/relayItemsKb_query.
 import type { relayItemsKbListQuery } from '@/__generated__/relayItemsKbListQuery.graphql';
 import type { relayItemsOrgs_query$key } from '@/__generated__/relayItemsOrgs_query.graphql';
 import type { relayItemsOrgsListQuery } from '@/__generated__/relayItemsOrgsListQuery.graphql';
+import { decodeGlobalId } from '@/lib/relay-id';
 import { CONTEXT_ENTITY_KIND } from './context-types';
 import { type ContextItemsProps, MINGO_CONTEXT_PAGE_SIZE } from './items-shared';
 
@@ -56,10 +57,13 @@ export function DeviceItems({ query, selectedKeys, onToggle, atLimit }: ContextI
           ? [
               {
                 type: CONTEXT_ENTITY_KIND.DEVICE,
-                // Use `machineId` (not the GraphQL/relay node id) — it's the id
-                // the backend's DEVICE context resolver + `@device:<id>` mention
-                // marker expect (ContextItemType.DEVICE idHint = "machineId").
-                id: e.node.machineId,
+                // Store the RAW db id, decoded from the Relay global `id`
+                // (`base64("Machine:<rawId>")`) — that's what the backend's
+                // DEVICE context resolver + `@device:<id>` mention marker expect.
+                // The chip re-encodes it to a global id for its `node(id:)` fetch
+                // (see relay-mention-chips). Falls back to `machineId` if decode
+                // ever fails.
+                id: decodeGlobalId(e.node.id)?.rawId ?? e.node.machineId,
                 label: e.node.displayName || e.node.hostname || e.node.machineId,
                 description: e.node.status ?? undefined,
               },
@@ -116,7 +120,9 @@ export function OrganizationItems({ query, selectedKeys, onToggle, atLimit }: Co
           ? [
               {
                 type: CONTEXT_ENTITY_KIND.ORGANIZATION,
-                id: e.node.id,
+                // Raw db id (organizationId), decoded from the global `id`
+                // (`base64("Organization:<rawId>")`); the chip re-encodes it.
+                id: decodeGlobalId(e.node.id)?.rawId ?? e.node.id,
                 label: e.node.name || e.node.id,
                 description: e.node.category ?? undefined,
               },
@@ -171,7 +177,9 @@ export function KnowledgeBaseItems({ query, selectedKeys, onToggle, atLimit }: C
           ? [
               {
                 type: CONTEXT_ENTITY_KIND.KB_ARTICLE,
-                id: e.node.id,
+                // Raw db id, decoded from the global `id`
+                // (`base64("KnowledgeBaseItem:<rawId>")`); the chip re-encodes it.
+                id: decodeGlobalId(e.node.id)?.rawId ?? e.node.id,
                 label: e.node.name || e.node.id,
                 description: e.node.type ?? undefined,
               },
