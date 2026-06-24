@@ -1,24 +1,23 @@
 'use client';
 
-import { DevSectionPage, RoadmapView } from '@flamingo-stack/openframe-frontend-core/components';
+import { RoadmapPage } from '@flamingo-stack/openframe-frontend-core/components/help-center-pages';
 import { EP, HELP_CENTER_BASE } from '../endpoints';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Roadmap — config-only. `<DevSectionPage sectionKey="roadmap">` supplies the
- * chrome (hero + search + status pills, all URL-param-wired); `<RoadmapView>`
- * reads those params, fetches the filtered list, renders the grid, and handles
- * voting. This page supplies only the api routes.
+ * Roadmap — one-line mount of the lib's ready-made `<RoadmapPage>` (PageLayout
+ * chrome + hero + search/status + the self-fetching `RoadmapView`). This page
+ * supplies only the `/content`-proxied api routes + the back target.
  */
-export default function RoadmapPage() {
+export default function RoadmapRoute() {
   return (
-    <DevSectionPage sectionKey="roadmap" backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}>
-      <RoadmapView
-        endpoint={EP.roadmap}
-        buildRefreshUrl={EP.roadmapById}
-        votingOptions={{ voteApiEndpoint: EP.roadmapVote }}
-      />
-    </DevSectionPage>
+    <RoadmapPage
+      shell={false}
+      roadmapEndpoint={EP.roadmap}
+      buildRefreshUrl={EP.roadmapById}
+      voteApiEndpoint={EP.roadmapVote}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+    />
   );
 }

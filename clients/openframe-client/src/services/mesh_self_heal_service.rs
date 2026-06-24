@@ -100,6 +100,7 @@ impl MeshSelfHealService {
                     for line in &lines {
                         if line.contains(HEALTHY_MARKER) {
                             stuck_since = None;
+                            last_heal_attempt = None;
                         } else if line.contains(FAILURE_MARKER) {
                             stuck_since.get_or_insert_with(Instant::now);
                         }
@@ -177,6 +178,13 @@ impl MeshSelfHealService {
         let mesh_changed = new_mesh.is_some() && cur_mesh != new_mesh;
         let server_changed = new_server.is_some() && cur_server != new_server;
         if !mesh_changed && !server_changed {
+            // Nothing to fix; log the server the agent is dialing so a server-side outage is
+            // distinguishable from a stale .msh target.
+            let server = current
+                .as_deref()
+                .and_then(|s| parse_msh_field(s, "MeshServer"))
+                .unwrap_or_else(|| "<none>".to_string());
+            info!("mesh self-heal: .msh already current (MeshServer={server}) — no action");
             return Ok(false);
         }
 

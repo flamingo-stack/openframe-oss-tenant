@@ -21,6 +21,8 @@ interface TicketDialogSubscriptionProps {
   adminInitialOptStartSeq: number;
   /** Gates JetStream consumer creation until both sides' history has loaded. */
   isInitialOptStartSeqReady: boolean;
+  /** Gates the ADMIN (technician) topic consumer; off when the technician chat is hidden. */
+  subscribeAdmin: boolean;
 }
 
 export function TicketDialogSubscription({
@@ -29,6 +31,7 @@ export function TicketDialogSubscription({
   clientInitialOptStartSeq,
   adminInitialOptStartSeq,
   isInitialOptStartSeqReady,
+  subscribeAdmin,
 }: TicketDialogSubscriptionProps) {
   const { getWsUrl, onBeforeReconnect } = useNatsAppConfig();
 
@@ -78,7 +81,7 @@ export function TicketDialogSubscription({
   });
 
   useJetStreamDialogSubscription({
-    enabled: !!dialogId && isInitialOptStartSeqReady,
+    enabled: !!dialogId && isInitialOptStartSeqReady && subscribeAdmin,
     dialogId,
     streamName: CHAT_CHUNKS_STREAM,
     topic: NATS_TOPICS.ADMIN_MESSAGE,

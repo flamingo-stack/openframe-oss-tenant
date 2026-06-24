@@ -14,6 +14,7 @@ export default function OnboardingGuideDetailRoute() {
   const { slug = '' } = useParams<{ slug: string }>();
   return (
     <OnboardingGuideDetailView
+      shell={false}
       slug={slug}
       guideEndpoint={EP.onboardingBySlug}
       basePath={`${HELP_CENTER_BASE}/onboarding-guides`}

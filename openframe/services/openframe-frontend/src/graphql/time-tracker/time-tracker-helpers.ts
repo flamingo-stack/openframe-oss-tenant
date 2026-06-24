@@ -173,3 +173,25 @@ export function makeCancelTimerUpdater(timerId: string) {
     store.delete(timerId);
   };
 }
+
+/**
+ * Cross-surface invalidation for time entries. Store updaters keep each surface's
+ * connections consistent, but `employeeTimeStats` is a server aggregate that only
+ * the employee work-time query can recompute — so when the global timer widget
+ * changes an entry, a mounted "My Time" page for that user must refetch.
+ * `userId` is the raw (non-global) id of the affected user so subscribers can
+ * ignore changes for someone else.
+ */
+type TimeEntriesChangedListener = (userId: string | null) => void;
+const timeEntriesChangedListeners = new Set<TimeEntriesChangedListener>();
+
+export function notifyTimeEntriesChanged(userId: string | null): void {
+  for (const listener of timeEntriesChangedListeners) listener(userId);
+}
+
+export function subscribeTimeEntriesChanged(listener: TimeEntriesChangedListener): () => void {
+  timeEntriesChangedListeners.add(listener);
+  return () => {
+    timeEntriesChangedListeners.delete(listener);
+  };
+}

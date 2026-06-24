@@ -40,6 +40,7 @@ import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingApprovals } from '@/lib/chat-history';
+import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { useAuthStore } from '@/stores';
@@ -102,6 +103,10 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
   const handleBackToTickets = useSafeBack('/tickets');
   const { toast } = useToast();
+  // When the Mingo sidebar carries per-ticket context, the embedded technician
+  // (Mingo) chat is redundant: its panel, NATS subscription, history fetch, and
+  // chunk processing are all dropped in favor of the global sidebar chat.
+  const isTechnicianChatEnabled = !featureFlags.mingoSidebarContext.enabled();
   const initialAiModel = useAiModel();
   const [currentClientModel, setCurrentClientModel] = useState<{ provider: string; displayName: string } | null>(null);
   const [currentAdminModel, setCurrentAdminModel] = useState<{ provider: string; displayName: string } | null>(null);
@@ -210,7 +215,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const messageDialogId = dialog?.dialogId ?? null;
 
   const clientChat = useTicketMessages(messageDialogId, CHAT_TYPE.CLIENT);
-  const adminChat = useTicketMessages(messageDialogId, CHAT_TYPE.ADMIN);
+  const adminChat = useTicketMessages(isTechnicianChatEnabled ? messageDialogId : null, CHAT_TYPE.ADMIN);
 
   const { activate, archive, isUpdating } = useTicketStatus();
   const transitionTicket = useTransitionTicket();
@@ -299,16 +304,17 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     setCurrentAdminModel(prev => prev ?? initialAiModel);
   }, [initialAiModel]);
 
-  // Default to technician tab when ticket is admin-owned (no client chat)
+  // Admin-owned tickets have no client chat, so the default 'client' tab is
+  // empty. Redirect to the technician chat when it's available, otherwise to
+  // ticket details (the only remaining tab).
   useEffect(() => {
-    if (dialog?.owner?.type === 'ADMIN' && activeChatTab === 'client') {
-      setActiveChatTab('technician');
-    }
-  }, [dialog?.owner?.type, activeChatTab]);
+    if (dialog?.owner?.type !== 'ADMIN' || activeChatTab !== 'client') return;
+    setActiveChatTab(isTechnicianChatEnabled ? 'technician' : 'info');
+  }, [dialog?.owner?.type, activeChatTab, isTechnicianChatEnabled]);
 
   const clientInitialOptStartSeq = useMemo(() => maxPersistedStreamSeq(clientChat.rawPages), [clientChat.rawPages]);
   const adminInitialOptStartSeq = useMemo(() => maxPersistedStreamSeq(adminChat.rawPages), [adminChat.rawPages]);
-  const isInitialOptStartSeqReady = clientChat.isFetched && adminChat.isFetched;
+  const isInitialOptStartSeqReady = clientChat.isFetched && (!isTechnicianChatEnabled || adminChat.isFetched);
 
   const applyStatus = useCallback(
     (nextStatus: Dialog['status']) => {
@@ -519,7 +525,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   }, [dialog, isUpdating, handleArchive, handleUnarchive]);
 
   if (isLoading) {
-    return <TicketDetailsSkeleton onBack={handleBackToTickets} />;
+    return <TicketDetailsSkeleton onBack={handleBackToTickets} showTechnicianChat={isTechnicianChatEnabled} />;
   }
 
   if (dialogError) {
@@ -565,6 +571,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         clientInitialOptStartSeq={clientInitialOptStartSeq}
         adminInitialOptStartSeq={adminInitialOptStartSeq}
         isInitialOptStartSeqReady={isInitialOptStartSeqReady}
+        subscribeAdmin={isTechnicianChatEnabled}
       />
       <PageLayout
         title={dialog.title || 'Untitled Dialog'}
@@ -649,9 +656,11 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   Client Chat
                 </TabsTrigger>
               )}
-              <TabsTrigger value="technician" className="flex-1">
-                Technician Chat
-              </TabsTrigger>
+              {isTechnicianChatEnabled && (
+                <TabsTrigger value="technician" className="flex-1">
+                  Technician Chat
+                </TabsTrigger>
+              )}
               <TabsTrigger value="info" className="flex-1">
                 Ticket Details
               </TabsTrigger>
@@ -784,69 +793,71 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             )}
 
             {/* Technician Chat */}
-            <div
-              className={cn(
-                'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
-                activeChatTab !== 'technician' ? 'hidden lg:flex' : 'flex',
-              )}
-            >
-              <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Technician Chat</h2>
-              <div className="flex-1 flex flex-col relative min-h-0">
-                {adminMessages.length === 0 ? (
-                  /* Empty State */
-                  <div className="bg-ods-card border border-ods-border rounded-lg flex-1 flex flex-col items-center justify-center p-8">
-                    <div className="flex flex-col items-center gap-4 text-center">
-                      <div className="relative w-12 h-12">
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <MessageCircleIcon className="h-8 w-8 text-ods-text-secondary" />
+            {isTechnicianChatEnabled && (
+              <div
+                className={cn(
+                  'flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0',
+                  activeChatTab !== 'technician' ? 'hidden lg:flex' : 'flex',
+                )}
+              >
+                <h2 className="hidden lg:block text-h5 text-ods-text-secondary">Technician Chat</h2>
+                <div className="flex-1 flex flex-col relative min-h-0">
+                  {adminMessages.length === 0 ? (
+                    /* Empty State */
+                    <div className="bg-ods-card border border-ods-border rounded-lg flex-1 flex flex-col items-center justify-center p-8">
+                      <div className="flex flex-col items-center gap-4 text-center">
+                        <div className="relative w-12 h-12">
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <MessageCircleIcon className="h-8 w-8 text-ods-text-secondary" />
+                          </div>
                         </div>
+                        <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
+                          Start a technician conversation
+                        </p>
                       </div>
-                      <p className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-secondary max-w-xs">
-                        Start a technician conversation
-                      </p>
                     </div>
-                  </div>
-                ) : (
-                  /* Messages */
-                  <ChatMessageList
-                    className="flex-1 bg-ods-card border border-ods-border rounded-lg"
-                    messages={adminChatDisplayMessages}
-                    dialogId={ticketId}
-                    autoScroll={true}
-                    showAvatars={false}
-                    isLoading={adminChat.isLoading}
-                    isTyping={isAdminChatTyping}
-                    pendingApprovals={adminPendingApprovals}
-                    assistantType={ASSISTANT_CONFIG.MINGO.type}
-                    hasNextPage={adminChat.hasNextPage}
-                    isFetchingNextPage={adminChat.isFetchingNextPage}
-                    onLoadMore={adminChat.fetchNextPage}
-                    contentClassName="px-[var(--spacing-system-mf)] !max-w-full"
+                  ) : (
+                    /* Messages */
+                    <ChatMessageList
+                      className="flex-1 bg-ods-card border border-ods-border rounded-lg"
+                      messages={adminChatDisplayMessages}
+                      dialogId={ticketId}
+                      autoScroll={true}
+                      showAvatars={false}
+                      isLoading={adminChat.isLoading}
+                      isTyping={isAdminChatTyping}
+                      pendingApprovals={adminPendingApprovals}
+                      assistantType={ASSISTANT_CONFIG.MINGO.type}
+                      hasNextPage={adminChat.hasNextPage}
+                      isFetchingNextPage={adminChat.isFetchingNextPage}
+                      onLoadMore={adminChat.fetchNextPage}
+                      contentClassName="px-[var(--spacing-system-mf)] !max-w-full"
+                    />
+                  )}
+                </div>
+
+                {!isClosed && (
+                  <ChatInput
+                    placeholder="Enter your Request..."
+                    onSend={handleSendAdminMessage}
+                    onStop={isAdminChatTyping ? handleStopGeneration : undefined}
+                    sending={isSendingAdminMessage || isAdminChatTyping || isCompacting || isClientChatTyping}
+                    autoFocus={false}
+                    className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
                   />
                 )}
+                {showTokenMemory && (currentAdminModel || adminTokenUsage) && (
+                  <div className="mt-[var(--spacing-system-xsf)]">
+                    <ModelDisplay
+                      provider={currentAdminModel?.provider}
+                      modelName={currentAdminModel?.displayName}
+                      usedTokens={adminTokenUsage?.totalTokensSize ?? undefined}
+                      contextWindow={adminTokenUsage?.contextSize ?? undefined}
+                    />
+                  </div>
+                )}
               </div>
-
-              {!isClosed && (
-                <ChatInput
-                  placeholder="Enter your Request..."
-                  onSend={handleSendAdminMessage}
-                  onStop={isAdminChatTyping ? handleStopGeneration : undefined}
-                  sending={isSendingAdminMessage || isAdminChatTyping || isCompacting || isClientChatTyping}
-                  autoFocus={false}
-                  className="mt-[var(--spacing-system-xsf)] bg-ods-card rounded-lg !max-w-full"
-                />
-              )}
-              {showTokenMemory && (currentAdminModel || adminTokenUsage) && (
-                <div className="mt-[var(--spacing-system-xsf)]">
-                  <ModelDisplay
-                    provider={currentAdminModel?.provider}
-                    modelName={currentAdminModel?.displayName}
-                    usedTokens={adminTokenUsage?.totalTokensSize ?? undefined}
-                    contextWindow={adminTokenUsage?.contextSize ?? undefined}
-                  />
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </PageLayout>

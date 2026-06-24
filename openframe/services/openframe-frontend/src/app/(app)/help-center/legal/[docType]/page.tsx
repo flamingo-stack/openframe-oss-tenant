@@ -42,6 +42,7 @@ export default function LegalPage() {
   const copy = COPY[docType] ?? COPY.privacy;
   return (
     <LegalDocumentPage
+      shell={false}
       docType={docType}
       apiEndpoint={EP.legal(docType)}
       backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}

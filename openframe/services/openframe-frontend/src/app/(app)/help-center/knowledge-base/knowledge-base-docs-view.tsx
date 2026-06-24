@@ -2,9 +2,7 @@
 
 import type { DocumentTypeRenderers } from '@flamingo-stack/openframe-frontend-core/components/docs';
 import { DocsHubPage } from '@flamingo-stack/openframe-frontend-core/components/docs';
-import { BookBookmarkIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { RichMarkdownRenderer } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { SECTION_HERO_ICON_CLASS } from '@flamingo-stack/openframe-frontend-core/utils';
 import { EP, HELP_CENTER_BASE, KNOWLEDGE_BASE_ROUTE } from '../endpoints';
 
 /** Public knowledge-hub doc source — must match the hub's `DOC_SOURCES` id. */
@@ -54,9 +52,8 @@ export function KnowledgeBaseDocsView({ docPath }: { docPath: string }) {
       sourceId={KB_SOURCE_ID}
       chatSource="openframe"
       title="Knowledge Base"
-      titleIcon={<BookBookmarkIcon className={SECTION_HERO_ICON_CLASS} />}
       subtitle="Comprehensive guides and references for the OpenFrame platform"
-      accentDot
+      shell={false}
       docPath={docPath}
       baseRoute={KNOWLEDGE_BASE_ROUTE}
       sidebarLabel="DOCUMENTATION"

@@ -18,7 +18,10 @@ export const AI_SETTINGS_TABS: TabItem[] = [
 // Tabs gated behind server feature flags until each feature ships. Guardrails
 // is always visible.
 const TAB_FEATURE_FLAG: Partial<Record<AiSettingsTabId, () => boolean>> = {
-  customer: () => featureFlags.customerAiAssistantSettings.enabled(),
+  // Temporarily always visible: the Customer AI Assistant tab is shown, while the
+  // not-yet-released appearance customization it controls stays gated behind
+  // `featureFlags.customerAiAssistantSettings` at its own call sites.
+  customer: () => true,
   mingo: () => featureFlags.mingoAiChatSettings.enabled(),
 };
 
