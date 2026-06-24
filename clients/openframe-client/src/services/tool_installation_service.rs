@@ -268,6 +268,19 @@ impl ToolInstallationService {
         }
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
+        // Don't install on top of a service we couldn't clear: if the existing service is still
+        // active (e.g. a wedged StopPending that even delete couldn't remove, or a live process
+        // we couldn't kill), abort so the record stays `Installing` and the install is retried,
+        // rather than overwriting/registering over a live agent.
+        if let Some(Installation::Service { service_name: svc, .. }) = &stop_installation {
+            if !crate::platform::system_service::service_clear_for_install(svc).await {
+                return Err(anyhow::anyhow!(
+                    "Aborting reinstall of {}: existing service '{}' is still active and could not be cleared; will retry",
+                    tool_agent_id, svc
+                ));
+            }
+        }
+
         // Download and install the tool
         let (executable_path, installation_type, bundle_id, config_service_name) = match resolved_config {
             Some(resolved_config) => {
@@ -453,6 +466,16 @@ impl ToolInstallationService {
             info!("Installation command executed successfully for tool {}\nstdout: {}", tool_agent_id, stdout);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
+        }
+
+        // For Service tools, confirm the service actually came up before recording it as
+        // Installed. A `-install` that exits 0 but leaves the service stopped/wedged would
+        // otherwise be marked healthy; failing here keeps the record `Installing` for retry.
+        if let Installation::Service { service_name: svc, .. } = &installation {
+            crate::platform::system_service::verify_service_running(svc)
+                .await
+                .with_context(|| format!("Post-install service verification failed for {}", tool_agent_id))?;
+            info!("Verified service {} is running after install of {}", svc, tool_agent_id);
         }
 
         // Persist installed tool information

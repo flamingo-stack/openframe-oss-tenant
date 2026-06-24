@@ -141,6 +141,45 @@ pub async fn stop_service(service_name: &str) -> Result<()> {
     }
 }
 
+/// Confirm a freshly (re)installed service actually reached RUNNING, starting it if the
+/// installer left it stopped; errors if it cannot be confirmed RUNNING. On non-Windows this is
+/// a no-op — the `StopPending` wedge that motivates it is Windows-specific, and blindly
+/// re-issuing a start on launchd/systemd risks failing an already-loaded unit.
+pub async fn verify_service_running(service_name: &str) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    {
+        use windows_service::service::ServiceState;
+        if let Ok(status) = query_service_status_windows(service_name) {
+            if status.current_state == ServiceState::Running {
+                return Ok(());
+            }
+        }
+        start_service(service_name)
+            .await
+            .with_context(|| format!("service {} did not reach RUNNING after install", service_name))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = service_name;
+        Ok(())
+    }
+}
+
+/// True if the service is absent or Stopped — i.e. safe to (re)install over. On non-Windows
+/// always true. Used to abort a reinstall rather than overwrite/register on top of a service
+/// we could not stop or clear (e.g. a wedged `StopPending` or a still-live old agent).
+pub async fn service_clear_for_install(service_name: &str) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        service_stopped_or_missing(&query_service_status_windows(service_name))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = service_name;
+        true
+    }
+}
+
 #[cfg(target_os = "windows")]
 async fn stop_service_windows(service_name: &str) -> Result<()> {
     use windows_service::service::ServiceAccess;
