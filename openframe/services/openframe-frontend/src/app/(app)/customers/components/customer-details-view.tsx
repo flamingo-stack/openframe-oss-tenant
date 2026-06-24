@@ -21,6 +21,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useClientView } from '@/app/(app)/settings/ai-settings/hooks/use-client-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
@@ -59,12 +60,14 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
 
   const { organization, isLoading, error } = useCustomerDetails(id);
 
-  // The Custom AI Assistant tab depends on the openframe-saas-ai-agent service
-  // (/chat/graphql), so it's saas-tenant only; it appears only when the customer
-  // has a custom appearance override (an org-scoped ClientView exists).
+  // The Custom AI Assistant tab is gated behind the customer-ai-assistant-settings
+  // flag (feature not released yet) and depends on the openframe-saas-ai-agent
+  // service (/chat/graphql), so it's saas-tenant only; it appears only when the
+  // customer has a custom appearance override (an org-scoped ClientView exists).
+  const isCustomerAiEnabled = featureFlags.customerAiAssistantSettings.enabled();
   const isSaasTenant = runtimeEnv.appMode() === 'saas-tenant';
-  const { view: clientView } = useClientView(id, { enabled: isSaasTenant && !!id });
-  const showCustomAiAssistant = isSaasTenant && !!clientView;
+  const { view: clientView } = useClientView(id, { enabled: isCustomerAiEnabled && isSaasTenant && !!id });
+  const showCustomAiAssistant = isCustomerAiEnabled && isSaasTenant && !!clientView;
   const tabs = useMemo(() => getCustomerTabs(showCustomAiAssistant), [showCustomAiAssistant]);
   const activeTab = tabs.some(tab => tab.id === requestedTab) ? requestedTab : 'devices';
 
