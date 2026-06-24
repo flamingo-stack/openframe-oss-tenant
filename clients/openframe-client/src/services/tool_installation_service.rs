@@ -110,6 +110,32 @@ impl ToolInstallationService {
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
+
+        // TEMP (remove when meshagent NodeID-preservation lands): a mesh force-reinstall wipes
+        // agent.db and `-install` regenerates the node identity (new NodeID), orphaning the device on
+        // MeshCentral. Until the agent reuses its persisted cert across a db wipe, back up agent.db
+        // here (outside the tool dir so it survives the wipe) and restore it after install so the
+        // NodeID is preserved. See MESH_AGENT_DB_SAFETY_VERDICT.md.
+        let mesh_db_backup: Option<std::path::PathBuf> = if reinstall && tool_agent_id == "meshcentral-agent" {
+            let db = tool_folder_path.join("agent.db");
+            let backup = base_folder_path.join("meshcentral-agent.db.reinstall-backup");
+            if db.exists() {
+                match fs::copy(&db, &backup).await {
+                    Ok(_) => {
+                        info!("TEMP: backed up mesh agent.db to {} to preserve NodeID across reinstall", backup.display());
+                        Some(backup)
+                    }
+                    Err(e) => {
+                        warn!("TEMP: failed to back up mesh agent.db: {:#}; NodeID may rotate on reinstall", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         
         // Check if tool is already installed
         if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
@@ -497,6 +523,31 @@ impl ToolInstallationService {
                 .await
                 .with_context(|| format!("Post-install service verification failed for {}", tool_agent_id))?;
             info!("Verified service {} is running after install of {}", svc, tool_agent_id);
+        }
+
+        // TEMP (remove when meshagent NodeID-preservation lands): the freshly (re)installed mesh
+        // agent generated a NEW node identity. Restore the agent.db backed up before the wipe so the
+        // agent loads its previous SelfNodeCert (same NodeID) on restart instead of the new one,
+        // avoiding an orphaned device on MeshCentral. The fresh .msh on disk is re-imported on the
+        // restart, so server config stays current. Remove once the meshagent reuses its persisted
+        // cert across a db wipe (see MESH_AGENT_DB_SAFETY_VERDICT.md).
+        if let Some(backup) = mesh_db_backup {
+            if let Installation::Service { service_name: svc, .. } = &installation {
+                let db_path = tool_folder_path.join("agent.db");
+                info!("TEMP: restoring preserved mesh agent.db to keep NodeID across reinstall");
+                if let Err(e) = crate::platform::system_service::stop_service(svc).await {
+                    warn!("TEMP: failed to stop {} before agent.db restore: {:#}", svc, e);
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                match fs::copy(&backup, &db_path).await {
+                    Ok(_) => info!("TEMP: restored mesh agent.db from {}", backup.display()),
+                    Err(e) => warn!("TEMP: failed to restore mesh agent.db from {}: {:#}; NodeID will rotate", backup.display(), e),
+                }
+                if let Err(e) = crate::platform::system_service::start_service(svc).await {
+                    warn!("TEMP: failed to restart {} after agent.db restore: {:#}", svc, e);
+                }
+            }
+            let _ = fs::remove_file(&backup).await;
         }
 
         // Persist installed tool information
