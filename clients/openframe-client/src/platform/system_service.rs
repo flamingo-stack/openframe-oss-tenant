@@ -121,22 +121,26 @@ pub async fn start_service(service_name: &str) -> Result<()> {
     Ok(())
 }
 
-/// Stop an OS service via the platform service manager.
-pub async fn stop_service(service_name: &str) -> Result<()> {
+/// Stop an OS service via the platform service manager. `allow_delete` permits the last-resort
+/// SCM delete of a wedged service; pass it only from install/reinstall/uninstall, which recreate
+/// the service. The update/restore paths must pass false (they don't re-register, so a delete bricks the tool).
+pub async fn stop_service(service_name: &str, allow_delete: bool) -> Result<()> {
     info!("Stopping service: {}", service_name);
 
     #[cfg(target_os = "windows")]
     {
-        stop_service_windows(service_name).await
+        stop_service_windows(service_name, allow_delete).await
     }
 
     #[cfg(target_os = "macos")]
     {
+        let _ = allow_delete;
         stop_service_macos(service_name).await
     }
 
     #[cfg(target_os = "linux")]
     {
+        let _ = allow_delete;
         stop_service_linux(service_name).await
     }
 }
@@ -181,7 +185,7 @@ pub async fn service_clear_for_install(service_name: &str) -> bool {
 }
 
 #[cfg(target_os = "windows")]
-async fn stop_service_windows(service_name: &str) -> Result<()> {
+async fn stop_service_windows(service_name: &str, allow_delete: bool) -> Result<()> {
     use windows_service::service::ServiceAccess;
     use winapi::shared::winerror::{
         ERROR_SERVICE_CANNOT_ACCEPT_CTRL, ERROR_SERVICE_DOES_NOT_EXIST, ERROR_SERVICE_NOT_ACTIVE,
@@ -204,12 +208,12 @@ async fn stop_service_windows(service_name: &str) -> Result<()> {
         Err(_elapsed) => {
             warn!("service.stop() for {} timed out after {}s; force-killing service process",
                   service_name, SERVICE_STOP_CALL_TIMEOUT_SECS);
-            return force_stop_service_windows(service_name).await;
+            return force_stop_service_windows(service_name, allow_delete).await;
         }
         Ok(Err(join_err)) => {
             error!("service.stop() task for {} failed: {}; force-killing service process",
                    service_name, join_err);
-            return force_stop_service_windows(service_name).await;
+            return force_stop_service_windows(service_name, allow_delete).await;
         }
         Ok(Ok(result)) => result,
     };
@@ -221,7 +225,7 @@ async fn stop_service_windows(service_name: &str) -> Result<()> {
                 return Ok(());
             }
             warn!("Service {} did not reach STOPPED after stop request; force-killing", service_name);
-            force_stop_service_windows(service_name).await
+            force_stop_service_windows(service_name, allow_delete).await
         }
         Err(windows_service::Error::Winapi(e))
             if e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32) =>
@@ -240,17 +244,17 @@ async fn stop_service_windows(service_name: &str) -> Result<()> {
         {
             warn!("Service {} cannot accept stop control (error {}); force-killing service process",
                   service_name, ERROR_SERVICE_CANNOT_ACCEPT_CTRL);
-            force_stop_service_windows(service_name).await
+            force_stop_service_windows(service_name, allow_delete).await
         }
         Err(e) => {
             error!("Failed to stop service {} via SCM: {}; force-killing service process", service_name, e);
-            force_stop_service_windows(service_name).await
+            force_stop_service_windows(service_name, allow_delete).await
         }
     }
 }
 
 #[cfg(target_os = "windows")]
-async fn force_stop_service_windows(service_name: &str) -> Result<()> {
+async fn force_stop_service_windows(service_name: &str, allow_delete: bool) -> Result<()> {
     for attempt in 1..=SERVICE_FORCE_KILL_MAX_ATTEMPTS {
         let status = query_service_status_windows(service_name);
         if service_stopped_or_missing(&status) {
@@ -311,13 +315,22 @@ async fn force_stop_service_windows(service_name: &str) -> Result<()> {
         return Ok(());
     }
 
+    let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
+        .unwrap_or_else(|_| "unqueryable".to_string());
+
+    // Only delete when the caller will recreate the service (install/reinstall/uninstall). The
+    // update/restore paths pass allow_delete=false: deleting there would brick the tool because
+    // nothing re-registers the service, so report failure and let the caller retry/repair.
+    if !allow_delete {
+        return Err(anyhow::anyhow!(
+            "Failed to force-stop service {} (state {} after {} attempts)",
+            service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS
+        ));
+    }
+
     // Last resort: the service is wedged (typically StopPending that SCM won't reap, with no
     // killable process). Mark it for deletion via the SCM so the follow-up reinstall recreates
     // it cleanly. This is what lets a reinstall recover the agent without a machine reboot.
-    // Only reachable from stop_for_installation (install/reinstall/uninstall), where the
-    // service is about to be recreated or removed anyway.
-    let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
-        .unwrap_or_else(|_| "unqueryable".to_string());
     warn!("Service {} still not stopped (state {}) after {} force-kill attempts; deleting it via SCM to clear the wedged state",
           service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
     match delete_service_windows(service_name).await {

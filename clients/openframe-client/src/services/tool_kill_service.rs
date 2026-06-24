@@ -203,11 +203,11 @@ impl ToolKillService {
         self.stop_processes_by_pattern(&pattern, &format!("path: {}", executable_path)).await
     }
 
-    pub async fn stop_installed_tool(&self, tool: &InstalledTool) -> Result<()> {
-        self.stop_for_installation(&tool.tool_agent_id, &tool.installation).await
+    pub async fn stop_installed_tool(&self, tool: &InstalledTool, allow_delete: bool) -> Result<()> {
+        self.stop_for_installation(&tool.tool_agent_id, &tool.installation, allow_delete).await
     }
 
-    pub async fn stop_for_installation(&self, tool_agent_id: &str, installation: &Installation) -> Result<()> {
+    pub async fn stop_for_installation(&self, tool_agent_id: &str, installation: &Installation, allow_delete: bool) -> Result<()> {
         match installation {
             Installation::GuiApp { executable_path, .. } => {
                 info!("Stopping GUI app by executable path: {}", executable_path);
@@ -222,7 +222,7 @@ impl ToolKillService {
             Installation::Service { service_name, executable_path } => {
                 info!(service_name = %service_name,
                       "Stopping Service type tool via system service manager");
-                if let Err(e) = system_service::stop_service(service_name).await {
+                if let Err(e) = system_service::stop_service(service_name, allow_delete).await {
                     warn!("Failed to stop service {} (continuing with process kill by path): {:#}",
                           service_name, e);
                 }

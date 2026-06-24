@@ -156,7 +156,7 @@ impl ToolInstallationService {
 
                 // Stop the tool process if it's running
                 info!("Stopping existing tool process for {}", tool_agent_id);
-                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool).await {
+                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool, true).await {
                     warn!("Failed to stop tool process: {:#}", e);
                 }
         
@@ -293,7 +293,7 @@ impl ToolInstallationService {
         };
         info!("Stopping any leftover holder for {} before download", tool_agent_id);
         if let Some(stop_installation) = &stop_installation {
-            if let Err(e) = self.tool_kill_service.stop_for_installation(tool_agent_id, stop_installation).await {
+            if let Err(e) = self.tool_kill_service.stop_for_installation(tool_agent_id, stop_installation, true).await {
                 warn!("Failed to stop leftover holder before download: {:#}", e);
             }
         }
@@ -534,7 +534,7 @@ impl ToolInstallationService {
             if let Installation::Service { service_name: svc, .. } = &installation {
                 let db_path = tool_folder_path.join("agent.db");
                 info!("TEMP: restoring preserved mesh agent.db to keep NodeID across reinstall");
-                if let Err(e) = crate::platform::system_service::stop_service(svc).await {
+                if let Err(e) = crate::platform::system_service::stop_service(svc, false).await {
                     warn!("TEMP: failed to stop {} before agent.db restore: {:#}", svc, e);
                 }
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
