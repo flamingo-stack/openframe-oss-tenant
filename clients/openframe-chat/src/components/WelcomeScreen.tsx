@@ -1,4 +1,7 @@
-import { MspOrganizationCard } from '@flamingo-stack/openframe-frontend-core/components/chat';
+import {
+  MspOrganizationCard,
+  MspOrganizationCardSkeleton,
+} from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   BrainAIIcon,
@@ -47,7 +50,7 @@ interface WelcomeScreenProps {
 export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   // Show which organization the user is signing into. Logo bytes sit behind a
   // Bearer-protected endpoint, so resolve them like the assistant avatar.
-  const { data: tenantInfo } = useTenantInfoQuery({ enabled: true });
+  const { data: tenantInfo, isLoading } = useTenantInfoQuery({ enabled: true });
   const rawLogoUrl = tenantInfo?.image ? getFullImageUrl(tenantInfo.image.imageUrl, tenantInfo.image.hash) : undefined;
   const { url: orgLogoUrl } = useAuthenticatedImage(rawLogoUrl);
   const orgName = tenantInfo?.name?.trim();
@@ -65,7 +68,9 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
 
         <FeatureList items={features} className="w-full" />
 
-        {orgName ? (
+        {isLoading ? (
+          <MspOrganizationCardSkeleton className="w-full" />
+        ) : orgName ? (
           <MspOrganizationCard
             name={orgName}
             website={orgWebsite || undefined}
