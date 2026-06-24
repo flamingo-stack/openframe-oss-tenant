@@ -1,4 +1,6 @@
-//! Mesh self-heal: when the agent is held/orphaned on a stale MeshID, re-fetch the current .msh and bounce the agent so it re-enrolls.
+//! Mesh self-heal: when the agent can't enroll (stale/old .msh — a re-keyed MeshID or a missing
+//! ServerID), re-fetch the current .msh and bounce the *service* so the agent re-imports it and
+//! reconnects. Restart-only (never `-install`/`-uninstall`) so agent.db / the NodeID is preserved.
 
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -89,10 +91,15 @@ impl MeshSelfHealService {
 
         let mut offset: u64 = 0;
         let mut stuck_since: Option<Instant> = None;
-        let mut last_noop_heal: Option<Instant> = None;
+        let mut last_heal_attempt: Option<Instant> = None;
 
         loop {
             sleep(POLL_INTERVAL).await;
+
+            // Proactive check: a current .msh with no ServerID line makes the agent bail before it
+            // ever connects ("ServerID entry not found in Db!"), so it never logs a connection
+            // failure and the log-based stuck detection below would never fire. Catch it directly.
+            let msh_missing_serverid = self.current_msh_missing_serverid().await;
 
             match read_new_lines(&log_path, &mut offset).await {
                 Ok(lines) => {
@@ -107,52 +114,49 @@ impl MeshSelfHealService {
                 Err(e) => {
                     // Log not present yet (agent not installed/started) — just wait.
                     debug!("mesh self-heal: cannot read {}: {e}", log_path.display());
-                    continue;
                 }
             }
 
-            let stuck_for = match stuck_since {
-                Some(t) => t.elapsed(),
-                None => continue,
-            };
-            if stuck_for < STUCK_DURATION {
+            let stuck = stuck_since.map_or(false, |t| t.elapsed() >= STUCK_DURATION);
+            if !msh_missing_serverid && !stuck {
                 continue;
             }
 
-            if let Some(t) = last_noop_heal {
+            // Rate-limit every attempt (success or no-op) so a down /generate-msh or a purely
+            // server-side outage can't trigger a heal each cycle.
+            if let Some(t) = last_heal_attempt {
                 if t.elapsed() < NOOP_HEAL_COOLDOWN {
                     continue;
                 }
             }
 
             if self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
-                info!("meshcentral-agent is updating — skipping MeshID self-heal this cycle");
+                info!("meshcentral-agent is updating — skipping .msh self-heal this cycle");
                 stuck_since = None;
                 continue;
             }
 
-            warn!(
-                "meshcentral-agent stuck for {}s with no successful connect — attempting MeshID self-heal",
-                stuck_for.as_secs()
-            );
+            let reason = if msh_missing_serverid {
+                "current .msh has no ServerID (agent cannot authenticate the server)".to_string()
+            } else {
+                format!("no successful connect within {}s", STUCK_DURATION.as_secs())
+            };
+            warn!("meshcentral-agent unhealthy: {reason} — attempting .msh self-heal");
+
             match self.try_heal().await {
-                Ok(true) => {
-                    info!("mesh self-heal: adopted a new MeshID and restarted the agent");
-                    last_noop_heal = None;
-                }
-                Ok(false) => {
-                    debug!("mesh self-heal: MeshID unchanged or server unreachable — no action taken");
-                    last_noop_heal = Some(Instant::now());
-                }
+                Ok(true) => info!("mesh self-heal: refreshed .msh and restarted the agent (NodeID preserved)"),
+                Ok(false) => debug!("mesh self-heal: .msh already current — likely a server-side issue, no action taken"),
                 Err(e) => error!("mesh self-heal failed: {e:#}"),
             }
 
-            // Sole rate-limiter: reset after every attempt; a real heal is cleared by the CoreOk marker.
             stuck_since = None;
+            last_heal_attempt = Some(Instant::now());
         }
     }
 
-    /// Fetch the current .msh; if its MeshID differs from the agent's, rewrite it and bounce. Ok(true) only when applied.
+    /// Fetch the current .msh; if it is missing, or its MeshID/ServerID differ from the server's,
+    /// rewrite it and bounce the service so the agent re-imports it. Ok(true) only when applied.
+    /// Restarting the service (never `-install`) preserves agent.db / the NodeID.
     async fn try_heal(&self) -> Result<bool> {
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
@@ -168,24 +172,32 @@ impl MeshSelfHealService {
             return Err(anyhow!("/generate-msh returned HTTP {}", resp.status()));
         }
         let body = resp.text().await?;
-        let new_id =
-            parse_mesh_id(&body).ok_or_else(|| anyhow!("no MeshID in /generate-msh response"))?;
+        let new_mesh = parse_msh_field(&body, "MeshID");
+        let new_server = parse_msh_field(&body, "ServerID");
+        if new_mesh.is_none() && new_server.is_none() {
+            return Err(anyhow!("/generate-msh response has neither MeshID nor ServerID"));
+        }
 
         let msh_path = self.mesh_msh_path().await?;
-        let current_id = tokio::fs::read_to_string(&msh_path)
-            .await
-            .ok()
-            .and_then(|s| parse_mesh_id(&s));
+        let current = tokio::fs::read_to_string(&msh_path).await.ok();
+        let cur_mesh = current.as_deref().and_then(|s| parse_msh_field(s, "MeshID"));
+        let cur_server = current.as_deref().and_then(|s| parse_msh_field(s, "ServerID"));
 
-        if current_id.as_deref() == Some(new_id.as_str()) {
+        // Rewrite when the current .msh is missing or differs from the server's current values.
+        // A missing/changed ServerID is the "ServerID entry not found in Db!" root cause; a changed
+        // MeshID means the device group was re-keyed.
+        let mesh_changed = new_mesh.is_some() && cur_mesh != new_mesh;
+        let server_changed = new_server.is_some() && cur_server != new_server;
+        if !mesh_changed && !server_changed {
             return Ok(false);
         }
 
         info!(
-            "mesh self-heal: MeshID change {} -> {} (writing {})",
-            current_id.as_deref().unwrap_or("<none>"),
-            new_id,
-            msh_path.display()
+            "mesh self-heal: rewriting {} (mesh_changed={}, serverid {} -> {})",
+            msh_path.display(),
+            mesh_changed,
+            if cur_server.is_some() { "present" } else { "missing" },
+            if new_server.is_some() { "present" } else { "missing" }
         );
 
         let tmp_path = msh_path.with_extension("msh.tmp");
@@ -193,6 +205,7 @@ impl MeshSelfHealService {
         tokio::fs::rename(&tmp_path, &msh_path).await?;
 
         // Restart the service to re-import the .msh: kill, then start (redundant start is a no-op under mac KeepAlive).
+        // No -install/-uninstall, so agent.db (SelfNodeCert/NodeID) is preserved.
         self.tool_kill.stop_tool(MESH_TOOL_ID).await?;
         if let Some(service_name) = self.mesh_service_name().await? {
             if let Err(e) = system_service::start_service(&service_name).await {
@@ -200,6 +213,18 @@ impl MeshSelfHealService {
             }
         }
         Ok(true)
+    }
+
+    /// True only when the agent is installed, its .msh exists, and that .msh has no ServerID line.
+    async fn current_msh_missing_serverid(&self) -> bool {
+        let msh_path = match self.mesh_msh_path().await {
+            Ok(p) => p,
+            Err(_) => return false, // not installed / no .msh yet — nothing to heal
+        };
+        match tokio::fs::read_to_string(&msh_path).await {
+            Ok(s) => parse_msh_field(&s, "ServerID").is_none(),
+            Err(_) => false,
+        }
     }
 
     /// Find the .msh the client saved in the tool dir (agent.msh on Windows, meshagent.msh on macOS).
@@ -233,11 +258,11 @@ impl MeshSelfHealService {
     }
 }
 
-/// Extract the value of the `MeshID=` line from an `.msh` body.
-fn parse_mesh_id(msh: &str) -> Option<String> {
+/// Extract the value of a `Key=` line (e.g. `MeshID=`, `ServerID=`) from an `.msh` body.
+fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
+    let prefix = format!("{key}=");
     msh.lines()
-        .find_map(|l| l.trim().strip_prefix("MeshID="))
-        .map(|v| v.trim().to_string())
+        .find_map(|l| l.trim().strip_prefix(prefix.as_str()).map(|v| v.trim().to_string()))
         .filter(|v| !v.is_empty())
 }
 
