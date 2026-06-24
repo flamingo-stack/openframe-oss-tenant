@@ -34,6 +34,16 @@ use std::os::unix::fs::PermissionsExt;
 /// terminated when the timeout fires.
 const TOOL_COMMAND_TIMEOUT_SECS: u64 = 300;
 
+/// TEMP (remove with the agent.db backup/restore): deletes the mesh reinstall backup on every exit path.
+struct ReinstallBackupGuard(Option<std::path::PathBuf>);
+impl Drop for ReinstallBackupGuard {
+    fn drop(&mut self) {
+        if let Some(path) = self.0.take() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ToolInstallationService {
     github_download_service: GithubDownloadService,
@@ -113,8 +123,8 @@ impl ToolInstallationService {
 
         // TEMP (remove when the agent persists its identity across a db wipe): back up the mesh
         // agent.db outside the tool dir so it survives the reinstall wipe; restored after install to
-        // preserve the NodeID.
-        let mesh_db_backup: Option<std::path::PathBuf> = if reinstall && tool_agent_id == "meshcentral-agent" {
+        // preserve the NodeID. The guard deletes the backup on every exit path.
+        let mesh_db_backup = ReinstallBackupGuard(if reinstall && tool_agent_id == "meshcentral-agent" {
             let db = tool_folder_path.join("agent.db");
             let backup = base_folder_path.join("meshcentral-agent.db.reinstall-backup");
             if db.exists() {
@@ -133,8 +143,8 @@ impl ToolInstallationService {
             }
         } else {
             None
-        };
-        
+        });
+
         // Check if tool is already installed
         if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             if reinstall {
@@ -520,7 +530,7 @@ impl ToolInstallationService {
 
         // TEMP (remove when the agent persists its identity across a db wipe): restore the preserved
         // agent.db so the agent keeps its previous NodeID; the fresh .msh is re-imported on restart.
-        if let Some(backup) = mesh_db_backup {
+        if let Some(backup) = mesh_db_backup.0.as_ref() {
             if let Installation::Service { service_name: svc, .. } = &installation {
                 let db_path = tool_folder_path.join("agent.db");
                 info!("TEMP: restoring preserved mesh agent.db to keep NodeID across reinstall");
@@ -528,15 +538,14 @@ impl ToolInstallationService {
                     warn!("TEMP: failed to stop {} before agent.db restore: {:#}", svc, e);
                 }
                 tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-                match fs::copy(&backup, &db_path).await {
+                match fs::copy(backup, &db_path).await {
                     Ok(_) => info!("TEMP: restored mesh agent.db from {}", backup.display()),
                     Err(e) => warn!("TEMP: failed to restore mesh agent.db from {}: {:#}; NodeID will rotate", backup.display(), e),
                 }
-                if let Err(e) = crate::platform::system_service::start_service(svc).await {
-                    warn!("TEMP: failed to restart {} after agent.db restore: {:#}", svc, e);
-                }
+                crate::platform::system_service::start_service(svc)
+                    .await
+                    .with_context(|| format!("Failed to restart {} after agent.db restore", svc))?;
             }
-            let _ = fs::remove_file(&backup).await;
         }
 
         // Persist installed tool information
