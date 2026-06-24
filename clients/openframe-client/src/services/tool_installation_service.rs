@@ -34,6 +34,16 @@ use std::os::unix::fs::PermissionsExt;
 /// terminated when the timeout fires.
 const TOOL_COMMAND_TIMEOUT_SECS: u64 = 300;
 
+/// TEMP (remove with the agent.db backup/restore): deletes the mesh reinstall backup on every exit path.
+struct ReinstallBackupGuard(Option<std::path::PathBuf>);
+impl Drop for ReinstallBackupGuard {
+    fn drop(&mut self) {
+        if let Some(path) = self.0.take() {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct ToolInstallationService {
     github_download_service: GithubDownloadService,
@@ -106,10 +116,35 @@ impl ToolInstallationService {
         let effective_version = tool_installation_message.effective_version().to_string();
         let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
+        let mut reinstall_dir_cleared = false;
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
-        
+
+        // TEMP (remove when the agent persists its identity across a db wipe): back up the mesh
+        // agent.db outside the tool dir so it survives the reinstall wipe; restored after install to
+        // preserve the NodeID. The guard deletes the backup on every exit path.
+        let mesh_db_backup = ReinstallBackupGuard(if reinstall && tool_agent_id == "meshcentral-agent" {
+            let db = tool_folder_path.join("agent.db");
+            let backup = base_folder_path.join("meshcentral-agent.db.reinstall-backup");
+            if db.exists() {
+                match fs::copy(&db, &backup).await {
+                    Ok(_) => {
+                        info!("TEMP: backed up mesh agent.db to {} to preserve NodeID across reinstall", backup.display());
+                        Some(backup)
+                    }
+                    Err(e) => {
+                        warn!("TEMP: failed to back up mesh agent.db: {:#}; NodeID may rotate on reinstall", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            }
+        } else {
+            None
+        });
+
         // Check if tool is already installed
         if let Some(installed_tool) = self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             if reinstall {
@@ -121,7 +156,7 @@ impl ToolInstallationService {
 
                 // Stop the tool process if it's running
                 info!("Stopping existing tool process for {}", tool_agent_id);
-                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool).await {
+                if let Err(e) = self.tool_kill_service.stop_installed_tool(&installed_tool, true).await {
                     warn!("Failed to stop tool process: {:#}", e);
                 }
         
@@ -185,6 +220,7 @@ impl ToolInstallationService {
                 crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
                     .await
                     .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                reinstall_dir_cleared = true;
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
@@ -257,7 +293,7 @@ impl ToolInstallationService {
         };
         info!("Stopping any leftover holder for {} before download", tool_agent_id);
         if let Some(stop_installation) = &stop_installation {
-            if let Err(e) = self.tool_kill_service.stop_for_installation(tool_agent_id, stop_installation).await {
+            if let Err(e) = self.tool_kill_service.stop_for_installation(tool_agent_id, stop_installation, true).await {
                 warn!("Failed to stop leftover holder before download: {:#}", e);
             }
         }
@@ -267,6 +303,32 @@ impl ToolInstallationService {
             }
         }
         tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+        // Don't install on top of a service we couldn't clear: if the existing service is still
+        // active (e.g. a wedged StopPending that even delete couldn't remove, or a live process
+        // we couldn't kill), abort so the record stays `Installing` and the install is retried,
+        // rather than overwriting/registering over a live agent.
+        if let Some(Installation::Service { service_name: svc, .. }) = &stop_installation {
+            if !crate::platform::system_service::service_clear_for_install(svc).await {
+                return Err(anyhow::anyhow!(
+                    "Aborting reinstall of {}: existing service '{}' is still active and could not be cleared; will retry",
+                    tool_agent_id, svc
+                ));
+            }
+        }
+
+        // Reinstall with no registry record: cleanup above was skipped, so wipe the dir now (holder
+        // is stopped and the service confirmed clear) to drop stale on-disk state.
+        if reinstall && !reinstall_dir_cleared && tool_folder_path.exists() {
+            info!("Reinstall without registry record: removing stale tool directory {}", tool_folder_path.display());
+            crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
+                .await
+                .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+            fs::create_dir_all(&tool_folder_path)
+                .await
+                .with_context(|| format!("Failed to recreate tool directory: {}", tool_folder_path.display()))?;
+            reinstall_dir_cleared = true;
+        }
 
         // Download and install the tool
         let (executable_path, installation_type, bundle_id, config_service_name) = match resolved_config {
@@ -317,8 +379,9 @@ impl ToolInstallationService {
                 let asset_original_version = asset.original_version();
                 let asset_effective_version = asset.effective_version();
                 
-                // Download and save asset if it doesn't already exist
-                if !asset_path.exists() {
+                // On reinstall, always refresh server-generated config assets (e.g. the mesh .msh).
+                let refresh_config_asset = reinstall && matches!(asset.source, AssetSource::ToolApi);
+                if !asset_path.exists() || refresh_config_asset {
                     if is_executable {
                         if let Err(e) = self.tool_kill_service.stop_asset(&asset.id, tool_agent_id).await {
                             warn!("Failed to stop asset process {} before write: {:#}", asset.id, e);
@@ -453,6 +516,36 @@ impl ToolInstallationService {
             info!("Installation command executed successfully for tool {}\nstdout: {}", tool_agent_id, stdout);
         } else {
             info!("No installation command args provided for tool: {} - skip installation", tool_agent_id);
+        }
+
+        // For Service tools, confirm the service actually came up before recording it as
+        // Installed. A `-install` that exits 0 but leaves the service stopped/wedged would
+        // otherwise be marked healthy; failing here keeps the record `Installing` for retry.
+        if let Installation::Service { service_name: svc, .. } = &installation {
+            crate::platform::system_service::verify_service_running(svc)
+                .await
+                .with_context(|| format!("Post-install service verification failed for {}", tool_agent_id))?;
+            info!("Verified service {} is running after install of {}", svc, tool_agent_id);
+        }
+
+        // TEMP (remove when the agent persists its identity across a db wipe): restore the preserved
+        // agent.db so the agent keeps its previous NodeID; the fresh .msh is re-imported on restart.
+        if let Some(backup) = mesh_db_backup.0.as_ref() {
+            if let Installation::Service { service_name: svc, .. } = &installation {
+                let db_path = tool_folder_path.join("agent.db");
+                info!("TEMP: restoring preserved mesh agent.db to keep NodeID across reinstall");
+                if let Err(e) = crate::platform::system_service::stop_service(svc, false).await {
+                    warn!("TEMP: failed to stop {} before agent.db restore: {:#}", svc, e);
+                }
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+                match fs::copy(backup, &db_path).await {
+                    Ok(_) => info!("TEMP: restored mesh agent.db from {}", backup.display()),
+                    Err(e) => warn!("TEMP: failed to restore mesh agent.db from {}: {:#}; NodeID will rotate", backup.display(), e),
+                }
+                crate::platform::system_service::start_service(svc)
+                    .await
+                    .with_context(|| format!("Failed to restart {} after agent.db restore", svc))?;
+            }
         }
 
         // Persist installed tool information

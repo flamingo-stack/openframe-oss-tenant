@@ -6,6 +6,7 @@ import '@flamingo-stack/openframe-frontend-core/styles';
 import { DevTicketObserver } from '@/app/(auth)/auth/components/dev-ticket-observer';
 import { azeretMono, dmSans } from '@/lib/fonts';
 import { NatsAppProvider } from '@/lib/nats/nats-app-provider';
+import { sidebarWidthFoucScript } from '@/lib/navigation-sidebar-state';
 import { Toaster } from '@/lib/openframe-core-ui';
 import { FeatureFlagsGate } from '../components/feature-flags-gate';
 import { GraphQlIntrospectionInitializer } from '../components/graphql-introspection-initializer';
@@ -90,6 +91,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <PublicEnvScript />
+        {/* Seeds the sidebar width before first paint so the SSR'd skeleton
+            honors the persisted collapsed state instead of flashing expanded. */}
+        {/* biome-ignore lint/style/useNamingConvention: React's dangerouslySetInnerHTML requires the __html key */}
+        <script dangerouslySetInnerHTML={{ __html: sidebarWidthFoucScript }} />
       </head>
       <body suppressHydrationWarning className="min-h-screen antialiased font-body" data-app-type="openframe">
         <GoogleTagManager />

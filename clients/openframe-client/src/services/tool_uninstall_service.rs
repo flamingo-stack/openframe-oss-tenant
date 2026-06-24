@@ -158,7 +158,7 @@ impl ToolUninstallService {
     }
 
     async fn stop_tool_process(&self, tool: &InstalledTool) -> Result<()> {
-        self.tool_kill_service.stop_installed_tool(tool).await
+        self.tool_kill_service.stop_installed_tool(tool, true).await
     }
 
     async fn cleanup_tool_processes(&self, tool: &InstalledTool) {

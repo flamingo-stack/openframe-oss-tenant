@@ -82,6 +82,8 @@ const ITEMS: Item[] = [
   },
 ];
 
+// The Help Center index stays a LOCAL page (not extracted to the lib) — it's a
+// host-specific landing whose links + icons are app-owned.
 export default function HelpCenterPage() {
   return (
     <PageLayout title="Help Center" className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
