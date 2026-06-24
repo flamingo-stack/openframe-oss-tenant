@@ -1,5 +1,6 @@
 'use client';
 
+import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { AgentAiConfig, AiQuickAction, ClientView } from '../types/ai-settings';
 import { AiSettingsCustomerCard } from './ai-settings-customer-card';
@@ -38,7 +39,10 @@ export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickAc
           />
         </>
       )}
-      {quickActions && <AiSettingsQuickActions actions={quickActions} />}
+      {/* Quick actions are part of the not-yet-released AI customization. */}
+      {featureFlags.customerAiAssistantSettings.enabled() && quickActions && (
+        <AiSettingsQuickActions actions={quickActions} />
+      )}
     </div>
   );
 }
