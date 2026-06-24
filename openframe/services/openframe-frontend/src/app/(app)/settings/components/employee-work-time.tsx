@@ -21,8 +21,8 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { endOfMonth, startOfMonth } from 'date-fns';
-import { Suspense, useCallback, useDeferredValue, useMemo, useState } from 'react';
-import { fetchQuery, useLazyLoadQuery, useMutation, usePaginationFragment, useRelayEnvironment } from 'react-relay';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useLazyLoadQuery, useMutation, usePaginationFragment } from 'react-relay';
 import type { deleteTimeEntryMutation as DeleteTimeEntryMutationType } from '@/__generated__/deleteTimeEntryMutation.graphql';
 import type { employeeWorkTimeRelay_query$key } from '@/__generated__/employeeWorkTimeRelay_query.graphql';
 import type { employeeWorkTimeRelayPaginationQuery } from '@/__generated__/employeeWorkTimeRelayPaginationQuery.graphql';
@@ -40,12 +40,15 @@ import {
   formatDurationLabel,
   makeDeleteTimeEntryUpdater,
   parseInstant,
+  subscribeTimeEntriesChanged,
   toDateRangeInput,
 } from '@/graphql/time-tracker/time-tracker-helpers';
 import { formatDate } from '@/lib/format-date';
 import { ensureGlobalIdForType } from '@/lib/relay-id';
 
 const PAGE_SIZE = 20;
+const EMPTY_ROWS: WorkTimeRow[] = [];
+const noop = () => {};
 
 interface WorkTimeRow {
   id: string;
@@ -135,15 +138,18 @@ interface QueryVars {
 
 function EmployeeWorkTimeData({
   vars,
+  fetchKey,
   onEdit,
   onDelete,
 }: {
   vars: QueryVars;
+  fetchKey: number;
   onEdit: (row: WorkTimeRow) => void;
   onDelete: (row: WorkTimeRow) => void;
 }) {
   const queryData = useLazyLoadQuery<EmployeeWorkTimeRelayQueryType>(employeeWorkTimeRelayQuery, vars, {
     fetchPolicy: 'store-and-network',
+    fetchKey,
   });
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
     employeeWorkTimeRelayPaginationQuery,
@@ -212,25 +218,40 @@ function EmployeeWorkTimeData({
 }
 
 function EmployeeWorkTimeSkeleton() {
+  const columns = useMemo(() => buildColumns(noop, noop), []);
+  const table = useDataTable<WorkTimeRow>({
+    data: EMPTY_ROWS,
+    columns,
+    getRowId: row => row.id,
+    enableSorting: false,
+  });
+
   return (
     <>
       <div className="flex flex-col gap-[var(--spacing-system-m)] md:flex-row">
         {[0, 1, 2].map(i => (
-          <Skeleton key={i} className="h-[88px] flex-1 rounded-md" />
+          <div
+            key={i}
+            className="flex flex-1 items-center gap-[var(--spacing-system-s)] rounded-sm border border-ods-border bg-ods-card p-[var(--spacing-system-m)]"
+          >
+            <div className="flex flex-1 flex-col gap-[var(--spacing-system-xs)]">
+              <Skeleton className="h-3 w-20 rounded-sm" />
+              <Skeleton className="h-7 w-28 rounded-sm" />
+            </div>
+          </div>
         ))}
       </div>
-      <div className="flex flex-col gap-[var(--spacing-system-xs)]">
-        {[0, 1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-16 w-full rounded-md" />
-        ))}
-      </div>
+
+      <DataTable table={table}>
+        <DataTable.Header rightSlot={<DataTable.RowCount itemName="result" />} />
+        <DataTable.Body loading skeletonRows={8} />
+      </DataTable>
     </>
   );
 }
 
 export function EmployeeWorkTime({ userId }: { userId: string }) {
   const { toast } = useToast();
-  const environment = useRelayEnvironment();
 
   const { params, setParam } = useApiParams({
     search: { type: 'string', default: '' },
@@ -253,36 +274,29 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
     return toDateRangeInput(from, to);
   }, [range]);
 
-  const deferredPeriod = useDeferredValue(period);
-  const deferredSearch = useDeferredValue(debouncedSearch);
-
   const vars = useMemo<QueryVars>(
     () => ({
       employeeId,
-      period: deferredPeriod,
-      search: deferredSearch || null,
+      period,
+      search: debouncedSearch || null,
       first: PAGE_SIZE,
       after: null,
     }),
-    [employeeId, deferredPeriod, deferredSearch],
+    [employeeId, period, debouncedSearch],
   );
 
-  const refresh = useCallback(() => {
-    fetchQuery(environment, employeeWorkTimeRelayQuery, vars, { fetchPolicy: 'network-only' }).subscribe({
-      error: () => {},
-    });
-  }, [environment, vars]);
+  const [fetchKey, setFetchKey] = useState(0);
+  const refresh = useCallback(() => setFetchKey(key => key + 1), []);
 
-  const handleEdit = useCallback((row: WorkTimeRow) => {
-    setEditTarget({
-      id: row.id,
-      durationSeconds: row.durationSeconds,
-      ticketId: row.ticketId,
-      ticketNumber: row.ticketNumber,
-      ticketTitle: row.ticketTitle,
-      notes: row.notes,
-    });
-  }, []);
+  useEffect(
+    () =>
+      subscribeTimeEntriesChanged(changedUserId => {
+        if (changedUserId === userId) refresh();
+      }),
+    [userId, refresh],
+  );
+
+  const handleEdit = useCallback((row: WorkTimeRow) => setEditTarget(row), []);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -318,8 +332,8 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search for Work Time"
-          startAdornment={<SearchIcon />}
-          className="flex-1"
+          startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+          className="w-full md:flex-1"
         />
         <DatePicker
           mode="range"
@@ -339,7 +353,7 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
         }
       >
         <Suspense fallback={<EmployeeWorkTimeSkeleton />}>
-          <EmployeeWorkTimeData vars={vars} onEdit={handleEdit} onDelete={setDeleteTarget} />
+          <EmployeeWorkTimeData vars={vars} fetchKey={fetchKey} onEdit={handleEdit} onDelete={setDeleteTarget} />
         </Suspense>
       </ErrorBoundary>
 
@@ -356,9 +370,17 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
         onOpenChange={open => {
           if (!open) setDeleteTarget(null);
         }}
-        title="Delete work time entry"
-        description="This time entry will be permanently removed. This action cannot be undone."
-        confirmLabel="Delete"
+        title="Delete Entry"
+        description={
+          deleteTarget ? (
+            <>
+              <span className="text-ods-error">{formatDurationLabel(deleteTarget.durationSeconds)}</span> logged on{' '}
+              <span className="text-ods-error">{formatDate(parseInstant(deleteTarget.startedAt))}</span> will be
+              permanently removed and subtracted from totals.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete Entry"
         variant="destructive"
         isPending={isDeleting}
         pendingLabel="Deleting..."

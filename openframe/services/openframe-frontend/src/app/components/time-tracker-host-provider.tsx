@@ -21,6 +21,7 @@ import type { stopTimerMutation as StopTimerMutationType } from '@/__generated__
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useTicketSearchOptions } from '@/app/(app)/tickets/hooks/use-ticket-options';
 import { type ManualEntryEditTarget, ManualEntryModal } from '@/app/components/manual-entry-modal';
+import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { TimerState } from '@/generated/schema-enums';
 import { cancelTimerMutation } from '@/graphql/time-tracker/cancel-timer-mutation';
 import { currentTimerRelayQuery } from '@/graphql/time-tracker/current-timer-relay';
@@ -30,11 +31,13 @@ import { resumeTimerMutation } from '@/graphql/time-tracker/resume-timer-mutatio
 import { startTimerMutation } from '@/graphql/time-tracker/start-timer-mutation';
 import { stopTimerMutation } from '@/graphql/time-tracker/stop-timer-mutation';
 import {
+  formatDurationLabel,
   makeCancelTimerUpdater,
   makeSetCurrentTimerUpdater,
   makeStopTimerUpdater,
   mapTimeEntryToLastEntry,
   mapTimerToTrackerState,
+  notifyTimeEntriesChanged,
   type TimeEntryNodeShape,
   toTicketGlobalId,
 } from '@/graphql/time-tracker/time-tracker-helpers';
@@ -57,6 +60,7 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
   const [ticketSearch, setTicketSearch] = useState('');
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ManualEntryEditTarget | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   const { options: ticketOptionsRaw, isLoading: ticketsLoading } = useTicketSearchOptions(ticketSearch);
 
@@ -64,7 +68,7 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
   const [pauseTimer, isPausing] = useMutation<PauseTimerMutationType>(pauseTimerMutation);
   const [resumeTimer, isResuming] = useMutation<ResumeTimerMutationType>(resumeTimerMutation);
   const [stopTimer, isSubmitting] = useMutation<StopTimerMutationType>(stopTimerMutation);
-  const [cancelTimer] = useMutation<CancelTimerMutationType>(cancelTimerMutation);
+  const [cancelTimer, isCancelling] = useMutation<CancelTimerMutationType>(cancelTimerMutation);
 
   const clock = useMemo(() => mapTimerToTrackerState(timerNode), [timerNode]);
 
@@ -124,10 +128,17 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
   }, [resumeTimer, onError]);
 
   const onCancel = useCallback(() => {
+    if (timerNode) setCancelConfirmOpen(true);
+  }, [timerNode]);
+
+  const confirmCancel = useCallback(() => {
     cancelTimer({
       variables: {},
       updater: timerNode ? makeCancelTimerUpdater(timerNode.id) : undefined,
-      onCompleted: resetDraft,
+      onCompleted: () => {
+        resetDraft();
+        setCancelConfirmOpen(false);
+      },
       onError: onError('Failed to cancel timer'),
     });
   }, [cancelTimer, timerNode, resetDraft, onError]);
@@ -136,10 +147,15 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
     stopTimer({
       variables: { input: { ticketId: toTicketGlobalId(selectedTicketId), notes: notes || null } },
       updater: makeStopTimerUpdater(),
-      onCompleted: resetDraft,
+      onCompleted: () => {
+        resetDraft();
+        notifyTimeEntriesChanged(currentUserId ?? null);
+      },
       onError: onError('Failed to save time entry'),
     });
-  }, [stopTimer, selectedTicketId, notes, resetDraft, onError]);
+  }, [stopTimer, selectedTicketId, notes, resetDraft, onError, currentUserId]);
+
+  const onEntriesChanged = useCallback(() => notifyTimeEntriesChanged(currentUserId ?? null), [currentUserId]);
 
   const onManualEntry = useCallback(() => setManualEntryOpen(true), []);
 
@@ -158,6 +174,7 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
       setEditTarget({
         id: node.id,
         durationSeconds: Number(node.durationSeconds),
+        startedAt: node.startedAt,
         ticketId: node.ticketId ?? null,
         ticketNumber: node.ticketNumber ?? null,
         ticketTitle: node.ticketTitle ?? null,
@@ -224,9 +241,55 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
         <RecentEntriesHydrator onEntries={setRecentNodes} />
       </Suspense>
       {children}
-      <ManualEntryModal isOpen={manualEntryOpen} onClose={() => setManualEntryOpen(false)} />
-      <ManualEntryModal isOpen={!!editTarget} entry={editTarget} onClose={() => setEditTarget(null)} />
+      <ManualEntryModal
+        isOpen={manualEntryOpen}
+        onClose={() => setManualEntryOpen(false)}
+        onSuccess={onEntriesChanged}
+      />
+      <ManualEntryModal
+        isOpen={!!editTarget}
+        entry={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSuccess={onEntriesChanged}
+      />
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onOpenChange={setCancelConfirmOpen}
+        title="Cancel Entry"
+        description={<CancelEntryDescription runningSince={clock.runningSince} accumulatedMs={clock.accumulatedMs} />}
+        variant="destructive"
+        isPending={isCancelling}
+        onConfirm={confirmCancel}
+      />
     </TimeTrackerProvider>
+  );
+}
+
+/**
+ * The discarded time is shown live so it matches the still-ticking panel timer up to
+ * the moment of confirmation. Static while paused (`runningSince` null).
+ */
+function CancelEntryDescription({
+  runningSince,
+  accumulatedMs,
+}: {
+  runningSince: number | null;
+  accumulatedMs: number;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (runningSince == null) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [runningSince]);
+
+  const elapsedMs = accumulatedMs + (runningSince != null ? now - runningSince : 0);
+  return (
+    <>
+      The timer will stop and{' '}
+      <span className="font-mono tabular-nums text-ods-error">{formatDurationLabel(elapsedMs / 1000)}</span> won't be
+      logged.
+    </>
   );
 }
 
