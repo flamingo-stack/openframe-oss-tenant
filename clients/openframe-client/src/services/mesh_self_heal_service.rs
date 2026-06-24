@@ -1,6 +1,3 @@
-//! Mesh self-heal: re-fetch the .msh and restart the service when the agent can't enroll (stale
-//! MeshID or missing ServerID). Restart-only (no `-install`) so agent.db / the NodeID is preserved.
-
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -16,9 +13,9 @@ use crate::services::{AgentConfigurationService, InitialConfigurationService, In
 
 const MESH_TOOL_ID: &str = "meshcentral-agent";
 
-/// Agent log line for a control channel that can't connect (orphaned/dead-upstream); its authState= field is ignored (unreliable, ill machines show 0).
+/// Agent log line for a control channel that can't connect.
 const FAILURE_MARKER: &str = "Connection FAILED: No HTTP response";
-/// Sent only after the mesh check passes, so an orphaned/dead-upstream agent never prints it (unlike "Server fully authenticated", printed before the hold).
+/// Printed only after a successful server connect.
 const HEALTHY_MARKER: &str = "Received CoreOk from server";
 
 /// How often we scan the agent log.
@@ -64,7 +61,6 @@ impl MeshSelfHealService {
         }
     }
 
-    /// Spawn the self-heal watcher in the background (matches tool_run_manager).
     pub async fn run(&self) -> Result<()> {
         let this = self.clone();
         tokio::spawn(async move {
@@ -107,7 +103,6 @@ impl MeshSelfHealService {
                     }
                 }
                 Err(e) => {
-                    // Log not present yet (agent not installed/started) — just wait.
                     debug!("mesh self-heal: cannot read {}: {e}", log_path.display());
                 }
             }
@@ -117,7 +112,6 @@ impl MeshSelfHealService {
                 continue;
             }
 
-            // Rate-limit attempts.
             if let Some(t) = last_heal_attempt {
                 if t.elapsed() < NOOP_HEAL_COOLDOWN {
                     continue;
@@ -148,7 +142,6 @@ impl MeshSelfHealService {
         }
     }
 
-    /// Re-fetch the .msh; if MeshID/ServerID changed (or it's missing), rewrite and bounce. Ok(true) when applied.
     async fn try_heal(&self) -> Result<bool> {
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
@@ -178,8 +171,6 @@ impl MeshSelfHealService {
         let mesh_changed = new_mesh.is_some() && cur_mesh != new_mesh;
         let server_changed = new_server.is_some() && cur_server != new_server;
         if !mesh_changed && !server_changed {
-            // Nothing to fix; log the server the agent is dialing so a server-side outage is
-            // distinguishable from a stale .msh target.
             let server = current
                 .as_deref()
                 .and_then(|s| parse_msh_field(s, "MeshServer"))
@@ -200,7 +191,6 @@ impl MeshSelfHealService {
         tokio::fs::write(&tmp_path, body.as_bytes()).await?;
         tokio::fs::rename(&tmp_path, &msh_path).await?;
 
-        // Restart the service to re-import the .msh: kill, then start (redundant start is a no-op under mac KeepAlive).
         self.tool_kill.stop_tool(MESH_TOOL_ID).await?;
         if let Some(service_name) = self.mesh_service_name().await? {
             if let Err(e) = system_service::start_service(&service_name).await {
@@ -210,11 +200,10 @@ impl MeshSelfHealService {
         Ok(true)
     }
 
-    /// True only when the agent is installed, its .msh exists, and that .msh has no ServerID line.
     async fn current_msh_missing_serverid(&self) -> bool {
         let msh_path = match self.mesh_msh_path().await {
             Ok(p) => p,
-            Err(_) => return false, // not installed / no .msh yet — nothing to heal
+            Err(_) => return false,
         };
         match tokio::fs::read_to_string(&msh_path).await {
             Ok(s) => parse_msh_field(&s, "ServerID").is_none(),
@@ -222,7 +211,6 @@ impl MeshSelfHealService {
         }
     }
 
-    /// Find the .msh the client saved in the tool dir (agent.msh on Windows, meshagent.msh on macOS).
     async fn mesh_msh_path(&self) -> Result<PathBuf> {
         self.installed_tools
             .get_by_tool_agent_id(MESH_TOOL_ID)
@@ -239,7 +227,6 @@ impl MeshSelfHealService {
         Err(anyhow!("no .msh found in {}", dir.display()))
     }
 
-    /// The service name (launchd/SCM/systemd) if the agent installs as a service.
     async fn mesh_service_name(&self) -> Result<Option<String>> {
         let tool = self
             .installed_tools
@@ -253,7 +240,6 @@ impl MeshSelfHealService {
     }
 }
 
-/// Extract the value of a `Key=` line (e.g. `MeshID=`, `ServerID=`) from an `.msh` body.
 fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
     let prefix = format!("{key}=");
     msh.lines()
@@ -261,7 +247,6 @@ fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
         .filter(|v| !v.is_empty())
 }
 
-/// Read whole new lines since *offset, advancing only to the last newline; resets offset if the file shrank.
 async fn read_new_lines(path: &Path, offset: &mut u64) -> Result<Vec<String>> {
     use tokio::io::{AsyncReadExt, AsyncSeekExt, SeekFrom};
 
@@ -280,7 +265,7 @@ async fn read_new_lines(path: &Path, offset: &mut u64) -> Result<Vec<String>> {
 
     let consume = match buf.iter().rposition(|&b| b == b'\n') {
         Some(i) => i + 1,
-        None => return Ok(Vec::new()), // no complete line yet
+        None => return Ok(Vec::new()),
     };
     *offset += consume as u64;
 
