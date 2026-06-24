@@ -106,6 +106,7 @@ impl ToolInstallationService {
         let effective_version = tool_installation_message.effective_version().to_string();
         let run_args_clone = tool_installation_message.run_command_args.clone();
         let reinstall = tool_installation_message.reinstall.clone();
+        let mut reinstall_dir_cleared = false;
         // Create tool-specific directory
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
@@ -185,6 +186,7 @@ impl ToolInstallationService {
                 crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
                     .await
                     .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+                reinstall_dir_cleared = true;
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
@@ -281,6 +283,22 @@ impl ToolInstallationService {
             }
         }
 
+        // On reinstall without a prior registry record (the record was lost on long-broken hosts),
+        // the cleanup branch above is skipped, so stale on-disk state (e.g. the mesh agent.msh and
+        // meshagent.db) would be reused and the agent fails to enroll ("ServerID entry not found in
+        // Db!"). Now that the holder is stopped and the service is confirmed clear, wipe the
+        // directory so the tool re-provisions from scratch.
+        if reinstall && !reinstall_dir_cleared && tool_folder_path.exists() {
+            info!("Reinstall without registry record: removing stale tool directory {}", tool_folder_path.display());
+            crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
+                .await
+                .with_context(|| format!("Failed to remove existing tool directory: {}", tool_folder_path.display()))?;
+            fs::create_dir_all(&tool_folder_path)
+                .await
+                .with_context(|| format!("Failed to recreate tool directory: {}", tool_folder_path.display()))?;
+            reinstall_dir_cleared = true;
+        }
+
         // Download and install the tool
         let (executable_path, installation_type, bundle_id, config_service_name) = match resolved_config {
             Some(resolved_config) => {
@@ -330,8 +348,11 @@ impl ToolInstallationService {
                 let asset_original_version = asset.original_version();
                 let asset_effective_version = asset.effective_version();
                 
-                // Download and save asset if it doesn't already exist
-                if !asset_path.exists() {
+                // Download the asset if it's missing. On reinstall, always refresh server-generated
+                // config assets (e.g. the mesh .msh from /generate-msh) even when a stale copy
+                // exists, so the tool never reuses an outdated server identity.
+                let refresh_config_asset = reinstall && matches!(asset.source, AssetSource::ToolApi);
+                if !asset_path.exists() || refresh_config_asset {
                     if is_executable {
                         if let Err(e) = self.tool_kill_service.stop_asset(&asset.id, tool_agent_id).await {
                             warn!("Failed to stop asset process {} before write: {:#}", asset.id, e);
