@@ -1,15 +1,16 @@
 'use client';
 
+import { MspOrganizationCard } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { FlamingoLogo } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ClockCheckIcon,
-  ExternalLinkIcon,
   SignalBroadcast02Icon,
   WrenchScrewdiverIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { ComponentType } from 'react';
-import { ChatPreviewLogo } from './chat-preview-logo';
+import { getFullImageUrl } from '@/lib/image-url';
+import { useTenantInfo } from '../../../hooks/use-tenant-info';
 
 interface MeetFaePreviewProps {
   assistantName: string;
@@ -35,6 +36,16 @@ export function MeetFaePreview({
   mspName = 'TechFlow Solutions',
   mspWebsite = 'www.techflow.com',
 }: MeetFaePreviewProps) {
+  // Source the MSP org from the same tenant-info query the /settings card uses
+  // (react-query-cached, so no extra request). Fall back to the sample copy/logo
+  // so the preview still reads well before any org data is configured.
+  const { data: tenantInfo } = useTenantInfo();
+  const orgName = tenantInfo?.name || mspName;
+  const orgWebsite = tenantInfo?.website || mspWebsite;
+  const orgLogoUrl =
+    getFullImageUrl(tenantInfo?.image?.imageUrl, tenantInfo?.image?.hash) ??
+    '/assets/ai-settings/chat-preview-logo.svg';
+
   const features: FeatureRow[] = [
     {
       icon: WrenchScrewdiverIcon,
@@ -96,16 +107,13 @@ export function MeetFaePreview({
             ))}
           </div>
 
-          <div className="flex w-full items-center gap-[var(--spacing-system-m)] rounded-md border border-ods-border bg-ods-bg p-[var(--spacing-system-m)]">
-            <ChatPreviewLogo className="size-12 shrink-0" />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-h3 text-ods-text-primary">Your IT is managed by {mspName}</span>
-              <span className="truncate text-h6 text-ods-text-secondary">{mspWebsite}</span>
-            </div>
-            <Button variant="outline" size="icon" aria-label={`Open ${mspWebsite}`}>
-              <ExternalLinkIcon className="size-6" />
-            </Button>
-          </div>
+          <MspOrganizationCard
+            name={orgName}
+            website={orgWebsite}
+            logoUrl={orgLogoUrl}
+            onOpenWebsite={() => undefined}
+            className="w-full"
+          />
 
           <Button type="button" variant="accent" style={{ backgroundColor: accentColor }}>
             Get Started
