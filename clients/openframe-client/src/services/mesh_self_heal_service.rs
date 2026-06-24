@@ -1,6 +1,5 @@
-//! Mesh self-heal: when the agent can't enroll (stale/old .msh — a re-keyed MeshID or a missing
-//! ServerID), re-fetch the current .msh and bounce the *service* so the agent re-imports it and
-//! reconnects. Restart-only (never `-install`/`-uninstall`) so agent.db / the NodeID is preserved.
+//! Mesh self-heal: re-fetch the .msh and restart the service when the agent can't enroll (stale
+//! MeshID or missing ServerID). Restart-only (no `-install`) so agent.db / the NodeID is preserved.
 
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -26,9 +25,7 @@ const HEALTHY_MARKER: &str = "Received CoreOk from server";
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How long continuously stuck before we act.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
-/// After a no-op heal (MeshID unchanged / nothing to do), wait at least this long before
-/// trying again, so a persistently-unreachable mesh server doesn't trigger a heal attempt
-/// every STUCK_DURATION.
+/// Minimum wait between heal attempts (success or no-op), so a server-side outage can't spin.
 const NOOP_HEAL_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 /// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
@@ -96,9 +93,6 @@ impl MeshSelfHealService {
         loop {
             sleep(POLL_INTERVAL).await;
 
-            // Proactive check: a current .msh with no ServerID line makes the agent bail before it
-            // ever connects ("ServerID entry not found in Db!"), so it never logs a connection
-            // failure and the log-based stuck detection below would never fire. Catch it directly.
             let msh_missing_serverid = self.current_msh_missing_serverid().await;
 
             match read_new_lines(&log_path, &mut offset).await {
@@ -122,8 +116,7 @@ impl MeshSelfHealService {
                 continue;
             }
 
-            // Rate-limit every attempt (success or no-op) so a down /generate-msh or a purely
-            // server-side outage can't trigger a heal each cycle.
+            // Rate-limit attempts.
             if let Some(t) = last_heal_attempt {
                 if t.elapsed() < NOOP_HEAL_COOLDOWN {
                     continue;
@@ -154,9 +147,7 @@ impl MeshSelfHealService {
         }
     }
 
-    /// Fetch the current .msh; if it is missing, or its MeshID/ServerID differ from the server's,
-    /// rewrite it and bounce the service so the agent re-imports it. Ok(true) only when applied.
-    /// Restarting the service (never `-install`) preserves agent.db / the NodeID.
+    /// Re-fetch the .msh; if MeshID/ServerID changed (or it's missing), rewrite and bounce. Ok(true) when applied.
     async fn try_heal(&self) -> Result<bool> {
         let host = self.initial_config.get_server_url()?;
         let url = format!("https://{host}/tools/agent/meshcentral-server/generate-msh?host={host}");
@@ -183,9 +174,6 @@ impl MeshSelfHealService {
         let cur_mesh = current.as_deref().and_then(|s| parse_msh_field(s, "MeshID"));
         let cur_server = current.as_deref().and_then(|s| parse_msh_field(s, "ServerID"));
 
-        // Rewrite when the current .msh is missing or differs from the server's current values.
-        // A missing/changed ServerID is the "ServerID entry not found in Db!" root cause; a changed
-        // MeshID means the device group was re-keyed.
         let mesh_changed = new_mesh.is_some() && cur_mesh != new_mesh;
         let server_changed = new_server.is_some() && cur_server != new_server;
         if !mesh_changed && !server_changed {
@@ -205,7 +193,6 @@ impl MeshSelfHealService {
         tokio::fs::rename(&tmp_path, &msh_path).await?;
 
         // Restart the service to re-import the .msh: kill, then start (redundant start is a no-op under mac KeepAlive).
-        // No -install/-uninstall, so agent.db (SelfNodeCert/NodeID) is preserved.
         self.tool_kill.stop_tool(MESH_TOOL_ID).await?;
         if let Some(service_name) = self.mesh_service_name().await? {
             if let Err(e) = system_service::start_service(&service_name).await {

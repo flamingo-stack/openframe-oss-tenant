@@ -111,11 +111,9 @@ impl ToolInstallationService {
         let base_folder_path = self.directory_manager.app_support_dir();
         let tool_folder_path = base_folder_path.join(tool_agent_id);
 
-        // TEMP (remove when meshagent NodeID-preservation lands): a mesh force-reinstall wipes
-        // agent.db and `-install` regenerates the node identity (new NodeID), orphaning the device on
-        // MeshCentral. Until the agent reuses its persisted cert across a db wipe, back up agent.db
-        // here (outside the tool dir so it survives the wipe) and restore it after install so the
-        // NodeID is preserved. See MESH_AGENT_DB_SAFETY_VERDICT.md.
+        // TEMP (remove when the agent persists its identity across a db wipe): back up the mesh
+        // agent.db outside the tool dir so it survives the reinstall wipe; restored after install to
+        // preserve the NodeID.
         let mesh_db_backup: Option<std::path::PathBuf> = if reinstall && tool_agent_id == "meshcentral-agent" {
             let db = tool_folder_path.join("agent.db");
             let backup = base_folder_path.join("meshcentral-agent.db.reinstall-backup");
@@ -309,11 +307,8 @@ impl ToolInstallationService {
             }
         }
 
-        // On reinstall without a prior registry record (the record was lost on long-broken hosts),
-        // the cleanup branch above is skipped, so stale on-disk state (e.g. the mesh agent.msh and
-        // meshagent.db) would be reused and the agent fails to enroll ("ServerID entry not found in
-        // Db!"). Now that the holder is stopped and the service is confirmed clear, wipe the
-        // directory so the tool re-provisions from scratch.
+        // Reinstall with no registry record: cleanup above was skipped, so wipe the dir now (holder
+        // is stopped and the service confirmed clear) to drop stale on-disk state.
         if reinstall && !reinstall_dir_cleared && tool_folder_path.exists() {
             info!("Reinstall without registry record: removing stale tool directory {}", tool_folder_path.display());
             crate::platform::remove_directory_with_retry(&tool_folder_path, 5)
@@ -374,9 +369,7 @@ impl ToolInstallationService {
                 let asset_original_version = asset.original_version();
                 let asset_effective_version = asset.effective_version();
                 
-                // Download the asset if it's missing. On reinstall, always refresh server-generated
-                // config assets (e.g. the mesh .msh from /generate-msh) even when a stale copy
-                // exists, so the tool never reuses an outdated server identity.
+                // On reinstall, always refresh server-generated config assets (e.g. the mesh .msh).
                 let refresh_config_asset = reinstall && matches!(asset.source, AssetSource::ToolApi);
                 if !asset_path.exists() || refresh_config_asset {
                     if is_executable {
@@ -525,12 +518,8 @@ impl ToolInstallationService {
             info!("Verified service {} is running after install of {}", svc, tool_agent_id);
         }
 
-        // TEMP (remove when meshagent NodeID-preservation lands): the freshly (re)installed mesh
-        // agent generated a NEW node identity. Restore the agent.db backed up before the wipe so the
-        // agent loads its previous SelfNodeCert (same NodeID) on restart instead of the new one,
-        // avoiding an orphaned device on MeshCentral. The fresh .msh on disk is re-imported on the
-        // restart, so server config stays current. Remove once the meshagent reuses its persisted
-        // cert across a db wipe (see MESH_AGENT_DB_SAFETY_VERDICT.md).
+        // TEMP (remove when the agent persists its identity across a db wipe): restore the preserved
+        // agent.db so the agent keeps its previous NodeID; the fresh .msh is re-imported on restart.
         if let Some(backup) = mesh_db_backup {
             if let Installation::Service { service_name: svc, .. } = &installation {
                 let db_path = tool_folder_path.join("agent.db");
