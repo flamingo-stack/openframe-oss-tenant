@@ -17,6 +17,10 @@ export const dynamic = 'force-dynamic';
  */
 export default function TicketsPage() {
   return (
-    <HelpCenterList title="Support Tickets" backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }} />
+    <HelpCenterList
+      title="Support Tickets"
+      shell={false}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+    />
   );
 }

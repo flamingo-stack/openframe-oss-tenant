@@ -20,14 +20,19 @@ export const SIDEBAR_MINIMIZED_STORAGE_KEY = 'of.navigationSidebar.minimized';
 export const SIDEBAR_WIDTH_CSS_VAR = '--of-sidebar-skeleton-width';
 
 /**
+ * Assembled through a tagged template so the value is built at runtime. A plain
+ * concatenation or constant template literal gets constant-folded by Turbopack's
+ * SWC minifier, which mis-folds this particular string and silently drops the
+ * `getItem` comparison and the `matchMedia` line — corrupting the emitted
+ * inline script. The tag call blocks that fold.
+ */
+const runtimeJoin = (parts: TemplateStringsArray, ...values: Array<string | number>): string =>
+  parts.reduce<string>((acc, part, i) => acc + part + (i < values.length ? values[i] : ''), '');
+
+/**
  * Inline FOUC-prevention script. Runs synchronously in `<head>` before first
  * paint: reads the persisted (or tablet-forced) collapse state and seeds the
  * width CSS var. Breakpoints mirror the core sidebar hooks (md 800px, lg
  * 1280px); tablet always starts minimized.
  */
-export const sidebarWidthFoucScript =
-  `(function(){try{` +
-  `var m=localStorage.getItem('${SIDEBAR_MINIMIZED_STORAGE_KEY}')==='true';` +
-  `if(window.matchMedia('(min-width:800px)').matches&&!window.matchMedia('(min-width:1280px)').matches)m=true;` +
-  `document.documentElement.style.setProperty('${SIDEBAR_WIDTH_CSS_VAR}',m?'${SIDEBAR_MINIMIZED_WIDTH}px':'${SIDEBAR_EXPANDED_WIDTH}px');` +
-  `}catch(e){}})();`;
+export const sidebarWidthFoucScript = runtimeJoin`(function(){try{var m=localStorage.getItem('${SIDEBAR_MINIMIZED_STORAGE_KEY}')==='true';if(window.matchMedia('(min-width:800px)').matches&&!window.matchMedia('(min-width:1280px)').matches)m=true;document.documentElement.style.setProperty('${SIDEBAR_WIDTH_CSS_VAR}',m?'${SIDEBAR_MINIMIZED_WIDTH}px':'${SIDEBAR_EXPANDED_WIDTH}px');}catch(e){}})();`;
