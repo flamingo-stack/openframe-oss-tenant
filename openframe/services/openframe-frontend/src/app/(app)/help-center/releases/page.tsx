@@ -1,21 +1,23 @@
 'use client';
 
-import { DevSectionPage, ProductReleasesView } from '@flamingo-stack/openframe-frontend-core/components';
+import { ProductReleasesListPage } from '@flamingo-stack/openframe-frontend-core/components/help-center-pages';
 import { EP, HELP_CENTER_BASE } from '../endpoints';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Releases LIST — config-only. `<DevSectionPage sectionKey="releases">` supplies
- * the chrome; `<ProductReleasesView>` reads the search/status/page URL params,
- * fetches, paginates, and renders. Card → detail navigation flows through the
- * section's `composeContentUrl` (product_release is a hosted type) into the
- * in-app `/help-center/releases/<slug>` route.
+ * Releases LIST — one-line mount of the lib's ready-made `<ProductReleasesListPage>`.
+ * Card → detail navigation flows through the section's `composeContentUrl`
+ * (product_release is a hosted type) into the in-app `/help-center/releases/<slug>`
+ * route; `basePath` is the fallback prefix.
  */
-export default function ReleasesPage() {
+export default function ReleasesRoute() {
   return (
-    <DevSectionPage sectionKey="releases" backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}>
-      <ProductReleasesView endpoint={EP.productReleases} />
-    </DevSectionPage>
+    <ProductReleasesListPage
+      shell={false}
+      releasesEndpoint={EP.productReleases}
+      basePath={`${HELP_CENTER_BASE}/releases`}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+    />
   );
 }
