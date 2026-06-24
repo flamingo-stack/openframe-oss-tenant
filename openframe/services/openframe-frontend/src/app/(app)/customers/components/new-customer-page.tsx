@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
 import { safeBackOrReplace, useSafeBack } from '@/app/hooks/use-safe-back';
+import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { deleteWithAuth, uploadWithAuth } from '@/lib/upload-with-auth';
@@ -424,10 +425,11 @@ export function NewCustomerPage({ organizationId }: NewCustomerPageProps) {
           className="disabled:opacity-60"
         />
 
-        {/* AI-Assistant Appearance — per-customer override. SaaS-only: it relies on
-            the openframe-saas-ai-agent service (/chat/graphql), absent in self-hosted.
-            Edit mode only, since it needs an org id to scope the override. */}
-        {organizationId && isSaasTenant && (
+        {/* AI-Assistant Appearance — per-customer override. Gated behind the
+            customer-ai-assistant-settings flag (feature not released yet). SaaS-only:
+            it relies on the openframe-saas-ai-agent service (/chat/graphql), absent in
+            self-hosted. Edit mode only, since it needs an org id to scope the override. */}
+        {organizationId && isSaasTenant && featureFlags.customerAiAssistantSettings.enabled() && (
           <>
             <div className="border-t border-ods-border" />
             <CustomerAiAssistantAppearance ref={appearanceRef} organizationId={organizationId} />
