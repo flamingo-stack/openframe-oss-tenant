@@ -175,12 +175,16 @@ impl MeshSelfHealService {
             parse_mesh_id(&body).ok_or_else(|| anyhow!("no MeshID in /generate-msh response"))?;
 
         let msh_path = self.mesh_msh_path().await?;
-        let current_id = tokio::fs::read_to_string(&msh_path)
-            .await
-            .ok()
-            .and_then(|s| parse_mesh_id(&s));
+        let current_msh = tokio::fs::read_to_string(&msh_path).await.ok();
+        let current_id = current_msh.as_deref().and_then(parse_mesh_id);
 
         if current_id.as_deref() == Some(new_id.as_str()) {
+            // No MeshID drift to fix. Log the target the agent is dialing so a server/gateway-side outage is distinguishable from a stale .msh target.
+            let server = current_msh
+                .as_deref()
+                .and_then(|s| parse_msh_field(s, "MeshServer"))
+                .unwrap_or_else(|| "<none>".to_string());
+            info!("mesh self-heal: MeshID unchanged ({new_id}); agent .msh MeshServer={server}");
             return Ok(false);
         }
 
@@ -241,6 +245,14 @@ fn parse_mesh_id(msh: &str) -> Option<String> {
     msh.lines()
         .find_map(|l| l.trim().strip_prefix("MeshID="))
         .map(|v| v.trim().to_string())
+        .filter(|v| !v.is_empty())
+}
+
+/// Extract the value of a `Key=` line from an `.msh` body.
+fn parse_msh_field(msh: &str, key: &str) -> Option<String> {
+    let prefix = format!("{key}=");
+    msh.lines()
+        .find_map(|l| l.trim().strip_prefix(prefix.as_str()).map(|v| v.trim().to_string()))
         .filter(|v| !v.is_empty())
 }
 
