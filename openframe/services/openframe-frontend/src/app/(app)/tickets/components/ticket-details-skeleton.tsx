@@ -5,6 +5,7 @@ import { PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/co
 
 interface TicketDetailsSkeletonProps {
   onBack: () => void;
+  showTechnicianChat: boolean;
 }
 
 /**
@@ -12,7 +13,7 @@ interface TicketDetailsSkeletonProps {
  * client/technician chat). Reusing the message list's own `ChatMessageListSkeleton`
  * keeps the transition seamless once the dialog resolves but messages are still loading.
  */
-export function TicketDetailsSkeleton({ onBack }: TicketDetailsSkeletonProps) {
+export function TicketDetailsSkeleton({ onBack, showTechnicianChat }: TicketDetailsSkeletonProps) {
   return (
     <PageLayout
       backButton={{ label: 'Back', onClick: onBack }}
@@ -58,17 +59,19 @@ export function TicketDetailsSkeleton({ onBack }: TicketDetailsSkeletonProps) {
             <Skeleton className="mt-[var(--spacing-system-xsf)] h-12 w-full rounded-lg" />
           </div>
 
-          <div className="flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0">
-            <Skeleton className="hidden lg:block h-5 w-32" />
-            <div className="flex-1 flex flex-col relative min-h-0">
-              <ChatMessageListSkeleton
-                className="flex-1 bg-ods-card border border-ods-border rounded-lg"
-                contentClassName="px-[var(--spacing-system-mf)]"
-                fullWidth
-              />
+          {showTechnicianChat && (
+            <div className="flex-1 lg:basis-1/2 min-w-0 flex flex-col gap-1 min-h-0">
+              <Skeleton className="hidden lg:block h-5 w-32" />
+              <div className="flex-1 flex flex-col relative min-h-0">
+                <ChatMessageListSkeleton
+                  className="flex-1 bg-ods-card border border-ods-border rounded-lg"
+                  contentClassName="px-[var(--spacing-system-mf)]"
+                  fullWidth
+                />
+              </div>
+              <Skeleton className="mt-[var(--spacing-system-xsf)] h-12 w-full rounded-lg" />
             </div>
-            <Skeleton className="mt-[var(--spacing-system-xsf)] h-12 w-full rounded-lg" />
-          </div>
+          )}
         </div>
       </div>
     </PageLayout>
