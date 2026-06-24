@@ -17,6 +17,12 @@ use crate::services::tool_connection_service::ToolConnectionService;
 use crate::services::tool_run_manager::ToolRunManager;
 
 const RETRY_DELAY_SECONDS: u64 = 15;
+/// Consecutive agentId-resolution failures tolerated at the normal cadence before the tool
+/// connection is treated as degraded and the retry loop backs off (e.g. a hung `-nodeid-base64`).
+const AGENT_ID_MAX_FAST_RETRIES: u32 = 5;
+/// Back-off delay between agentId attempts once resolution is degraded, so a persistently
+/// unhealthy agent can't spin a tight 15s loop forever while staying invisible.
+const AGENT_ID_DEGRADED_BACKOFF_SECONDS: u64 = 300;
 
 // TODO: refactor class
 #[derive(Clone)]
@@ -131,6 +137,9 @@ impl ToolConnectionProcessingManager {
         let tool_run_manager = self.tool_run_manager.clone();
 
         tokio::spawn(async move {
+            // Counts consecutive agentId-resolution failures so a hung agent backs off
+            // (and is reported as degraded) instead of spinning a tight retry loop forever.
+            let mut agent_id_failures: u32 = 0;
             loop {
                 while tool_run_manager.is_updating(&tool.tool_agent_id).await {
                     info!(tool_id = %tool.tool_id, "Tool is being updated, deferring node-id resolution...");
@@ -157,7 +166,7 @@ impl ToolConnectionProcessingManager {
                                 tool.tool_id,
                                 e
                             );
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
                         }
                     };
@@ -187,13 +196,13 @@ impl ToolConnectionProcessingManager {
                         // Command returned an error before timeout
                         Ok(Err(e)) => {
                             error!("Failed to execute agentId command: {:#} – retrying", e);
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
                         }
                         // Timeout expired
                         Err(_) => {
                             error!("agentId command timed out after 15 seconds – retrying");
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
                         }
                     };
@@ -207,14 +216,14 @@ impl ToolConnectionProcessingManager {
                         // Parse agent_tool_id from command output
                         if !stdout.is_empty() {
                             // TODO: add mechanism to verify that it's correct agent id
+                            agent_id_failures = 0;
                             stdout // Use the command output as agent_tool_id
                         } else {
                             info!(
                                 tool_id = %tool.tool_id,
-                                "agentId command returned empty output - retrying in {} seconds",
-                                RETRY_DELAY_SECONDS
+                                "agentId command returned empty output - retrying"
                             );
-                            sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                            backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                             continue;
                         }
                     } else {
@@ -223,12 +232,11 @@ impl ToolConnectionProcessingManager {
                         error!(
                             tool_id = %tool.tool_id,
                             exit_status = %output.status,
-                            "agentId command failed - stdout: {} stderr: {}. Retrying in {} seconds",
+                            "agentId command failed - stdout: {} stderr: {}. Retrying",
                             stdout,
-                            stderr,
-                            RETRY_DELAY_SECONDS
+                            stderr
                         );
-                        sleep(Duration::from_secs(RETRY_DELAY_SECONDS)).await;
+                        backoff_agent_id_failure(&tool.tool_id, &mut agent_id_failures).await;
                         continue;
                     }
                 };
@@ -271,6 +279,32 @@ impl ToolConnectionProcessingManager {
 
         Ok(())
     }
+}
+
+/// Sleep between agentId-resolution attempts, escalating to a longer back-off once failures
+/// are sustained. A persistently failing `-nodeid-base64` (hung agent / missing node identity)
+/// would otherwise spin a tight 15s loop indefinitely and stay invisible; after
+/// `AGENT_ID_MAX_FAST_RETRIES` it logs a one-time degraded error and slows to
+/// `AGENT_ID_DEGRADED_BACKOFF_SECONDS`, while still retrying so it self-recovers if the agent
+/// becomes healthy (e.g. after a server-side reinstall).
+async fn backoff_agent_id_failure(tool_id: &str, failures: &mut u32) {
+    *failures += 1;
+    if *failures == AGENT_ID_MAX_FAST_RETRIES + 1 {
+        error!(
+            tool_id = %tool_id,
+            consecutive_failures = *failures,
+            "agentId resolution is failing repeatedly — tool connection is DEGRADED (agent likely \
+             unhealthy: hung -nodeid-base64 or missing node identity). Backing off to {}s; will keep \
+             retrying. A server-side reinstall may be required to recover.",
+            AGENT_ID_DEGRADED_BACKOFF_SECONDS
+        );
+    }
+    let delay = if *failures > AGENT_ID_MAX_FAST_RETRIES {
+        AGENT_ID_DEGRADED_BACKOFF_SECONDS
+    } else {
+        RETRY_DELAY_SECONDS
+    };
+    sleep(Duration::from_secs(delay)).await;
 }
 
 

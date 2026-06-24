@@ -238,10 +238,28 @@ async fn force_stop_service_windows(service_name: &str) -> Result<()> {
                 }
             }
             None => {
-                let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
-                    .unwrap_or_else(|_| "unqueryable".to_string());
-                info!("Service {} has no reportable PID (state {}, attempt {}/{}); waiting",
-                      service_name, state, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+                // SCM only reports a PID while the service is Running; in StopPending (and
+                // other transitional states) the PID is hidden, so the SCM-PID path can never
+                // act on a wedged service. Fall back to the service's configured image path
+                // and kill any live process running from it directly.
+                match service_image_exe_path_windows(service_name) {
+                    Some(exe) => {
+                        let killed = kill_processes_by_exe_path_windows(&exe).await;
+                        if killed > 0 {
+                            info!("Force-killed {} process(es) for service {} by image path {} (attempt {}/{})",
+                                  killed, service_name, exe.display(), attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+                        } else {
+                            info!("Service {} has no reportable PID and no live process at {} (attempt {}/{}); waiting for SCM to settle",
+                                  service_name, exe.display(), attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+                        }
+                    }
+                    None => {
+                        let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
+                            .unwrap_or_else(|_| "unqueryable".to_string());
+                        info!("Service {} has no reportable PID and no resolvable image path (state {}, attempt {}/{}); waiting",
+                              service_name, state, attempt, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+                    }
+                }
             }
         }
 
@@ -251,16 +269,30 @@ async fn force_stop_service_windows(service_name: &str) -> Result<()> {
     let status = query_service_status_windows(service_name);
     if service_stopped_or_missing(&status) {
         info!("Service {} force-stopped successfully", service_name);
-        Ok(())
-    } else {
-        let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
-            .unwrap_or_else(|_| "unqueryable".to_string());
-        error!("Service {} still not stopped (state {}) after {} force-kill attempts",
-               service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
-        Err(anyhow::anyhow!(
-            "Failed to force-stop service {} (state {} after {} attempts)",
-            service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS
-        ))
+        return Ok(());
+    }
+
+    // Last resort: the service is wedged (typically StopPending that SCM won't reap, with no
+    // killable process). Mark it for deletion via the SCM so the follow-up reinstall recreates
+    // it cleanly. This is what lets a reinstall recover the agent without a machine reboot.
+    // Only reachable from stop_for_installation (install/reinstall/uninstall), where the
+    // service is about to be recreated or removed anyway.
+    let state = status.as_ref().map(|s| format!("{:?}", s.current_state))
+        .unwrap_or_else(|_| "unqueryable".to_string());
+    warn!("Service {} still not stopped (state {}) after {} force-kill attempts; deleting it via SCM to clear the wedged state",
+          service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS);
+    match delete_service_windows(service_name).await {
+        Ok(()) => {
+            info!("Service {} deleted; a fresh install will recreate it", service_name);
+            Ok(())
+        }
+        Err(e) => {
+            error!("Service {} could not be stopped or deleted: {:#}", service_name, e);
+            Err(anyhow::anyhow!(
+                "Failed to force-stop or delete service {} (state {} after {} attempts): {:#}",
+                service_name, state, SERVICE_FORCE_KILL_MAX_ATTEMPTS, e
+            ))
+        }
     }
 }
 
@@ -376,5 +408,113 @@ fn service_stopped_or_missing(
             e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32)
         }
         Err(_) => false,
+    }
+}
+
+/// True only if SCM reports the service does not exist.
+#[cfg(target_os = "windows")]
+fn service_missing_windows(service_name: &str) -> bool {
+    use winapi::shared::winerror::ERROR_SERVICE_DOES_NOT_EXIST;
+    match query_service_status_windows(service_name) {
+        Err(windows_service::Error::Winapi(e)) => {
+            e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32)
+        }
+        _ => false,
+    }
+}
+
+/// The on-disk executable path from the service's SCM image path (`lpBinaryPathName`),
+/// stripped of surrounding quotes and any trailing arguments.
+#[cfg(target_os = "windows")]
+fn service_image_exe_path_windows(service_name: &str) -> Option<std::path::PathBuf> {
+    use windows_service::service::ServiceAccess;
+    let service = open_service_windows(service_name, ServiceAccess::QUERY_CONFIG).ok()?;
+    let config = service.query_config().ok()?;
+    parse_exe_from_image_path(&config.executable_path.to_string_lossy())
+}
+
+/// Extract the executable path from a raw SCM image-path string, e.g.
+/// `"C:\\path\\agent.exe" -arg` or `C:\\path\\agent.exe -arg`.
+#[cfg(target_os = "windows")]
+fn parse_exe_from_image_path(image_path: &str) -> Option<std::path::PathBuf> {
+    let trimmed = image_path.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    // Quoted form: take the contents of the first quoted span.
+    if let Some(rest) = trimmed.strip_prefix('"') {
+        if let Some(end) = rest.find('"') {
+            return Some(std::path::PathBuf::from(&rest[..end]));
+        }
+    }
+    // Unquoted: cut after the first ".exe" (case-insensitive) to drop trailing args.
+    let lower = trimmed.to_lowercase();
+    if let Some(idx) = lower.find(".exe") {
+        return Some(std::path::PathBuf::from(&trimmed[..idx + 4]));
+    }
+    Some(std::path::PathBuf::from(trimmed))
+}
+
+/// Force-kill every running process whose executable is exactly `exe_path`. Matching on the
+/// full path (not the image name) avoids killing sibling tools that share an `agent.exe` name.
+/// Returns the number of processes a kill was issued for.
+#[cfg(target_os = "windows")]
+async fn kill_processes_by_exe_path_windows(exe_path: &std::path::Path) -> usize {
+    use sysinfo::System;
+    let target = exe_path.to_string_lossy().to_lowercase();
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    let mut killed = 0usize;
+    for (pid, process) in sys.processes() {
+        let proc_exe = process
+            .exe()
+            .map(|p| p.to_string_lossy().to_lowercase())
+            .unwrap_or_default();
+        if !proc_exe.is_empty() && proc_exe == target {
+            let _ = Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &pid.to_string()])
+                .output()
+                .await;
+            killed += 1;
+        }
+    }
+    killed
+}
+
+/// Mark a wedged service for deletion via the SCM and wait for it to disappear, so a follow-up
+/// reinstall can recreate it under the same name without hitting `ERROR_SERVICE_MARKED_FOR_DELETE`.
+#[cfg(target_os = "windows")]
+async fn delete_service_windows(service_name: &str) -> Result<()> {
+    use windows_service::service::ServiceAccess;
+
+    if service_missing_windows(service_name) {
+        return Ok(());
+    }
+
+    // Scope the handle so it is closed before we poll — SCM only finalizes removal once the
+    // last open handle is released.
+    {
+        let service = open_service_windows(service_name, ServiceAccess::DELETE)
+            .with_context(|| format!("open service {} for deletion", service_name))?;
+        service
+            .delete()
+            .with_context(|| format!("DeleteService failed for {}", service_name))?;
+    }
+
+    for _ in 1..=SERVICE_STOP_MAX_ATTEMPTS {
+        if service_missing_windows(service_name) {
+            return Ok(());
+        }
+        sleep(Duration::from_millis(PROCESS_CHECK_INTERVAL_MS)).await;
+    }
+
+    if service_missing_windows(service_name) {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!(
+            "service {} still present after delete request",
+            service_name
+        ))
     }
 }
