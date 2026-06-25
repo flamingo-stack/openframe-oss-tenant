@@ -4,9 +4,9 @@ import { useAuthenticatedImage } from './useAuthenticatedImage';
 import { useChatConfig } from './useChatConfig';
 
 export interface AssistantBranding {
-  /** Configured assistant name; `undefined` when not customized so callers
-   *  apply their own fallback (both header and message bubbles default to
-   *  "Fae" via `assistantName ?? 'Fae'`). */
+  /** Assistant name. The configured name when set; otherwise the default "Fae"
+   *  once settings have loaded. `undefined` only while settings are still
+   *  loading, so callers can show a skeleton instead of flashing a name. */
   assistantName: string | undefined;
   /** Avatar image src. While still resolving (settings loading or the avatar
    *  fetch in flight) this is `undefined` so the header shows a skeleton rather
@@ -43,7 +43,9 @@ export function useAssistantBranding(): AssistantBranding {
       : faeAvatar;
 
   return {
-    assistantName: configuredName || undefined,
+    // Default to "Fae" once settings have loaded with no configured name;
+    // stay undefined while loading so callers don't flash a name.
+    assistantName: configuredName || (isSettingsLoading ? undefined : 'Fae'),
     assistantAvatar,
     isLoading: isResolving,
   };

@@ -332,7 +332,7 @@ export function useChat({
         id: lastAssistantId,
         role: 'assistant' as const,
         content: assistantSegments,
-        name: assistantName ?? 'Fae',
+        name: assistantName,
         timestamp: lastAssistantTimestamp,
       };
 
@@ -657,7 +657,7 @@ export function useChat({
       const syntheticMessage: Message = {
         id: `ticket-preview-${Date.now()}`,
         role: 'assistant',
-        name: assistantName ?? 'Fae',
+        name: assistantName,
         content,
         timestamp: new Date(),
         avatar: assistantAvatar,

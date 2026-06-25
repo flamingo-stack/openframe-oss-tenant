@@ -9,7 +9,11 @@
     "core:event:allow-emit",
     "dialog:default",
     "fs:default",
-    "notification:default"
+    "notification:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://*" }, { "url": "http://*" }]
+    }
   ]
 }
 
