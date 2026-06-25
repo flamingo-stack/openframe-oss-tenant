@@ -20,10 +20,11 @@ import { useTicketSearchOptions } from '@/app/(app)/tickets/hooks/use-ticket-opt
 import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { createTimeEntryMutation } from '@/graphql/time-tracker/create-time-entry-mutation';
 import {
+  calendarDayToInstant,
   formatDurationLabel,
+  instantToCalendarDay,
   makeCreateTimeEntryUpdater,
   parseDurationLabel,
-  parseInstant,
   toTicketGlobalId,
 } from '@/graphql/time-tracker/time-tracker-helpers';
 import { updateTimeEntryMutation } from '@/graphql/time-tracker/update-time-entry-mutation';
@@ -116,7 +117,7 @@ export function ManualEntryModal({ isOpen, onClose, userId, entry, onSuccess }: 
       entry
         ? {
             workTime: formatDurationLabel(entry.durationSeconds),
-            startedAt: new Date(parseInstant(entry.startedAt)),
+            startedAt: instantToCalendarDay(entry.startedAt),
             ticketId: entry.ticketId ?? null,
             notes: entry.notes ?? '',
           }
@@ -128,7 +129,7 @@ export function ManualEntryModal({ isOpen, onClose, userId, entry, onSuccess }: 
     const durationSeconds = parseDurationLabel(values.workTime) ?? 0;
     const ticketId = toTicketGlobalId(values.ticketId);
     const notes = values.notes.trim() || null;
-    const startedAt = values.startedAt.toISOString();
+    const startedAt = calendarDayToInstant(values.startedAt);
 
     if (entry) {
       updateTimeEntry({
