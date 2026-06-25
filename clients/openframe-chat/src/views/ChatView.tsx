@@ -344,7 +344,7 @@ export function ChatView() {
     const faeMessage = {
       id: `synthetic-fae-form-${faeFormTicket.id}`,
       role: 'assistant' as const,
-      name: assistantName ?? 'Fae',
+      name: assistantName,
       content: [
         'Your request has been received. We will contact you shortly.',
         '',
@@ -423,7 +423,7 @@ export function ChatView() {
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
         isLoading={isAssistantLoading}
-        userName={assistantName ?? 'Fae'}
+        userName={assistantName}
         userAvatar={assistantAvatar}
         connectionStatus={status}
         serverUrl={mspCompanyName}

@@ -48,7 +48,7 @@ export function useChatMessages({ onApprove, onReject }: UseChatMessagesOptions 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        name: assistantName ?? 'Fae',
+        name: assistantName,
         content: [],
         timestamp: new Date(),
         avatar: assistantAvatar,

@@ -76,15 +76,11 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
   return (
     <div className="h-screen flex flex-col items-center bg-ods-bg">
       <div className="flex flex-col gap-[var(--spacing-system-lf)] items-center justify-center flex-1 w-full max-w-ods-content-narrow px-[var(--spacing-system-mf)]">
-        <img
-          src={assistantAvatar}
-          alt={assistantName ?? 'AI Assistant'}
-          className="size-16 rounded-full object-cover"
-        />
+        <img src={assistantAvatar} alt={assistantName} className="size-16 rounded-full object-cover" />
 
         <p className="text-h3 text-ods-text-primary text-center max-w-[504px]">
-          Meet {assistantName ?? 'AI Assistant'}, your AI IT assistant. Fixes what it can right away, and hands off the
-          rest to your technicians.
+          Meet {assistantName}, your AI IT assistant. Fixes what it can right away, and hands off the rest to your
+          technicians.
         </p>
 
         <FeatureList items={features} className="w-full" />
