@@ -10,7 +10,6 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button, FeatureList } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { openUrl } from '@tauri-apps/plugin-opener';
-import faeAvatar from '../assets/fae-avatar.png';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useAuthenticatedImage } from '../hooks/useAuthenticatedImage';
 import { useTenantInfoQuery } from '../hooks/useTenantInfoQuery';
@@ -78,14 +77,14 @@ export function WelcomeScreen({ onGetStarted }: WelcomeScreenProps) {
     <div className="h-screen flex flex-col items-center bg-ods-bg">
       <div className="flex flex-col gap-[var(--spacing-system-lf)] items-center justify-center flex-1 w-full max-w-ods-content-narrow px-[var(--spacing-system-mf)]">
         <img
-          src={assistantAvatar ?? faeAvatar}
-          alt={assistantName ?? 'Fae'}
+          src={assistantAvatar}
+          alt={assistantName ?? 'AI Assistant'}
           className="size-16 rounded-full object-cover"
         />
 
         <p className="text-h3 text-ods-text-primary text-center max-w-[504px]">
-          Meet {assistantName ?? 'Fae'}, your AI IT assistant. Fixes what it can right away, and hands off the rest to
-          your technicians.
+          Meet {assistantName ?? 'AI Assistant'}, your AI IT assistant. Fixes what it can right away, and hands off the
+          rest to your technicians.
         </p>
 
         <FeatureList items={features} className="w-full" />
