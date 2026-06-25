@@ -22,9 +22,9 @@ import { isOssTenantMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { featureFlags } from '@/lib/feature-flags';
 import { handleApiError } from '@/lib/handle-api-error';
+import { AccountSettingsCard } from './account-settings-card';
 import { EditProfileModal } from './edit-profile-modal';
 import { EmailVerificationModal } from './email-verification-modal';
-import { ProfileCard } from './profile-card';
 import { SettingMenuItem } from './setting-menu-item';
 
 const SETTINGS_NAV_ITEMS = [
@@ -140,15 +140,19 @@ export function SettingsHub() {
   }, [fetchFullProfile]);
 
   return (
-    <PageLayout title="Settings" className="min-h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
-      {/* Profile Card */}
-      <ProfileCard
+    <PageLayout
+      title="Settings"
+      className="min-h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+      contentClassName="gap-[var(--spacing-system-l)] lg:gap-[var(--spacing-system-xl)]"
+    >
+      {/* Organization + Profile */}
+      <AccountSettingsCard
         onEditProfile={() => setIsEditModalOpen(true)}
         onVerifyEmail={() => setIsVerificationModalOpen(true)}
       />
 
       {/* Navigation Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-m)]">
         {SETTINGS_NAV_ITEMS.filter(
           item => item.href !== '/settings/billing-usage' || featureFlags.subscription.enabled(),
         )

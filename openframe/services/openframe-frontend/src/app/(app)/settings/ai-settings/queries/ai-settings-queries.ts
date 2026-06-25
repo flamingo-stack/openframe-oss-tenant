@@ -91,3 +91,24 @@ export const UPDATE_CLIENT_VIEW_MUTATION = `
     }
   }
 `;
+
+/**
+ * Removes a per-organization appearance override so the customer falls back to
+ * the tenant-wide default. The payload carries the tenant default (or null when
+ * none exists) so the caller can re-render in a single round-trip.
+ *
+ * NOTE: requires the backend `resetClientView(organizationId: ID!)` mutation
+ * (the per-org counterpart to `updateClientView`).
+ */
+export const RESET_CLIENT_VIEW_MUTATION = `
+  mutation ResetClientView($organizationId: ID!) {
+    resetClientView(organizationId: $organizationId) {
+      view {
+        ${CLIENT_VIEW_FIELDS}
+      }
+      userErrors {
+        message
+      }
+    }
+  }
+`;

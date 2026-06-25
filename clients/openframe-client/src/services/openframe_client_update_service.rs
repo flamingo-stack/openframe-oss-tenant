@@ -45,6 +45,11 @@ impl OpenFrameClientUpdateService {
         let requested_version = message.version.trim();
         info!("Received update request for version: {}", requested_version);
 
+        if self.tool_run_manager.any_tool_op_in_progress().await {
+            warn!("Tool operation in progress, deferring client update to version {} (will redeliver)", requested_version);
+            return Err(anyhow!("Tool operation in progress, deferring client update"));
+        }
+
         // 1. Check if update is already in progress (race condition protection)
         {
             let mut update_lock = self.update_in_progress.lock().await;
@@ -192,6 +197,15 @@ impl OpenFrameClientUpdateService {
             service_name: FULL_SERVICE_NAME.to_string(),
             update_state_path: self.update_state_service.get_state_file_path(),
         };
+
+        if self.tool_run_manager.any_tool_op_in_progress().await {
+            warn!("Tool operation started during client download, deferring client update (will redeliver)");
+            if let Err(cleanup_err) = std::fs::remove_file(&archive_path) {
+                warn!("Failed to remove archive after deferring: {}", cleanup_err);
+            }
+            self.update_state_service.clear().await?;
+            return Err(anyhow!("Tool operation started during download, deferring client update"));
+        }
 
         let launch_result = updater_launcher::launch_updater(params).await;
 

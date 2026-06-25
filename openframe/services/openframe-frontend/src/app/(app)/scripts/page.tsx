@@ -2,13 +2,26 @@
 
 export const dynamic = 'force-dynamic';
 
-import { ContentPageContainer } from '@flamingo-stack/openframe-frontend-core';
-import { ScriptsView } from './components/scripts-view';
+import { getTabComponent } from '@flamingo-stack/openframe-frontend-core';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { SCRIPTS_TABS, ScriptsTabNavigation } from './components/scripts-tabs';
 
 export default function Scripts() {
+  // `search` is declared here too (owned by the tables) so we can clear it on
+  // a tab switch — each tab starts with a fresh search.
+  const { params, setParams } = useApiParams({
+    tab: { type: 'string', default: 'list' },
+    search: { type: 'string', default: '' },
+  });
+
+  const TabComponent = getTabComponent(SCRIPTS_TABS, params.tab);
+
   return (
-    <ContentPageContainer className="p-[var(--spacing-system-l)]" padding="none" showHeader={false}>
-      <ScriptsView />
-    </ContentPageContainer>
+    <div className="flex flex-col w-full">
+      <div className="flex flex-col w-full">
+        <ScriptsTabNavigation activeTab={params.tab} onTabChange={tab => setParams({ tab, search: '' })} />
+        {TabComponent ? <TabComponent /> : null}
+      </div>
+    </div>
   );
 }

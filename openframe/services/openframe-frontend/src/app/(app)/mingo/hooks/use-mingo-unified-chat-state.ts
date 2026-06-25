@@ -40,6 +40,7 @@ import { CONTEXT_ITEMS_MAX, RECENT_VIEWS_MAX } from '../context/context-types';
 import { useMingoContextStore } from '../stores/mingo-context-store';
 import { useMingoMessagesStore } from '../stores/mingo-messages-store';
 import { type MingoSendContext, useMingoChat } from './use-mingo-chat';
+import { useMingoDialogActions } from './use-mingo-dialog-actions';
 import { useMingoDialogSelection } from './use-mingo-dialog-selection';
 import { useMingoDialogs } from './use-mingo-dialogs';
 import { useMingoRealtimeSubscription } from './use-mingo-realtime-subscription';
@@ -78,6 +79,17 @@ export interface MingoUnifiedChat {
    * about X" EmptyState buttons) that always want a fresh conversation.
    */
   sendInNewDialog: (text: string) => Promise<void>;
+  /** Current server-side dialog-search term. */
+  searchQuery: string;
+  /** Set the dialog-search term (already debounced by the chat's search bar). */
+  setSearchQuery: (query: string) => void;
+  /** Fetch a page of ARCHIVED dialogs — feeds the chat archive page. */
+  fetchArchivedDialogs: (params: { cursor?: string; limit?: number; search?: string }) => Promise<{
+    dialogs: DialogItem[];
+    nextCursor: string | null;
+  }>;
+  /** Restore an archived dialog back to the active list. */
+  unarchiveDialog: (id: string) => Promise<void>;
 }
 
 export function useMingoUnifiedChatState(): MingoUnifiedChat {
@@ -86,12 +98,20 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage, getStreamingMessage, tokenUsageByDialog } =
     useMingoMessagesStore();
 
+  // Server-side dialog search. The embeddable chat's search bar emits the
+  // already-debounced term via `setSearchQuery`; it rides the `useMingoDialogs`
+  // query key, so the backend filters the list.
+  const [searchQuery, setSearchQuery] = useState('');
+
   const {
     dialogs,
     isLoading: isLoadingDialogs,
     hasNextPage: hasMoreDialogs,
     fetchNextPage: fetchNextDialogPage,
-  } = useMingoDialogs();
+    refetch: refetchDialogs,
+  } = useMingoDialogs({ search: searchQuery || undefined });
+
+  const { renameDialog, archiveDialog, unarchiveDialog, fetchArchivedDialogs } = useMingoDialogActions();
 
   const {
     selectDialog: selectDialogMut,
@@ -333,10 +353,10 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     [handleReject],
   );
 
-  // Rename / archive / delete aren't wired for the Mingo agent surface (parity
-  // with the previous EmbeddableChat config, which didn't pass those callbacks).
   const noopDialogAction = useCallback(async () => {}, []);
-  const reloadDialogs = useCallback(() => {}, []);
+  const reloadDialogs = useCallback(() => {
+    void refetchDialogs();
+  }, [refetchDialogs]);
   const discussRef = useCallback(() => {}, []);
   const displayRef = useCallback(() => {}, []);
 
@@ -366,8 +386,8 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       selectDialog,
       startNewDialog,
       deleteDialog: noopDialogAction,
-      renameDialog: noopDialogAction,
-      archiveDialog: noopDialogAction,
+      renameDialog,
+      archiveDialog,
       isDialogsLoading: isLoadingDialogs,
       dialogsError: false,
       reloadDialogs,
@@ -398,6 +418,8 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
       selectDialog,
       startNewDialog,
       noopDialogAction,
+      renameDialog,
+      archiveDialog,
       isLoadingDialogs,
       reloadDialogs,
       isLoadingMessages,
@@ -437,5 +459,13 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     ],
   );
 
-  return { state, subscription, sendInNewDialog };
+  return {
+    state,
+    subscription,
+    sendInNewDialog,
+    searchQuery,
+    setSearchQuery,
+    fetchArchivedDialogs,
+    unarchiveDialog,
+  };
 }

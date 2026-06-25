@@ -183,6 +183,56 @@ fn register_app_id() {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn register_start_menu_shortcut() {
+    use mslnk::ShellLink;
+
+    extern "system" {
+        fn SHChangeNotify(event_id: i32, flags: u32, item1: *const std::ffi::c_void, item2: *const std::ffi::c_void);
+    }
+
+    let Some(programs) = dirs::data_dir().map(|d| {
+        d.join("Microsoft").join("Windows").join("Start Menu").join("Programs")
+    }) else {
+        return;
+    };
+    let lnk = programs.join("OpenFrame Chat.lnk");
+    if lnk.exists() {
+        return;
+    }
+
+    let exe = match std::env::current_exe() {
+        Ok(p) => p,
+        Err(e) => {
+            log::warn!("start menu shortcut: cannot resolve exe path ({e})");
+            return;
+        }
+    };
+
+    let mut sl = match ShellLink::new(&exe) {
+        Ok(sl) => sl,
+        Err(e) => {
+            log::warn!("start menu shortcut: ShellLink::new failed ({e:?})");
+            return;
+        }
+    };
+    sl.set_name(Some("OpenFrame Chat".to_string()));
+    sl.set_icon_location(Some(exe.to_string_lossy().into_owned()));
+    if let Some(dir) = exe.parent() {
+        sl.set_working_dir(Some(dir.to_string_lossy().into_owned()));
+    }
+    if let Err(e) = sl.create_lnk(&lnk) {
+        log::warn!("start menu shortcut: failed to create {} ({e:?})", lnk.display());
+        return;
+    }
+
+    // SHChangeNotify makes Start surface the new shortcut without a reboot.
+    const SHCNE_ASSOCCHANGED: i32 = 0x0800_0000;
+    const SHCNF_IDLIST: u32 = 0;
+    unsafe { SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, std::ptr::null(), std::ptr::null()); }
+    log::info!("start menu shortcut: created at {}", lnk.display());
+}
+
 /// Materializes the embedded app icon to a user-writable path and points the
 /// AUMID's `IconUri` at it. The agent ships only the chat executable — no Tauri
 /// `resources/` on disk — so a bundled-resource path never exists; and
@@ -262,7 +312,10 @@ async fn nats_register_event_channel(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(target_os = "windows")]
-    register_app_id();
+    {
+        register_app_id();
+        register_start_menu_shortcut();
+    }
 
     println!("[startup] openframe-chat starting (version {})", env!("CARGO_PKG_VERSION"));
 
@@ -325,6 +378,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             if std::env::var("OPENFRAME_DISABLE_LOG").is_err() {
                 use tauri_plugin_log::{

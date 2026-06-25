@@ -2,7 +2,7 @@ use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use tracing::{info, warn};
 use anyhow::{Context, Result};
 use crate::models::tool_agent_update_message::{ToolAgentUpdateMessage, AssetUpdate};
-use crate::models::{Installation, InstalledAsset};
+use crate::models::{Installation, InstalledAsset, ToolRecordState};
 use crate::services::InstalledToolsService;
 use crate::services::ToolKillService;
 use crate::services::GithubDownloadService;
@@ -66,12 +66,32 @@ impl ToolAgentUpdateService {
         let mut installed_tool = match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
             Some(tool) => tool,
             None => {
-                warn!("Tool {} is not installed, skipping update", tool_agent_id);
+                warn!("Tool {} has no registry record (orphaned) — cannot self-heal from a lean update message; awaiting reinstall (TOOL_INSTALLATION). Skipping update", tool_agent_id);
                 return Ok(());
             }
         };
 
-        let needs_tool_update = installed_tool.version != *new_version;
+        let was_installing = installed_tool.state == ToolRecordState::Installing;
+        let agent_path = self.directory_manager
+            .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
+        let binary_missing = !self.directory_manager
+            .tool_artifact_present(&agent_path, installed_tool.installation.is_gui_app()).await;
+        let needs_repair = was_installing || binary_missing;
+        if was_installing {
+            warn!("Tool {} record is in Installing state (interrupted (re)install) — forcing repair", tool_agent_id);
+        } else if binary_missing {
+            warn!("Tool {} has a registry record but its binary is missing at {} — forcing repair", tool_agent_id, agent_path.display());
+        }
+        if needs_repair {
+            installed_tool.state = ToolRecordState::Installing;
+            if binary_missing && !was_installing {
+                if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installing).await {
+                    warn!("Failed to mark tool {} as installing before repair: {:#}", tool_agent_id, e);
+                }
+            }
+        }
+
+        let needs_tool_update = needs_repair || installed_tool.version != *new_version;
         let assets_to_update: Vec<_> = message.assets.as_ref()
             .map(|assets| assets.iter().filter(|a| {
                 let new_version = match a.version.as_deref() {
@@ -94,6 +114,9 @@ impl ToolAgentUpdateService {
         // Mark as updating once for all updates
         self.tool_run_manager.mark_updating(tool_agent_id).await;
 
+        // A Standard->GuiApp migration self-relaunches, so only relaunch here if it was already a GUI app.
+        let was_gui_before_update = matches!(installed_tool.installation, Installation::GuiApp { .. });
+
         let result = self.do_updates(
             &message,
             &mut installed_tool,
@@ -101,8 +124,19 @@ impl ToolAgentUpdateService {
             &assets_to_update,
         ).await;
 
-        // Clear updating flag - tool_run_manager will restart the tool
+        // Clear updating flag - for Standard tools the run manager relaunches them via this flag.
         self.tool_run_manager.clear_updating(tool_agent_id).await;
+
+        if result.is_ok() && needs_repair {
+            if let Err(e) = self.installed_tools_service.set_state(tool_agent_id, ToolRecordState::Installed).await {
+                warn!("Failed to finalize tool {} record to Installed after repair: {:#}", tool_agent_id, e);
+            }
+        }
+
+        // Windows GUI apps aren't run-manager-supervised; relaunch once after a successful update (no-op otherwise).
+        if result.is_ok() && was_gui_before_update {
+            self.relaunch_windows_gui_app(&installed_tool);
+        }
 
         result
     }
@@ -393,6 +427,36 @@ impl ToolAgentUpdateService {
                 crate::utils::windows_helpers::write_app_config(tool_agent_id, &launch_args)
             {
                 warn!(tool_id = %tool_agent_id, error = %e, "Failed to persist GuiApp config to registry");
+            }
+        }
+    }
+
+    /// Relaunch a just-updated Windows GUI app once in the user session (the update killed it; autorun owns later logons).
+    #[allow(unused_variables)]
+    fn relaunch_windows_gui_app(&self, installed_tool: &crate::models::installed_tool::InstalledTool) {
+        #[cfg(target_os = "windows")]
+        if let Installation::GuiApp { .. } = &installed_tool.installation {
+            let tool_agent_id = &installed_tool.tool_agent_id;
+            let mut launch_args = self.command_params_resolver
+                .process(tool_agent_id, installed_tool.run_command_args.clone())
+                .unwrap_or_else(|_| installed_tool.run_command_args.clone());
+            // For openframe-chat, add --background flag to start in tray
+            if tool_agent_id == "openframe-chat" {
+                launch_args.push("--background".to_string());
+            }
+            let command_path = self.directory_manager
+                .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path())
+                .to_string_lossy()
+                .to_string();
+            match crate::services::tool_run_manager::launch_process_in_user_session(&command_path, &launch_args) {
+                Ok((pid, process_handle)) => {
+                    info!(tool_id = %tool_agent_id, pid, "Relaunched updated GuiApp in user session (fire-and-forget)");
+                    unsafe { let _ = windows::Win32::Foundation::CloseHandle(process_handle); }
+                }
+                Err(e) => {
+                    warn!(tool_id = %tool_agent_id, error = %e,
+                          "Failed to relaunch updated GuiApp - it will start at the next logon via autorun");
+                }
             }
         }
     }

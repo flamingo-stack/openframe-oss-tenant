@@ -16,5 +16,11 @@ export const dynamic = 'force-dynamic';
  * `next.config.mjs` rewrites to the gateway's `/content/api/chat/agent/*`.
  */
 export default function TicketsPage() {
-  return <HelpCenterList backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }} />;
+  return (
+    <HelpCenterList
+      title="Support Tickets"
+      shell={false}
+      backButton={{ label: 'Back to Help Center', href: HELP_CENTER_BASE }}
+    />
+  );
 }

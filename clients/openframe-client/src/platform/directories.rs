@@ -798,6 +798,13 @@ impl DirectoryManager {
     pub fn is_app_bundle_path(path: &Path) -> bool {
         path.to_string_lossy().contains(".app/")
     }
+
+    pub async fn tool_artifact_present(&self, path: &Path, is_gui_app: bool) -> bool {
+        match tokio::fs::metadata(path).await {
+            Ok(m) => (m.is_file() && m.len() > 0) || (is_gui_app && m.is_dir()),
+            Err(_) => false,
+        }
+    }
 }
 
 

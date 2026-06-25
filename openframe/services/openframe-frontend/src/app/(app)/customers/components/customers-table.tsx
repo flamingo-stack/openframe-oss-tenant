@@ -9,12 +9,13 @@ import {
   ShieldCheckIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { DataTable, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useApiParams, useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { useCustomers } from '../hooks/use-customers';
 import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
@@ -31,16 +32,14 @@ export function CustomersTable({ status }: CustomersTableProps) {
     search: { type: 'string', default: '' },
   });
 
-  const [localSearch, setLocalSearch] = useState(params.search);
-  const debouncedSearch = useDebounce(localSearch, 500);
+  // Local search keeps typing responsive; the shared hook debounces it to the
+  // URL param and guards the back/forward sync-down against clobbering typing.
+  const {
+    search: localSearch,
+    setSearch: setLocalSearch,
+    debouncedSearch,
+  } = useSearchParam(params.search, value => setParam('search', value), 500);
   const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
-
-  const setParamRef = useRef(setParam);
-  setParamRef.current = setParam;
-
-  useEffect(() => {
-    setParamRef.current('search', debouncedSearch);
-  }, [debouncedSearch]);
 
   const { customers, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, error } = useCustomers(
     debouncedSearch,

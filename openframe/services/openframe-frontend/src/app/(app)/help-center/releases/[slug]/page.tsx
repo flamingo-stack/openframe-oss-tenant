@@ -89,6 +89,7 @@ export default function ReleaseDetailRoute() {
   const { slug = '' } = useParams<{ slug: string }>();
   return (
     <ReleaseDetailPage
+      shell={false}
       slug={slug}
       useRelease={useRelease}
       RoadmapSection={RoadmapSection}

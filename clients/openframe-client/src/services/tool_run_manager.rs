@@ -4,12 +4,12 @@ use std::process::Stdio;
 use tokio::process::Command;
 use tokio::time::sleep;
 use std::time::Duration;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::sync::RwLock;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use crate::models::installed_tool::{InstalledTool, Installation};
+use crate::models::installed_tool::{InstalledTool, Installation, ToolRecordState};
 use crate::services::installed_tools_service::InstalledToolsService;
 use crate::services::tool_command_params_resolver::ToolCommandParamsResolver;
 use crate::services::tool_kill_service::ToolKillService;
@@ -23,8 +23,6 @@ use windows::{
     Win32::UI::WindowsAndMessaging::SW_SHOW,
     Win32::Security::*,
 };
-#[cfg(target_os = "windows")]
-use crate::services::windows_session_manager::WindowsSessionManager;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_helpers::{build_command_line, to_wide, wcslen};
 
@@ -351,10 +349,8 @@ pub struct ToolRunManager {
     params_processor: ToolCommandParamsResolver,
     tool_kill_service: ToolKillService,
     running_tools: Arc<RwLock<HashSet<String>>>,
-    updating_tools: Arc<RwLock<HashSet<String>>>,
+    updating_tools: Arc<RwLock<HashMap<String, usize>>>,
     shutting_down: Arc<AtomicBool>,
-    #[cfg(target_os = "windows")]
-    session_manager: Option<Arc<WindowsSessionManager>>,
 }
 
 impl ToolRunManager {
@@ -362,17 +358,14 @@ impl ToolRunManager {
         installed_tools_service: InstalledToolsService,
         params_processor: ToolCommandParamsResolver,
         tool_kill_service: ToolKillService,
-        #[cfg(target_os = "windows")] session_manager: Option<Arc<WindowsSessionManager>>,
     ) -> Self {
         Self {
             installed_tools_service,
             params_processor,
             tool_kill_service,
             running_tools: Arc::new(RwLock::new(HashSet::new())),
-            updating_tools: Arc::new(RwLock::new(HashSet::new())),
+            updating_tools: Arc::new(RwLock::new(HashMap::new())),
             shutting_down: Arc::new(AtomicBool::new(false)),
-            #[cfg(target_os = "windows")]
-            session_manager,
         }
     }
 
@@ -384,17 +377,31 @@ impl ToolRunManager {
     }
 
     pub async fn mark_updating(&self, tool_id: &str) {
-        self.updating_tools.write().await.insert(tool_id.to_string());
-        info!("Tool {} marked as updating", tool_id);
+        let mut map = self.updating_tools.write().await;
+        let count = map.entry(tool_id.to_string()).or_insert(0);
+        *count += 1;
+        info!("Tool {} marked as updating (in-flight ops: {})", tool_id, *count);
     }
 
     pub async fn clear_updating(&self, tool_id: &str) {
-        self.updating_tools.write().await.remove(tool_id);
-        info!("Tool {} update flag cleared", tool_id);
+        let mut map = self.updating_tools.write().await;
+        if let Some(count) = map.get_mut(tool_id) {
+            *count -= 1;
+            if *count == 0 {
+                map.remove(tool_id);
+                info!("Tool {} update flag cleared", tool_id);
+            } else {
+                info!("Tool {} op finished (in-flight ops remaining: {})", tool_id, *count);
+            }
+        }
     }
 
     pub async fn is_updating(&self, tool_id: &str) -> bool {
-        self.updating_tools.read().await.contains(tool_id)
+        self.updating_tools.read().await.contains_key(tool_id)
+    }
+
+    pub async fn any_tool_op_in_progress(&self) -> bool {
+        !self.updating_tools.read().await.is_empty()
     }
 
     pub async fn run(&self) -> Result<()> {
@@ -409,6 +416,31 @@ impl ToolRunManager {
         if tools.is_empty() {
             info!("No installed tools found – nothing to run");
             return Ok(());
+        }
+
+        for tool in &tools {
+            if tool.state != ToolRecordState::Installing {
+                continue;
+            }
+            let path = self.params_processor.directory_manager
+                .get_tool_executable_path(&tool.tool_agent_id, tool.installation.executable_path());
+            let binary_present = self.params_processor.directory_manager
+                .tool_artifact_present(&path, tool.installation.is_gui_app()).await;
+
+            if !binary_present {
+                warn!(tool_id = %tool.tool_agent_id, "Record left Installing and binary missing/empty at {} — awaiting reinstall", path.display());
+                continue;
+            }
+
+            if tool.installation.is_service() {
+                warn!(tool_id = %tool.tool_agent_id, "Record left Installing; binary present at {} but service registration can't be verified from disk — leaving Installing for a verified repair", path.display());
+                continue;
+            }
+
+            warn!(tool_id = %tool.tool_agent_id, "Record left Installing but binary is present at {} — marking Installed", path.display());
+            if let Err(e) = self.installed_tools_service.set_state(&tool.tool_agent_id, ToolRecordState::Installed).await {
+                warn!(tool_id = %tool.tool_agent_id, "Failed to mark Installed during startup recheck: {:#}", e);
+            }
         }
 
         for tool in tools {
@@ -458,9 +490,9 @@ impl ToolRunManager {
         #[cfg(not(target_os = "windows"))]
         self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
 
-        // On Windows, GUI apps whose lifecycle is owned by the session manager
+        // Windows GUI apps are owned by the HKLM Run autorun, not us — never kill them.
         #[cfg(target_os = "windows")]
-        if !(tool.installation.is_gui_app() && self.session_manager.is_some()) {
+        if !tool.installation.is_gui_app() {
             self.tool_kill_service.stop_tool(&tool.tool_agent_id).await?;
         }
 
@@ -470,8 +502,6 @@ impl ToolRunManager {
         let running_tools = self.running_tools.clone();
         let installed_tools_service = self.installed_tools_service.clone();
         let mut installation = tool.installation.clone();
-        #[cfg(target_os = "windows")]
-        let session_manager = self.session_manager.clone();
 
         tokio::spawn(async move {
             loop {
@@ -482,7 +512,7 @@ impl ToolRunManager {
                 }
 
                 let mut was_updating = false;
-                while updating_tools.read().await.contains(&tool.tool_agent_id) {
+                while updating_tools.read().await.contains_key(&tool.tool_agent_id) {
                     was_updating = true;
                     info!(tool_id = %tool.tool_agent_id, "Tool is being updated, waiting...");
                     sleep(Duration::from_secs(1)).await;
@@ -523,22 +553,30 @@ impl ToolRunManager {
                                 break;
                             }
 
-                            // Register tool in the WindowsSessionManager,
-                            // so its lifetime will be managed by it
-                            if let Some(mgr) = &session_manager {
+                            // Fresh install: launch once now (Run autorun only fires at next logon); else autorun owns it.
+                            if new_tool {
                                 let mut launch_args = processed_args.clone();
                                 // For openframe-chat, add --background flag to start in tray
                                 if tool.tool_agent_id == "openframe-chat" {
                                     launch_args.push("--background".to_string());
                                 }
-                                mgr.register_tool(
-                                    tool.tool_agent_id.clone(),
-                                    command_path.clone(),
-                                    launch_args,
-                                    new_tool,
-                                ).await;
-                                return;
+                                match launch_process_in_user_session(&command_path, &launch_args) {
+                                    Ok((pid, process_handle)) => {
+                                        info!(tool_id = %tool.tool_agent_id, pid,
+                                              "GuiApp launched once in user session after install (fire-and-forget)");
+                                        unsafe { let _ = CloseHandle(process_handle); }
+                                    }
+                                    Err(e) => {
+                                        warn!(tool_id = %tool.tool_agent_id, error = %e,
+                                              "Failed to launch GuiApp in user session after install");
+                                    }
+                                }
+                            } else {
+                                info!(tool_id = %tool.tool_agent_id,
+                                      "GuiApp launch owned by HKLM Run autorun at logon - not launching from service");
                             }
+                            running_tools.write().await.remove(&tool.tool_agent_id);
+                            return;
                         }
 
                         #[cfg(target_os = "macos")]

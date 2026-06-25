@@ -35,7 +35,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { KNOWLEDGE_BASE_ROUTE } from '../(app)/help-center/endpoints';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
-import { renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
+import { renderMingoContextItem, renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
 import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
@@ -61,7 +61,8 @@ interface OpenframeEmbeddableChatEntryProps {
 }
 
 export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEmbeddableChatEntryProps) {
-  const { state, subscription, sendInNewDialog } = useMingoUnifiedChatState();
+  const { state, subscription, sendInNewDialog, searchQuery, setSearchQuery, fetchArchivedDialogs, unarchiveDialog } =
+    useMingoUnifiedChatState();
 
   // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
   // "Ask Mingo about X" button). The drawer unmounts this entry on close and
@@ -143,6 +144,21 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // pass `modes.mingo` — that keeps the lib's built-in NATS adapter idle.
         modes={{ guide: {} }}
         mingoState={state}
+        // Dialog management for the host-injected Mingo state:
+        //  - search: the chat-history search bar emits the debounced term into
+        //    `setSearchQuery`, which rides the `useMingoDialogs` query key.
+        //  - rename/archive: enable the row + header ⋯ menu (mutations live on
+        //    `mingoState` via `useMingoDialogActions`).
+        //  - archive page: `fetchArchivedDialogs` gates the clock-history button;
+        //    `unarchiveDialog` enables restore.
+        mingoDialogCapabilities={{
+          searchQuery,
+          onSearchChange: setSearchQuery,
+          canRename: true,
+          canArchive: true,
+          fetchArchivedDialogs,
+          unarchiveDialog,
+        }}
         // Controlled + persisted so reopening the drawer restores the transport
         // the user left on instead of always snapping back to Mingo.
         activeMode={activeMode}
@@ -157,6 +173,10 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // as self-fetching chips — the `@marker:id` analogue of `renderEntityCard`
         // for `[card://]`. Stable module-level fn so the message memo holds.
         renderMention={contextEnabled ? renderMingoMention : undefined}
+        // Renders a user's ATTACHED context chips (`contextItems`) as the SAME
+        // self-fetching chips as inline mentions — so manually attached context
+        // resolves its live name + link instead of the lib's label-only pill.
+        renderContextItem={contextEnabled ? renderMingoContextItem : undefined}
       />
     </>
   );

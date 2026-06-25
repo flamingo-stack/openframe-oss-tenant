@@ -1,14 +1,13 @@
 'use client';
 
-import { getTabComponent, type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
+import { type TabItem, TabNavigation } from '@flamingo-stack/openframe-frontend-core';
 import { BracketCurlyIcon, CalendarIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback } from 'react';
 import { ScriptSchedulesTable } from './script-schedules-table';
 import { ScriptsTable } from './scripts-table';
 
-const SCRIPTS_TABS: TabItem[] = [
+export const SCRIPTS_TABS: TabItem[] = [
   {
     id: 'list',
     label: 'Scripts List',
@@ -23,33 +22,33 @@ const SCRIPTS_TABS: TabItem[] = [
   },
 ];
 
-export function ScriptsView() {
+interface ScriptsTabNavigationProps {
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
+}
+
+export function ScriptsTabNavigation({ activeTab, onTabChange }: ScriptsTabNavigationProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { params } = useApiParams({
-    tab: { type: 'string', default: 'list' },
-  });
-
-  const handleTabChange = useCallback(
+  const defaultHandleTabChange = useCallback(
     (tabId: string) => {
       router.replace(`${pathname}?tab=${tabId}`);
     },
     [router, pathname],
   );
 
-  const TabComponent = getTabComponent(SCRIPTS_TABS, params.tab);
+  const handleTabChange = onTabChange || defaultHandleTabChange;
 
   return (
-    <div className="flex flex-col w-full -mt-4">
+    <div className="px-[var(--spacing-system-l)]">
       <TabNavigation
-        tabs={SCRIPTS_TABS}
-        activeTab={params.tab}
         urlSync={false}
+        activeTab={activeTab || 'list'}
+        tabs={SCRIPTS_TABS}
         onTabChange={handleTabChange}
         showRightGradient
       />
-      <div className="min-h-[400px]">{TabComponent ? <TabComponent /> : null}</div>
     </div>
   );
 }

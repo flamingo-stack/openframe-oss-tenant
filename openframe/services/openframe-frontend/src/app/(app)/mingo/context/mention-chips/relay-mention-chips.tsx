@@ -1,99 +1,65 @@
 'use client';
 
 /**
- * Self-fetching mention chips for the GraphQL-resolvable entity types — the
- * `@marker:id` analogue of `[card://]` entity cards. Each suspends on first
- * fetch (→ skeleton), reads from the Relay store on streaming remounts
- * (`store-or-network`, no flash), and falls back to a plain id chip on error.
+ * Self-fetching mention chips for the GraphQL-resolvable entity types (device,
+ * organization, kb article) — the `@marker:id` analogue of `[card://]` entity
+ * cards. Each suspends on first fetch (→ skeleton), reads from the Relay store
+ * on streaming remounts (`store-or-network`, no flash), and falls back to a
+ * plain id chip on error / unresolved name.
  *
- * id semantics: a mention carries the backend `ContextItemType.idHint`, NOT the
- * Relay node id (confirmed: device idHint = machineId, and `device(machineId:)`
- * resolves it). So:
- *   - device       → machineId          → `device(machineId:)`               → /devices/details/{machineId}
- *   - organization → organizationId      → `organizationByOrganizationId(...)` → /customers/details/{organizationId}
- *   - kb article   → knowledgeBaseItemId → `knowledgeBaseItem(id:)`            → /knowledge-base/details/{id}
- *     (KB's idHint equals the node id — there's no separate field — so the
- *      `id: ID!` lookup is correct; org's organizationId is a DISTINCT field,
- *      hence the dedicated `organizationByOrganizationId` query.)
+ * id semantics (TEMPORARY HACK — see `CONTEXT_RELAY_TYPENAME` in context-types):
+ * mentions AND context items carry the RAW db id (machineId / organizationId /
+ * kb id), never the Relay global id. Relay's store is keyed by GLOBAL id, so we
+ * re-encode the raw id to `base64("<Typename>:<rawId>")` (via `@/lib/relay-id`)
+ * before fetching. Drop this once the backend speaks global ids end-to-end.
+ *
+ * Two fetch paths, because the backend `node(id:)` resolver only knows the types
+ * in its `NodeType` enum:
+ *   - device + organization → `node(id:)` (Machine / Organization ARE in the
+ *     enum). Detail-page href uses the RAW id (the route segment those pages
+ *     expect).
+ *   - kb article            → `knowledgeBaseItem(id:)` (KnowledgeBaseItem is NOT
+ *     in `NodeType` → `node(id:)` throws "Unknown Node type"). This query takes a
+ *     GLOBAL id (server decodes it), and the KB detail route ALSO keys on the
+ *     global id — so both the fetch AND the href use `globalId`, not the raw id.
  */
 
 import { type ReactNode, Suspense } from 'react';
 import { graphql, useLazyLoadQuery } from 'react-relay';
-import type { relayMentionChipsDeviceQuery } from '@/__generated__/relayMentionChipsDeviceQuery.graphql';
 import type { relayMentionChipsKbQuery } from '@/__generated__/relayMentionChipsKbQuery.graphql';
-import type { relayMentionChipsOrgQuery } from '@/__generated__/relayMentionChipsOrgQuery.graphql';
+import type { relayMentionChipsNodeQuery } from '@/__generated__/relayMentionChipsNodeQuery.graphql';
+import { ensureGlobalIdForType } from '@/lib/relay-id';
+import { CONTEXT_ENTITY_KIND, CONTEXT_RELAY_TYPENAME, type ContextEntityKind } from '../context-types';
 import { MentionErrorBoundary, MentionTag, MentionTagSkeleton } from './mention-tag';
 
-interface MentionChipProps {
+interface GraphqlMentionChipProps {
+  /** GraphQL-resolvable kind — DEVICE | ORGANIZATION | KB_ARTICLE. */
+  kind: ContextEntityKind;
+  /** RAW db id (machineId / organizationId / kb id). */
   id: string;
   icon?: ReactNode;
+  /** Known display name (e.g. a context item's picked label). Shown instead of
+   *  the bare `id` when the live fetch can't resolve a name. */
+  fallbackLabel?: string;
 }
 
-// ───────────────────────────── Device ───────────────────────────────────────
-
-const DEVICE_QUERY = graphql`
-  query relayMentionChipsDeviceQuery($machineId: String!) {
-    device(machineId: $machineId) {
-      hostname
-      displayName
+/** device + organization — both are in the backend `NodeType` enum. */
+const NODE_QUERY = graphql`
+  query relayMentionChipsNodeQuery($id: ID!) {
+    node(id: $id) {
+      __typename
+      ... on Machine {
+        hostname
+        displayName
+      }
+      ... on Organization {
+        name
+      }
     }
   }
 `;
 
-function DeviceInner({ id, icon }: MentionChipProps) {
-  const data = useLazyLoadQuery<relayMentionChipsDeviceQuery>(
-    DEVICE_QUERY,
-    { machineId: id },
-    { fetchPolicy: 'store-or-network' },
-  );
-  const d = data.device;
-  return <MentionTag icon={icon} label={d?.displayName || d?.hostname || id} href={`/devices/details/${id}`} />;
-}
-
-export function DeviceMentionChip({ id, icon }: MentionChipProps) {
-  return (
-    <MentionErrorBoundary fallback={<MentionTag icon={icon} label={id} href={`/devices/details/${id}`} />}>
-      <Suspense fallback={<MentionTagSkeleton icon={icon} />}>
-        <DeviceInner id={id} icon={icon} />
-      </Suspense>
-    </MentionErrorBoundary>
-  );
-}
-
-// ─────────────────────────── Organization ───────────────────────────────────
-
-const ORG_QUERY = graphql`
-  query relayMentionChipsOrgQuery($organizationId: String!) {
-    organizationByOrganizationId(organizationId: $organizationId) {
-      name
-    }
-  }
-`;
-
-function OrgInner({ id, icon }: MentionChipProps) {
-  // The mention id IS the organizationId (idHint), which the customers route
-  // also keys on — so it's both the query arg and the href segment.
-  const data = useLazyLoadQuery<relayMentionChipsOrgQuery>(
-    ORG_QUERY,
-    { organizationId: id },
-    { fetchPolicy: 'store-or-network' },
-  );
-  const o = data.organizationByOrganizationId;
-  return <MentionTag icon={icon} label={o?.name || id} href={`/customers/details/${id}`} />;
-}
-
-export function OrganizationMentionChip({ id, icon }: MentionChipProps) {
-  return (
-    <MentionErrorBoundary fallback={<MentionTag icon={icon} label={id} href={`/customers/details/${id}`} />}>
-      <Suspense fallback={<MentionTagSkeleton icon={icon} />}>
-        <OrgInner id={id} icon={icon} />
-      </Suspense>
-    </MentionErrorBoundary>
-  );
-}
-
-// ───────────────────────────── KB Article ───────────────────────────────────
-
+/** kb article — NOT in `NodeType`, so it can't go through `node(id:)`. */
 const KB_QUERY = graphql`
   query relayMentionChipsKbQuery($id: ID!) {
     knowledgeBaseItem(id: $id) {
@@ -102,17 +68,76 @@ const KB_QUERY = graphql`
   }
 `;
 
-function KbInner({ id, icon }: MentionChipProps) {
-  const data = useLazyLoadQuery<relayMentionChipsKbQuery>(KB_QUERY, { id }, { fetchPolicy: 'store-or-network' });
-  const k = data.knowledgeBaseItem;
-  return <MentionTag icon={icon} label={k?.name || id} href={`/knowledge-base/details/${id}`} />;
+/** Detail-page URL for a resolved entity. Device/org routes key on the RAW id;
+ *  the kb route keys on the GLOBAL id (same id `knowledgeBaseItem(id:)` takes). */
+function hrefFor(kind: ContextEntityKind, rawId: string, globalId: string): string | undefined {
+  switch (kind) {
+    case CONTEXT_ENTITY_KIND.DEVICE:
+      return `/devices/details/${rawId}`;
+    case CONTEXT_ENTITY_KIND.ORGANIZATION:
+      return `/customers/details/${rawId}`;
+    case CONTEXT_ENTITY_KIND.KB_ARTICLE:
+      return `/knowledge-base/details/${globalId}`;
+    default:
+      return undefined;
+  }
 }
 
-export function KbMentionChip({ id, icon }: MentionChipProps) {
+type InnerProps = GraphqlMentionChipProps & { globalId: string };
+
+function NodeInner({ kind, id, icon, globalId, fallbackLabel }: InnerProps) {
+  const data = useLazyLoadQuery<relayMentionChipsNodeQuery>(
+    NODE_QUERY,
+    { id: globalId },
+    { fetchPolicy: 'store-or-network' },
+  );
+  const node = data.node;
+  let label = fallbackLabel || id;
+  if (node) {
+    switch (node.__typename) {
+      case 'Machine':
+        label = node.displayName || node.hostname || label;
+        break;
+      case 'Organization':
+        label = node.name || label;
+        break;
+    }
+  }
+  return <MentionTag icon={icon} label={label} href={hrefFor(kind, id, globalId)} />;
+}
+
+function KbInner({ kind, id, icon, globalId, fallbackLabel }: InnerProps) {
+  const data = useLazyLoadQuery<relayMentionChipsKbQuery>(
+    KB_QUERY,
+    { id: globalId },
+    { fetchPolicy: 'store-or-network' },
+  );
   return (
-    <MentionErrorBoundary fallback={<MentionTag icon={icon} label={id} href={`/knowledge-base/details/${id}`} />}>
+    <MentionTag
+      icon={icon}
+      label={data.knowledgeBaseItem?.name || fallbackLabel || id}
+      href={hrefFor(kind, id, globalId)}
+    />
+  );
+}
+
+export function GraphqlMentionChip({ kind, id, icon, fallbackLabel }: GraphqlMentionChipProps) {
+  const typename = CONTEXT_RELAY_TYPENAME[kind];
+  // No relay typename for this kind → can't build a global id; render a plain
+  // (clickable where a route exists) chip. Should not happen for the three
+  // GraphQL kinds.
+  if (!typename) return <MentionTag icon={icon} label={fallbackLabel || id} href={hrefFor(kind, id, id)} />;
+  // `id` may be a RAW db id (context item) OR an already-global id (an inline
+  // `@kb:<globalId>` mention, since KB's idHint == the node id). `ensure…`
+  // encodes the former and passes the latter through unchanged — no double-encode.
+  const globalId = ensureGlobalIdForType(typename, id);
+  const Inner = kind === CONTEXT_ENTITY_KIND.KB_ARTICLE ? KbInner : NodeInner;
+  return (
+    <MentionErrorBoundary
+      fallback={<MentionTag icon={icon} label={fallbackLabel || id} href={hrefFor(kind, id, globalId)} />}
+    >
       <Suspense fallback={<MentionTagSkeleton icon={icon} />}>
-        <KbInner id={id} icon={icon} />
+        <Inner kind={kind} id={id} icon={icon} globalId={globalId} fallbackLabel={fallbackLabel} />
       </Suspense>
     </MentionErrorBoundary>
   );
