@@ -301,7 +301,7 @@ fn init_inner(log_endpoint: Option<String>, agent_id: Option<String>, file_only:
 
         // Set up the full tracing subscriber
         let env_filter =
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info,async_nats=warn"));
 
         // Decide output format: default to text (one-liners). Set OPENFRAME_LOG_FORMAT=json to use JSON
         let format = std::env::var("OPENFRAME_LOG_FORMAT").unwrap_or_else(|_| "text".into());
