@@ -378,6 +378,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
             if std::env::var("OPENFRAME_DISABLE_LOG").is_err() {
                 use tauri_plugin_log::{

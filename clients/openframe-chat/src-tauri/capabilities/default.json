@@ -9,7 +9,8 @@
     "core:event:allow-emit",
     "dialog:default",
     "fs:default",
-    "notification:default"
+    "notification:default",
+    "opener:allow-open-url"
   ]
 }
 
