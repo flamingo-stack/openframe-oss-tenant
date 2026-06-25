@@ -12,6 +12,11 @@ import type { DialogNode, DialogsResponse, UseMingoDialogsOptions } from '../typ
 // temporary workaround — disabled for now; flip this flag to restore it.
 const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
 
+// Statuses shown in the active "Current Chats" list — every DialogStatus except
+// ARCHIVED. The backend returns archived dialogs when no statuses are passed, so
+// list them explicitly; archived dialogs live in the separate Chat Archive page.
+const ACTIVE_DIALOG_STATUSES = ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED'] as const;
+
 function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): DialogItem {
   return {
     id: dialog.id,
@@ -47,6 +52,7 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
       const variables = {
         filter: {
           agentTypes: ['ADMIN'],
+          statuses: ACTIVE_DIALOG_STATUSES,
         },
         pagination: {
           limit,

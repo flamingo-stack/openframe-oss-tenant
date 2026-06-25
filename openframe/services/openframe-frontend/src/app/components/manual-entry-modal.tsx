@@ -180,10 +180,10 @@ export function ManualEntryModal({ isOpen, onClose, userId, entry, onSuccess }: 
       contentClassName="flex flex-col gap-[var(--spacing-system-l)]"
       footer={
         <>
-          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting} className="flex-1">
             Cancel
           </Button>
-          <Button onClick={onSubmit} disabled={isSubmitting}>
+          <Button onClick={onSubmit} disabled={isSubmitting} className="flex-1">
             {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Entry'}
           </Button>
         </>
