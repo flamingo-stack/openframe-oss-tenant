@@ -16,6 +16,7 @@ export const FEATURE_FLAG_NAMES = [
   'customer-ai-assistant-settings',
   'time-tracker',
   'scripts-v2',
+  'cancel-subscription',
 ] as const;
 
 /**
@@ -89,6 +90,11 @@ export const featureFlags = {
   scriptsV2: {
     enabled(): boolean {
       return getFlagValue('scripts-v2', () => false);
+    },
+  },
+  cancelSubscription: {
+    enabled(): boolean {
+      return getFlagValue('cancel-subscription', () => false);
     },
   },
 } as const;

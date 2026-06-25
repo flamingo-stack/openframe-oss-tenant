@@ -78,6 +78,10 @@ export interface MingoUnifiedChat {
    * about X" EmptyState buttons) that always want a fresh conversation.
    */
   sendInNewDialog: (text: string) => Promise<void>;
+  /** Current server-side dialog-search term. */
+  searchQuery: string;
+  /** Set the dialog-search term (already debounced by the chat's search bar). */
+  setSearchQuery: (query: string) => void;
 }
 
 export function useMingoUnifiedChatState(): MingoUnifiedChat {
@@ -86,12 +90,17 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
   const { activeDialogId, setActiveDialogId, resetUnread, addMessage, getStreamingMessage, tokenUsageByDialog } =
     useMingoMessagesStore();
 
+  // Server-side dialog search. The embeddable chat's search bar emits the
+  // already-debounced term via `setSearchQuery`; it rides the `useMingoDialogs`
+  // query key, so the backend filters the list.
+  const [searchQuery, setSearchQuery] = useState('');
+
   const {
     dialogs,
     isLoading: isLoadingDialogs,
     hasNextPage: hasMoreDialogs,
     fetchNextPage: fetchNextDialogPage,
-  } = useMingoDialogs();
+  } = useMingoDialogs({ search: searchQuery || undefined });
 
   const {
     selectDialog: selectDialogMut,
@@ -437,5 +446,5 @@ export function useMingoUnifiedChatState(): MingoUnifiedChat {
     ],
   );
 
-  return { state, subscription, sendInNewDialog };
+  return { state, subscription, sendInNewDialog, searchQuery, setSearchQuery };
 }

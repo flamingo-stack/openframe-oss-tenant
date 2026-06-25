@@ -18,10 +18,11 @@
  * Unknown marker → bare token.
  */
 
+import type { ChatContextItem } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import type { ReactNode } from 'react';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../context-sources';
-import { CONTEXT_ENTITY_MARKER as M } from '../context-types';
-import { DeviceMentionChip, KbMentionChip, OrganizationMentionChip } from './relay-mention-chips';
+import { CONTEXT_ENTITY_KIND, type ContextEntityKind, CONTEXT_ENTITY_MARKER as M } from '../context-types';
+import { GraphqlMentionChip } from './relay-mention-chips';
 import { RestMentionChip } from './rest-mention-chips';
 
 /** marker → lead icon, taken from the picker's entity-type config. */
@@ -29,23 +30,56 @@ const ICON_BY_MARKER = new Map<string, ReactNode>(
   MINGO_CONTEXT_ENTITY_TYPES.flatMap(t => (t.marker ? [[t.marker, t.icon] as const] : [])),
 );
 
-export function renderMingoMention({ marker, id }: { marker: string; id: string }): ReactNode {
+export function renderMingoMention({
+  marker,
+  id,
+  label,
+}: {
+  marker: string;
+  id: string;
+  /** Known display name (a context item's picked label). Inline mentions don't
+   *  have one; context items do. Used as the chip's fallback so it never shows a
+   *  bare id when the live resolve misses (e.g. a script id the resolver can't
+   *  find, or a reloaded message whose label was stripped on the wire). */
+  label?: string;
+}): ReactNode {
   const icon = ICON_BY_MARKER.get(marker);
   switch (marker) {
     case M.DEVICE:
-      return <DeviceMentionChip id={id} icon={icon} />;
+      return <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.DEVICE} id={id} icon={icon} fallbackLabel={label} />;
     case M.ORGANIZATION:
-      return <OrganizationMentionChip id={id} icon={icon} />;
+      return <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.ORGANIZATION} id={id} icon={icon} fallbackLabel={label} />;
     case M.KB_ARTICLE:
-      return <KbMentionChip id={id} icon={icon} />;
+      return <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.KB_ARTICLE} id={id} icon={icon} fallbackLabel={label} />;
     case M.POLICY:
     case M.QUERY:
     case M.USER:
     case M.SCRIPT:
     case M.TICKET:
-      return <RestMentionChip marker={marker} id={id} icon={icon} />;
+      return <RestMentionChip marker={marker} id={id} icon={icon} fallbackLabel={label} />;
     default:
       // Unknown marker → let the lib render the bare `@marker:id` token.
       return null;
   }
+}
+
+/**
+ * `renderContextItem` for `<EmbeddableChat>` — renders a user's ATTACHED context
+ * chip (from `contextItems`) IDENTICALLY to an inline `@marker:id` mention.
+ * Bridges the structured `{ type: <KIND>, id }` shape to the marker-keyed mention
+ * path: maps the stored kind to its backend marker and delegates to
+ * `renderMingoMention`, so the attached chip is the same self-fetching,
+ * name-resolving, linked chip. Returns null for an unknown kind → the lib falls
+ * back to its default label-only pill. Module-level for a stable identity (the
+ * message memo depends on it).
+ */
+export function renderMingoContextItem(item: ChatContextItem): ReactNode {
+  const marker = M[item.type as ContextEntityKind];
+  if (!marker) return null;
+  // Context items carry the picked display name — pass it as the chip's fallback
+  // so it shows the name immediately (and never a bare id) even if the live
+  // re-fetch can't resolve. `label === id` (history with the label stripped on
+  // the wire) is treated as "no label".
+  const label = item.label && item.label !== item.id ? item.label : undefined;
+  return renderMingoMention({ marker, id: item.id, label });
 }

@@ -11,7 +11,7 @@
  *   - policy → fleet `getPolicy(policyId)`        → /monitoring/policy/{id}
  *   - query  → fleet `getQuery(queryId)`          → /monitoring/query/{id}
  *   - user   → REST `/api/users/{userId}`         → (no detail route)
- *   - script → tactical `getScripts()` + find     → /scripts/details/{id}
+ *   - script → tactical `getScript(id)`           → /scripts/details/{id}
  *   - ticket → ai-agent `ticket(id:)` GraphQL      → /tickets/dialog?id={id}
  */
 
@@ -34,7 +34,11 @@ async function resolvePolicy(id: string): Promise<Resolved> {
 
 async function resolveQuery(id: string): Promise<Resolved> {
   const res = await fleetApiClient.getQuery(Number(id));
-  return { label: (res.ok && res.data?.name) || id, href: `/monitoring/query/${id}` };
+  // Fleet wraps the single-query response in `{ query: {...} }` (same as policies
+  // under `policy`) — read the nested name, not a flat `res.data.name` (which is
+  // always undefined → chip would show the bare id). See `use-query-details.ts`.
+  const name = res.ok ? (res.data as unknown as { query?: { name?: string } }).query?.name : undefined;
+  return { label: name || id, href: `/monitoring/query/${id}` };
 }
 
 async function resolveUser(id: string): Promise<Resolved> {
@@ -47,10 +51,12 @@ async function resolveUser(id: string): Promise<Resolved> {
 }
 
 async function resolveScript(id: string): Promise<Resolved> {
-  const res = await tacticalApiClient.getScripts();
-  const list = (res.ok && Array.isArray(res.data) ? res.data : []) as Array<{ id: number | string; name?: string }>;
-  const s = list.find(x => String(x.id) === id);
-  return { label: s?.name || id, href: `/scripts/details/${id}` };
+  // Single-script tactical endpoint (`GET /scripts/{id}/`) — direct fetch by id,
+  // no full-list scan. Scripts stay on the tactical REST API (not GraphQL). An
+  // unknown id 404s (degrades to the chip's `fallbackLabel`/id via `res.ok`).
+  const res = await tacticalApiClient.getScript(id);
+  const name = res.ok ? (res.data?.name as string | undefined) : undefined;
+  return { label: name || id, href: `/scripts/details/${id}` };
 }
 
 interface TicketEnvelope {
@@ -78,22 +84,28 @@ interface RestMentionChipProps {
   marker: string;
   id: string;
   icon?: ReactNode;
+  /** Known display name (e.g. a context item's picked label). Shown instead of
+   *  the bare `id` when the live resolve can't find the entity. */
+  fallbackLabel?: string;
 }
 
-function RestInner({ marker, id, icon }: RestMentionChipProps) {
+function RestInner({ marker, id, icon, fallbackLabel }: RestMentionChipProps) {
   const { data } = useSuspenseQuery({
     queryKey: ['mingo-mention', marker, id],
     queryFn: () => RESOLVERS[marker](id),
     staleTime: 5 * 60 * 1000,
   });
-  return <MentionTag icon={icon} label={data.label} href={data.href} />;
+  // Resolvers degrade to `{ label: id }` when the lookup misses; in that case
+  // prefer the caller's known label over showing the raw id.
+  const label = data.label === id && fallbackLabel ? fallbackLabel : data.label;
+  return <MentionTag icon={icon} label={label} href={data.href} />;
 }
 
-export function RestMentionChip({ marker, id, icon }: RestMentionChipProps) {
+export function RestMentionChip({ marker, id, icon, fallbackLabel }: RestMentionChipProps) {
   return (
-    <MentionErrorBoundary fallback={<MentionTag icon={icon} label={id} />}>
+    <MentionErrorBoundary fallback={<MentionTag icon={icon} label={fallbackLabel || id} />}>
       <Suspense fallback={<MentionTagSkeleton icon={icon} />}>
-        <RestInner marker={marker} id={id} icon={icon} />
+        <RestInner marker={marker} id={id} icon={icon} fallbackLabel={fallbackLabel} />
       </Suspense>
     </MentionErrorBoundary>
   );

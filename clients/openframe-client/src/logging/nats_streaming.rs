@@ -99,7 +99,7 @@ impl NatsLogConnection {
             .await
             .context("Failed to receive publish acknowledgment")?;
 
-        info!(
+        debug!(
             "Published {} logs to NATS (ack received)",
             payload.logs.len()
         );

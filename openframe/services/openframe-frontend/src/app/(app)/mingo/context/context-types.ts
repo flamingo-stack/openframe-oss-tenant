@@ -62,6 +62,27 @@ export const CONTEXT_ENTITY_MARKER: Record<ContextEntityKind, string> = {
   QUERY: 'query',
 };
 
+/**
+ * Relay `__typename` for the GraphQL-resolvable kinds. Used ONLY to round-trip a
+ * raw db id back to a Relay global id (`base64("<typename>:<rawId>")`, see
+ * `@/lib/relay-id`) right before a client-side `node(id:)` fetch in the chips.
+ *
+ * TEMPORARY (intentional hack): mentions AND contextItems carry RAW database ids
+ * — that's what the backend context resolvers / `@marker:id` parser expect, and
+ * what we store + send on the wire. But Relay's store is keyed by GLOBAL id, so
+ * each chip must re-encode the raw id before fetching. On the way IN (manual
+ * context-add in the picker) we do the inverse: take the GraphQL node's global
+ * `id`, `decodeGlobalId` it, and store the decoded raw id. This typename map
+ * never leaves the client. REST kinds (script/user/policy/query/ticket) resolve
+ * via their own REST fetchers and have NO entry here. Drop this whole dance once
+ * the backend speaks global ids end-to-end for context.
+ */
+export const CONTEXT_RELAY_TYPENAME: Partial<Record<ContextEntityKind, string>> = {
+  DEVICE: 'Machine',
+  ORGANIZATION: 'Organization',
+  KB_ARTICLE: 'KnowledgeBaseItem',
+};
+
 /** Minimal wire shape for `contextItems` / `currentView` / `recentViews`. */
 export interface ContextRef {
   type: ContextEntityKind;

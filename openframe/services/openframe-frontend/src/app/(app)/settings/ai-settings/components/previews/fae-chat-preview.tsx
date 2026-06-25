@@ -11,13 +11,14 @@ import {
 
 import type { CSSProperties } from 'react';
 import { useMemo } from 'react';
+import { useTenantInfo } from '../../../hooks/use-tenant-info';
 import { buildFaeChatPreviewMessages } from './fae-chat-preview-messages';
 
 interface FaeChatPreviewProps {
   assistantName: string;
   avatarUrl?: string;
   accentColor: string;
-  serverUrl?: string;
+  mspName?: string;
   providerName?: string;
   modelDisplayName?: string;
 }
@@ -26,11 +27,16 @@ export function FaeChatPreview({
   assistantName,
   avatarUrl,
   accentColor,
-  serverUrl = 'msp1.openframe.ai',
+  mspName = 'TechFlow Solutions',
   providerName = 'google',
   modelDisplayName = 'Google Gemini 3.5',
 }: FaeChatPreviewProps) {
   const messages = useMemo(() => buildFaeChatPreviewMessages(avatarUrl), [avatarUrl]);
+
+  // Header shows the MSP company name (from tenant info) in place of the tenant
+  // domain; falls back to the sample name so the preview still reads well.
+  const { data: tenantInfo } = useTenantInfo();
+  const mspCompanyName = tenantInfo?.name || mspName;
 
   return (
     <div className="fae-chat-preview grid h-[250px] w-full place-items-center overflow-hidden rounded-md border border-ods-border bg-ods-bg md:h-[296px] lg:h-[380px]">
@@ -44,7 +50,7 @@ export function FaeChatPreview({
           fullWidth
           userName={assistantName}
           userAvatar={avatarUrl}
-          serverUrl={serverUrl}
+          serverUrl={mspCompanyName}
           connectionStatus="connected"
           ticketInfo={{
             title: 'Slow Laptop',

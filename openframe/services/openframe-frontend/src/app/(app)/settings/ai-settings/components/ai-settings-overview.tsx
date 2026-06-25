@@ -29,14 +29,17 @@ export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickAc
       {aiConfig && view && (
         <>
           <AiSettingsCustomerCard aiConfig={aiConfig} view={view} providerModelLabel={providerModelLabel} />
-          <AiSettingsPreviews
-            assistantName={view.assistantName}
-            avatarUrl={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
-            accentColor={view.accentColor}
-            theme={view.applicationTheme}
-            providerName={aiConfig.llmProvider}
-            modelDisplayName={providerModelLabel ?? aiConfig.providerModel}
-          />
+          {/* Previews are part of the not-yet-released AI customization. */}
+          {featureFlags.customerAiAssistantSettings.enabled() && (
+            <AiSettingsPreviews
+              assistantName={view.assistantName}
+              avatarUrl={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
+              accentColor={view.accentColor}
+              theme={view.applicationTheme}
+              providerName={aiConfig.llmProvider}
+              modelDisplayName={providerModelLabel ?? aiConfig.providerModel}
+            />
+          )}
         </>
       )}
       {/* Quick actions are part of the not-yet-released AI customization. */}

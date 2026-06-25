@@ -13,6 +13,7 @@ import { graphql, useLazyLoadQuery } from 'react-relay';
 import type { billingUsageViewQuery as BillingUsageViewQueryType } from '@/__generated__/billingUsageViewQuery.graphql';
 import { SubscriptionStatus } from '@/app/components/subscription-lock/subscription-status';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { featureFlags } from '@/lib/feature-flags';
 import { useBillingSummary } from '../hooks/use-billing-summary';
 import { useCancelSubscription } from '../hooks/use-cancel-subscription';
 import { useCancellationImpact } from '../hooks/use-cancellation-impact';
@@ -55,7 +56,7 @@ function BillingUsageContent() {
   const nextPaymentAmount = billing.nextPayment ?? 0;
 
   const menuActions: ActionsMenuGroup[] =
-    status === SubscriptionStatus.ACTIVE
+    status === SubscriptionStatus.ACTIVE && featureFlags.cancelSubscription.enabled()
       ? [
           {
             items: [
