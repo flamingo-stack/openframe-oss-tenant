@@ -1,7 +1,7 @@
 'use client';
 
 import { type DialogItem, useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries';
@@ -77,6 +77,9 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
     enabled,
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
+    // Keep the current list visible while a new `search` term refetches, so
+    // typing doesn't flash an empty list / "No chats found" between keystrokes.
+    placeholderData: keepPreviousData,
   });
 
   const dialogsWithUnread = useMemo(() => {
