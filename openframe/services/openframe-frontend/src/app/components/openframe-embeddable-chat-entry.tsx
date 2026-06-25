@@ -61,7 +61,8 @@ interface OpenframeEmbeddableChatEntryProps {
 }
 
 export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEmbeddableChatEntryProps) {
-  const { state, subscription, sendInNewDialog, searchQuery, setSearchQuery } = useMingoUnifiedChatState();
+  const { state, subscription, sendInNewDialog, searchQuery, setSearchQuery, fetchArchivedDialogs, unarchiveDialog } =
+    useMingoUnifiedChatState();
 
   // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
   // "Ask Mingo about X" button). The drawer unmounts this entry on close and
@@ -143,10 +144,21 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // pass `modes.mingo` — that keeps the lib's built-in NATS adapter idle.
         modes={{ guide: {} }}
         mingoState={state}
-        // Server-side dialog search: the lib's chat-history search bar emits the
-        // debounced term into `setSearchQuery`, which rides the `useMingoDialogs`
-        // query key so the backend filters the list.
-        mingoDialogCapabilities={{ searchQuery, onSearchChange: setSearchQuery }}
+        // Dialog management for the host-injected Mingo state:
+        //  - search: the chat-history search bar emits the debounced term into
+        //    `setSearchQuery`, which rides the `useMingoDialogs` query key.
+        //  - rename/archive: enable the row + header ⋯ menu (mutations live on
+        //    `mingoState` via `useMingoDialogActions`).
+        //  - archive page: `fetchArchivedDialogs` gates the clock-history button;
+        //    `unarchiveDialog` enables restore.
+        mingoDialogCapabilities={{
+          searchQuery,
+          onSearchChange: setSearchQuery,
+          canRename: true,
+          canArchive: true,
+          fetchArchivedDialogs,
+          unarchiveDialog,
+        }}
         // Controlled + persisted so reopening the drawer restores the transport
         // the user left on instead of always snapping back to Mingo.
         activeMode={activeMode}

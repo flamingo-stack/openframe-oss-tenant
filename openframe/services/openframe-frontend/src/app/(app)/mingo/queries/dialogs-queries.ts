@@ -21,6 +21,33 @@ export const GET_MINGO_DIALOGS_QUERY = `
  }
 `;
 
+export const RENAME_MINGO_DIALOG_MUTATION = `
+  mutation RenameDialog($input: RenameDialogInput!) {
+    renameDialog(input: $input) {
+      dialog { id title }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const ARCHIVE_MINGO_DIALOG_MUTATION = `
+  mutation ArchiveDialog($input: DialogIdInput!) {
+    archiveDialog(input: $input) {
+      dialog { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
+export const UNARCHIVE_MINGO_DIALOG_MUTATION = `
+  mutation UnarchiveDialog($input: DialogIdInput!) {
+    unarchiveDialog(input: $input) {
+      dialog { id status }
+      userErrors { field message }
+    }
+  }
+`;
+
 export const GET_MINGO_DIALOG_QUERY = `
   query GetDialog($id: ID!) {
     dialog(id: $id) {
