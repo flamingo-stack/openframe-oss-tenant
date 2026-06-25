@@ -15,7 +15,8 @@ function isAllowed(pathname: string): boolean {
     pathname.startsWith('/static') ||
     pathname.startsWith('/favicon') ||
     pathname.startsWith('/assets') ||
-    pathname.startsWith('/icons')
+    pathname.startsWith('/icons') ||
+    pathname === '/robots.txt'
   ) {
     return true;
   }
@@ -51,5 +52,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/|static/|favicon|assets/|icons/).*)'],
+  matcher: ['/((?!_next/|static/|favicon|assets/|icons/|robots\\.txt$).*)'],
 };
