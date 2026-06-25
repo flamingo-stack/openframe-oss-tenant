@@ -12,6 +12,7 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
   const { toast } = useToast();
   const [isArchiving, setIsArchiving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
 
   const archiveDevice = useCallback(
     async (deviceId: string, deviceName?: string): Promise<boolean> => {
@@ -81,11 +82,48 @@ export function useDeviceActions(options?: UseDeviceActionsOptions) {
     [toast, options],
   );
 
+  const updateDisplayName = useCallback(
+    async (deviceId: string, displayName: string): Promise<boolean> => {
+      setIsSavingDisplayName(true);
+      try {
+        const trimmed = displayName.trim();
+        const response = await apiClient.patch(`/api/devices/${deviceId}`, {
+          displayName: trimmed.length > 0 ? trimmed : null,
+        });
+
+        if (!response.ok) {
+          throw new Error(response.error || 'Failed to update display name');
+        }
+
+        toast({
+          title: 'Display name updated',
+          description: trimmed.length > 0 ? trimmed : 'Display name cleared',
+        });
+
+        options?.onSuccess?.();
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update display name';
+        toast({
+          title: 'Update failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+        return false;
+      } finally {
+        setIsSavingDisplayName(false);
+      }
+    },
+    [toast, options],
+  );
+
   return {
     archiveDevice,
     deleteDevice,
+    updateDisplayName,
     isArchiving,
     isDeleting,
-    isProcessing: isArchiving || isDeleting,
+    isSavingDisplayName,
+    isProcessing: isArchiving || isDeleting || isSavingDisplayName,
   };
 }

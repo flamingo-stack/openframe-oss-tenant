@@ -6,10 +6,12 @@ import {
   ArrowRightUpIcon,
   BoxArchiveIcon,
   BracketCurlyIcon,
+  PenEditIcon,
   TrashIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useCallback, useMemo } from 'react';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
+import { EditDisplayNameModal } from '../components/edit-display-name-modal';
 import type { Device } from '../types/device.types';
 import { type DeviceActionAvailability, getDeviceActionAvailability } from '../utils/device-action-utils';
 import { buildDeviceMenuItems } from '../utils/device-menu-items';
@@ -34,6 +36,7 @@ export interface DeviceActionsMenuItems {
   remoteControl: ActionsMenuItem;
   manageFiles: ActionsMenuItem;
   runScript: ActionsMenuItem;
+  editDisplayName: ActionsMenuItem;
   deviceLogs: ActionsMenuItem;
   archive: ActionsMenuItem | null;
   delete: ActionsMenuItem | null;
@@ -56,6 +59,7 @@ export function useDeviceActionsMenu(
   }: UseDeviceActionsMenuOptions = {},
 ): UseDeviceActionsMenuResult {
   const router = useRouter();
+  const [showEditDisplayName, setShowEditDisplayName] = useState(false);
 
   const deviceId = deviceIdOverride || device?.machineId || device?.id || '';
 
@@ -87,6 +91,8 @@ export function useDeviceActionsMenu(
     }
   }, [runScriptHref, onRunScript, router]);
 
+  const openEditDisplayName = useCallback(() => setShowEditDisplayName(true), []);
+
   const items = useMemo<DeviceActionsMenuItems>(() => {
     const base = buildDeviceMenuItems({
       deviceId,
@@ -110,6 +116,13 @@ export function useDeviceActionsMenu(
         openInNewTab: true,
         disabled: runScriptDisabled,
       },
+    };
+
+    const editDisplayName: ActionsMenuItem = {
+      id: 'edit-display-name',
+      label: 'Edit Display Name',
+      icon: <PenEditIcon className={`${iconSize} text-ods-text-secondary`} />,
+      onClick: openEditDisplayName,
     };
 
     const archive: ActionsMenuItem | null = actionAvailability?.archiveEnabled
@@ -136,11 +149,34 @@ export function useDeviceActionsMenu(
       remoteControl: base.remoteControl,
       manageFiles: base.manageFiles,
       runScript,
+      editDisplayName,
       deviceLogs: base.deviceLogs,
       archive,
       delete: deleteItem,
     };
-  }, [deviceId, actionAvailability, isWindows, iconSize, handleRunScript, runScriptHref, openArchive, openDelete]);
+  }, [
+    deviceId,
+    actionAvailability,
+    isWindows,
+    iconSize,
+    handleRunScript,
+    runScriptHref,
+    openArchive,
+    openDelete,
+    openEditDisplayName,
+  ]);
 
-  return { items, dialogs, actionAvailability };
+  const allDialogs = (
+    <>
+      {dialogs}
+      <EditDisplayNameModal
+        isOpen={showEditDisplayName}
+        onClose={() => setShowEditDisplayName(false)}
+        device={device ?? null}
+        onSaved={onActionComplete}
+      />
+    </>
+  );
+
+  return { items, dialogs: allDialogs, actionAvailability };
 }
