@@ -12,5 +12,5 @@ interface CustomerLogsTabProps {
  * SOURCE filter to this organization.
  */
 export function CustomerLogsTab({ organizationId }: CustomerLogsTabProps) {
-  return <LogsTable organizationId={organizationId} />;
+  return <LogsTable organizationId={organizationId} embedded />;
 }

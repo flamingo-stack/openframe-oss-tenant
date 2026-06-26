@@ -13,6 +13,7 @@ import {
   type Row,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { AlertTriangle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useEffect, useMemo } from 'react';
@@ -30,6 +31,7 @@ import { useGridInfiniteScroll } from '@/app/(app)/devices/hooks/use-grid-infini
 import { useTagFilterModal } from '@/app/(app)/devices/hooks/use-tag-filter-modal';
 import type { Device, DeviceFilterInput } from '@/app/(app)/devices/types/device.types';
 import { DevicesFilterToolbar } from '../devices-filter-toolbar';
+import { EMBEDDED_PAGE_OFFSET } from '../embedded-page';
 
 export interface DevicesPanelProps {
   /** Page title shown in the PageLayout header. */
@@ -53,6 +55,11 @@ export interface DevicesPanelProps {
    * already provides padding).
    */
   className?: string;
+  /**
+   * Render inside a tab (e.g. customer details) — drops the standalone top padding
+   * via `EMBEDDED_PAGE_OFFSET` so the header sits flush under the tab bar.
+   */
+  embedded?: boolean;
   /**
    * Empty state rendered instead of the toolbar + list when there are
    * no devices and no active search/filters. Pass from the standalone Devices
@@ -82,6 +89,7 @@ export function DevicesPanel({
   hideFilters,
   defaultStatuses,
   className = '',
+  embedded = false,
   emptyState,
   noOrganizations = false,
   isCheckingOrganizations = false,
@@ -227,7 +235,7 @@ export function DevicesPanel({
       <PageLayout
         title={title}
         actionsVariant="icon-buttons"
-        className={className}
+        className={cn(embedded && EMBEDDED_PAGE_OFFSET, className)}
         selector={
           <TabSelector
             value={params.viewMode}

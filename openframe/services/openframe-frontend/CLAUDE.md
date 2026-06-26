@@ -279,6 +279,26 @@ For regular client components, import directly from the core library.
 - **Feature Components** — AuthProvidersList, Terminal, ToolBadge
 - **Navigation** — AppLayout, sidebar config types
 
+### Embedded Page Components (standalone + tab reuse)
+
+Some page components render their own `PageLayout` and are used **both** as a standalone route
+**and** embedded inside another page's tab (e.g. `LogsTable`, `DevicesPanel` inside customer/device
+details). Core `PageLayout`/`TitleBlock` are **FROZEN** — the `TitleBlock` has a hardcoded leading
+`pt-[var(--spacing-system-l)]` that is correct standalone but leaves a redundant gap under the tab bar
+when embedded.
+
+**Convention:** such a component accepts an `embedded?: boolean` prop. When `embedded`, forward
+`EMBEDDED_PAGE_OFFSET` (a `-mt-[var(--spacing-system-l)]` from `@/app/components/shared`) into its
+`PageLayout` `className` to cancel that top padding. The header stays; only the top gap is removed.
+Callers in tabs just pass `embedded`:
+
+```tsx
+<LogsTable organizationId={organizationId} embedded />
+<DevicesPanel embedded /* ... */ />
+```
+
+Do **not** modify `PageLayout`/`TitleBlock` to fix this — they are frozen.
+
 ## Development Patterns
 
 ### CRITICAL: React Hooks Rules
