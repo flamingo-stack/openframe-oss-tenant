@@ -1,16 +1,23 @@
 'use client';
 
 import { Loading01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
+  ModalV2,
+  ModalV2Footer,
+  ModalV2Header,
+  ModalV2Title,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
-import { SimpleModal } from './simple-modal';
 
 /**
  * ConfirmDialog — shared confirmation dialog for destructive and reversible
- * actions. Built on top of `SimpleModal` so it shares the responsive layout
- * (centered desktop / bottom-anchored mobile) with every other modal in the
- * app. Adds three confirm-button variants, pending state, and an
- * `extraContent` slot for small accompanying bits (CommandBox, picker, etc.).
+ * actions. Built directly on the `ModalV2*` primitives so it shares the
+ * responsive layout (centered desktop / bottom-anchored mobile) with every
+ * other modal in the app. Buttons are the core `Button` component. Adds three
+ * confirm-button variants, pending state, and an `extraContent` slot for small
+ * accompanying bits (CommandBox, picker, etc.).
  *
  * Parent owns the `open` state. The dialog does NOT auto-close on confirm —
  * the parent decides when to flip `open` to false (typically after the
@@ -33,17 +40,18 @@ interface ConfirmDialogProps {
   extraContent?: ReactNode;
 }
 
-const CANCEL_BUTTON =
-  'flex-1 bg-ods-card border border-ods-border text-ods-text-primary text-h3 px-[var(--spacing-system-mf)] py-[var(--spacing-system-sf)] rounded-[6px] hover:bg-ods-bg-surface disabled:opacity-50 disabled:pointer-events-none';
-
-const CONFIRM_BUTTON_BASE =
-  'flex-1 text-h3 px-[var(--spacing-system-mf)] py-[var(--spacing-system-sf)] rounded-[6px] inline-flex items-center justify-center gap-[var(--spacing-system-xsf)] disabled:opacity-50 disabled:pointer-events-none';
-
-const CONFIRM_BUTTON_VARIANT = {
-  destructive: 'bg-ods-error text-ods-bg hover:bg-ods-error/90',
-  warning: 'bg-ods-warning text-ods-bg hover:bg-ods-warning/90',
-  default: 'bg-ods-accent text-ods-text-on-accent hover:bg-ods-accent/90',
-} as const;
+/**
+ * Maps the dialog's intent to a core `Button` variant. `warning` has no
+ * first-class Button variant, so it rides on `accent` with a token override.
+ */
+const CONFIRM_VARIANT: Record<
+  NonNullable<ConfirmDialogProps['variant']>,
+  { variant: 'accent' | 'destructive'; className?: string }
+> = {
+  destructive: { variant: 'destructive' },
+  warning: { variant: 'accent', className: 'bg-ods-warning text-ods-bg hover:bg-ods-warning/90' },
+  default: { variant: 'accent' },
+};
 
 export function ConfirmDialog({
   open,
@@ -60,32 +68,31 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const confirmText = isPending && pendingLabel ? pendingLabel : confirmLabel;
   const handleClose = () => onOpenChange(false);
+  const confirm = CONFIRM_VARIANT[variant];
 
   return (
-    <SimpleModal
-      isOpen={open}
-      onClose={handleClose}
-      className="md:max-w-[600px] text-left"
-      title={title}
-      footer={
-        <>
-          <button type="button" onClick={handleClose} disabled={isPending} className={CANCEL_BUTTON}>
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={isPending}
-            className={cn(CONFIRM_BUTTON_BASE, CONFIRM_BUTTON_VARIANT[variant])}
-          >
-            {isPending && <Loading01Icon size={20} className="animate-spin" />}
-            {confirmText}
-          </button>
-        </>
-      }
-    >
+    <ModalV2 isOpen={open} onClose={handleClose} className="text-left md:max-w-[600px]">
+      <ModalV2Header>
+        <ModalV2Title>{title}</ModalV2Title>
+      </ModalV2Header>
+
       <p className="text-h4 text-ods-text-primary">{description}</p>
       {extraContent}
-    </SimpleModal>
+
+      <ModalV2Footer>
+        <Button variant="outline" onClick={handleClose} disabled={isPending} className="flex-1">
+          {cancelLabel}
+        </Button>
+        <Button
+          variant={confirm.variant}
+          onClick={onConfirm}
+          disabled={isPending}
+          leftIcon={isPending ? <Loading01Icon size={20} className="animate-spin" /> : undefined}
+          className={cn('flex-1', confirm.className)}
+        >
+          {confirmText}
+        </Button>
+      </ModalV2Footer>
+    </ModalV2>
   );
 }

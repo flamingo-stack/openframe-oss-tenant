@@ -6,7 +6,6 @@ import {
   AppLayoutDrawerContent,
   AppLayout as CoreAppLayout,
 } from '@flamingo-stack/openframe-frontend-core/components/navigation';
-import { CompactPageLoader } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { NavigationSidebarConfig } from '@flamingo-stack/openframe-frontend-core/types/navigation';
 import { usePathname, useRouter } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
@@ -28,10 +27,6 @@ import { SubscriptionLockContent } from './subscription-lock/subscription-lock-c
 import { useSubscriptionLock } from './subscription-lock/subscription-lock-context';
 import { TimeTrackerHostProvider } from './time-tracker-host-provider';
 import { UnauthorizedOverlay } from './unauthorized-overlay';
-
-function ContentLoading() {
-  return <CompactPageLoader />;
-}
 
 function AppShell({ children, mainClassName }: { children: React.ReactNode; mainClassName?: string }) {
   const router = useRouter();
@@ -224,7 +219,7 @@ function AppShell({ children, mainClassName }: { children: React.ReactNode; main
         <CoreAppLayout
           mainClassName={mainClassName ?? 'pb-20 md:pb-20'}
           sidebarConfig={sidebarConfig}
-          loadingFallback={<ContentLoading />}
+          loadingFallback={null}
           mobileBurgerMenuProps={mobileBurgerMenuProps}
           headerProps={headerProps}
           disabled={showLockContent}
