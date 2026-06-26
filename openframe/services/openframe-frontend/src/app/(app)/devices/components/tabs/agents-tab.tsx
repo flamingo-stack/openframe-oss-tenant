@@ -105,7 +105,10 @@ export function AgentsTab({ device }: AgentsTabProps) {
   });
 
   // Sort agents alphabetically by agentType for a stable, predictable order across reloads.
-  combinedAgents.sort((a, b) => a.agentType.localeCompare(b.agentType));
+  // Tie-break on the upstream agentToolId so equal types never reorder by API response order.
+  combinedAgents.sort(
+    (a, b) => a.agentType.localeCompare(b.agentType) || (a.agentToolId ?? '').localeCompare(b.agentToolId ?? ''),
+  );
 
   const hasAgents = combinedAgents.length > 0;
 
