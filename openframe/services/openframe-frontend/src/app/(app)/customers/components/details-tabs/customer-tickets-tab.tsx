@@ -101,13 +101,25 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
       <CustomerTabHeader
         title="Tickets"
         rightActions={
-          <Button
-            variant="outline"
-            onClick={() => router.push('/tickets/new')}
-            leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-          >
-            New Ticket
-          </Button>
+          <>
+            {/* Icon + label on desktop; icon-only on mobile. */}
+            <Button
+              variant="outline"
+              onClick={() => router.push('/tickets/new')}
+              leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
+              className="hidden md:inline-flex"
+            >
+              New Ticket
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => router.push('/tickets/new')}
+              aria-label="New Ticket"
+              leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
+              className="md:hidden"
+            />
+          </>
         }
       />
 
