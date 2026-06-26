@@ -104,12 +104,11 @@ export function AgentsTab({ device }: AgentsTabProps) {
     }
   });
 
-  // Sort agents to show those with agentToolId first
-  combinedAgents.sort((a, b) => {
-    if (a.agentToolId && !b.agentToolId) return -1;
-    if (!a.agentToolId && b.agentToolId) return 1;
-    return 0;
-  });
+  // Sort agents alphabetically by agentType for a stable, predictable order across reloads.
+  // Tie-break on the upstream agentToolId so equal types never reorder by API response order.
+  combinedAgents.sort(
+    (a, b) => a.agentType.localeCompare(b.agentType) || (a.agentToolId ?? '').localeCompare(b.agentToolId ?? ''),
+  );
 
   const hasAgents = combinedAgents.length > 0;
 
