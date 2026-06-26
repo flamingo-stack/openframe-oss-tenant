@@ -86,7 +86,7 @@ export function useTempAttachments() {
     mutationFn: createTempAttachment,
     onMutate: (file: File) => {
       const placeholder: TempFileEntry = {
-        id: `pending-${Date.now()}`,
+        id: `pending-${crypto.randomUUID()}`,
         fileName: file.name,
         fileSize: file.size,
         contentType: file.type || 'application/octet-stream',

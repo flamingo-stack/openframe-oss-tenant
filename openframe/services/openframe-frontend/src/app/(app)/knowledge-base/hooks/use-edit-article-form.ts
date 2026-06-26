@@ -68,7 +68,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
 
   const initialTagRefs = useMemo<ArticleTagRef[]>(() => {
     if (!initialArticle?.tags) return [];
-    return initialArticle.tags.map(t => ({ id: t.id, key: t.key }));
+    return initialArticle.tags.filter(Boolean).map(t => ({ id: t.id, key: t.key }));
   }, [initialArticle?.tags]);
 
   const assignedItems = useAssignedItems({

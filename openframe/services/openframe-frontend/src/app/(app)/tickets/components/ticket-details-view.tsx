@@ -607,7 +607,6 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     isStatusPending: transitionTicket.isPending,
   };
 
-  const isFaeForm = dialog.creationSource === CREATION_SOURCE.FAE_FORM;
   const hasClientChat = !isAdminOwner;
   const hasDescription = !!dialog.description?.trim();
   const hasAssignedItems = !!(
@@ -837,10 +836,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const sidebarContent = (
     <>
       <InfoSection title="Ticket Details" rows={infoRows} />
-      {/* Attachments only apply to FAE-form and admin-created tickets. */}
-      {(isFaeForm || isAdminOwner) && (
-        <TicketAttachmentsSection ticketId={dialog.id} attachments={dialog.attachments ?? []} />
-      )}
+      <TicketAttachmentsSection ticketId={dialog.id} attachments={dialog.attachments ?? []} />
       <TicketTagsSection ticketId={dialog.id} labels={dialog.labels ?? []} />
     </>
   );

@@ -4,6 +4,7 @@ import { Autocomplete } from '@flamingo-stack/openframe-frontend-core/components
 import { useCallback, useMemo, useState } from 'react';
 import { useCreateTagMutation } from '@/app/components/shared/tags';
 import { useTicketLabels } from '../../hooks/use-ticket-labels';
+import { useTicketTagDelete } from '../../hooks/use-ticket-tag-delete';
 
 interface TicketTagsManagerProps {
   selectedIds: string[];
@@ -16,6 +17,10 @@ export function TicketTagsManager({ selectedIds, onChange, disabled }: TicketTag
   const { createTag, isInFlight: isCreating } = useCreateTagMutation();
 
   const [optimisticTags, setOptimisticTags] = useState<Array<{ key: string; tempId: string }>>([]);
+
+  const { requestDelete, isDeleting, dialog } = useTicketTagDelete(id => {
+    onChange(selectedIds.filter(sid => sid !== id));
+  });
 
   const options = useMemo(
     () => [
@@ -54,18 +59,24 @@ export function TicketTagsManager({ selectedIds, onChange, disabled }: TicketTag
   );
 
   return (
-    <Autocomplete
-      multiple
-      options={options}
-      value={selectedIds}
-      onChange={handleChange}
-      placeholder={selectedIds.length > 0 ? 'Add more...' : 'Select or create tags...'}
-      label="Tags"
-      loading={isCreating}
-      disabled={disabled}
-      showChevron={false}
-      creatable
-      freeSolo
-    />
+    <>
+      <Autocomplete
+        multiple
+        options={options}
+        value={selectedIds}
+        onChange={handleChange}
+        placeholder={selectedIds.length > 0 ? 'Add more...' : 'Select or create tags...'}
+        label="Tags"
+        loading={isCreating}
+        disabled={disabled}
+        showChevron={false}
+        creatable
+        maxCreateLength={25}
+        onDeleteOption={requestDelete}
+        isDeletingOption={isDeleting}
+        freeSolo
+      />
+      {dialog}
+    </>
   );
 }
