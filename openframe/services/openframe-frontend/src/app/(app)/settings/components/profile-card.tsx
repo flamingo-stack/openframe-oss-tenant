@@ -62,13 +62,23 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
       </div>
 
       <div className="shrink-0 flex items-center gap-3">
+        {/* Icon + label on desktop; icon-only on mobile (matches the page-action buttons). */}
         <Button
           variant="outline"
           onClick={onEditProfile}
           leftIcon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
+          className="hidden md:inline-flex"
         >
           Edit Profile
         </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onEditProfile}
+          aria-label="Edit Profile"
+          leftIcon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
+          className="md:hidden"
+        />
       </div>
     </div>
   );
