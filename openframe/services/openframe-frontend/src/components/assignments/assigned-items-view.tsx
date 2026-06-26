@@ -14,9 +14,12 @@ export interface AssignedItemsViewProps {
   itemId: string;
   itemType: AssignmentItemType;
   className?: string;
+  /** Render the built-in "Assigned Items" heading. Hosts that supply their own
+   *  section title (e.g. the ticket details page) pass `false`. */
+  showTitle?: boolean;
 }
 
-export function AssignedItemsView({ itemId, itemType, className }: AssignedItemsViewProps) {
+export function AssignedItemsView({ itemId, itemType, className, showTitle = true }: AssignedItemsViewProps) {
   const { value, customers, devices, articles, tickets, isLoading } = useAssignedItems({ itemId, itemType });
 
   const activeTypes = useMemo(() => ASSIGNMENT_TARGET_TYPES.filter(type => (value[type]?.length ?? 0) > 0), [value]);
@@ -50,7 +53,7 @@ export function AssignedItemsView({ itemId, itemType, className }: AssignedItems
   if (isLoading && activeTypes.length === 0) {
     return (
       <section className={className}>
-        <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>
+        {showTitle && <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>}
         <Skeleton className="h-12 w-full" />
       </section>
     );
@@ -60,7 +63,7 @@ export function AssignedItemsView({ itemId, itemType, className }: AssignedItems
 
   return (
     <section className={className}>
-      <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>
+      {showTitle && <h3 className="text-h2 text-ods-text-primary mb-[var(--spacing-system-lf)]">Assigned Items</h3>}
 
       <div className="rounded-md border border-ods-border overflow-hidden">
         {activeTypes.length === 1 ? (
