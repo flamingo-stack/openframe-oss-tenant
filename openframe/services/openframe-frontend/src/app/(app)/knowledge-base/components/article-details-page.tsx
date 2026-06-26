@@ -179,9 +179,9 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
       menuActions={menuActions}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      {article.tags && article.tags.length > 0 && (
+      {article.tags?.some(Boolean) && (
         <div className="flex flex-wrap gap-[var(--spacing-system-xsf)]">
-          {article.tags.map(tag => (
+          {article.tags.filter(Boolean).map(tag => (
             <Tag key={tag.id} label={tag.key} variant="outline" className="max-w-full" />
           ))}
         </div>

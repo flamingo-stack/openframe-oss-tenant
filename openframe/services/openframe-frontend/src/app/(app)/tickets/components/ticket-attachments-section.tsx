@@ -48,7 +48,7 @@ export function TicketAttachmentsSection({ ticketId, attachments }: TicketAttach
       <Button
         variant="outline"
         size="small"
-        fullWidth
+        className="w-fit"
         leftIcon={<Upload />}
         onClick={() => fileInputRef.current?.click()}
         disabled={addAttachments.isPending}
