@@ -13,11 +13,13 @@ import {
   TabsList,
   TabsTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
+import { useOptionalTimeTracker } from '@flamingo-stack/openframe-frontend-core/components/features';
 import {
   BoxArchiveIcon,
   ChatsIcon,
   CheckCircleIcon,
   ClipboardListIcon,
+  ClockHistoryIcon,
   HourglassClockIcon,
   Menu02Icon,
   MonitorIcon,
@@ -43,10 +45,14 @@ import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation } from 'react-relay';
+import type { startTimerMutation as StartTimerMutationType } from '@/__generated__/startTimerMutation.graphql';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useAiModel } from '@/app/hooks/use-ai-model';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView, useAssignedItems } from '@/components/assignments';
+import { startTimerMutation } from '@/graphql/time-tracker/start-timer-mutation';
+import { makeSetCurrentTimerUpdater, toTicketGlobalId } from '@/graphql/time-tracker/time-tracker-helpers';
 import { EVENT_SUBTYPE, type EventSubtype, trackDashboardActivity } from '@/lib/analytics';
 import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingApprovals } from '@/lib/chat-history';
 import { featureFlags } from '@/lib/feature-flags';
@@ -81,6 +87,7 @@ import { useTransitionTicket } from '../hooks/use-transition-ticket';
 import { useTicketDetailsStore } from '../stores/ticket-details-store';
 import type { ClientDialogOwner, Dialog, DialogOwner } from '../types/dialog.types';
 import { ticketsQueryKeys } from '../utils/query-keys';
+import { TICKET_STATUS_KIND } from '../utils/ticket-statistics';
 import { TicketAttachmentsSection } from './ticket-attachments-section';
 import { TicketDetailsSkeleton } from './ticket-details-skeleton';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
@@ -233,6 +240,29 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const { activate, archive, isUpdating } = useTicketStatus();
   const transitionTicket = useTransitionTicket();
   const { handleApproveRequest, handleRejectRequest } = useApprovalRequests();
+
+  // Time tracker lives in a global host provider (mounted when the feature flag
+  // is on). Starting here writes the running timer into the Relay store, which
+  // the host's CurrentTimer hydrator reads — so the global panel reflects it.
+  const timeTracker = useOptionalTimeTracker();
+  const [startTimer, isStartingTimer] = useMutation<StartTimerMutationType>(startTimerMutation);
+  const handleStartTimeTracking = useCallback(() => {
+    if (!dialog) return;
+    startTimer({
+      variables: { input: { ticketId: toTicketGlobalId(dialog.id), notes: null } },
+      updater: makeSetCurrentTimerUpdater('startTimer'),
+      onCompleted: () => {
+        toast({
+          title: 'Time tracking started',
+          description: 'A timer is now running for this ticket.',
+          variant: 'success',
+        });
+      },
+      onError: err => {
+        toast({ title: 'Failed to start timer', description: err.message, variant: 'destructive' });
+      },
+    });
+  }, [dialog, startTimer, toast]);
   const [isTicketInfoExpanded, setIsTicketInfoExpanded] = useState<boolean | null>(null);
   const defaultTicketInfoExpanded =
     dialog?.creationSource === CREATION_SOURCE.FAE_FORM || dialog?.creationSource === CREATION_SOURCE.ADMIN_DASHBOARD;
@@ -656,6 +686,15 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
     },
   ];
 
+  // Time tracking only applies to tickets that have reached a human-handled
+  // status (tech-required or a custom lifecycle status); it's hidden for
+  // AI-assistance, resolved, and archived tickets. Once a timer is running the
+  // button disables — only one timer can be active at a time.
+  const canTrackTime =
+    featureFlags.timeTracker.enabled() &&
+    (dialog.statusKind === TICKET_STATUS_KIND.TECH_REQUIRED || dialog.statusKind === TICKET_STATUS_KIND.CUSTOM);
+  const isTimerActive = (timeTracker?.status ?? 'ready') !== 'ready';
+
   const sidebarActions: PageActionButton[] = [];
   if (!isArchived) {
     sidebarActions.push({
@@ -664,6 +703,18 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       variant: 'outline',
       icon: <PenEditIcon className="text-ods-text-secondary" />,
       onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
+      iconOnlyOnDesktop: true,
+    });
+  }
+  if (canTrackTime) {
+    sidebarActions.push({
+      label: 'Track Time',
+      ariaLabel: 'Track time for this ticket',
+      tooltip: 'Track time for this ticket',
+      variant: 'outline',
+      icon: <ClockHistoryIcon className="text-ods-text-secondary" />,
+      onClick: handleStartTimeTracking,
+      disabled: isTimerActive || isStartingTimer,
       iconOnlyOnDesktop: true,
     });
   }
