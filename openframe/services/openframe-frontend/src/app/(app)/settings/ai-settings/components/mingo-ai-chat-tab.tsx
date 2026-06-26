@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
+import { getProviderModelLabel, useSupportedModels } from '../hooks/use-supported-models';
 import type { AgentAiConfig, AgentAiConfigInput } from '../types/ai-settings';
 import {
   getMingoAiChatDefaults,
@@ -11,9 +11,12 @@ import {
   mingoAiChatSchema,
   toMingoAiChatSubmit,
 } from '../types/mingo-ai-chat.types';
-import { AiModelConfig, type AiModelConfigHandle } from './ai-model-config';
-import { AiSettingsOverview } from './ai-settings-overview';
+import { AiAnswerStyleFields, AiProviderModelFields } from './ai-config-fields';
+import { AiSettingsAdminCard } from './ai-settings-admin-card';
+import { AiSettingsQuickActions } from './ai-settings-quick-actions';
 import { AiSettingsQuickActionsEditor } from './ai-settings-quick-actions-editor';
+
+export { MINGO_AI_CHAT_FORM_ID } from '../types/mingo-ai-chat.types';
 
 interface MingoAiChatTabProps {
   aiConfig: AgentAiConfig;
@@ -27,30 +30,36 @@ export function MingoAiChatTab({ aiConfig, isEditMode, onSubmit }: MingoAiChatTa
     defaultValues: getMingoAiChatDefaults(aiConfig),
   });
 
-  // AiModelConfig owns the provider/model and persists it to the REST AI
-  // configuration endpoint; saved via this ref on submit. The admin quick
-  // actions are persisted separately through adminAiConfig (onSubmit).
-  const aiModelRef = useRef<AiModelConfigHandle>(null);
+  const { modelsByProvider } = useSupportedModels();
 
-  const handleSubmit = form.handleSubmit(async values => {
-    const ok = await aiModelRef.current?.save();
-    if (ok === false) return;
-    onSubmit(toMingoAiChatSubmit(values));
-  });
+  const llmProvider = form.watch('llmProvider');
+  const answerStyle = form.watch('answerStyle');
+
+  const handleSubmit = form.handleSubmit(values => onSubmit(toMingoAiChatSubmit(values)));
 
   if (!isEditMode) {
+    const modelLabel = getProviderModelLabel(modelsByProvider, aiConfig.llmProvider, aiConfig.providerModel);
     return (
       <div className="flex flex-col gap-[var(--spacing-system-l)]">
-        <AiModelConfig ref={aiModelRef} isEditMode={false} />
-        <AiSettingsOverview quickActions={aiConfig.quickActions} />
+        <AiSettingsAdminCard aiConfig={aiConfig} providerModelLabel={modelLabel} />
+        <AiSettingsQuickActions actions={aiConfig.quickActions} />
       </div>
     );
   }
 
   return (
     <form id={MINGO_AI_CHAT_FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-[var(--spacing-system-l)]">
-      <AiModelConfig ref={aiModelRef} isEditMode />
-      <AiSettingsQuickActionsEditor control={form.control} title="Mingo Quick Actions" />
+      <AiProviderModelFields
+        control={form.control}
+        llmProvider={llmProvider}
+        modelsByProvider={modelsByProvider}
+        onProviderChange={() => form.setValue('providerModel', '')}
+        providerLabel="Mingo LLM Provider"
+      />
+
+      <AiAnswerStyleFields control={form.control} answerStyle={answerStyle} />
+
+      <AiSettingsQuickActionsEditor control={form.control} title="Mingo Quick Actions" className="mt-8" />
     </form>
   );
 }
