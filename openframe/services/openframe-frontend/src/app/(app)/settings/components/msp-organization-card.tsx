@@ -1,8 +1,9 @@
 'use client';
 
-import { Button, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { Skeleton } from '@flamingo-stack/openframe-frontend-core';
 import { PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { ResponsiveActionButton } from '@/app/components/shared/responsive-action-button';
 
 interface MspOrganizationCardProps {
   name: string;
@@ -43,13 +44,11 @@ export function MspOrganizationCard({
       </div>
 
       <div className="shrink-0 flex items-center gap-3">
-        <Button
-          variant="outline"
+        <ResponsiveActionButton
+          label="Edit Organization"
+          icon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
           onClick={onEditOrganization}
-          leftIcon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
-        >
-          Edit Organization
-        </Button>
+        />
       </div>
     </div>
   );
