@@ -3,7 +3,7 @@ import { graphql } from 'react-relay';
 export const employeeWorkTimeRelayQuery = graphql`
   query employeeWorkTimeRelayQuery(
     $employeeId: ID!
-    $period: DateRangeInput!
+    $period: DateRangeInput
     $search: String
     $first: Int!
     $after: String
@@ -25,7 +25,7 @@ export const employeeWorkTimeRelayFragment = graphql`
     @refetchable(queryName: "employeeWorkTimeRelayPaginationQuery")
     @argumentDefinitions(
       employeeId: { type: "ID!" }
-      period: { type: "DateRangeInput!" }
+      period: { type: "DateRangeInput" }
       search: { type: "String" }
       first: { type: "Int", defaultValue: 20 }
       after: { type: "String" }
