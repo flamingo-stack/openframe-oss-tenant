@@ -227,6 +227,9 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
               activeTab={tabId}
               TabComponent={getTabComponent(DEVICE_TABS, tabId)}
               componentProps={{ device: normalizedDevice }}
+              // Single source of the gap between the tab bar and tab content, so
+              // every tab (and its empty/loading states) is spaced consistently.
+              className="mt-6"
             />
           )}
         </TabNavigation>

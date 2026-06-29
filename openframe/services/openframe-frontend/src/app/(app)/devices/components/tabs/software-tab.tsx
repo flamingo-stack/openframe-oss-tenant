@@ -111,7 +111,7 @@ export function SoftwareTab({ device }: SoftwareTabProps) {
   }
 
   return (
-    <div className="space-y-4 mt-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-h5 text-ods-text-secondary">Installed Software ({software.length})</h3>
       </div>

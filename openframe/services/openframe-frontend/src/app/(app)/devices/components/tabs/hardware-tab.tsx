@@ -272,7 +272,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="mt-6">
+      <div>
         {/* Disk Info Section */}
         <div>
           <h3 className="text-h5 text-ods-text-secondary mb-1">DISK INFO</h3>

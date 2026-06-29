@@ -30,7 +30,7 @@ export function UsersTab({ device }: UsersTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="space-y-6 mt-6">
+      <div className="space-y-6">
         {/* Logged In User */}
         <div>
           <h3 className="text-h5 text-ods-text-secondary mb-4">CURRENTLY LOGGED IN</h3>
