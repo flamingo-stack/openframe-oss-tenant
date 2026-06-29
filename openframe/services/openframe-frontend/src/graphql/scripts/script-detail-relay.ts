@@ -11,8 +11,12 @@ export const scriptDetailRelayQuery = graphql`
       name
       description
       shell
+      privilegeLevel
       scriptBody
-      tag
+      tags {
+        id
+        key
+      }
       supportedPlatforms
       defaultTimeoutSeconds
       defaultArgs
@@ -22,6 +26,12 @@ export const scriptDetailRelayQuery = graphql`
         secret
       }
       status
+      author {
+        id
+        firstName
+        lastName
+        email
+      }
     }
   }
 `;

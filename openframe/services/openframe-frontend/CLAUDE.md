@@ -36,6 +36,8 @@ Access: http://localhost:3000
 | `npm run type-check` | TypeScript validation (`tsc --noEmit`) |
 | `npm run relay` | Relay compiler — regenerates `src/__generated__/` artifacts |
 | `npm run relay:watch` | Relay compiler in watch mode |
+| `npm run fetch-schema` | Pull `schema.graphql` from a backend via introspection (`-- --endpoint <url> --token <JWT>`) |
+| `npm run generate-enums` | Regenerate `src/generated/schema-enums.ts` (enum const+type) from `schema.graphql` |
 | `npm run lint` | Next.js ESLint check |
 | `npm run lint:biome` | Biome check (linting + formatting) |
 | `npm run lint:biome:fix` | Biome auto-fix |
@@ -350,6 +352,7 @@ The app is **gradually migrating GraphQL data fetching to react-relay**. The rul
 - Environment/provider: `src/lib/relay/` (singleton, cookie auth + 401 refresh, mounted in root layout above all other providers)
 - Run `npm run relay` after adding/changing any `graphql\`...\`` tag (`npm run build` also runs it)
 - Operation names MUST be prefixed with the camelCased file name (e.g. `unread-counts-relay.ts` → `unreadCountsRelayQuery`)
+- **Enum / scalar types come from `@/generated/schema-enums`, NEVER from a query's Relay artifact.** `src/generated/schema-enums.ts` is generated from `schema.graphql` by `npm run generate-enums` (Prisma-style: the same name is both a `const` value and a `type`, so `ScriptShell.CMD` and `const s: ScriptShell` both work). Do NOT `import type { ScriptShell } from '@/__generated__/<someQuery>.graphql'` — relay-compiler owns `src/__generated__/`, re-emits per-operation copies, and prunes them, so those imports are unstable. Refresh the SDL with `npm run fetch-schema`, then `npm run generate-enums`.
 
 **Reference implementations** (notifications domain, fully on Relay):
 - `src/graphql/notifications/` — query/fragment/mutation definitions, connection updaters via `ConnectionHandler`

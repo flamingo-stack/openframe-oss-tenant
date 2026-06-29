@@ -35,7 +35,7 @@ export function useTagValueSuggestions(tagKey: string) {
   const queryData = useLazyLoadQuery<ValueSuggestionsQueryType>(
     valueSuggestionsRootQuery,
     { tagKey, limit: SUGGESTIONS_LIMIT },
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
 
   const [valueData, refetchValues] = useRefetchableFragment<
@@ -50,7 +50,7 @@ export function useTagValueSuggestions(tagKey: string) {
     startTransition(() => {
       refetchValues(
         { tagKey, search: debouncedInput || undefined, limit: SUGGESTIONS_LIMIT },
-        { fetchPolicy: 'store-or-network' },
+        { fetchPolicy: 'store-and-network' },
       );
     });
   }, [debouncedInput, tagKey, refetchValues]);

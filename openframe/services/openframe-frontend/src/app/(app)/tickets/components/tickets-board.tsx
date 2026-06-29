@@ -27,7 +27,7 @@ import { AssigneeFilter } from './assignee-filter';
 import { BoardAssigneePicker } from './board-assignee-picker';
 import { BoardColumnSubscriber, type BoardColumnUpdate } from './board-column-subscriber';
 import { OrganizationFilter } from './organization-filter';
-import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
+import { TicketTagFilter } from './ticket-label-filter';
 
 // TODO(unread-from-entity): re-enable per-ticket unread highlighting once the backend exposes
 // unread counts on the ticket entity itself. Matching unread notifications to tickets by id is a
@@ -293,13 +293,12 @@ export function TicketsBoard({
       >
         <div className="flex flex-col gap-[var(--spacing-system-l)]">
           <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
-            <TicketLabelSearchInput
+            <TicketTagFilter
               search={search}
               onSearchChange={onSearchChange}
               labelIds={labelIds ?? []}
               onLabelIdsChange={ids => onLabelIdsChange?.(ids)}
             />
-            <TicketLabelsRow selectedIds={labelIds ?? []} onAdd={id => onLabelIdsChange?.([...(labelIds ?? []), id])} />
           </div>
           <div className="grid grid-cols-4 gap-[var(--spacing-system-l)]">
             <OrganizationFilter

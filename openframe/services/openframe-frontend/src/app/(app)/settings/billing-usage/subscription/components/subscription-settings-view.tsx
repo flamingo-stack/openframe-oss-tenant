@@ -92,7 +92,7 @@ function SubscriptionSettingsContent() {
   const data = useLazyLoadQuery<SubscriptionSettingsViewQueryType>(
     subscriptionSettingsViewQuery,
     {},
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   // No active paid subscription → create a new one via Stripe Checkout instead
   // of an update (no diff/validation gating in that flow).

@@ -1,8 +1,8 @@
 'use client';
 
 import { TruncateText } from '@flamingo-stack/openframe-frontend-core';
-import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types';
 import { getOSLabel } from '@flamingo-stack/openframe-frontend-core/utils';
+import { scriptV2ShellLabel } from '../utils/shell-types';
 
 interface ScriptSummaryCardProps {
   name: string;
@@ -14,6 +14,8 @@ interface ScriptSummaryCardProps {
   timeoutSeconds?: number | null;
   /** Show the Timeout cell. Off on the run page, where the timeout is editable below. */
   showTimeout?: boolean;
+  /** Author name ("Added by"). Pass `undefined` to omit the stat entirely. */
+  author?: string | null;
 }
 
 /** Number of equal-width columns the metadata strip is laid out on. */
@@ -32,7 +34,7 @@ function MetaStat({ value, label }: { value: string; label: string }) {
 }
 
 function shellLabel(shellId: string): string {
-  return SHELL_TYPES.find(s => s.value === shellId)?.label ?? shellId;
+  return scriptV2ShellLabel(shellId);
 }
 
 /**
@@ -48,6 +50,7 @@ export function ScriptSummaryCard({
   platforms,
   timeoutSeconds,
   showTimeout = true,
+  author,
 }: ScriptSummaryCardProps) {
   const platformsText = platforms.map(getOSLabel).join(', ') || '—';
 
@@ -55,6 +58,7 @@ export function ScriptSummaryCard({
     { label: 'Shell Type', value: shellLabel(shellId) },
     { label: 'Supported Platforms', value: platformsText },
     ...(showTimeout ? [{ label: 'Timeout (seconds)', value: String(timeoutSeconds ?? '—') }] : []),
+    ...(author !== undefined ? [{ label: 'Added by', value: author || '—' }] : []),
   ];
 
   return (

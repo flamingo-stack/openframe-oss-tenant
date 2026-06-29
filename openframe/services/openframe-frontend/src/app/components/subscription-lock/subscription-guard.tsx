@@ -45,7 +45,7 @@ function SubscriptionGuardInner({ children }: { children: ReactNode }) {
   const data = useLazyLoadQuery<SubscriptionGuardQueryType>(
     subscriptionGuardQuery,
     {},
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   const status = resolveGuardStatus({
     subscription: data.subscription,
