@@ -20,7 +20,6 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { endOfMonth, startOfMonth } from 'date-fns';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLazyLoadQuery, useMutation, usePaginationFragment } from 'react-relay';
 import type { deleteTimeEntryMutation as DeleteTimeEntryMutationType } from '@/__generated__/deleteTimeEntryMutation.graphql';
@@ -58,11 +57,6 @@ interface WorkTimeRow {
   ticketNumber: number | null;
   ticketTitle: string | null;
   notes: string | null;
-}
-
-function currentMonthRange(): DateRange {
-  const now = new Date();
-  return { from: startOfMonth(now), to: endOfMonth(now) };
 }
 
 function buildColumns(
@@ -130,7 +124,7 @@ function buildColumns(
 
 interface QueryVars {
   employeeId: string;
-  period: DateRangeInputValue;
+  period: DateRangeInputValue | null;
   search: string | null;
   first: number;
   after: string | null;
@@ -257,7 +251,7 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
     search: { type: 'string', default: '' },
   });
   const { search, setSearch, debouncedSearch } = useSearchParam(params.search, value => setParam('search', value), 300);
-  const [range, setRange] = useState<DateRange>(currentMonthRange);
+  const [range, setRange] = useState<DateRange | undefined>(undefined);
 
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ManualEntryEditTarget | null>(null);
@@ -268,10 +262,9 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
 
   const employeeId = useMemo(() => ensureGlobalIdForType('User', userId), [userId]);
 
-  const period = useMemo(() => {
-    const from = range?.from ?? startOfMonth(new Date());
-    const to = range?.to ?? range?.from ?? endOfMonth(new Date());
-    return toDateRangeInput(from, to);
+  const period = useMemo<DateRangeInputValue | null>(() => {
+    if (!range?.from) return null;
+    return toDateRangeInput(range.from, range.to ?? range.from);
   }, [range]);
 
   const vars = useMemo<QueryVars>(
@@ -338,7 +331,7 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
         <DatePicker
           mode="range"
           value={range}
-          onChange={next => setRange(next ?? currentMonthRange())}
+          onChange={setRange}
           formatDate={formatDate}
           numberOfMonths={2}
           placeholder="Select dates"
