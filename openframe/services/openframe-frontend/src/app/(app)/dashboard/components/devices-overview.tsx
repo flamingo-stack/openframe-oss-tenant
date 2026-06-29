@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardInfoCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, Skeleton, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { useDevicesOverview } from '../hooks/use-dashboard-stats';
 
@@ -49,10 +49,7 @@ export function DevicesOverviewSection() {
   if (devices.isLoading) {
     return (
       <div className="space-y-4">
-        <div>
-          <h2 className="text-h2 text-ods-text-primary">Devices Overview</h2>
-          <Skeleton className="h-5 w-48" />
-        </div>
+        <TitleBlock title="Devices Overview" className="pt-0 mb-0" />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statusCards.map(card => (
@@ -65,10 +62,11 @@ export function DevicesOverviewSection() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-h2 text-ods-text-primary">Devices Overview</h2>
-        <p className="text-h6 text-ods-text-secondary">{devices.total.toLocaleString()} Devices in Total</p>
-      </div>
+      <TitleBlock
+        title="Devices Overview"
+        subtitle={`${devices.total.toLocaleString()} Devices in Total`}
+        className="pt-1 mb-0 [&_p]:hidden lg:[&_p]:block"
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statusCards.map(card => (

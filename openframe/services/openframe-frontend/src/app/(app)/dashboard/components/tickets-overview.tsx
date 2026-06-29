@@ -1,6 +1,6 @@
 'use client';
 
-import { DashboardInfoCard, Skeleton, TicketStatusTag } from '@flamingo-stack/openframe-frontend-core';
+import { DashboardInfoCard, Skeleton, TicketStatusTag, TitleBlock } from '@flamingo-stack/openframe-frontend-core';
 import { useTicketsOverview } from '../hooks/use-dashboard-stats';
 
 export function TicketsOverviewSection() {
@@ -9,10 +9,7 @@ export function TicketsOverviewSection() {
   if (tickets.isLoading) {
     return (
       <div className="space-y-4">
-        <div>
-          <h2 className="text-h2 text-ods-text-primary">Tickets Overview</h2>
-          <Skeleton className="h-5 w-48" />
-        </div>
+        <TitleBlock title="Tickets Overview" className="pt-0 mb-0" />
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Skeleton className="h-20 w-full" />
@@ -26,10 +23,11 @@ export function TicketsOverviewSection() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-h2 text-ods-text-primary">Tickets Overview</h2>
-        <p className="text-h6 text-ods-text-secondary">{tickets.total.toLocaleString()} Tickets in Total</p>
-      </div>
+      <TitleBlock
+        title="Tickets Overview"
+        subtitle={`${tickets.total.toLocaleString()} Tickets in Total`}
+        className="pt-0 mb-0 [&_p]:hidden lg:[&_p]:block"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <DashboardInfoCard
