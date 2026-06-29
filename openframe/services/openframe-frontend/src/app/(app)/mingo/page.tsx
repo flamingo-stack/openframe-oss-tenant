@@ -8,8 +8,8 @@ import {
   ChatInput,
   ChatMessageList,
   ChatSidebar,
-  ContentPageContainer,
   ModelDisplay,
+  PageLayout,
   Skeleton,
 } from '@flamingo-stack/openframe-frontend-core';
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
@@ -360,7 +360,7 @@ export default function Mingo() {
   }
 
   return (
-    <ContentPageContainer padding="none" showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
+    <PageLayout showHeader={false} className="h-full" contentClassName="h-full flex flex-col">
       {activeDialogId && subscribedDialogs.has(activeDialogId) && (
         <DialogSubscription
           key={activeDialogId}
@@ -473,6 +473,6 @@ export default function Mingo() {
           </div>
         </div>
       </div>
-    </ContentPageContainer>
+    </PageLayout>
   );
 }

@@ -1,15 +1,15 @@
 'use client';
 
-import { OSTypeBadgeGroup, type ShellType, ShellTypeBadge } from '@flamingo-stack/openframe-frontend-core/components';
+import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components';
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArrowRightUpIcon,
+  BoxArchiveIcon,
   BracketCurlyIcon,
   Filter02Icon,
   PenEditIcon,
   PlayIcon,
   PlusCircleIcon,
-  SearchIcon,
   TerminalIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
@@ -19,18 +19,17 @@ import {
   type ColumnDef,
   DataTable,
   FilterModal,
-  Input,
   multiSelectFilterFn,
   PageLayout,
   type Row,
+  SquareAvatar,
   TruncateText,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { SHELL_TYPES } from '@flamingo-stack/openframe-frontend-core/types';
 import { getOSLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useRouter } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useLazyLoadQuery, usePaginationFragment } from 'react-relay';
 import type { scriptsTableRelay_query$key as ScriptsFragmentKey } from '@/__generated__/scriptsTableRelay_query.graphql';
 import type { scriptsTableRelayPaginationQuery as ScriptsPaginationQueryType } from '@/__generated__/scriptsTableRelayPaginationQuery.graphql';
@@ -40,12 +39,19 @@ import type {
 } from '@/__generated__/scriptsTableRelayQuery.graphql';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
+import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { ScriptStatus } from '@/generated/schema-enums';
 import { scriptsTableRelayFragment, scriptsTableRelayQuery } from '@/graphql/scripts/scripts-table-relay';
+import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { AVAILABLE_PLATFORMS } from '@/lib/platforms';
-import { ALLOWED_SHELL_IDS, platformsToEnums, platformsToIds, shellToEnum, shellToId } from '../utils/script-mappers';
+import { initiatorInitials, initiatorName } from '../utils/execution-helpers';
+import { platformsToEnums, platformsToIds, shellToEnum, shellToId } from '../utils/script-mappers';
+import { SCRIPT_V2_SHELL_TYPES } from '../utils/shell-types';
+import { ScriptShellBadge } from './script-shell-badge';
+import { ScriptsTagFilter, ScriptsTagFilterSkeleton } from './scripts-tag-filter';
 
 const PAGE_SIZE = 20;
 
@@ -56,12 +62,17 @@ interface UiScriptEntry {
   shellType: string;
   supportedPlatforms: string[];
   timeout: number;
+  authorId: string;
+  authorName: string;
+  authorInitials: string;
+  authorImage?: string;
+  hasAuthor: boolean;
 }
 
 // Static filter options derived from the backend enums (the connection is
 // server-paginated, so we can't enumerate distinct values from loaded rows).
-// Limited to the shells the product supports (see ALLOWED_SHELL_IDS).
-const SHELL_FILTER_OPTIONS = SHELL_TYPES.filter(s => ALLOWED_SHELL_IDS.includes(s.value)).map(s => ({
+// Limited to the shells the product supports (see SCRIPT_V2_SHELL_TYPES).
+const SHELL_FILTER_OPTIONS = SCRIPT_V2_SHELL_TYPES.map(s => ({
   id: s.value,
   label: s.label,
   value: s.value,
@@ -81,22 +92,27 @@ interface ScriptsTableContentProps {
   backendFilters: ScriptFilterInput;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
+  /** Whether any tag filter is active (kept out of `tableFilters` so it doesn't become a phantom column filter). */
+  hasTagFilter: boolean;
   onFilterChange: (filters: Record<string, any[]>) => void;
   onEmptyChange: (isEmpty: boolean) => void;
   mobileFilterOpen: boolean;
   onMobileFilterClose: () => void;
   stickyHeaderOffset: string;
+  archived: boolean;
 }
 
 function ScriptsTableContent({
   backendFilters,
   debouncedSearch,
   tableFilters,
+  hasTagFilter,
   onFilterChange,
   onEmptyChange,
   mobileFilterOpen,
   onMobileFilterClose,
   stickyHeaderOffset,
+  archived,
 }: ScriptsTableContentProps) {
   const askMingo = useAskMingo();
   const [isPending] = useTransition();
@@ -128,6 +144,11 @@ function ScriptsTableContent({
         shellType: shellToId(node.shell),
         supportedPlatforms: platformsToIds(node.supportedPlatforms),
         timeout: node.defaultTimeoutSeconds ?? 300,
+        authorId: node.author?.id ?? '',
+        authorName: initiatorName(node.author),
+        authorInitials: initiatorInitials(node.author),
+        authorImage: getFullImageUrl(node.author?.image?.imageUrl, node.author?.image?.hash),
+        hasAuthor: Boolean(node.author),
       };
     });
   }, [data.scripts?.edges]);
@@ -137,6 +158,20 @@ function ScriptsTableContent({
       loadNext(PAGE_SIZE);
     }
   }, [hasNext, isLoadingNext, loadNext]);
+
+  // "Added by" filter options. There's no backend query for distinct script
+  // authors, so we derive them from loaded rows and accumulate across pages
+  // (a ref keeps already-seen authors in the dropdown even after a filter
+  // narrows the result set). Caveat: an author never loaded won't appear.
+  const authorAccRef = useRef<Map<string, string>>(new Map());
+  const authorOptions = useMemo(() => {
+    for (const script of transformedScripts) {
+      if (script.hasAuthor && script.authorId) authorAccRef.current.set(script.authorId, script.authorName);
+    }
+    return Array.from(authorAccRef.current, ([id, label]) => ({ id, label, value: id })).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    );
+  }, [transformedScripts]);
 
   const renderRowActions = useCallback((script: UiScriptEntry) => {
     const runHref = `/scripts-v2/details/${script.id}/run`;
@@ -170,6 +205,15 @@ function ScriptsTableContent({
               openInNewTab: true,
             },
           },
+          {
+            // Disabled until the backend ships an archive mutation — there's no way
+            // to set status=ARCHIVED today (updateScript has no `status`, and no
+            // archiveScript mutation exists). See SCRIPTS_BACKEND_GAPS.md.
+            id: 'archive-script',
+            label: 'Archive Script',
+            icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+            disabled: true,
+          },
         ],
       },
     ];
@@ -199,7 +243,7 @@ function ScriptsTableContent({
         accessorKey: 'shellType',
         header: 'Shell Type',
         cell: ({ row }: { row: Row<UiScriptEntry> }) => (
-          <ShellTypeBadge shellType={row.original.shellType as ShellType} iconClassName="w-4 h-4 md:w-6 md:h-6" />
+          <ScriptShellBadge value={row.original.shellType} iconClassName="w-4 h-4 md:w-6 md:h-6" />
         ),
         enableSorting: false,
         filterFn: multiSelectFilterFn,
@@ -217,10 +261,39 @@ function ScriptsTableContent({
         enableSorting: false,
         filterFn: multiSelectFilterFn,
         meta: {
-          width: 'w-[90px]',
+          width: 'w-[80px]',
           hideAt: 'lg',
           filter: { options: PLATFORM_FILTER_OPTIONS },
         },
+      },
+      {
+        // "Added by" = Script.author. Server filter via `authorIds`; the dropdown
+        // options are derived from loaded rows (no distinct-authors query exists).
+        // accessorKey is `authorId` so the option values (ids) match the server filter.
+        accessorKey: 'authorId',
+        header: 'Added by',
+        cell: ({ row }: { row: Row<UiScriptEntry> }) =>
+          row.original.hasAuthor ? (
+            <div className="flex items-center gap-2 min-w-0">
+              <SquareAvatar
+                variant="round"
+                size="sm"
+                src={row.original.authorImage}
+                fallback={row.original.authorInitials}
+                alt={row.original.authorName}
+                initialsClassName="text-ods-text-secondary"
+              />
+              {/* min-w-0 flex-1 wrapper so the FloatingTooltip's block div can shrink and the name ellipsizes. */}
+              <div className="min-w-0 flex-1">
+                <TruncateText>{row.original.authorName}</TruncateText>
+              </div>
+            </div>
+          ) : (
+            <TruncateText tone="secondary">—</TruncateText>
+          ),
+        enableSorting: false,
+        filterFn: multiSelectFilterFn,
+        meta: { width: 'w-[250px]', hideAt: 'lg', filter: { options: authorOptions } },
       },
       {
         id: 'actions',
@@ -250,15 +323,16 @@ function ScriptsTableContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [renderRowActions],
+    [renderRowActions, authorOptions],
   );
 
   const filterGroups = useMemo(
     () => [
       { id: 'shellType', title: 'Shell Type', options: SHELL_FILTER_OPTIONS },
       { id: 'supportedPlatforms', title: 'OS', options: PLATFORM_FILTER_OPTIONS },
+      { id: 'authorId', title: 'Added by', options: authorOptions },
     ],
-    [],
+    [authorOptions],
   );
 
   const columnFilters = useMemo(
@@ -292,12 +366,22 @@ function ScriptsTableContent({
 
   const scriptRowHref = useCallback((script: UiScriptEntry) => `/scripts-v2/details/${script.id}`, []);
 
-  const hasActiveFilters = Object.values(tableFilters).some(values => values.length > 0);
+  const hasActiveFilters = hasTagFilter || Object.values(tableFilters).some(values => values.length > 0);
   const showEmptyState = !debouncedSearch && !hasActiveFilters && !isPending && transformedScripts.length === 0;
 
   useEffect(() => {
     onEmptyChange(showEmptyState);
   }, [showEmptyState, onEmptyChange]);
+
+  if (showEmptyState && archived) {
+    return (
+      <EmptyState
+        icon={<BoxArchiveIcon />}
+        title="No archived scripts"
+        description="Scripts you archive will be moved here. They stay out of the main list but can be reviewed any time."
+      />
+    );
+  }
 
   if (showEmptyState) {
     return (
@@ -386,8 +470,18 @@ function ScriptsTableSkeleton({ stickyHeaderOffset }: { stickyHeaderOffset: stri
         accessorKey: 'supportedPlatforms',
         header: 'OS',
         enableSorting: false,
-        meta: { width: 'w-[90px]', hideAt: 'lg' },
+        meta: { width: 'w-[80px]', hideAt: 'lg' },
       },
+      {
+        accessorKey: 'authorName',
+        header: 'Added by',
+        enableSorting: false,
+        meta: { width: 'w-[250px]', hideAt: 'lg' },
+      },
+      // Mirror the real table's trailing action columns (row actions menu + open
+      // button) so the loading header reserves the same width and stays aligned.
+      { id: 'actions', enableSorting: false, meta: { width: 'w-12 shrink-0 flex-none', align: 'right' } },
+      { id: 'open', enableSorting: false, meta: { width: 'w-12 shrink-0 flex-none', align: 'right' } },
     ],
     [],
   );
@@ -411,13 +505,21 @@ function ScriptsTableSkeleton({ stickyHeaderOffset }: { stickyHeaderOffset: stri
 // Outer shell — layout + URL state + Suspense boundary
 // ----------------------------------------------------------------
 
-export function ScriptsTable() {
+interface ScriptsTableProps {
+  /** When true, lists archived scripts (status = ARCHIVED) with a back button instead of the Archive/Add actions. */
+  archived?: boolean;
+}
+
+export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
   const router = useRouter();
+  const handleBack = useSafeBack('/scripts-v2');
 
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
     shellType: { type: 'array', default: [] },
     supportedPlatforms: { type: 'array', default: [] },
+    authorId: { type: 'array', default: [] },
+    tagIds: { type: 'array', default: [] },
   });
 
   // Local search input keeps typing responsive; the shared hook debounces it to
@@ -435,18 +537,24 @@ export function ScriptsTable() {
   const backendFilters: ScriptFilterInput = useMemo(() => {
     const shells = params.shellType.map(shellToEnum);
     const supportedPlatforms = platformsToEnums(params.supportedPlatforms);
+    // Default scripts() (null statuses) returns ACTIVE + ARCHIVED together; scope
+    // each page explicitly so the archive lives on its own list.
     return {
+      statuses: [archived ? ScriptStatus.ARCHIVED : ScriptStatus.ACTIVE],
       ...(shells.length > 0 && { shells }),
       ...(supportedPlatforms.length > 0 && { supportedPlatforms }),
+      ...(params.authorId.length > 0 && { authorIds: params.authorId }),
+      ...(params.tagIds.length > 0 && { tagIds: params.tagIds }),
     };
-  }, [params.shellType, params.supportedPlatforms]);
+  }, [archived, params.shellType, params.supportedPlatforms, params.authorId, params.tagIds]);
 
   const tableFilters = useMemo(
     () => ({
       shellType: params.shellType,
       supportedPlatforms: params.supportedPlatforms,
+      authorId: params.authorId,
     }),
-    [params.shellType, params.supportedPlatforms],
+    [params.shellType, params.supportedPlatforms, params.authorId],
   );
 
   const handleFilterChange = useCallback(
@@ -454,6 +562,7 @@ export function ScriptsTable() {
       setParams({
         shellType: columnFilters.shellType || [],
         supportedPlatforms: columnFilters.supportedPlatforms || [],
+        authorId: columnFilters.authorId || [],
       });
       document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
@@ -464,41 +573,76 @@ export function ScriptsTable() {
     router.push('/scripts-v2/create');
   }, [router]);
 
+  const handleOpenArchive = useCallback(() => {
+    router.push('/scripts-v2/archived');
+  }, [router]);
+
+  // Archived list has no header actions (back button only); the active list shows
+  // Archive (→ archived page) + Add Script. "Edit Categories" is intentionally omitted.
   const actions = useMemo(
-    () => [
-      {
-        label: 'Add Script',
-        variant: (isEmpty ? 'accent' : 'outline') as 'accent' | 'outline',
-        icon: <PlusCircleIcon size={24} className={isEmpty ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'} />,
-        onClick: handleNewScript,
-      },
-    ],
-    [handleNewScript, isEmpty],
+    () =>
+      archived
+        ? []
+        : [
+            {
+              label: 'Archive',
+              variant: 'outline' as const,
+              icon: <BoxArchiveIcon className="w-6 h-6 text-ods-text-secondary" />,
+              onClick: handleOpenArchive,
+            },
+            {
+              label: 'Add Script',
+              variant: (isEmpty ? 'accent' : 'outline') as 'accent' | 'outline',
+              icon: (
+                <PlusCircleIcon size={24} className={isEmpty ? 'text-ods-text-on-accent' : 'text-ods-text-secondary'} />
+              ),
+              onClick: handleNewScript,
+            },
+          ],
+    [archived, handleNewScript, handleOpenArchive, isEmpty],
+  );
+
+  const mobileFilterButton = (
+    <Button
+      variant="outline"
+      size="icon"
+      className="md:hidden"
+      onClick={() => setMobileFilterOpen(true)}
+      aria-label="Open filters"
+      leftIcon={<Filter02Icon />}
+    />
   );
 
   return (
-    <PageLayout title="Scripts" actions={actions} className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]">
+    <PageLayout
+      title={archived ? 'Archived Scripts' : 'Scripts'}
+      backButton={archived ? { label: 'Back', onClick: handleBack } : undefined}
+      actions={actions.length > 0 ? actions : undefined}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+    >
       <div className="flex flex-col" style={containerStyle}>
         {!isEmpty && (
           <div
             ref={toolbarRef}
-            className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-m)] bg-ods-bg -mx-[var(--spacing-system-l)] p-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"
+            className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
           >
-            <Input
-              placeholder="Search for Scripts"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              className="flex-1"
-              startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
-            />
-            <Button
-              variant="outline"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileFilterOpen(true)}
-              aria-label="Open filters"
-              leftIcon={<Filter02Icon />}
-            />
+            <Suspense
+              fallback={
+                <ScriptsTagFilterSkeleton
+                  search={searchInput}
+                  onSearchChange={setSearchInput}
+                  filterButton={mobileFilterButton}
+                />
+              }
+            >
+              <ScriptsTagFilter
+                search={searchInput}
+                onSearchChange={setSearchInput}
+                tagIds={params.tagIds}
+                onTagIdsChange={ids => setParam('tagIds', ids)}
+                filterButton={mobileFilterButton}
+              />
+            </Suspense>
           </div>
         )}
 
@@ -507,11 +651,13 @@ export function ScriptsTable() {
             backendFilters={backendFilters}
             debouncedSearch={debouncedSearch}
             tableFilters={tableFilters}
+            hasTagFilter={params.tagIds.length > 0}
             onFilterChange={handleFilterChange}
             onEmptyChange={setIsEmpty}
             mobileFilterOpen={mobileFilterOpen}
             onMobileFilterClose={() => setMobileFilterOpen(false)}
             stickyHeaderOffset={stickyHeaderOffset}
+            archived={archived}
           />
         </Suspense>
       </div>

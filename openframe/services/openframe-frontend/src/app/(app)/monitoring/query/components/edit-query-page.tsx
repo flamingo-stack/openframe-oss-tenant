@@ -2,11 +2,11 @@
 
 import {
   CardLoader,
-  FormPageContainer,
   Input,
   Label,
   LoadError,
   NotFoundError,
+  PageLayout,
   Select,
   SelectContent,
   SelectItem,
@@ -263,15 +263,15 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
   }
 
   return (
-    <FormPageContainer
+    <PageLayout
       title={isExistingQuery && queryDetails ? queryDetails.name : 'New Query'}
       backButton={{
         label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="space-y-6 md:space-y-8">
         {/* Test Query Panel */}
@@ -403,6 +403,6 @@ export function EditQueryPage({ queryId }: EditQueryPageProps) {
           />
         </div>
       </div>
-    </FormPageContainer>
+    </PageLayout>
   );
 }

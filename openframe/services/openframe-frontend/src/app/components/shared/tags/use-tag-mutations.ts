@@ -54,6 +54,7 @@ export function useCreateTagMutation() {
     (
       variables: { key: string; entityType: string; description?: string; color?: string },
       onCompleted?: (id: string) => void,
+      onError?: (error: Error) => void,
     ) => {
       commit({
         variables,
@@ -61,6 +62,7 @@ export function useCreateTagMutation() {
           onCompleted?.(response.createTag?.id);
         },
         onError: (error: Error) => {
+          onError?.(error);
           toast({ title: 'Error', description: error.message || 'Failed to create tag', variant: 'destructive' });
         },
       });

@@ -1,7 +1,7 @@
 'use client';
 
 import { apiClient } from '@/lib/api-client';
-import { DEVICE_STATUS } from '../../devices/constants/device-statuses';
+import { DEFAULT_DASHBOARD_STATUSES, DEVICE_STATUS } from '../../devices/constants/device-statuses';
 import { GET_DEVICE_FILTERS_QUERY } from '../../devices/queries/devices-queries';
 import type { GraphQlResponse } from '../../devices/types/device.types';
 import { API_ENDPOINTS, TICKET_STATUS } from '../../tickets/constants';
@@ -20,8 +20,12 @@ export interface DashboardDeviceStats {
   total: number;
   active: number;
   inactive: number;
+  pending: number;
+  archived: number;
   activePercentage: number;
   inactivePercentage: number;
+  pendingPercentage: number;
+  archivedPercentage: number;
 }
 
 export interface DashboardTicketStats {
@@ -82,7 +86,7 @@ class DashboardApiService {
     try {
       const response = await apiClient.post<GraphQlResponse<DeviceFiltersResponse>>('/api/graphql', {
         query: GET_DEVICE_FILTERS_QUERY,
-        variables: { filter: { statuses: [DEVICE_STATUS.ONLINE, DEVICE_STATUS.OFFLINE] } },
+        variables: { filter: { statuses: [...DEFAULT_DASHBOARD_STATUSES] } },
       });
 
       if (!response.ok) {
@@ -96,15 +100,24 @@ class DashboardApiService {
 
       const total = data.filteredCount || 0;
       const statuses = data.statuses || [];
-      const active = statuses.find(s => s.value === DEVICE_STATUS.ONLINE)?.count || 0;
-      const inactive = statuses.find(s => s.value === DEVICE_STATUS.OFFLINE)?.count || 0;
+      const countFor = (value: string) => statuses.find(s => s.value === value)?.count || 0;
+      const toPercentage = (count: number) => (total > 0 ? Math.round((count / total) * 100) : 0);
+
+      const active = countFor(DEVICE_STATUS.ONLINE);
+      const inactive = countFor(DEVICE_STATUS.OFFLINE);
+      const pending = countFor(DEVICE_STATUS.PENDING);
+      const archived = countFor(DEVICE_STATUS.ARCHIVED);
 
       return {
         total,
         active,
         inactive,
-        activePercentage: total > 0 ? Math.round((active / total) * 100) : 0,
-        inactivePercentage: total > 0 ? Math.round((inactive / total) * 100) : 0,
+        pending,
+        archived,
+        activePercentage: toPercentage(active),
+        inactivePercentage: toPercentage(inactive),
+        pendingPercentage: toPercentage(pending),
+        archivedPercentage: toPercentage(archived),
       };
     } catch (error) {
       throw this.handleApiError(error, 'Device stats fetch');

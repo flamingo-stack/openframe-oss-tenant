@@ -39,7 +39,7 @@ function BillingUsageContent() {
   const data = useLazyLoadQuery<BillingUsageViewQueryType>(
     billingUsageViewQuery,
     {},
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   const cancelSubscription = useCancelSubscription();
   const [cancelStep, setCancelStep] = useState<'idle' | 'reason' | 'offer' | 'cancelled'>('idle');

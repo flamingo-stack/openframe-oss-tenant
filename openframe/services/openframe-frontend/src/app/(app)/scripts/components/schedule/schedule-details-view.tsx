@@ -1,10 +1,10 @@
 'use client';
 
 import {
-  DetailPageContainer,
   getTabComponent,
   LoadError,
   NotFoundError,
+  PageLayout,
   TabContent,
   type TabItem,
   TabNavigation,
@@ -113,13 +113,12 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
   }
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={schedule.name}
       backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       actionsVariant="icon-buttons"
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex-1 overflow-auto">
         {/* Schedule info bar */}
@@ -142,6 +141,6 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
           </TabNavigation>
         </div>
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

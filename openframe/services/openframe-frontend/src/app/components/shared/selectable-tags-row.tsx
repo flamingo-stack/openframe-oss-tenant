@@ -1,7 +1,12 @@
 'use client';
 
 import { Ellipsis01Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { ActionsMenuDropdown, Skeleton, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import {
+  ActionsMenuDropdown,
+  FloatingTooltip,
+  Skeleton,
+  Tag,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useAutoLimitTags } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { useMemo } from 'react';
@@ -10,6 +15,16 @@ export interface SelectableTag {
   id: string;
   key: string;
 }
+
+/**
+ * Max characters shown on a tag chip before it is truncated with an ellipsis;
+ * the full key is then surfaced via a tooltip. Keeps a single long key from
+ * stretching the row (and the measured chips in sync with the visible ones).
+ */
+const MAX_TAG_LABEL_LENGTH = 24;
+
+const formatTagLabel = (key: string): string =>
+  key.length > MAX_TAG_LABEL_LENGTH ? `${key.slice(0, MAX_TAG_LABEL_LENGTH)}…` : key;
 
 interface SelectableTagsRowProps {
   tags: ReadonlyArray<SelectableTag>;
@@ -41,15 +56,21 @@ export function SelectableTagsRow({ tags, selectedIds, onAdd }: SelectableTagsRo
   return (
     <div className="relative">
       <div ref={middleRef} className="flex items-center gap-[var(--spacing-system-xxs)] overflow-hidden">
-        {visible.map(tag => (
-          <Tag
-            key={tag.id}
-            variant="outline"
-            label={tag.key}
-            onClick={() => onAdd(tag)}
-            className="shrink-0 cursor-pointer hover:bg-ods-bg-hover"
-          />
-        ))}
+        {visible.map(tag => {
+          const isTruncated = tag.key.length > MAX_TAG_LABEL_LENGTH;
+          return (
+            <FloatingTooltip key={tag.id} content={tag.key} side="top" disabled={!isTruncated} className="break-all">
+              <Tag
+                variant="outline"
+                // Element (not a string) so the chip doesn't also set a native `title`
+                // tooltip on top of the styled one.
+                label={<span>{formatTagLabel(tag.key)}</span>}
+                onClick={() => onAdd(tag)}
+                className="shrink-0 cursor-pointer hover:bg-ods-bg-hover"
+              />
+            </FloatingTooltip>
+          );
+        })}
 
         {hidden.length > 0 && (
           <ActionsMenuDropdown
@@ -87,7 +108,7 @@ export function SelectableTagsRow({ tags, selectedIds, onAdd }: SelectableTagsRo
         className="absolute left-0 top-0 flex gap-[var(--spacing-system-xxs)] pointer-events-none invisible -z-10"
       >
         {available.map(tag => (
-          <Tag key={tag.id} variant="outline" label={tag.key} />
+          <Tag key={tag.id} variant="outline" label={formatTagLabel(tag.key)} />
         ))}
       </div>
     </div>

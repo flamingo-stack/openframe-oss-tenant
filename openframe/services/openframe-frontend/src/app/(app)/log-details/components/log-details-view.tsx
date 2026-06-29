@@ -2,7 +2,7 @@
 
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
 import { CheckIcon, Copy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { Button, DetailPageContainer, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, PageLayout, Tag } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -92,7 +92,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
   }
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title="Log Details"
       backButton={{
         label: 'Back',
@@ -110,8 +110,7 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
           ),
         },
       ]}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 w-full">
         {/* Status and Timestamp */}
@@ -149,6 +148,6 @@ export function LogDetailsView({ logId, ingestDay, toolType, eventType, timestam
         {/* Details Section */}
         <DetailsSection logDetails={logDetails} />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

@@ -86,6 +86,9 @@ export function CustomersOverviewSection() {
             value={org.active}
             percentage={org.activePct}
             showProgress
+            progressVariant="success"
+            percentageDisplay="plain"
+            progressSize={{ base: 24, lg: 56 }}
             href={
               org.active > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
@@ -99,6 +102,9 @@ export function CustomersOverviewSection() {
             value={org.inactive}
             percentage={org.inactivePct}
             showProgress
+            progressVariant="error"
+            percentageDisplay="plain"
+            progressSize={{ base: 24, lg: 56 }}
             href={
               org.inactive > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`

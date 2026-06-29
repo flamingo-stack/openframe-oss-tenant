@@ -1,9 +1,9 @@
 'use client';
 
 import {
-  DetailPageContainer,
   LoadError,
   NotFoundError,
+  PageLayout,
   ScriptArguments,
   ScriptInfoSection,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -183,11 +183,12 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
   }
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title="Run Script"
       backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex-1 overflow-auto">
         <ScriptInfoSection
@@ -268,7 +269,7 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         scriptName={scriptDetails.name || 'Script'}
         onViewLogs={handleViewLogs}
       />
-    </DetailPageContainer>
+    </PageLayout>
   );
 }
 

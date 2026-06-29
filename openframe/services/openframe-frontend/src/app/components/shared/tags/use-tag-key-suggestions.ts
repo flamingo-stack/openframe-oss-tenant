@@ -26,7 +26,7 @@ export function useTagKeySuggestions(currentKey: string, keySuggestionsRef: KeyS
     startTransition(() => {
       refetchKeys(
         { search: debouncedInput || undefined, limit: SUGGESTIONS_LIMIT },
-        { fetchPolicy: 'store-or-network' },
+        { fetchPolicy: 'store-and-network' },
       );
     });
   }, [debouncedInput, refetchKeys]);

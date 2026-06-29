@@ -74,7 +74,7 @@ function DeviceRowSkeleton() {
 
 /**
  * Full Schedule Assign Devices page loader
- * Matches ScheduleAssignDevicesView inside DetailPageContainer:
+ * Matches ScheduleAssignDevicesView inside PageLayout:
  * - Back link + title + Save button
  * - ScheduleInfoBarFromData
  * - Selection mode radios

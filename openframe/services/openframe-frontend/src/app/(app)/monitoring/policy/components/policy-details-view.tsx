@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  Button,
+  type ActionsMenuGroup,
   CardLoader,
-  DetailPageContainer,
   LoadError,
-  MoreActionsMenu,
   NotFoundError,
+  type PageActionButton,
+  PageLayout,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core';
 import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -71,35 +71,40 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
     return <NotFoundError message="Policy not found" />;
   }
 
+  const actions: PageActionButton[] = [
+    {
+      label: 'Edit',
+      icon: <PenEditIcon size={24} className="text-ods-text-secondary" />,
+      variant: 'outline',
+      onClick: handleEditPolicy,
+    },
+  ];
+
+  const menuActions: ActionsMenuGroup[] = [
+    {
+      items: [
+        {
+          id: 'delete-policy',
+          label: 'Delete Policy',
+          icon: <TrashIcon />,
+          onClick: () => setIsDeleteModalOpen(true),
+          disabled: isDeleting,
+        },
+      ],
+    },
+  ];
+
   return (
-    <DetailPageContainer
+    <PageLayout
       title={policyDetails.name}
       backButton={{
         label: 'Back',
         onClick: handleBack,
       }}
-      className="p-[var(--spacing-system-l)]"
-      headerActions={
-        <div className="flex items-center gap-2">
-          <Button
-            leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
-            variant="outline"
-            onClick={handleEditPolicy}
-          >
-            Edit
-          </Button>
-          <MoreActionsMenu
-            items={[
-              {
-                label: 'Delete Policy',
-                icon: <TrashIcon />,
-                onClick: () => setIsDeleteModalOpen(true),
-                disabled: isDeleting,
-              },
-            ]}
-          />
-        </div>
-      }
+      actions={actions}
+      menuActions={menuActions}
+      actionsVariant="menu-primary"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {/* Policy Info */}
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
@@ -162,6 +167,6 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
         itemType="policy"
         onConfirm={handleDeletePolicy}
       />
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

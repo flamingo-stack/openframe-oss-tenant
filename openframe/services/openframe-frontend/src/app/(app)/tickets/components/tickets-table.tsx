@@ -19,7 +19,7 @@ import { emphasizeNewTicketAction, useTicketsActions } from '../hooks/use-ticket
 import { useTicketsQuery } from '../hooks/use-tickets-query';
 import { useTicketStatusesQuery } from '../statuses/hooks/use-ticket-statuses-query';
 import type { Dialog } from '../types/dialog.types';
-import { TicketLabelSearchInput, TicketLabelsRow } from './ticket-label-filter';
+import { TicketTagFilter } from './ticket-label-filter';
 import { getTicketTableColumns, type StatusFilterOption, TicketTableBody } from './ticket-table-columns';
 
 // TODO(unread-from-entity): re-enable per-ticket unread highlighting once the backend exposes
@@ -176,28 +176,24 @@ export function TicketsTable({
             ref={toolbarRef}
             className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
           >
-            <div className="flex gap-[var(--spacing-system-m)] items-center">
-              <div className="flex-1 min-w-0">
-                <TicketLabelSearchInput
-                  search={search}
-                  onSearchChange={onSearchChange}
-                  labelIds={labelIds}
-                  onLabelIdsChange={onLabelIdsChange}
-                />
-              </div>
-              {hasMobileFilter && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="md:hidden"
-                  onClick={() => setMobileFilterOpen(true)}
-                  aria-label="Open filters"
-                  leftIcon={<Filter02Icon />}
-                />
-              )}
-            </div>
-
-            <TicketLabelsRow selectedIds={labelIds} onAdd={id => onLabelIdsChange([...labelIds, id])} />
+            <TicketTagFilter
+              search={search}
+              onSearchChange={onSearchChange}
+              labelIds={labelIds}
+              onLabelIdsChange={onLabelIdsChange}
+              filterButton={
+                hasMobileFilter ? (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="md:hidden"
+                    onClick={() => setMobileFilterOpen(true)}
+                    aria-label="Open filters"
+                    leftIcon={<Filter02Icon />}
+                  />
+                ) : undefined
+              }
+            />
           </div>
 
           {hasMobileFilter && (

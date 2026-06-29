@@ -43,7 +43,7 @@ export function TagsEditor({ tags, onTagsChange, addLabel = 'Add Tag' }: TagsEdi
   const queryData = useLazyLoadQuery<TagsEditorQueryType>(
     tagsEditorRootQuery,
     { limit: SUGGESTIONS_LIMIT },
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
 
   const addTag = useCallback(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { ListPageContainer, ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
+import { PageLayout, ServiceCard, Skeleton } from '@flamingo-stack/openframe-frontend-core';
 import { SearchIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Input } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -50,11 +50,9 @@ export function ArchitectureTab({ title = 'Architecture Overview' }: Architectur
   const layerOrder = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
 
   return (
-    <ListPageContainer
+    <PageLayout
       title={title}
-      background="default"
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] bg-ods-bg"
       backButton={{ label: 'Back', onClick: handleBack }}
     >
       <div>
@@ -135,6 +133,6 @@ export function ArchitectureTab({ title = 'Architecture Overview' }: Architectur
           </div>
         </div>
       ))}
-    </ListPageContainer>
+    </PageLayout>
   );
 }

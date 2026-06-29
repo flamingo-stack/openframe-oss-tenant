@@ -63,7 +63,7 @@ function ActionCardSkeleton() {
 
 /**
  * Full Schedule Create/Edit page loader
- * Matches the exact layout of ScheduleCreateView inside DetailPageContainer
+ * Matches the exact layout of ScheduleCreateView inside PageLayout
  */
 export function ScheduleCreateSkeleton() {
   return (

@@ -1,8 +1,8 @@
 'use client';
 
-import { InfoRow } from '@flamingo-stack/openframe-frontend-core';
-import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
+import type { InfoCardData } from '@flamingo-stack/openframe-frontend-core';
+import { InfoCard, ToolIcon } from '@flamingo-stack/openframe-frontend-core';
+import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
 
 interface LogEntry {
   toolEventId: string;
@@ -41,50 +41,28 @@ export function FullInformationSection({ logDetails }: FullInformationSectionPro
     );
   }
 
+  const items: InfoCardData['items'] = [
+    { label: 'toolEventId', value: logDetails.toolEventId },
+    { label: 'ingestDay', value: logDetails.ingestDay },
+    {
+      label: 'toolType',
+      value: toToolLabel(logDetails.toolType),
+      icon: <ToolIcon toolType={normalizeToolTypeWithFallback(logDetails.toolType)} size={16} />,
+    },
+    { label: 'eventType', value: logDetails.eventType },
+    { label: 'severity', value: logDetails.severity },
+    ...(logDetails.userId ? [{ label: 'userId', value: logDetails.userId }] : []),
+    ...(logDetails.deviceId ? [{ label: 'deviceId', value: logDetails.deviceId }] : []),
+    { label: 'timestamp', value: formatTimestamp(logDetails.timestamp) },
+  ];
+
   return (
     <div className="flex flex-col gap-3 w-full">
       {/* Section Title */}
       <div className="text-h5 text-ods-text-secondary w-full">Full Information</div>
 
       {/* Info Card */}
-      <div className="bg-ods-card border border-ods-border rounded-[6px] w-full">
-        <div className="flex flex-col divide-y divide-ods-border">
-          <div className="p-4 md:p-6">
-            <InfoRow label="toolEventId" value={logDetails.toolEventId} />
-          </div>
-          <div className="p-4 md:p-6">
-            <InfoRow label="ingestDay" value={logDetails.ingestDay} />
-          </div>
-          <div className="p-4 md:p-6">
-            <div className="flex gap-2 items-center w-full">
-              <div className="text-h4 text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap">toolType</div>
-              <div className="flex-1 bg-[#3a3a3a] h-px min-h-px min-w-px" />
-              <div className="text-h4 text-[#fafafa] overflow-hidden text-ellipsis whitespace-nowrap flex items-center gap-1">
-                <ToolBadge toolType={normalizeToolTypeWithFallback(logDetails.toolType)} />
-              </div>
-            </div>
-          </div>
-          <div className="p-4 md:p-6">
-            <InfoRow label="eventType" value={logDetails.eventType} />
-          </div>
-          <div className="p-4 md:p-6">
-            <InfoRow label="severity" value={logDetails.severity} />
-          </div>
-          {logDetails.userId && (
-            <div className="p-4 md:p-6">
-              <InfoRow label="userId" value={logDetails.userId} />
-            </div>
-          )}
-          {logDetails.deviceId && (
-            <div className="p-4 md:p-6">
-              <InfoRow label="deviceId" value={logDetails.deviceId} />
-            </div>
-          )}
-          <div className="p-4 md:p-6">
-            <InfoRow label="timestamp" value={formatTimestamp(logDetails.timestamp)} />
-          </div>
-        </div>
-      </div>
+      <InfoCard data={{ items }} />
     </div>
   );
 }

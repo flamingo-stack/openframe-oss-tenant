@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  DetailPageContainer,
+  PageLayout,
   Select,
   SelectContent,
   SelectItem,
@@ -183,14 +183,15 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
 
   return (
     <FormProvider {...methods}>
-      <DetailPageContainer
+      <PageLayout
         title={isEditMode ? 'Edit Script Schedule' : 'New Script Schedule'}
         backButton={{
           label: isEditMode ? 'Back' : 'Back',
           onClick: handleBack,
         }}
         actions={actions}
-        className="p-[var(--spacing-system-l)]"
+        actionsVariant="primary-buttons"
+        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       >
         <div className="flex flex-col gap-6 overflow-auto">
           {/* Schedule Name */}
@@ -349,7 +350,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             </Button>
           </div>
         </div>
-      </DetailPageContainer>
+      </PageLayout>
     </FormProvider>
   );
 }

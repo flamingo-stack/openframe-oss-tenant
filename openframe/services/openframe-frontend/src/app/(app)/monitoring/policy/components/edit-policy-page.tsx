@@ -2,11 +2,11 @@
 
 import {
   CardLoader,
-  FormPageContainer,
   Input,
   Label,
   LoadError,
   NotFoundError,
+  PageLayout,
   Textarea,
 } from '@flamingo-stack/openframe-frontend-core';
 import { InfoCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
@@ -224,15 +224,15 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
   }
 
   return (
-    <FormPageContainer
+    <PageLayout
       title={isExistingPolicy && policyDetails ? policyDetails.name : 'New Policy'}
       backButton={{
         label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="space-y-6 md:space-y-8">
         {/* Test Policy Panel */}
@@ -313,6 +313,6 @@ export function EditPolicyPage({ policyId }: EditPolicyPageProps) {
           />
         </div>
       </div>
-    </FormPageContainer>
+    </PageLayout>
   );
 }

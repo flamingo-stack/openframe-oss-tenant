@@ -1,7 +1,7 @@
 'use client';
 
 import { NotFoundError, PageLayout, ScriptArguments } from '@flamingo-stack/openframe-frontend-core';
-import { Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { CheckboxBlock, Input, Label } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -9,11 +9,11 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { useLazyLoadQuery, useMutation } from 'react-relay';
 import { z } from 'zod';
-import type { runScriptMutation as RunScriptMutationType } from '@/__generated__/runScriptMutation.graphql';
+import type { batchRunScriptMutation as BatchRunScriptMutationType } from '@/__generated__/batchRunScriptMutation.graphql';
 import type { scriptDetailRelayQuery as ScriptDetailQueryType } from '@/__generated__/scriptDetailRelayQuery.graphql';
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
-import { runScriptMutation } from '@/graphql/scripts/run-script-mutation';
+import { batchRunScriptMutation } from '@/graphql/scripts/batch-run-script-mutation';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
 import type { Device } from '../../../devices/types/device.types';
 import { ExecutionStartedModal } from '../../components/script/execution-started-modal';
@@ -21,6 +21,7 @@ import { scriptArgumentSchema } from '../../types/edit-script.types';
 import { getDevicePrimaryId } from '../../utils/device-helpers';
 import { parseKeyValues, serializeKeyValues } from '../../utils/script-key-values';
 import { useRunDevices } from '../hooks/use-run-devices';
+import { initiatorName } from '../utils/execution-helpers';
 import { envVarsToInput, envVarsToPairs, platformsToIds, shellToId } from '../utils/script-mappers';
 import { RunScriptSkeleton } from './run-script-skeleton';
 import { ScriptSummaryCard } from './script-summary-card';
@@ -31,6 +32,7 @@ interface RunScriptViewProps {
 
 const runFormSchema = z.object({
   timeout: z.number().min(1, 'Timeout must be at least 1 second').max(86400, 'Timeout cannot exceed 24 hours'),
+  runAsUser: z.boolean(),
   scriptArgs: z.array(scriptArgumentSchema),
   envVars: z.array(scriptArgumentSchema),
 });
@@ -62,7 +64,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showExecutionModal, setShowExecutionModal] = useState(false);
-  const [commitRun] = useMutation<RunScriptMutationType>(runScriptMutation);
+  const [commitBatchRun] = useMutation<BatchRunScriptMutationType>(batchRunScriptMutation);
 
   const {
     control,
@@ -71,7 +73,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
     formState: { isSubmitting },
   } = useForm<RunFormData>({
     resolver: zodResolver(runFormSchema),
-    defaultValues: { timeout: 90, scriptArgs: [], envVars: [] },
+    defaultValues: { timeout: 90, runAsUser: false, scriptArgs: [], envVars: [] },
   });
 
   useEffect(() => {
@@ -80,6 +82,8 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
       const parsedEnv = envVarsToPairs(script.envVars);
       reset({
         timeout: script.defaultTimeoutSeconds ?? 90,
+        // Seed from the script's saved privilege; the user can still toggle it per run.
+        runAsUser: script.privilegeLevel === 'USER',
         // Show one empty row when the script has none, so the inputs are visible.
         // Empty rows are dropped on submit, so the run still starts without them.
         scriptArgs: parsedArgs.length > 0 ? parsedArgs : [{ id: 'arg-0', key: '', value: '' }],
@@ -90,15 +94,23 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
 
   const handleBack = useSafeBack(`/scripts-v2/details/${scriptId}`);
 
-  const dispatchToDevice = useCallback(
-    (machineId: string, args: string[], timeoutSeconds: number, envVars: ReturnType<typeof envVarsToInput>) =>
+  // One dispatch to every selected machine under a single shared executionId
+  // (batchRunScript), instead of a runScript per device.
+  const dispatchBatch = useCallback(
+    (
+      machineIds: string[],
+      args: string[],
+      timeoutSeconds: number,
+      envVars: ReturnType<typeof envVarsToInput>,
+      runAsUser: boolean,
+    ) =>
       new Promise<void>((resolve, reject) => {
-        commitRun({
+        commitBatchRun({
           variables: {
             input: {
-              machineId,
+              machineIds,
               scriptId,
-              privilegeLevel: 'ADMIN',
+              privilegeLevel: runAsUser ? 'USER' : 'ADMIN',
               args,
               timeoutSeconds,
               envVars,
@@ -108,7 +120,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
           onError: err => reject(err),
         });
       }),
-    [commitRun, scriptId],
+    [commitBatchRun, scriptId],
   );
 
   const onSubmit = useCallback(
@@ -138,14 +150,14 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
       const envVars = envVarsToInput(formData.envVars);
 
       try {
-        await Promise.all(machineIds.map(machineId => dispatchToDevice(machineId, args, formData.timeout, envVars)));
+        await dispatchBatch(machineIds, args, formData.timeout, envVars, formData.runAsUser);
         setShowExecutionModal(true);
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Failed to dispatch script';
         toast({ title: 'Submission failed', description: msg, variant: 'destructive' });
       }
     },
-    [allDevices, selectedIds, toast, dispatchToDevice],
+    [allDevices, selectedIds, toast, dispatchBatch],
   );
 
   const onFormError = useCallback(
@@ -193,21 +205,36 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
           description={script.description}
           shellId={shellToId(script.shell)}
           platforms={supportedPlatforms}
+          author={script.author ? initiatorName(script.author) : null}
           showTimeout={false}
         />
 
-        <div className="pt-6">
-          <Label className="text-ods-text-primary font-semibold text-lg">Timeout</Label>
+        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
+          <div>
+            <Label className="text-ods-text-primary font-semibold text-lg">Timeout</Label>
+            <Controller
+              name="timeout"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  type="number"
+                  className="w-full"
+                  value={field.value}
+                  onChange={e => field.onChange(Number(e.target.value) || 0)}
+                  endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
+                />
+              )}
+            />
+          </div>
+
           <Controller
-            name="timeout"
+            name="runAsUser"
             control={control}
             render={({ field }) => (
-              <Input
-                type="number"
-                className="md:max-w-[320px] w-full"
-                value={field.value}
-                onChange={e => field.onChange(Number(e.target.value) || 0)}
-                endAdornment={<span className="text-ods-text-secondary text-sm">Seconds</span>}
+              <CheckboxBlock
+                checked={field.value}
+                onCheckedChange={checked => field.onChange(checked === true)}
+                label="Run as User"
               />
             )}
           />

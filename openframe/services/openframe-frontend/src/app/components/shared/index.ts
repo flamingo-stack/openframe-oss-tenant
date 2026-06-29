@@ -8,4 +8,5 @@ export { EmptyState, type EmptyStateProps } from './empty-state';
 export { LogDrawer, type LogDrawerInfoField } from './log-drawer';
 export { OrgAvatar } from './org-avatar';
 export { type SelectableTag, SelectableTagsRow, SelectableTagsRowSkeleton } from './selectable-tags-row';
+export { TagFilterBar, TagFilterBarSkeleton } from './tag-filter-bar';
 export * from './tags';

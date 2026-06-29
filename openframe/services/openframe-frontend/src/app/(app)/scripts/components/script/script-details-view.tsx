@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  DetailPageContainer,
-  LoadError,
-  NotFoundError,
-  ScriptInfoSection,
-} from '@flamingo-stack/openframe-frontend-core';
+import { LoadError, NotFoundError, PageLayout, ScriptInfoSection } from '@flamingo-stack/openframe-frontend-core';
 import { ArrowRightUpIcon, PenEditIcon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { useMemo } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
@@ -67,14 +62,15 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   }
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={scriptDetails.name}
       backButton={{
         label: 'Back',
         onClick: handleBack,
       }}
       actions={actions}
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {/* Main Content */}
       <div className="flex flex-col overflow-auto gap-6">
@@ -106,6 +102,6 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
           </div>
         )}{' '}
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

@@ -5,8 +5,9 @@ import {
   Button,
   type ColumnDef,
   DataTable,
-  ListPageContainer,
   MoreActionsMenu,
+  type PageActionButton,
+  PageLayout,
   type Row,
   Tag,
   TruncateText,
@@ -167,32 +168,26 @@ export function ApiKeysTab() {
     enableSorting: false,
   });
 
-  const headerActions = (
-    <div className="flex items-center gap-3">
-      <Button
-        onClick={() => window.open('/swagger-ui/index.html#/', '_blank', 'noopener,noreferrer')}
-        leftIcon={<DocumentIcon className="w-5 h-5" />}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-      >
-        API Documentation
-      </Button>
-      <Button
-        onClick={() => setIsCreateOpen(true)}
-        className="bg-ods-card border border-ods-border hover:bg-ods-bg-hover text-ods-text-primary px-4 py-2.5 rounded-[6px] font-['DM_Sans'] font-bold text-[16px]"
-        leftIcon={<PlusCircleIcon iconSize={20} whiteOverlay />}
-      >
-        Create API Key
-      </Button>
-    </div>
-  );
+  const actions: PageActionButton[] = [
+    {
+      label: 'API Documentation',
+      icon: <DocumentIcon className="w-5 h-5" />,
+      variant: 'outline',
+      onClick: () => window.open('/swagger-ui/index.html#/', '_blank', 'noopener,noreferrer'),
+    },
+    {
+      label: 'Create API Key',
+      icon: <PlusCircleIcon iconSize={20} whiteOverlay />,
+      variant: 'outline',
+      onClick: () => setIsCreateOpen(true),
+    },
+  ];
 
   return (
-    <ListPageContainer
+    <PageLayout
       title="API Keys"
-      headerActions={headerActions}
-      background="default"
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      actions={actions}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] bg-ods-bg"
       backButton={{ label: 'Back', onClick: handleBack }}
     >
       <DataTable table={table}>
@@ -278,6 +273,6 @@ export function ApiKeysTab() {
           setIsDisableOpen(false);
         }}
       />
-    </ListPageContainer>
+    </PageLayout>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { CommandBox } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { CheckIcon, Copy02Icon, PlayIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import type { AutocompleteOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
@@ -202,11 +202,10 @@ export function NewDeviceContent() {
   }, [command, platform, toast, validateBeforeAction]);
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title="New Device"
       backButton={{ label: 'Back', onClick: handleBack }}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -284,6 +283,6 @@ export function NewDeviceContent() {
         <AntivirusWarning platform={platform} />
         <DoctorModeWarning platform={platform} />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

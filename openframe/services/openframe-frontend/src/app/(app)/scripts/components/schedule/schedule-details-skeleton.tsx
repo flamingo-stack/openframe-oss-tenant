@@ -1,6 +1,6 @@
 'use client';
 
-import { DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 
 /**
@@ -77,7 +77,7 @@ function ScriptCardSkeleton() {
 
 /**
  * Full Schedule Detail page skeleton
- * Matches ScheduleDetailView inside DetailPageContainer:
+ * Matches ScheduleDetailView inside PageLayout:
  * - Back link + title + 2 action buttons
  * - ScheduleInfoBar (4 columns)
  * - TabNavigation (3 tabs with icons)
@@ -85,22 +85,18 @@ function ScriptCardSkeleton() {
  */
 export function ScheduleDetailSkeleton() {
   return (
-    <DetailPageContainer
-      className="p-[var(--spacing-system-l)]"
-      headerContent={
-        <div className="flex items-end justify-between md:flex-col md:items-start md:justify-start lg:flex-row lg:items-end lg:justify-between gap-4 w-full pt-8">
-          <div className="flex flex-col gap-2 flex-1 min-w-0">
-            <Skeleton className="h-5 w-48" />
-            <Skeleton className="h-9 w-64 md:h-10 md:w-72" />
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Skeleton className="h-12 w-[155px] rounded-[6px]" />
-            <Skeleton className="h-12 w-[160px] rounded-[6px]" />
-          </div>
+    <PageLayout showHeader={false} className="p-[var(--spacing-system-l)]">
+      <div className="flex items-end justify-between md:flex-col md:items-start md:justify-start lg:flex-row lg:items-end lg:justify-between gap-4 w-full pt-8">
+        <div className="flex flex-col gap-2 flex-1 min-w-0">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-9 w-64 md:h-10 md:w-72" />
         </div>
-      }
-      padding="none"
-    >
+        <div className="flex items-center gap-2 shrink-0">
+          <Skeleton className="h-12 w-[155px] rounded-[6px]" />
+          <Skeleton className="h-12 w-[160px] rounded-[6px]" />
+        </div>
+      </div>
+
       <div className="flex-1 overflow-auto">
         {/* Info bar */}
         <div className="pt-6">
@@ -117,6 +113,6 @@ export function ScheduleDetailSkeleton() {
           </div>
         </div>
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }
