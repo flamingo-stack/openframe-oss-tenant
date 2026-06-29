@@ -1,7 +1,7 @@
 'use client';
 
 import { type DialogItem, useOptionalNotifications } from '@flamingo-stack/openframe-frontend-core';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { GET_MINGO_DIALOGS_QUERY } from '../queries/dialogs-queries';
@@ -11,6 +11,11 @@ import type { DialogNode, DialogsResponse, UseMingoDialogsOptions } from '../typ
 // unread counts on the dialog entity itself. Matching unread notifications to dialogs by id is a
 // temporary workaround — disabled for now; flip this flag to restore it.
 const HIGHLIGHT_UNREAD_FROM_NOTIFICATIONS: boolean = false;
+
+// Statuses shown in the active "Current Chats" list — every DialogStatus except
+// ARCHIVED. The backend returns archived dialogs when no statuses are passed, so
+// list them explicitly; archived dialogs live in the separate Chat Archive page.
+const ACTIVE_DIALOG_STATUSES = ['ACTIVE', 'ACTION_REQUIRED', 'ON_HOLD', 'RESOLVED'] as const;
 
 function transformToDialogItem(dialog: DialogNode, unreadCount: number = 0): DialogItem {
   return {
@@ -47,6 +52,7 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
       const variables = {
         filter: {
           agentTypes: ['ADMIN'],
+          statuses: ACTIVE_DIALOG_STATUSES,
         },
         pagination: {
           limit,
@@ -77,6 +83,9 @@ export function useMingoDialogs(options: UseMingoDialogsOptions = {}) {
     enabled,
     staleTime: 30 * 1000,
     refetchInterval: 60 * 1000,
+    // Keep the current list visible while a new `search` term refetches, so
+    // typing doesn't flash an empty list / "No chats found" between keystrokes.
+    placeholderData: keepPreviousData,
   });
 
   const dialogsWithUnread = useMemo(() => {

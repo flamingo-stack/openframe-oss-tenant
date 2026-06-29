@@ -27,6 +27,8 @@ interface AiProviderModelFieldsProps<T extends AiLogicFormValues & FieldValues> 
   modelsByProvider: SupportedModelsByProvider | undefined;
   /** Clears the selected model when the provider changes. */
   onProviderChange: () => void;
+  /** Label for the provider select (e.g. "Mingo LLM Provider"). */
+  providerLabel?: string;
 }
 
 /**
@@ -39,6 +41,7 @@ export function AiProviderModelFields<T extends AiLogicFormValues & FieldValues>
   llmProvider,
   modelsByProvider,
   onProviderChange,
+  providerLabel = 'LLM Provider',
 }: AiProviderModelFieldsProps<T>) {
   // The generic constraint guarantees the form has the AI-logic fields; cast
   // narrows Control to that shape for type-safe field names.
@@ -59,7 +62,7 @@ export function AiProviderModelFields<T extends AiLogicFormValues & FieldValues>
                 onProviderChange();
               }}
             >
-              <SelectTrigger label="LLM Provider" error={fieldState.error?.message}>
+              <SelectTrigger label={providerLabel} error={fieldState.error?.message}>
                 <SelectValue placeholder="Select a provider" />
               </SelectTrigger>
               <SelectContent>

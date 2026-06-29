@@ -19,9 +19,9 @@ interface AiSettingsOverviewProps {
 }
 
 /**
- * Shared read-only view for the AI settings tabs. The CLIENT tab passes both
- * `aiConfig` and `view` (full card + previews); the ADMIN/Mingo tab passes only
- * `quickActions` (its provider/model is rendered separately by AiModelConfig).
+ * Shared read-only view for the CLIENT (customer) AI settings tab: the full
+ * customer card plus previews. The ADMIN/Mingo tab renders its own read-only
+ * view (AiSettingsAdminCard + quick actions table).
  */
 export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickActions }: AiSettingsOverviewProps) {
   return (
@@ -29,14 +29,17 @@ export function AiSettingsOverview({ aiConfig, view, providerModelLabel, quickAc
       {aiConfig && view && (
         <>
           <AiSettingsCustomerCard aiConfig={aiConfig} view={view} providerModelLabel={providerModelLabel} />
-          <AiSettingsPreviews
-            assistantName={view.assistantName}
-            avatarUrl={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
-            accentColor={view.accentColor}
-            theme={view.applicationTheme}
-            providerName={aiConfig.llmProvider}
-            modelDisplayName={providerModelLabel ?? aiConfig.providerModel}
-          />
+          {/* Previews are part of the not-yet-released AI customization. */}
+          {featureFlags.customerAiAssistantSettings.enabled() && (
+            <AiSettingsPreviews
+              assistantName={view.assistantName}
+              avatarUrl={getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash)}
+              accentColor={view.accentColor}
+              theme={view.applicationTheme}
+              providerName={aiConfig.llmProvider}
+              modelDisplayName={providerModelLabel ?? aiConfig.providerModel}
+            />
+          )}
         </>
       )}
       {/* Quick actions are part of the not-yet-released AI customization. */}

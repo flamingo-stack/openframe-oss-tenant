@@ -46,6 +46,24 @@ export function parseInstant(value: unknown): number {
 }
 
 /**
+ * Calendar-day codec for day-granular fields (e.g. a manual time entry's "Date").
+ * A calendar day has no timezone, but the API stores it as an `Instant`, so we
+ * anchor it at UTC midnight: the stored instant's UTC date always equals the
+ * civil day the user picked, regardless of their timezone. Local midnight would
+ * roll back a day in UTC for east-of-UTC offsets and drop the entry out of its
+ * own day's range. The two functions are exact inverses, so prefill → edit →
+ * save round-trips stably in every timezone.
+ */
+export function calendarDayToInstant(date: Date): string {
+  return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString();
+}
+
+export function instantToCalendarDay(value: unknown): Date {
+  const inst = new Date(parseInstant(value));
+  return new Date(inst.getUTCFullYear(), inst.getUTCMonth(), inst.getUTCDate());
+}
+
+/**
  * Maps the backend timer to the core lib's display contract. ALL timer math lives here.
  *
  * The backend keeps `durationSeconds` at 0 for the whole active session (it's only
@@ -115,7 +133,7 @@ export function mapTimeEntryToLastEntry(node: TimeEntryNodeShape): TimeTrackerEn
     id: node.id,
     durationLabel: formatDurationLabel(Number(node.durationSeconds)),
     dateLabel: formatDate(parseInstant(node.startedAt)),
-    title: node.ticketTitle ?? (node.ticketNumber != null ? `#${node.ticketNumber}` : 'Manual entry'),
+    title: node.ticketTitle ?? (node.ticketNumber != null ? `#${node.ticketNumber}` : '–'),
     description: node.notes ?? undefined,
   };
 }

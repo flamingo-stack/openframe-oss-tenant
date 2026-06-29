@@ -13,6 +13,7 @@ import {
 import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
+import { ResponsiveActionButton } from '@/app/components/shared/responsive-action-button';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { getTicketTableColumns } from '../../../tickets/components/ticket-table-columns';
@@ -101,13 +102,11 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
       <CustomerTabHeader
         title="Tickets"
         rightActions={
-          <Button
-            variant="outline"
+          <ResponsiveActionButton
+            label="New Ticket"
+            icon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
             onClick={() => router.push('/tickets/new')}
-            leftIcon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-          >
-            New Ticket
-          </Button>
+          />
         }
       />
 

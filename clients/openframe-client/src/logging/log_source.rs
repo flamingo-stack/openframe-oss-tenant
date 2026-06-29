@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 
 use anyhow::{Context, Result};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 
 use super::log_parser::{parse_log_line, LogDeduplicator, LogEntry};
 
@@ -156,7 +156,7 @@ impl LogSourceRegistry {
                         if count == 0 {
                             active[i] = false;
                         } else {
-                            info!("Read {} logs from '{}'", count, source.name());
+                            debug!("Read {} logs from '{}'", count, source.name());
                             remaining = remaining.saturating_sub(count);
                             all_logs.extend(entries);
 

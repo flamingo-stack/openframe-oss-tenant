@@ -281,6 +281,26 @@ For regular client components, import directly from the core library.
 - **Feature Components** — AuthProvidersList, Terminal, ToolBadge
 - **Navigation** — AppLayout, sidebar config types
 
+### Embedded Page Components (standalone + tab reuse)
+
+Some page components render their own `PageLayout` and are used **both** as a standalone route
+**and** embedded inside another page's tab (e.g. `LogsTable`, `DevicesPanel` inside customer/device
+details). Core `PageLayout`/`TitleBlock` are **FROZEN** — the `TitleBlock` has a hardcoded leading
+`pt-[var(--spacing-system-l)]` that is correct standalone but leaves a redundant gap under the tab bar
+when embedded.
+
+**Convention:** such a component accepts an `embedded?: boolean` prop. When `embedded`, forward
+`EMBEDDED_PAGE_OFFSET` (a `-mt-[var(--spacing-system-l)]` from `@/app/components/shared`) into its
+`PageLayout` `className` to cancel that top padding. The header stays; only the top gap is removed.
+Callers in tabs just pass `embedded`:
+
+```tsx
+<LogsTable organizationId={organizationId} embedded />
+<DevicesPanel embedded /* ... */ />
+```
+
+Do **not** modify `PageLayout`/`TitleBlock` to fix this — they are frozen.
+
 ## Development Patterns
 
 ### CRITICAL: React Hooks Rules
@@ -726,31 +746,16 @@ export interface UnifiedUser {
 5. **Focus Management** — Handle focus in modals and dynamic content
 
 ### ODS Design Tokens (MANDATORY)
-```typescript
-// GOOD: Using ODS tokens
-<Card className="bg-ods-card border-ods-border">
-  <div className="text-ods-text-primary">Primary text</div>
-  <div className="text-ods-text-secondary">Secondary text</div>
-</Card>
 
-// BAD: Hardcoded values
-<Card className="bg-gray-800 border-gray-700">
-  <div className="text-white">Primary text</div>
-</Card>
-```
+ALL styling must use ODS design tokens — never hardcode colors, font families, font sizes, or spacing.
 
-**Key tokens:**
-```css
---ods-attention-green-success: #5ea62e
---ods-attention-red-error: #f36666
---color-warning: #f59e0b
---ods-card: #212121
---ods-border: #3a3a3a
---ods-text-primary: #fafafa
---ods-text-secondary: #888888
-```
+The full canonical ODS token rules (colors, spacing, typography, Figma workflow) are the **single
+source of truth** maintained in `@flamingo-stack/openframe-frontend-core` and imported here straight
+from the installed package. Edit the rules in the core lib, not here:
 
-**Tailwind preset:** ODS colors are provided via the core library's Tailwind preset (see `tailwind.config.ts`).
+@./node_modules/@flamingo-stack/openframe-frontend-core/src/ODS_TOKEN_RULES.md
+
+**Tailwind preset:** ODS colors/utilities are provided via the core library's Tailwind preset (see `tailwind.config.ts`).
 
 ### Inverted Progress Bar
 ```typescript

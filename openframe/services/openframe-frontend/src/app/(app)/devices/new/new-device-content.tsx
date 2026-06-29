@@ -18,7 +18,9 @@ import { isValidTag, type TagEntryWithId, TagsEditor } from '@/app/components/sh
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AVAILABLE_PLATFORMS, DISABLED_PLATFORMS } from '@/lib/platforms';
+import { AdminPrivilegesWarning } from '../components/admin-privileges-warning';
 import { AntivirusWarning } from '../components/antivirus-warning';
+import { DoctorModeWarning } from '../components/doctor-mode-warning';
 import { useDeviceOrganizations } from '../hooks/use-device-organizations';
 import { useInstallCommand } from '../hooks/use-install-command';
 
@@ -278,7 +280,9 @@ export function NewDeviceContent() {
           }}
         />
 
+        <AdminPrivilegesWarning platform={platform} />
         <AntivirusWarning platform={platform} />
+        <DoctorModeWarning platform={platform} />
       </div>
     </DetailPageContainer>
   );

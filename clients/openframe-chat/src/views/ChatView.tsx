@@ -31,6 +31,7 @@ import { useApplyAiAppearance } from '../hooks/useApplyAiAppearance';
 import { useAssistantBranding } from '../hooks/useAssistantBranding';
 import { useChat } from '../hooks/useChat';
 import { useConnectionStatus } from '../hooks/useConnectionStatus';
+import { useTenantInfoQuery } from '../hooks/useTenantInfoQuery';
 import { type TicketDetails, useTickets } from '../hooks/useTickets';
 import { useWelcomeScreen } from '../hooks/useWelcomeScreen';
 import { type DialogTokenUsage, dialogGraphQlService } from '../services/dialogGraphQLService';
@@ -155,8 +156,12 @@ export function ChatView() {
 
   const { toast } = useToast();
 
-  const { status, serverUrl, aiConfiguration, isFullyLoaded } = useConnectionStatus();
+  const { status, aiConfiguration, isFullyLoaded } = useConnectionStatus();
   const isDisconnected = status !== 'connected';
+
+  // Header shows the MSP company name (from tenant info) in place of the tenant domain.
+  const { data: tenantInfo } = useTenantInfoQuery({ enabled: true });
+  const mspCompanyName = tenantInfo?.name?.trim() || undefined;
 
   // Connected: fire-and-forget so ChatInput clears the draft immediately. Returning
   // sendMessage's promise would make the lib defer clearing until it resolves (once
@@ -339,7 +344,7 @@ export function ChatView() {
     const faeMessage = {
       id: `synthetic-fae-form-${faeFormTicket.id}`,
       role: 'assistant' as const,
-      name: assistantName ?? 'Fae',
+      name: assistantName,
       content: [
         'Your request has been received. We will contact you shortly.',
         '',
@@ -418,10 +423,10 @@ export function ChatView() {
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
       <ChatHeader
         isLoading={isAssistantLoading}
-        userName={assistantName ?? 'Fae'}
+        userName={assistantName}
         userAvatar={assistantAvatar}
         connectionStatus={status}
-        serverUrl={serverUrl}
+        serverUrl={mspCompanyName}
         onBack={hasMessages ? handleNewChat : undefined}
         ticketInfo={ticketInfo}
         headerActions={

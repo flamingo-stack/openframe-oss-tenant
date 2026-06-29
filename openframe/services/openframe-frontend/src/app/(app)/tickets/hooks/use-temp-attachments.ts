@@ -25,7 +25,7 @@ export interface TempFileEntry {
   error?: string;
 }
 
-async function createTempAttachment(
+export async function createTempAttachment(
   file: File,
 ): Promise<{ id: string; fileName: string; fileSize: number; contentType: string }> {
   const contentType = file.type || 'application/octet-stream';
@@ -86,7 +86,7 @@ export function useTempAttachments() {
     mutationFn: createTempAttachment,
     onMutate: (file: File) => {
       const placeholder: TempFileEntry = {
-        id: `pending-${Date.now()}`,
+        id: `pending-${crypto.randomUUID()}`,
         fileName: file.name,
         fileSize: file.size,
         contentType: file.type || 'application/octet-stream',

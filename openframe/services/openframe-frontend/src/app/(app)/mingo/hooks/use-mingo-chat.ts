@@ -250,11 +250,20 @@ export function useMingoChat(dialogId: string | null): UseMingoChat {
       return result.id;
     } catch (error) {
       console.error('[MingoChat] Failed to create dialog:', error);
+      // Surface the failure: callers (quick actions, launcher, draft send) only
+      // get a null id back and otherwise bail silently, so without this a dialog
+      // that can't be created leaves the user with no feedback.
+      toast({
+        title: 'Failed to start conversation',
+        description: error instanceof Error ? error.message : 'Could not create a new chat',
+        variant: 'destructive',
+        duration: 5000,
+      });
       return null;
     } finally {
       setCreatingDialog(false);
     }
-  }, [isCreatingDialog, setCreatingDialog, createDialogMutation, queryClient]);
+  }, [isCreatingDialog, setCreatingDialog, createDialogMutation, queryClient, toast]);
 
   const sendMessage = useCallback(
     async (content: string, targetDialogId?: string, context?: MingoSendContext): Promise<boolean> => {

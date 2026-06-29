@@ -44,7 +44,7 @@ import type { logsTableRelay_query$key as LogsFragmentKey } from '@/__generated_
 import type { logsTableRelayPaginationQuery as LogsPaginationQueryType } from '@/__generated__/logsTableRelayPaginationQuery.graphql';
 import type { logsTableRelayQuery as LogsQueryType } from '@/__generated__/logsTableRelayQuery.graphql';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
-import { EmptyState, LogDrawer } from '@/app/components/shared';
+import { EMBEDDED_PAGE_OFFSET, EmptyState, LogDrawer } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { transformOrganizationFilters } from '@/lib/filter-utils';
 import { formatDateTime } from '@/lib/format-date';
@@ -145,6 +145,8 @@ interface LogsTableProps {
   deviceId?: string;
   /** Lock the table to a single organization. When set, the source/organization column filter is hidden. */
   organizationId?: string;
+  /** Render inside a tab (e.g. customer/device details) — drops the standalone top padding. */
+  embedded?: boolean;
 }
 
 export interface LogsTableRef {
@@ -676,7 +678,7 @@ function LogsTableSkeleton() {
 // ----------------------------------------------------------------
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable(
-  { deviceId, organizationId }: LogsTableProps,
+  { deviceId, organizationId, embedded }: LogsTableProps,
   ref,
 ) {
   const { params, setParam, setParams } = useApiParams({
@@ -762,7 +764,7 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   );
 
   return (
-    <PageLayout title="Logs" actions={actions}>
+    <PageLayout title="Logs" actions={actions} className={embedded ? EMBEDDED_PAGE_OFFSET : undefined}>
       {/* Search toolbar - outside the Suspense boundary so it keeps focus across
           re-queries, and hidden while the empty state is shown. */}
       {!isEmpty && (

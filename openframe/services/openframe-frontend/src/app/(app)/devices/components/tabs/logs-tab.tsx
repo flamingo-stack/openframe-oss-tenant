@@ -37,9 +37,5 @@ export function LogsTab({ device }: LogsTabProps) {
     );
   }
 
-  return (
-    <div className="mt-6">
-      <LogsTable deviceId={deviceId} ref={logsTableRef} />
-    </div>
-  );
+  return <LogsTable deviceId={deviceId} ref={logsTableRef} embedded />;
 }

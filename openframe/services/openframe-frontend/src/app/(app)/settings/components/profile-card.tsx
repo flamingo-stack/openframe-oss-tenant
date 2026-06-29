@@ -1,9 +1,10 @@
 'use client';
 
-import { Button, Skeleton, Tag } from '@flamingo-stack/openframe-frontend-core';
+import { Skeleton, Tag } from '@flamingo-stack/openframe-frontend-core';
 import { AlertCircleIcon, PenEditIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { PageError, SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useAuthStore } from '@/app/(auth)/auth/stores';
+import { ResponsiveActionButton } from '@/app/components/shared/responsive-action-button';
 import { getFullImageUrl } from '@/lib/image-url';
 
 interface ProfileCardProps {
@@ -62,13 +63,11 @@ export function ProfileCard({ onEditProfile, onVerifyEmail }: ProfileCardProps) 
       </div>
 
       <div className="shrink-0 flex items-center gap-3">
-        <Button
-          variant="outline"
+        <ResponsiveActionButton
+          label="Edit Profile"
+          icon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
           onClick={onEditProfile}
-          leftIcon={<PenEditIcon className="w-5 h-5 text-ods-text-secondary" />}
-        >
-          Edit Profile
-        </Button>
+        />
       </div>
     </div>
   );

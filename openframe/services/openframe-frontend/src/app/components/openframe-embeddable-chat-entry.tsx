@@ -27,7 +27,10 @@
  * Coexists with the old `/mingo` page route during migration.
  */
 
-import type { ChatContextPickerConfig } from '@flamingo-stack/openframe-frontend-core/components/chat';
+import type {
+  ChatContextPickerConfig,
+  MingoQuickAction,
+} from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { EmbeddableChat } from '@flamingo-stack/openframe-frontend-core/components/chat';
 import { useLocalStorage } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useEffect, useMemo } from 'react';
@@ -37,6 +40,7 @@ import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sourc
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
 import { renderMingoContextItem, renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
 import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
+import { useMingoQuickActions } from '../(app)/mingo/hooks/use-mingo-quick-actions';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
 import { useMingoUnifiedChatState } from '../(app)/mingo/hooks/use-mingo-unified-chat-state';
 import { useMingoLauncherStore } from '../(app)/mingo/stores/mingo-launcher-store';
@@ -61,7 +65,8 @@ interface OpenframeEmbeddableChatEntryProps {
 }
 
 export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEmbeddableChatEntryProps) {
-  const { state, subscription, sendInNewDialog } = useMingoUnifiedChatState();
+  const { state, subscription, sendInNewDialog, searchQuery, setSearchQuery, fetchArchivedDialogs, unarchiveDialog } =
+    useMingoUnifiedChatState();
 
   // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
   // "Ask Mingo about X" button). The drawer unmounts this entry on close and
@@ -103,6 +108,23 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
   // undefined makes the lib's composer inert (no `+`, no `@`, no chips).
   const contextEnabled = featureFlags.mingoSidebarContext.enabled();
 
+  // Admin-configured Mingo quick actions (AI Settings → "Mingo AI Chat" tab)
+  // become starter chips in the empty state. Clicking one opens a new dialog
+  // seeded with the action's instructions — same path the launcher prompt uses.
+  const quickActions = useMingoQuickActions();
+  const mingoQuickActions = useMemo<MingoQuickAction[]>(
+    () =>
+      quickActions.map(action => ({
+        id: action.id,
+        label: action.name,
+        variant: 'outline',
+        onClick: () => {
+          void sendInNewDialog(action.instructions);
+        },
+      })),
+    [quickActions, sendInNewDialog],
+  );
+
   return (
     <>
       {/* Realtime tail for the active dialog — writes chunks into the shared
@@ -143,10 +165,29 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // pass `modes.mingo` — that keeps the lib's built-in NATS adapter idle.
         modes={{ guide: {} }}
         mingoState={state}
+        // Dialog management for the host-injected Mingo state:
+        //  - search: the chat-history search bar emits the debounced term into
+        //    `setSearchQuery`, which rides the `useMingoDialogs` query key.
+        //  - rename/archive: enable the row + header ⋯ menu (mutations live on
+        //    `mingoState` via `useMingoDialogActions`).
+        //  - archive page: `fetchArchivedDialogs` gates the clock-history button;
+        //    `unarchiveDialog` enables restore.
+        mingoDialogCapabilities={{
+          searchQuery,
+          onSearchChange: setSearchQuery,
+          canRename: true,
+          canArchive: true,
+          fetchArchivedDialogs,
+          unarchiveDialog,
+        }}
         // Controlled + persisted so reopening the drawer restores the transport
         // the user left on instead of always snapping back to Mingo.
         activeMode={activeMode}
         onActiveModeChange={setActiveMode}
+        // Admin-configured Mingo quick actions appended as chips after the
+        // built-in "Start Guide Chat" in the Mingo empty state. Omitted when
+        // none are configured so the lib keeps its default welcome content.
+        mingoWelcome={mingoQuickActions.length > 0 ? { quickActions: mingoQuickActions } : undefined}
         // Greeting + try-asking quick-action chips are now per-platform,
         // admin-driven: the lib fetches them from `endpoints.emptyStateUrl`
         // (`/content/api/docs/empty-state`) configured in the runtime provider.

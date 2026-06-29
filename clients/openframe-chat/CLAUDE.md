@@ -49,9 +49,13 @@ import '@flamingo-stack/openframe-frontend-core/styles'
 
 If a needed component is missing from the core library, raise it in the core lib repo. Don't fork it into the chat client.
 
-### 2. ODS design tokens only — no hardcoded colors or font sizes
+### 2. ODS design tokens only — no hardcoded colors, font sizes, or spacing
 
-Same token system as the rest of the Flamingo stack. Use `bg-ods-card`, `text-ods-text-primary`, `border-ods-border`, `bg-ods-accent`, `text-ods-error`, etc. Never use `bg-gray-800`, raw hex, or `text-[14px]`.
+Same token system as the rest of the Flamingo stack. The full canonical ODS token rules are the
+**single source of truth** maintained in `@flamingo-stack/openframe-frontend-core` and imported here
+from the installed package. Edit the rules in the core lib, not here:
+
+@./node_modules/@flamingo-stack/openframe-frontend-core/src/ODS_TOKEN_RULES.md
 
 ### 3. React hooks at the top, unconditionally
 

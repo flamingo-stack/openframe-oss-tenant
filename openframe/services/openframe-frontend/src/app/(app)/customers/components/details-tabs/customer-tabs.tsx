@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  ChatFaceIcon,
+  ChatsIcon,
   ClipboardListIcon,
   FileContentIcon,
   MonitorIcon,
@@ -58,7 +58,7 @@ const BASE_CUSTOMER_TABS: TabItem[] = [
 const CUSTOM_AI_ASSISTANT_TAB: TabItem = {
   id: CUSTOM_AI_ASSISTANT_TAB_ID,
   label: 'Custom AI Assistant',
-  icon: ChatFaceIcon,
+  icon: ChatsIcon,
   component: CustomAiAssistantTab,
 };
 

@@ -12,6 +12,7 @@ export function CustomerDevicesTab({ organizationId }: CustomerDevicesTabProps) 
 
   return (
     <DevicesPanel
+      embedded
       addDeviceHref={`/devices/new?organizationId=${organizationId}`}
       lockedFilters={lockedFilters}
       hideColumns={['organization']}
