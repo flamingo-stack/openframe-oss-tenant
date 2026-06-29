@@ -184,7 +184,7 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
   }
 
   return (
-    <div className="space-y-4 mt-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-4">
         <h3 className="text-h5 text-ods-text-secondary">Vulnerabilities ({vulnerabilities.length})</h3>
 

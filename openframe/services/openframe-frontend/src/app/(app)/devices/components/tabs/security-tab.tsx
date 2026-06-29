@@ -32,7 +32,7 @@ export function SecurityTab({ device }: SecurityTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="mt-6">
+      <div>
         {/* Security Posture Section */}
         <div>
           <h3 className="text-h5 text-ods-text-secondary mb-4">SECURITY POSTURE</h3>

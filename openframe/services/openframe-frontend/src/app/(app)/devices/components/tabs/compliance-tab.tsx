@@ -39,7 +39,7 @@ export function ComplianceTab({ device }: ComplianceTabProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="mt-6">
+      <div>
         {/* Patch Management Section */}
         <div>
           <h3 className="text-h5 text-ods-text-secondary mb-4">PATCH MANAGEMENT</h3>

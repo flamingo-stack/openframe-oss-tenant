@@ -29,7 +29,7 @@ export function LogsTab({ device }: LogsTabProps) {
 
   if (!deviceId) {
     return (
-      <div className="space-y-4 mt-6">
+      <div className="space-y-4">
         <div className="p-4 bg-ods-card border border-ods-border rounded-[6px] text-ods-text-secondary font-['DM_Sans'] text-[14px]">
           No device ID available to filter logs.
         </div>
@@ -37,12 +37,7 @@ export function LogsTab({ device }: LogsTabProps) {
     );
   }
 
-  // `embedded` cancels the PageLayout TitleBlock's leading pt (so it doesn't
-  // double up); the `mt-6` wrapper then supplies the same top gap the sibling
-  // tabs use, keeping the "Logs" header from sitting flush against the tab bar.
-  return (
-    <div className="mt-6">
-      <LogsTable deviceId={deviceId} ref={logsTableRef} embedded />
-    </div>
-  );
+  // `embedded` cancels the PageLayout TitleBlock's leading pt; the uniform top
+  // gap under the tab bar is supplied centrally by the TabContent wrapper.
+  return <LogsTable deviceId={deviceId} ref={logsTableRef} embedded />;
 }
