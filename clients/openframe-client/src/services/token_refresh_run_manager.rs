@@ -49,23 +49,25 @@ impl TokenRefreshRunManager {
                 }
                 sleep(wait).await;
 
-                match timeout(REAUTH_TIMEOUT, auth_service.reauthenticate()).await {
-                    Ok(Ok(_)) => debug!("Proactively refreshed access token; shared_token.enc updated"),
-                    Ok(Err(e)) => {
-                        error!(
+                // Retry on the short interval until a refresh succeeds, so a failure never falls
+                // back into the long scheduling delay (e.g. for an undecodable token).
+                loop {
+                    match timeout(REAUTH_TIMEOUT, auth_service.reauthenticate()).await {
+                        Ok(Ok(_)) => {
+                            debug!("Proactively refreshed access token; shared_token.enc updated");
+                            break;
+                        }
+                        Ok(Err(e)) => error!(
                             "Proactive token refresh failed: {e:#}; retrying in {}s",
                             RETRY_INTERVAL.as_secs()
-                        );
-                        sleep(RETRY_INTERVAL).await;
-                    }
-                    Err(_) => {
-                        error!(
+                        ),
+                        Err(_) => error!(
                             "Proactive token refresh timed out after {}s; retrying in {}s",
                             REAUTH_TIMEOUT.as_secs(),
                             RETRY_INTERVAL.as_secs()
-                        );
-                        sleep(RETRY_INTERVAL).await;
+                        ),
                     }
+                    sleep(RETRY_INTERVAL).await;
                 }
             }
         });
@@ -89,7 +91,11 @@ async fn next_refresh_delay(config_service: &AgentConfigurationService) -> Durat
         return FALLBACK_INTERVAL;
     };
 
-    let secs_until_refresh = exp - Utc::now().timestamp() - REFRESH_MARGIN.as_secs() as i64;
+    // Saturating math: a malformed/negative `exp` must never underflow into a huge sleep (or
+    // panic in debug builds) — treat any non-positive result as "refresh now".
+    let secs_until_refresh = exp
+        .saturating_sub(Utc::now().timestamp())
+        .saturating_sub(REFRESH_MARGIN.as_secs() as i64);
     if secs_until_refresh <= 0 {
         Duration::ZERO
     } else {
