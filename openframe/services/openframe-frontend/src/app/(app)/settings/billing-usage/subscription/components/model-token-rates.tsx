@@ -53,7 +53,7 @@ function ModelTokenRatesContent() {
   const data = useLazyLoadQuery<ModelTokenRatesQueryType>(
     modelTokenRatesQuery,
     {},
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   const rates = data.aiModelRates;
 

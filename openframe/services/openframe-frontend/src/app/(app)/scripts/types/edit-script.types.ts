@@ -20,6 +20,8 @@ export const editScriptSchema = z.object({
   description: z.string(),
   supported_platforms: z.array(z.string()).min(1, 'Please select at least one platform'),
   category: z.string().min(1, 'Please select a category'),
+  /** Ids of Tag entities assigned to the script (maps to `tagIds` on the API). */
+  tag_ids: z.array(z.string()),
 });
 
 export type EditScriptFormData = z.infer<typeof editScriptSchema>;
@@ -35,6 +37,7 @@ export const EDIT_SCRIPT_DEFAULT_VALUES: EditScriptFormData = {
   run_as_user: false,
   env_vars: [],
   description: '',
-  supported_platforms: ['windows'],
+  supported_platforms: [],
   category: '',
+  tag_ids: [],
 };

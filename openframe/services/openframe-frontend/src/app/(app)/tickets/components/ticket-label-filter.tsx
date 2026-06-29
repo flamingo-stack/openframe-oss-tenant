@@ -1,53 +1,39 @@
 'use client';
 
-import { TagSearchInput, type TagSearchOption } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { useMemo } from 'react';
-import { SelectableTagsRow, SelectableTagsRowSkeleton } from '@/app/components/shared';
+import { type ReactNode, useMemo } from 'react';
+import { TagFilterBar } from '@/app/components/shared';
 import { useTicketLabels } from '../hooks/use-ticket-labels';
 
-interface TicketLabelSearchInputProps {
+interface TicketTagFilterProps {
   search: string;
   onSearchChange: (value: string) => void;
   labelIds: string[];
   onLabelIdsChange: (ids: string[]) => void;
+  /** Mobile filter button rendered next to the search input. */
+  filterButton?: ReactNode;
 }
 
-export function TicketLabelSearchInput({
+/** Ticket label filter — the shared `TagFilterBar` fed by the tenant ticket labels. */
+export function TicketTagFilter({
   search,
   onSearchChange,
   labelIds,
   onLabelIdsChange,
-}: TicketLabelSearchInputProps) {
-  const { data: labels } = useTicketLabels();
-
-  const tags = useMemo<TagSearchOption<string>[]>(() => {
-    const keyById = new Map((labels ?? []).map(label => [label.id, label.key]));
-    return labelIds.map(id => ({ value: id, label: keyById.get(id) ?? id }));
-  }, [labels, labelIds]);
+  filterButton,
+}: TicketTagFilterProps) {
+  const { data: labels, isLoading } = useTicketLabels();
+  const tags = useMemo(() => (labels ?? []).map(label => ({ id: label.id, key: label.key })), [labels]);
 
   return (
-    <TagSearchInput<string>
+    <TagFilterBar
       tags={tags}
-      searchValue={search}
+      loading={isLoading}
+      search={search}
       onSearchChange={onSearchChange}
-      onTagRemove={id => onLabelIdsChange(labelIds.filter(labelId => labelId !== id))}
-      onClearAll={() => {
-        onSearchChange('');
-        onLabelIdsChange([]);
-      }}
+      selectedIds={labelIds}
+      onSelectedIdsChange={onLabelIdsChange}
       placeholder="Search for Ticket"
-      addMorePlaceholder="Search for Ticket"
+      filterButton={filterButton}
     />
   );
-}
-
-interface TicketLabelsRowProps {
-  selectedIds: string[];
-  onAdd: (id: string) => void;
-}
-
-export function TicketLabelsRow({ selectedIds, onAdd }: TicketLabelsRowProps) {
-  const { data: labels, isLoading } = useTicketLabels();
-  if (isLoading) return <SelectableTagsRowSkeleton />;
-  return <SelectableTagsRow tags={labels ?? []} selectedIds={selectedIds} onAdd={tag => onAdd(tag.id)} />;
 }

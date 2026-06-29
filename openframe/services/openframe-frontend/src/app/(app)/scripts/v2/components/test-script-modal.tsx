@@ -2,7 +2,6 @@
 
 import {
   Button,
-  Checkbox,
   ModalV2,
   ModalV2Content,
   ModalV2Footer,
@@ -24,8 +23,6 @@ import { mapPlatformsToOsTypes } from '../../utils/script-utils';
 export interface SelectedTestDevice {
   machineId: string;
   deviceName: string;
-  /** Run the test as the logged-in user (Windows) — maps to privilegeLevel USER. */
-  runAsUser: boolean;
 }
 
 interface TestScriptModalProps {
@@ -75,7 +72,6 @@ async function fetchOnlineDevices(supportedPlatforms: string[]): Promise<Device[
 export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPlatforms }: TestScriptModalProps) {
   const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [runAsUser, setRunAsUser] = useState(false);
 
   const platformsKey = JSON.stringify(supportedPlatforms);
   const hasPlatforms = supportedPlatforms.length > 0;
@@ -110,16 +106,13 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
     onDeviceSelected({
       machineId,
       deviceName: selectedDevice.displayName || selectedDevice.hostname,
-      runAsUser,
     });
     setSelectedIds(new Set());
-    setRunAsUser(false);
     onClose();
-  }, [selectedIds, devices, runAsUser, toast, onDeviceSelected, onClose]);
+  }, [selectedIds, devices, toast, onDeviceSelected, onClose]);
 
   const handleClose = useCallback(() => {
     setSelectedIds(new Set());
-    setRunAsUser(false);
     onClose();
   }, [onClose]);
 
@@ -147,13 +140,7 @@ export function TestScriptModal({ isOpen, onClose, onDeviceSelected, supportedPl
           />
         )}
       </ModalV2Content>
-      <ModalV2Footer className="justify-between">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <Checkbox checked={runAsUser} onCheckedChange={checked => setRunAsUser(checked === true)} />
-          <span className="text-h6 text-ods-text-primary">
-            Run as User <span className="text-ods-text-secondary">(Windows only)</span>
-          </span>
-        </label>
+      <ModalV2Footer className="justify-end">
         <div className="flex gap-4">
           <Button variant="outline" onClick={handleClose}>
             Cancel

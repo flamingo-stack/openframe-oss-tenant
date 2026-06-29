@@ -77,7 +77,7 @@ export function useKnowledgeBaseFolders(): FolderOption[] {
   const data = useLazyLoadQuery<UseKnowledgeBaseFoldersQueryType>(
     knowledgeBaseFoldersQuery,
     {},
-    { fetchPolicy: 'store-or-network' },
+    { fetchPolicy: 'store-and-network' },
   );
   return data.knowledgeBaseFolderTree.map(folder => ({
     id: folder.id,

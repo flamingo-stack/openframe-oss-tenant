@@ -39,6 +39,16 @@ export const scriptsTableRelayFragment = graphql`
           shell
           supportedPlatforms
           defaultTimeoutSeconds
+          author {
+            id
+            firstName
+            lastName
+            email
+            image {
+              imageUrl
+              hash
+            }
+          }
         }
       }
       pageInfo {

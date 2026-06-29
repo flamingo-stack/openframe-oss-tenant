@@ -52,12 +52,17 @@ export function useEditScriptForm({ scriptId, initialValues, isEditMode }: UseEd
   });
 
   const { reset, handleSubmit } = form;
+  const { isDirty } = form.formState;
 
   useEffect(() => {
-    if (initialValues && isEditMode) {
+    // Seed the form from the query. The detail query runs `store-and-network`, so a
+    // background refresh can deliver a new `initialValues` reference after the user
+    // has started editing — re-seeding then would wipe their in-progress changes.
+    // Guard on `!isDirty`: apply fresh data only while the form is still pristine.
+    if (initialValues && isEditMode && !isDirty) {
       reset(initialValues);
     }
-  }, [initialValues, isEditMode, reset]);
+  }, [initialValues, isEditMode, isDirty, reset]);
 
   const [commitCreate, isCreating] = useMutation<CreateScriptMutationType>(createScriptMutation);
   const [commitUpdate, isUpdating] = useMutation<UpdateScriptMutationType>(updateScriptMutation);
