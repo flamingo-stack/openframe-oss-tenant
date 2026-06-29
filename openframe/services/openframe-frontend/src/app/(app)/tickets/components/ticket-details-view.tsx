@@ -91,6 +91,7 @@ import { TICKET_STATUS_KIND } from '../utils/ticket-statistics';
 import { TicketAttachmentsSection } from './ticket-attachments-section';
 import { TicketDetailsSkeleton } from './ticket-details-skeleton';
 import { TicketDialogSubscription } from './ticket-dialog-subscription';
+import { TicketNotesSection } from './ticket-notes-section';
 import { TicketTagsSection } from './ticket-tags-section';
 
 interface TicketDetailsViewProps {
@@ -838,6 +839,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       <InfoSection title="Ticket Details" rows={infoRows} />
       <TicketAttachmentsSection ticketId={dialog.id} attachments={dialog.attachments ?? []} />
       <TicketTagsSection ticketId={dialog.id} labels={dialog.labels ?? []} />
+      <TicketNotesSection
+        notes={uiNotes}
+        isAddingNote={addNoteMutation.isPending}
+        onAddNote={text => addNoteMutation.mutate({ content: text })}
+        onEditNote={(id, text) => updateNoteMutation.mutate({ id, content: text })}
+        onDeleteNote={setNoteToDelete}
+      />
     </>
   );
 
