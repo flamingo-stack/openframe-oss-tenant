@@ -24,6 +24,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { handleApiError } from '@/lib/handle-api-error';
 import { AccountSettingsCard } from './account-settings-card';
 import { EditProfileModal } from './edit-profile-modal';
+import { EmailVerificationBanner } from './email-verification-banner';
 import { EmailVerificationModal } from './email-verification-modal';
 import { SettingMenuItem } from './setting-menu-item';
 
@@ -145,11 +146,15 @@ export function SettingsHub() {
       className="min-h-full px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       contentClassName="gap-[var(--spacing-system-l)] lg:gap-[var(--spacing-system-xl)]"
     >
-      {/* Organization + Profile */}
-      <AccountSettingsCard
-        onEditProfile={() => setIsEditModalOpen(true)}
-        onVerifyEmail={() => setIsVerificationModalOpen(true)}
-      />
+      <div className="flex flex-col gap-[var(--spacing-system-l)]">
+        {/* Organization + Profile */}
+        <AccountSettingsCard
+          onEditProfile={() => setIsEditModalOpen(true)}
+          onVerifyEmail={() => setIsVerificationModalOpen(true)}
+        />
+
+        {user?.emailVerified === false && <EmailVerificationBanner onResend={() => setIsVerificationModalOpen(true)} />}
+      </div>
 
       {/* Navigation Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[var(--spacing-system-m)]">
