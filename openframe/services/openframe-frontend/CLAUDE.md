@@ -743,31 +743,16 @@ export interface UnifiedUser {
 5. **Focus Management** — Handle focus in modals and dynamic content
 
 ### ODS Design Tokens (MANDATORY)
-```typescript
-// GOOD: Using ODS tokens
-<Card className="bg-ods-card border-ods-border">
-  <div className="text-ods-text-primary">Primary text</div>
-  <div className="text-ods-text-secondary">Secondary text</div>
-</Card>
 
-// BAD: Hardcoded values
-<Card className="bg-gray-800 border-gray-700">
-  <div className="text-white">Primary text</div>
-</Card>
-```
+ALL styling must use ODS design tokens — never hardcode colors, font families, font sizes, or spacing.
 
-**Key tokens:**
-```css
---ods-attention-green-success: #5ea62e
---ods-attention-red-error: #f36666
---color-warning: #f59e0b
---ods-card: #212121
---ods-border: #3a3a3a
---ods-text-primary: #fafafa
---ods-text-secondary: #888888
-```
+The full canonical ODS token rules (colors, spacing, typography, Figma workflow) are the **single
+source of truth** maintained in `@flamingo-stack/openframe-frontend-core` and imported here straight
+from the installed package. Edit the rules in the core lib, not here:
 
-**Tailwind preset:** ODS colors are provided via the core library's Tailwind preset (see `tailwind.config.ts`).
+@./node_modules/@flamingo-stack/openframe-frontend-core/src/ODS_TOKEN_RULES.md
+
+**Tailwind preset:** ODS colors/utilities are provided via the core library's Tailwind preset (see `tailwind.config.ts`).
 
 ### Inverted Progress Bar
 ```typescript
