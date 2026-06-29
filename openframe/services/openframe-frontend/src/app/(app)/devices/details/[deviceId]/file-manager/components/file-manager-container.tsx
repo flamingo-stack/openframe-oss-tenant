@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, DetailPageContainer, Progress } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { Button, PageLayout, Progress } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import type { FileAction, FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import { FileManager, FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -272,7 +272,7 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
   }, [deleteContext, deleteItems, closeDeleteModal]);
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title={'File Manager'}
       subtitle={hostname || `Device ${deviceId}`}
       className={className ? `${className} h-full` : 'h-full'}
@@ -281,7 +281,6 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
         label: 'Back',
         onClick: handleBackToDevice,
       }}
-      padding="none"
     >
       <div className="flex flex-col flex-1 min-h-0">
         {showFileManagerSkeleton ? (
@@ -405,6 +404,6 @@ export function FileManagerContainer({ deviceId, meshcentralAgentId, hostname, c
         onClose={closeDeleteModal}
         onConfirm={handleDeleteConfirmed}
       />
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

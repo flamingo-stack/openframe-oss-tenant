@@ -1,6 +1,6 @@
 'use client';
 
-import { DetailPageContainer, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { DeviceInfoSectionSkeleton } from '@/app/components/shared/device-info-section-skeleton';
 
 interface LogDetailsSkeletonProps {
@@ -116,12 +116,11 @@ function DetailsSkeleton() {
 
 export function LogDetailsSkeleton({ onBack }: LogDetailsSkeletonProps) {
   return (
-    <DetailPageContainer
+    <PageLayout
       title="Log Details"
       backButton={{ label: 'Back', onClick: onBack }}
-      headerActions={<Skeleton className="h-12 w-[180px] rounded-[6px] hidden md:block" />}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      selector={<Skeleton className="h-12 w-[180px] rounded-[6px]" />}
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 w-full">
         <StatusTimestampSkeleton />
@@ -130,6 +129,6 @@ export function LogDetailsSkeleton({ onBack }: LogDetailsSkeletonProps) {
         <FullInformationSkeleton />
         <DetailsSkeleton />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

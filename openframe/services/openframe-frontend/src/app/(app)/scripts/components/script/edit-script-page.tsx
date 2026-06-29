@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, FormPageContainer, Label } from '@flamingo-stack/openframe-frontend-core';
+import { Button, Label, PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { Card } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -78,12 +78,12 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
   }
 
   return (
-    <FormPageContainer
+    <PageLayout
       title={isEditMode && scriptDetails ? 'Edit Script' : 'New Script'}
       backButton={backButton}
       actions={actions}
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {testRun && (
         <div>
@@ -105,6 +105,6 @@ export function EditScriptPage({ scriptId }: EditScriptPageProps) {
         onDeviceSelected={handleDeviceSelected}
         supportedPlatforms={watchedSupportedPlatforms}
       />
-    </FormPageContainer>
+    </PageLayout>
   );
 }

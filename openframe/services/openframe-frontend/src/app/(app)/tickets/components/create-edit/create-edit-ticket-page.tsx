@@ -27,6 +27,15 @@ export function CreateEditTicketPage() {
   const actions = useMemo(
     () => [
       {
+        label: 'Cancel',
+        onClick: backButton.onClick,
+        variant: 'outline' as const,
+        disabled: isSubmitting,
+        // Desktop keeps the header "Back" link for cancelling; the explicit
+        // Cancel button is only needed in the mobile/tablet bottom action bar.
+        showOnlyMobile: true,
+      },
+      {
         label: isEditMode ? 'Save Changes' : 'Save Ticket',
         onClick: handleSave,
         variant: 'accent' as const,
@@ -34,7 +43,7 @@ export function CreateEditTicketPage() {
         loading: isSubmitting,
       },
     ],
-    [handleSave, isSubmitting, isLoadingTicket, isEditMode],
+    [backButton, handleSave, isSubmitting, isLoadingTicket, isEditMode],
   );
 
   return (
@@ -43,6 +52,7 @@ export function CreateEditTicketPage() {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       backButton={backButton}
       actions={actions}
+      actionsVariant="primary-buttons"
     >
       <TicketFormFields
         form={form}

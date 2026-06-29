@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { Button, PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { FileManagerSkeleton } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
 import { use } from 'react';
 import { FileManagerContainer } from '@/app/(app)/devices/details/[deviceId]/file-manager/components/file-manager-container';
@@ -8,7 +8,9 @@ import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-utils';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 
-const PAGE_PADDING = 'pt-4 px-4 md:pt-6 md:px-6';
+// Horizontal padding only — `PageLayout`'s `TitleBlock` already supplies the
+// top padding (`pt-[var(--spacing-system-l)]` = 16/24px, matching the former pt-4/md:pt-6).
+const PAGE_PADDING = 'px-4 md:px-6';
 
 interface FileManagerPageProps {
   params: Promise<{
@@ -31,12 +33,11 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
 
   if (error) {
     return (
-      <DetailPageContainer
+      <PageLayout
         title="File Manager"
         className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
         backButton={{ label: 'Back', onClick: handleBack }}
-        padding="none"
       >
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="text-ods-attention-red-error text-lg">Error: {error}</div>
@@ -44,18 +45,17 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
             Return to Device Details
           </Button>
         </div>
-      </DetailPageContainer>
+      </PageLayout>
     );
   }
 
   if (!meshcentralAgentId) {
     return (
-      <DetailPageContainer
+      <PageLayout
         title="File Manager"
         className={`${PAGE_PADDING} h-full`}
         contentClassName="flex flex-col min-h-0 overflow-hidden"
         backButton={{ label: 'Back', onClick: handleBack }}
-        padding="none"
       >
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="text-ods-attention-red-error text-lg">
@@ -66,7 +66,7 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
             Return to Device Details
           </Button>
         </div>
-      </DetailPageContainer>
+      </PageLayout>
     );
   }
 
@@ -88,7 +88,7 @@ interface FileManagerPageSkeletonProps {
 
 function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
   return (
-    <DetailPageContainer
+    <PageLayout
       title="File Manager"
       className={`${PAGE_PADDING} h-full`}
       contentClassName="flex flex-col min-h-0 overflow-hidden"
@@ -96,11 +96,10 @@ function FileManagerPageSkeleton({ onBack }: FileManagerPageSkeletonProps) {
         label: 'Back',
         onClick: onBack,
       }}
-      padding="none"
     >
       <div className="flex flex-col flex-1 min-h-0">
         <FileManagerSkeleton />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

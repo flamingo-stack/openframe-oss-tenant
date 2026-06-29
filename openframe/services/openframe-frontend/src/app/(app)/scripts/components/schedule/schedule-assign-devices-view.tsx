@@ -1,6 +1,6 @@
 'use client';
 
-import { DetailPageContainer, LoadError, NotFoundError } from '@flamingo-stack/openframe-frontend-core';
+import { LoadError, NotFoundError, PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
@@ -181,11 +181,12 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
   const repeat = getRepeatLabel(schedule);
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title="Schedule Devices"
       backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
-      className="p-[var(--spacing-system-l)]"
+      actionsVariant="primary-buttons"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <div className="flex flex-col gap-6 overflow-auto">
         <DeviceSelector
@@ -208,6 +209,6 @@ export function ScheduleAssignDevicesView({ scheduleId }: ScheduleAssignDevicesV
           }
         />
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

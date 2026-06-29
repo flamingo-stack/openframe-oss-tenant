@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  Button,
+  type ActionsMenuGroup,
   CardLoader,
-  DetailPageContainer,
   LoadError,
-  MoreActionsMenu,
   NotFoundError,
+  type PageActionButton,
+  PageLayout,
   QueryReportTable,
   TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
@@ -103,35 +103,40 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
     return <NotFoundError message="Query not found" />;
   }
 
+  const actions: PageActionButton[] = [
+    {
+      label: 'Edit',
+      icon: <PenEditIcon size={24} className="text-ods-text-secondary" />,
+      variant: 'outline',
+      onClick: handleEditQuery,
+    },
+  ];
+
+  const menuActions: ActionsMenuGroup[] = [
+    {
+      items: [
+        {
+          id: 'delete-query',
+          label: 'Delete Query',
+          icon: <TrashIcon />,
+          onClick: () => setIsDeleteModalOpen(true),
+          disabled: isDeleting,
+        },
+      ],
+    },
+  ];
+
   return (
-    <DetailPageContainer
+    <PageLayout
       title={queryDetails.name}
       backButton={{
         label: 'Back',
         onClick: handleBack,
       }}
-      className="p-[var(--spacing-system-l)]"
-      headerActions={
-        <div className="flex items-center gap-2">
-          <Button
-            leftIcon={<PenEditIcon size={24} className="text-ods-text-secondary" />}
-            variant="outline"
-            onClick={handleEditQuery}
-          >
-            Edit
-          </Button>
-          <MoreActionsMenu
-            items={[
-              {
-                label: 'Delete Query',
-                icon: <TrashIcon />,
-                onClick: () => setIsDeleteModalOpen(true),
-                disabled: isDeleting,
-              },
-            ]}
-          />
-        </div>
-      }
+      actions={actions}
+      menuActions={menuActions}
+      actionsVariant="menu-primary"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {/* Query Info */}
       <div className="bg-ods-card border border-ods-border rounded-lg p-6">
@@ -197,6 +202,6 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
         itemType="query"
         onConfirm={handleDeleteQuery}
       />
-    </DetailPageContainer>
+    </PageLayout>
   );
 }

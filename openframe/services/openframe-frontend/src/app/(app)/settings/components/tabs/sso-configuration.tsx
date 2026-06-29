@@ -9,8 +9,8 @@ import {
   type ColumnDef,
   DataTable,
   Input,
-  ListPageContainer,
   PageError,
+  PageLayout,
   type Row,
   Skeleton,
   Tag,
@@ -265,11 +265,9 @@ export function SsoConfigurationTab() {
   }
 
   return (
-    <ListPageContainer
+    <PageLayout
       title="SSO Configurations"
-      background="default"
-      padding="none"
-      className="p-[var(--spacing-system-l)]"
+      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] bg-ods-bg"
       backButton={{ label: 'Back', onClick: handleBack }}
     >
       <Input
@@ -370,6 +368,6 @@ export function SsoConfigurationTab() {
           await loadData();
         }}
       />
-    </ListPageContainer>
+    </PageLayout>
   );
 }

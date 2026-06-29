@@ -37,5 +37,12 @@ export function LogsTab({ device }: LogsTabProps) {
     );
   }
 
-  return <LogsTable deviceId={deviceId} ref={logsTableRef} embedded />;
+  // `embedded` cancels the PageLayout TitleBlock's leading pt (so it doesn't
+  // double up); the `mt-6` wrapper then supplies the same top gap the sibling
+  // tabs use, keeping the "Logs" header from sitting flush against the tab bar.
+  return (
+    <div className="mt-6">
+      <LogsTable deviceId={deviceId} ref={logsTableRef} embedded />
+    </div>
+  );
 }

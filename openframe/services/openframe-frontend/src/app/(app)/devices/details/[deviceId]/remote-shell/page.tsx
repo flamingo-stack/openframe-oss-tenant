@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, DetailPageContainer } from '@flamingo-stack/openframe-frontend-core';
+import { Button, PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { TerminalSquare } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -284,9 +284,9 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   }
 
   return (
-    <DetailPageContainer
+    <PageLayout
       title="Remote Shell"
-      className="p-4 md:p-6 h-full"
+      className="px-4 md:px-6 pb-4 md:pb-6 h-full"
       contentClassName="flex flex-col"
       backButton={{
         label: 'Back',
@@ -330,6 +330,6 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
           <div ref={containerRef} className="w-full h-full p-2" />
         </div>
       </div>
-    </DetailPageContainer>
+    </PageLayout>
   );
 }
