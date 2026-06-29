@@ -85,9 +85,9 @@ impl AgentConfigurationService {
         let json_content = serde_json::to_string_pretty(config)
             .context("Failed to serialize agent configuration to JSON")?;
 
-        fs::write(&self.config_file_path, json_content)
+        crate::utils::fs::atomic_write(&self.config_file_path, json_content)
             .with_context(|| format!("Failed to write config file: {:?}", self.config_file_path))?;
-        
+
         Ok(())
     }
 }

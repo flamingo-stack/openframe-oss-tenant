@@ -1,3 +1,4 @@
+pub mod fs;
 pub mod jwt;
 
 #[cfg(target_os = "windows")]
