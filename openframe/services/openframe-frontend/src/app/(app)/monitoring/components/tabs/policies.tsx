@@ -1,6 +1,7 @@
 'use client';
 
-import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
+// Temporarily hidden along with the Platform column.
+// import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
   ArcheryTargetIcon,
@@ -46,17 +47,18 @@ import { computePolicySummary, getPolicyStatus, POLICY_STATUS_CONFIG } from '../
 
 const PAGE_SIZE = 20;
 
+// Temporarily hidden along with the Platform column. Restore to re-enable.
 // An empty platform string means the policy applies to every OS, so we render
 // the full set of OS icons rather than a plain-text "All" label.
-const ALL_PLATFORMS = ['windows', 'darwin', 'linux'];
+// const ALL_PLATFORMS = ['windows', 'darwin', 'linux'];
 
-function parsePlatforms(platform: string | undefined): string[] {
-  if (!platform) return [];
-  return platform
-    .split(',')
-    .map(p => p.trim())
-    .filter(Boolean);
-}
+// function parsePlatforms(platform: string | undefined): string[] {
+//   if (!platform) return [];
+//   return platform
+//     .split(',')
+//     .map(p => p.trim())
+//     .filter(Boolean);
+// }
 
 function PolicyStatusCell({ policy }: { policy: Policy }) {
   const status = getPolicyStatus(policy);
@@ -167,16 +169,17 @@ export function Policies() {
         ),
         meta: { width: 'w-[100px]', hideAt: 'md' },
       },
-      {
-        accessorKey: 'platform',
-        header: 'Platform',
-        cell: ({ row }: { row: Row<Policy> }) => {
-          const platforms = parsePlatforms(row.original.platform);
-          const osTypes = platforms.length > 0 ? platforms : ALL_PLATFORMS;
-          return <OSTypeBadgeGroup osTypes={osTypes} iconSize="w-6 h-6" />;
-        },
-        meta: { width: 'w-[140px]', hideAt: 'lg' },
-      },
+      // Temporarily hidden from users. Restore to re-enable the Platform column.
+      // {
+      //   accessorKey: 'platform',
+      //   header: 'Platform',
+      //   cell: ({ row }: { row: Row<Policy> }) => {
+      //     const platforms = parsePlatforms(row.original.platform);
+      //     const osTypes = platforms.length > 0 ? platforms : ALL_PLATFORMS;
+      //     return <OSTypeBadgeGroup osTypes={osTypes} iconSize="w-6 h-6" />;
+      //   },
+      //   meta: { width: 'w-[140px]', hideAt: 'lg' },
+      // },
       {
         accessorKey: 'status',
         header: 'Status',
