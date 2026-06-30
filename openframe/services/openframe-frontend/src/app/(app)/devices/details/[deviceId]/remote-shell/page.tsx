@@ -9,6 +9,7 @@ import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
+import { routes } from '@/lib/routes';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +32,8 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
-  const safeBackToDevice = useSafeBack(`/devices/details/${deviceId}`);
-  const safeBackToDevices = useSafeBack('/devices');
+  const safeBackToDevice = useSafeBack(routes.devices.details(deviceId));
+  const safeBackToDevices = useSafeBack(routes.devices.list);
 
   const shellTypeParam = searchParams.get('shellType');
   const shellType = useMemo<'cmd' | 'powershell'>(() => {

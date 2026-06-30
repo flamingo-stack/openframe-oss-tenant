@@ -2,11 +2,12 @@
 
 import { PageLayout, Skeleton, SkeletonButton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 const RADIO_ROW_KEYS = ['payg', 'tier-1', 'tier-2', 'tier-3', 'custom'] as const;
 
 export function SubscriptionSettingsSkeleton() {
-  const handleBack = useSafeBack('/settings/billing-usage');
+  const handleBack = useSafeBack(routes.settings.billingUsage);
 
   return (
     <PageLayout

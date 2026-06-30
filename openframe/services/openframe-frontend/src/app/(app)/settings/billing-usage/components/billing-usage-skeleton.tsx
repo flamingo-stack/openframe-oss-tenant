@@ -2,6 +2,7 @@
 
 import { PageLayout, Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 // Mirrors a DashboardInfoCard (~94px tall): text column (title + big value)
 // with a circular progress on the right, inside the same card chrome.
@@ -61,7 +62,7 @@ const USAGE_OVERVIEW_ROWS = [
 ];
 
 export function BillingUsageSkeleton() {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
 
   return (
     <PageLayout

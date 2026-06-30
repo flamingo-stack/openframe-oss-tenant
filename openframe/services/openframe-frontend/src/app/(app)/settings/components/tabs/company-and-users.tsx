@@ -19,6 +19,7 @@ import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { InvitationStatus } from '../../hooks/use-invitations';
 import { UserStatus } from '../../hooks/use-users';
 import {
@@ -50,7 +51,7 @@ const employeeRowHref = (record: UnifiedUserRecord) =>
   record.type === RecordType.User ? employeeDetailHref(record.id) : null;
 
 export function CompanyAndUsersTab() {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
   const {
     records,
     isLoading,

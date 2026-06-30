@@ -23,6 +23,7 @@ import { useClientView } from '@/app/(app)/settings/ai-settings/hooks/use-client
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { featureFlags } from '@/lib/feature-flags';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { runtimeEnv } from '@/lib/runtime-config';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
@@ -87,7 +88,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
 
   const isArchived = organization?.status === 'ARCHIVED';
 
-  const handleBack = useSafeBack(isArchived ? '/customers?tab=archived' : '/customers');
+  const handleBack = useSafeBack(isArchived ? routes.customers.list({ tab: 'archived' }) : routes.customers.list());
 
   const handleArchiveClick = useCallback(async () => {
     if (!organization) return;
@@ -112,7 +113,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
       await queryClient.invalidateQueries({ queryKey: customersQueryKeys.all });
       await queryClient.invalidateQueries({ queryKey: customerDetailsQueryKeys.detail(id) });
       toast({ title: 'Customer archived', description: `${organization.name} was archived` });
-      router.push('/customers?tab=archived');
+      router.push(routes.customers.list({ tab: 'archived' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to archive customer';
       toast({ title: 'Archive failed', description: msg, variant: 'destructive' });
@@ -129,7 +130,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
       await queryClient.invalidateQueries({ queryKey: customersQueryKeys.all });
       await queryClient.invalidateQueries({ queryKey: customerDetailsQueryKeys.detail(id) });
       toast({ title: 'Customer restored', description: `${organization.name} was restored` });
-      router.push('/customers');
+      router.push(routes.customers.list());
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Failed to restore customer';
       toast({ title: 'Restore failed', description: msg, variant: 'destructive' });
@@ -161,7 +162,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
           loading: isChecking,
         };
 
-    const editHref = `/customers/edit/${id}`;
+    const editHref = routes.customers.edit(id);
     const editAction: PageActionButton = {
       label: 'Edit Customer',
       variant: 'outline',

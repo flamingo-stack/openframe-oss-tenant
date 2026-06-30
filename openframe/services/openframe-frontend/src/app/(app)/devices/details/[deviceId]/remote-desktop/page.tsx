@@ -23,6 +23,7 @@ import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { type DisplayInfo, MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
 import { MeshTunnel, type TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
 import { DEFAULT_SETTINGS, RemoteDesktopSettings, type RemoteSettingsConfig } from '@/lib/meshcentral/remote-settings';
+import { routes } from '@/lib/routes';
 import { type ActionHandlers, createActionsMenuGroups } from './actions-menu-config';
 import { RemoteSettingsModal } from './remote-settings-modal';
 
@@ -49,8 +50,8 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
 
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
-  const safeBackToDevice = useSafeBack(`/devices/details/${deviceId}`);
-  const safeBackToDevices = useSafeBack('/devices');
+  const safeBackToDevice = useSafeBack(routes.devices.details(deviceId));
+  const safeBackToDevices = useSafeBack(routes.devices.list);
 
   // Check for legacy deviceData query param (backward compatibility)
   const deviceDataParam = searchParams.get('deviceData');

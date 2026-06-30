@@ -17,6 +17,7 @@ import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import { routes } from '@/lib/routes';
 import { useCustomers } from '../hooks/use-customers';
 import { CustomersSearchInput, CustomersTableBody } from './customers-table-columns';
 
@@ -58,7 +59,7 @@ export function CustomersTable({ status }: CustomersTableProps) {
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   const handleAddCustomer = useCallback(() => {
-    router.push('/customers/edit/new');
+    router.push(routes.customers.editNew);
   }, [router]);
 
   const showEmptyState = !isLoading && !debouncedSearch && customers.length === 0;

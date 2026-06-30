@@ -39,6 +39,7 @@ import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import type { Policy } from '../../types/policies.types';
@@ -129,7 +130,7 @@ export function Policies() {
     (policy: Policy) => [
       {
         label: 'Policy Details',
-        onClick: () => router.push(`/monitoring/policy/${policy.id}`),
+        onClick: () => router.push(routes.monitoring.policy(policy.id)),
       },
       {
         label: 'Delete Policy',
@@ -197,7 +198,7 @@ export function Policies() {
         cell: ({ row }: { row: Row<Policy> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/monitoring/policy/${row.original.id}`)}
+              onClick={openInNewTab(routes.monitoring.policy(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -220,12 +221,12 @@ export function Policies() {
     enableSorting: false,
   });
 
-  const policyRowHref = useCallback((policy: Policy) => `/monitoring/policy/${policy.id}`, []);
+  const policyRowHref = useCallback((policy: Policy) => routes.monitoring.policy(policy.id), []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddPolicy = useCallback(() => {
-    router.push('/monitoring/policy/edit/new');
+    router.push(routes.monitoring.policyEditNew);
   }, [router]);
 
   const actions = useMemo(

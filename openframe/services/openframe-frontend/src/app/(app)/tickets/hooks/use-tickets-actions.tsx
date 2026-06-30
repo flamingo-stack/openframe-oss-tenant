@@ -14,6 +14,7 @@ import type {
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
+import { routes } from '@/lib/routes';
 import { type ArchiveResolvedFilter, useArchiveResolvedMutation } from './use-archive-resolved-mutation';
 import { useTicketStatistics } from './use-ticket-statistics';
 
@@ -55,7 +56,7 @@ export function useTicketsActions({
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
   const handleNewTicket = useCallback(() => {
-    router.push('/tickets/new');
+    router.push(routes.tickets.new());
   }, [router]);
 
   const handleArchiveConfirm = useCallback(async () => {
@@ -85,13 +86,13 @@ export function useTicketsActions({
       id: 'edit-statuses',
       label: 'Edit Statuses',
       icon: <PenEditIcon className="text-ods-text-secondary" />,
-      href: '/tickets/statuses',
+      href: routes.tickets.statuses,
     });
     items.push({
       id: 'tickets-archive',
       label: 'Tickets Archive',
       icon: <BoxArchiveIcon className="text-ods-text-secondary" />,
-      href: '/tickets/archive',
+      href: routes.tickets.archive,
     });
     if (resolvedCount > 0) {
       items.push({

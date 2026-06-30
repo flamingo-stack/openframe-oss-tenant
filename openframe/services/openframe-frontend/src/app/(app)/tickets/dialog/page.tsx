@@ -4,6 +4,7 @@ import { TicketDetailsView } from '../components/ticket-details-view';
 export const dynamic = 'force-dynamic';
 
 import { redirect } from 'next/navigation';
+import { routes } from '@/lib/routes';
 
 interface TicketDetailsPageProps {
   searchParams: Promise<{
@@ -16,7 +17,7 @@ export default async function TicketDetailsPage({ searchParams }: TicketDetailsP
   const { id } = params;
 
   if (!id) {
-    redirect('/tickets');
+    redirect(routes.tickets.list);
   }
 
   return <TicketDetailsView ticketId={id} />;

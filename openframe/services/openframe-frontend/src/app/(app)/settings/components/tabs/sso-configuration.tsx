@@ -20,6 +20,7 @@ import {
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { type AvailableProvider, type ProviderConfig, useSsoConfig } from '../../hooks/use-sso-config';
 import { type TenantDomainInfo, useTenantDomain } from '../../hooks/use-tenant-domain';
 import { getProviderIcon } from '../../utils/get-provider-icon';
@@ -61,7 +62,7 @@ export function SsoConfigurationTab() {
   const { fetchAvailableProviders, fetchProviderConfig, updateProviderConfig, toggleProviderEnabled } = useSsoConfig();
   const { fetchTenantDomain, updateSharedAutoProvision } = useTenantDomain();
   const { toast } = useToast();
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
 
   const loadData = useCallback(async () => {
     setIsLoading(true);

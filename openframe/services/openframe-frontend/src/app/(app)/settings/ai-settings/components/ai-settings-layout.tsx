@@ -5,6 +5,7 @@ import { Button, type PageActionButton } from '@flamingo-stack/openframe-fronten
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ReactNode } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 interface AiSettingsLayoutProps {
   children: ReactNode;
@@ -19,7 +20,7 @@ interface AiSettingsLayoutProps {
 }
 
 export function AiSettingsLayout({ children, actions, selector, mobileBottomActions = false }: AiSettingsLayoutProps) {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
   const hasActions = !!actions && actions.length > 0;
   const useMobileBottomBar = mobileBottomActions && hasActions;
 

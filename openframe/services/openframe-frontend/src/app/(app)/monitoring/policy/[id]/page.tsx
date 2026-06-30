@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { routes } from '@/lib/routes';
 import { PolicyDetailsView } from '../components/policy-details-view';
 
 export default function PolicyPageWrapper() {
@@ -11,7 +12,7 @@ export default function PolicyPageWrapper() {
 
   useEffect(() => {
     if (paramId === 'new') {
-      router.replace('/monitoring/policy/edit/new');
+      router.replace(routes.monitoring.policyEditNew);
     }
   }, [paramId, router]);
 

@@ -64,6 +64,7 @@ import { useNotificationMutations } from '@/graphql/notifications/use-notificati
 import { isDialogViewActive } from '@/lib/active-dialog-views';
 import { featureFlags } from '@/lib/feature-flags';
 import { notificationGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import {
   ADMIN_AI_MESSAGE_CONTEXT_TYPE,
   CONTEXT_TYPENAME_BY_TYPE,
@@ -81,7 +82,7 @@ const DESKTOP_NOTIFICATION_ICON = '/assets/openframe/android-chrome-192x192.png'
 const NOTIFICATION_SUBJECT_PREFIX = 'user';
 const NOTIFICATION_SUBJECT_SUFFIX = 'notification';
 const POPUP_OFFSET_CLASS = 'top-16 md:top-[4.5rem]';
-const NOTIFICATIONS_HISTORY_HREF = '/notifications?tab=history';
+const NOTIFICATIONS_HISTORY_HREF = routes.notifications({ tab: 'history' });
 
 const DRAWER_FILTER_PAIRS = [UNFILTERED_NOTIFICATION_PAIR];
 const NATS_CONTEXT_TYPENAME = 'GenericContext';

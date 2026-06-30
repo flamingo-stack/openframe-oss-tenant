@@ -4,6 +4,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
+import { routes } from '@/lib/routes';
 import { API_ENDPOINTS } from '../constants';
 import { CREATE_TICKET_MUTATION } from '../queries/ticket-queries';
 import type { CreateTicketInput, TicketPayload } from '../types/ticket.types';
@@ -39,9 +40,9 @@ export function useCreateTicket() {
       queryClient.invalidateQueries({ queryKey: dialogsQueryKeys.all });
       toast({ title: 'Success', description: 'Ticket created successfully', variant: 'success' });
       if (ticket?.id) {
-        router.replace(`/tickets/dialog?id=${ticket.id}`);
+        router.replace(routes.tickets.dialog(ticket.id));
       } else {
-        router.replace('/tickets');
+        router.replace(routes.tickets.list);
       }
     },
     onError: err => {

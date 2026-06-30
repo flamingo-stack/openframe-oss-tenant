@@ -58,6 +58,7 @@ import { extractPendingApprovals, findLatestPendingApprovalId, stripPendingAppro
 import { featureFlags } from '@/lib/feature-flags';
 import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { useAuthStore } from '@/stores';
 import { useDeviceActionsMenu } from '../../devices/hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
@@ -120,7 +121,7 @@ function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): Act
 
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
-  const handleBackToTickets = useSafeBack('/tickets');
+  const handleBackToTickets = useSafeBack(routes.tickets.list);
   const { toast } = useToast();
   // When the Mingo sidebar carries per-ticket context, the embedded technician
   // (Mingo) chat is redundant: its panel, NATS subscription, history fetch, and
@@ -515,7 +516,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         id: 'edit-ticket',
         label: 'Edit Ticket',
         icon: <PenEditIcon className="text-ods-text-secondary" />,
-        onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
+        onClick: () => router.push(routes.tickets.new({ edit: dialog.id })),
       });
     }
 
@@ -645,7 +646,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
             ? dialog.owner.machine?.hostname || dialog.owner.machine?.displayName
             : undefined) ||
           '—',
-        href: machineId ? `/devices/details/${machineId}` : undefined,
+        href: machineId ? routes.devices.details(machineId) : undefined,
       },
     },
     {
@@ -702,7 +703,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       ariaLabel: 'Edit Ticket',
       variant: 'outline',
       icon: <PenEditIcon className="text-ods-text-secondary" />,
-      onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
+      onClick: () => router.push(routes.tickets.new({ edit: dialog.id })),
       iconOnlyOnDesktop: true,
     });
   }
@@ -964,7 +965,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                   : undefined) ||
                 'Unassigned',
               icon: <MonitorIcon className="size-4" />,
-              onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+              onClick: machineId ? () => router.push(routes.devices.details(machineId)) : undefined,
             }}
             {...statusInfoProps}
             onExpand={() => setIsTicketInfoExpanded(!ticketInfoExpanded)}
@@ -1048,7 +1049,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
                         : undefined) ||
                       'Unassigned',
                     icon: <MonitorIcon className="size-4" />,
-                    onClick: machineId ? () => router.push(`/devices/details/${machineId}`) : undefined,
+                    onClick: machineId ? () => router.push(routes.devices.details(machineId)) : undefined,
                   }}
                   {...statusInfoProps}
                   expanded={true}

@@ -16,6 +16,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { formatDate, formatTime } from '@/lib/format-date';
+import { routes } from '@/lib/routes';
 import { ApiKeyCreatedModal } from '../../components/api-key-created-modal';
 import { ApiKeyDetailsModal } from '../../components/api-key-details-modal';
 import { CreateApiKeyModal } from '../../components/create-api-key-modal';
@@ -24,7 +25,7 @@ import { RegenerateApiKeyModal } from '../../components/regenerate-api-key-modal
 import { type ApiKeyRecord, useApiKeys } from '../../hooks/use-api-keys';
 
 export function ApiKeysTab() {
-  const handleBack = useSafeBack('/settings');
+  const handleBack = useSafeBack(routes.settings.root());
   const { items, isLoading, error, fetchApiKeys, createApiKey, updateApiKey, regenerateApiKey, setApiKeyEnabled } =
     useApiKeys();
   const [isCreateOpen, setIsCreateOpen] = useState(false);

@@ -17,6 +17,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
@@ -120,7 +121,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       // Clear the action param to avoid re-triggering
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.delete('action');
-      router.replace(`/devices/details/${deviceId}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
+      router.replace(`${routes.devices.details(deviceId)}${newParams.toString() ? `?${newParams.toString()}` : ''}`);
     }
   }, [searchParams, isLoading, deviceId, router]);
 
@@ -138,7 +139,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       : null,
   );
 
-  const handleBack = useSafeBack('/devices');
+  const handleBack = useSafeBack(routes.devices.list);
 
   const {
     items: deviceMenuItems,

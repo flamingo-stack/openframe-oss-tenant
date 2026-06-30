@@ -12,6 +12,7 @@ import {
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 import { useTicketStatusesForm } from '../hooks/use-ticket-statuses-form';
 import type { CustomTicketStatus, SystemTicketStatus } from '../types/ticket-statuses.types';
 import { DeleteStatusDialog } from './delete-status-dialog';
@@ -43,7 +44,7 @@ function renderSystemRow(row: SystemTicketStatus) {
 }
 
 export function TicketStatusesView() {
-  const handleBack = useSafeBack('/tickets');
+  const handleBack = useSafeBack(routes.tickets.list);
   const {
     form,
     fieldArray,

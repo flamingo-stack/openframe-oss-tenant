@@ -31,6 +31,7 @@ import { EmptyState } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
@@ -90,7 +91,7 @@ export function Queries() {
     (query: Query) => [
       {
         label: 'Query Details',
-        onClick: () => router.push(`/monitoring/query/${query.id}`),
+        onClick: () => router.push(routes.monitoring.query(query.id)),
       },
       {
         label: 'Delete Query',
@@ -139,7 +140,7 @@ export function Queries() {
         cell: ({ row }: { row: Row<Query> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/monitoring/query/${row.original.id}`)}
+              onClick={openInNewTab(routes.monitoring.query(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -162,12 +163,12 @@ export function Queries() {
     enableSorting: false,
   });
 
-  const queryRowHref = useCallback((query: Query) => `/monitoring/query/${query.id}`, []);
+  const queryRowHref = useCallback((query: Query) => routes.monitoring.query(query.id), []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddQuery = useCallback(() => {
-    router.push('/monitoring/query/edit/new');
+    router.push(routes.monitoring.queryEditNew);
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

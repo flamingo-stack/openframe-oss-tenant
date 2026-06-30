@@ -16,6 +16,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ResponsiveActionButton } from '@/app/components/shared/responsive-action-button';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { openInNewTab } from '@/lib/open-in-new-tab';
+import { routes } from '@/lib/routes';
 import { getTicketTableColumns } from '../../../tickets/components/ticket-table-columns';
 import { useTicketsQuery } from '../../../tickets/hooks/use-tickets-query';
 import type { ClientDialogOwner, Dialog } from '../../../tickets/types/dialog.types';
@@ -67,7 +68,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
         cell: ({ row }: { row: Row<Dialog> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/tickets/dialog?id=${row.original.id}`)}
+              onClick={openInNewTab(routes.tickets.dialog(row.original.id))}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -90,7 +91,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
     enableSorting: false,
   });
 
-  const ticketRowHref = useCallback((t: Dialog) => `/tickets/dialog?id=${t.id}`, []);
+  const ticketRowHref = useCallback((t: Dialog) => routes.tickets.dialog(t.id), []);
   const handleLoadMore = useCallback(() => fetchNextPage(), [fetchNextPage]);
 
   if (error) {
@@ -105,7 +106,7 @@ export function CustomerTicketsTab({ organizationId }: CustomerTicketsTabProps) 
           <ResponsiveActionButton
             label="New Ticket"
             icon={<PlusCircleIcon className="w-5 h-5 text-ods-text-secondary" />}
-            onClick={() => router.push('/tickets/new')}
+            onClick={() => router.push(routes.tickets.new())}
           />
         }
       />

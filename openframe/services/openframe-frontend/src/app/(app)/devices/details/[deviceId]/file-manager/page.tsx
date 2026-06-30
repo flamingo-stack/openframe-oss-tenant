@@ -7,6 +7,7 @@ import { FileManagerContainer } from '@/app/(app)/devices/details/[deviceId]/fil
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-utils';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { routes } from '@/lib/routes';
 
 // Horizontal padding only — `PageLayout`'s `TitleBlock` already supplies the
 // top padding (`pt-[var(--spacing-system-l)]` = 16/24px, matching the former pt-4/md:pt-6).
@@ -21,7 +22,7 @@ interface FileManagerPageProps {
 export default function FileManagerPage({ params }: FileManagerPageProps) {
   const resolvedParams = use(params);
   const deviceId = resolvedParams.deviceId;
-  const handleBack = useSafeBack(`/devices/details/${deviceId}`);
+  const handleBack = useSafeBack(routes.devices.details(deviceId));
 
   const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId, { polling: false });
 

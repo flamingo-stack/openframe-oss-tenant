@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { routes } from '@/lib/routes';
 import { QueryDetailsView } from '../components/query-details-view';
 
 export default function QueryPageWrapper() {
@@ -11,7 +12,7 @@ export default function QueryPageWrapper() {
 
   useEffect(() => {
     if (paramId === 'new') {
-      router.replace('/monitoring/query/edit/new');
+      router.replace(routes.monitoring.queryEditNew);
     }
   }, [paramId, router]);
 

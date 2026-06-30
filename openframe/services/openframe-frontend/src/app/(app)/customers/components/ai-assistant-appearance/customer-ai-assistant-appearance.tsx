@@ -27,6 +27,7 @@ import {
 import { getDefaultClientView } from '@/app/(app)/settings/ai-settings/types/ai-settings';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { getFullImageUrl } from '@/lib/image-url';
+import { routes } from '@/lib/routes';
 import { useCustomerAppearanceForm } from './use-customer-appearance-form';
 
 interface CustomerAiAssistantAppearanceProps {
@@ -128,7 +129,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push('/settings/ai-settings')}
+          onClick={() => router.push(routes.settings.aiSettings)}
           className="shrink-0"
         >
           <PenEditIcon className="size-5 text-ods-text-secondary" />
