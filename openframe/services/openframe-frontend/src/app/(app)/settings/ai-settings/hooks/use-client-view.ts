@@ -86,9 +86,9 @@ export function useUpdateClientView(organizationId: string | null = null) {
   const queryClient = useQueryClient();
 
   const result = useMutation({
-    mutationFn: async (input: ClientViewInput) => {
+    mutationFn: async (input: ClientViewInput): Promise<ClientView | null> => {
       const response = await apiClient.post<
-        GraphqlResponse<{ updateClientView: { userErrors: { message: string }[] } }>
+        GraphqlResponse<{ updateClientView: { view: ClientViewGql | null; userErrors: { message: string }[] } }>
       >('/chat/graphql', { query: UPDATE_CLIENT_VIEW_MUTATION, variables: { organizationId, input } });
 
       if (!response.ok || !response.data) {
@@ -98,10 +98,14 @@ export function useUpdateClientView(organizationId: string | null = null) {
         throw new Error(response.data.errors.map(e => e.message).join(', '));
       }
 
-      const userErrors = response.data.data?.updateClientView.userErrors ?? [];
+      const result = response.data.data?.updateClientView;
+      const userErrors = result?.userErrors ?? [];
       if (userErrors.length > 0) {
         throw new Error(userErrors.map(e => e.message).join(', '));
       }
+
+      // Return the saved view so the caller can attach the avatar to its id.
+      return result?.view ? toClientView(result.view) : null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
