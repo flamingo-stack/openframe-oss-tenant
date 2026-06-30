@@ -13,6 +13,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { type ReactNode, useMemo } from 'react';
+import { formatDateTime } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { useCustomerDeviceCounts } from '../hooks/use-customer-device-counts';
@@ -57,7 +58,7 @@ export function transformCustomerToEntry(org: Customer, deviceCount: number | nu
     email: org.contact.email,
     deviceCount,
     numberOfEmployees: org.numberOfEmployees,
-    lastActivityDate: new Date(org.lastActivity).toLocaleString(),
+    lastActivityDate: formatDateTime(org.lastActivity),
     lastActivityRelative: formatRelativeTime(org.lastActivity),
     imageUrl: org.imageUrl,
     imageHash: org.imageHash,

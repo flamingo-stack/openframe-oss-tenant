@@ -3,6 +3,7 @@
 import type { InfoCardData } from '@flamingo-stack/openframe-frontend-core';
 import { InfoCard, ToolIcon } from '@flamingo-stack/openframe-frontend-core';
 import { normalizeToolTypeWithFallback, toToolLabel } from '@flamingo-stack/openframe-frontend-core/utils';
+import { formatDateTime } from '@/lib/format-date';
 
 interface LogEntry {
   toolEventId: string;
@@ -24,7 +25,7 @@ interface FullInformationSectionProps {
 export function FullInformationSection({ logDetails }: FullInformationSectionProps) {
   const formatTimestamp = (timestamp: string) => {
     try {
-      return new Date(timestamp).toISOString();
+      return formatDateTime(timestamp);
     } catch {
       return timestamp;
     }
