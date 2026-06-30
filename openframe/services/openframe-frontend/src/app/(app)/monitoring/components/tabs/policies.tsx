@@ -46,6 +46,10 @@ import { computePolicySummary, getPolicyStatus, POLICY_STATUS_CONFIG } from '../
 
 const PAGE_SIZE = 20;
 
+// An empty platform string means the policy applies to every OS, so we render
+// the full set of OS icons rather than a plain-text "All" label.
+const ALL_PLATFORMS = ['windows', 'darwin', 'linux'];
+
 function parsePlatforms(platform: string | undefined): string[] {
   if (!platform) return [];
   return platform
@@ -168,11 +172,8 @@ export function Policies() {
         header: 'Platform',
         cell: ({ row }: { row: Row<Policy> }) => {
           const platforms = parsePlatforms(row.original.platform);
-          return platforms.length > 0 ? (
-            <OSTypeBadgeGroup osTypes={platforms} iconSize="w-4 h-4" />
-          ) : (
-            <span className="text-h6 text-ods-text-secondary">All</span>
-          );
+          const osTypes = platforms.length > 0 ? platforms : ALL_PLATFORMS;
+          return <OSTypeBadgeGroup osTypes={osTypes} iconSize="w-6 h-6" />;
         },
         meta: { width: 'w-[140px]', hideAt: 'lg' },
       },
