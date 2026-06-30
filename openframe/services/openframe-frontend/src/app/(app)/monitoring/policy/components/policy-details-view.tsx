@@ -96,6 +96,13 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
     },
   ];
 
+  const severityColumn = { key: 'severity', value: policyDetails.critical ? 'Critical' : 'Low', label: 'Severity' };
+  const statusColumn = { key: 'status', value: <PolicyStatusTag policy={policyDetails} />, label: 'Status' };
+  const authorColumn = { key: 'author', value: policyDetails.author_name, label: 'Author' };
+
+  // The meta fields render as one row on desktop and as two separate rows on
+  // tablet/mobile. Each is a distinct PanelRow toggled by breakpoint so every
+  // line keeps its own divider and padding (matching the Figma responsive specs).
   const policyInfoRows: PanelRow[] = [
     ...(policyDetails.description
       ? [
@@ -105,13 +112,23 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
           },
         ]
       : []),
+    // Desktop (lg+): Severity + Status + Author on a single row → 2 rows total.
     {
-      id: 'meta',
-      columns: [
-        { key: 'severity', value: policyDetails.critical ? 'Critical' : 'Low', label: 'Severity' },
-        { key: 'status', value: <PolicyStatusTag policy={policyDetails} />, label: 'Status' },
-        { key: 'author', value: policyDetails.author_name, label: 'Author' },
-      ],
+      id: 'meta-desktop',
+      className: 'hidden lg:flex lg:border-b-0',
+      columns: [severityColumn, statusColumn, authorColumn],
+    },
+    // Tablet & mobile (< lg): split into two rows — Severity + Status, then Author
+    // on its own third row. The empty spacer keeps Author at the standard row height.
+    {
+      id: 'meta-severity-status',
+      className: 'lg:hidden',
+      columns: [severityColumn, statusColumn],
+    },
+    {
+      id: 'meta-author',
+      className: 'lg:hidden',
+      columns: [authorColumn, { key: 'author-spacer' }],
     },
   ];
 
