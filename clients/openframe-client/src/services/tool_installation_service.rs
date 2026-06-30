@@ -176,9 +176,12 @@ impl ToolInstallationService {
                     tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
                 }
 
-                let installed_agent_path = self.directory_manager
-                    .get_tool_executable_path(tool_agent_id, installed_tool.installation.executable_path());
-                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&installed_agent_path.to_string_lossy()).await {
+                // Kill anything still running from inside the tool directory before removing it.
+                // On Windows the orbit-spawned osqueryd child keeps its own binary (osqueryd.exe)
+                // locked, so removing the directory fails with "Access is denied" and aborts the
+                // whole reinstall. Matching on the tool folder path catches the agent and every
+                // child (osqueryd) it left behind, not just agent.exe.
+                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&tool_folder_path.to_string_lossy()).await {
                     warn!("Failed to kill processes locking tool directory for {}: {:#}", tool_agent_id, e);
                 }
 
