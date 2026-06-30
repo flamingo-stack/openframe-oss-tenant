@@ -51,7 +51,7 @@ export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
     // Appearance changes rarely but should land without a restart. No polling;
     // instead refetch when the user refocuses the window or the app reconnects,
     // with a short staleTime so that refocus actually picks up admin edits.
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
