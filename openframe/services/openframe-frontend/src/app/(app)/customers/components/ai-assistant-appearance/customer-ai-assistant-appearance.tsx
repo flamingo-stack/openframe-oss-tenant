@@ -77,7 +77,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
     const effectiveView = orgView ?? defaultView ?? getDefaultClientView(organizationId);
     const fallbackDefault = defaultView ?? getDefaultClientView(null);
 
-    const { form, avatarUrl, handleAvatarChange, handleAvatarRemove } = useCustomerAppearanceForm({
+    const { form, avatarUrl, handleAvatarChange, handleAvatarRemove, commitAvatar } = useCustomerAppearanceForm({
       view: effectiveView,
     });
 
@@ -97,14 +97,17 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
             return;
           }
           const values = form.getValues();
-          await update({
+
+          const savedView = await update({
             assistantName: values.assistantName,
             applicationTheme: values.applicationTheme,
             accentColor: values.accentColor,
           });
+          const clientViewId = savedView?.id ?? orgView?.id;
+          if (clientViewId) await commitAvatar(clientViewId);
         },
       }),
-      [useDefault, orgView, form, update, reset],
+      [useDefault, orgView, form, update, reset, commitAvatar],
     );
 
     const handleToggle = (checked: boolean) => {
