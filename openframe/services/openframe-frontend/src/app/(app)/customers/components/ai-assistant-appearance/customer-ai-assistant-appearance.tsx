@@ -15,11 +15,13 @@ import {
   Input,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { AiSettingsPreviews } from '@/app/(app)/settings/ai-settings/components/previews/ai-settings-previews';
 import {
+  clientViewQueryKeys,
   useClientView,
   useResetClientView,
   useUpdateClientView,
@@ -55,6 +57,7 @@ export interface CustomerAppearanceHandle {
 export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle, CustomerAiAssistantAppearanceProps>(
   function CustomerAiAssistantAppearance({ organizationId }, ref) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     // Org-scoped override (null when the customer inherits the default).
     const { view: orgView, isLoading } = useClientView(organizationId);
     // Tenant-wide default, used for the "use default" previews.
@@ -104,10 +107,16 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
             accentColor: values.accentColor,
           });
           const clientViewId = savedView?.id ?? orgView?.id;
-          if (clientViewId) await commitAvatar(clientViewId);
+          if (clientViewId) {
+            await commitAvatar(clientViewId);
+            // The avatar lives on a separate REST endpoint, so the cached view
+            // is stale after upload. Refetch it now, otherwise an SPA revisit
+            // shows an empty preview until a hard refresh.
+            await queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
+          }
         },
       }),
-      [useDefault, orgView, form, update, reset, commitAvatar],
+      [useDefault, organizationId, orgView, form, update, reset, commitAvatar, queryClient],
     );
 
     const handleToggle = (checked: boolean) => {
