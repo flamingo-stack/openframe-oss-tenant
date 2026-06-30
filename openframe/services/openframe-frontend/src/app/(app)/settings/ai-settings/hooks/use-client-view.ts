@@ -82,7 +82,10 @@ export function useClientView(organizationId: string | null = null, { enabled = 
  * Returns `mutateAsync` so the CLIENT screen can save the view alongside the AI
  * config and surface a single combined toast. Feedback is owned by the caller.
  */
-export function useUpdateClientView(organizationId: string | null = null) {
+export function useUpdateClientView(
+  organizationId: string | null = null,
+  { invalidateOnSuccess = true }: { invalidateOnSuccess?: boolean } = {},
+) {
   const queryClient = useQueryClient();
 
   const result = useMutation({
@@ -108,7 +111,12 @@ export function useUpdateClientView(organizationId: string | null = null) {
       return result?.view ? toClientView(result.view) : null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
+      // The customer screen attaches the avatar after this resolves, then
+      // invalidates once itself — auto-invalidating here would refetch the
+      // pre-upload avatar and flicker the preview, so it opts out.
+      if (invalidateOnSuccess) {
+        queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
+      }
     },
   });
 

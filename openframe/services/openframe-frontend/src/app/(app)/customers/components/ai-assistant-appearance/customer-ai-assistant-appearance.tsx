@@ -62,7 +62,9 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
     const { view: orgView, isLoading } = useClientView(organizationId);
     // Tenant-wide default, used for the "use default" previews.
     const { view: defaultView } = useClientView(null);
-    const { update } = useUpdateClientView(organizationId);
+    // Opt out of auto-invalidation: commit() refetches once after the avatar
+    // upload, so the preview never flickers the pre-upload image.
+    const { update } = useUpdateClientView(organizationId, { invalidateOnSuccess: false });
     const { reset } = useResetClientView(organizationId);
 
     const [useDefault, setUseDefault] = useState(true);
@@ -107,13 +109,11 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
             accentColor: values.accentColor,
           });
           const clientViewId = savedView?.id ?? orgView?.id;
-          if (clientViewId) {
-            await commitAvatar(clientViewId);
-            // The avatar lives on a separate REST endpoint, so the cached view
-            // is stale after upload. Refetch it now, otherwise an SPA revisit
-            // shows an empty preview until a hard refresh.
-            await queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
-          }
+          if (clientViewId) await commitAvatar(clientViewId);
+          // Single refetch after the avatar lands: the view and its avatar live
+          // in separate stores, so this is the one point where both are current.
+          // (Also keeps the cache fresh for an SPA revisit — no hard refresh.)
+          await queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
         },
       }),
       [useDefault, organizationId, orgView, form, update, reset, commitAvatar, queryClient],
