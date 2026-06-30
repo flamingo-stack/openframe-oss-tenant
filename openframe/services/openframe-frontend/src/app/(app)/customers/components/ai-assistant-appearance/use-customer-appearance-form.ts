@@ -1,5 +1,6 @@
 'use client';
 
+import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -17,6 +18,7 @@ interface UseCustomerAppearanceFormOptions {
 }
 
 export function useCustomerAppearanceForm({ view }: UseCustomerAppearanceFormOptions) {
+  const { toast } = useToast();
   const form = useForm<CustomerAppearanceFormValues>({
     resolver: zodResolver(customerAppearanceSchema),
     defaultValues: getCustomerAppearanceDefaults(view),
@@ -80,9 +82,11 @@ export function useCustomerAppearanceForm({ view }: UseCustomerAppearanceFormOpt
       clearPreview();
       // Bust the content-stable endpoint URL so the new image loads.
       setAvatarUrl(getFullImageUrl(uploadedUrl, String(Date.now())));
+      toast({ title: 'Avatar updated', description: 'Assistant avatar uploaded', variant: 'success' });
     } else if (pendingRemovalRef.current) {
       await deleteWithAuth(imageEndpoint);
       pendingRemovalRef.current = false;
+      toast({ title: 'Avatar removed', description: 'Assistant avatar deleted', variant: 'success' });
     }
   };
 
