@@ -29,20 +29,10 @@ interface DeviceDetailsViewProps {
   deviceId: string;
 }
 
-const DEVICE_TAB_IDS = [
-  'overview',
-  'vulnerabilities',
-  'policies',
-  'queries',
-  'security',
-  'agents',
-  'tickets',
-  'hardware',
-  'os',
-  'network',
-  'users',
-  'software',
-] as const;
+// Derive the valid-tab set from DEVICE_TABS (the single source of truth) so disabled
+// tabs (e.g. the commented-out `queries`) are excluded automatically. Otherwise a URL
+// like `?tab=queries` would pass validation but render a blank panel (no component).
+const DEVICE_TAB_IDS = DEVICE_TABS.map(tab => tab.id);
 const DEFAULT_DEVICE_TAB = 'overview';
 
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
