@@ -20,6 +20,10 @@ import type { PolicyTableRow } from './policy-table-row';
 
 const EMPTY_COLUMN_FILTERS: never[] = [];
 
+// An empty platform list means the policy applies to every OS, so we render the
+// full set of OS icons rather than a plain-text "All" label.
+const ALL_PLATFORMS = ['windows', 'darwin', 'linux'];
+
 const NOTE_TONE_CLASS = {
   error: 'text-[var(--ods-attention-red-error)]',
   warning: 'text-[var(--color-warning)]',
@@ -110,11 +114,8 @@ export function PoliciesTable({
         header: 'PLATFORM',
         cell: ({ row }: { row: Row<PolicyTableRow> }) => {
           const platforms = row.original.platforms ?? [];
-          return platforms.length > 0 ? (
-            <OSTypeBadgeGroup osTypes={platforms} iconSize="w-4 h-4" />
-          ) : (
-            <span className="text-h6 text-ods-text-secondary">All</span>
-          );
+          const osTypes = platforms.length > 0 ? platforms : ALL_PLATFORMS;
+          return <OSTypeBadgeGroup osTypes={osTypes} iconSize="w-6 h-6" />;
         },
         meta: { width: 'w-[140px]', hideAt: 'lg' },
       });

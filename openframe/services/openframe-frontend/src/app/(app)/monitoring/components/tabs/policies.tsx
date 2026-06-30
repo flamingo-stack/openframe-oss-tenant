@@ -130,7 +130,8 @@ export function Policies() {
           critical: policy.critical,
           severityLabel: policy.critical ? 'Critical' : 'Low',
           status: { label: config.label, variant: config.variant, note },
-          platforms: parsePlatforms(policy.platform),
+          // Temporarily hidden along with the Platform column. Restore to re-enable.
+          // platforms: parsePlatforms(policy.platform),
           actions: rowActions(policy),
           href: `/monitoring/policy/${policy.id}`,
         };
@@ -246,10 +247,10 @@ export function Policies() {
           </div>
 
           {/* Table */}
+          {/* Platform column temporarily hidden from users — omit `showPlatform` to restore. */}
           <PoliciesTable
             rows={rows}
             isLoading={isLoading}
-            showPlatform
             rowAsLink
             stickyHeader
             stickyHeaderOffset={stickyHeaderOffset}
