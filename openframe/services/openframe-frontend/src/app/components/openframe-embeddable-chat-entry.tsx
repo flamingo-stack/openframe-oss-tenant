@@ -39,6 +39,7 @@ import { KNOWLEDGE_BASE_ROUTE } from '../(app)/help-center/endpoints';
 import { MINGO_CONTEXT_ENTITY_TYPES } from '../(app)/mingo/context/context-sources';
 import { CONTEXT_ITEMS_MAX } from '../(app)/mingo/context/context-types';
 import { renderMingoContextItem, renderMingoMention } from '../(app)/mingo/context/mention-chips/render-mention';
+import { MingoPageContextTag } from '../(app)/mingo/context/page-context-tag';
 import { renderMingoContextItems } from '../(app)/mingo/context/render-context-items';
 import { useMingoQuickActions } from '../(app)/mingo/hooks/use-mingo-quick-actions';
 import { DialogSubscription } from '../(app)/mingo/hooks/use-mingo-realtime-subscription';
@@ -68,26 +69,40 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
   const { state, subscription, sendInNewDialog, searchQuery, setSearchQuery, fetchArchivedDialogs, unarchiveDialog } =
     useMingoUnifiedChatState();
 
-  // Drain a queued launcher prompt (set by `askMingo(source)` from an EmptyState
-  // "Ask Mingo about X" button). The drawer unmounts this entry on close and
-  // remounts on open, so this effect runs on every open; it also re-fires if a
-  // new prompt is queued while the drawer is already open. `consumePendingPrompt`
-  // nulls the prompt as it reads it, so a manual header open (no prompt) and
-  // React StrictMode's double-invoke are both no-ops.
+  // A queued launcher prompt (set by `askMingo(source)` from an EmptyState
+  // "Ask Mingo about X" button) opens the drawer and asks Mingo's GUIDE mode for
+  // contextual guidance about that section. The drawer unmounts this entry on
+  // close and remounts on open, so these run on every open and re-fire if a new
+  // prompt is queued while the drawer is already open.
   const pendingPrompt = useMingoLauncherStore(s => s.pendingPrompt);
+  const pendingMode = useMingoLauncherStore(s => s.pendingMode);
   const consumePendingPrompt = useMingoLauncherStore(s => s.consumePendingPrompt);
+
+  // Legacy Mingo-mode launch (no current caller — kept for a future agent-mode
+  // launcher): drain straight into a fresh Mingo dialog. `consumePendingPrompt`
+  // nulls the prompt as it reads it, so a header open (no prompt) and StrictMode's
+  // double-invoke are both no-ops. The Guide path is wired below — it needs
+  // `setActiveMode`, declared further down.
   useEffect(() => {
-    if (!pendingPrompt) return;
+    if (!pendingPrompt || pendingMode !== 'mingo') return;
     const text = consumePendingPrompt();
     if (!text) return;
     void sendInNewDialog(text);
-  }, [pendingPrompt, consumePendingPrompt, sendInNewDialog]);
+  }, [pendingPrompt, pendingMode, consumePendingPrompt, sendInNewDialog]);
 
   // Controlled active mode persisted across drawer open/close (and reloads):
   // the drawer unmounts its content on close, so an uncontrolled mode would
   // reset to `defaultActiveMode` every reopen. `useLocalStorage` reads the
   // stored value synchronously on remount, so we reopen on the same transport.
   const [activeMode, setActiveMode] = useLocalStorage<ChatMode>(ACTIVE_MODE_KEY, 'mingo');
+
+  // Guide-mode launch ("Ask Mingo about X"): force the panel into Guide mode so
+  // the lib's `guidePendingPrompt` one-shot (forwarded below) sends through the
+  // SSE/Guide transport. The lib calls `onGuidePromptConsumed` once it sends,
+  // which clears the store and re-arms the one-shot for the next click.
+  useEffect(() => {
+    if (pendingPrompt && pendingMode === 'guide') setActiveMode('guide');
+  }, [pendingPrompt, pendingMode, setActiveMode]);
 
   // Entity-context picker config (the `+` "Assign Item" menu + `@` trigger).
   // Stable so the lib's composer doesn't re-derive its icon map each render.
@@ -202,6 +217,17 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         // self-fetching chips as inline mentions — so manually attached context
         // resolves its live name + link instead of the lib's label-only pill.
         renderContextItem={contextEnabled ? renderMingoContextItem : undefined}
+        // One-shot Guide-mode prompt from an "Ask Mingo about X" launcher. The
+        // `activeMode='guide'` flip above lands first; the lib then sends this
+        // once via the Guide transport and calls `onGuidePromptConsumed` to clear
+        // it (which re-arms the one-shot for the next launch).
+        guidePendingPrompt={pendingMode === 'guide' ? pendingPrompt : null}
+        onGuidePromptConsumed={consumePendingPrompt}
+        // Mingo-mode "current page context" banner (Figma 192:51006): names the
+        // entity detail page the user is on now (read from the navigation-context
+        // store). The lib renders it under the header in Mingo mode only; the tag
+        // self-hides when there's no open view.
+        mingoContextBanner={<MingoPageContextTag />}
       />
     </>
   );
