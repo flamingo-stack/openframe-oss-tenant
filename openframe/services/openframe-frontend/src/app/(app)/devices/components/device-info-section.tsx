@@ -8,7 +8,7 @@ import type React from 'react';
 import { renderDeviceTypeIcon } from '@/app/components/shared/device-type-icon';
 import { InfoCell } from '@/app/components/shared/info-cell';
 import { useCopyToClipboard } from '@/app/hooks/use-copy-to-clipboard';
-import { splitDateAndTimeWithSeconds } from '@/lib/format-date';
+import { formatDate, formatTimeWithSeconds } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
 import type { Device } from '../types/device.types';
 
@@ -16,10 +16,9 @@ function formatDateWithTime(iso?: string): React.ReactNode {
   if (!iso) return 'Unknown';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'Unknown';
-  const { date, time } = splitDateAndTimeWithSeconds(d);
   return (
     <>
-      {date} <span className="text-ods-text-secondary">{time}</span>
+      {formatDate(d)} <span className="text-ods-text-secondary">{formatTimeWithSeconds(d)}</span>
     </>
   );
 }

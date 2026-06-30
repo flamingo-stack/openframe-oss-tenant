@@ -1,5 +1,6 @@
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { formatTime } from '@/lib/format-date';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 
 import type { TestRunData } from '../components/script/test-run-card';
@@ -70,11 +71,7 @@ export function useTestRuns(getFormValues: () => EditScriptFormData) {
         id: runId,
         deviceName: device.deviceName,
         agentToolId: device.agentToolId,
-        startedAt: new Date(startTime).toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true,
-        }),
+        startedAt: formatTime(startTime),
         startTime,
         status: 'running',
         output: ['Starting script execution...'],
