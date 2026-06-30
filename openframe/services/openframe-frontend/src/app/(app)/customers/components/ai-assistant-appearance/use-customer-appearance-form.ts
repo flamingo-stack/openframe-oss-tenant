@@ -1,8 +1,7 @@
 'use client';
 
-import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { ClientView } from '@/app/(app)/settings/ai-settings/types/ai-settings';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -18,78 +17,72 @@ interface UseCustomerAppearanceFormOptions {
 }
 
 export function useCustomerAppearanceForm({ view }: UseCustomerAppearanceFormOptions) {
-  const { toast } = useToast();
   const form = useForm<CustomerAppearanceFormValues>({
     resolver: zodResolver(customerAppearanceSchema),
     defaultValues: getCustomerAppearanceDefaults(view),
   });
 
-  // The avatar lives on the ClientView via a separate REST endpoint, not GraphQL.
-  // imageUrl from the API is relative (/images/...), so resolve it for <img src>.
-  const imageEndpoint = `/api/client-agent-settings/${view.id}/image`;
   const [avatarUrl, setAvatarUrl] = useState(
     getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash),
   );
 
-  // Re-sync form + avatar when the underlying record changes (initial load,
-  // after a save+refetch, or when switching which record we're editing).
+  // Avatar upload/removal is deferred to commit() so it targets the customer's
+  // own ClientView id, not the tenant default `view` borrowed while editing.
+  const pendingFileRef = useRef<File | null>(null);
+  const pendingRemovalRef = useRef(false);
+  const previewUrlRef = useRef<string | null>(null);
+
+  const clearPreview = useCallback(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  }, []);
+
+  // Re-sync form + avatar when the underlying record changes.
   const syncKey = `${view.id}:${view.updatedAt ?? ''}`;
   const lastSyncRef = useRef<string | null>(null);
   useEffect(() => {
     if (lastSyncRef.current === syncKey) return;
     lastSyncRef.current = syncKey;
+    clearPreview();
+    pendingFileRef.current = null;
+    pendingRemovalRef.current = false;
     form.reset(getCustomerAppearanceDefaults(view));
     setAvatarUrl(getFullImageUrl(view.assistantAvatar?.imageUrl, view.assistantAvatar?.hash));
-  }, [syncKey, view, form]);
+  }, [syncKey, view, form, clearPreview]);
 
-  const handleAvatarChange = async (file: File) => {
-    if (!view.id) {
-      toast({
-        title: 'Save appearance first',
-        description: 'Save the custom appearance before uploading an avatar',
-        variant: 'destructive',
-      });
-      return;
-    }
-    const previous = avatarUrl;
+  useEffect(() => () => clearPreview(), [clearPreview]);
+
+  const handleAvatarChange = (file: File) => {
+    clearPreview();
     const preview = URL.createObjectURL(file);
+    previewUrlRef.current = preview;
+    pendingFileRef.current = file;
+    pendingRemovalRef.current = false;
     setAvatarUrl(preview);
-    try {
-      const uploadedUrl = await uploadWithAuth(imageEndpoint, file);
-      // The image endpoint URL is content-stable, so the browser would otherwise
-      // serve the previously cached avatar. Bust the cache so the freshly
-      // uploaded image actually loads.
-      setAvatarUrl(getFullImageUrl(uploadedUrl, String(Date.now())));
-      toast({ title: 'Avatar updated', description: 'Assistant avatar uploaded', variant: 'success' });
-    } catch (err) {
-      setAvatarUrl(previous);
-      toast({
-        title: 'Upload failed',
-        description: err instanceof Error ? err.message : 'Failed to upload avatar',
-        variant: 'destructive',
-      });
-    } finally {
-      URL.revokeObjectURL(preview);
-    }
   };
 
-  const handleAvatarRemove = async () => {
-    if (!view.id) {
-      setAvatarUrl(undefined);
-      return;
-    }
-    const previous = avatarUrl;
+  const handleAvatarRemove = () => {
+    clearPreview();
+    pendingFileRef.current = null;
+    // Delete on the backend only if there is a persisted avatar.
+    pendingRemovalRef.current = Boolean(view.assistantAvatar);
     setAvatarUrl(undefined);
-    try {
+  };
+
+  // Flush the pending avatar change to the saved ClientView id. Throws on failure.
+  const commitAvatar = async (clientViewId: string) => {
+    const imageEndpoint = `/api/client-agent-settings/${clientViewId}/image`;
+    if (pendingFileRef.current) {
+      const uploadedUrl = await uploadWithAuth(imageEndpoint, pendingFileRef.current);
+      pendingFileRef.current = null;
+      clearPreview();
+      // Bust the content-stable endpoint URL so the new image loads.
+      setAvatarUrl(getFullImageUrl(uploadedUrl, String(Date.now())));
+    } else if (pendingRemovalRef.current) {
       await deleteWithAuth(imageEndpoint);
-      toast({ title: 'Avatar removed', description: 'Assistant avatar deleted', variant: 'success' });
-    } catch (err) {
-      setAvatarUrl(previous);
-      toast({
-        title: 'Delete failed',
-        description: err instanceof Error ? err.message : 'Failed to delete avatar',
-        variant: 'destructive',
-      });
+      pendingRemovalRef.current = false;
     }
   };
 
@@ -98,5 +91,6 @@ export function useCustomerAppearanceForm({ view }: UseCustomerAppearanceFormOpt
     avatarUrl,
     handleAvatarChange,
     handleAvatarRemove,
+    commitAvatar,
   };
 }

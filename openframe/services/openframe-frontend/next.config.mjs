@@ -47,4 +47,13 @@ const nextConfig = {
   },
 };
 
-export default withBundleAnalyzer({ enabled: process.env.ANALYZE === 'true' })(nextConfig);
+export default phase => {
+  // Cap Turbopack's native memory in the dev server only ('phase-development-server' ===
+  // PHASE_DEVELOPMENT_SERVER); the prod `next build` (also Turbopack) stays uncapped so
+  // CI/Docker can use available RAM.
+  const config =
+    phase === 'phase-development-server'
+      ? { ...nextConfig, experimental: { turbopackMemoryLimit: 8 * 1024 * 1024 * 1024 } }
+      : nextConfig;
+  return withBundleAnalyzer({ enabled: process.env.ANALYZE === 'true' })(config);
+};
