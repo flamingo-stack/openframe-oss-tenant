@@ -146,7 +146,11 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
         accessorKey: 'created_at',
         header: 'DISCOVERED',
         cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => {
-          const days = differenceInCalendarDays(new Date(), new Date(row.original.created_at));
+          const discovered = new Date(row.original.created_at);
+          if (Number.isNaN(discovered.getTime())) {
+            return <span className="text-h4 text-ods-text-secondary">—</span>;
+          }
+          const days = differenceInCalendarDays(new Date(), discovered);
           return (
             <div className="flex flex-col justify-center min-w-0">
               <span className="text-h4 truncate">{formatDate(row.original.created_at)}</span>

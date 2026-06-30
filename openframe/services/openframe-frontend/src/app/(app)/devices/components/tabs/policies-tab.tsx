@@ -59,7 +59,7 @@ export function PoliciesTab({ device }: PoliciesTabProps) {
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
+        <div className="text-ods-text-secondary text-h4">No device data available</div>
       </div>
     );
   }

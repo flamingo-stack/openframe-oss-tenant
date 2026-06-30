@@ -43,7 +43,7 @@ export function OsTab({ device }: OsTabProps) {
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
+        <div className="text-ods-text-secondary text-h4">No device data available</div>
       </div>
     );
   }
@@ -84,7 +84,7 @@ export function OsTab({ device }: OsTabProps) {
   if (!hasOs && bootItems.length === 0 && managementItems.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No OS data available for this device</div>
+        <div className="text-ods-text-secondary text-h4">No OS data available for this device</div>
       </div>
     );
   }

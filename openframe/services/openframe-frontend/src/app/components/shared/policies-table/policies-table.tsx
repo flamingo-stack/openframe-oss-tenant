@@ -26,7 +26,7 @@ const ALL_PLATFORMS = ['windows', 'darwin', 'linux'];
 
 const NOTE_TONE_CLASS = {
   error: 'text-[var(--ods-attention-red-error)]',
-  warning: 'text-[var(--color-warning)]',
+  warning: 'text-ods-warning',
 } as const;
 
 export interface PoliciesTableProps {

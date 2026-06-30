@@ -148,7 +148,7 @@ export function UsersTab({ device }: UsersTabProps) {
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
+        <div className="text-ods-text-secondary text-h4">No device data available</div>
       </div>
     );
   }
@@ -156,7 +156,7 @@ export function UsersTab({ device }: UsersTabProps) {
   if (rows.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No users found for this device</div>
+        <div className="text-ods-text-secondary text-h4">No users found for this device</div>
       </div>
     );
   }

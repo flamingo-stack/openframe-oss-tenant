@@ -398,7 +398,7 @@ function StaticTabBar({ activeTab }: { activeTab: string }) {
               key={tab.id}
               className={cn(
                 'flex gap-[var(--spacing-system-xxs)] items-center justify-center p-[var(--spacing-system-m)] relative shrink-0',
-                isActive && 'bg-gradient-to-b from-[rgba(255,255,255,0)] to-[rgba(255,255,255,0.1)]',
+                isActive && 'bg-ods-bg-hover',
               )}
             >
               <Icon className={cn('h-4 w-4 md:h-6 md:w-6', isActive ? 'text-ods-accent' : 'text-ods-text-secondary')} />
