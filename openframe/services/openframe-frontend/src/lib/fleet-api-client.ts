@@ -5,7 +5,12 @@
 
 import { FleetHost, FleetHostResponse } from '@/app/(app)/devices/types/fleet.types';
 import { Policy } from '@/app/(app)/monitoring/types/policies.types';
-import { Query, QueryReportParams, QueryReportResponse } from '@/app/(app)/monitoring/types/queries.types';
+import {
+  HostQueriesResponse,
+  Query,
+  QueryReportParams,
+  QueryReportResponse,
+} from '@/app/(app)/monitoring/types/queries.types';
 import { type ApiRequestOptions, type ApiResponse, apiClient } from './api-client';
 import { runtimeEnv } from './runtime-config';
 
@@ -374,7 +379,7 @@ class FleetApiClient {
     return this.get(`/api/latest/fleet/hosts/${hostId}/policies`);
   }
 
-  async getHostQueries(hostId: number): Promise<ApiResponse<Query[]>> {
+  async getHostQueries(hostId: number): Promise<ApiResponse<HostQueriesResponse>> {
     return this.get(`/api/latest/fleet/hosts/${hostId}/queries`);
   }
 

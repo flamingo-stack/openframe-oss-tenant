@@ -1,45 +1,30 @@
 'use client';
 
-// Temporarily hidden along with the Platform column.
-// import { OSTypeBadgeGroup } from '@flamingo-stack/openframe-frontend-core/components/features';
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
-  ArcheryTargetIcon,
-  ArrowRightUpIcon,
   BellCheckIcon,
-  BellIcon,
   FolderShieldIcon,
-  Hierarchy01Icon,
   Hierarchy02Icon,
   PlusCircleIcon,
   RadarIcon,
   SearchIcon,
-  ShareIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  Button,
-  type ColumnDef,
   DashboardInfoCard,
   DataTable,
   Input,
-  MoreActionsMenu,
   PageError,
   PageLayout,
-  type Row,
   Skeleton,
-  Tag,
-  TruncateText,
-  useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
-import { EmptyState } from '@/app/components/shared';
+import { EmptyState, PoliciesTable, type PolicyTableRow, type PolicyTableStatus } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { usePolicies } from '../../hooks/use-policies';
 import type { Policy } from '../../types/policies.types';
@@ -59,30 +44,6 @@ const PAGE_SIZE = 20;
 //     .map(p => p.trim())
 //     .filter(Boolean);
 // }
-
-function PolicyStatusCell({ policy }: { policy: Policy }) {
-  const status = getPolicyStatus(policy);
-  const config = POLICY_STATUS_CONFIG[status];
-  const failing = policy.failing_host_count;
-  const responded = policy.passing_host_count + failing;
-  const missing = (policy.hosts_include_any?.length ?? 0) - responded;
-
-  return (
-    <div className="flex flex-col items-start gap-1">
-      <Tag label={config.label} variant={config.variant} />
-      {status === 'partial' && missing > 0 && (
-        <span className="text-xs font-medium text-[var(--color-warning)]">
-          {missing} {missing === 1 ? 'device' : 'devices'} left
-        </span>
-      )}
-      {status === 'failing' && (
-        <span className="text-xs font-medium text-[var(--ods-attention-red-error)]">
-          {failing} {failing === 1 ? 'device' : 'devices'}
-        </span>
-      )}
-    </div>
-  );
-}
 
 export function Policies() {
   const router = useRouter();
@@ -145,86 +106,38 @@ export function Policies() {
     [router],
   );
 
-  const columns = useMemo<ColumnDef<Policy>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Name',
-        cell: ({ row }: { row: Row<Policy> }) => (
-          <div className="flex flex-col justify-center gap-1 py-2 min-h-[60px]">
-            <TruncateText>{row.original.name}</TruncateText>
-            <TruncateText variant="h6" tone="secondary">
-              {row.original.description}
-            </TruncateText>
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'severity',
-        header: 'Severity',
-        cell: ({ row }: { row: Row<Policy> }) => (
-          <span className="font-medium leading-[20px] text-ods-text-primary">
-            {row.original.critical ? 'Critical ' : 'Low'}
-          </span>
-        ),
-        meta: { width: 'w-[100px]', hideAt: 'md' },
-      },
-      // Temporarily hidden from users. Restore to re-enable the Platform column.
-      // {
-      //   accessorKey: 'platform',
-      //   header: 'Platform',
-      //   cell: ({ row }: { row: Row<Policy> }) => {
-      //     const platforms = parsePlatforms(row.original.platform);
-      //     const osTypes = platforms.length > 0 ? platforms : ALL_PLATFORMS;
-      //     return <OSTypeBadgeGroup osTypes={osTypes} iconSize="w-6 h-6" />;
-      //   },
-      //   meta: { width: 'w-[140px]', hideAt: 'lg' },
-      // },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }: { row: Row<Policy> }) => <PolicyStatusCell policy={row.original} />,
-        meta: { width: 'w-[140px]', hideAt: 'md' },
-      },
-      {
-        id: 'actions',
-        cell: ({ row }: { row: Row<Policy> }) => (
-          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
-            <MoreActionsMenu items={rowActions(row.original)} />
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
-      },
-      {
-        id: 'open',
-        cell: ({ row }: { row: Row<Policy> }) => (
-          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-            <Button
-              onClick={openInNewTab(`/monitoring/policy/${row.original.id}`)}
-              variant="outline"
-              size="icon"
-              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
-              aria-label="Open in new tab"
-              className="bg-ods-card"
-            />
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-    ],
-    [rowActions],
+  // Map the fleet-wide Policy model into the shared table's normalized view-model.
+  const rows = useMemo<PolicyTableRow[]>(
+    () =>
+      visiblePolicies.map(policy => {
+        const status = getPolicyStatus(policy);
+        const config = POLICY_STATUS_CONFIG[status];
+        const failing = policy.failing_host_count;
+        const responded = policy.passing_host_count + failing;
+        const missing = (policy.hosts_include_any?.length ?? 0) - responded;
+
+        let note: PolicyTableStatus['note'];
+        if (status === 'partial' && missing > 0) {
+          note = { text: `${missing} ${missing === 1 ? 'device' : 'devices'} left`, tone: 'warning' };
+        } else if (status === 'failing') {
+          note = { text: `${failing} ${failing === 1 ? 'device' : 'devices'}`, tone: 'error' };
+        }
+
+        return {
+          id: String(policy.id),
+          name: policy.name,
+          description: policy.description,
+          critical: policy.critical,
+          severityLabel: policy.critical ? 'Critical' : 'Low',
+          status: { label: config.label, variant: config.variant, note },
+          // Temporarily hidden along with the Platform column. Restore to re-enable.
+          // platforms: parsePlatforms(policy.platform),
+          actions: rowActions(policy),
+          href: `/monitoring/policy/${policy.id}`,
+        };
+      }),
+    [visiblePolicies, rowActions],
   );
-
-  const table = useDataTable<Policy>({
-    data: visiblePolicies,
-    columns,
-    getRowId: (row: Policy) => String(row.id),
-    enableSorting: false,
-  });
-
-  const policyRowHref = useCallback((policy: Policy) => `/monitoring/policy/${policy.id}`, []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
@@ -334,28 +247,23 @@ export function Policies() {
           </div>
 
           {/* Table */}
-          <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
-            <DataTable.Body
-              loading={isLoading}
-              skeletonRows={PAGE_SIZE}
-              emptyMessage={
-                debouncedSearch
-                  ? `No policies found matching "${debouncedSearch}". Try adjusting your search.`
-                  : 'No policies found.'
-              }
-              rowClassName="mb-1"
-              rowHref={policyRowHref}
-            />
-            {visibleCount < filteredPolicies.length && (
-              <DataTable.InfiniteFooter
-                hasNextPage
-                isFetchingNextPage={false}
-                onLoadMore={handleLoadMore}
-                skeletonRows={2}
-              />
-            )}
-          </DataTable>
+          {/* Platform column temporarily hidden from users — omit `showPlatform` to restore. */}
+          <PoliciesTable
+            rows={rows}
+            isLoading={isLoading}
+            rowAsLink
+            stickyHeader
+            stickyHeaderOffset={stickyHeaderOffset}
+            rightSlot={<DataTable.RowCount />}
+            skeletonRows={PAGE_SIZE}
+            emptyMessage={
+              debouncedSearch
+                ? `No policies found matching "${debouncedSearch}". Try adjusting your search.`
+                : 'No policies found.'
+            }
+            hasMore={visibleCount < filteredPolicies.length}
+            onLoadMore={handleLoadMore}
+          />
         </div>
       )}
       <ConfirmDeleteMonitoringModal

@@ -2,48 +2,25 @@
 
 import { MingoIcon } from '@flamingo-stack/openframe-frontend-core/components/icons';
 import {
-  ArrowRightUpIcon,
   BracketCurlyEllipsisVrIcon,
   DatabaseIcon,
   HourglassClockIcon,
-  HourglassIcon,
   PlusCircleIcon,
   SearchIcon,
-  TimerIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import {
-  Button,
-  type ColumnDef,
-  DataTable,
-  Input,
-  MoreActionsMenu,
-  PageError,
-  PageLayout,
-  type Row,
-  TruncateText,
-  useDataTable,
-} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { DataTable, Input, PageError, PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
-import { EmptyState } from '@/app/components/shared';
+import { EmptyState, formatQueryInterval, QueriesTable, type QueryTableRow } from '@/app/components/shared';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { openInNewTab } from '@/lib/open-in-new-tab';
 import { ConfirmDeleteMonitoringModal } from '../../components/confirm-delete-monitoring-modal';
 import { useQueries } from '../../hooks/use-queries';
 import type { Query } from '../../types/queries.types';
 
 const PAGE_SIZE = 20;
-
-function formatInterval(seconds: number): string {
-  if (seconds === 0) return 'Manual';
-  if (seconds < 60) return `Every ${seconds}s`;
-  if (seconds < 3600) return `Every ${Math.floor(seconds / 60)}m`;
-  if (seconds < 86400) return `Every ${Math.floor(seconds / 3600)}h`;
-  return `Every ${Math.floor(seconds / 86400)}d`;
-}
 
 export function Queries() {
   const router = useRouter();
@@ -100,69 +77,19 @@ export function Queries() {
     [router],
   );
 
-  const columns = useMemo<ColumnDef<Query>[]>(
-    () => [
-      {
-        accessorKey: 'name',
-        header: 'Name',
-        cell: ({ row }: { row: Row<Query> }) => (
-          <div className="flex flex-col justify-center gap-1 py-2 min-h-[60px]">
-            <TruncateText>{row.original.name}</TruncateText>
-            <TruncateText variant="h6" tone="secondary">
-              {row.original.description}
-            </TruncateText>
-          </div>
-        ),
-      },
-      {
-        accessorKey: 'frequency',
-        header: 'Frequency',
-        cell: ({ row }: { row: Row<Query> }) => (
-          <span className="font-medium leading-[20px] text-ods-text-primary">
-            {formatInterval(row.original.interval)}
-          </span>
-        ),
-        meta: { width: 'w-[120px]', hideAt: 'md' },
-      },
-      {
-        id: 'actions',
-        cell: ({ row }: { row: Row<Query> }) => (
-          <div data-no-row-click className="flex gap-2 items-center justify-end pointer-events-auto">
-            <MoreActionsMenu items={rowActions(row.original)} />
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'min-w-[100px] w-auto shrink-0 flex-none', align: 'right' },
-      },
-      {
-        id: 'open',
-        cell: ({ row }: { row: Row<Query> }) => (
-          <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
-            <Button
-              onClick={openInNewTab(`/monitoring/query/${row.original.id}`)}
-              variant="outline"
-              size="icon"
-              leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
-              aria-label="Open in new tab"
-              className="bg-ods-card"
-            />
-          </div>
-        ),
-        enableSorting: false,
-        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
-      },
-    ],
-    [rowActions],
+  // Map the fleet-wide Query model into the shared table's normalized view-model.
+  const rows = useMemo<QueryTableRow[]>(
+    () =>
+      visibleQueries.map(query => ({
+        id: String(query.id),
+        name: query.name,
+        description: query.description,
+        frequencyLabel: formatQueryInterval(query.interval),
+        actions: rowActions(query),
+        href: `/monitoring/query/${query.id}`,
+      })),
+    [visibleQueries, rowActions],
   );
-
-  const table = useDataTable<Query>({
-    data: visibleQueries,
-    columns,
-    getRowId: (row: Query) => String(row.id),
-    enableSorting: false,
-  });
-
-  const queryRowHref = useCallback((query: Query) => `/monitoring/query/${query.id}`, []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
@@ -231,28 +158,22 @@ export function Queries() {
             />
           </div>
 
-          <DataTable table={table}>
-            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
-            <DataTable.Body
-              loading={isLoading}
-              skeletonRows={PAGE_SIZE}
-              emptyMessage={
-                debouncedSearch
-                  ? `No queries found matching "${debouncedSearch}". Try adjusting your search.`
-                  : 'No queries found.'
-              }
-              rowClassName="mb-1"
-              rowHref={queryRowHref}
-            />
-            {visibleCount < filteredQueries.length && (
-              <DataTable.InfiniteFooter
-                hasNextPage
-                isFetchingNextPage={false}
-                onLoadMore={handleLoadMore}
-                skeletonRows={2}
-              />
-            )}
-          </DataTable>
+          <QueriesTable
+            rows={rows}
+            isLoading={isLoading}
+            rowAsLink
+            stickyHeader
+            stickyHeaderOffset={stickyHeaderOffset}
+            rightSlot={<DataTable.RowCount />}
+            skeletonRows={PAGE_SIZE}
+            emptyMessage={
+              debouncedSearch
+                ? `No queries found matching "${debouncedSearch}". Try adjusting your search.`
+                : 'No queries found.'
+            }
+            hasMore={visibleCount < filteredQueries.length}
+            onLoadMore={handleLoadMore}
+          />
         </div>
       )}
       <ConfirmDeleteMonitoringModal

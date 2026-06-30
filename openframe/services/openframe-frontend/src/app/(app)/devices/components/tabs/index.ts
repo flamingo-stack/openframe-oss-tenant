@@ -7,9 +7,13 @@ export {
   getTabComponent,
 } from './device-tabs';
 export { HardwareTab } from './hardware-tab';
-export { LogsTab } from './logs-tab';
 export { NetworkTab } from './network-tab';
+export { OsTab } from './os-tab';
+export { OverviewTab } from './overview-tab';
+export { PoliciesTab } from './policies-tab';
+export { QueriesTab } from './queries-tab';
 export { SecurityTab } from './security-tab';
 export { SoftwareTab } from './software-tab';
+export { TicketsTab } from './tickets-tab';
 export { UsersTab } from './users-tab';
 export { VulnerabilitiesTab } from './vulnerabilities-tab';

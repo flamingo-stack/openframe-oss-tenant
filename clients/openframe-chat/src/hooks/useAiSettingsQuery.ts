@@ -48,7 +48,11 @@ export function useAiSettingsQuery({ enabled }: { enabled: boolean }) {
     queryFn: () => aiSettingsService.fetchAiSettings(),
     enabled: enabled && connection.isReady,
     retry: 1,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    // Appearance changes rarely but should land without a restart. No polling;
+    // instead refetch when the user refocuses the window or the app reconnects,
+    // with a short staleTime so that refocus actually picks up admin edits.
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }

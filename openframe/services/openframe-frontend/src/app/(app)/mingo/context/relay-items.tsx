@@ -25,11 +25,18 @@ import { type ContextItemsProps, MINGO_CONTEXT_PAGE_SIZE } from './items-shared'
 
 // ───────────────────────────── Device ───────────────────────────────────────
 
+// Mingo device context is restricted to live/relevant devices only: ONLINE
+// (rendered as the green "active" state) and OFFLINE. Pending (the backend
+// `ACTIVE`/`PENDING` enum), archived, deleted, decommissioned, etc. are
+// excluded so Mingo never lists or suggests actions on irrelevant devices.
+// Mirrors `DEFAULT_DASHBOARD_STATUSES` ([ONLINE, OFFLINE]); the values are
+// inlined because the Relay compiler needs a static document.
 const DEVICES_FRAGMENT = graphql`
   fragment relayItemsDevices_query on Query
   @refetchable(queryName: "relayItemsDevicesPaginationQuery")
   @argumentDefinitions(search: { type: "String" }, first: { type: "Int", defaultValue: 10 }, after: { type: "String" }) {
-    devices(search: $search, first: $first, after: $after) @connection(key: "relayItemsDevices_devices") {
+    devices(filter: { statuses: [ONLINE, OFFLINE] }, search: $search, first: $first, after: $after)
+      @connection(key: "relayItemsDevices_devices") {
       edges { node { id machineId hostname displayName status } }
     }
   }

@@ -1,15 +1,23 @@
 'use client';
 
-import type { SoftwareSource } from '@flamingo-stack/openframe-frontend-core';
-import { Badge, CveLink, SoftwareInfo, SoftwareSourceBadge, Tag } from '@flamingo-stack/openframe-frontend-core';
+import { Tag } from '@flamingo-stack/openframe-frontend-core';
 import {
+  ArrowRightUpIcon,
+  BracketSquareCheckIcon,
+  SearchIcon,
+} from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import {
+  Button,
   type ColumnDef,
   DataTable,
+  Input,
   type Row,
   type SortingState,
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import React, { useCallback, useMemo, useState } from 'react';
+import { differenceInCalendarDays } from 'date-fns';
+import { useCallback, useMemo, useState } from 'react';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { formatDate } from '@/lib/format-date';
 import type { Device, Software, Vulnerability } from '../../types/device.types';
 
@@ -25,13 +33,44 @@ interface VulnerabilityWithSoftware extends Vulnerability {
   unique_key: string; // Unique identifier for React keys
 }
 
+type Severity = 'critical' | 'high' | 'medium' | 'low';
+
+const SEVERITY_RANK: Record<Severity, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+const SEVERITY_VARIANT: Record<Severity, 'critical' | 'error' | 'warning' | 'grey'> = {
+  critical: 'critical',
+  high: 'error',
+  medium: 'warning',
+  low: 'grey',
+};
+
 const EMPTY_COLUMN_FILTERS: never[] = [];
 
-export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+/** CVSS v3 band → severity. */
+function severityFromScore(score: number): Severity {
+  if (score >= 9) return 'critical';
+  if (score >= 7) return 'high';
+  if (score >= 4) return 'medium';
+  return 'low';
+}
 
-  // Flatten all vulnerabilities from all software with context
-  const vulnerabilities = useMemo(() => {
+// Prefer the real Fleet CVSS score; fall back to a year-based heuristic when it's absent.
+function getSeverity(vuln: { cve: string; cvss_score?: number | null }): Severity {
+  if (typeof vuln.cvss_score === 'number') return severityFromScore(vuln.cvss_score);
+  const year = Number.parseInt(vuln.cve.match(/CVE-(\d{4})/)?.[1] || '0', 10);
+  const currentYear = new Date().getFullYear();
+  if (currentYear - year === 0) return 'critical';
+  if (currentYear - year <= 1) return 'high';
+  if (currentYear - year <= 3) return 'medium';
+  return 'low';
+}
+
+export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
+  const [search, setSearch] = useState('');
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
+
+  // Flatten all vulnerabilities from all software, carrying the software context.
+  const vulnerabilities = useMemo<VulnerabilityWithSoftware[]>(() => {
     if (!device?.software) return [];
 
     const flattened: VulnerabilityWithSoftware[] = [];
@@ -51,98 +90,105 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
     return flattened;
   }, [device]);
 
-  // Get severity from CVE (simple heuristic based on year and CVE format)
-  const getSeverity = useCallback((_cve: string): 'critical' | 'high' | 'medium' | 'low' => {
-    // This is a simplified heuristic - in production you'd fetch CVSS scores
-    // For now, we'll use a simple rule: newer CVEs are more severe
-    const year = parseInt(_cve.match(/CVE-(\d{4})/)?.[1] || '0');
-    const currentYear = new Date().getFullYear();
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return vulnerabilities;
+    return vulnerabilities.filter(
+      vuln => vuln.cve.toLowerCase().includes(query) || vuln.software_name.toLowerCase().includes(query),
+    );
+  }, [vulnerabilities, search]);
 
-    if (currentYear - year === 0) return 'critical';
-    if (currentYear - year <= 1) return 'high';
-    if (currentYear - year <= 3) return 'medium';
-    return 'low';
-  }, []);
-
-  // Define table columns
   const columns = useMemo<ColumnDef<VulnerabilityWithSoftware>[]>(
     () => [
       {
         accessorKey: 'cve',
         header: 'CVE ID',
-        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => <CveLink cveId={row.original.cve} />,
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => <span className="text-h4">{row.original.cve}</span>,
+        meta: { width: 'w-[20%]' },
+      },
+      {
+        id: 'severity',
+        header: 'SEVERITY',
+        accessorFn: (row: VulnerabilityWithSoftware) => SEVERITY_RANK[getSeverity(row)],
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => {
+          const severity = getSeverity(row.original);
+          const score = row.original.cvss_score;
+          return (
+            <div className="flex flex-col gap-1 items-start min-w-0">
+              <Tag label={severity.toUpperCase()} variant={SEVERITY_VARIANT[severity]} />
+              {typeof score === 'number' && <span className="text-h6 text-ods-text-secondary">CVSS {score}</span>}
+            </div>
+          );
+        },
         enableSorting: true,
-        meta: { width: 'w-[15%]' },
+        sortingFn: (a: Row<VulnerabilityWithSoftware>, b: Row<VulnerabilityWithSoftware>) =>
+          SEVERITY_RANK[getSeverity(a.original)] - SEVERITY_RANK[getSeverity(b.original)],
+        meta: { width: 'w-[16%]', sortable: true },
       },
       {
         accessorKey: 'software_name',
         header: 'SOFTWARE',
         cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
-          <SoftwareInfo
-            name={row.original.software_name}
-            vendor={row.original.software_vendor}
-            version={row.original.software_version}
-          />
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="text-h4 text-ods-text-primary truncate" title={row.original.software_name}>
+              {row.original.software_name}
+            </span>
+            {row.original.software_version && (
+              <span className="text-h6 text-ods-text-secondary truncate" title={row.original.software_version}>
+                {row.original.software_version}
+              </span>
+            )}
+          </div>
         ),
-        enableSorting: true,
-        meta: { width: 'w-[30%]' },
-      },
-      {
-        accessorKey: 'software_source',
-        header: 'SOURCE',
-        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
-          <SoftwareSourceBadge source={row.original.software_source as SoftwareSource} />
-        ),
-        enableSorting: true,
-        meta: { width: 'w-[15%]' },
-      },
-      {
-        id: 'severity',
-        header: 'SEVERITY',
-        accessorFn: (row: VulnerabilityWithSoftware) => {
-          const severity = getSeverity(row.cve);
-          return severity === 'critical' ? 4 : severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
-        },
-        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => {
-          const severity = getSeverity(row.original.cve);
-          const variantMap = {
-            critical: 'critical' as const,
-            high: 'error' as const,
-            medium: 'warning' as const,
-            low: 'grey' as const,
-          };
-          return <Tag label={severity.toUpperCase()} variant={variantMap[severity]} />;
-        },
-        enableSorting: true,
-        sortingFn: (rowA: Row<VulnerabilityWithSoftware>, rowB: Row<VulnerabilityWithSoftware>) => {
-          const rank = (item: VulnerabilityWithSoftware) => {
-            const severity = getSeverity(item.cve);
-            return severity === 'critical' ? 4 : severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
-          };
-          const a = rank(rowA.original);
-          const b = rank(rowB.original);
-          if (a === b) return 0;
-          return a > b ? 1 : -1;
-        },
-        meta: { width: 'w-[15%]' },
+        meta: { width: 'flex-1 min-w-0' },
       },
       {
         accessorKey: 'created_at',
         header: 'DISCOVERED',
-        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => (
-          <div className="font-['DM_Sans'] font-medium text-ods-text-primary">
-            {formatDate(row.original.created_at)}
-          </div>
-        ),
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) => {
+          const discovered = new Date(row.original.created_at);
+          if (Number.isNaN(discovered.getTime())) {
+            return <span className="text-h4 text-ods-text-secondary">—</span>;
+          }
+          const days = differenceInCalendarDays(new Date(), discovered);
+          return (
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="text-h4 truncate">{formatDate(row.original.created_at)}</span>
+              <span className="text-h6 text-ods-text-secondary truncate">
+                {days} {days === 1 ? 'day' : 'days'}
+              </span>
+            </div>
+          );
+        },
         enableSorting: true,
-        meta: { width: 'w-[25%]' },
+        // Least-needed column for mobile triage — hidden below md, CVE/Severity/Software stay.
+        meta: { width: 'w-[18%]', sortable: true, hideAt: 'md' },
+      },
+      {
+        id: 'open',
+        header: '',
+        cell: ({ row }: { row: Row<VulnerabilityWithSoftware> }) =>
+          row.original.details_link ? (
+            <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
+              <Button
+                onClick={() => window.open(row.original.details_link, '_blank', 'noopener,noreferrer')}
+                variant="outline"
+                size="icon"
+                leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
+                aria-label={`Open ${row.original.cve} details`}
+                className="bg-ods-card"
+              />
+            </div>
+          ) : null,
+        enableSorting: false,
+        meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [getSeverity],
+    [],
   );
 
   const table = useDataTable<VulnerabilityWithSoftware>({
-    data: vulnerabilities,
+    data: filtered,
     columns,
     getRowId: (row: VulnerabilityWithSoftware) => row.unique_key,
     clientSideSorting: true,
@@ -150,17 +196,15 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
     onSortingChange: setSorting,
   });
 
-  // Count by severity - must be called before early returns
-  const severityCounts = useMemo(() => {
-    return vulnerabilities.reduce(
-      (acc, vuln) => {
-        const severity = getSeverity(vuln.cve);
-        acc[severity] = (acc[severity] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-  }, [vulnerabilities, getSeverity]);
+  const sortState = sorting[0] ? { id: sorting[0].id, desc: sorting[0].desc } : null;
+  const handleSortChange = useCallback((columnId: string) => {
+    setSorting(prev => {
+      const current = prev[0];
+      if (!current || current.id !== columnId) return [{ id: columnId, desc: false }];
+      if (!current.desc) return [{ id: columnId, desc: true }];
+      return [];
+    });
+  }, []);
 
   if (!device) {
     return (
@@ -170,74 +214,47 @@ export function VulnerabilitiesTab({ device }: VulnerabilitiesTabProps) {
     );
   }
 
-  if (vulnerabilities.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-2">
-          <Badge variant="success" className="text-lg px-4 py-2">
-            No Vulnerabilities Found
-          </Badge>
-          <div className="text-ods-text-secondary">All installed software is up to date and secure</div>
-        </div>
-      </div>
-    );
-  }
+  // Empty table → show only the centered empty state: hide the column header always, and
+  // hide the search too (unless a search is active, so the user can still clear it).
+  const hasSearch = search.trim().length > 0;
+  const isEmpty = filtered.length === 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
-        <h3 className="text-h5 text-ods-text-secondary">Vulnerabilities ({vulnerabilities.length})</h3>
-
-        {severityCounts.critical > 0 && (
-          <div className="flex items-center gap-2">
-            <span
-              className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--ods-attention-red-error)' }}
-            >
-              CRITICAL
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">
-              {severityCounts.critical}
-            </span>
-          </div>
-        )}
-        {severityCounts.high > 0 && (
-          <div className="flex items-center gap-2">
-            <span
-              className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--ods-attention-red-error)' }}
-            >
-              HIGH
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">
-              {severityCounts.high}
-            </span>
-          </div>
-        )}
-        {severityCounts.medium > 0 && (
-          <div className="flex items-center gap-2">
-            <span
-              className="font-['DM_Sans'] font-bold text-[14px] uppercase"
-              style={{ color: 'var(--color-warning)' }}
-            >
-              MEDIUM
-            </span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">
-              {severityCounts.medium}
-            </span>
-          </div>
-        )}
-        {severityCounts.low > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="font-['DM_Sans'] font-bold text-[14px] uppercase text-ods-text-secondary">LOW</span>
-            <span className="font-['DM_Sans'] font-medium text-[14px] text-ods-text-primary">{severityCounts.low}</span>
-          </div>
-        )}
-      </div>
+    <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+      {(!isEmpty || hasSearch) && (
+        <div
+          ref={toolbarRef}
+          className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
+        >
+          <Input
+            placeholder="Search for Vulnerability"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full"
+            startAdornment={<SearchIcon className="w-4 h-4 md:w-6 md:h-6" />}
+          />
+        </div>
+      )}
 
       <DataTable table={table}>
-        <DataTable.Header rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body rowClassName="mb-1" />
+        {!isEmpty && (
+          <DataTable.Header
+            sort={sortState}
+            onSortChange={handleSortChange}
+            stickyHeader
+            stickyHeaderOffset={stickyHeaderOffset}
+          />
+        )}
+        <DataTable.Body
+          rowClassName="mb-1"
+          emptyState={{
+            icon: <BracketSquareCheckIcon />,
+            title: 'No vulnerabilities found',
+            description: search.trim()
+              ? `No results for "${search.trim()}".`
+              : 'Detected vulnerabilities for this device will appear here.',
+          }}
+        />
       </DataTable>
     </div>
   );

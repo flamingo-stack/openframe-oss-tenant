@@ -147,6 +147,10 @@ interface LogsTableProps {
   organizationId?: string;
   /** Render inside a tab (e.g. customer/device details) — drops the standalone top padding. */
   embedded?: boolean;
+  /** Render the PageLayout header (title + Refresh action). Defaults to `true`. Pass
+   *  `false` when embedded in a section that supplies its own heading (e.g. the device
+   *  Overview tab), so only the search toolbar + table show. */
+  showHeader?: boolean;
 }
 
 export interface LogsTableRef {
@@ -507,21 +511,28 @@ function LogsTableContent({
   }, []);
 
   const hasActiveFilters = Object.values(tableFilters).some(values => values.length > 0);
-  // Show the empty state only on the standalone Logs page when there is genuinely
-  // no data: no device/org scope, no search, no filters, and not pending.
-  const showEmptyState =
-    !deviceId &&
-    !organizationLocked &&
-    !debouncedSearch &&
-    !hasActiveFilters &&
-    !isPending &&
-    transformedLogs.length === 0;
+  const hasQuery = Boolean(debouncedSearch) || hasActiveFilters;
+  const noRows = !isPending && transformedLogs.length === 0;
+
+  // Standalone (unscoped) Logs page: the rich onboarding EmptyState replaces the
+  // whole table when there is genuinely no data (no scope, no query).
+  const showEmptyState = !deviceId && !organizationLocked && !hasQuery && noRows;
+
+  // Embedded (device/customer-scoped) tabs: mirror the other detail-page tabs —
+  // when the table is empty, hide the column header and render the unified
+  // `DataTable.Body emptyState` (icon + title + description) instead of an inline
+  // message. (Below, the search input is also hidden unless a query is active.)
+  const scoped = Boolean(deviceId) || Boolean(organizationLocked);
+  const scopedEmpty = scoped && noRows;
 
   // Search lives in the outer layout (outside this Suspense boundary, to keep
-  // focus across re-queries), so push the empty flag up to gate its visibility.
+  // focus across re-queries), so push the "hide search" flag up. Hide it for the
+  // onboarding empty state and for a genuinely-empty scoped tab — but keep it when
+  // a query is active so the user can clear it.
+  const hideSearch = showEmptyState || (scopedEmpty && !hasQuery);
   useEffect(() => {
-    onEmptyChange(showEmptyState);
-  }, [showEmptyState, onEmptyChange]);
+    onEmptyChange(hideSearch);
+  }, [hideSearch, onEmptyChange]);
 
   if (showEmptyState) {
     return (
@@ -550,15 +561,27 @@ function LogsTableContent({
   return (
     <>
       <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+        {!scopedEmpty && (
+          <DataTable.Header stickyHeader stickyHeaderOffset="top-[96px]" rightSlot={<DataTable.RowCount />} />
+        )}
         <DataTable.Body
           loading={isPending}
           skeletonRows={10}
-          emptyMessage={
-            deviceId
-              ? 'No logs found for this device. Try adjusting your search or filters.'
-              : 'No logs found. Try adjusting your search or filters.'
-          }
+          // Embedded tabs get the unified empty state (matches every other device/
+          // customer tab); the standalone page keeps its inline message.
+          {...(scoped
+            ? {
+                emptyState: {
+                  icon: <ClipboardListIcon />,
+                  title: 'No logs found',
+                  description: hasQuery
+                    ? 'No results. Try adjusting your search or filters.'
+                    : deviceId
+                      ? 'Logs for this device will appear here.'
+                      : 'Logs for this customer will appear here.',
+                },
+              }
+            : { emptyMessage: 'No logs found. Try adjusting your search or filters.' })}
           rowHref={getLogDetailsUrl}
           rowClassName="mb-1"
         />
@@ -608,7 +631,7 @@ function LogsTableContent({
 
 const EMPTY_LOG_ENTRIES: UiLogEntry[] = [];
 
-function LogsTableSkeleton() {
+export function LogsTableSkeleton() {
   const columns = useMemo<ColumnDef<UiLogEntry>[]>(
     () => [
       {
@@ -678,7 +701,7 @@ function LogsTableSkeleton() {
 // ----------------------------------------------------------------
 
 export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsTable(
-  { deviceId, organizationId, embedded }: LogsTableProps,
+  { deviceId, organizationId, embedded, showHeader }: LogsTableProps,
   ref,
 ) {
   const { params, setParam, setParams } = useApiParams({
@@ -764,7 +787,12 @@ export const LogsTable = forwardRef<LogsTableRef, LogsTableProps>(function LogsT
   );
 
   return (
-    <PageLayout title="Logs" actions={actions} className={embedded ? EMBEDDED_PAGE_OFFSET : undefined}>
+    <PageLayout
+      title="Logs"
+      actions={actions}
+      showHeader={showHeader}
+      className={embedded ? EMBEDDED_PAGE_OFFSET : undefined}
+    >
       {/* Search toolbar - outside the Suspense boundary so it keeps focus across
           re-queries, and hidden while the empty state is shown. */}
       {!isEmpty && (

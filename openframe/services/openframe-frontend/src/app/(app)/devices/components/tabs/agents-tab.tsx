@@ -1,16 +1,8 @@
 'use client';
 
-import {
-  InfoCard,
-  Tag,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
+import { InfoCard, Tag } from '@flamingo-stack/openframe-frontend-core';
 import { ToolBadge } from '@flamingo-stack/openframe-frontend-core/components';
-import { normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
-import { Info as InfoIcon } from 'lucide-react';
+import { formatRelativeTime, normalizeToolTypeWithFallback } from '@flamingo-stack/openframe-frontend-core/utils';
 import { formatDateTime } from '@/lib/format-date';
 import type { Device, InstalledAgent, ToolConnection } from '../../types/device.types';
 import { getAgentFooter } from '../../utils/agent-footer';
@@ -59,6 +51,18 @@ function getAgentDisplayStatus(toolType: string, raw: string | undefined): 'onli
   }
 }
 
+function formatTimestamp(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return d.getTime() > 0 ? formatDateTime(d) : undefined;
+}
+
+function formatRelative(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  return d.getTime() > 0 ? formatRelativeTime(d) : undefined;
+}
+
 export function AgentsTab({ device }: AgentsTabProps) {
   const toolConnections = Array.isArray(device?.toolConnections) ? device.toolConnections : [];
   const installedAgents = Array.isArray(device?.installedAgents) ? device.installedAgents : [];
@@ -82,6 +86,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
       status: getAgentDisplayStatus(toolType, connection?.status),
       lastSeen: connection?.lastSeen,
       lastFetched: connection?.lastFetched,
+      updatedAt: agent.updatedAt as string | undefined,
     };
   });
 
@@ -100,6 +105,7 @@ export function AgentsTab({ device }: AgentsTabProps) {
         status: getAgentDisplayStatus(tc.toolType, tc.status),
         lastSeen: tc.lastSeen,
         lastFetched: tc.lastFetched,
+        updatedAt: tc.lastSyncAt,
       });
     }
   });
@@ -112,96 +118,52 @@ export function AgentsTab({ device }: AgentsTabProps) {
 
   const hasAgents = combinedAgents.length > 0;
 
+  if (!hasAgents) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-ods-text-secondary text-lg">No agents found for this device</div>
+      </div>
+    );
+  }
+
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-        {hasAgents ? (
-          combinedAgents.map((agent: any, idx: number) => {
-            const toolType = normalizeToolTypeWithFallback(agent.toolType);
-            const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
-            const items = [];
+    <section className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <h3 className="text-h5 text-ods-text-secondary uppercase">Agent Versions</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[var(--spacing-system-l)] items-stretch">
+        {combinedAgents.map((agent, idx) => {
+          const toolType = normalizeToolTypeWithFallback(agent.toolType);
+          const statusConfig = getDeviceStatusConfig(agent.status ?? 'offline');
+          const showStatusBlock =
+            AGENT_TYPES_WITH_STATUS.has(agent.toolType) &&
+            (agent.status != null || agent.lastSeen != null || agent.lastFetched != null);
 
-            if (
-              AGENT_TYPES_WITH_STATUS.has(agent.toolType) &&
-              (agent.status != null || agent.lastSeen != null || agent.lastFetched != null)
-            ) {
-              if (agent.status != null) {
-                items.push({
-                  label: 'Status',
-                  value: <Tag label={statusConfig.label} variant={statusConfig.variant} />,
-                });
-              }
-              if (agent.lastSeen) {
-                const d = new Date(agent.lastSeen);
-                const formatted = d.getTime() > 0 ? formatDateTime(d) : '—';
-                items.push({ label: 'Last seen', value: formatted });
-              }
-            }
+          // `value` carries ReactNodes (Tag, ToolBadge); InfoCard's typings only model strings, so
+          // the items array stays loosely typed (matching the prior implementation) and renders inline.
+          const items: any[] = [{ label: 'Agent', value: <ToolBadge toolType={toolType} /> }];
 
-            if (agent.agentToolId) {
-              items.push({ label: 'ID', value: agent.agentToolId, copyable: true });
-            }
+          if (showStatusBlock && agent.status != null) {
+            items.push({ label: 'Status', value: <Tag label={statusConfig.label} variant={statusConfig.variant} /> });
+          }
 
-            if (agent.version) {
-              items.push({ label: 'Version', value: agent.version });
-            }
+          const lastSeen = showStatusBlock ? formatTimestamp(agent.lastSeen) : undefined;
+          if (lastSeen) items.push({ label: 'Last Seen', value: lastSeen });
 
-            if (AGENT_TYPES_WITH_STATUS.has(agent.toolType) && agent.lastFetched != null) {
-              const d = new Date(agent.lastFetched);
-              const formatted = d.getTime() > 0 ? formatDateTime(d) : '—';
-              items.push({ label: 'Last fetched', value: formatted });
-            }
+          if (agent.agentToolId) items.push({ label: 'ID', value: agent.agentToolId, copyable: true });
+          if (agent.version) items.push({ label: 'Version', value: agent.version });
 
-            const cardData = { items, footer: getAgentFooter(agent.toolType) };
+          const updated =
+            formatRelative(agent.updatedAt) ?? (showStatusBlock ? formatRelative(agent.lastFetched) : undefined);
+          if (updated) items.push({ label: 'Updated', value: updated });
 
-            return (
-              <div key={`${agent.agentType}-${agent.agentToolId || idx}`} className="relative flex flex-col">
-                <div className="absolute top-4 left-4 z-10">
-                  <ToolBadge toolType={toolType} />
-                </div>
-                <div className="absolute top-4 right-4 z-10">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        {agent.hasConnection
-                          ? `Connected agent from ${toolType}. Shows the unique agent ID and version for this device.`
-                          : `${toolType} agent installed.`}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <InfoCard data={cardData} className="pt-16 flex-1 min-h-0" />
-              </div>
-            );
-          })
-        ) : (
-          <div className="h-full">
+          return (
             <InfoCard
-              data={{
-                title: 'Agents',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        No management agents are currently installed on this device. Agents provide remote management
-                        capabilities through Tactical RMM, Fleet MDM, and other platforms.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [{ label: 'Status', value: 'No agents found' }],
-              }}
+              key={`${agent.agentType}-${agent.agentToolId || idx}`}
+              data={{ items, footer: getAgentFooter(agent.toolType) }}
               className="h-full"
             />
-          </div>
-        )}
+          );
+        })}
       </div>
-    </TooltipProvider>
+    </section>
   );
 }
