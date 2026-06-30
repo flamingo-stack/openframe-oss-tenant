@@ -5,6 +5,7 @@ import {
   Input,
   type PageActionButton,
   PageLayout,
+  TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core';
 import {
   ArrowRightUpIcon,
@@ -381,45 +382,6 @@ function DeviceInfoSectionSkeleton() {
   );
 }
 
-/**
- * The REAL device tab bar — the tabs are static, so we render them outright (icons +
- * labels, active tab highlighted) instead of grey bars. Mirrors core `TabNavigation`
- * markup but non-interactive (no scroll/handlers needed while loading).
- */
-function StaticTabBar({ activeTab }: { activeTab: string }) {
-  return (
-    <div className="relative w-full">
-      <div className="flex gap-[var(--spacing-system-xxs)] items-center justify-start h-full overflow-hidden">
-        {DEVICE_TABS.map(tab => {
-          const isActive = activeTab === tab.id;
-          const Icon = tab.icon;
-          return (
-            <div
-              key={tab.id}
-              className={cn(
-                'flex gap-[var(--spacing-system-xxs)] items-center justify-center p-[var(--spacing-system-m)] relative shrink-0',
-                isActive && 'bg-ods-bg-hover',
-              )}
-            >
-              <Icon className={cn('h-4 w-4 md:h-6 md:w-6', isActive ? 'text-ods-accent' : 'text-ods-text-secondary')} />
-              <span
-                className={cn(
-                  'text-h4 whitespace-nowrap',
-                  isActive ? 'text-ods-text-primary' : 'text-ods-text-secondary',
-                )}
-              >
-                {tab.label}
-              </span>
-              {isActive && <div className="absolute bottom-0 left-0 right-0 h-1 bg-ods-accent" />}
-            </div>
-          );
-        })}
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-ods-border pointer-events-none" />
-    </div>
-  );
-}
-
 // --- Tab-specific skeletons ---
 
 /** One hardware block skeleton: heading (text-h5) above an InfoCard. */
@@ -724,12 +686,18 @@ export function DeviceDetailsSkeleton({ activeTab = 'overview' }: DeviceDetailsS
       titleAdornment={<TagSkeleton />}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <div>
-        {/* Real, static tab bar with the active tab highlighted */}
-        <StaticTabBar activeTab={activeTab} />
-        {/* Gap between the static tab bar and the content (real `TabNavigation` content sits flush). */}
-        <div className="mt-[var(--spacing-system-l)]">{getTabSkeleton(activeTab)}</div>
-      </div>
+      {/* Reuse the REAL `TabNavigation` (not a copy) so the tab bar is pixel-identical to
+          the loaded page and can't drift. `pointer-events-none` keeps it non-interactive
+          while loading; `onTabChange` is a required no-op in controlled mode. */}
+      <TabNavigation
+        tabs={DEVICE_TABS}
+        activeTab={activeTab}
+        onTabChange={noop}
+        showRightGradient
+        className="pointer-events-none"
+      >
+        {() => getTabSkeleton(activeTab)}
+      </TabNavigation>
     </PageLayout>
   );
 }
