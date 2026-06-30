@@ -222,6 +222,9 @@ impl ToolInstallationService {
             }
             let orbit_dir = crate::platform::orbit_dir();
             if orbit_dir.exists() {
+                if let Err(e) = self.tool_kill_service.stop_tool_by_path(&orbit_dir.to_string_lossy()).await {
+                    warn!("Failed to stop processes under Orbit directory {}: {:#}", orbit_dir.display(), e);
+                }
                 info!("Removing leftover Orbit directory: {}", orbit_dir.display());
                 if let Err(e) = crate::platform::remove_directory_with_retry(&orbit_dir, 5).await {
                     warn!("Failed to remove Orbit directory {}: {:#}", orbit_dir.display(), e);
