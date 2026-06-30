@@ -16,6 +16,13 @@ export interface Software {
   vulnerabilities: Vulnerability[];
   installed_paths: string[];
   last_opened_at?: string;
+  /** From Fleet `signature_information` — true when the binary carries a code-signing identity. */
+  signed?: boolean;
+  /** First non-empty `team_identifier` from Fleet `signature_information`. */
+  signature_team_id?: string;
+  generated_cpe?: string;
+  browser?: string;
+  extension_id?: string;
 }
 
 /**
@@ -25,6 +32,24 @@ export interface Vulnerability {
   cve: string;
   details_link: string;
   created_at: string;
+  // Fleet Premium severity fields — optional (present only on Premium instances).
+  cvss_score?: number | null;
+  epss_probability?: number | null;
+  cisa_known_exploit?: boolean | null;
+  cve_published?: string | null;
+  resolved_in_version?: string | null;
+}
+
+/** A compliance policy evaluated against this specific device (from Fleet MDM). */
+export interface DevicePolicy {
+  id: number;
+  name: string;
+  description?: string;
+  critical: boolean;
+  /** Comma-separated OS platforms the policy targets (e.g. "darwin,windows"). */
+  platform?: string;
+  /** Pass/fail outcome for this device; empty string when not yet evaluated. */
+  response: 'pass' | 'fail' | '';
 }
 
 /**
@@ -58,6 +83,16 @@ export interface MdmInfo {
   device_status: string;
   pending_action: string;
   connected_to_fleet: boolean;
+  /** Fleet `mdm.dep_profile_error` — DEP enrollment profile assignment failed. */
+  dep_profile_error?: boolean;
+  /** Count of configuration profiles from Fleet `mdm.profiles`. */
+  profiles_count?: number;
+}
+
+/** Host geolocation derived from Fleet's built-in GeoIP (`geolocation`). */
+export interface DeviceGeolocation {
+  city?: string;
+  country?: string;
 }
 
 /**
@@ -192,6 +227,7 @@ export interface Device {
   software?: Software[];
   batteries?: Battery[];
   users?: User[];
+  policies?: DevicePolicy[];
 
   // MDM Info
   mdm?: MdmInfo;
@@ -216,6 +252,18 @@ export interface Device {
   registeredAt?: string;
   updatedAt?: string;
   osUuid?: string;
+  timezone?: string;
+
+  // Fleet-derived metadata
+  software_updated_at?: string; // Fleet software inventory last-scanned timestamp
+  fleetTeamName?: string;
+  fleetTeamId?: number | null;
+  fleetLabels?: string[];
+  failingPoliciesCount?: number;
+  totalIssuesCount?: number;
+  geolocation?: DeviceGeolocation;
+  /** End-user emails from Fleet `end_users` (Chrome profiles / IdP). */
+  endUserEmails?: string[];
 
   // Reference IDs (NOT nested data)
   fleetId?: number;

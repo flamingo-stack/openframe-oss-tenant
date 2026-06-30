@@ -123,7 +123,7 @@ export function buildDeviceMenuItems(ctx: DeviceMenuItemContext): DeviceMenuItem
   const manageFilesDisabled = !ctx.availability?.manageFilesEnabled;
 
   const deviceDetailsHref = `/devices/details/${ctx.deviceId}`;
-  const deviceLogsHref = `/devices/details/${ctx.deviceId}?tab=logs`;
+  const deviceLogsHref = `/devices/details/${ctx.deviceId}?tab=overview`;
 
   return {
     deviceDetails: {

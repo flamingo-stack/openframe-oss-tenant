@@ -10,12 +10,12 @@ import {
   parseMeshCentralDeviceStatus,
   parseMeshCentralLastSeen,
 } from '@/lib/meshcentral/meshcentral-api';
-import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { GET_DEVICE_QUERY } from '../queries/devices-queries';
 import type {
   Battery,
   Device,
   DeviceGraphQlNode,
+  DevicePolicy,
   GraphQlResponse,
   MdmInfo,
   Software,
@@ -23,6 +23,19 @@ import type {
 } from '../types/device.types';
 import type { FleetHost } from '../types/fleet.types';
 import { deviceQueryKeys } from '../utils/query-keys';
+
+/** Collect unique end-user emails from Fleet `end_users` (primary email + other_emails). */
+function collectEndUserEmails(fleetData: FleetHost | null): string[] | undefined {
+  if (!fleetData?.end_users?.length) return undefined;
+  const emails = new Set<string>();
+  for (const user of fleetData.end_users) {
+    if (user.email) emails.add(user.email);
+    for (const other of user.other_emails || []) {
+      if (other.email) emails.add(other.email);
+    }
+  }
+  return emails.size > 0 ? Array.from(emails) : undefined;
+}
 
 /**
  * Create Device object directly from API responses
@@ -37,27 +50,52 @@ function createDevice(
 ): Device {
   // Transform Fleet software to unified Software type
   const software: Software[] =
-    fleetData?.software?.map(fs => ({
-      id: fs.id,
-      name: fs.name,
-      version: fs.version,
-      source: fs.source,
-      vendor: fs.vendor || undefined, // Normalize null to undefined
-      bundle_identifier: fs.bundle_identifier,
-      vulnerabilities: (fs.vulnerabilities || []).map(v => ({
-        cve: v.cve,
-        details_link: v.details_link,
-        created_at: v.created_at,
-      })),
-      installed_paths: fs.installed_paths,
-      last_opened_at: fs.last_opened_at,
-    })) || [];
+    fleetData?.software?.map(fs => {
+      const signatureTeamId = fs.signature_information?.find(s => s.team_identifier)?.team_identifier;
+      return {
+        id: fs.id,
+        name: fs.name,
+        version: fs.version,
+        source: fs.source,
+        vendor: fs.vendor || undefined, // Normalize null to undefined
+        bundle_identifier: fs.bundle_identifier,
+        vulnerabilities: (fs.vulnerabilities || []).map(v => ({
+          cve: v.cve,
+          details_link: v.details_link,
+          created_at: v.created_at,
+          // Fleet Premium severity fields — pass through when present.
+          cvss_score: v.cvss_score ?? undefined,
+          epss_probability: v.epss_probability ?? undefined,
+          cisa_known_exploit: v.cisa_known_exploit ?? undefined,
+          cve_published: v.cve_published ?? undefined,
+          resolved_in_version: v.resolved_in_version ?? undefined,
+        })),
+        installed_paths: fs.installed_paths,
+        last_opened_at: fs.last_opened_at,
+        signed: Boolean(signatureTeamId),
+        signature_team_id: signatureTeamId,
+        generated_cpe: fs.generated_cpe,
+        browser: fs.browser,
+        extension_id: fs.extension_id,
+      };
+    }) || [];
 
   // Transform Fleet batteries to unified Battery type
   const batteries: Battery[] =
     fleetData?.batteries?.map(fb => ({
       cycle_count: fb.cycle_count,
       health: fb.health,
+    })) || [];
+
+  // Transform Fleet per-host policies to unified DevicePolicy type
+  const policies: DevicePolicy[] =
+    fleetData?.policies?.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      critical: Boolean(p.critical),
+      platform: p.platform,
+      response: p.response ?? '',
     })) || [];
 
   // Transform Fleet users to unified User type
@@ -81,6 +119,8 @@ function createDevice(
         device_status: fleetData.mdm.device_status,
         pending_action: fleetData.mdm.pending_action,
         connected_to_fleet: fleetData.mdm.connected_to_fleet,
+        dep_profile_error: fleetData.mdm.dep_profile_error,
+        profiles_count: Array.isArray(fleetData.mdm.profiles) ? fleetData.mdm.profiles.length : undefined,
       }
     : undefined;
 
@@ -242,6 +282,7 @@ function createDevice(
     software,
     batteries,
     users,
+    policies,
 
     // MDM Info
     mdm,
@@ -294,6 +335,23 @@ function createDevice(
       node.lastSeen ||
       tacticalData?.last_seen,
     osUuid: fleetData?.uuid || node.osUuid,
+    timezone: node.timezone || tacticalData?.timezone,
+
+    // Fleet-derived metadata (already in the host payload)
+    software_updated_at: fleetData?.software_updated_at,
+    fleetTeamName: fleetData?.team_name || undefined,
+    fleetTeamId: fleetData?.team_id,
+    // Drop Fleet's builtin auto-labels ("All Hosts", "macOS", …) — keep meaningful (regular) ones.
+    fleetLabels: fleetData?.labels
+      ?.filter(l => l.label_type !== 'builtin')
+      .map(l => l.name)
+      .filter(Boolean),
+    failingPoliciesCount: fleetData?.issues?.failing_policies_count,
+    totalIssuesCount: fleetData?.issues?.total_issues_count,
+    geolocation: fleetData?.geolocation
+      ? { city: fleetData.geolocation.city_name, country: fleetData.geolocation.country_iso }
+      : undefined,
+    endUserEmails: collectEndUserEmails(fleetData),
 
     // Reference IDs
     fleetId: fleetData?.id,
@@ -358,15 +416,9 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
 
   const node = graphqlResponse.data.device;
 
-  // 2) Use toolConnections to fetch Tactical details if present
-  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
-  let tacticalData: any | null = null;
-  if (tactical?.agentToolId) {
-    const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
-    if (tResponse.ok) {
-      tacticalData = tResponse.data;
-    }
-  }
+  // 2) Tactical RMM is decommissioned as a data source — device details are sourced from Fleet only.
+  // `createDevice` keeps null-guarded Tactical fallbacks for safety, but we no longer fetch Tactical.
+  const tacticalData: any | null = null;
 
   // 2.5) Fetch Fleet MDM details if present
   const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM');

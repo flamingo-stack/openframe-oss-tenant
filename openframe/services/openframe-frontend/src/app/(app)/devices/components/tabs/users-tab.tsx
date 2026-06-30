@@ -1,129 +1,204 @@
 'use client';
 
+import { Tag } from '@flamingo-stack/openframe-frontend-core';
+import { UsersIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
-  InfoCard,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { Info as InfoIcon } from 'lucide-react';
-import React from 'react';
-import { Device } from '../../types/device.types';
+  type ColumnDef,
+  DataTable,
+  type Row,
+  SearchInput,
+  TruncateText,
+  useDataTable,
+} from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useDebounce } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { useMemo, useState } from 'react';
+import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
+import type { Device } from '../../types/device.types';
 
 interface UsersTabProps {
   device: Device | null;
 }
 
+interface UserRow {
+  id: string;
+  username: string;
+  uid?: number;
+  type?: string;
+  groupname?: string;
+  shell?: string;
+  isLoggedIn?: boolean;
+}
+
+function roleLabel(user: UserRow): string {
+  if (user.isLoggedIn) return 'Active session';
+  if (user.type === 'person') return 'User account';
+  if (user.type) return `${user.type} account`;
+  return 'System user';
+}
+
 export function UsersTab({ device }: UsersTabProps) {
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
+  const { toolbarRef, containerStyle, stickyHeaderOffset } = useStickyToolbar();
+
+  const rows = useMemo<UserRow[]>(
+    () =>
+      (device?.users || []).map((user, index) => ({
+        id: `${user.username}-${user.uid ?? index}`,
+        username: user.username,
+        uid: user.uid,
+        type: user.type,
+        groupname: user.groupname,
+        shell: user.shell,
+        isLoggedIn: user.isLoggedIn,
+      })),
+    [device?.users],
+  );
+
+  const filteredRows = useMemo(() => {
+    const query = debouncedSearch.trim().toLowerCase();
+    if (!query) return rows;
+    return rows.filter(
+      user =>
+        user.username.toLowerCase().includes(query) ||
+        (user.groupname ?? '').toLowerCase().includes(query) ||
+        (user.type ?? '').toLowerCase().includes(query),
+    );
+  }, [rows, debouncedSearch]);
+
+  const columns = useMemo<ColumnDef<UserRow>[]>(
+    () => [
+      {
+        accessorKey: 'username',
+        header: 'USER',
+        cell: ({ row }: { row: Row<UserRow> }) => (
+          <div className="flex flex-col justify-center min-w-0">
+            <TruncateText>{row.original.username}</TruncateText>
+            <TruncateText variant="h6" tone="secondary">
+              {roleLabel(row.original)}
+            </TruncateText>
+          </div>
+        ),
+        enableSorting: false,
+        meta: { width: 'flex-1 min-w-0' },
+      },
+      {
+        accessorKey: 'uid',
+        header: 'UID',
+        cell: ({ row }: { row: Row<UserRow> }) => (
+          <span className="text-h4 text-ods-text-primary">
+            {row.original.uid !== undefined ? row.original.uid : '—'}
+          </span>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[100px] shrink-0' },
+      },
+      {
+        accessorKey: 'type',
+        header: 'TYPE',
+        cell: ({ row }: { row: Row<UserRow> }) => (
+          <span className="text-h4 text-ods-text-primary capitalize">{row.original.type || '—'}</span>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[120px] shrink-0', hideAt: 'md' },
+      },
+      {
+        accessorKey: 'groupname',
+        header: 'GROUP',
+        cell: ({ row }: { row: Row<UserRow> }) => (
+          <TruncateText tone={row.original.groupname ? 'primary' : 'secondary'}>
+            {row.original.groupname || '—'}
+          </TruncateText>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[160px] shrink-0', hideAt: 'lg' },
+      },
+      {
+        accessorKey: 'shell',
+        header: 'SHELL',
+        cell: ({ row }: { row: Row<UserRow> }) => (
+          <TruncateText tone={row.original.shell ? 'primary' : 'secondary'}>{row.original.shell || '—'}</TruncateText>
+        ),
+        enableSorting: false,
+        meta: { width: 'w-[200px] shrink-0', hideAt: 'lg' },
+      },
+      {
+        id: 'status',
+        header: 'STATUS',
+        cell: ({ row }: { row: Row<UserRow> }) =>
+          row.original.isLoggedIn ? (
+            <Tag label="ACTIVE" variant="success" className="w-fit" />
+          ) : (
+            <span className="text-h4 text-ods-text-secondary">—</span>
+          ),
+        enableSorting: false,
+        meta: { width: 'w-[120px] shrink-0', align: 'right' },
+      },
+    ],
+    [],
+  );
+
+  const table = useDataTable<UserRow>({
+    data: filteredRows,
+    columns,
+    getRowId: (row: UserRow) => row.id,
+    enableSorting: false,
+  });
+
   if (!device) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-ods-text-secondary text-lg">No device data available</div>
+        <div className="text-ods-text-secondary text-h4">No device data available</div>
       </div>
     );
   }
 
-  const users = device.users || [];
-  const loggedInUser = users.find(u => u.isLoggedIn) || users[0];
-  const loggedUsername = loggedInUser?.username || device.logged_in_username || device.logged_username || 'Unknown';
+  if (rows.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-ods-text-secondary text-h4">No users found for this device</div>
+      </div>
+    );
+  }
+
+  // Empty table → show only the centered empty state: hide the column header always, and
+  // hide the search too (unless a search is active, so the user can still clear it).
+  const hasSearch = debouncedSearch.trim().length > 0;
+  const isEmpty = filteredRows.length === 0;
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="space-y-6">
-        {/* Logged In User */}
-        <div>
-          <h3 className="text-h5 text-ods-text-secondary mb-4">CURRENTLY LOGGED IN</h3>
-          <InfoCard
-            data={{
-              title: loggedUsername,
-              subtitle: 'Active Session',
-              icon: (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[500px] min-w-[400px]">
-                    <p>
-                      Currently logged in user from Fleet MDM and Tactical RMM. Shows the active user session with UID,
-                      group membership, and shell information.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              ),
-              items: (() => {
-                const items = [];
-                if (loggedInUser?.uid !== undefined) {
-                  items.push({ label: 'UID', value: loggedInUser.uid.toString() });
-                }
-                if (loggedInUser?.groupname) {
-                  items.push({ label: 'Group', value: loggedInUser.groupname });
-                }
-                if (loggedInUser?.shell) {
-                  items.push({ label: 'Shell', value: loggedInUser.shell });
-                }
-                return items.length > 0 ? items : [{ label: 'Status', value: 'Logged In' }];
-              })(),
-            }}
-          />
+    <div className="flex flex-col gap-[var(--spacing-system-l)]" style={containerStyle}>
+      {device.endUserEmails && device.endUserEmails.length > 0 && (
+        <div className="flex flex-wrap items-center gap-[var(--spacing-system-xs)]">
+          <span className="text-h6 text-ods-text-secondary uppercase">End-user emails</span>
+          {device.endUserEmails.map(email => (
+            <Tag key={email} label={email} variant="grey" className="w-fit" />
+          ))}
         </div>
+      )}
 
-        {/* All System Users */}
-        {users.length > 1 && (
-          <div>
-            <h3 className="text-h5 text-ods-text-secondary mb-4">ALL SYSTEM USERS ({users.length})</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {users.map((user, index) => {
-                const items = [];
+      {(!isEmpty || hasSearch) && (
+        <div
+          ref={toolbarRef}
+          className="sticky top-0 z-20 bg-ods-bg py-[var(--spacing-system-l)] -my-[var(--spacing-system-l)]"
+        >
+          <SearchInput value={search} onChange={setSearch} placeholder="Search for User" />
+        </div>
+      )}
 
-                if (user.uid !== undefined) {
-                  items.push({ label: 'UID', value: user.uid.toString() });
-                }
-
-                if (user.groupname) {
-                  items.push({ label: 'Group', value: user.groupname });
-                }
-
-                if (user.shell) {
-                  items.push({ label: 'Shell', value: user.shell });
-                }
-
-                if (user.type) {
-                  items.push({ label: 'Type', value: user.type });
-                }
-
-                return (
-                  <InfoCard
-                    key={index}
-                    data={{
-                      title: user.username,
-                      subtitle: user.isLoggedIn
-                        ? '● Active'
-                        : user.type === 'person'
-                          ? 'User Account'
-                          : user.type || 'System User',
-                      icon: (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-[500px] min-w-[400px]">
-                            <p>
-                              System user account from Fleet MDM. Shows user type (person or service), UID, group, and
-                              shell information for access control monitoring.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ),
-                      items: items.length > 0 ? items : [{ label: 'Username', value: user.username }],
-                    }}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-    </TooltipProvider>
+      <DataTable table={table}>
+        {!isEmpty && <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} />}
+        <DataTable.Body
+          rowClassName="mb-1"
+          emptyState={{
+            icon: <UsersIcon />,
+            title: 'No users found',
+            description: debouncedSearch
+              ? `No results for "${debouncedSearch}".`
+              : 'User accounts on this device will appear here.',
+          }}
+        />
+      </DataTable>
+    </div>
   );
 }

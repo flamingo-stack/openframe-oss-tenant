@@ -9,11 +9,8 @@ import {
   TabContent,
   TabNavigation,
   Tag,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
 } from '@flamingo-stack/openframe-frontend-core';
+import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/utils';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
@@ -21,60 +18,22 @@ import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
-import type { Device } from '../types/device.types';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
-import { DeviceInfoSection } from './device-info-section';
 import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
 
 const DETAIL_ICON_SIZE = 'w-[var(--icon-size-icon-size)] h-[var(--icon-size-icon-size)]';
 
-function DeviceStatusAndTags({ device }: { device: Device }) {
-  const statusConfig = getDeviceStatusConfig(device.status);
-  const tagValues = device.tags?.flatMap(tag =>
-    tag.values.map(value => ({ id: `${tag.tagId}-${value}`, key: tag.key, value })),
-  );
-
-  return (
-    <TooltipProvider delayDuration={0}>
-      <div className="flex gap-2 items-center flex-wrap py-4">
-        <Tag label={statusConfig.label} variant={statusConfig.variant} />
-        {tagValues?.map(tag => (
-          <Tooltip key={tag.id}>
-            <TooltipTrigger asChild>
-              <span className="bg-ods-card border border-ods-border rounded-[6px] px-2 h-8 flex items-center justify-center font-mono font-medium text-sm text-ods-text-primary uppercase tracking-tight cursor-default">
-                {tag.value}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-h5">
-                {tag.key}:{tag.value}
-              </p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
-    </TooltipProvider>
-  );
-}
-
 interface DeviceDetailsViewProps {
   deviceId: string;
 }
 
-const DEVICE_TAB_IDS = [
-  'hardware',
-  'network',
-  'security',
-  'compliance',
-  'agents',
-  'users',
-  'software',
-  'vulnerabilities',
-  'logs',
-] as const;
-const DEFAULT_DEVICE_TAB = 'hardware';
+// Derive the valid-tab set from DEVICE_TABS (the single source of truth) so disabled
+// tabs (e.g. the commented-out `queries`) are excluded automatically. Otherwise a URL
+// like `?tab=queries` would pass validation but render a blank panel (no component).
+const DEVICE_TAB_IDS = DEVICE_TABS.map(tab => tab.id);
+const DEFAULT_DEVICE_TAB = 'overview';
 
 export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
   const router = useRouter();
@@ -176,7 +135,8 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
 
   const handleDeviceLogs = () => {
     const params = new URLSearchParams(window.location.search);
-    params.set('tab', 'logs');
+    // Logs now live on the Overview tab.
+    params.set('tab', 'overview');
     // Add timestamp to force logs refresh
     params.set('refresh', Date.now().toString());
     router.push(`${window.location.pathname}?${params.toString()}`);
@@ -201,39 +161,35 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
     { ...deviceMenuItems.remoteShell, variant: 'outline' },
   ];
 
+  const title =
+    normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device';
+  const lastUpdated = normalizedDevice.updatedAt || normalizedDevice.lastSeen;
+  const subtitle = lastUpdated ? `Updated ${formatRelativeTime(lastUpdated)}` : undefined;
+  const statusConfig = getDeviceStatusConfig(normalizedDevice.status);
+
   return (
+    // Core PageLayout's built-in TitleBlock; the device status rides inline with the
+    // title via the additive `titleAdornment` slot (no host-side header replica).
     <PageLayout
-      title={
-        normalizedDevice?.displayName || normalizedDevice?.hostname || normalizedDevice?.description || 'Unknown Device'
-      }
-      backButton={{
-        label: 'Back',
-        onClick: handleBack,
-      }}
-      actionsVariant="menu-primary"
+      title={title}
+      subtitle={subtitle}
+      backButton={{ label: 'Back', onClick: handleBack }}
       actions={actions}
       menuActions={menuActions}
+      actionsVariant="menu-primary"
+      titleAdornment={<Tag label={statusConfig.label} variant={statusConfig.variant} />}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <DeviceStatusAndTags device={normalizedDevice} />
-
-      <DeviceInfoSection device={normalizedDevice} />
-
       {/* Tab Navigation */}
-      <div className="mt-6">
-        <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
-          {tabId => (
-            <TabContent
-              activeTab={tabId}
-              TabComponent={getTabComponent(DEVICE_TABS, tabId)}
-              componentProps={{ device: normalizedDevice }}
-              // Single source of the gap between the tab bar and tab content, so
-              // every tab (and its empty/loading states) is spaced consistently.
-              className="mt-6"
-            />
-          )}
-        </TabNavigation>
-      </div>
+      <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+        {tabId => (
+          <TabContent
+            activeTab={tabId}
+            TabComponent={getTabComponent(DEVICE_TABS, tabId)}
+            componentProps={{ device: normalizedDevice }}
+          />
+        )}
+      </TabNavigation>
 
       {/* Scripts Modal */}
       <ScriptsModal

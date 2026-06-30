@@ -7,6 +7,42 @@ export interface FleetVulnerability {
   cve: string;
   details_link: string;
   created_at: string;
+  // Fleet Premium severity fields — present only on Premium instances; optional everywhere.
+  cvss_score?: number | null;
+  epss_probability?: number | null;
+  cisa_known_exploit?: boolean | null;
+  cve_published?: string | null;
+  resolved_in_version?: string | null;
+}
+
+/** Fleet built-in GeoIP for the host's public IP (present when Fleet has the GeoIP db loaded). */
+export interface FleetGeolocation {
+  country_iso?: string;
+  city_name?: string;
+  geometry?: { type?: string; coordinates?: number[] };
+}
+
+/** Per-host end-user identity (emails/IdP) from Fleet `end_users` — e.g. Chrome-profile emails. */
+export interface FleetEndUser {
+  username?: string;
+  full_name?: string;
+  email?: string;
+  idp_info_updated_at?: string | null;
+  other_emails?: Array<{ email: string; source?: string }>;
+  groups?: string[];
+}
+
+/** Per-host policy as returned in `GET /hosts/:id` → `host.policies`. */
+export interface FleetHostPolicy {
+  id: number;
+  name: string;
+  query?: string;
+  description?: string;
+  resolution?: string;
+  platform?: string;
+  critical: boolean;
+  /** Pass/fail outcome for THIS host; empty string when not yet evaluated. */
+  response: 'pass' | 'fail' | '';
 }
 
 export interface FleetSignatureInfo {
@@ -145,7 +181,7 @@ export interface FleetHost {
   mdm: FleetMdmInfo;
 
   // Policies & Labels
-  policies: any[];
+  policies: FleetHostPolicy[];
   labels: FleetLabel[];
   packs: any[];
   pack_stats: any[] | null;
@@ -157,6 +193,12 @@ export interface FleetHost {
   detail_updated_at: string;
   label_updated_at: string;
   policy_updated_at: string;
+
+  // Geolocation (Fleet built-in GeoIP)
+  geolocation?: FleetGeolocation;
+
+  // End-user identity (emails / IdP)
+  end_users?: FleetEndUser[];
 
   // Misc
   refetch_requested: boolean;

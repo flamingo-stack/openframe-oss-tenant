@@ -129,10 +129,10 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
       <div className="lg:hidden flex flex-col">
         <div className={rowClass}>
           {hostnameCell}
-          {typeCell}
+          {deviceCell}
         </div>
         <div className={rowClass}>
-          {deviceCell}
+          {typeCell}
           {serialCell}
         </div>
 
@@ -171,28 +171,25 @@ export function DeviceInfoSection({ device }: DeviceInfoSectionProps) {
         </div>
       </div>
 
-      {/* ===== Desktop (lg+) — 4 cells per row ===== */}
+      {/* ===== Desktop (lg+) — 4 cells per row, matching Figma 9-57016 ===== */}
       <div className="hidden lg:flex lg:flex-col">
+        {/* Row 1: Hostname · Device · Type · Customer ID (Site) */}
         <div className={rowClass}>
           {hostnameCell}
-          {typeCell}
           {deviceCell}
-          {serialCell}
-        </div>
-        <div className={rowClass}>
-          {customerInner && (
+          {typeCell}
+          {customerInner ? (
             <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{customerInner}</div>
+          ) : (
+            <div className="flex-1" aria-hidden="true" />
           )}
-          {assignedInner && (
-            <div className="flex items-center gap-[var(--spacing-system-xs)] flex-1 min-w-0">{assignedInner}</div>
-          )}
-          {registeredCell}
-          {updatedCell}
-          {!customerInner && <div className="flex-1" aria-hidden="true" />}
-          {!assignedInner && <div className="flex-1" aria-hidden="true" />}
         </div>
+        {/* Row 2: UUID · Serial Number · Registered · Updated */}
         <div className="flex items-center gap-[var(--spacing-system-m)] px-[var(--spacing-system-m)] min-h-20">
           {uuidCell}
+          {serialCell}
+          {registeredCell}
+          {updatedCell}
         </div>
       </div>
     </div>

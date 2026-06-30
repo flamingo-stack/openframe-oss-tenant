@@ -1,145 +1,129 @@
 'use client';
 
-import {
-  InfoCard,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { Info as InfoIcon } from 'lucide-react';
-import React from 'react';
+import { InfoCard } from '@flamingo-stack/openframe-frontend-core';
+import { Hierarchy02Icon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { NoData } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import type { ReactNode } from 'react';
+import type { Device } from '../../types/device.types';
 
 interface NetworkTabProps {
-  device: any;
+  device: Device | null;
+}
+
+type InfoRow = { label: string; value?: string | null; copyable?: boolean };
+
+function toItems(rows: InfoRow[]): Array<{ label: string; value: string; copyable?: boolean }> {
+  return rows
+    .filter(row => row.value !== undefined && row.value !== null && String(row.value).trim() !== '')
+    .map(row => ({ label: row.label, value: String(row.value), copyable: row.copyable }));
+}
+
+/** Numeric-aware sort for dotted IPv4 / CIDR strings. */
+function sortIpv4(addresses: string[]): string[] {
+  return [...addresses].sort((a, b) => {
+    const aParts = a.split(/[./]/).map(Number);
+    const bParts = b.split(/[./]/).map(Number);
+    for (let i = 0; i < 4; i++) {
+      if (aParts[i] !== bParts[i]) return (aParts[i] || 0) - (bParts[i] || 0);
+    }
+    return 0;
+  });
+}
+
+function Labeled({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <h3 className="text-h5 text-ods-text-secondary uppercase">{title}</h3>
+      {children}
+    </div>
+  );
 }
 
 export function NetworkTab({ device }: NetworkTabProps) {
-  // Separate IPs and preserve Fleet MDM primary_ip at top
-  const allIps = device?.local_ips || [];
-  const fleetPrimaryIp = device?.primary_ip; // Fleet MDM primary IP
-  const ipv4Addresses: string[] = [];
-  const ipv6Addresses: string[] = [];
-
-  allIps.forEach((ip: string) => {
-    if (ip.includes(':')) {
-      ipv6Addresses.push(ip);
-    } else {
-      ipv4Addresses.push(ip);
-    }
-  });
-
-  // Keep Fleet primary IP at top, sort the rest
-  if (fleetPrimaryIp && ipv4Addresses.length > 0) {
-    const primaryIndex = ipv4Addresses.indexOf(fleetPrimaryIp);
-    if (primaryIndex > -1) {
-      // Remove primary IP from list
-      ipv4Addresses.splice(primaryIndex, 1);
-      // Sort remaining IPs numerically
-      ipv4Addresses.sort((a, b) => {
-        const aParts = a.split(/[./]/).map(Number);
-        const bParts = b.split(/[./]/).map(Number);
-        for (let i = 0; i < 4; i++) {
-          if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
-        }
-        return 0;
-      });
-      // Put primary IP back at top
-      ipv4Addresses.unshift(fleetPrimaryIp);
-    } else {
-      // Primary IP not in list, just sort normally
-      ipv4Addresses.sort((a, b) => {
-        const aParts = a.split(/[./]/).map(Number);
-        const bParts = b.split(/[./]/).map(Number);
-        for (let i = 0; i < 4; i++) {
-          if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
-        }
-        return 0;
-      });
-    }
-  } else {
-    // No Fleet primary IP, sort normally
-    ipv4Addresses.sort((a, b) => {
-      const aParts = a.split(/[./]/).map(Number);
-      const bParts = b.split(/[./]/).map(Number);
-      for (let i = 0; i < 4; i++) {
-        if (aParts[i] !== bParts[i]) return aParts[i] - bParts[i];
-      }
-      return 0;
-    });
+  if (!device) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-ods-text-secondary text-lg">No device data available</div>
+      </div>
+    );
   }
 
-  // Sort IPv6 addresses (lexicographically for now)
-  ipv6Addresses.sort();
+  const allIps = device.local_ips || [];
+  const fleetPrimaryIp = device.primary_ip;
+
+  const ipv4Addresses: string[] = [];
+  const ipv6Addresses: string[] = [];
+  for (const ip of allIps) {
+    (ip.includes(':') ? ipv6Addresses : ipv4Addresses).push(ip);
+  }
+
+  // Keep the Fleet primary IPv4 pinned at the top; sort the rest numerically.
+  let sortedIpv4 = sortIpv4(ipv4Addresses);
+  if (fleetPrimaryIp && sortedIpv4.includes(fleetPrimaryIp)) {
+    sortedIpv4 = [fleetPrimaryIp, ...sortedIpv4.filter(ip => ip !== fleetPrimaryIp)];
+  }
+  const sortedIpv6 = [...ipv6Addresses].sort();
+
+  // Interface identity — Public/Primary IP + MAC (MAC was previously not surfaced here).
+  const interfaceItems = toItems([
+    { label: 'Public IP', value: device.public_ip, copyable: true },
+    { label: 'Primary IPv4', value: device.primary_ip, copyable: true },
+    { label: 'MAC Address', value: device.primary_mac || device.macAddress, copyable: true },
+  ]);
+
+  // Location — Fleet built-in GeoIP on the public IP (city/country when available).
+  const locationItems = toItems([
+    { label: 'City', value: device.geolocation?.city },
+    { label: 'Country', value: device.geolocation?.country },
+  ]);
+
+  const hasIpv4 = sortedIpv4.length > 0;
+  const hasIpv6 = sortedIpv6.length > 0;
+
+  if (interfaceItems.length === 0 && locationItems.length === 0 && !hasIpv4 && !hasIpv6) {
+    // Exact copy of the `DataTable.Body` empty state: the same wrapper + `NoData` with the
+    // same `py-[--spacing-system-xxl]` padding `DataTableEmpty` applies — so this tab is
+    // pixel-identical to the table tabs.
+    return (
+      <div className="flex flex-col gap-[var(--spacing-system-xsf)] w-full">
+        <NoData
+          icon={<Hierarchy02Icon />}
+          title="No network data found"
+          description="Network details for this device will appear here."
+          className="py-[var(--spacing-system-xxl)]"
+        />
+      </div>
+    );
+  }
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="space-y-4">
-        <InfoCard
-          data={{
-            title: 'Public IP',
-            icon: (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[500px] min-w-[400px]">
-                  <p>
-                    Public internet-facing IP address from Fleet MDM. This is the external IP used for internet
-                    communication, useful for network troubleshooting and remote access configuration.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            ),
-            items: [{ label: 'IP Address', value: device?.public_ip || 'Unknown', copyable: true }],
-          }}
-        />
+    <div className="flex flex-col gap-[var(--spacing-system-l)]">
+      {interfaceItems.length > 0 && (
+        <Labeled title="Network">
+          <InfoCard data={{ items: interfaceItems }} />
+        </Labeled>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {ipv4Addresses.length > 0 && (
-            <InfoCard
-              data={{
-                title: 'Local IPv4 Addresses',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Local network IPv4 addresses from Fleet MDM. Shows all private network IPs assigned to device
-                        interfaces for local network communication.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [{ value: ipv4Addresses, copyable: true }],
-              }}
-            />
+      {locationItems.length > 0 && (
+        <Labeled title="Location">
+          <InfoCard data={{ items: locationItems }} />
+        </Labeled>
+      )}
+
+      {(hasIpv4 || hasIpv6) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--spacing-system-l)]">
+          {hasIpv4 && (
+            <Labeled title="IPv4 Addresses">
+              <InfoCard data={{ items: [{ value: sortedIpv4, copyable: true }] }} />
+            </Labeled>
           )}
-          {ipv6Addresses.length > 0 && (
-            <InfoCard
-              data={{
-                title: 'Local IPv6 Addresses',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Local network IPv6 addresses from Fleet MDM. Shows modern IPv6 addresses assigned to device
-                        interfaces for next-generation network communication.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [{ value: ipv6Addresses, copyable: true }],
-              }}
-            />
+          {hasIpv6 && (
+            <Labeled title="IPv6 Addresses">
+              <InfoCard data={{ items: [{ value: sortedIpv6, copyable: true }] }} />
+            </Labeled>
           )}
         </div>
-      </div>
-    </TooltipProvider>
+      )}
+    </div>
   );
 }
