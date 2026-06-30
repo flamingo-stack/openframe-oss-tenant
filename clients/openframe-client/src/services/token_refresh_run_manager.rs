@@ -54,7 +54,7 @@ impl TokenRefreshRunManager {
                 loop {
                     match timeout(REAUTH_TIMEOUT, auth_service.reauthenticate()).await {
                         Ok(Ok(_)) => {
-                            debug!("Proactively refreshed access token; shared_token.enc updated");
+                            info!("Proactively refreshed access token; shared_token.enc updated");
                             break;
                         }
                         Ok(Err(e)) => error!(
