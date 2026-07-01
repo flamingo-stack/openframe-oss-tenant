@@ -30,138 +30,6 @@ function formatUptime(seconds?: number): string | undefined {
   return parts.join(' ') || '< 1m';
 }
 
-/**
- * Group physical disks (from Tactical `physical_disks` strings) with their partition
- * usage (from Tactical `disks`) so each drive shows capacity + current usage.
- * Unchanged behavior from the previous Hardware tab — only the presentation moved.
- */
-function processDiskData(disks: Device['disks'], physicalDisks: string[]) {
-  if (!disks || disks.length === 0) return [];
-
-  const validDisks = disks.filter(disk => disk.total !== '0 B' && disk.device !== 'map auto_home' && disk.percent > 0);
-
-  const extractPhysicalDisk = (deviceStr: string) => {
-    const macMatch = deviceStr.match(/disk(\d+)/);
-    if (macMatch) return `disk${macMatch[1]}`;
-    const driveMatch = deviceStr.match(/^([A-Z]):/);
-    if (driveMatch) return `drive_${driveMatch[1]}`;
-    return `disk_${deviceStr.replace(/[^a-zA-Z0-9]/g, '_')}`;
-  };
-
-  const groupedByPhysicalDisk = validDisks.reduce(
-    (acc, disk) => {
-      const key = extractPhysicalDisk(disk.device);
-      (acc[key] ||= []).push(disk);
-      return acc;
-    },
-    {} as Record<string, typeof validDisks>,
-  );
-
-  const physicalDiskInfo = (physicalDisks || []).reduce(
-    (acc, diskStr) => {
-      const str = diskStr.trim();
-      let diskKey = '';
-      let size = '';
-      let diskType = 'HDD';
-      let diskName = '';
-
-      const macDiskMatch = str.match(/disk(\d+)\s+([\d.]+\s*[KMGT]B)/i);
-      if (macDiskMatch) {
-        diskKey = `disk${macDiskMatch[1]}`;
-        size = macDiskMatch[2];
-        if (str.includes('SSD') || str.includes('NVMe')) {
-          diskType = 'SSD';
-          diskName = 'SSD';
-        } else if (str.includes('Virtual')) {
-          diskType = 'Virtual';
-          diskName = 'Virtual Disk';
-        } else {
-          diskType = 'HDD';
-          diskName = 'HDD';
-        }
-      } else {
-        const sizeMatch = str.match(/([\d.]+\s*[KMGT]B)/i);
-        if (sizeMatch) size = sizeMatch[1];
-
-        const driveLetterMatch = str.match(/\b([A-Z]):/i);
-        diskKey = driveLetterMatch
-          ? `drive_${driveLetterMatch[1]}`
-          : `disk_${str.slice(0, 20).replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-        if (str.includes('Virtual')) {
-          diskType = 'Virtual';
-          diskName = 'Virtual Disk';
-        } else if (str.includes('SSD') || str.includes('NVMe')) {
-          diskType = 'SSD';
-          diskName = 'SSD';
-        } else if (str.includes('HDD')) {
-          diskType = 'HDD';
-          diskName = 'HDD';
-        } else if (str.includes('Samsung') || str.includes('Kingston') || str.includes('Crucial')) {
-          diskType = 'SSD';
-          diskName = 'SSD';
-        } else {
-          diskType = 'HDD';
-          diskName = 'HDD';
-        }
-      }
-
-      if (diskKey && size) {
-        acc[diskKey] = { size, name: diskName, type: diskType };
-      }
-      return acc;
-    },
-    {} as Record<string, { size: string; name: string; type: string }>,
-  );
-
-  const allDiskKeys = new Set([...Object.keys(physicalDiskInfo), ...Object.keys(groupedByPhysicalDisk)]);
-
-  const parseSize = (sizeStr: string): number => {
-    const match = sizeStr.match(/([0-9.]+)\s*(GB|MB|TB)/i);
-    if (!match) return 0;
-    const value = parseFloat(match[1]);
-    const unit = match[2].toUpperCase();
-    if (unit === 'TB') return value * 1024;
-    if (unit === 'MB') return value / 1024;
-    return value;
-  };
-
-  return Array.from(allDiskKeys)
-    .map(diskKey => {
-      const partitions = groupedByPhysicalDisk[diskKey];
-      const diskInfo = physicalDiskInfo[diskKey];
-
-      if (partitions && partitions.length > 0) {
-        const mainPartition = partitions.reduce((largest, current) =>
-          parseSize(current.total) > parseSize(largest.total) ? current : largest,
-        );
-        return {
-          name: diskInfo?.name || diskKey,
-          size: diskInfo?.size || mainPartition.total,
-          used: mainPartition.used,
-          free: mainPartition.free,
-          percentage: mainPartition.percent,
-          type: diskInfo?.type || (diskKey.includes('Virtual') ? 'Virtual' : 'Unknown'),
-          count: partitions.length,
-        };
-      }
-      if (diskInfo) {
-        return {
-          name: diskInfo.name,
-          size: diskInfo.size,
-          used: 'N/A',
-          free: 'N/A',
-          percentage: 0,
-          type: diskInfo.type,
-          count: 0,
-        };
-      }
-      return { name: diskKey, size: 'Unknown', used: 'N/A', free: 'N/A', percentage: 0, type: 'Unknown', count: 0 };
-    })
-    .filter(disk => disk.name && disk.size !== 'Unknown')
-    .sort((a, b) => parseSize(b.size) - parseSize(a.size));
-}
-
 /** A row of hardware blocks — a 3-column grid where every block stretches to an equal width. */
 function Row({ children }: { children: ReactNode }) {
   return <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--spacing-system-l)]">{children}</div>;
@@ -220,7 +88,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
   ]);
 
   // CPU — model + architecture/cores/threads.
-  const cpuModel = device.cpu_brand || device.cpu_model?.[0];
+  const cpuModel = device.cpu_brand;
   const cpuItems = toItems([
     { label: 'Architecture', value: device.cpu_type },
     { label: 'Subtype', value: device.cpu_subtype },
@@ -232,8 +100,7 @@ export function HardwareTab({ device }: HardwareTabProps) {
   // MEMORY — total only (per-DIMM/slot detail is not in our payload).
   const memoryItems = toItems([{ label: 'Total Memory', value: device.totalRam }]);
 
-  // STORAGE — per-drive detail (legacy Tactical). When absent, fall back to Fleet's whole-disk totals.
-  const diskData = processDiskData(device.disks || [], device.physical_disks || []);
+  // STORAGE — Fleet whole-disk totals.
   const fleetTotalGb = device.gigs_total_disk_space;
   const fleetAvailableGb = device.gigs_disk_space_available;
   const hasFleetStorage = typeof fleetTotalGb === 'number' && fleetTotalGb > 0;
@@ -245,9 +112,6 @@ export function HardwareTab({ device }: HardwareTabProps) {
     typeof fleetTotalGb === 'number' && typeof fleetAvailableGb === 'number'
       ? Math.max(0, fleetTotalGb - fleetAvailableGb)
       : undefined;
-
-  // GRAPHICS — Tactical `graphics` string (currently unused on this tab).
-  const hasGraphics = Boolean(device.graphics);
 
   // BATTERY — macOS battery health from Fleet.
   const batteries = device.batteries || [];
@@ -292,33 +156,8 @@ export function HardwareTab({ device }: HardwareTabProps) {
         </Row>
       )}
 
-      {/* Storage — its own row (multiple drives flow across the 3 columns). */}
-      {diskData.length > 0 && (
-        <Row>
-          {diskData.map((disk, index) => (
-            <Block key={`${disk.name}-${index}`} heading={index === 0 ? 'Storage' : undefined}>
-              <InfoCard
-                data={{
-                  title: disk.name,
-                  subtitle:
-                    disk.count === 0
-                      ? `${disk.type} Drive (No partition data)`
-                      : `${disk.type} Drive (${disk.count} partition${disk.count > 1 ? 's' : ''})`,
-                  items: toItems([
-                    { label: 'Current Usage', value: `${disk.percentage}%` },
-                    { label: 'Used Space', value: disk.used },
-                    { label: 'Free Space', value: disk.free },
-                    { label: 'Total Capacity', value: disk.size },
-                  ]),
-                  ...(disk.count > 0 && { progress: { value: disk.percentage } }),
-                }}
-              />
-            </Block>
-          ))}
-        </Row>
-      )}
-
-      {diskData.length === 0 && hasFleetStorage && (
+      {/* Storage — Fleet whole-disk totals. */}
+      {hasFleetStorage && (
         <Row>
           <Block heading="Storage">
             <InfoCard
@@ -343,14 +182,6 @@ export function HardwareTab({ device }: HardwareTabProps) {
                 ...(fleetUsedPercent !== undefined && { progress: { value: fleetUsedPercent } }),
               }}
             />
-          </Block>
-        </Row>
-      )}
-
-      {hasGraphics && (
-        <Row>
-          <Block heading="Graphics">
-            <InfoCard data={{ items: toItems([{ label: 'Model', value: device.graphics }]) }} />
           </Block>
         </Row>
       )}

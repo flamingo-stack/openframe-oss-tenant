@@ -444,7 +444,7 @@ function KnowledgeBaseBodyShell({
       <div style={containerStyle} className="flex flex-col">
         <div
           ref={toolbarRef}
-          className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]"
+          className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]"
         >
           <div className="flex items-center gap-[var(--spacing-system-m)]">
             <div className="min-w-0 flex-1">
@@ -559,7 +559,7 @@ function KnowledgeBaseBodyFallback({ parentId }: KnowledgeBaseBodyProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       actions={buildActions(parentId, () => {})}
     >
-      <div className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-m)] -mt-[var(--spacing-system-l)]">
+      <div className="sticky top-0 z-20 flex flex-col gap-[var(--spacing-system-xxs)] bg-ods-bg -mx-[var(--spacing-system-l)] px-[var(--spacing-system-l)] pt-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] -mt-[var(--spacing-system-l)]">
         <TagSearchInput<string>
           tags={[]}
           searchValue=""

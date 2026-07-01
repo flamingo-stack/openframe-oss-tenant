@@ -16,7 +16,6 @@ import { useCreateArticle } from './use-create-article';
 import type { KnowledgeBaseItemNode } from './use-knowledge-base-item';
 import { knowledgeBaseItemQuery } from './use-knowledge-base-item';
 import { getKnowledgeBaseArticlesConnectionId } from './use-knowledge-base-items';
-import { useCreateKnowledgeBaseTag } from './use-knowledge-base-tags';
 import { useLinkArticleAttachments } from './use-link-article-attachments';
 import { usePublishArticle } from './use-publish-article';
 import { useRemoveTag } from './use-remove-tag';
@@ -35,10 +34,6 @@ interface UseEditArticleFormOptions {
 interface ArticleTagRef {
   id: string;
   key: string;
-}
-
-interface SaveOptions {
-  availableTags: ReadonlyArray<ArticleTagRef>;
 }
 
 export function useEditArticleForm({ articleId, initialFolderId, initialArticle }: UseEditArticleFormOptions) {
@@ -61,7 +56,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
   const { unarchiveArticle } = useUnarchiveArticle();
   const { addTag } = useAddTag();
   const { removeTag } = useRemoveTag();
-  const { createTag } = useCreateKnowledgeBaseTag();
   const { mutateAsync: applyAssignmentsDiff } = useApplyAssignmentsDiff();
   const tempAttachments = useArticleTempAttachments();
   const { linkAttachments } = useLinkArticleAttachments();
@@ -82,7 +76,7 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
       form.reset({
         title: initialArticle.name,
         folderId: initialArticle.parentId ?? null,
-        tags: initialTagRefs.map(t => t.key),
+        tags: initialTagRefs.map(t => t.id),
         body: initialArticle.content ?? '',
         assignments: assignedItems.value,
       });
@@ -106,34 +100,16 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
     tempAttachments.initializeExisting,
   ]);
 
-  const resolveTagIds = useCallback(
-    async (keys: ReadonlyArray<string>, availableTags: ReadonlyArray<ArticleTagRef>): Promise<string[]> => {
-      const byKey = new Map(availableTags.map(t => [t.key, t.id]));
-      const ids: string[] = [];
-      for (const key of keys) {
-        const existing = byKey.get(key);
-        if (existing) {
-          ids.push(existing);
-        } else {
-          const created = await createTag(key);
-          ids.push(created.id);
-          byKey.set(created.key, created.id);
-        }
-      }
-      return ids;
-    },
-    [createTag],
-  );
-
   const handleSave = useCallback(
-    (targetStatus: SaveStatus, options: SaveOptions) => {
-      const { availableTags } = options;
+    (targetStatus: SaveStatus) => {
       setIsSubmitting(true);
 
       form.handleSubmit(
         async data => {
           try {
-            const tagIds = await resolveTagIds(data.tags, availableTags);
+            // Tags are created eagerly in the picker, so `data.tags` already holds
+            // persisted Tag ids — no resolution / create-on-save step needed.
+            const tagIds = data.tags;
             const folderId = data.folderId;
 
             if (isEditMode && articleId && initialArticle && initialArticle.type === 'ARTICLE') {
@@ -275,7 +251,6 @@ export function useEditArticleForm({ articleId, initialFolderId, initialArticle 
       linkAttachments,
       publishArticle,
       removeTag,
-      resolveTagIds,
       router,
       tempAttachments,
       toast,

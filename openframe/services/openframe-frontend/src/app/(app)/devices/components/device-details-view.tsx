@@ -14,12 +14,14 @@ import { formatRelativeTime } from '@flamingo-stack/openframe-frontend-core/util
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { featureFlags } from '@/lib/feature-flags';
 import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
 import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { useDeviceActionsMenu } from '../hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../hooks/use-device-details';
 import { getDeviceStatusConfig } from '../utils/device-status';
 import { DeviceDetailsSkeleton } from './device-details-skeleton';
+import { RunScriptModal } from './run-script/run-script-modal';
 import { ScriptsModal } from './scripts-modal';
 import { DEVICE_TABS } from './tabs/device-tabs';
 
@@ -191,15 +193,25 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
         )}
       </TabNavigation>
 
-      {/* Scripts Modal */}
-      <ScriptsModal
-        isOpen={isScriptsModalOpen}
-        onClose={() => setIsScriptsModalOpen(false)}
-        deviceId={actionAvailability?.tacticalAgentId || deviceId}
-        device={normalizedDevice}
-        onRunScripts={handleRunScripts}
-        onDeviceLogs={handleDeviceLogs}
-      />
+      {/* Run Script — new (scripts-v2) modal with the native GraphQL run API when
+          the flag is on; the legacy Tactical ScriptsModal otherwise. */}
+      {featureFlags.scriptsV2.enabled() ? (
+        <RunScriptModal
+          isOpen={isScriptsModalOpen}
+          onClose={() => setIsScriptsModalOpen(false)}
+          machineId={normalizedDevice.machineId}
+          onViewDeviceLogs={handleDeviceLogs}
+        />
+      ) : (
+        <ScriptsModal
+          isOpen={isScriptsModalOpen}
+          onClose={() => setIsScriptsModalOpen(false)}
+          deviceId={actionAvailability?.tacticalAgentId || deviceId}
+          device={normalizedDevice}
+          onRunScripts={handleRunScripts}
+          onDeviceLogs={handleDeviceLogs}
+        />
+      )}
 
       {confirmationDialogs}
     </PageLayout>

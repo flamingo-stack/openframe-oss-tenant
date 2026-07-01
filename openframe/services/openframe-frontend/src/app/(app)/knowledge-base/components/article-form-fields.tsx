@@ -10,22 +10,23 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo } from 'react';
 import { Controller, type UseFormReturn } from 'react-hook-form';
+import { EntityTagPicker } from '@/app/components/shared/tags';
 import { AssignmentsField } from '@/components/assignments';
+import { TagEntityType } from '@/generated/schema-enums';
 import type { useArticleTempAttachments } from '../hooks/use-article-temp-attachments';
 import { buildFolderTree, KNOWLEDGE_BASE_ROOT_LABEL, useKnowledgeBaseFolders } from '../hooks/use-knowledge-base-items';
-import type { KnowledgeBaseTag } from '../hooks/use-knowledge-base-tags';
 import type { ArticleFormData } from '../types/article.types';
-import { ArticleTagsManager } from './article-tags-manager';
 import { buildFolderMenuItemsWithRoot } from './folder-menu-items';
 import { MarkdownEditor, SimpleMarkdownRenderer } from './lazy-markdown';
 
 interface ArticleFormFieldsProps {
   form: UseFormReturn<ArticleFormData>;
-  availableTags: ReadonlyArray<KnowledgeBaseTag>;
+  /** Tags already assigned to the article — seeded into the picker so their chips render. */
+  initialTags: ReadonlyArray<{ id: string; key: string }>;
   tempAttachments: ReturnType<typeof useArticleTempAttachments>;
 }
 
-export function ArticleFormFields({ form, availableTags, tempAttachments }: ArticleFormFieldsProps) {
+export function ArticleFormFields({ form, initialTags, tempAttachments }: ArticleFormFieldsProps) {
   const { control } = form;
   const folders = useKnowledgeBaseFolders();
   const tree = useMemo(() => buildFolderTree(folders), [folders]);
@@ -118,7 +119,16 @@ export function ArticleFormFields({ form, availableTags, tempAttachments }: Arti
         name="tags"
         control={control}
         render={({ field }) => (
-          <ArticleTagsManager selected={field.value} onChange={field.onChange} availableTags={availableTags} />
+          <EntityTagPicker
+            entityType={TagEntityType.KNOWLEDGE_ARTICLE}
+            selectedIds={field.value}
+            onChange={field.onChange}
+            initialTags={initialTags}
+            emptyPlaceholder="Select or create tags..."
+            maxCreateLength={25}
+            deletable
+            entityLabel="article"
+          />
         )}
       />
 

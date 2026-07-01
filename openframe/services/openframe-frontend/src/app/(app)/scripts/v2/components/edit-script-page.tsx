@@ -8,7 +8,9 @@ import { Controller } from 'react-hook-form';
 import { useLazyLoadQuery, useMutation } from 'react-relay';
 import type { runCommandMutation as RunCommandMutationType } from '@/__generated__/runCommandMutation.graphql';
 import type { scriptDetailRelayQuery as ScriptDetailQueryType } from '@/__generated__/scriptDetailRelayQuery.graphql';
+import { EntityTagPicker } from '@/app/components/shared/tags';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { TagEntityType } from '@/generated/schema-enums';
 import { runCommandMutation } from '@/graphql/scripts/run-command-mutation';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
 import { ExecutionStartedModal } from '../../components/script/execution-started-modal';
@@ -18,7 +20,6 @@ import { useEditScriptForm } from '../hooks/use-edit-script-form';
 import { relayScriptToForm, shellToEnum } from '../utils/script-mappers';
 import { SCRIPT_V2_SHELL_TYPES } from '../utils/shell-types';
 import { EditScriptSkeleton } from './edit-script-skeleton';
-import { ScriptTagsManager } from './script-tags-manager';
 import { type SelectedTestDevice, TestScriptModal } from './test-script-modal';
 
 interface ScriptTag {
@@ -137,9 +138,12 @@ function EditScriptForm({ scriptId, initialValues, initialTags }: EditScriptForm
     [form, commitRunCommand, toast, validateTestPrereqs],
   );
 
+  // Test always dispatches `runCommand` (the current editor body may be unsaved),
+  // so it carries no scriptId and never shows in `scriptExecutions(scriptId)` — the
+  // results live in the activity logs, NOT the script's Execution History. Open in a
+  // new tab so the user doesn't lose in-progress script edits.
   const handleViewLogs = useCallback(() => {
     setTestDispatched(false);
-    // Open logs in a new tab so the user doesn't lose the in-progress script edits.
     window.open('/logs-page', '_blank', 'noopener,noreferrer');
   }, []);
 
@@ -162,29 +166,38 @@ function EditScriptForm({ scriptId, initialValues, initialTags }: EditScriptForm
   );
 
   return (
-    <PageLayout
-      title={isEditMode ? 'Edit Script' : 'New Script'}
-      backButton={backButton}
-      actions={actions}
-      className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
-    >
-      <ScriptFormFields
-        form={form}
-        shellTypes={SCRIPT_V2_SHELL_TYPES}
-        hideCategory
-        showErrors={showErrors}
-        tagsField={
-          <Controller
-            name="tag_ids"
-            control={form.control}
-            render={({ field }) => (
-              <Suspense fallback={<Skeleton className="h-[72px] w-full" />}>
-                <ScriptTagsManager selectedIds={field.value} onChange={field.onChange} initialTags={initialTags} />
-              </Suspense>
-            )}
-          />
-        }
-      />
+    <>
+      <PageLayout
+        title={isEditMode ? 'Edit Script' : 'New Script'}
+        backButton={backButton}
+        actions={actions}
+        className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
+      >
+        <ScriptFormFields
+          form={form}
+          shellTypes={SCRIPT_V2_SHELL_TYPES}
+          hideCategory
+          showErrors={showErrors}
+          tagsField={
+            <Controller
+              name="tag_ids"
+              control={form.control}
+              render={({ field }) => (
+                <Suspense fallback={<Skeleton className="h-[72px] w-full" />}>
+                  <EntityTagPicker
+                    entityType={TagEntityType.SCRIPT}
+                    selectedIds={field.value}
+                    onChange={field.onChange}
+                    initialTags={initialTags}
+                    deletable
+                    entityLabel="script"
+                  />
+                </Suspense>
+              )}
+            />
+          }
+        />
+      </PageLayout>
 
       <TestScriptModal
         isOpen={isTestModalOpen}
@@ -197,9 +210,11 @@ function EditScriptForm({ scriptId, initialValues, initialTags }: EditScriptForm
         isOpen={testDispatched}
         onClose={() => setTestDispatched(false)}
         scriptName={form.getValues('name') || 'Script'}
-        onViewLogs={handleViewLogs}
+        onViewResults={handleViewLogs}
+        viewLabel="View Logs"
+        resultsLocation="activity logs section"
       />
-    </PageLayout>
+    </>
   );
 }
 

@@ -121,7 +121,7 @@ export interface ToolConnection {
   toolType: ToolType;
   agentToolId: string;
   status: string;
-  /** ISO date string: Tactical last_seen, Fleet seen_time — shown under status */
+  /** ISO date string: Fleet seen_time / MeshCentral last connection — shown under status */
   lastSeen?: string;
   /** Fleet detail_updated_at — when host details were last fetched */
   lastFetched?: string;
@@ -179,14 +179,6 @@ export interface Device {
   percent_disk_space_available?: number;
   gigs_total_disk_space?: number;
   disk_encryption_enabled?: boolean;
-  disks?: Array<{
-    free: string;
-    used: string;
-    total: string;
-    device: string;
-    fstype: string;
-    percent: number;
-  }>;
 
   // Network
   primary_ip?: string;
@@ -267,11 +259,9 @@ export interface Device {
 
   // Reference IDs (NOT nested data)
   fleetId?: number;
+  /** Tactical RMM agent id (from tool connections) — used to run scripts on the device. */
   tacticalAgentId?: string;
-  agent_id?: string; // Alias for tactical agent ID
-
-  // Graphics
-  graphics?: string;
+  agent_id?: string; // Alias for device/agent id
 
   // Legacy fields for backward compatibility
   serialNumber?: string; // Alias for serial_number
@@ -279,35 +269,7 @@ export interface Device {
   plat?: string; // Platform (for scripts modal)
   logged_in_username?: string; // Currently logged in user
   logged_username?: string; // Alias for logged_in_username
-
-  // Legacy Tactical RMM fields
-  cpu_model?: string[]; // CPU model array (Tactical format)
-  physical_disks?: string[]; // Physical disk info from Tactical
-  total_ram?: string; // Total RAM (formatted string)
   make_model?: string; // Make and model combined
-  site_name?: string; // Tactical site name
-  client_name?: string; // Tactical client name
-  monitoring_type?: string; // Monitoring type
-  needs_reboot?: boolean; // Needs reboot flag
-  pending_actions_count?: number; // Pending actions count
-  overdue_text_alert?: boolean; // Overdue text alert
-  overdue_email_alert?: boolean; // Overdue email alert
-  overdue_dashboard_alert?: boolean; // Overdue dashboard alert
-  checks?: {
-    // Health checks
-    total: number;
-    passing: number;
-    failing: number;
-    warning: number;
-    info: number;
-    has_failing_checks: boolean;
-  };
-  maintenance_mode?: boolean; // Maintenance mode flag
-  italic?: boolean; // Italic display flag
-  block_policy_inheritance?: boolean; // Block policy inheritance
-  goarch?: string; // Go architecture
-  has_patches_pending?: boolean; // Has patches pending
-  custom_fields?: any[]; // Custom fields array
   version?: string; // Agent version (alias)
 }
 

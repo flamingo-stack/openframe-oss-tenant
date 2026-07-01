@@ -64,14 +64,6 @@ class TacticalApiClient {
 
   // Tactical RMM specific methods
 
-  async getAgents(): Promise<ApiResponse<any[]>> {
-    return this.get('/agents/');
-  }
-
-  async getAgent(agentId: string): Promise<ApiResponse<any>> {
-    return this.get(`/agents/${agentId}/`);
-  }
-
   async runScript(
     agentId: string,
     scriptData: {
@@ -149,112 +141,6 @@ class TacticalApiClient {
     },
   ): Promise<ApiResponse<any>> {
     return this.put(`/scripts/${scriptId}/`, scriptData);
-  }
-
-  async getAgentLogs(
-    agentId: string,
-    params?: {
-      limit?: number;
-      offset?: number;
-      search?: string;
-    },
-  ): Promise<ApiResponse<any[]>> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.search) queryParams.append('search', params.search);
-
-    const queryString = queryParams.toString();
-    const path = queryString ? `/agents/${agentId}/logs/?${queryString}` : `/agents/${agentId}/logs/`;
-
-    return this.get(path);
-  }
-
-  async getAgentChecks(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/checks/`);
-  }
-
-  async getAgentTasks(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/tasks/`);
-  }
-
-  async getAgentServices(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/services/`);
-  }
-
-  async getAgentProcesses(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/processes/`);
-  }
-
-  async getAgentSoftware(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/software/`);
-  }
-
-  async getAgentWindowsServices(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/winservices/`);
-  }
-
-  async getAgentEventLogs(
-    agentId: string,
-    params?: {
-      limit?: number;
-      offset?: number;
-      level?: string;
-    },
-  ): Promise<ApiResponse<any[]>> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-    if (params?.level) queryParams.append('level', params.level);
-
-    const queryString = queryParams.toString();
-    const path = queryString ? `/agents/${agentId}/eventlogs/?${queryString}` : `/agents/${agentId}/eventlogs/`;
-
-    return this.get(path);
-  }
-
-  async getAgentSystemInfo(agentId: string): Promise<ApiResponse<any>> {
-    return this.get(`/agents/${agentId}/systeminfo/`);
-  }
-
-  async getAgentDiskInfo(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/disks/`);
-  }
-
-  async getAgentNetworkInfo(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/network/`);
-  }
-
-  async getAgentUsers(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/users/`);
-  }
-
-  async getAgentGroups(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/groups/`);
-  }
-
-  async getAgentPolicies(agentId: string): Promise<ApiResponse<any[]>> {
-    return this.get(`/agents/${agentId}/policies/`);
-  }
-
-  async getAgentChecksHistory(
-    agentId: string,
-    checkId: string,
-    params?: {
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<ApiResponse<any[]>> {
-    const queryParams = new URLSearchParams();
-    if (params?.limit) queryParams.append('limit', params.limit.toString());
-    if (params?.offset) queryParams.append('offset', params.offset.toString());
-
-    const queryString = queryParams.toString();
-    const path = queryString
-      ? `/agents/${agentId}/checks/${checkId}/history/?${queryString}`
-      : `/agents/${agentId}/checks/${checkId}/history/`;
-
-    return this.get(path);
   }
 
   // Script Schedule methods

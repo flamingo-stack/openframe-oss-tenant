@@ -13,6 +13,10 @@
  *   - user   → REST `/api/users/{userId}`         → (no detail route)
  *   - script → tactical `getScript(id)`           → /scripts/details/{id}
  *   - ticket → ai-agent `ticket(id:)` GraphQL      → /tickets/dialog?id={id}
+ *
+ * The `script` resolver here is the LEGACY (Tactical) path. New scripts resolve
+ * via the Relay `GraphqlMentionChip`; `render-mention.tsx` dispatches by id shape
+ * (24-char ObjectId → new, numeric → this Tactical resolver) so BOTH resolve.
  */
 
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -51,9 +55,9 @@ async function resolveUser(id: string): Promise<Resolved> {
 }
 
 async function resolveScript(id: string): Promise<Resolved> {
-  // Single-script tactical endpoint (`GET /scripts/{id}/`) — direct fetch by id,
-  // no full-list scan. Scripts stay on the tactical REST API (not GraphQL). An
-  // unknown id 404s (degrades to the chip's `fallbackLabel`/id via `res.ok`).
+  // Legacy/Tactical single-script endpoint (`GET /scripts/{id}/`) — direct fetch
+  // by id. Only reached for numeric Tactical ids (see render-mention dispatch);
+  // an unknown id 404s (degrades to the chip's `fallbackLabel`/id via `res.ok`).
   const res = await tacticalApiClient.getScript(id);
   const name = res.ok ? (res.data?.name as string | undefined) : undefined;
   return { label: name || id, href: `/scripts/details/${id}` };

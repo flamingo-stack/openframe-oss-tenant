@@ -103,10 +103,3 @@ export const DEVICE_TABS: TabItem[] = [
     component: SoftwareTab,
   },
 ];
-
-export const getDeviceTab = (tabId: string): TabItem | undefined => DEVICE_TABS.find(tab => tab.id === tabId);
-
-export const getTabComponent = (tabId: string): React.ComponentType<{ device: any }> | null => {
-  const tab = getDeviceTab(tabId);
-  return tab?.component || null;
-};

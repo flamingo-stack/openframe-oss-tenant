@@ -267,7 +267,9 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
         isOpen={showExecutionModal}
         onClose={handleCloseExecutionModal}
         scriptName={scriptDetails.name || 'Script'}
-        onViewLogs={handleViewLogs}
+        onViewResults={handleViewLogs}
+        viewLabel="View Logs"
+        resultsLocation="activity logs section"
       />
     </PageLayout>
   );

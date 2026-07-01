@@ -103,6 +103,10 @@ export function useDeleteTagMutation() {
     (id: string, onCompleted?: () => void) => {
       commit({
         variables: { id },
+        // Drop the deleted Tag record from the store so any Relay-driven picker /
+        // list stops rendering it without waiting for a refetch. (REST callers,
+        // e.g. tickets, are unaffected — they refetch their own react-query list.)
+        updater: store => store.delete(id),
         onCompleted: () => {
           onCompleted?.();
         },

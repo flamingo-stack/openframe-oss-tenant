@@ -3,7 +3,6 @@
 import type { ActionsMenuItem } from '@flamingo-stack/openframe-frontend-core';
 import { normalizeOSType } from '@flamingo-stack/openframe-frontend-core';
 import {
-  ArrowRightUpIcon,
   BoxArchiveIcon,
   BracketCurlyIcon,
   TrashIcon,
@@ -97,19 +96,13 @@ export function useDeviceActionsMenu(
     });
 
     const runScriptDisabled = !actionAvailability?.runScriptEnabled;
+    // Run Script opens the run modal in place — no new-tab `iconAction` arrow.
     const runScript: ActionsMenuItem = {
       id: 'run-script',
       label: 'Run Script',
       icon: <BracketCurlyIcon className={`${iconSize} text-ods-text-secondary`} />,
       disabled: runScriptDisabled,
       onClick: handleRunScript,
-      iconAction: {
-        icon: <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />,
-        'aria-label': 'Open Run Script in new tab',
-        href: runScriptHref,
-        openInNewTab: true,
-        disabled: runScriptDisabled,
-      },
     };
 
     const archive: ActionsMenuItem | null = actionAvailability?.archiveEnabled
@@ -140,7 +133,7 @@ export function useDeviceActionsMenu(
       archive,
       delete: deleteItem,
     };
-  }, [deviceId, actionAvailability, isWindows, iconSize, handleRunScript, runScriptHref, openArchive, openDelete]);
+  }, [deviceId, actionAvailability, isWindows, iconSize, handleRunScript, openArchive, openDelete]);
 
   return { items, dialogs, actionAvailability };
 }
