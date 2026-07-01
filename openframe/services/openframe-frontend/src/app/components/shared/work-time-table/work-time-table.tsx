@@ -5,13 +5,16 @@ import { PenEditIcon, SearchIcon, TrashIcon } from '@flamingo-stack/openframe-fr
 import {
   Button,
   type ColumnDef,
+  type ColumnFiltersState,
   DashboardInfoCard,
   DataTable,
+  type DataTableFilterOption,
   DatePicker,
   type DateRange,
   EntityImage,
   Input,
   LoadError,
+  type OnChangeFn,
   Skeleton,
   SquareAvatar,
   TruncateText,
@@ -24,6 +27,7 @@ import type { deleteTimeEntryMutation as DeleteTimeEntryMutationType } from '@/_
 import type { employeeWorkTimeRelay_query$key } from '@/__generated__/employeeWorkTimeRelay_query.graphql';
 import type { employeeWorkTimeRelayPaginationQuery } from '@/__generated__/employeeWorkTimeRelayPaginationQuery.graphql';
 import type { employeeWorkTimeRelayQuery as EmployeeWorkTimeRelayQueryType } from '@/__generated__/employeeWorkTimeRelayQuery.graphql';
+import { useAssigneeOptions, useOrganizationOptions } from '@/app/(app)/tickets/hooks/use-ticket-options';
 import { type ManualEntryEditTarget, ManualEntryModal } from '@/app/components/manual-entry-modal';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
 import { useSearchParam } from '@/app/hooks/use-search-param';
@@ -38,6 +42,7 @@ import {
   parseInstant,
   subscribeTimeEntriesChanged,
   toInstantRange,
+  toOrganizationGlobalId,
 } from '@/graphql/time-tracker/time-tracker-helpers';
 import { formatDate } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
@@ -161,6 +166,8 @@ function buildColumns(
   showCustomer: boolean,
   onEdit: (row: WorkTimeRow) => void,
   onDelete: (row: WorkTimeRow) => void,
+  employeeFilterOptions: DataTableFilterOption[] = [],
+  customerFilterOptions: DataTableFilterOption[] = [],
 ): ColumnDef<WorkTimeRow>[] {
   const actionsColumn: ColumnDef<WorkTimeRow> = {
     id: 'actions',
@@ -190,9 +197,29 @@ function buildColumns(
   };
 
   return [
-    ...(showEmployee ? [employeeColumn] : []),
+    ...(showEmployee
+      ? [
+          {
+            ...employeeColumn,
+            meta: {
+              ...employeeColumn.meta,
+              filter: employeeFilterOptions.length ? { options: employeeFilterOptions } : undefined,
+            },
+          },
+        ]
+      : []),
     timeColumn,
-    ...(showCustomer ? [customerColumn] : []),
+    ...(showCustomer
+      ? [
+          {
+            ...customerColumn,
+            meta: {
+              ...customerColumn.meta,
+              filter: customerFilterOptions.length ? { options: customerFilterOptions } : undefined,
+            },
+          },
+        ]
+      : []),
     ticketNotesColumn,
     actionsColumn,
   ];
@@ -213,6 +240,10 @@ function WorkTimeTableData({
   fetchKey,
   onEdit,
   onDelete,
+  employeeFilterOptions,
+  customerFilterOptions,
+  columnFilters,
+  onColumnFiltersChange,
 }: {
   showEmployee: boolean;
   showCustomer: boolean;
@@ -220,6 +251,10 @@ function WorkTimeTableData({
   fetchKey: number;
   onEdit: (row: WorkTimeRow) => void;
   onDelete: (row: WorkTimeRow) => void;
+  employeeFilterOptions: DataTableFilterOption[];
+  customerFilterOptions: DataTableFilterOption[];
+  columnFilters: ColumnFiltersState;
+  onColumnFiltersChange: OnChangeFn<ColumnFiltersState>;
 }) {
   const queryData = useLazyLoadQuery<EmployeeWorkTimeRelayQueryType>(employeeWorkTimeRelayQuery, vars, {
     fetchPolicy: 'store-and-network',
@@ -261,10 +296,17 @@ function WorkTimeTableData({
   );
 
   const columns = useMemo(
-    () => buildColumns(showEmployee, showCustomer, onEdit, onDelete),
-    [showEmployee, showCustomer, onEdit, onDelete],
+    () => buildColumns(showEmployee, showCustomer, onEdit, onDelete, employeeFilterOptions, customerFilterOptions),
+    [showEmployee, showCustomer, onEdit, onDelete, employeeFilterOptions, customerFilterOptions],
   );
-  const table = useDataTable<WorkTimeRow>({ data: rows, columns, getRowId: row => row.id, enableSorting: false });
+  const table = useDataTable<WorkTimeRow>({
+    data: rows,
+    columns,
+    getRowId: row => row.id,
+    enableSorting: false,
+    state: { columnFilters },
+    onColumnFiltersChange,
+  });
 
   return (
     <>
@@ -387,15 +429,58 @@ export function WorkTimeTable({
 
   const [deleteEntry, isDeleting] = useMutation<DeleteTimeEntryMutationType>(deleteTimeEntryMutation);
 
+  const [employeeFilterIds, setEmployeeFilterIds] = useState<string[]>([]);
+  const [customerFilterIds, setCustomerFilterIds] = useState<string[]>([]);
+
+  const { options: employeeOptionsRaw } = useAssigneeOptions(showEmployee);
+  const { options: customerOptionsRaw } = useOrganizationOptions('', showCustomer);
+
+  const employeeFilterOptions = useMemo<DataTableFilterOption[]>(
+    () => employeeOptionsRaw.map(option => ({ id: option.value, label: option.label, value: option.value })),
+    [employeeOptionsRaw],
+  );
+  const customerFilterOptions = useMemo<DataTableFilterOption[]>(
+    () => customerOptionsRaw.map(option => ({ id: option.value, label: option.label, value: option.value })),
+    [customerOptionsRaw],
+  );
+
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => [
+      ...(employeeFilterIds.length ? [{ id: 'employee', value: employeeFilterIds }] : []),
+      ...(customerFilterIds.length ? [{ id: 'customer', value: customerFilterIds }] : []),
+    ],
+    [employeeFilterIds, customerFilterIds],
+  );
+
+  const onColumnFiltersChange = useCallback<OnChangeFn<ColumnFiltersState>>(
+    updater => {
+      const next = typeof updater === 'function' ? updater(columnFilters) : updater;
+      const byId = Object.fromEntries(next.map(entry => [entry.id, entry.value as string[]]));
+      setEmployeeFilterIds(byId.employee ?? []);
+      setCustomerFilterIds(byId.customer ?? []);
+    },
+    [columnFilters],
+  );
+
   const filter = useMemo<WorkTimeFilter>(() => {
     const dateRange = range?.from ? toInstantRange(range.from, range.to ?? range.from) : null;
+    const employeeIds = employeeId
+      ? [ensureGlobalIdForType('User', employeeId)]
+      : employeeFilterIds.length
+        ? employeeFilterIds.map(id => ensureGlobalIdForType('User', id))
+        : null;
+    const organizationIds = organizationGlobalId
+      ? [organizationGlobalId]
+      : customerFilterIds.length
+        ? customerFilterIds.map(id => toOrganizationGlobalId(id)).filter((id): id is string => id != null)
+        : null;
     return {
-      employeeIds: employeeId ? [ensureGlobalIdForType('User', employeeId)] : null,
-      organizationIds: organizationGlobalId ? [organizationGlobalId] : null,
+      employeeIds,
+      organizationIds,
       startedFrom: dateRange?.startedFrom ?? null,
       startedTo: dateRange?.startedTo ?? null,
     };
-  }, [employeeId, organizationGlobalId, range]);
+  }, [employeeId, organizationGlobalId, employeeFilterIds, customerFilterIds, range]);
 
   const vars = useMemo<QueryVars>(
     () => ({ filter, search: debouncedSearch || null, first: PAGE_SIZE, after: null }),
@@ -464,6 +549,10 @@ export function WorkTimeTable({
             fetchKey={fetchKey}
             onEdit={setEditTarget}
             onDelete={setDeleteTarget}
+            employeeFilterOptions={employeeFilterOptions}
+            customerFilterOptions={customerFilterOptions}
+            columnFilters={columnFilters}
+            onColumnFiltersChange={onColumnFiltersChange}
           />
         </Suspense>
       </ErrorBoundary>

@@ -43,10 +43,11 @@ async function fetchCustomerOptions(search: string): Promise<AvatarOption[]> {
   }));
 }
 
-export function useOrganizationOptions(search = '') {
+export function useOrganizationOptions(search = '', enabled = true) {
   const query = useQuery({
     queryKey: ['ticket-options', 'organizations', search],
     queryFn: () => fetchCustomerOptions(search),
+    enabled,
   });
 
   return { options: query.data ?? EMPTY_AVATAR_OPTIONS, isLoading: query.isLoading };
@@ -93,10 +94,11 @@ async function fetchAssigneeOptions(): Promise<AvatarOption[]> {
   }));
 }
 
-export function useAssigneeOptions() {
+export function useAssigneeOptions(enabled = true) {
   const query = useQuery({
     queryKey: ['ticket-options', 'assignees'],
     queryFn: fetchAssigneeOptions,
+    enabled,
   });
 
   return { options: query.data ?? EMPTY_AVATAR_OPTIONS, isLoading: query.isLoading };
