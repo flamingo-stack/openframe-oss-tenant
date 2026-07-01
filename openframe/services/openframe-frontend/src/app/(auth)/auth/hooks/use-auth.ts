@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
 import { runtimeEnv } from '@/lib/runtime-config';
+import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
 import { useAuthStore } from '../stores/auth-store';
 import { authSessionQueryKey } from './use-auth-session';
 import { useTokenStorage } from './use-token-storage';
@@ -150,19 +151,19 @@ export function useAuth() {
         const variant: any = 'destructive';
 
         switch (code) {
-          case 'INVALID_ARGUMENT':
+          case AUTH_ERROR_CODE.INVALID_ARGUMENT:
             userMessage = 'Access code is required';
             break;
-          case 'INVALID_ACCESS_CODE':
+          case AUTH_ERROR_CODE.INVALID_ACCESS_CODE:
             userMessage = 'The access code you entered is invalid. Please check and try again.';
             break;
-          case 'ACCESS_CODE_ALREADY_USED':
+          case AUTH_ERROR_CODE.ACCESS_CODE_ALREADY_USED:
             userMessage = 'This access code has already been used. Please contact support for a new code.';
             break;
-          case 'ACCESS_CODE_VALIDATION_FAILED':
+          case AUTH_ERROR_CODE.ACCESS_CODE_VALIDATION_FAILED:
             userMessage = 'Unable to verify access code. Please try again in a moment.';
             break;
-          case 'TENANT_REGISTRATION_BLOCKED':
+          case AUTH_ERROR_CODE.TENANT_REGISTRATION_BLOCKED:
             title = 'Service Unavailable';
             userMessage = 'Registration is temporarily unavailable. Please try again later.';
             break;
