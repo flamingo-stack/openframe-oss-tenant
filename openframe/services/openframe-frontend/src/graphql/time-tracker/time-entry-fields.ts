@@ -16,6 +16,8 @@ export const timeEntryFieldsFragment = graphql`
       id
       ticketNumber
       title
+      organizationId
+      organizationName
     }
     notes
     startedAt

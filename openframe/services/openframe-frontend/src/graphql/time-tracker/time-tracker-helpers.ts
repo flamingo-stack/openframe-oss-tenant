@@ -1,5 +1,5 @@
 import type { TimeTrackerEntry, TimeTrackerStatus } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { addDays, format } from 'date-fns';
+import { endOfDay, startOfDay } from 'date-fns';
 import { ConnectionHandler, type RecordSourceSelectorProxy } from 'relay-runtime';
 import { TimerState } from '@/generated/schema-enums';
 import { formatDate } from '@/lib/format-date';
@@ -20,6 +20,7 @@ export interface TimeEntryNodeShape {
   readonly ticketId?: string | null;
   readonly ticketNumber?: number | null;
   readonly ticketTitle?: string | null;
+  readonly ticket?: { readonly organizationId?: string | null; readonly organizationName?: string | null } | null;
   readonly notes?: string | null;
 }
 
@@ -95,18 +96,18 @@ export function formatDurationLabel(seconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
 }
 
-export interface DateRangeInputValue {
-  startDate: string;
-  endDate: string;
+export interface InstantRangeValue {
+  startedFrom: string;
+  startedTo: string;
 }
 
 /**
- * Build the GraphQL `DateRangeInput` from an inclusive [from, to] day range.
- * The backend range is half-open [startDate, endDate) on the `Date` scalar
- * (YYYY-MM-DD), so `endDate` is the day after `to` to keep `to` itself included.
+ * Build the `TimeEntryFilterInput` instant bounds from an inclusive [from, to] day range.
+ * `startedFrom` is the local start of `from`; `startedTo` is the local end of `to`, so the
+ * whole `to` day is included regardless of an entry's time of day.
  */
-export function toDateRangeInput(from: Date, to: Date): DateRangeInputValue {
-  return { startDate: format(from, 'yyyy-MM-dd'), endDate: format(addDays(to, 1), 'yyyy-MM-dd') };
+export function toInstantRange(from: Date, to: Date): InstantRangeValue {
+  return { startedFrom: startOfDay(from).toISOString(), startedTo: endOfDay(to).toISOString() };
 }
 
 /**
@@ -116,6 +117,15 @@ export function toDateRangeInput(from: Date, to: Date): DateRangeInputValue {
  */
 export function toTicketGlobalId(ticketId: string | null | undefined): string | null {
   return ticketId ? ensureGlobalIdForType('Ticket', ticketId) : null;
+}
+
+/**
+ * Normalize an organization id to a Relay `Organization` global id for time-tracker
+ * mutations. Customer options carry the business `organizationId`, but saas-api decodes
+ * the mutation input as a global id (like `ticketId`/`userId`). Idempotent; null-safe.
+ */
+export function toOrganizationGlobalId(organizationId: string | null | undefined): string | null {
+  return organizationId ? ensureGlobalIdForType('Organization', organizationId) : null;
 }
 
 /** Parse an `HH:MM:SS` label to seconds; null when malformed (used by the manual-entry form). */
