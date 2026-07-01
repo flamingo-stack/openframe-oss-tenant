@@ -121,6 +121,22 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             }
           }
         } else {
+          const errorData = response.data as { code?: string; message?: string } | undefined;
+
+          // 409 Conflict with code TENANT_REGISTRATION_BLOCKED means registration cannot
+          // proceed because there is no available cluster capacity. Surface the backend
+          // message so the user knows to contact the admin or wait for capacity.
+          if (response.status === 409 && errorData?.code === 'TENANT_REGISTRATION_BLOCKED') {
+            toast({
+              title: 'Registration Unavailable',
+              description:
+                errorData.message ||
+                'Registration is currently unavailable because there is no cluster capacity. Please contact your administrator or try again later.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
           throw new Error(response.error || 'Failed to check domain availability');
         }
       } catch (error) {
