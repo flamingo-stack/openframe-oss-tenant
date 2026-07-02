@@ -3,7 +3,7 @@ import { endOfDay, startOfDay } from 'date-fns';
 import { ConnectionHandler, type RecordSourceSelectorProxy } from 'relay-runtime';
 import { TimerState } from '@/generated/schema-enums';
 import { formatDate } from '@/lib/format-date';
-import { ensureGlobalIdForType } from '@/lib/relay-id';
+import { ensureGlobalIdForType, toGlobalId } from '@/lib/relay-id';
 
 export const MY_TIME_ENTRIES_CONNECTION_KEY = 'MyTimeEntries_myTimeEntries';
 const TIME_ENTRY_EDGE_TYPENAME = 'TimeEntryEdge';
@@ -21,6 +21,8 @@ export interface TimeEntryNodeShape {
   readonly ticketNumber?: number | null;
   readonly ticketTitle?: string | null;
   readonly ticket?: { readonly organizationId?: string | null; readonly organizationName?: string | null } | null;
+  readonly organizationId?: string | null;
+  readonly organization?: { readonly name?: string | null } | null;
   readonly notes?: string | null;
 }
 
@@ -127,6 +129,15 @@ export function toTicketGlobalId(ticketId: string | null | undefined): string | 
 export function toOrganizationGlobalId(organizationId: string | null | undefined): string | null {
   return organizationId ? ensureGlobalIdForType('Organization', organizationId) : null;
 }
+
+/**
+ * updateTimeEntry/stopTimer inputs are partial updates: null (or absent) keeps the stored
+ * value; only a BLANK raw id clears it. The backend decodes every non-null id before the
+ * blank check, so "clear" must be sent as the global-id encoding of a blank raw id
+ * (`Type:""`) — a plain `''` would fail global-id decoding.
+ */
+export const CLEAR_TICKET_ID = toGlobalId('Ticket', '');
+export const CLEAR_ORGANIZATION_ID = toGlobalId('Organization', '');
 
 /** Parse an `HH:MM:SS` label to seconds; null when malformed (used by the manual-entry form). */
 export function parseDurationLabel(label: string): number | null {

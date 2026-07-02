@@ -22,6 +22,8 @@ import { SimpleModal } from '@/app/components/shared/simple-modal';
 import { useTicketCustomerSelection } from '@/app/components/use-ticket-customer-selection';
 import { createTimeEntryMutation } from '@/graphql/time-tracker/create-time-entry-mutation';
 import {
+  CLEAR_ORGANIZATION_ID,
+  CLEAR_TICKET_ID,
   calendarDayToInstant,
   formatDurationLabel,
   instantToCalendarDay,
@@ -195,7 +197,8 @@ export function ManualEntryModal({
             ticketLabel: ticketLabelFromEntry(entry),
             customerId: entry.organizationId ?? null,
             customerLabel: entry.organizationName ?? null,
-            lockCustomer: !!entry.organizationId,
+            // Locked only when ticket-derived; a customer picked without a ticket stays editable.
+            lockCustomer: !!(entry.ticketId && entry.organizationId),
           }
         : defaultCustomer
           ? {
@@ -240,9 +243,9 @@ export function ManualEntryModal({
             id: entry.id,
             // Reassign the employee only when the field is shown (updateTimeEntry supports userId).
             ...(showUserField && assignedUserId ? { userId: ensureGlobalIdForType('User', assignedUserId) } : {}),
-            ticketId,
-            organizationId,
-            notes: notesValue,
+            ticketId: ticketId ?? CLEAR_TICKET_ID,
+            organizationId: organizationId ?? CLEAR_ORGANIZATION_ID,
+            notes,
             durationSeconds,
             startedAt,
           },

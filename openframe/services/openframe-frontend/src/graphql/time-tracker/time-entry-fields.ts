@@ -19,6 +19,11 @@ export const timeEntryFieldsFragment = graphql`
       organizationId
       organizationName
     }
+    organizationId
+    organization {
+      id
+      name
+    }
     notes
     startedAt
     endedAt
