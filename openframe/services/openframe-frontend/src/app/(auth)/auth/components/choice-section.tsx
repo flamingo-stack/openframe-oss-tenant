@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
 import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
+import { useDomainAvailability, useEmailAvailability } from '../hooks/use-registration-availability';
 import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface AuthChoiceSectionProps {
@@ -40,8 +41,22 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
   const isOrgEmailValid = emailRegex.test(orgEmail.trim());
   const isSignInEmailValid = emailRegex.test(signInEmail.trim());
 
+  // Real-time availability checks (debounced).
+  const emailStatus = useEmailAvailability(orgEmail);
+  const { status: domainStatus, suggestions: liveDomainSuggestions } = useDomainAvailability(
+    domain,
+    orgName,
+    isSaasShared,
+  );
+
+  // Prefer live suggestions from the real-time check; fall back to submit-time ones.
+  const domainSuggestions = liveDomainSuggestions.length > 0 ? liveDomainSuggestions : suggestedDomains;
+
   const handleCreateOrganization = async () => {
     if (!orgName.trim() || !isOrgNameValid || !isOrgEmailValid) return;
+
+    // Real-time check already flagged the email as registered — block submit.
+    if (emailStatus === 'taken') return;
 
     if (isSaasShared) {
       if (!accessCode.trim()) {
@@ -203,6 +218,15 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
               {orgEmail.trim() && !isOrgEmailValid && (
                 <p className="text-xs text-ods-error mt-1">Enter a valid email address</p>
               )}
+              {isOrgEmailValid && emailStatus === 'checking' && (
+                <p className="text-xs text-ods-text-secondary mt-1">Checking availability…</p>
+              )}
+              {isOrgEmailValid && emailStatus === 'taken' && (
+                <p className="text-xs text-ods-error mt-1">This email is already registered. Sign in instead.</p>
+              )}
+              {isOrgEmailValid && emailStatus === 'available' && (
+                <p className="text-xs text-ods-success mt-1">Email is available</p>
+              )}
             </div>
             <div className="flex-1 flex flex-col gap-1">
               <Label>Organization Name</Label>
@@ -270,11 +294,20 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                   className="bg-ods-card border-ods-border text-ods-text-secondary font-body text-[18px] font-medium leading-6 placeholder:text-ods-text-secondary p-3"
                 />
               )}
-              {suggestedDomains.length > 0 && (
+              {isSaasShared && domain.trim() && domainStatus === 'checking' && (
+                <p className="text-xs text-ods-text-secondary">Checking availability…</p>
+              )}
+              {isSaasShared && domain.trim() && domainStatus === 'taken' && (
+                <p className="text-xs text-ods-error">This domain is already taken. Please try another one.</p>
+              )}
+              {isSaasShared && domain.trim() && domainStatus === 'available' && (
+                <p className="text-xs text-ods-success">Domain is available</p>
+              )}
+              {domainSuggestions.length > 0 && (
                 <div className="text-sm text-ods-text-secondary">
                   <p className="mb-1">Available suggestions:</p>
                   <div className="flex flex-wrap gap-2">
-                    {suggestedDomains.map((suggestion, index) => (
+                    {domainSuggestions.map((suggestion, index) => (
                       <Button
                         key={index}
                         onClick={() => {
@@ -326,7 +359,10 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
                 disabled={
                   !orgName.trim() ||
                   !isOrgEmailValid ||
+                  emailStatus === 'taken' ||
+                  emailStatus === 'checking' ||
                   (isSaasShared && (!domain.trim() || !accessCode.trim())) ||
+                  (isSaasShared && (domainStatus === 'taken' || domainStatus === 'checking')) ||
                   isLoading ||
                   isValidatingAccessCode ||
                   isCheckingDomain
