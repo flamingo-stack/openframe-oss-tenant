@@ -49,7 +49,6 @@ use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
 use crate::services::tool_uninstall_service::ToolUninstallService;
-use crate::services::tool_uninstall_result_publisher::ToolUninstallResultPublisher;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
 use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
@@ -403,12 +402,10 @@ impl Client {
             tool_kill_service.clone(),
             directory_manager.clone(),
         );
-        let tool_uninstall_result_publisher = ToolUninstallResultPublisher::new(nats_message_publisher.clone());
         let tool_uninstall_message_listener = ToolUninstallMessageListener::new(
             nats_connection_manager.clone(),
             tool_run_manager.clone(),
             tool_uninstall_service,
-            tool_uninstall_result_publisher,
             config_service.clone(),
         );
 

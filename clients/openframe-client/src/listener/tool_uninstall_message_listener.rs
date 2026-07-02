@@ -1,10 +1,9 @@
 use crate::services::nats_connection_manager::NatsConnectionManager;
 use crate::services::tool_run_manager::ToolRunManager;
 use crate::services::tool_uninstall_service::ToolUninstallService;
-use crate::services::tool_uninstall_result_publisher::ToolUninstallResultPublisher;
 use crate::services::tool_uninstall_service::UninstallOutcome;
 use crate::services::AgentConfigurationService;
-use crate::models::{ToolUninstallMessage, UninstallStatus};
+use crate::models::ToolUninstallMessage;
 use crate::config::update_config::{
     CONSUMER_RETRY_ATTEMPTS_PER_CYCLE,
     INITIAL_RETRY_DELAY_MS,
@@ -28,7 +27,6 @@ pub struct ToolUninstallMessageListener {
     nats_connection_manager: NatsConnectionManager,
     tool_run_manager: ToolRunManager,
     tool_uninstall_service: ToolUninstallService,
-    result_publisher: ToolUninstallResultPublisher,
     config_service: AgentConfigurationService,
 }
 
@@ -40,14 +38,12 @@ impl ToolUninstallMessageListener {
         nats_connection_manager: NatsConnectionManager,
         tool_run_manager: ToolRunManager,
         tool_uninstall_service: ToolUninstallService,
-        result_publisher: ToolUninstallResultPublisher,
         config_service: AgentConfigurationService,
     ) -> Self {
         Self {
             nats_connection_manager,
             tool_run_manager,
             tool_uninstall_service,
-            result_publisher,
             config_service,
         }
     }
@@ -99,7 +95,7 @@ impl ToolUninstallMessageListener {
                 }
             };
 
-            if let Err(e) = self.handle_message(message, &machine_id).await {
+            if let Err(e) = self.handle_message(message).await {
                 error!("Failed to handle message: {:#}", e);
             }
         }
@@ -107,7 +103,7 @@ impl ToolUninstallMessageListener {
         Ok(())
     }
 
-    async fn handle_message(&self, message: Message, machine_id: &str) -> Result<()> {
+    async fn handle_message(&self, message: Message) -> Result<()> {
         let payload = String::from_utf8_lossy(&message.payload);
         info!("Received tool uninstall message: {:?}", payload);
 
@@ -141,16 +137,16 @@ impl ToolUninstallMessageListener {
         .catch_unwind()
         .await;
 
-        let (status, ack_message, remove_supervision) = match outcome {
-            Ok(Ok(UninstallOutcome::Removed)) => (UninstallStatus::Removed, true, true),
-            Ok(Ok(UninstallOutcome::NotInstalled)) => (UninstallStatus::NotInstalled, true, true),
+        let (ack_message, remove_supervision) = match outcome {
+            Ok(Ok(UninstallOutcome::Removed)) => (true, true),
+            Ok(Ok(UninstallOutcome::NotInstalled)) => (true, true),
             Ok(Err(e)) => {
                 error!("Failed to uninstall tool {}: {:#}", tool_agent_id, e);
-                (UninstallStatus::Failed, false, false)
+                (false, false)
             }
             Err(_) => {
                 error!("Uninstall panicked for tool {}", tool_agent_id);
-                (UninstallStatus::Failed, false, false)
+                (false, false)
             }
         };
 
@@ -158,13 +154,6 @@ impl ToolUninstallMessageListener {
             self.tool_run_manager.clear_running_tool(&tool_agent_id).await;
         }
         self.tool_run_manager.clear_updating(&tool_agent_id).await;
-
-        if let Err(e) = self.result_publisher
-            .publish(machine_id, &tool_agent_id, status)
-            .await
-        {
-            warn!("Failed to publish uninstall result for {}: {:#}", tool_agent_id, e);
-        }
 
         if ack_message {
             message.ack().await

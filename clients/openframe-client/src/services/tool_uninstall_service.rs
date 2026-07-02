@@ -48,6 +48,14 @@ impl ToolUninstallService {
             Some(tool) => {
                 self.uninstall_tool(&tool).await
                     .with_context(|| format!("Failed to uninstall tool: {}", tool_agent_id))?;
+
+                let tool_dir = self.directory_manager.app_support_dir().join(tool_agent_id);
+                if tool_dir.exists() {
+                    std::fs::remove_dir_all(&tool_dir)
+                        .with_context(|| format!("Failed to remove tool directory: {}", tool_dir.display()))?;
+                    info!("Removed tool directory: {}", tool_dir.display());
+                }
+
                 self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await
                     .with_context(|| format!("Failed to remove registry record for: {}", tool_agent_id))?;
                 info!("Tool {} uninstalled and removed from registry", tool_agent_id);

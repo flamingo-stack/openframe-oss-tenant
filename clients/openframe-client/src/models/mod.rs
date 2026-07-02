@@ -24,7 +24,7 @@ pub use execution::{
     CommandMessage, ExecutionMessage, ExecutionRequest, PrivilegeLevel, RmmResult, ScriptEnvVar,
     ScriptMessage, ScriptShell,
 };
-pub use tool_uninstall_message::{ToolUninstallMessage, ToolUninstallResult, UninstallStatus};
+pub use tool_uninstall_message::ToolUninstallMessage;
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;
