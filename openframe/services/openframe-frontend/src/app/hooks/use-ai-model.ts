@@ -22,8 +22,10 @@ async function fetchAiConfiguration(): Promise<AiModel | null> {
   return { provider: response.data.provider, displayName: response.data.displayName };
 }
 
+export const AI_MODEL_QUERY_KEY = ['ai-configuration-model'] as const;
+
 const AI_MODEL_QUERY_OPTIONS = {
-  queryKey: ['ai-configuration-model'],
+  queryKey: AI_MODEL_QUERY_KEY,
   queryFn: fetchAiConfiguration,
   staleTime: 5 * 60 * 1000,
   refetchOnWindowFocus: false,

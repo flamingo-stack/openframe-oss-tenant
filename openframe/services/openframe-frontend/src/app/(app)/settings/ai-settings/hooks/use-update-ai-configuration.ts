@@ -2,6 +2,7 @@
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AI_MODEL_QUERY_KEY } from '@/app/hooks/use-ai-model';
 import { apiClient } from '@/lib/api-client';
 import type { AIProvider } from '../types/ai-settings';
 
@@ -30,7 +31,7 @@ export function useUpdateAiConfiguration() {
       // Refresh the cached active model so the Mingo composer's model row picks
       // up the new provider/model immediately, instead of only after the next
       // chat request refines it via streamed metadata.
-      queryClient.invalidateQueries({ queryKey: ['ai-configuration-model'] });
+      queryClient.invalidateQueries({ queryKey: AI_MODEL_QUERY_KEY });
     },
     onError: error => {
       toast({
