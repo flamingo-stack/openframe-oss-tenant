@@ -18,6 +18,8 @@ import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
+import { CONTEXT_ENTITY_KIND } from '@/app/(app)/mingo/context/context-types';
+import { useTrackOpenView } from '@/app/(app)/mingo/context/use-track-open-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { type DisplayInfo, MeshDesktop } from '@/lib/meshcentral/meshcentral-desktop';
@@ -93,6 +95,10 @@ export default function RemoteDesktopPage({ params }: RemoteDesktopPageProps) {
     }
     return deviceDetails?.organization;
   }, [legacyDeviceData, deviceDetails]);
+
+  // Keep this device as the Mingo "open view" while on the remote-desktop surface
+  // (the parent detail page unmounted on navigation, clearing its own openView).
+  useTrackOpenView(hostname ? { type: CONTEXT_ENTITY_KIND.DEVICE, id: deviceId, label: hostname } : null);
 
   // Remote desktop state
   const canvasRef = useRef<HTMLCanvasElement>(null);

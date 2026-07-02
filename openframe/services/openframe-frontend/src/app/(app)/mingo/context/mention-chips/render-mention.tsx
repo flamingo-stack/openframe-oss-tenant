@@ -13,9 +13,11 @@
  *
  * Coverage = all eight markers the agent can emit. GraphQL types (device,
  * customer, kb) resolve via Relay; REST/ai-agent types (policy, query, user,
- * script, ticket) via `RestMentionChip`. Every chip falls back to a plain id
- * chip (clickable where a route exists) if its fetch can't resolve a name.
- * Unknown marker → bare token.
+ * ticket) via `RestMentionChip`. SCRIPT is dual-sourced — a NEW script (24-char
+ * ObjectId) resolves via Relay, a LEGACY Tactical script (numeric id) via REST —
+ * so both kinds of script id render regardless of the `scripts-v2` flag. Every
+ * chip falls back to a plain id chip (clickable where a route exists) if its
+ * fetch can't resolve a name. Unknown marker → bare token.
  */
 
 import type { ChatContextItem } from '@flamingo-stack/openframe-frontend-core/components/chat';
@@ -29,6 +31,13 @@ import { RestMentionChip } from './rest-mention-chips';
 const ICON_BY_MARKER = new Map<string, ReactNode>(
   MINGO_CONTEXT_ENTITY_TYPES.flatMap(t => (t.marker ? [[t.marker, t.icon] as const] : [])),
 );
+
+/**
+ * New OpenFrame scripts carry a 24-char Mongo ObjectId raw db id; legacy Tactical
+ * scripts carry a plain numeric id. Used to route a `@script:id` to the right
+ * resolver (Relay vs Tactical REST) so both kinds render.
+ */
+const OBJECT_ID_RE = /^[0-9a-f]{24}$/i;
 
 export function renderMingoMention({
   marker,
@@ -51,10 +60,18 @@ export function renderMingoMention({
       return <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.ORGANIZATION} id={id} icon={icon} fallbackLabel={label} />;
     case M.KB_ARTICLE:
       return <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.KB_ARTICLE} id={id} icon={icon} fallbackLabel={label} />;
+    case M.SCRIPT:
+      // Dual-sourced, independent of the `scripts-v2` flag: a 24-char ObjectId is
+      // a NEW script (Relay `script(id:)`); anything else (numeric) is a LEGACY
+      // Tactical script (REST). Only the manual-add dropdown source is flag-gated.
+      return OBJECT_ID_RE.test(id) ? (
+        <GraphqlMentionChip kind={CONTEXT_ENTITY_KIND.SCRIPT} id={id} icon={icon} fallbackLabel={label} />
+      ) : (
+        <RestMentionChip marker={marker} id={id} icon={icon} fallbackLabel={label} />
+      );
     case M.POLICY:
     case M.QUERY:
     case M.USER:
-    case M.SCRIPT:
     case M.TICKET:
       return <RestMentionChip marker={marker} id={id} icon={icon} fallbackLabel={label} />;
     default:

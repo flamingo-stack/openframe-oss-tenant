@@ -5,6 +5,7 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient, SAAS_DOMAIN_SUFFIX } from '@/lib/auth-api-client';
+import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
 import { ForgotPasswordModal } from './forgot-password-modal';
 
 interface AuthChoiceSectionProps {
@@ -56,14 +57,16 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
         if (!validateResponse.ok || !validateResponse.data) {
           const error = validateResponse?.data?.code || 'Failed to validate access code';
 
-          if (error.includes('ACCESS_CODE_ALREADY_USED')) {
+          if (error.includes(AUTH_ERROR_CODE.ACCESS_CODE_ALREADY_USED)) {
             setAccessCodeError('This access code has already been used');
             toast({
               title: 'Access Code Already Used',
               description: 'This access code has already been used.',
               variant: 'destructive',
             });
-          } else if (['ACCESS_CODE_VALIDATION_FAILED', 'INVALID_ACCESS_CODE'].includes(error)) {
+          } else if (
+            [AUTH_ERROR_CODE.ACCESS_CODE_VALIDATION_FAILED, AUTH_ERROR_CODE.INVALID_ACCESS_CODE].includes(error)
+          ) {
             setAccessCodeError('Invalid access code');
             toast({
               title: 'Invalid Access Code',
@@ -121,6 +124,22 @@ export function AuthChoiceSection({ onCreateOrganization, onSignIn, isLoading }:
             }
           }
         } else {
+          const errorData = response.data as { code?: string; message?: string } | undefined;
+
+          // 409 Conflict with code TENANT_REGISTRATION_BLOCKED means registration cannot
+          // proceed because there is no available cluster capacity. Surface the backend
+          // message so the user knows to contact the admin or wait for capacity.
+          if (response.status === 409 && errorData?.code === AUTH_ERROR_CODE.TENANT_REGISTRATION_BLOCKED) {
+            toast({
+              title: 'Registration Unavailable',
+              description:
+                errorData.message ||
+                'Registration is currently unavailable because there is no cluster capacity. Please contact your administrator or try again later.',
+              variant: 'destructive',
+            });
+            return;
+          }
+
           throw new Error(response.error || 'Failed to check domain availability');
         }
       } catch (error) {

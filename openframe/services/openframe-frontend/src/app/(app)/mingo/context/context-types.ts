@@ -73,14 +73,15 @@ export const CONTEXT_ENTITY_MARKER: Record<ContextEntityKind, string> = {
  * each chip must re-encode the raw id before fetching. On the way IN (manual
  * context-add in the picker) we do the inverse: take the GraphQL node's global
  * `id`, `decodeGlobalId` it, and store the decoded raw id. This typename map
- * never leaves the client. REST kinds (script/user/policy/query/ticket) resolve
- * via their own REST fetchers and have NO entry here. Drop this whole dance once
- * the backend speaks global ids end-to-end for context.
+ * never leaves the client. The remaining REST kinds (user/policy/query/ticket)
+ * resolve via their own REST fetchers and have NO entry here. Drop this whole
+ * dance once the backend speaks global ids end-to-end for context.
  */
 export const CONTEXT_RELAY_TYPENAME: Partial<Record<ContextEntityKind, string>> = {
   DEVICE: 'Machine',
   ORGANIZATION: 'Organization',
   KB_ARTICLE: 'KnowledgeBaseItem',
+  SCRIPT: 'Script',
 };
 
 /** Minimal wire shape for `contextItems` / `currentView` / `recentViews`. */

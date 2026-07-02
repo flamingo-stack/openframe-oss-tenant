@@ -128,7 +128,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={SCHEDULE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          <TabNavigation tabs={SCHEDULE_TABS} activeTab={activeTab} onTabChange={handleTabChange}>
             {tabId => (
               <div className="pt-6">
                 <TabContent

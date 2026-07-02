@@ -59,24 +59,24 @@ export const getNavigationItems = (
       path: '/devices',
       isActive: pathname.startsWith('/devices'),
     },
-    {
-      id: 'scripts',
-      label: 'Scripts',
-      icon: <BracketCurlyIcon size={24} />,
-      path: '/scripts',
-      isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
-    },
-    ...(featureFlags.scriptsV2.enabled()
-      ? [
-          {
-            id: 'scripts-v2',
-            label: 'Scripts v2',
-            icon: <BracketCurlyIcon size={24} />,
-            path: '/scripts-v2',
-            isActive: pathname.startsWith('/scripts-v2'),
-          },
-        ]
-      : []),
+    // Single "Scripts" entry — the flag swaps which implementation it points at
+    // (new `/scripts-v2` when enabled, legacy `/scripts` otherwise). The label
+    // stays "Scripts" in both cases; the version is never surfaced in the sidebar.
+    featureFlags.scriptsV2.enabled()
+      ? {
+          id: 'scripts-v2',
+          label: 'Scripts',
+          icon: <BracketCurlyIcon size={24} />,
+          path: '/scripts-v2',
+          isActive: pathname.startsWith('/scripts-v2'),
+        }
+      : {
+          id: 'scripts',
+          label: 'Scripts',
+          icon: <BracketCurlyIcon size={24} />,
+          path: '/scripts',
+          isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
+        },
     {
       id: 'monitoring',
       label: 'Monitoring',

@@ -29,6 +29,11 @@ export function ChatDialogScreen({
       hasNextPage={hasNextPage}
       isFetchingNextPage={isFetchingNextPage}
       onLoadMore={onLoadMore}
+      // This is the Fae client chat — render the CLIENT command-block variant
+      // (frameless, no tool icon, full-text status pill). Set at the list level
+      // so both regular messages and synthetic pending-approval rows resolve to
+      // 'fae'.
+      assistantType="fae"
     />
   );
 }

@@ -1,14 +1,14 @@
 import type { Message } from '@flamingo-stack/openframe-frontend-core/components/chat';
 
 /** Static sample conversation for the read-only chat preview. */
-export function buildFaeChatPreviewMessages(avatarUrl?: string): Message[] {
+export function buildFaeChatPreviewMessages(assistantName: string, avatarUrl?: string): Message[] {
   // Fixed time so every bubble shows the same stamp.
   const at = new Date();
   at.setHours(14, 47, 0, 0);
 
   const base = {
     role: 'assistant' as const,
-    name: 'Fae',
+    name: assistantName,
     assistantType: 'fae' as const,
     avatar: avatarUrl ?? null,
     timestamp: at,

@@ -6,6 +6,8 @@ import { use } from 'react';
 import { FileManagerContainer } from '@/app/(app)/devices/details/[deviceId]/file-manager/components/file-manager-container';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
 import { getMeshCentralAgentId } from '@/app/(app)/devices/utils/device-action-utils';
+import { CONTEXT_ENTITY_KIND } from '@/app/(app)/mingo/context/context-types';
+import { useTrackOpenView } from '@/app/(app)/mingo/context/use-track-open-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 
 // Horizontal padding only — `PageLayout`'s `TitleBlock` already supplies the
@@ -26,6 +28,19 @@ export default function FileManagerPage({ params }: FileManagerPageProps) {
   const { deviceDetails, isLoading, error } = useDeviceDetails(deviceId, { polling: false });
 
   const meshcentralAgentId = deviceDetails ? getMeshCentralAgentId(deviceDetails) : undefined;
+
+  // Keep this device as the Mingo "open view" while on the file-manager surface
+  // (the parent detail page unmounted on navigation, clearing its own openView).
+  // Above the early returns so hook order stays stable.
+  useTrackOpenView(
+    deviceDetails
+      ? {
+          type: CONTEXT_ENTITY_KIND.DEVICE,
+          id: deviceId,
+          label: deviceDetails.hostname || deviceDetails.displayName || deviceId,
+        }
+      : null,
+  );
 
   if (isLoading) {
     return <FileManagerPageSkeleton onBack={handleBack} />;

@@ -16,9 +16,8 @@ import { getFullImageUrl } from '@/lib/image-url';
 import { useTenantInfo } from '../../../hooks/use-tenant-info';
 
 interface MeetFaePreviewProps {
+  /** Assistant name woven into the copy and avatar — updates live as the user types. */
   assistantName: string;
-  /** Short name woven into the copy (e.g. "Fae"). */
-  shortName?: string;
   avatarUrl?: string;
   accentColor: string;
   mspName?: string;
@@ -33,7 +32,6 @@ interface FeatureRow {
 
 export function MeetFaePreview({
   assistantName,
-  shortName = 'Fae',
   avatarUrl,
   accentColor,
   mspName = 'TechFlow Solutions',
@@ -53,12 +51,12 @@ export function MeetFaePreview({
     {
       icon: WrenchScrewdiverIcon,
       title: 'Try to Fix It Instantly',
-      description: `${shortName} diagnoses common issues like email problems, password resets, slow performance, or connectivity — and resolves them on the spot.`,
+      description: `${assistantName} diagnoses common issues like email problems, password resets, slow performance, or connectivity — and resolves them on the spot.`,
     },
     {
       icon: SignalBroadcast02Icon,
       title: 'Escalate When Needed',
-      description: `If the issue needs hands-on attention, ${shortName} automatically creates a detailed support ticket so your technician knows exactly what's going on.`,
+      description: `If the issue needs hands-on attention, ${assistantName} automatically creates a detailed support ticket so your technician knows exactly what's going on.`,
     },
     {
       icon: ClockCheckIcon,
@@ -85,15 +83,15 @@ export function MeetFaePreview({
             <SquareAvatar
               src={avatarUrl}
               alt={assistantName}
-              fallback={shortName.charAt(0)}
+              fallback={assistantName.charAt(0)}
               size="xl"
               variant="round"
               style={{ backgroundColor: accentColor }}
             />
 
             <p className="max-w-[504px] text-center text-h3 text-ods-text-primary">
-              Meet {shortName}, your AI IT assistant. She fixes what she can right away — and hands off the rest to your
-              technicians.
+              Meet {assistantName}, your AI IT assistant. She fixes what she can right away — and hands off the rest to
+              your technicians.
             </p>
 
             <div className="w-full overflow-hidden rounded-md border border-ods-border bg-ods-bg">

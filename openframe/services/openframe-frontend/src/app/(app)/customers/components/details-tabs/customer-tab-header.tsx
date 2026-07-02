@@ -11,9 +11,7 @@ interface CustomerTabHeaderProps {
 export function CustomerTabHeader({ title, rightActions }: CustomerTabHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-4 flex-wrap">
-      <h2 className="font-mono font-semibold text-[24px] md:text-[28px] leading-[1.25] tracking-[-0.02em] text-ods-text-primary">
-        {title}
-      </h2>
+      <h2 className="text-h2 text-ods-text-primary">{title}</h2>
       {rightActions && <div className="flex items-center gap-2">{rightActions}</div>}
     </div>
   );

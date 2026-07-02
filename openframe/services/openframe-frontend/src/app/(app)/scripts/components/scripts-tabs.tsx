@@ -47,7 +47,6 @@ export function ScriptsTabNavigation({ activeTab, onTabChange }: ScriptsTabNavig
         activeTab={activeTab || 'list'}
         tabs={SCRIPTS_TABS}
         onTabChange={handleTabChange}
-        showRightGradient
       />
     </div>
   );

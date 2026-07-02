@@ -133,6 +133,9 @@ export function OpenframeEmbeddableChatEntry({ open, onOpenChange }: OpenframeEm
         id: action.id,
         label: action.name,
         variant: 'outline',
+        // Hover/focus previews the full instruction (what's actually sent) as
+        // ghost text in the composer; the chip `label` is just the short name.
+        prompt: action.instructions,
         onClick: () => {
           void sendInNewDialog(action.instructions);
         },

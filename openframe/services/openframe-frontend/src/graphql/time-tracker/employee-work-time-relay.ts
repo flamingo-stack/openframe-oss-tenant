@@ -1,22 +1,15 @@
 import { graphql } from 'react-relay';
 
 export const employeeWorkTimeRelayQuery = graphql`
-  query employeeWorkTimeRelayQuery(
-    $employeeId: ID!
-    $period: DateRangeInput
-    $search: String
-    $first: Int!
-    $after: String
-  ) {
-    employeeTimeStats(employeeId: $employeeId, period: $period) {
+  query employeeWorkTimeRelayQuery($filter: TimeEntryFilterInput, $search: String, $first: Int!, $after: String) {
+    employeeTimeStats(filter: $filter) {
       todayTotalSeconds
       todayEntryCount
       periodTotalSeconds
       periodEntryCount
       averagePerDaySeconds
     }
-    ...employeeWorkTimeRelay_query
-      @arguments(employeeId: $employeeId, period: $period, search: $search, first: $first, after: $after)
+    ...employeeWorkTimeRelay_query @arguments(filter: $filter, search: $search, first: $first, after: $after)
   }
 `;
 
@@ -24,19 +17,42 @@ export const employeeWorkTimeRelayFragment = graphql`
   fragment employeeWorkTimeRelay_query on Query
     @refetchable(queryName: "employeeWorkTimeRelayPaginationQuery")
     @argumentDefinitions(
-      employeeId: { type: "ID!" }
-      period: { type: "DateRangeInput" }
+      filter: { type: "TimeEntryFilterInput" }
       search: { type: "String" }
       first: { type: "Int", defaultValue: 20 }
       after: { type: "String" }
     ) {
-    employeeTimeEntries(employeeId: $employeeId, period: $period, search: $search, first: $first, after: $after)
-      @connection(key: "EmployeeWorkTime_employeeTimeEntries", filters: ["employeeId", "period", "search"]) {
+    employeeTimeEntries(filter: $filter, search: $search, first: $first, after: $after)
+      @connection(key: "EmployeeWorkTime_employeeTimeEntries", filters: ["filter", "search"]) {
       filteredCount
       edges {
         cursor
         node {
           ...timeEntryFields_timeEntry @relay(mask: false)
+          user {
+            id
+            firstName
+            lastName
+            email
+            image {
+              imageUrl
+              hash
+            }
+          }
+          organization {
+            id
+            organizationId
+            name
+            image {
+              imageUrl
+              hash
+            }
+            contactInformation {
+              contacts {
+                email
+              }
+            }
+          }
         }
       }
       pageInfo {

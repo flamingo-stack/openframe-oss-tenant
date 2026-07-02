@@ -7,7 +7,6 @@ import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useEditArticleForm } from '../hooks/use-edit-article-form';
 import type { KnowledgeBaseItemNode } from '../hooks/use-knowledge-base-item';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
-import { useKnowledgeBaseTags } from '../hooks/use-knowledge-base-tags';
 import { ArticleFormFields } from './article-form-fields';
 
 interface ArticleFormPageProps {
@@ -22,7 +21,10 @@ interface FormShellProps {
 }
 
 function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProps) {
-  const availableTags = useKnowledgeBaseTags({ folderId: initialFolderId ?? null });
+  const initialTags = useMemo(
+    () => (initialArticle?.tags ?? []).filter(Boolean).map(t => ({ id: t.id, key: t.key })),
+    [initialArticle?.tags],
+  );
 
   const { form, isEditMode, isSubmitting, handleSave, tempAttachments } = useEditArticleForm({
     articleId,
@@ -41,18 +43,18 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
     () => [
       {
         label: 'Save as Draft',
-        onClick: () => handleSave('DRAFT', { availableTags }),
+        onClick: () => handleSave('DRAFT'),
         variant: 'outline' as const,
         disabled: isSubmitting,
       },
       {
         label: 'Save and Publish',
-        onClick: () => handleSave('PUBLISHED', { availableTags }),
+        onClick: () => handleSave('PUBLISHED'),
         variant: 'accent' as const,
         disabled: isSubmitting,
       },
     ],
-    [handleSave, isSubmitting, availableTags],
+    [handleSave, isSubmitting],
   );
 
   return (
@@ -62,7 +64,7 @@ function FormShell({ articleId, initialFolderId, initialArticle }: FormShellProp
       actions={actions}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
-      <ArticleFormFields form={form} availableTags={availableTags} tempAttachments={tempAttachments} />
+      <ArticleFormFields form={form} initialTags={initialTags} tempAttachments={tempAttachments} />
     </PageLayout>
   );
 }

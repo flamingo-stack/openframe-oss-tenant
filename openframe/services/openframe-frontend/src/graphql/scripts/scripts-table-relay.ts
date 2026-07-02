@@ -30,6 +30,7 @@ export const scriptsTableRelayFragment = graphql`
     ) {
     scripts(filter: $filter, search: $search, first: $first, after: $after)
       @connection(key: "scriptsTableRelay_scripts") {
+      __id
       filteredCount
       edges {
         node {

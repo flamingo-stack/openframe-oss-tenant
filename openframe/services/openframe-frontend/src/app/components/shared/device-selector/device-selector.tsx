@@ -546,9 +546,7 @@ export function DeviceSelector({
         </div>
       )}
 
-      {!singleSelect && (
-        <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} showRightGradient />
-      )}
+      {!singleSelect && <TabNavigation tabs={assignTabs} activeTab={activeSubTab} onTabChange={handleTabChange} />}
 
       <DevicesFilterToolbar
         sticky={false}

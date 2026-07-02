@@ -7,9 +7,11 @@ import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { type ReactNode, Suspense, useMemo } from 'react';
 import { useLazyLoadQuery } from 'react-relay';
 import type { scriptExecutionDetailRelayQuery as ScriptExecutionDetailQueryType } from '@/__generated__/scriptExecutionDetailRelayQuery.graphql';
+import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { scriptExecutionDetailRelayQuery } from '@/graphql/scripts/script-execution-detail-relay';
 import { getFullImageUrl } from '@/lib/image-url';
+import { decodeGlobalId } from '@/lib/relay-id';
 import {
   executionResultText,
   executionStatusLabel,
@@ -90,6 +92,13 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
   const result = executionResultText(execution);
   const org = organizationLabel(execution.machine);
 
+  // The initiator id is a User global id; decode to the raw id the REST-backed
+  // employee page expects, then link "Executed by" to that user (new tab).
+  const rawInitiatorId = execution.initiator?.id
+    ? (decodeGlobalId(execution.initiator.id)?.rawId ?? execution.initiator.id)
+    : '';
+  const initiatorHref = rawInitiatorId ? employeeDetailHref(rawInitiatorId) : null;
+
   return (
     <PageLayout
       title="Script Execution Details"
@@ -106,14 +115,17 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
             value={
               <div className="flex items-center gap-1 min-w-0">
                 <MonitorIcon className="size-6 shrink-0 text-ods-text-secondary" />
-                <TruncateText variant="h4">{machineLabel(execution.machine)}</TruncateText>
+                {/* min-w-0 flex-1 wrapper so the name can shrink and ellipsize next to the icon. */}
+                <div className="min-w-0 flex-1">
+                  <TruncateText variant="h4">{machineLabel(execution.machine)}</TruncateText>
+                </div>
               </div>
             }
             label={org || 'Device'}
           />
           <DetailCell
-            value={
-              <div className="flex items-center gap-2 min-w-0">
+            value={(() => {
+              const avatar = (
                 <SquareAvatar
                   variant="round"
                   size="md"
@@ -122,11 +134,29 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
                   alt={initiatorName(execution.initiator)}
                   initialsClassName="text-ods-text-secondary"
                 />
-                <TruncateText variant="h4" className="text-ods-accent">
-                  {initiatorName(execution.initiator)}
-                </TruncateText>
-              </div>
-            }
+              );
+              if (!initiatorHref) {
+                return (
+                  <div className="flex items-center gap-2 min-w-0">
+                    {avatar}
+                    <TruncateText variant="h4">{initiatorName(execution.initiator)}</TruncateText>
+                  </div>
+                );
+              }
+              return (
+                <a
+                  href={initiatorHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 min-w-0 no-underline"
+                >
+                  {avatar}
+                  <TruncateText variant="h4" className="text-ods-accent underline">
+                    {initiatorName(execution.initiator)}
+                  </TruncateText>
+                </a>
+              );
+            })()}
             label="Executed by"
           />
           <DetailCell

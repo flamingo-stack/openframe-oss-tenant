@@ -55,7 +55,7 @@ export function OsTab({ device }: OsTabProps) {
     { label: 'Platform', value: device.platform || device.osType },
     { label: 'Version', value: device.osVersion },
     { label: 'Build', value: device.build || device.osBuild },
-    { label: 'Architecture', value: device.goarch },
+    { label: 'Architecture', value: device.cpu_type },
     { label: 'OS UUID', value: device.osUuid, copyable: true },
   ]);
   const hasOs = Boolean(osTitle || osSubtitle || osItems.length > 0);

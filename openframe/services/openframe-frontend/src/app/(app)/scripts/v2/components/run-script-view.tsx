@@ -15,7 +15,10 @@ import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { batchRunScriptMutation } from '@/graphql/scripts/batch-run-script-mutation';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
+import { decodeGlobalId } from '@/lib/relay-id';
 import type { Device } from '../../../devices/types/device.types';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ExecutionStartedModal } from '../../components/script/execution-started-modal';
 import { scriptArgumentSchema } from '../../types/edit-script.types';
 import { getDevicePrimaryId } from '../../utils/device-helpers';
@@ -53,6 +56,14 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
     { fetchPolicy: 'store-and-network' },
   );
   const script = data.script;
+
+  // Keep this script as the Mingo "open view" while on the run surface (the detail
+  // page unmounted on navigation). Raw db id — the route's `scriptId` is the Relay
+  // global id (SCRIPT is GraphQL-resolved; the chip re-encodes it for `node(id:)`).
+  const scriptDbId = useMemo(() => decodeGlobalId(scriptId)?.rawId ?? scriptId, [scriptId]);
+  useTrackOpenView(
+    script ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptDbId, label: script.name || scriptDbId } : null,
+  );
 
   const supportedPlatforms = useMemo(() => platformsToIds(script?.supportedPlatforms), [script?.supportedPlatforms]);
 
@@ -170,10 +181,10 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
     [toast],
   );
 
-  const handleViewLogs = useCallback(() => {
+  const handleViewHistory = useCallback(() => {
     setShowExecutionModal(false);
-    router.push('/logs-page');
-  }, [router]);
+    router.push(`/scripts-v2/details/${scriptId}?tab=executions`);
+  }, [router, scriptId]);
 
   const actions = useMemo(
     () => [
@@ -193,13 +204,13 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
   }
 
   return (
-    <PageLayout
-      title="Run Script"
-      backButton={{ label: 'Back', onClick: handleBack }}
-      actions={actions}
-      className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
-    >
-      <div className="flex-1 overflow-auto">
+    <>
+      <PageLayout
+        title="Run Script"
+        backButton={{ label: 'Back', onClick: handleBack }}
+        actions={actions}
+        className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
+      >
         <ScriptSummaryCard
           name={script.name}
           description={script.description}
@@ -209,7 +220,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
           showTimeout={false}
         />
 
-        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-end">
           <div>
             <Label className="text-ods-text-primary font-semibold text-lg">Timeout</Label>
             <Controller
@@ -240,7 +251,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
           />
         </div>
 
-        <div className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Controller
             name="scriptArgs"
             control={control}
@@ -271,7 +282,7 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
           />
         </div>
 
-        <div className="pt-6 space-y-1">
+        <div className="space-y-1">
           <DeviceSelector
             devices={allDevices}
             loading={isLoadingDevices}
@@ -283,15 +294,15 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
             isDeviceDisabled={d => (!getMachineId(d) ? 'Agent is not\nconnected' : undefined)}
           />
         </div>
-      </div>
+      </PageLayout>
 
       <ExecutionStartedModal
         isOpen={showExecutionModal}
         onClose={() => setShowExecutionModal(false)}
         scriptName={script.name || 'Script'}
-        onViewLogs={handleViewLogs}
+        onViewResults={handleViewHistory}
       />
-    </PageLayout>
+    </>
   );
 }
 

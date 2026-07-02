@@ -17,6 +17,7 @@ import { useLazyLoadQuery } from 'react-relay';
 import type { scriptDetailRelayQuery as ScriptDetailQueryType } from '@/__generated__/scriptDetailRelayQuery.graphql';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
+import { decodeGlobalId } from '@/lib/relay-id';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { initiatorName } from '../utils/execution-helpers';
@@ -45,7 +46,13 @@ function ScriptDetailsContent({ scriptId }: ScriptDetailsViewProps) {
   const script = data.script;
   const handleBack = useSafeBack('/scripts-v2');
 
-  useTrackOpenView(script ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptId, label: script.name || scriptId } : null);
+  // Mingo context carries the RAW db id (the route's `scriptId` is the Relay
+  // global id) — matching the picker + the `@script:<id>` marker the backend
+  // resolver expects. The mention chip re-encodes it to a global id for fetch.
+  const scriptDbId = useMemo(() => decodeGlobalId(scriptId)?.rawId ?? scriptId, [scriptId]);
+  useTrackOpenView(
+    script ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptDbId, label: script.name || scriptDbId } : null,
+  );
 
   const editHref = `/scripts-v2/edit/${scriptId}`;
   const runHref = `/scripts-v2/details/${scriptId}/run`;

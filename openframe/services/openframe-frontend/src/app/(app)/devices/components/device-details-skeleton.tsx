@@ -689,13 +689,7 @@ export function DeviceDetailsSkeleton({ activeTab = 'overview' }: DeviceDetailsS
       {/* Reuse the REAL `TabNavigation` (not a copy) so the tab bar is pixel-identical to
           the loaded page and can't drift. `pointer-events-none` keeps it non-interactive
           while loading; `onTabChange` is a required no-op in controlled mode. */}
-      <TabNavigation
-        tabs={DEVICE_TABS}
-        activeTab={activeTab}
-        onTabChange={noop}
-        showRightGradient
-        className="pointer-events-none"
-      >
+      <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={noop} className="pointer-events-none">
         {() => getTabSkeleton(activeTab)}
       </TabNavigation>
     </PageLayout>
