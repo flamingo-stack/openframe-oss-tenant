@@ -21,7 +21,7 @@ export function EmployeeWorkTime({ userId }: { userId: string }) {
         </Button>
       </div>
 
-      <WorkTimeTable employeeId={userId} addWorkTimeOpen={addOpen} onAddWorkTimeOpenChange={setAddOpen} />
+      <WorkTimeTable showCustomer employeeId={userId} addWorkTimeOpen={addOpen} onAddWorkTimeOpenChange={setAddOpen} />
     </section>
   );
 }
