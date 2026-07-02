@@ -21,6 +21,7 @@ import {
   useDataTable,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
+import { format, isValid, parseISO } from 'date-fns';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLazyLoadQuery, useMutation, usePaginationFragment } from 'react-relay';
 import type { deleteTimeEntryMutation as DeleteTimeEntryMutationType } from '@/__generated__/deleteTimeEntryMutation.graphql';
@@ -51,6 +52,18 @@ import { decodeGlobalId, ensureGlobalIdForType } from '@/lib/relay-id';
 const PAGE_SIZE = 20;
 const EMPTY_ROWS: WorkTimeRow[] = [];
 const noop = () => {};
+const DAY_PARAM_FORMAT = 'yyyy-MM-dd';
+
+function formatDayParam(date: Date | undefined): string | null {
+  return date ? format(date, DAY_PARAM_FORMAT) : null;
+}
+
+function rangeFromParams(from: string, to: string): DateRange | undefined {
+  const fromDate = from ? parseISO(from) : undefined;
+  if (!fromDate || !isValid(fromDate)) return undefined;
+  const toDate = to ? parseISO(to) : undefined;
+  return { from: fromDate, to: toDate && isValid(toDate) ? toDate : undefined };
+}
 
 interface WorkTimeRow {
   id: string;
@@ -417,11 +430,31 @@ export function WorkTimeTable({
 }: WorkTimeTableProps) {
   const { toast } = useToast();
 
-  const { params, setParam } = useApiParams({
+  const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
+    employeeIds: { type: 'array', default: [] },
+    organizationIds: { type: 'array', default: [] },
+    from: { type: 'string', default: '' },
+    to: { type: 'string', default: '' },
   });
   const { search, setSearch, debouncedSearch } = useSearchParam(params.search, value => setParam('search', value), 300);
-  const [range, setRange] = useState<DateRange | undefined>(undefined);
+
+  const [range, setRangeState] = useState<DateRange | undefined>(() => rangeFromParams(params.from, params.to));
+  const setRange = useCallback(
+    (next: DateRange | undefined) => {
+      setRangeState(next);
+      setParams({ from: formatDayParam(next?.from), to: formatDayParam(next?.to) });
+    },
+    [setParams],
+  );
+  useEffect(() => {
+    setRangeState(prev => {
+      if ((formatDayParam(prev?.from) ?? '') === params.from && (formatDayParam(prev?.to) ?? '') === params.to) {
+        return prev;
+      }
+      return rangeFromParams(params.from, params.to);
+    });
+  }, [params.from, params.to]);
 
   const [editTarget, setEditTarget] = useState<ManualEntryEditTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<WorkTimeRow | null>(null);
@@ -429,8 +462,8 @@ export function WorkTimeTable({
 
   const [deleteEntry, isDeleting] = useMutation<DeleteTimeEntryMutationType>(deleteTimeEntryMutation);
 
-  const [employeeFilterIds, setEmployeeFilterIds] = useState<string[]>([]);
-  const [customerFilterIds, setCustomerFilterIds] = useState<string[]>([]);
+  const employeeFilterIds = params.employeeIds;
+  const customerFilterIds = params.organizationIds;
 
   const { options: employeeOptionsRaw } = useAssigneeOptions(showEmployee);
   const { options: customerOptionsRaw } = useOrganizationOptions('', showCustomer);
@@ -456,10 +489,9 @@ export function WorkTimeTable({
     updater => {
       const next = typeof updater === 'function' ? updater(columnFilters) : updater;
       const byId = Object.fromEntries(next.map(entry => [entry.id, entry.value as string[]]));
-      setEmployeeFilterIds(byId.employee ?? []);
-      setCustomerFilterIds(byId.customer ?? []);
+      setParams({ employeeIds: byId.employee ?? [], organizationIds: byId.customer ?? [] });
     },
-    [columnFilters],
+    [columnFilters, setParams],
   );
 
   const filter = useMemo<WorkTimeFilter>(() => {
