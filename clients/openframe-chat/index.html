@@ -8,6 +8,36 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <title>OpenFrame</title>
+    <!-- Pre-CSS bg fallback, keyed to the resolved theme so the webview never
+         flashes white (or the wrong theme) before the ODS stylesheet loads. -->
+    <style>
+      html { background-color: #161616; }
+      html[data-theme="light"] { background-color: #fafafa; }
+    </style>
+    <!-- No-flash: apply the last-resolved theme and accent before first paint.
+         Both come from the server (AiSettings); useApplyAiAppearance persists
+         them here on every load. Falls back to ODS defaults until then. -->
+    <script>
+      (function () {
+        var root = document.documentElement;
+        try {
+          var t = localStorage.getItem('openframe-chat-theme');
+          var resolved =
+            t === 'LIGHT'
+              ? 'light'
+              : t === 'SYSTEM'
+                ? window.matchMedia('(prefers-color-scheme: light)').matches
+                  ? 'light'
+                  : 'dark'
+                : 'dark';
+          root.setAttribute('data-theme', resolved);
+        } catch {}
+        try {
+          var accent = JSON.parse(localStorage.getItem('openframe-chat-accent'));
+          if (accent) for (var k in accent) root.style.setProperty(k, accent[k]);
+        } catch {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
