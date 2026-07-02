@@ -28,33 +28,37 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useRouter } from 'next/navigation';
-import { Suspense, useCallback, useEffect, useMemo, useState, useTransition } from 'react';
-import { useLazyLoadQuery, useMutation, usePaginationFragment } from 'react-relay';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { fetchQuery, useLazyLoadQuery, useMutation, usePaginationFragment, useRelayEnvironment } from 'react-relay';
 import type { RecordSourceSelectorProxy } from 'relay-runtime';
 import type { archiveScriptMutation as ArchiveScriptMutationType } from '@/__generated__/archiveScriptMutation.graphql';
-import type { scriptFiltersRelayQuery as ScriptFiltersQueryType } from '@/__generated__/scriptFiltersRelayQuery.graphql';
+import type { scriptFiltersRefreshRelayQuery as ScriptFiltersRefreshQueryType } from '@/__generated__/scriptFiltersRefreshRelayQuery.graphql';
 import type { scriptsTableRelay_query$key as ScriptsFragmentKey } from '@/__generated__/scriptsTableRelay_query.graphql';
 import type { scriptsTableRelayPaginationQuery as ScriptsPaginationQueryType } from '@/__generated__/scriptsTableRelayPaginationQuery.graphql';
 import type {
   ScriptFilterInput,
   scriptsTableRelayQuery as ScriptsTableQueryType,
 } from '@/__generated__/scriptsTableRelayQuery.graphql';
+import type { scriptTagsRelayFilterQuery as ScriptTagsFilterQueryType } from '@/__generated__/scriptTagsRelayFilterQuery.graphql';
 import type { unarchiveScriptMutation as UnarchiveScriptMutationType } from '@/__generated__/unarchiveScriptMutation.graphql';
 import { useAskMingo } from '@/app/(app)/mingo/hooks/use-ask-mingo';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
 import { EmptyState } from '@/app/components/shared';
+import { useDeferredQuery } from '@/app/hooks/use-deferred-query';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
 import { ScriptStatus } from '@/generated/schema-enums';
 import { archiveScriptMutation } from '@/graphql/scripts/archive-script-mutation';
-import { scriptFiltersRelayQuery } from '@/graphql/scripts/script-filters-relay';
+import { scriptFiltersRefreshRelayQuery } from '@/graphql/scripts/script-filters-refresh-relay';
+import { scriptTagsRelayFilterQuery } from '@/graphql/scripts/script-tags-relay';
 import { scriptsTableRelayFragment, scriptsTableRelayQuery } from '@/graphql/scripts/scripts-table-relay';
 import { unarchiveScriptMutation } from '@/graphql/scripts/unarchive-script-mutation';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
 import { decodeGlobalId } from '@/lib/relay-id';
 import { initiatorInitials, initiatorName } from '../utils/execution-helpers';
+import { facetToSortedOptions } from '../utils/facet-options';
 import { platformsToEnums, platformsToIds, shellToEnum, shellToId } from '../utils/script-mappers';
 import { ArchiveScriptModal } from './archive-script-modal';
 import { RestoreScriptModal } from './restore-script-modal';
@@ -87,6 +91,12 @@ interface ScriptsTableContentProps {
   tableFilters: Record<string, string[]>;
   /** Whether any tag filter is active (kept out of `tableFilters` so it doesn't become a phantom column filter). */
   hasTagFilter: boolean;
+  /**
+   * True while the deferred query variables lag the live filter/search state
+   * (a refetch is in flight and the rows on screen are the previous result) —
+   * guards the empty state so it never flashes on stale data.
+   */
+  isPending: boolean;
   onFilterChange: (filters: Record<string, any[]>) => void;
   onEmptyChange: (isEmpty: boolean) => void;
   mobileFilterOpen: boolean;
@@ -100,6 +110,7 @@ function ScriptsTableContent({
   debouncedSearch,
   tableFilters,
   hasTagFilter,
+  isPending,
   onFilterChange,
   onEmptyChange,
   mobileFilterOpen,
@@ -109,7 +120,7 @@ function ScriptsTableContent({
 }: ScriptsTableContentProps) {
   const askMingo = useAskMingo();
   const { toast } = useToast();
-  const [isPending] = useTransition();
+  const environment = useRelayEnvironment();
 
   const [commitArchive, isArchiving] = useMutation<ArchiveScriptMutationType>(archiveScriptMutation);
   const [commitUnarchive, isUnarchiving] = useMutation<UnarchiveScriptMutationType>(unarchiveScriptMutation);
@@ -117,6 +128,8 @@ function ScriptsTableContent({
   // Script whose archive/restore is awaiting confirmation in the modal (null = closed).
   const [confirmTarget, setConfirmTarget] = useState<UiScriptEntry | null>(null);
 
+  // One round-trip per interaction: the filter facets (`scriptFilters`) ride the
+  // list operation — see the query docstring for the facet semantics.
   const queryData = useLazyLoadQuery<ScriptsTableQueryType>(
     scriptsTableRelayQuery,
     {
@@ -171,42 +184,32 @@ function ScriptsTableContent({
   }, [hasNext, isLoadingNext, loadNext]);
 
   // Filter options — all server-driven (the complete set for this scope), so
-  // values a paginated list couldn't enumerate still appear. Scoped by status
-  // only, so the facets don't narrow as other filters change. Shell/platform
+  // values a paginated list couldn't enumerate still appear. Shell/platform
   // option `value`s are mapped from the backend enum to the UI id the table's
   // column filter + `backendFilters` already use; author `value` is the user id.
-  const filtersData = useLazyLoadQuery<ScriptFiltersQueryType>(
-    scriptFiltersRelayQuery,
-    { filter: { statuses: [archived ? ScriptStatus.ARCHIVED : ScriptStatus.ACTIVE] } },
-    { fetchPolicy: 'store-and-network' },
-  );
-
   const shellOptions = useMemo(
     () =>
-      (filtersData.scriptFilters?.shells ?? []).map(s => {
+      (queryData.scriptFilters?.shells ?? []).map(s => {
         const id = shellToId(s.value);
         return { id, label: s.label, value: id };
       }),
-    [filtersData.scriptFilters?.shells],
+    [queryData.scriptFilters?.shells],
   );
 
   const platformOptions = useMemo(
     () =>
-      (filtersData.scriptFilters?.platforms ?? [])
+      (queryData.scriptFilters?.platforms ?? [])
         .map(p => {
           const id = platformsToIds([p.value])[0];
           return id ? { id, label: p.label, value: id } : null;
         })
         .filter((o): o is { id: string; label: string; value: string } => o !== null),
-    [filtersData.scriptFilters?.platforms],
+    [queryData.scriptFilters?.platforms],
   );
 
   const authorOptions = useMemo(
-    () =>
-      (filtersData.scriptFilters?.authors ?? [])
-        .map(a => ({ id: a.value, label: a.label, value: a.value }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [filtersData.scriptFilters?.authors],
+    () => facetToSortedOptions(queryData.scriptFilters?.authors),
+    [queryData.scriptFilters?.authors],
   );
 
   const renderRowActions = useCallback(
@@ -269,6 +272,29 @@ function ScriptsTableContent({
   // connection still holding its edge (other filter/search variants, the Mingo
   // picker) is marked stale and refetches on next read — independent of fetch
   // policy (works even under `store-or-network`). The current connection no longer
+  // Archiving/unarchiving changes the list's MEMBERSHIP, so the derived filter
+  // metadata goes stale: the shell/platform/author facets and the tag-filter
+  // chips may still offer values whose last script just left this scope.
+  // Re-fetch both imperatively into the store (`fetchQuery(...).subscribe({})` —
+  // every mounted subscriber re-renders); the list itself is NOT refetched, the
+  // `@deleteEdge` already updated it locally. `backendFilters` is the exact
+  // variables value of the mounted list query, so the facet payload lands in the
+  // same store records its dropdowns read from.
+  const refreshFilterMeta = useCallback(() => {
+    fetchQuery<ScriptFiltersRefreshQueryType>(
+      environment,
+      scriptFiltersRefreshRelayQuery,
+      { filter: backendFilters },
+      { fetchPolicy: 'network-only' },
+    ).subscribe({});
+    fetchQuery<ScriptTagsFilterQueryType>(
+      environment,
+      scriptTagsRelayFilterQuery,
+      { archived: archived ? true : null },
+      { fetchPolicy: 'network-only' },
+    ).subscribe({});
+  }, [environment, backendFilters, archived]);
+
   // references the node (edge already removed), so it isn't refetched. Modal closes
   // once the mutation settles (parent owns `open`, so pending state stays visible).
   const handleConfirmArchive = useCallback(() => {
@@ -291,6 +317,7 @@ function ScriptsTableContent({
               },
         );
         setConfirmTarget(null);
+        refreshFilterMeta();
       },
       onError: error => {
         toast({
@@ -301,7 +328,7 @@ function ScriptsTableContent({
         setConfirmTarget(null);
       },
     });
-  }, [confirmTarget, connectionId, archived, commitArchive, commitUnarchive, toast]);
+  }, [confirmTarget, connectionId, archived, commitArchive, commitUnarchive, toast, refreshFilterMeta]);
 
   const columns = useMemo<ColumnDef<UiScriptEntry>[]>(
     () => [
@@ -542,26 +569,30 @@ function ScriptsTableContent({
 
   return (
     <>
-      <DataTable table={table}>
-        <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
-        <DataTable.Body
-          loading={isPending}
-          skeletonRows={PAGE_SIZE}
-          emptyMessage={
-            debouncedSearch
-              ? `No scripts found matching "${debouncedSearch}". Try adjusting your search.`
-              : 'No scripts found. Try adjusting your filters or add a new script.'
-          }
-          rowClassName="mb-1"
-          rowHref={scriptRowHref}
-        />
-        <DataTable.InfiniteFooter
-          hasNextPage={hasNext}
-          isFetchingNextPage={isLoadingNext}
-          onLoadMore={fetchNextPage}
-          skeletonRows={2}
-        />
-      </DataTable>
+      {/* Dim (don't unmount) the stale rows while a deferred refetch is in
+          flight — the subtle fade is the pending feedback. Swapping to skeletons
+          is exactly the flash the deferral avoids. */}
+      <div className={`transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
+        <DataTable table={table}>
+          <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
+          <DataTable.Body
+            skeletonRows={PAGE_SIZE}
+            emptyMessage={
+              debouncedSearch
+                ? `No scripts found matching "${debouncedSearch}". Try adjusting your search.`
+                : 'No scripts found. Try adjusting your filters or add a new script.'
+            }
+            rowClassName="mb-1"
+            rowHref={scriptRowHref}
+          />
+          <DataTable.InfiniteFooter
+            hasNextPage={hasNext}
+            isFetchingNextPage={isLoadingNext}
+            onLoadMore={fetchNextPage}
+            skeletonRows={2}
+          />
+        </DataTable>
+      </div>
 
       <FilterModal
         isOpen={mobileFilterOpen}
@@ -688,6 +719,12 @@ export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
     };
   }, [archived, params.shellType, params.supportedPlatforms, params.authorId, params.tagIds]);
 
+  // Deferred query variables: on a filter/search interaction the table keeps
+  // rendering the current rows while the refetch is in flight, instead of
+  // dropping to the Suspense skeleton. The dropdown state (`tableFilters`) stays
+  // live so the checkboxes respond instantly.
+  const { deferredFilters, deferredSearch, isPending } = useDeferredQuery(backendFilters, debouncedSearch);
+
   const tableFilters = useMemo(
     () => ({
       shellType: params.shellType,
@@ -789,10 +826,11 @@ export function ScriptsTable({ archived = false }: ScriptsTableProps = {}) {
 
         <Suspense fallback={<ScriptsTableSkeleton stickyHeaderOffset={stickyHeaderOffset} />}>
           <ScriptsTableContent
-            backendFilters={backendFilters}
-            debouncedSearch={debouncedSearch}
+            backendFilters={deferredFilters}
+            debouncedSearch={deferredSearch}
             tableFilters={tableFilters}
             hasTagFilter={params.tagIds.length > 0}
+            isPending={isPending}
             onFilterChange={handleFilterChange}
             onEmptyChange={setIsEmpty}
             mobileFilterOpen={mobileFilterOpen}

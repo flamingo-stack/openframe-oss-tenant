@@ -3,9 +3,18 @@ import { graphql } from 'react-relay';
 /**
  * Execution-history list for a single script (v2 — native OpenFrame GraphQL API
  * via Relay). Mirrors the cursor-paginated `scriptExecutions(scriptId, ...)`
- * connection. Status and "Executed by" (initiator) filters plus the free-text
+ * connection. Status / Device / "Executed by" filters plus the free-text
  * `search` are all pushed to the server; the pagination fragment drives infinite
  * scroll.
+ *
+ * `scriptExecutionFilters` (the filter facets) rides the SAME operation, so each
+ * filter/search interaction is a single round-trip and the dropdown options
+ * update atomically with the rows. It sits on the outer query — not in the
+ * `@refetchable` fragment — so `loadNext` pagination does not refetch it. Facet
+ * semantics: the backend excludes each facet's OWN group when narrowing, so a
+ * group's options never vanish while the user multi-selects within it. Option
+ * `value`s match the `ScriptExecutionFilterInput` fields (statuses = enum,
+ * initiators = user global id, machines = machineId).
  */
 export const scriptExecutionsRelayQuery = graphql`
   query scriptExecutionsRelayQuery(
@@ -17,6 +26,23 @@ export const scriptExecutionsRelayQuery = graphql`
   ) {
     ...scriptExecutionsRelay_query
       @arguments(scriptId: $scriptId, filter: $filter, search: $search, first: $first, after: $after)
+    scriptExecutionFilters(scriptId: $scriptId, filter: $filter, search: $search) {
+      statuses {
+        value
+        label
+        count
+      }
+      initiators {
+        value
+        label
+        count
+      }
+      machines {
+        value
+        label
+        count
+      }
+    }
   }
 `;
 

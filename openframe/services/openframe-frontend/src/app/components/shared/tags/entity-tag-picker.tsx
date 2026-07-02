@@ -28,6 +28,44 @@ interface EntityTag {
   key: string;
 }
 
+const FALLBACK_NO_OPTIONS: Array<{ label: string; value: string }> = [];
+const FALLBACK_NO_VALUE: string[] = [];
+const fallbackNoop = () => {};
+
+// Shared defaults — the fallback must render the EXACT same label/placeholder as
+// the picker (its whole purpose is a zero-layout-shift swap), so both default
+// from these constants instead of keeping parallel literals in sync by hand.
+const DEFAULT_LABEL = 'Search and add Tags';
+const DEFAULT_EMPTY_PLACEHOLDER = 'Search to Add Tags';
+
+/**
+ * Suspense fallback for {@link EntityTagPicker}: the real `Autocomplete`,
+ * disabled and empty, with the same label / placeholder / search adornment —
+ * pixel-identical to the loaded picker, so the swap causes zero layout shift.
+ * Pass the same `label` / `emptyPlaceholder` overrides as the picker call site.
+ */
+export function EntityTagPickerFallback({
+  label = DEFAULT_LABEL,
+  emptyPlaceholder = DEFAULT_EMPTY_PLACEHOLDER,
+}: {
+  label?: string;
+  emptyPlaceholder?: string;
+}) {
+  return (
+    <Autocomplete
+      multiple
+      disabled
+      label={label}
+      placeholder={emptyPlaceholder}
+      options={FALLBACK_NO_OPTIONS}
+      value={FALLBACK_NO_VALUE}
+      onChange={fallbackNoop}
+      startAdornment={<SearchIcon className="size-6 text-ods-text-secondary" />}
+      showChevron={false}
+    />
+  );
+}
+
 interface EntityTagPickerProps {
   /** Tag entity type — drives the vocabulary query and the create mutation. */
   entityType: TagEntityType;
@@ -68,8 +106,8 @@ export function EntityTagPicker({
   onChange,
   initialTags = [],
   disabled,
-  label = 'Search and add Tags',
-  emptyPlaceholder = 'Search to Add Tags',
+  label = DEFAULT_LABEL,
+  emptyPlaceholder = DEFAULT_EMPTY_PLACEHOLDER,
   maxCreateLength,
   deletable = false,
   entityLabel,

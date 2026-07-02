@@ -1,6 +1,6 @@
 'use client';
 
-import { NotFoundError, PageLayout, Tag } from '@flamingo-stack/openframe-frontend-core';
+import { Tag } from '@flamingo-stack/openframe-frontend-core';
 import {
   ArrowRightUpIcon,
   BracketCurlyIcon,
@@ -9,23 +9,24 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import {
   type ActionsMenuGroup,
+  Skeleton,
   type TabItem,
   TabNavigation,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { Suspense, useMemo } from 'react';
 import { useLazyLoadQuery } from 'react-relay';
 import type { scriptDetailRelayQuery as ScriptDetailQueryType } from '@/__generated__/scriptDetailRelayQuery.graphql';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
 import { decodeGlobalId } from '@/lib/relay-id';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { initiatorName } from '../utils/execution-helpers';
 import { envVarsToStrings, platformsToIds, shellToId } from '../utils/script-mappers';
-import { ScriptDetailsSkeleton } from './script-details-skeleton';
+import { NotFoundBoundary, NotFoundSignal } from './not-found-boundary';
 import { ScriptDetailsTab } from './script-details-tab';
 import { ScriptExecutionsTab } from './script-executions-tab';
-import { ScriptSummaryCard } from './script-summary-card';
+import { ScriptPageChrome } from './script-page-chrome';
+import { ScriptSummaryCard, ScriptSummaryCardSkeleton } from './script-summary-card';
 
 // Two tabs only — Schedules is intentionally omitted from the v2 details page.
 const DETAIL_TABS: TabItem[] = [
@@ -37,14 +38,22 @@ interface ScriptDetailsViewProps {
   scriptId: string;
 }
 
-function ScriptDetailsContent({ scriptId }: ScriptDetailsViewProps) {
+// ----------------------------------------------------------------
+// Header island — tags row + summary card
+// ----------------------------------------------------------------
+
+/**
+ * Both data islands read the same `scriptDetail` query with identical variables:
+ * Relay dedupes identical in-flight requests, so mounting them in one commit
+ * still issues a single network call; afterwards both render from the store.
+ */
+function ScriptHeaderSection({ scriptId }: ScriptDetailsViewProps) {
   const data = useLazyLoadQuery<ScriptDetailQueryType>(
     scriptDetailRelayQuery,
     { id: scriptId },
     { fetchPolicy: 'store-and-network' },
   );
   const script = data.script;
-  const handleBack = useSafeBack('/scripts-v2');
 
   // Mingo context carries the RAW db id (the route's `scriptId` is the Relay
   // global id) — matching the picker + the `@script:<id>` marker the backend
@@ -54,6 +63,139 @@ function ScriptDetailsContent({ scriptId }: ScriptDetailsViewProps) {
     script ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptDbId, label: script.name || scriptDbId } : null,
   );
 
+  if (!script) {
+    throw new NotFoundSignal();
+  }
+
+  const tags = script.tags ?? [];
+
+  return (
+    <>
+      {tags.length > 0 && (
+        <div className="flex flex-wrap items-start gap-[var(--spacing-system-xs)]">
+          {tags.map(tag => (
+            <Tag key={tag.id} variant="outline" label={tag.key} />
+          ))}
+        </div>
+      )}
+
+      <ScriptSummaryCard
+        name={script.name}
+        description={script.description}
+        shellId={shellToId(script.shell)}
+        platforms={platformsToIds(script.supportedPlatforms)}
+        timeoutSeconds={script.defaultTimeoutSeconds}
+        author={script.author ? initiatorName(script.author) : null}
+      />
+    </>
+  );
+}
+
+/** Row of clickable tag chips under the title (mirrors the `Tag` outline chips). */
+const TAG_CHIP_WIDTHS = ['w-28', 'w-24', 'w-40', 'w-32'];
+
+function ScriptHeaderSkeleton() {
+  return (
+    <>
+      <div className="flex flex-wrap items-start gap-[var(--spacing-system-xs)]">
+        {TAG_CHIP_WIDTHS.map(width => (
+          <Skeleton key={width} className={`h-8 ${width} rounded-md`} />
+        ))}
+      </div>
+      <ScriptSummaryCardSkeleton />
+    </>
+  );
+}
+
+// ----------------------------------------------------------------
+// "Script Details" tab island — args/env cards + source editor
+// ----------------------------------------------------------------
+
+function ScriptDetailsTabSection({ scriptId }: ScriptDetailsViewProps) {
+  // `store-or-network` (not `-and-`): the header island (mounted for the whole
+  // page visit) already revalidated this exact query on page load. This island
+  // remounts on every tab switch — reading the store avoids refetching the whole
+  // script each time the user returns to the Details tab.
+  const data = useLazyLoadQuery<ScriptDetailQueryType>(
+    scriptDetailRelayQuery,
+    { id: scriptId },
+    { fetchPolicy: 'store-or-network' },
+  );
+  const script = data.script;
+
+  // Not-found is escalated (full-page) by the header island; render nothing here.
+  if (!script) {
+    return null;
+  }
+
+  return (
+    <ScriptDetailsTab
+      args={script.defaultArgs ? [...script.defaultArgs] : []}
+      envVarStrings={envVarsToStrings(script.envVars)}
+      scriptBody={script.scriptBody}
+      shellId={shellToId(script.shell)}
+    />
+  );
+}
+
+/** Skeleton for a {@link ScriptArgumentsCard}: caption label + key——value rows. */
+function InfoCardSkeleton() {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-system-xxs)] w-full">
+      <Skeleton className="h-5 w-44" />
+      <div className="bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)] flex flex-col gap-[var(--spacing-system-sf)]">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i} className="flex items-center gap-[var(--spacing-system-xsf)]">
+            <Skeleton className="h-5 w-20" />
+            <div className="flex-1 h-px bg-ods-border" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Code editor block skeleton (Syntax label + editor surface). */
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <Skeleton className="h-5 w-16" />
+      <div className="bg-ods-card border border-ods-border rounded-lg p-[var(--spacing-system-mf)] h-[400px] flex flex-col gap-[var(--spacing-system-xsf)]">
+        {Array.from({ length: 12 }, (_, i) => (
+          <Skeleton key={i} className="h-4" style={{ width: `${Math.max(20, 80 - i * 5 + ((i * 17) % 30))}%` }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ScriptDetailsTabSkeleton() {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-system-lf)]">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[var(--spacing-system-lf)]">
+        <InfoCardSkeleton />
+        <InfoCardSkeleton />
+      </div>
+      <EditorSkeleton />
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------
+// Page shell — chrome renders immediately, data islands suspend
+// ----------------------------------------------------------------
+
+/**
+ * The page chrome (title, Back, Run/Edit actions, tab bar) depends only on the
+ * route's `scriptId`, so it renders immediately — only the data islands (header,
+ * tab body) suspend into small colocated skeletons. A missing script is escalated
+ * from the header island via {@link NotFoundSignal} and swaps the whole page for
+ * the full-page not-found state. The boundary is keyed by `scriptId` so a
+ * client-side hop to another script (the router reuses the `[id]` segment)
+ * resets a tripped not-found instead of latching it.
+ */
+export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
   const editHref = `/scripts-v2/edit/${scriptId}`;
   const runHref = `/scripts-v2/details/${scriptId}/run`;
 
@@ -91,67 +233,33 @@ function ScriptDetailsContent({ scriptId }: ScriptDetailsViewProps) {
     [editHref],
   );
 
-  if (!script) {
-    return <NotFoundError message="Script not found" />;
-  }
-
-  const shellId = shellToId(script.shell);
-  const platforms = platformsToIds(script.supportedPlatforms);
-  const args = script.defaultArgs ? [...script.defaultArgs] : [];
-  const envVarStrings = envVarsToStrings(script.envVars);
-  const authorName = script.author ? initiatorName(script.author) : null;
-  const tags = script.tags ?? [];
-
   return (
-    <PageLayout
-      title="Script Details"
-      backButton={{ label: 'Back', onClick: handleBack }}
-      actions={actions}
-      menuActions={menuActions}
-      actionsVariant="menu-primary"
-      className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
-    >
-      <div className="flex flex-col gap-6">
-        {tags.length > 0 && (
-          <div className="flex flex-wrap items-start gap-[var(--spacing-system-xs)]">
-            {tags.map(tag => (
-              <Tag key={tag.id} variant="outline" label={tag.key} />
-            ))}
-          </div>
-        )}
+    <NotFoundBoundary key={scriptId} message="Script not found">
+      <ScriptPageChrome
+        title="Script Details"
+        backFallback="/scripts-v2"
+        actions={actions}
+        menuActions={menuActions}
+        actionsVariant="menu-primary"
+      >
+        <div className="flex flex-col gap-[var(--spacing-system-lf)]">
+          <Suspense fallback={<ScriptHeaderSkeleton />}>
+            <ScriptHeaderSection scriptId={scriptId} />
+          </Suspense>
 
-        <ScriptSummaryCard
-          name={script.name}
-          description={script.description}
-          shellId={shellId}
-          platforms={platforms}
-          timeoutSeconds={script.defaultTimeoutSeconds}
-          author={authorName}
-        />
-
-        <TabNavigation tabs={DETAIL_TABS} urlSync defaultTab="details">
-          {activeTab =>
-            activeTab === 'executions' ? (
-              <ScriptExecutionsTab scriptId={scriptId} />
-            ) : (
-              <ScriptDetailsTab
-                args={args}
-                envVarStrings={envVarStrings}
-                scriptBody={script.scriptBody}
-                shellId={shellId}
-              />
-            )
-          }
-        </TabNavigation>
-      </div>
-    </PageLayout>
-  );
-}
-
-export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
-  return (
-    <Suspense fallback={<ScriptDetailsSkeleton />}>
-      <ScriptDetailsContent scriptId={scriptId} />
-    </Suspense>
+          <TabNavigation tabs={DETAIL_TABS} urlSync defaultTab="details">
+            {activeTab =>
+              activeTab === 'executions' ? (
+                <ScriptExecutionsTab scriptId={scriptId} />
+              ) : (
+                <Suspense fallback={<ScriptDetailsTabSkeleton />}>
+                  <ScriptDetailsTabSection scriptId={scriptId} />
+                </Suspense>
+              )
+            }
+          </TabNavigation>
+        </div>
+      </ScriptPageChrome>
+    </NotFoundBoundary>
   );
 }

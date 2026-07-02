@@ -1,7 +1,7 @@
 'use client';
 
 import { Skeleton } from '@flamingo-stack/openframe-frontend-core/components/ui';
-import { ScriptSummaryCardSkeleton } from '../../../scripts/v2/components/script-details-skeleton';
+import { RUN_SUMMARY_LABELS, ScriptSummaryCardSkeleton } from '../../../scripts/v2/components/script-summary-card';
 
 /** Description widths cycled through the picker rows so they don't look uniform. */
 const PICKER_ROW_DESCRIPTIONS = ['w-72', 'w-56', 'w-48', 'w-64', 'w-40', 'w-60'];
@@ -55,7 +55,7 @@ export function RunScriptConfigStepSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--spacing-system-l)]">
       <div className="min-h-0 flex-1 space-y-[var(--spacing-system-l)] overflow-y-auto">
-        <ScriptSummaryCardSkeleton stats={3} />
+        <ScriptSummaryCardSkeleton labels={RUN_SUMMARY_LABELS} />
 
         {/* Timeout + Run as User */}
         <div className="grid grid-cols-1 items-end gap-[var(--spacing-system-l)] lg:grid-cols-2">

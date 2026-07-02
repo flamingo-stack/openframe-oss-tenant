@@ -1,14 +1,14 @@
 'use client';
 
-import { NotFoundError, PageLayout, Tag, TruncateText } from '@flamingo-stack/openframe-frontend-core';
+import { NotFoundError, Tag, TruncateText } from '@flamingo-stack/openframe-frontend-core';
 import { Copy01Icon, MonitorIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
-import { SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { type PageActionButton, Skeleton, SquareAvatar } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { type ReactNode, Suspense, useMemo } from 'react';
-import { useLazyLoadQuery } from 'react-relay';
+import { type ReactNode, Suspense, useEffect, useMemo } from 'react';
+import { fetchQuery, useLazyLoadQuery, useRelayEnvironment } from 'react-relay';
 import type { scriptExecutionDetailRelayQuery as ScriptExecutionDetailQueryType } from '@/__generated__/scriptExecutionDetailRelayQuery.graphql';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
+import { ScriptExecutionStatus } from '@/generated/schema-enums';
 import { scriptExecutionDetailRelayQuery } from '@/graphql/scripts/script-execution-detail-relay';
 import { getFullImageUrl } from '@/lib/image-url';
 import { decodeGlobalId } from '@/lib/relay-id';
@@ -23,16 +23,23 @@ import {
   organizationLabel,
   privilegeLevelLabel,
 } from '../utils/execution-helpers';
-import { ScriptExecutionDetailsSkeleton } from './script-details-skeleton';
+import { ScriptPageChrome } from './script-page-chrome';
 
 interface ScriptExecutionDetailsViewProps {
   executionId: string;
 }
 
-/** A value-over-label cell in the execution detail card. */
+/** How often a RUNNING execution is re-fetched so its status/output stay live. */
+const RUNNING_POLL_INTERVAL_MS = 5000;
+
+// Unlike the other script pages, this page's chrome IS data-dependent (subtitle +
+// back target come from the execution), so the loaded view and the Suspense
+// fallback each render {@link ScriptPageChrome} — the fallback with placeholders.
+
+/** A value-over-label cell in the execution detail card (also the base of its skeleton — see {@link DetailCellSkeleton}). */
 function DetailCell({ value, label }: { value: ReactNode; label: string }) {
   return (
-    <div className="flex flex-[1_0_0] min-w-[140px] flex-col justify-center gap-1">
+    <div className="flex flex-[1_0_0] min-w-[140px] flex-col justify-center gap-[var(--spacing-system-xxs)]">
       {typeof value === 'string' ? <TruncateText variant="h4">{value}</TruncateText> : value}
       <TruncateText variant="h6" tone="secondary">
         {label}
@@ -43,32 +50,49 @@ function DetailCell({ value, label }: { value: ReactNode; label: string }) {
 
 function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsViewProps) {
   const { toast } = useToast();
+  const environment = useRelayEnvironment();
   const data = useLazyLoadQuery<ScriptExecutionDetailQueryType>(
     scriptExecutionDetailRelayQuery,
     { id: executionId },
     { fetchPolicy: 'store-and-network' },
   );
   const execution = data.node;
-  const handleBack = useSafeBack(
-    execution?.scriptId ? `/scripts-v2/details/${execution.scriptId}?tab=executions` : '/scripts-v2',
-  );
 
-  const actions = useMemo(() => {
+  // Live view of an in-flight run: while the execution is RUNNING, poll the node
+  // so the status flips and the output streams in without a manual reload. The
+  // refetched payload lands in the Relay store, so this component re-renders
+  // from it; the interval stops itself once the status leaves RUNNING.
+  const isRunning = execution?.status === ScriptExecutionStatus.RUNNING;
+  useEffect(() => {
+    if (!isRunning) return;
+    const interval = setInterval(() => {
+      fetchQuery(
+        environment,
+        scriptExecutionDetailRelayQuery,
+        { id: executionId },
+        {
+          fetchPolicy: 'network-only',
+        },
+      ).subscribe({});
+    }, RUNNING_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [isRunning, environment, executionId]);
+
+  const actions = useMemo<PageActionButton[]>(() => {
     if (!execution) return [];
     const copyDetails = () => {
       const lines = [
         `Execution ID: ${execution.executionId}`,
-        `Script: ${execution.scriptName ?? '—'}`,
-        `Status: ${executionStatusLabel(execution.status)}`,
-        `Device: ${machineLabel(execution.machine)}`,
+        `Script Name: ${execution.scriptName ?? '—'}`,
+        `Machine ID: ${execution.machine?.machineId ?? '—'}`,
+        `Customer: ${organizationLabel(execution.machine) || '—'}`,
         `Executed by: ${initiatorName(execution.initiator)}`,
+        `Status: ${executionStatusLabel(execution.status)}`,
         `Privilege Level: ${privilegeLevelLabel(execution.privilegeLevel)}`,
         `Start Time: ${formatExecutionTimestamp(execution.dispatchedAt)}`,
         `Finish Time: ${formatExecutionTimestamp(execution.finishedAt)}`,
         `Execution Time (ms): ${execution.executionTimeMs ?? '—'}`,
-        '',
-        'Result:',
-        executionResultText(execution) || '—',
+        `Result: ${executionResultText(execution) || '—'}`,
       ];
       navigator.clipboard
         ?.writeText(lines.join('\n'))
@@ -100,12 +124,11 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
   const initiatorHref = rawInitiatorId ? employeeDetailHref(rawInitiatorId) : null;
 
   return (
-    <PageLayout
+    <ScriptPageChrome
       title="Script Execution Details"
       subtitle={execution.executionId}
-      backButton={{ label: 'Back', onClick: handleBack }}
+      backFallback={execution.scriptId ? `/scripts-v2/details/${execution.scriptId}?tab=executions` : '/scripts-v2'}
       actions={actions}
-      className="md:px-[var(--spacing-system-l)] md:pb-[var(--spacing-system-l)]"
     >
       <div className="bg-ods-card border border-ods-border rounded-[8px] overflow-hidden">
         {/* Row 1 — identity */}
@@ -183,19 +206,103 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
           />
         </div>
 
-        {/* Result */}
-        <div className="flex flex-col gap-1 p-[var(--spacing-system-m)]">
-          <div className="text-h4 text-ods-text-primary whitespace-pre-wrap break-words">{result || '—'}</div>
+        {/* Result — a RUNNING execution with no output yet says so (the page
+            polls, so the output streams in) instead of a dead-end "—". */}
+        <div className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-m)]">
+          {result ? (
+            <div className="text-h4 text-ods-text-primary whitespace-pre-wrap break-words">{result}</div>
+          ) : (
+            <div className="text-h4 text-ods-text-secondary">{isRunning ? 'Waiting for output…' : '—'}</div>
+          )}
           <div className="text-h6 text-ods-text-secondary">Result</div>
         </div>
       </div>
-    </PageLayout>
+    </ScriptPageChrome>
   );
 }
 
+// ----------------------------------------------------------------
+// Skeleton — body card only; the chrome is the real ScriptPageChrome
+// ----------------------------------------------------------------
+
+/**
+ * A value-over-label cell skeleton in the execution-details card: the real
+ * {@link DetailCell} (so wrapper + label markup can never drift) with a bar for
+ * the value. The label is static text, so it renders for real — exact `text-h6`
+ * line height, no jump on load.
+ */
+function DetailCellSkeleton({ valueWidth = 'w-28', label }: { valueWidth?: string; label: string }) {
+  return <DetailCell value={<Skeleton className={`h-6 ${valueWidth}`} />} label={label} />;
+}
+
+/**
+ * Card body skeleton: the identity row (Script Name / Device / Executed by /
+ * Status), the timing row (Privilege / Start / Finish / Execution Time), then
+ * the Result block — mirrors the card markup above, including the 40px avatar
+ * that makes the "Executed by" cell (and thus the identity row) taller.
+ */
+function ExecutionDetailsCardSkeleton() {
+  return (
+    <div className="bg-ods-card border border-ods-border rounded-[8px] overflow-hidden">
+      <div className="flex flex-wrap items-center gap-[var(--spacing-system-m)] border-b border-ods-border p-[var(--spacing-system-m)]">
+        <DetailCellSkeleton valueWidth="w-40" label="Script Name" />
+        <DetailCellSkeleton valueWidth="w-32" label="Device" />
+        {/* Executed by — round avatar + name, same 40px avatar as the loaded cell */}
+        <DetailCell
+          value={
+            <div className="flex items-center gap-[var(--spacing-system-xsf)]">
+              <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+              <Skeleton className="h-6 w-28" />
+            </div>
+          }
+          label="Executed by"
+        />
+        <DetailCellSkeleton valueWidth="w-24" label="Status" />
+      </div>
+      <div className="flex flex-wrap items-center gap-[var(--spacing-system-m)] border-b border-ods-border p-[var(--spacing-system-m)]">
+        <DetailCellSkeleton valueWidth="w-20" label="Privilege Level" />
+        <DetailCellSkeleton valueWidth="w-32" label="Start Time" />
+        <DetailCellSkeleton valueWidth="w-32" label="Finish Time" />
+        <DetailCellSkeleton valueWidth="w-16" label="Execution Time (ms)" />
+      </div>
+      <div className="flex flex-col gap-[var(--spacing-system-xxs)] p-[var(--spacing-system-m)]">
+        <Skeleton className="h-6 w-3/4 max-w-full" />
+        <div className="text-h6 text-ods-text-secondary">Result</div>
+      </div>
+    </div>
+  );
+}
+
+const noop = () => {};
+
+/** Disabled Copy placeholder shown in the chrome while the execution loads. */
+const LOADING_EXECUTION_ACTIONS: PageActionButton[] = [
+  {
+    label: 'Copy Execution Details',
+    variant: 'outline',
+    icon: <Copy01Icon className="w-6 h-6 text-ods-text-secondary" />,
+    disabled: true,
+    onClick: noop,
+  },
+];
+
 export function ScriptExecutionDetailsView({ executionId }: ScriptExecutionDetailsViewProps) {
   return (
-    <Suspense fallback={<ScriptExecutionDetailsSkeleton />}>
+    <Suspense
+      fallback={
+        // The `\u00A0` subtitle reserves the subtitle line so the header does not
+        // grow when the real execution UUID arrives (TitleBlock only renders the
+        // subtitle row when the prop is truthy).
+        <ScriptPageChrome
+          title="Script Execution Details"
+          subtitle={'\u00A0'}
+          backFallback="/scripts-v2"
+          actions={LOADING_EXECUTION_ACTIONS}
+        >
+          <ExecutionDetailsCardSkeleton />
+        </ScriptPageChrome>
+      }
+    >
       <ScriptExecutionDetailsContent executionId={executionId} />
     </Suspense>
   );

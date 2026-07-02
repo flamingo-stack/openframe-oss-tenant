@@ -26,7 +26,6 @@ import { useApiParams, useToast } from '@flamingo-stack/openframe-frontend-core/
 import { useRouter } from 'next/navigation';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { useLazyLoadQuery, usePaginationFragment } from 'react-relay';
-import type { scriptExecutionFiltersRelayQuery as ExecutionFiltersQueryType } from '@/__generated__/scriptExecutionFiltersRelayQuery.graphql';
 import type { scriptExecutionsRelay_query$key as ExecutionsFragmentKey } from '@/__generated__/scriptExecutionsRelay_query.graphql';
 import type { scriptExecutionsRelayPaginationQuery as ExecutionsPaginationQueryType } from '@/__generated__/scriptExecutionsRelayPaginationQuery.graphql';
 import type {
@@ -34,10 +33,9 @@ import type {
   ScriptExecutionFilterInput,
 } from '@/__generated__/scriptExecutionsRelayQuery.graphql';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
+import { useDeferredQuery } from '@/app/hooks/use-deferred-query';
 import { useSearchParam } from '@/app/hooks/use-search-param';
 import { useStickyToolbar } from '@/app/hooks/use-sticky-toolbar';
-import { ScriptExecutionStatus } from '@/generated/schema-enums';
-import { scriptExecutionFiltersRelayQuery } from '@/graphql/scripts/script-execution-filters-relay';
 import { scriptExecutionsRelayFragment, scriptExecutionsRelayQuery } from '@/graphql/scripts/script-executions-relay';
 import { getFullImageUrl } from '@/lib/image-url';
 import { openInNewTab } from '@/lib/open-in-new-tab';
@@ -52,6 +50,7 @@ import {
   machineLabel,
   organizationLabel,
 } from '../utils/execution-helpers';
+import { facetToSortedOptions } from '../utils/facet-options';
 
 const PAGE_SIZE = 20;
 
@@ -60,6 +59,7 @@ interface UiExecution {
   executionId: string;
   status: string;
   timestamp: string;
+  machineId: string;
   machineName: string;
   organization: string;
   initiatorId: string;
@@ -68,14 +68,6 @@ interface UiExecution {
   initiatorImage?: string;
   result: string;
 }
-
-// Status filter options are the enum values (labels from the shared helper). The
-// "Executed by" options are server-driven (see scriptExecutionFilters).
-const STATUS_FILTER_OPTIONS = Object.values(ScriptExecutionStatus).map(status => ({
-  id: status,
-  label: executionStatusLabel(status),
-  value: status,
-}));
 
 interface ScriptExecutionsTabProps {
   scriptId: string;
@@ -90,6 +82,12 @@ interface ContentProps {
   backendFilters: ScriptExecutionFilterInput;
   debouncedSearch: string;
   tableFilters: Record<string, string[]>;
+  /**
+   * True while the deferred query variables lag the live filter/search state (a
+   * refetch is in flight and the rows on screen are the previous result) —
+   * keeps the header mounted and dims the stale rows.
+   */
+  isPending: boolean;
   onFilterChange: (filters: Record<string, string[]>) => void;
   mobileFilterOpen: boolean;
   onMobileFilterClose: () => void;
@@ -102,6 +100,7 @@ function ScriptExecutionsContent({
   backendFilters,
   debouncedSearch,
   tableFilters,
+  isPending,
   onFilterChange,
   mobileFilterOpen,
   onMobileFilterClose,
@@ -110,26 +109,34 @@ function ScriptExecutionsContent({
   const router = useRouter();
   const { toast } = useToast();
 
+  // One round-trip per interaction: the filter facets (`scriptExecutionFilters`)
+  // ride the list operation — see the query docstring for the facet semantics.
   const queryData = useLazyLoadQuery<ExecutionsQueryType>(
     scriptExecutionsRelayQuery,
     { scriptId, filter: backendFilters, search: debouncedSearch || null, first: PAGE_SIZE, after: null },
     { fetchPolicy: 'store-and-network' },
   );
 
-  // "Executed by" options — server-driven (complete initiator set for this
-  // script), scoped to the script only so the list stays stable as filters change.
-  const filtersData = useLazyLoadQuery<ExecutionFiltersQueryType>(
-    scriptExecutionFiltersRelayQuery,
-    { scriptId },
-    { fetchPolicy: 'store-and-network' },
+  // Status: backend returns raw enum values; map through the shared helper for a
+  // friendly label ("SUCCESS" → "Completed"). Backend order = by count (kept).
+  const statusOptions = useMemo(
+    () =>
+      (queryData.scriptExecutionFilters?.statuses ?? []).map(s => ({
+        id: s.value,
+        label: executionStatusLabel(s.value),
+        value: s.value,
+      })),
+    [queryData.scriptExecutionFilters?.statuses],
   );
 
   const initiatorOptions = useMemo(
-    () =>
-      (filtersData.scriptExecutionFilters?.initiators ?? [])
-        .map(i => ({ id: i.value, label: i.label, value: i.value }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [filtersData.scriptExecutionFilters?.initiators],
+    () => facetToSortedOptions(queryData.scriptExecutionFilters?.initiators),
+    [queryData.scriptExecutionFilters?.initiators],
+  );
+
+  const machineOptions = useMemo(
+    () => facetToSortedOptions(queryData.scriptExecutionFilters?.machines),
+    [queryData.scriptExecutionFilters?.machines],
   );
 
   const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment<
@@ -139,21 +146,27 @@ function ScriptExecutionsContent({
 
   const executions: UiExecution[] = useMemo(() => {
     const edges = data.scriptExecutions?.edges ?? [];
-    return edges.map(edge => {
-      const node = edge.node;
-      return {
-        id: node.id,
-        executionId: node.executionId,
-        status: node.status,
-        timestamp: formatExecutionTimestamp(node.dispatchedAt),
-        machineName: machineLabel(node.machine),
-        organization: organizationLabel(node.machine),
-        initiatorId: node.initiator?.id ?? '',
-        initiatorName: initiatorName(node.initiator),
-        initiatorInitials: initiatorInitials(node.initiator),
-        initiatorImage: getFullImageUrl(node.initiator?.image?.imageUrl, node.initiator?.image?.hash),
-        result: executionResultText(node),
-      };
+    // Defensive null-node guard (same as scripts-table): skip any dangling edge
+    // instead of crashing the tab on a store-evicted record.
+    return edges.flatMap(edge => {
+      const node = edge?.node;
+      if (!node) return [];
+      return [
+        {
+          id: node.id,
+          executionId: node.executionId,
+          status: node.status,
+          timestamp: formatExecutionTimestamp(node.dispatchedAt),
+          machineId: node.machine?.machineId ?? '',
+          machineName: machineLabel(node.machine),
+          organization: organizationLabel(node.machine),
+          initiatorId: node.initiator?.id ?? '',
+          initiatorName: initiatorName(node.initiator),
+          initiatorInitials: initiatorInitials(node.initiator),
+          initiatorImage: getFullImageUrl(node.initiator?.image?.imageUrl, node.initiator?.image?.hash),
+          result: executionResultText(node),
+        },
+      ];
     });
   }, [data.scriptExecutions?.edges]);
 
@@ -218,10 +231,12 @@ function ScriptExecutionsContent({
         ),
         enableSorting: false,
         filterFn: multiSelectFilterFn,
-        meta: { width: 'w-[120px]', filter: { options: STATUS_FILTER_OPTIONS } },
+        meta: { width: 'w-[120px]', filter: { options: statusOptions } },
       },
       {
-        accessorKey: 'machineName',
+        // accessorKey is `machineId` so the filter option values (machineIds)
+        // match the `machineIds` server filter; the cell still renders the name.
+        accessorKey: 'machineId',
         header: 'Device',
         // Icon rides only with the machine name on the first line; the org label
         // sits on its own line beneath, left-aligned to the icon (not indented
@@ -243,7 +258,8 @@ function ScriptExecutionsContent({
           </div>
         ),
         enableSorting: false,
-        meta: { width: 'w-[240px]', hideAt: 'lg' },
+        filterFn: multiSelectFilterFn,
+        meta: { width: 'w-[240px]', hideAt: 'lg', filter: { options: machineOptions } },
       },
       {
         // accessorKey is `initiatorId` so the filter option values (user ids)
@@ -347,15 +363,16 @@ function ScriptExecutionsContent({
         meta: { width: 'w-12 shrink-0 flex-none', align: 'right' },
       },
     ],
-    [renderRowActions, router, executionHref, initiatorOptions],
+    [renderRowActions, router, executionHref, statusOptions, initiatorOptions, machineOptions],
   );
 
   const filterGroups = useMemo(
     () => [
-      { id: 'status', title: 'Status', options: STATUS_FILTER_OPTIONS },
+      { id: 'status', title: 'Status', options: statusOptions },
+      { id: 'machineId', title: 'Device', options: machineOptions },
       { id: 'initiatorId', title: 'Executed by', options: initiatorOptions },
     ],
-    [initiatorOptions],
+    [statusOptions, machineOptions, initiatorOptions],
   );
 
   const columnFilters = useMemo(
@@ -388,31 +405,45 @@ function ScriptExecutionsContent({
   });
 
   // Hide the column header on an empty list (cleaner empty state), but keep it
-  // when a filter is active so the Status dropdown is still reachable to clear it.
+  // when a filter is active (so the dropdowns stay reachable to clear it) and
+  // while a deferred refetch is pending (the rows on screen are stale — don't
+  // tear the header down on them).
   const hasActiveFilter = columnFilters.length > 0;
-  const showHeader = executions.length > 0 || hasActiveFilter;
+  const showHeader = executions.length > 0 || hasActiveFilter || isPending;
+
+  // The default copy claims the script never ran — only true without an active
+  // search/filter; otherwise it's the narrowing that produced the empty result.
+  const emptyMessage = debouncedSearch
+    ? `No executions found matching "${debouncedSearch}". Try adjusting your search.`
+    : hasActiveFilter
+      ? 'No executions match the current filters. Try adjusting them.'
+      : 'No executions found. Run this script to see its history here.';
 
   return (
     <>
-      <DataTable table={table}>
-        {showHeader && (
-          <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
-        )}
-        <DataTable.Body
-          skeletonRows={PAGE_SIZE}
-          emptyMessage="No executions found. Run this script to see its history here."
-          rowClassName="mb-1"
-          rowHref={executionHref}
-        />
-        {executions.length > 0 && (
-          <DataTable.InfiniteFooter
-            hasNextPage={hasNext}
-            isFetchingNextPage={isLoadingNext}
-            onLoadMore={fetchNextPage}
-            skeletonRows={2}
+      {/* Dim (don't unmount) the stale rows while a deferred refetch is in
+          flight — the subtle fade is the pending feedback. */}
+      <div className={`transition-opacity duration-200 ${isPending ? 'opacity-60' : ''}`}>
+        <DataTable table={table}>
+          {showHeader && (
+            <DataTable.Header stickyHeader stickyHeaderOffset={stickyHeaderOffset} rightSlot={<DataTable.RowCount />} />
+          )}
+          <DataTable.Body
+            skeletonRows={PAGE_SIZE}
+            emptyMessage={emptyMessage}
+            rowClassName="mb-1"
+            rowHref={executionHref}
           />
-        )}
-      </DataTable>
+          {executions.length > 0 && (
+            <DataTable.InfiniteFooter
+              hasNextPage={hasNext}
+              isFetchingNextPage={isLoadingNext}
+              onLoadMore={fetchNextPage}
+              skeletonRows={2}
+            />
+          )}
+        </DataTable>
+      </div>
 
       <FilterModal
         isOpen={mobileFilterOpen}
@@ -482,6 +513,7 @@ export function ScriptExecutionsTab({ scriptId }: ScriptExecutionsTabProps) {
   const { params, setParam, setParams } = useApiParams({
     search: { type: 'string', default: '' },
     status: { type: 'array', default: [] },
+    machineId: { type: 'array', default: [] },
     initiatorId: { type: 'array', default: [] },
   });
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
@@ -496,30 +528,42 @@ export function ScriptExecutionsTab({ scriptId }: ScriptExecutionsTabProps) {
   const backendFilters: ScriptExecutionFilterInput = useMemo(
     () => ({
       ...(params.status.length > 0 && { statuses: params.status as ScriptExecutionFilterInput['statuses'] }),
+      ...(params.machineId.length > 0 && { machineIds: params.machineId }),
       ...(params.initiatorId.length > 0 && { initiatorIds: params.initiatorId }),
     }),
-    [params.status, params.initiatorId],
+    [params.status, params.machineId, params.initiatorId],
   );
 
+  // Deferred query variables: on a filter/search interaction the table keeps
+  // rendering the current rows while the refetch is in flight, instead of
+  // dropping to the Suspense skeleton. The dropdown state (`tableFilters`) stays
+  // live so the checkboxes respond instantly.
+  const { deferredFilters, deferredSearch, isPending } = useDeferredQuery(backendFilters, debouncedSearch);
+
   const tableFilters = useMemo(
-    () => ({ status: params.status, initiatorId: params.initiatorId }),
-    [params.status, params.initiatorId],
+    () => ({ status: params.status, machineId: params.machineId, initiatorId: params.initiatorId }),
+    [params.status, params.machineId, params.initiatorId],
   );
 
   const handleFilterChange = useCallback(
     (columnFilters: Record<string, string[]>) => {
-      setParams({ status: columnFilters.status || [], initiatorId: columnFilters.initiatorId || [] });
+      setParams({
+        status: columnFilters.status || [],
+        machineId: columnFilters.machineId || [],
+        initiatorId: columnFilters.initiatorId || [],
+      });
       document.querySelector('main')?.scrollTo({ top: 0, behavior: 'instant' });
     },
     [setParams],
   );
 
   return (
-    // `-mt-6` cancels the `gap-6` the parent (script-details-view) puts between the
-    // tab bar and this content: TabNavigation renders as a fragment, so its tab bar
-    // and this body are sibling flex items and the gap leaks in as a top offset.
-    // Without this it stacks with the toolbar's `pt-l` below → doubled top padding.
-    <div className="flex flex-col -mt-6" style={containerStyle}>
+    // The negative `-mt-lf` cancels the `gap-lf` the parent (script-details-view)
+    // puts between the tab bar and this content: TabNavigation renders as a
+    // fragment, so its tab bar and this body are sibling flex items and the gap
+    // leaks in as a top offset. Without this it stacks with the toolbar's `pt-l`
+    // below → doubled top padding.
+    <div className="flex flex-col -mt-[var(--spacing-system-lf)]" style={containerStyle}>
       {/* Search stays pinned to the top of the scroll area; its measured height
           feeds the sticky column header offset. `pt-l` sits above the input (and,
           once the `-mt-6` cancels the parent gap, is the sole top spacing), `pb-l`
@@ -549,8 +593,9 @@ export function ScriptExecutionsTab({ scriptId }: ScriptExecutionsTabProps) {
       <Suspense fallback={<ScriptExecutionsSkeleton stickyHeaderOffset={stickyHeaderOffset} />}>
         <ScriptExecutionsContent
           scriptId={scriptId}
-          debouncedSearch={debouncedSearch}
-          backendFilters={backendFilters}
+          debouncedSearch={deferredSearch}
+          backendFilters={deferredFilters}
+          isPending={isPending}
           tableFilters={tableFilters}
           onFilterChange={handleFilterChange}
           mobileFilterOpen={mobileFilterOpen}
