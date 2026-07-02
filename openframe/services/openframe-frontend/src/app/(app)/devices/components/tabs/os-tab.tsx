@@ -34,7 +34,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-[var(--spacing-system-xxs)]">
       <h3 className="text-h5 text-ods-text-secondary uppercase">{title}</h3>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--spacing-system-l)]">{children}</div>
+      {children}
     </section>
   );
 }
@@ -91,22 +91,29 @@ export function OsTab({ device }: OsTabProps) {
 
   return (
     <div className="flex flex-col gap-[var(--spacing-system-l)]">
-      {hasOs && (
-        <Section title="Operating System">
-          <InfoCard data={{ title: osTitle || 'Operating System', subtitle: osSubtitle, items: osItems }} />
-        </Section>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--spacing-system-l)]">
+        {hasOs && (
+          <Section title="Operating System">
+            <InfoCard
+              className="flex-1"
+              data={{ title: osTitle || 'Operating System', subtitle: osSubtitle, items: osItems }}
+            />
+          </Section>
+        )}
 
-      {bootItems.length > 0 && (
-        <Section title="Boot & Time">
-          <InfoCard data={{ title: 'Boot & Time', items: bootItems }} />
-        </Section>
-      )}
+        {bootItems.length > 0 && (
+          <Section title="Boot & Time">
+            <InfoCard className="flex-1" data={{ title: 'Boot & Time', items: bootItems }} />
+          </Section>
+        )}
+      </div>
 
       {managementItems.length > 0 && (
-        <Section title="Management">
-          <InfoCard data={{ title: 'Fleet', items: managementItems }} />
-        </Section>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[var(--spacing-system-l)]">
+          <Section title="Management">
+            <InfoCard data={{ title: 'Fleet', items: managementItems }} />
+          </Section>
+        </div>
       )}
     </div>
   );
