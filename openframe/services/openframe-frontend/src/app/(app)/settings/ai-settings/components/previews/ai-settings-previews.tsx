@@ -1,5 +1,6 @@
 'use client';
 
+import { FAE_AVATAR_DATA_URI } from '@flamingo-stack/openframe-frontend-core/assets';
 import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import type { ApplicationTheme } from '../../types/ai-settings';
 import { FaeChatPreview } from './fae-chat-preview';
@@ -26,6 +27,11 @@ export function AiSettingsPreviews({
 }: AiSettingsPreviewsProps) {
   const resolved = useResolvedTheme(theme);
 
+  // Fall back to the library's packaged default Fae avatar when no custom image
+  // is uploaded — same behavior as the chat, which never renders an empty/broken
+  // avatar. Keeps both previews (and their MSP/chat cards) looking complete.
+  const resolvedAvatarUrl = avatarUrl || FAE_AVATAR_DATA_URI;
+
   // Scope the theme to each card, not the wrapper: `.theme-light` flips
   // `--ods-system-greys-background`, so applying it to the container would turn
   // the whole container white too. Per-card scoping keeps the container on the
@@ -35,12 +41,12 @@ export function AiSettingsPreviews({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-[var(--spacing-system-l)] rounded-md bg-ods-bg">
       <div className={themeClass}>
-        <MeetFaePreview assistantName={assistantName} avatarUrl={avatarUrl} accentColor={accentColor} />
+        <MeetFaePreview assistantName={assistantName} avatarUrl={resolvedAvatarUrl} accentColor={accentColor} />
       </div>
       <div className={themeClass}>
         <FaeChatPreview
           assistantName={assistantName}
-          avatarUrl={avatarUrl}
+          avatarUrl={resolvedAvatarUrl}
           accentColor={accentColor}
           providerName={providerName}
           modelDisplayName={modelDisplayName}
