@@ -11,6 +11,11 @@ use crate::platform::remove_app_bundle;
 #[cfg(target_os = "windows")]
 use crate::platform::file_lock::log_file_lock_info;
 
+pub enum UninstallOutcome {
+    Removed,
+    NotInstalled,
+}
+
 #[derive(Clone)]
 pub struct ToolUninstallService {
     installed_tools_service: InstalledToolsService,
@@ -31,6 +36,23 @@ impl ToolUninstallService {
             command_params_resolver,
             tool_kill_service,
             directory_manager,
+        }
+    }
+
+    pub async fn uninstall_by_tool_agent_id(&self, tool_agent_id: &str) -> Result<UninstallOutcome> {
+        match self.installed_tools_service.get_by_tool_agent_id(tool_agent_id).await? {
+            None => {
+                info!("Tool {} not present in registry, nothing to uninstall", tool_agent_id);
+                Ok(UninstallOutcome::NotInstalled)
+            }
+            Some(tool) => {
+                self.uninstall_tool(&tool).await
+                    .with_context(|| format!("Failed to uninstall tool: {}", tool_agent_id))?;
+                self.installed_tools_service.delete_by_tool_agent_id(tool_agent_id).await
+                    .with_context(|| format!("Failed to remove registry record for: {}", tool_agent_id))?;
+                info!("Tool {} uninstalled and removed from registry", tool_agent_id);
+                Ok(UninstallOutcome::Removed)
+            }
         }
     }
 

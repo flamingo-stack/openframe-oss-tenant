@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  AlignLeftIcon,
   // BracketCurlyEllipsisVrIcon, // Queries tab temporarily disabled
   BracketSquareCheckIcon,
   FolderShieldIcon,
   HardDrivesIcon,
   Hierarchy02Icon,
+  Menu02Icon,
   ShieldIcon,
   TagIcon,
   TerminalBrowserIcon,
@@ -32,7 +32,7 @@ export const DEVICE_TABS: TabItem[] = [
   {
     id: 'overview',
     label: 'Overview',
-    icon: AlignLeftIcon,
+    icon: Menu02Icon,
     component: OverviewTab,
   },
   {

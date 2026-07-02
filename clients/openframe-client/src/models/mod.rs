@@ -18,11 +18,13 @@ pub mod update_state;
 pub mod device_tag;
 pub mod tool_version_overrides;
 pub mod execution;
+pub mod tool_uninstall_message;
 
 pub use execution::{
     CommandMessage, ExecutionMessage, ExecutionRequest, PrivilegeLevel, RmmResult, ScriptEnvVar,
     ScriptMessage, ScriptShell,
 };
+pub use tool_uninstall_message::{ToolUninstallMessage, ToolUninstallResult, UninstallStatus};
 
 pub use agent_registration_request::AgentRegistrationRequest;
 pub use agent_registration_response::AgentRegistrationResponse;
