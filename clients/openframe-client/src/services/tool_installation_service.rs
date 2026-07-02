@@ -92,6 +92,8 @@ impl ToolInstallationService {
     #[tracing::instrument(skip_all, fields(tool_id = %tool_installation_message.tool_agent_id))]
     pub async fn install(&self, tool_installation_message: ToolInstallationMessage) -> Result<()> {
         let tool_agent_id = tool_installation_message.tool_agent_id.clone();
+        let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
+        let _guard = tool_lock.lock().await;
         self.tool_run_manager.mark_updating(&tool_agent_id).await;
         let result = self.install_inner(tool_installation_message).await;
         self.tool_run_manager.clear_updating(&tool_agent_id).await;

@@ -2,7 +2,6 @@
 
 import { PageLayout } from '@flamingo-stack/openframe-frontend-core';
 import {
-  ClockHistoryIcon,
   CreditCardIcon,
   Hierarchy02Icon,
   Logout01Icon,
@@ -52,12 +51,6 @@ const SETTINGS_NAV_ITEMS = [
     icon: UsersGroupIcon,
     title: 'Employees',
     description: 'Manage employee accounts, roles, and permissions',
-  },
-  {
-    href: '/settings/worktime',
-    icon: ClockHistoryIcon,
-    title: 'Worktime',
-    description: 'Hours logged across your team',
   },
   {
     href: '/settings/api-keys',

@@ -4,6 +4,7 @@ import {
   BracketCurlyIcon,
   ChartDonutIcon,
   ClipboardListIcon,
+  ClockHistoryIcon,
   IdCardIcon,
   MonitorIcon,
   QuestionCircleIcon,
@@ -113,6 +114,16 @@ export const getNavigationItems = (
         isActive: pathname.startsWith('/mingo'),
       });
     }
+  }
+
+  if (featureFlags.timeTracker.enabled()) {
+    baseItems.push({
+      id: 'worktime',
+      label: 'Worktime',
+      icon: <ClockHistoryIcon size={24} />,
+      path: '/worktime',
+      isActive: pathname.startsWith('/worktime'),
+    });
   }
 
   baseItems.push({
