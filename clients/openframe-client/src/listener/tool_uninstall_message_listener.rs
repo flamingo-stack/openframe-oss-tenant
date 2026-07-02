@@ -12,7 +12,7 @@ use crate::config::update_config::{
     CONSUMER_CYCLE_PAUSE_MS,
     RECONNECTION_DELAY_MS,
     CONSUMER_ACK_WAIT_SECS,
-    CONSUMER_MAX_DELIVER,
+    UNINSTALL_CONSUMER_MAX_DELIVER,
 };
 use async_nats::jetstream::consumer::PushConsumer;
 use async_nats::jetstream::consumer::push;
@@ -134,7 +134,6 @@ impl ToolUninstallMessageListener {
         };
 
         self.tool_run_manager.mark_updating(&tool_agent_id).await;
-        self.tool_run_manager.clear_running_tool(&tool_agent_id).await;
 
         let outcome = std::panic::AssertUnwindSafe(
             self.tool_uninstall_service.uninstall_by_tool_agent_id(&tool_agent_id),
@@ -142,20 +141,23 @@ impl ToolUninstallMessageListener {
         .catch_unwind()
         .await;
 
-        self.tool_run_manager.clear_updating(&tool_agent_id).await;
-
-        let (status, ack_message) = match outcome {
-            Ok(Ok(UninstallOutcome::Removed)) => (UninstallStatus::Removed, true),
-            Ok(Ok(UninstallOutcome::NotInstalled)) => (UninstallStatus::NotInstalled, true),
+        let (status, ack_message, remove_supervision) = match outcome {
+            Ok(Ok(UninstallOutcome::Removed)) => (UninstallStatus::Removed, true, true),
+            Ok(Ok(UninstallOutcome::NotInstalled)) => (UninstallStatus::NotInstalled, true, true),
             Ok(Err(e)) => {
                 error!("Failed to uninstall tool {}: {:#}", tool_agent_id, e);
-                (UninstallStatus::Failed, false)
+                (UninstallStatus::Failed, false, false)
             }
             Err(_) => {
                 error!("Uninstall panicked for tool {}", tool_agent_id);
-                (UninstallStatus::Failed, false)
+                (UninstallStatus::Failed, false, false)
             }
         };
+
+        if remove_supervision {
+            self.tool_run_manager.clear_running_tool(&tool_agent_id).await;
+        }
+        self.tool_run_manager.clear_updating(&tool_agent_id).await;
 
         if let Err(e) = self.result_publisher
             .publish(machine_id, &tool_agent_id, status)
@@ -242,7 +244,7 @@ impl ToolUninstallMessageListener {
             deliver_subject,
             durable_name: Some(durable_name),
             ack_wait: Duration::from_secs(CONSUMER_ACK_WAIT_SECS),
-            max_deliver: CONSUMER_MAX_DELIVER,
+            max_deliver: UNINSTALL_CONSUMER_MAX_DELIVER,
             ..Default::default()
         }
     }
