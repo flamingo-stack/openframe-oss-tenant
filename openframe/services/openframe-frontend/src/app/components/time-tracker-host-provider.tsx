@@ -31,6 +31,8 @@ import { resumeTimerMutation } from '@/graphql/time-tracker/resume-timer-mutatio
 import { startTimerMutation } from '@/graphql/time-tracker/start-timer-mutation';
 import { stopTimerMutation } from '@/graphql/time-tracker/stop-timer-mutation';
 import {
+  CLEAR_ORGANIZATION_ID,
+  CLEAR_TICKET_ID,
   formatDurationLabel,
   makeCancelTimerUpdater,
   makeSetCurrentTimerUpdater,
@@ -91,9 +93,10 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
       resetTicketCustomer({
         ticketId: timerNode.ticketId ?? null,
         ticketLabel: timerNode.ticketTitle ?? (timerNode.ticketNumber != null ? `#${timerNode.ticketNumber}` : null),
-        customerId: timerNode.ticket?.organizationId ?? null,
-        customerLabel: timerNode.ticket?.organizationName ?? null,
-        lockCustomer: !!timerNode.ticket?.organizationId,
+        customerId: timerNode.organizationId ?? null,
+        customerLabel: timerNode.organization?.name ?? timerNode.ticket?.organizationName ?? null,
+        // Locked only when ticket-derived; a customer picked without a ticket stays editable.
+        lockCustomer: !!(timerNode.ticketId && timerNode.organizationId),
       });
       if (timerNode.notes) setNotes(timerNode.notes);
       seededRef.current = true;
@@ -175,9 +178,9 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
     stopTimer({
       variables: {
         input: {
-          ticketId: toTicketGlobalId(selectedTicketId),
-          organizationId: toOrganizationGlobalId(selectedCustomerId),
-          notes: notes || null,
+          ticketId: toTicketGlobalId(selectedTicketId) ?? CLEAR_TICKET_ID,
+          organizationId: toOrganizationGlobalId(selectedCustomerId) ?? CLEAR_ORGANIZATION_ID,
+          notes,
         },
       },
       updater: makeStopTimerUpdater(),
@@ -212,8 +215,8 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
         ticketId: node.ticketId ?? null,
         ticketNumber: node.ticketNumber ?? null,
         ticketTitle: node.ticketTitle ?? null,
-        organizationId: node.ticket?.organizationId ?? null,
-        organizationName: node.ticket?.organizationName ?? null,
+        organizationId: node.organizationId ?? null,
+        organizationName: node.organization?.name ?? node.ticket?.organizationName ?? null,
         notes: node.notes ?? null,
       });
     },
