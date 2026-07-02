@@ -6,6 +6,8 @@ import { TerminalSquare } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useDeviceDetails } from '@/app/(app)/devices/hooks/use-device-details';
+import { CONTEXT_ENTITY_KIND } from '@/app/(app)/mingo/context/context-types';
+import { useTrackOpenView } from '@/app/(app)/mingo/context/use-track-open-view';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { MeshControlClient } from '@/lib/meshcentral/meshcentral-control';
 import { MeshTunnel, TunnelState } from '@/lib/meshcentral/meshcentral-tunnel';
@@ -56,6 +58,12 @@ export default function RemoteShellPage({ params }: RemoteShellPageProps) {
   const organizationName = useMemo(() => {
     return deviceDetails?.organization;
   }, [deviceDetails]);
+
+  // Keep this device as the Mingo "open view" while on the remote-shell surface
+  // (the parent detail page unmounted on navigation, clearing its own openView).
+  useTrackOpenView(
+    deviceDetails ? { type: CONTEXT_ENTITY_KIND.DEVICE, id: deviceId, label: hostname || deviceId } : null,
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<any | null>(null);

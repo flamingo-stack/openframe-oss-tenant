@@ -169,7 +169,7 @@ export function QueryDetailsView({ queryId }: QueryDetailsViewProps) {
 
       {/* Tabs: Query Results / Assigned Devices */}
       <div className="mt-6">
-        <TabNavigation tabs={QUERY_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+        <TabNavigation tabs={QUERY_TABS} activeTab={activeTab} onTabChange={handleTabChange}>
           {tabId => (
             <div className="mt-6">
               {tabId === 'devices' ? (

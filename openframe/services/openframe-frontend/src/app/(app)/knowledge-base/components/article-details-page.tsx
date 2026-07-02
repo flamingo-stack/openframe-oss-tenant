@@ -23,7 +23,10 @@ import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { AssignedItemsView } from '@/components/assignments';
 import { formatDate } from '@/lib/format-date';
 import { getFullImageUrl } from '@/lib/image-url';
+import { decodeGlobalId } from '@/lib/relay-id';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import { getArchivedArticlesConnectionId } from '../hooks/use-archived-articles';
 import { useDownloadArticleAttachment } from '../hooks/use-download-article-attachment';
 import { useKnowledgeBaseItem } from '../hooks/use-knowledge-base-item';
@@ -58,6 +61,16 @@ function ArticleDetailsContent({ articleId }: { articleId: string }) {
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
   const [moveOpen, setMoveOpen] = useState(false);
+
+  // Mingo context carries the RAW db id (the route's `articleId` is the Relay
+  // global id) — KB_ARTICLE is GraphQL-resolved, so the chip re-encodes it to a
+  // global id for `node(id:)`. Registers the open article as the Mingo "open view".
+  const articleDbId = useMemo(() => decodeGlobalId(articleId)?.rawId ?? articleId, [articleId]);
+  useTrackOpenView(
+    article && article.type === 'ARTICLE'
+      ? { type: CONTEXT_ENTITY_KIND.KB_ARTICLE, id: articleDbId, label: article.name || articleDbId }
+      : null,
+  );
 
   if (!article || article.type !== 'ARTICLE') {
     notFound();

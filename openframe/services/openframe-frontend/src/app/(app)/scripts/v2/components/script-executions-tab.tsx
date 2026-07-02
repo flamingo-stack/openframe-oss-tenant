@@ -515,11 +515,16 @@ export function ScriptExecutionsTab({ scriptId }: ScriptExecutionsTabProps) {
   );
 
   return (
-    <div className="flex flex-col" style={containerStyle}>
+    // `-mt-6` cancels the `gap-6` the parent (script-details-view) puts between the
+    // tab bar and this content: TabNavigation renders as a fragment, so its tab bar
+    // and this body are sibling flex items and the gap leaks in as a top offset.
+    // Without this it stacks with the toolbar's `pt-l` below → doubled top padding.
+    <div className="flex flex-col -mt-6" style={containerStyle}>
       {/* Search stays pinned to the top of the scroll area; its measured height
-          feeds the sticky column header offset. `pt-l` separates it from the tab
-          bar above (TabNavigation renders its content flush), `pb-l` from the
-          table below — the `bg-ods-bg` hides rows scrolling underneath. */}
+          feeds the sticky column header offset. `pt-l` sits above the input (and,
+          once the `-mt-6` cancels the parent gap, is the sole top spacing), `pb-l`
+          separates it from the table below — the `bg-ods-bg` hides rows scrolling
+          underneath while the toolbar is pinned. */}
       <div
         ref={toolbarRef}
         className="sticky top-0 z-20 flex items-center gap-[var(--spacing-system-xs)] bg-ods-bg pt-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"

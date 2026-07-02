@@ -54,7 +54,6 @@ export function CustomersTabNavigation({ activeTab, onTabChange }: CustomersTabN
         activeTab={activeTab || 'active'}
         tabs={CUSTOMERS_TABS}
         onTabChange={handleTabChange}
-        showRightGradient
       />
     </div>
   );

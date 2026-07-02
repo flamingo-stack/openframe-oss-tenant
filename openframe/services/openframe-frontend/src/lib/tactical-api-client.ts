@@ -64,6 +64,15 @@ class TacticalApiClient {
 
   // Tactical RMM specific methods
 
+  /**
+   * Fetch a single Tactical RMM agent. Used only to enrich the Tactical tool
+   * connection's live status/last-seen on the device-details Agents tab —
+   * Tactical is otherwise no longer a device-details data source.
+   */
+  async getAgent(agentId: string): Promise<ApiResponse<any>> {
+    return this.get(`/agents/${agentId}/`);
+  }
+
   async runScript(
     agentId: string,
     scriptData: {

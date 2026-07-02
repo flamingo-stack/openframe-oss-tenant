@@ -15,7 +15,10 @@ import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { batchRunScriptMutation } from '@/graphql/scripts/batch-run-script-mutation';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
+import { decodeGlobalId } from '@/lib/relay-id';
 import type { Device } from '../../../devices/types/device.types';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { ExecutionStartedModal } from '../../components/script/execution-started-modal';
 import { scriptArgumentSchema } from '../../types/edit-script.types';
 import { getDevicePrimaryId } from '../../utils/device-helpers';
@@ -53,6 +56,14 @@ function RunScriptContent({ scriptId }: RunScriptViewProps) {
     { fetchPolicy: 'store-and-network' },
   );
   const script = data.script;
+
+  // Keep this script as the Mingo "open view" while on the run surface (the detail
+  // page unmounted on navigation). Raw db id — the route's `scriptId` is the Relay
+  // global id (SCRIPT is GraphQL-resolved; the chip re-encodes it for `node(id:)`).
+  const scriptDbId = useMemo(() => decodeGlobalId(scriptId)?.rawId ?? scriptId, [scriptId]);
+  useTrackOpenView(
+    script ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptDbId, label: script.name || scriptDbId } : null,
+  );
 
   const supportedPlatforms = useMemo(() => platformsToIds(script?.supportedPlatforms), [script?.supportedPlatforms]);
 

@@ -10,6 +10,7 @@ import {
   parseMeshCentralDeviceStatus,
   parseMeshCentralLastSeen,
 } from '@/lib/meshcentral/meshcentral-api';
+import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { GET_DEVICE_QUERY } from '../queries/devices-queries';
 import type {
   Battery,
@@ -46,6 +47,8 @@ function createDevice(
   fleetData: FleetHost | null,
   meshCentralStatus: 'online' | 'offline' | null,
   meshCentralLastSeen: string | null,
+  tacticalStatus: string | null,
+  tacticalLastSeen: string | null,
 ): Device {
   // Transform Fleet software to unified Software type
   const software: Software[] =
@@ -259,9 +262,16 @@ function createDevice(
     // Tags
     tags: node.tags || [],
 
-    // Tool Connections (enriched with status + lastSeen from Fleet / MeshCentral API)
+    // Tool Connections (enriched with status + lastSeen from Tactical / Fleet / MeshCentral API)
     toolConnections: (node.toolConnections || []).map(tc => {
       const base = { ...tc };
+      if (tc.toolType === 'TACTICAL_RMM') {
+        return {
+          ...base,
+          ...(tacticalStatus != null && { status: tacticalStatus }),
+          ...(tacticalLastSeen != null && { lastSeen: tacticalLastSeen }),
+        };
+      }
       if (tc.toolType === 'FLEET_MDM') {
         return {
           ...base,
@@ -339,7 +349,21 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
 
   const node = graphqlResponse.data.device;
 
-  // 2) Fetch Fleet MDM details if present
+  // 2) Fetch Tactical RMM agent — ONLY to surface live agent status/last-seen on the Agents tab.
+  // Tactical is no longer a general device-details data source; we intentionally read just these two
+  // fields. On error we leave both null so the Agents tab simply omits Tactical status/last-seen.
+  const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
+  let tacticalStatus: string | null = null;
+  let tacticalLastSeen: string | null = null;
+  if (tactical?.agentToolId) {
+    const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
+    if (tResponse.ok && tResponse.data) {
+      if (tResponse.data.status != null) tacticalStatus = String(tResponse.data.status).toLowerCase();
+      if (tResponse.data.last_seen != null) tacticalLastSeen = tResponse.data.last_seen;
+    }
+  }
+
+  // 2.5) Fetch Fleet MDM details if present
   const fleet = node.toolConnections?.find(tc => tc.toolType === 'FLEET_MDM');
   let fleetData: any | null = null;
   if (fleet?.agentToolId) {
@@ -371,7 +395,7 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
   }
 
   // 3) Create Device object directly - no normalization
-  return createDevice(node, fleetData, meshCentralStatus, meshCentralLastSeen);
+  return createDevice(node, fleetData, meshCentralStatus, meshCentralLastSeen, tacticalStatus, tacticalLastSeen);
 }
 
 interface UseDeviceDetailsOptions {

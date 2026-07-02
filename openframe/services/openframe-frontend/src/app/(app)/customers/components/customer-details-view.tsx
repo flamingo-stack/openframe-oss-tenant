@@ -204,7 +204,7 @@ export function CustomerDetailsView({ id }: CustomerDetailsViewProps) {
         contentClassName="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)] md:px-0 md:pb-0"
         headerVariant="card"
       >
-        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+        <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange}>
           {activeTab => (
             <TabContent
               activeTab={activeTab}

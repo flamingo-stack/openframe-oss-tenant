@@ -18,6 +18,8 @@ import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { useSafeBack } from '@/app/hooks/use-safe-back';
 import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { getTacticalAgentId } from '../../../devices/utils/device-action-utils';
+import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
+import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { useRunScriptData } from '../../hooks/use-run-script-data';
 import { scriptArgumentSchema } from '../../types/edit-script.types';
 import { getDevicePrimaryId, resolveOsTypeFromDevices, resolveShellForExecution } from '../../utils/device-helpers';
@@ -47,6 +49,13 @@ export function RunScriptView({ scriptId }: RunScriptViewProps) {
     devices: allDevices,
     isLoadingDevices,
   } = useRunScriptData({ scriptId });
+
+  // Keep this script as the Mingo "open view" while on the run surface (the detail
+  // page unmounted on navigation). v1 is REST-backed — `scriptId` is already the
+  // raw db id the backend SCRIPT resolver expects (no global-id decode needed).
+  useTrackOpenView(
+    scriptDetails ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptId, label: scriptDetails.name || scriptId } : null,
+  );
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 

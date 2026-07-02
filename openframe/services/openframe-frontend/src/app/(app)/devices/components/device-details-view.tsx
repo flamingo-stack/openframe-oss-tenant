@@ -183,7 +183,7 @@ export function DeviceDetailsView({ deviceId }: DeviceDetailsViewProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {/* Tab Navigation */}
-      <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+      <TabNavigation tabs={DEVICE_TABS} activeTab={activeTab} onTabChange={handleTabChange}>
         {tabId => (
           <TabContent
             activeTab={tabId}

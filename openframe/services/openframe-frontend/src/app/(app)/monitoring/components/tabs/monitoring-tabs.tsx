@@ -50,7 +50,6 @@ export function MonitoringTabNavigation({ activeTab, onTabChange }: MonitoringTa
         activeTab={activeTab || 'policies'}
         tabs={MONITORING_TABS}
         onTabChange={handleTabChange}
-        showRightGradient
       />
     </div>
   );
