@@ -48,7 +48,10 @@ use crate::services::shared_token_service::SharedTokenService;
 use crate::services::encryption_service::EncryptionService;
 use crate::clients::tool_agent_file_client::ToolAgentFileClient;
 use crate::services::tool_installation_service::ToolInstallationService;
+use crate::services::tool_uninstall_service::ToolUninstallService;
+use crate::services::tool_uninstall_result_publisher::ToolUninstallResultPublisher;
 use crate::listener::tool_installation_message_listener::ToolInstallationMessageListener;
+use crate::listener::tool_uninstall_message_listener::ToolUninstallMessageListener;
 use crate::listener::openframe_client_update_listener::OpenFrameClientUpdateListener;
 use crate::listener::tool_agent_update_listener::ToolAgentUpdateListener;
 use crate::services::openframe_client_update_service::OpenFrameClientUpdateService;
@@ -140,6 +143,7 @@ pub struct Client {
     auth_processor: InitialAuthenticationProcessor,
     nats_connection_manager: NatsConnectionManager,
     tool_installation_message_listener: ToolInstallationMessageListener,
+    tool_uninstall_message_listener: ToolUninstallMessageListener,
     openframe_client_update_listener: OpenFrameClientUpdateListener,
     tool_agent_update_listener: ToolAgentUpdateListener,
     command_execution_listener: ExecutionListener<CommandMessage>,
@@ -388,9 +392,24 @@ impl Client {
 
         // Initialize tool installation message listener
         let tool_installation_message_listener = ToolInstallationMessageListener::new(
-            nats_connection_manager.clone(), 
-            tool_installation_service, 
+            nats_connection_manager.clone(),
+            tool_installation_service,
             config_service.clone()
+        );
+
+        let tool_uninstall_service = ToolUninstallService::new(
+            installed_tools_service.clone(),
+            tool_command_params_resolver.clone(),
+            tool_kill_service.clone(),
+            directory_manager.clone(),
+        );
+        let tool_uninstall_result_publisher = ToolUninstallResultPublisher::new(nats_message_publisher.clone());
+        let tool_uninstall_message_listener = ToolUninstallMessageListener::new(
+            nats_connection_manager.clone(),
+            tool_run_manager.clone(),
+            tool_uninstall_service,
+            tool_uninstall_result_publisher,
+            config_service.clone(),
         );
 
         // Initialize OpenFrame client update listener
@@ -444,6 +463,7 @@ impl Client {
             auth_processor,
             nats_connection_manager,
             tool_installation_message_listener,
+            tool_uninstall_message_listener,
             openframe_client_update_listener,
             tool_agent_update_listener,
             command_execution_listener,
@@ -490,6 +510,8 @@ impl Client {
 
         //Start tool installation message listener in background
         self.tool_installation_message_listener.start().await?;
+
+        self.tool_uninstall_message_listener.start().await?;
 
         // Start OpenFrame client update listener in background
         self.openframe_client_update_listener.start().await?;
