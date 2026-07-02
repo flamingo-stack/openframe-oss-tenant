@@ -77,6 +77,10 @@ export function ChatView() {
   const [previewTicketId, setPreviewTicketId] = useState<string | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [isDialogClosed, setIsDialogClosed] = useState(false);
+  // Hovering a quick-action chip previews its full instruction as ghost text in
+  // the composer (the chip label is short); clears on hover-out / select. Aligns
+  // this client with the other chat surfaces' quick-action preview behaviour.
+  const [quickActionPreview, setQuickActionPreview] = useState<string | null>(null);
   const activeTicketIdRef = useRef<string | null>(null);
   activeTicketIdRef.current = activeTicketId;
   const { showWelcome, completeWelcome } = useWelcomeScreen();
@@ -413,11 +417,20 @@ export function ChatView() {
     };
   }, []);
 
+  const isDialogActive = displayMessages.length > 0 || hasMessages || Boolean(dialogId && isLoadingHistory);
+
+  // The quick-action row only renders on the empty initial screen. If it goes
+  // away (a message is sent, or the chat disconnects) while a chip is still
+  // hovered, drop the in-flight preview so ghost text can't leak into the
+  // active composer. Declared before the `showWelcome` early return so the hook
+  // order stays stable (rules-of-hooks).
+  useEffect(() => {
+    if (isDialogActive || isDisconnected) setQuickActionPreview(null);
+  }, [isDialogActive, isDisconnected]);
+
   if (showWelcome) {
     return <WelcomeScreen onGetStarted={completeWelcome} />;
   }
-
-  const isDialogActive = displayMessages.length > 0 || hasMessages || Boolean(dialogId && isLoadingHistory);
 
   return (
     <ChatContainer className="p-[var(--spacing-system-l)] pb-[var(--spacing-system-xs)]">
@@ -513,7 +526,12 @@ export function ChatView() {
                 chips={quickActions.map(action => ({
                   id: action.id,
                   label: action.name,
-                  onSelect: () => handleQuickAction(action.instructions),
+                  onSelect: () => {
+                    setQuickActionPreview(null);
+                    handleQuickAction(action.instructions);
+                  },
+                  onHoverStart: () => setQuickActionPreview(action.instructions),
+                  onHoverEnd: () => setQuickActionPreview(null),
                 }))}
               />
             )}
@@ -523,6 +541,7 @@ export function ChatView() {
               sending={isStreaming || isCompacting}
               awaitingResponse={isTicketPreview || awaitingTechnicianResponse || isAwaitingTechnician}
               placeholder="Enter your request here..."
+              previewText={quickActionPreview ?? undefined}
             />
           </>
         )}
