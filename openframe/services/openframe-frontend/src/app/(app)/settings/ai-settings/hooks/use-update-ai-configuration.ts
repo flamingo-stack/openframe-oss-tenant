@@ -1,7 +1,7 @@
 'use client';
 
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
 import type { AIProvider } from '../types/ai-settings';
 
@@ -17,6 +17,7 @@ interface UpdateAiConfigurationInput {
  */
 export function useUpdateAiConfiguration() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: async (input: UpdateAiConfigurationInput) => {
@@ -24,6 +25,12 @@ export function useUpdateAiConfiguration() {
       if (!response.ok) {
         throw new Error(response.error || 'Failed to update AI configuration');
       }
+    },
+    onSuccess: () => {
+      // Refresh the cached active model so the Mingo composer's model row picks
+      // up the new provider/model immediately, instead of only after the next
+      // chat request refines it via streamed metadata.
+      queryClient.invalidateQueries({ queryKey: ['ai-configuration-model'] });
     },
     onError: error => {
       toast({

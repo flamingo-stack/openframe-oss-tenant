@@ -140,11 +140,19 @@ export default function Mingo() {
     chatInputRef.current?.clear();
   }, [activeDialogId]);
 
+  // Sync the displayed model to the global AI config. Runs on first load
+  // (seeding `currentModel`) and again whenever the global config changes — e.g.
+  // the user picks a new provider/model on /settings/ai-settings — so the model
+  // row under the composer reflects the new selection immediately instead of
+  // only after the next request refines it. React Query's structural sharing
+  // keeps `initialAiModel` referentially stable while its value is unchanged, so
+  // this only fires on a real config change and doesn't clobber per-dialog
+  // metadata refinements (handleMetadataUpdate) in between.
   useEffect(() => {
-    if (initialAiModel && !currentModel) {
+    if (initialAiModel) {
       setCurrentModel(initialAiModel);
     }
-  }, [initialAiModel, currentModel]);
+  }, [initialAiModel]);
 
   // The model is global config; per-dialog metadata only refines it. Falling
   // back to `initialAiModel` means we never have to null `currentModel` on
