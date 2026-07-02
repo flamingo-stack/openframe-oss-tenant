@@ -358,14 +358,17 @@ pub fn run() {
     builder = builder
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             log::info!("single-instance: second launch intercepted");
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.set_focus();
-            }
-            #[cfg(target_os = "macos")]
-            {
-                let _ = app.set_activation_policy(ActivationPolicy::Regular);
-                restore_dock_icon();
+            let background_relaunch = argv.iter().any(|arg| arg == "--background");
+            if !background_relaunch {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+                #[cfg(target_os = "macos")]
+                {
+                    let _ = app.set_activation_policy(ActivationPolicy::Regular);
+                    restore_dock_icon();
+                }
             }
             let mut cfg = config_reader::AppConfig::from_args(&argv);
             if !cfg.is_valid() {
