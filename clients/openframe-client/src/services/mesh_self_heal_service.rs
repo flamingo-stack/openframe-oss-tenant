@@ -22,6 +22,8 @@ const HEALTHY_MARKER: &str = "Received CoreOk from server";
 const POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// How long continuously stuck before we act.
 const STUCK_DURATION: Duration = Duration::from_secs(10 * 60);
+/// How long continuously failing (after a .msh refresh) before we restart the agent outright.
+const RESTART_DURATION: Duration = Duration::from_secs(20 * 60);
 /// Minimum wait between heal attempts (success or no-op), so a server-side outage can't spin.
 const NOOP_HEAL_COOLDOWN: Duration = Duration::from_secs(60 * 60);
 /// Timeout for the /generate-msh fetch so an unresponsive server can't block the heal loop.
@@ -84,6 +86,7 @@ impl MeshSelfHealService {
 
         let mut offset: u64 = 0;
         let mut stuck_since: Option<Instant> = None;
+        let mut error_since: Option<Instant> = None;
         let mut last_heal_attempt: Option<Instant> = None;
 
         loop {
@@ -96,15 +99,27 @@ impl MeshSelfHealService {
                     for line in &lines {
                         if line.contains(HEALTHY_MARKER) {
                             stuck_since = None;
+                            error_since = None;
                             last_heal_attempt = None;
                         } else if line.contains(FAILURE_MARKER) {
                             stuck_since.get_or_insert_with(Instant::now);
+                            error_since.get_or_insert_with(Instant::now);
                         }
                     }
                 }
                 Err(e) => {
                     debug!("mesh self-heal: cannot read {}: {e}", log_path.display());
                 }
+            }
+
+            // Errors persisted past RESTART_DURATION after a .msh refresh — restart the agent outright.
+            let persistent = error_since.map_or(false, |t| t.elapsed() >= RESTART_DURATION);
+            if persistent && last_heal_attempt.is_some() && !self.tool_run_manager.is_updating(MESH_TOOL_ID).await {
+                warn!("meshcentral-agent still failing after {}s and a .msh refresh — restarting agent", RESTART_DURATION.as_secs());
+                if let Err(e) = self.restart_agent().await {
+                    error!("mesh self-heal restart failed: {e:#}");
+                }
+                error_since = None;
             }
 
             let stuck = stuck_since.map_or(false, |t| t.elapsed() >= STUCK_DURATION);
@@ -191,13 +206,18 @@ impl MeshSelfHealService {
         tokio::fs::write(&tmp_path, body.as_bytes()).await?;
         tokio::fs::rename(&tmp_path, &msh_path).await?;
 
+        self.restart_agent().await?;
+        Ok(true)
+    }
+
+    async fn restart_agent(&self) -> Result<()> {
         self.tool_kill.stop_tool(MESH_TOOL_ID).await?;
         if let Some(service_name) = self.mesh_service_name().await? {
             if let Err(e) = system_service::start_service(&service_name).await {
                 debug!("mesh self-heal: start_service({service_name}) — likely already running: {e}");
             }
         }
-        Ok(true)
+        Ok(())
     }
 
     async fn current_msh_missing_serverid(&self) -> bool {
