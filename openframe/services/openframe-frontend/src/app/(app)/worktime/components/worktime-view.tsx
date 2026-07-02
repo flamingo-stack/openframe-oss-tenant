@@ -4,11 +4,8 @@ import { PlusCircleIcon } from '@flamingo-stack/openframe-frontend-core/componen
 import { PageLayout } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useState } from 'react';
 import { WorkTimeTable } from '@/app/components/shared/work-time-table';
-import { useSafeBack } from '@/app/hooks/use-safe-back';
 
 export function WorktimeView() {
-  const handleBack = useSafeBack('/settings');
-
   const [addWorkTimeOpen, setAddWorkTimeOpen] = useState(false);
 
   const actions = [
@@ -25,7 +22,6 @@ export function WorktimeView() {
       title="Worktime"
       actions={actions}
       actionsVariant="primary-buttons"
-      backButton={{ label: 'Back', onClick: handleBack }}
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       <WorkTimeTable
