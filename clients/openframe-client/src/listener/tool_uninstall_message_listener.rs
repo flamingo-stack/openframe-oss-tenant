@@ -123,7 +123,6 @@ impl ToolUninstallMessageListener {
         };
 
         let tool_agent_id = uninstall_message.tool_agent_id.clone();
-        let operation_id = uninstall_message.operation_id.clone();
 
         let tool_lock = self.tool_run_manager.tool_lock(&tool_agent_id).await;
         let _guard = match tool_lock.try_lock() {
@@ -145,21 +144,21 @@ impl ToolUninstallMessageListener {
 
         self.tool_run_manager.clear_updating(&tool_agent_id).await;
 
-        let (status, error, ack_message) = match outcome {
-            Ok(Ok(UninstallOutcome::Removed)) => (UninstallStatus::Removed, None, true),
-            Ok(Ok(UninstallOutcome::NotInstalled)) => (UninstallStatus::NotInstalled, None, true),
+        let (status, ack_message) = match outcome {
+            Ok(Ok(UninstallOutcome::Removed)) => (UninstallStatus::Removed, true),
+            Ok(Ok(UninstallOutcome::NotInstalled)) => (UninstallStatus::NotInstalled, true),
             Ok(Err(e)) => {
                 error!("Failed to uninstall tool {}: {:#}", tool_agent_id, e);
-                (UninstallStatus::Failed, Some(format!("{:#}", e)), false)
+                (UninstallStatus::Failed, false)
             }
             Err(_) => {
                 error!("Uninstall panicked for tool {}", tool_agent_id);
-                (UninstallStatus::Failed, Some("uninstall task panicked".to_string()), false)
+                (UninstallStatus::Failed, false)
             }
         };
 
         if let Err(e) = self.result_publisher
-            .publish(machine_id, &operation_id, &tool_agent_id, status, error)
+            .publish(machine_id, &tool_agent_id, status)
             .await
         {
             warn!("Failed to publish uninstall result for {}: {:#}", tool_agent_id, e);

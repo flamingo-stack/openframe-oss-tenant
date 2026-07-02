@@ -15,17 +15,13 @@ impl ToolUninstallResultPublisher {
     pub async fn publish(
         &self,
         machine_id: &str,
-        operation_id: &str,
         tool_agent_id: &str,
         status: UninstallStatus,
-        error: Option<String>,
     ) -> anyhow::Result<()> {
         let topic = format!("machine.{}.tool-uninstall.result", machine_id);
         let result = ToolUninstallResult {
-            operation_id: operation_id.to_string(),
             tool_agent_id: tool_agent_id.to_string(),
             status,
-            error,
         };
         self.nats_message_publisher.publish(&topic, result).await
             .context(format!("Failed to publish tool uninstall result to topic: {}", topic))
