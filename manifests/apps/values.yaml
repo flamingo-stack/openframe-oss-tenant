@@ -1,8 +1,3 @@
-global:
-  image:
-    tag: latest
-
-environment: dev
 
 deployment:
   oss:
@@ -14,13 +9,11 @@ deployment:
         credentials:
           apiKey: ""
           authtoken: ""
-    repository:
-      baseDir: manifests
-      appsDir: apps
-      URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
-      branch: main
-      profile: dev
-      autoSync: true
+
+repository:
+  baseDir: manifests
+  URL: https://github.com/flamingo-stack/openframe-oss-tenant.git
+  branch: main
 
 
 apps:
@@ -60,31 +53,11 @@ apps:
     project: platform
     namespace: platform
     syncWave: "0"
-  alloy:
+  dev-tools:
     enabled: true
     project: platform
     namespace: platform
     syncWave: "0"
-  loki:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-  prometheus:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-    syncOptions:
-      ServerSideApply: true
-  grafana:
-    enabled: true
-    project: platform
-    namespace: platform
-    syncWave: "0"
-    syncOptions:
-      ServerSideApply: true
-      RespectIgnoreDifferences: true
 
   mongodb:
     enabled: true
@@ -126,21 +99,28 @@ apps:
     project: datasources
     namespace: datasources
     syncWave: "1"
-# ---
+  mysql-fleetmdm:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
+  mongodb-meshcentral:
+    enabled: true
+    project: datasources
+    namespace: datasources
+    syncWave: "1"
   openframe-config:
     enabled: true
     project: microservices
     namespace: microservices
     syncWave: "1"
-    values:
-      config:
-        branch: main
+
+
   openframe-management:
     enabled: true
     project: microservices
     namespace: microservices
-    syncWave: "1"
-
+    syncWave: "2"
   openframe-external-api: 
     enabled: true
     project: microservices
@@ -176,84 +156,19 @@ apps:
     project: microservices
     namespace: microservices
     syncWave: "2"
-# ---
-  mongo-express:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-  kafka-ui:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-  telepresence:
-    enabled: true
-    project: client-tools
-    namespace: client-tools
-    syncWave: "2"
-    syncOptions:
-      RespectIgnoreDifferences: true
-# ---
-  # postgres-authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "2"
-  # redis-authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "2"
-  mysql-fleetmdm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  redis-fleet:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  mongodb-meshcentral:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  redis-tactical:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-  postgres-tactical:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "2"
-
-  # authentik:
-  #   enabled: true
-  #   project: integrated-tools
-  #   namespace: integrated-tools
-  #   syncWave: "3"
   fleetmdm: 
     enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
   meshcentral: 
     enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
-  tactical-rmm:
-    enabled: true
-    project: integrated-tools
-    namespace: integrated-tools
-    syncWave: "3"
+    project: microservices
+    namespace: microservices
+    syncWave: "2"
   
   registration:
     enabled: true
     project: platform
     namespace: platform
-    syncWave: "4"
+    syncWave: "3"

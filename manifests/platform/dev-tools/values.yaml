@@ -1,0 +1,73 @@
+
+kafka-ui:
+  fullnameOverride: kafka-ui  # drop the release-name prefix
+  image:
+    registry: ghcr.io/flamingo-stack/registry
+    repository: kafbat/kafka-ui
+    tag: v1.4.2
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
+  yamlApplicationConfig:
+    auth:
+      type: disabled
+    management:
+      health:
+        ldap:
+          enabled: false
+
+  ingress:
+    enabled: false
+
+  env:
+  - name: DYNAMIC_CONFIG_ENABLED  # config from UI
+    value: 'true'
+  - name: "DISABLELOGDIRSCOLLECTION"
+    value: 'true'
+  - name: LOGGING_PATTERN_CONSOLE
+    value: "ts=%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} level=%p thread=\"%t\" logger=\"%c{1}\" line=%L msg=\"%m\"%n"
+  - name: SPRING_OUTPUT_ANSI_ENABLED
+    value: "NEVER"
+  - name: KAFKA_CLUSTERS_0_NAME
+    value: "kafka"
+  - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+    value: "kafka-broker-headless.datasources:9092"
+  - name: KAFKA_CLUSTERS_1_NAME
+    value: "kafka-tenant"
+  - name: KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS
+    value: "kafka-tenant-broker-headless.datasources:9092"
+
+
+telepresence-oss:
+  logLevel: info
+
+  grpc:
+    connectionTTL: 6h
+
+  client:
+    timeouts:
+      clusterConnect: 30s
+    routing:
+      alsoProxySubnets:
+        - "172.16.0.0/12"     # Tenant VPC primary (GKE nodes)
+        - "10.0.0.0/8"        # Tenant VPC pods
+      allowConflictingSubnets:
+        - "172.16.0.0/12"     # May conflict with Docker bridge (172.17.0.0/16)
+        - "10.0.0.0/8"        # May conflict with local Docker/k3d networks
+
+  image:
+    registry: ghcr.io/flamingo-stack/registry/telepresenceio
+    name: tel2  # not configurable
+    tag: "2.27.0"
+  podAnnotations:
+    loki.grafana.com/scrape: "true"
+
+  hooks:
+    busybox:
+      registry: ghcr.io/flamingo-stack/registry
+      image: busybox
+      tag: "1.36"
+    curl:
+      registry: ghcr.io/flamingo-stack/registry
+      image: curlimages/curl
+      tag: "8.9.1"
