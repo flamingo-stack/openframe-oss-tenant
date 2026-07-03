@@ -9,6 +9,7 @@ import type { runCommandMutation as RunCommandMutationType } from '@/__generated
 import { EntityTagPicker, EntityTagPickerFallback } from '@/app/components/shared/tags';
 import { TagEntityType } from '@/generated/schema-enums';
 import { runCommandMutation } from '@/graphql/scripts/run-command-mutation';
+import { routes } from '@/lib/routes';
 import { ExecutionStartedModal } from '../../components/script/execution-started-modal';
 import { ScriptFormFields } from '../../components/script/script-form-fields';
 import type { EditScriptFormData } from '../../types/edit-script.types';
@@ -167,7 +168,7 @@ function EditScriptForm({ scriptId, initialValues, initialTags, loading = false 
     <>
       <ScriptPageChrome
         title={isEditMode ? 'Edit Script' : 'New Script'}
-        backFallback={isEditMode ? `/scripts-v2/details?id=${scriptId}` : '/scripts-v2'}
+        backFallback={isEditMode && scriptId ? routes.scriptsV2.details(scriptId) : routes.scriptsV2.list}
         actions={actions}
         className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
       >

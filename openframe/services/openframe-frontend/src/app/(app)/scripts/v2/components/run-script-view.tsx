@@ -18,6 +18,7 @@ import type { batchRunScriptMutation as BatchRunScriptMutationType } from '@/__g
 import { DeviceSelector } from '@/app/components/shared/device-selector';
 import { batchRunScriptMutation } from '@/graphql/scripts/batch-run-script-mutation';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import type { Device } from '../../../devices/types/device.types';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
@@ -188,7 +189,7 @@ function RunScriptContent({ scriptId, script }: RunScriptContentProps) {
 
   const handleViewHistory = useCallback(() => {
     setShowExecutionModal(false);
-    router.push(`/scripts-v2/details?id=${scriptId}&tab=executions`);
+    router.push(routes.scriptsV2.details(scriptId, { tab: 'executions' }));
   }, [router, scriptId]);
 
   const actions = useMemo<PageActionButton[]>(
@@ -206,7 +207,7 @@ function RunScriptContent({ scriptId, script }: RunScriptContentProps) {
 
   return (
     <>
-      <ScriptPageChrome title="Run Script" backFallback={`/scripts-v2/details?id=${scriptId}`} actions={actions}>
+      <ScriptPageChrome title="Run Script" backFallback={routes.scriptsV2.details(scriptId)} actions={actions}>
         {script ? (
           <ScriptSummaryCard
             name={script.name}

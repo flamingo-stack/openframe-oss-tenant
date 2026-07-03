@@ -18,6 +18,7 @@ import { useLazyLoadQuery } from 'react-relay';
 import type { scriptDetailRelayQuery as ScriptDetailQueryType } from '@/__generated__/scriptDetailRelayQuery.graphql';
 import { scriptDetailRelayQuery } from '@/graphql/scripts/script-detail-relay';
 import { decodeGlobalId } from '@/lib/relay-id';
+import { routes } from '@/lib/routes';
 import { CONTEXT_ENTITY_KIND } from '../../../mingo/context/context-types';
 import { useTrackOpenView } from '../../../mingo/context/use-track-open-view';
 import { initiatorName } from '../utils/execution-helpers';
@@ -196,8 +197,8 @@ function ScriptDetailsTabSkeleton() {
  * resets a tripped not-found instead of latching it.
  */
 export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
-  const editHref = `/scripts-v2/edit?id=${scriptId}`;
-  const runHref = `/scripts-v2/details/run?id=${scriptId}`;
+  const editHref = routes.scriptsV2.edit(scriptId);
+  const runHref = routes.scriptsV2.run(scriptId);
 
   const actions = useMemo(
     () => [
@@ -237,7 +238,7 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     <NotFoundBoundary key={scriptId} message="Script not found">
       <ScriptPageChrome
         title="Script Details"
-        backFallback="/scripts-v2"
+        backFallback={routes.scriptsV2.list}
         actions={actions}
         menuActions={menuActions}
         actionsVariant="menu-primary"

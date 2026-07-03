@@ -40,7 +40,7 @@ export const TAB_IDS = {
     'software',
   ],
   scripts: ['list', 'schedules'],
-  scriptsV2Details: ['details', 'history', 'execution-logs'],
+  scriptsV2Details: ['details', 'executions'],
   monitoring: ['policies', 'queries'],
   settings: ['ai-settings', 'architecture', 'company-and-users', 'api-keys', 'sso-configuration', 'profile'],
   notifications: ['history'],
