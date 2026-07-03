@@ -63,6 +63,8 @@ import { useAuthStore } from '@/stores';
 import { useDeviceActionsMenu } from '../../devices/hooks/use-device-actions-menu';
 import { useDeviceDetails } from '../../devices/hooks/use-device-details';
 import { formatFileSize } from '../../devices/utils/file-manager-utils';
+import { CONTEXT_ENTITY_KIND } from '../../mingo/context/context-types';
+import { useTrackOpenView } from '../../mingo/context/use-track-open-view';
 import {
   APPROVAL_STATUS,
   ASSISTANT_CONFIG,
@@ -121,7 +123,7 @@ function withActivityTracking(item: ActionsMenuItem, subtype: EventSubtype): Act
 
 export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
   const router = useRouter();
-  const handleBackToTickets = useSafeBack(routes.tickets.list);
+  const handleBackToTickets = useSafeBack('/tickets');
   const { toast } = useToast();
   // When the Mingo sidebar carries per-ticket context, the embedded technician
   // (Mingo) chat is redundant: its panel, NATS subscription, history fetch, and
@@ -138,6 +140,13 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
 
   const queryClient = useQueryClient();
   const { ticket: dialog, isPending: isLoading, error: dialogError } = useTicketDetail(ticketId);
+
+  // Register the open ticket as the Mingo "open view" so it rides on the sidebar
+  // chat's context. `dialog.id` is the raw db id the backend TICKET resolver /
+  // `@ticket:id` marker expects (TICKET is REST-resolved — no global-id round-trip).
+  useTrackOpenView(
+    dialog ? { type: CONTEXT_ENTITY_KIND.TICKET, id: dialog.id, label: dialog.title || dialog.id } : null,
+  );
 
   // Device referenced by the ticket. Same hook & availability utility used by
   // the Devices view, so remote-action gating stays in sync across views.
@@ -516,7 +525,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
         id: 'edit-ticket',
         label: 'Edit Ticket',
         icon: <PenEditIcon className="text-ods-text-secondary" />,
-        onClick: () => router.push(routes.tickets.new({ edit: dialog.id })),
+        onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
       });
     }
 
@@ -703,7 +712,7 @@ export function TicketDetailsView({ ticketId }: TicketDetailsViewProps) {
       ariaLabel: 'Edit Ticket',
       variant: 'outline',
       icon: <PenEditIcon className="text-ods-text-secondary" />,
-      onClick: () => router.push(routes.tickets.new({ edit: dialog.id })),
+      onClick: () => router.push(`/tickets/new?edit=${dialog.id}`),
       iconOnlyOnDesktop: true,
     });
   }

@@ -1,6 +1,6 @@
 type ControlAuthCookies = { authCookie: string; relayCookie?: string };
 
-import { runtimeEnv } from '../runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from '../token-store';
 import { buildWsUrl, MESH_PASS, MESH_USER } from './meshcentral-config';
 import { WebSocketManager } from './websocket-manager';
 
@@ -36,13 +36,10 @@ export class MeshControlClient {
     const buildUrl = () => {
       let url = buildWsUrl(`/control.ashx?${qs.toString()}`);
 
-      try {
-        const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-        if (isDevTicketEnabled && typeof window !== 'undefined') {
-          const token = localStorage.getItem('of_access_token');
-          if (token) url += `&authorization=${encodeURIComponent(token)}`;
-        }
-      } catch {}
+      if (isBearerAuthMode()) {
+        const token = getAccessTokenSync();
+        if (token) url += `&authorization=${encodeURIComponent(token)}`;
+      }
 
       return url;
     };

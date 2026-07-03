@@ -39,6 +39,12 @@ interface ScriptFormFieldsProps {
    */
   tagsField?: ReactNode;
   /**
+   * Disable every control (inputs, selects, platform cards, args, editor).
+   * Used by the edit page while the script query is still loading, so the real
+   * empty form doubles as the loading state — no skeleton swap, no remount.
+   */
+  disabled?: boolean;
+  /**
    * Controls inline error visibility. The parent flips this true once the user
    * attempts an action (Save or Test) so errors stay hidden on a pristine form,
    * then track validation live. Which fields actually carry an error is decided
@@ -56,6 +62,7 @@ export function ScriptFormFields({
   hideCategory,
   hideRunAsUser,
   tagsField,
+  disabled = false,
   showErrors = true,
 }: ScriptFormFieldsProps) {
   const { control, watch, setValue, getValues } = form;
@@ -81,7 +88,7 @@ export function ScriptFormFields({
                 title={p.name}
                 icon={<p.icon className="w-5 h-5" />}
                 selected={!isDisabled && watchedSupportedPlatforms.includes(p.id)}
-                disabled={isDisabled}
+                disabled={isDisabled || disabled}
                 tag={isDisabled ? (isMdUp ? 'Coming Soon' : 'Soon') : undefined}
                 onClick={
                   isDisabled
@@ -108,6 +115,7 @@ export function ScriptFormFields({
                   checked={field.value}
                   onCheckedChange={checked => field.onChange(checked)}
                   label="Run as User"
+                  disabled={disabled}
                   // Match the SelectButton card height (h-11 md:h-16) — the block's
                   // own min-height is shorter, so override it on the inner label.
                   className="[&>label]:h-11 md:[&>label]:h-16 [&>label]:min-h-0"
@@ -138,6 +146,7 @@ export function ScriptFormFields({
                 type="text"
                 value={field.value}
                 onChange={field.onChange}
+                disabled={disabled}
                 placeholder="Enter Script Name Here"
                 error={showErrors ? fieldState.error?.message : undefined}
                 invalid={showErrors && !!fieldState.error}
@@ -152,7 +161,7 @@ export function ScriptFormFields({
           render={({ field, fieldState }) => (
             <div className="space-y-1">
               <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Shell Type</Label>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
                 <SelectTrigger
                   error={showErrors ? fieldState.error?.message : undefined}
                   invalid={showErrors && !!fieldState.error}
@@ -181,7 +190,7 @@ export function ScriptFormFields({
             render={({ field, fieldState }) => (
               <div className="space-y-1">
                 <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Category</Label>
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
                   <SelectTrigger
                     error={showErrors ? fieldState.error?.message : undefined}
                     invalid={showErrors && !!fieldState.error}
@@ -211,6 +220,7 @@ export function ScriptFormFields({
                 type="number"
                 value={field.value}
                 onChange={e => field.onChange(e.target.value ? Number(e.target.value) : '')}
+                disabled={disabled}
                 placeholder="90"
                 endAdornment={<span className="text-sm text-ods-text-secondary">Seconds</span>}
                 error={showErrors ? fieldState.error?.message : undefined}
@@ -228,7 +238,13 @@ export function ScriptFormFields({
         render={({ field }) => (
           <div>
             <Label className="text-lg font-['DM_Sans'] font-medium text-ods-text-primary">Description</Label>
-            <Textarea value={field.value} onChange={field.onChange} rows={4} placeholder="Enter Script Description" />
+            <Textarea
+              value={field.value}
+              onChange={field.onChange}
+              rows={4}
+              disabled={disabled}
+              placeholder="Enter Script Description"
+            />
           </div>
         )}
       />
@@ -249,6 +265,7 @@ export function ScriptFormFields({
               valuePlaceholder="Enter Value (empty=flag)"
               addButtonLabel="Add Script Argument"
               titleLabel="Script Arguments"
+              disabled={disabled}
               className="flex-1"
             />
           )}
@@ -264,6 +281,7 @@ export function ScriptFormFields({
               valuePlaceholder="Enter Value"
               addButtonLabel="Add Environment Var"
               titleLabel="Environment Vars"
+              disabled={disabled}
               className="flex-1"
             />
           )}
@@ -281,6 +299,7 @@ export function ScriptFormFields({
               value={field.value}
               onChange={field.onChange}
               shell={getValues('shell')}
+              readOnly={disabled}
               height="600px"
               invalid={showErrors && !!fieldState.error}
             />

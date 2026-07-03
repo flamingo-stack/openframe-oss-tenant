@@ -76,7 +76,7 @@ export function CustomersOverviewSection() {
           <OrganizationCard
             organization={org}
             fetchedImageUrl={fullImageUrl}
-            href={`/customers/details/${org.organizationId}`}
+            href={`/customers/details?id=${org.organizationId}`}
             deviceCount={org.total}
           />
 
@@ -88,7 +88,7 @@ export function CustomersOverviewSection() {
             showProgress
             progressVariant="success"
             percentageDisplay="plain"
-            progressSize={{ base: 24, lg: 56 }}
+            progressSize={{ base: 24, md: 56 }}
             href={
               org.active > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=ONLINE`
@@ -104,7 +104,7 @@ export function CustomersOverviewSection() {
             showProgress
             progressVariant="error"
             percentageDisplay="plain"
-            progressSize={{ base: 24, lg: 56 }}
+            progressSize={{ base: 24, md: 56 }}
             href={
               org.inactive > 0
                 ? `/devices?organizationIds=${org.organizationId}&statuses=OFFLINE`

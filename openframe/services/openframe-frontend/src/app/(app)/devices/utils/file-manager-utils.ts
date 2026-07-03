@@ -1,4 +1,5 @@
 import type { FileItem } from '@flamingo-stack/openframe-frontend-core/components/ui/file-manager';
+import { formatDateTime } from '@/lib/format-date';
 import type { FileEntry } from '@/lib/meshcentral/file-manager-types';
 
 /**
@@ -61,19 +62,10 @@ export function formatFileSize(bytes: number): string {
  */
 export function formatDate(timestamp: number): string {
   const date = new Date(timestamp);
-
   if (isNaN(date.getTime())) {
     return '';
   }
-
-  // Format: MM/DD/YYYY HH:MM
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const year = date.getFullYear();
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-
-  return `${month}/${day}/${year} ${hours}:${minutes}`;
+  return formatDateTime(date);
 }
 
 /**

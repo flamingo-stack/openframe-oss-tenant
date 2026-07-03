@@ -4,6 +4,7 @@ import type { QueryResultRow } from '@flamingo-stack/openframe-frontend-core';
 import { Button, QueryReportTable } from '@flamingo-stack/openframe-frontend-core';
 import { ChevronDown, ChevronRight, Square, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { formatTimeWithSeconds } from '@/lib/format-date';
 import type { CampaignEmptyResult, CampaignError, CampaignTotals } from '../hooks/use-live-campaign';
 
 export interface LiveTestPanelProps {
@@ -28,10 +29,6 @@ function formatDuration(ms: number): string {
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
 function CollapsibleSection({ color, title, children }: { color: string; title: string; children: React.ReactNode }) {
@@ -101,7 +98,9 @@ export function LiveTestPanel({
         <div className="flex items-center gap-4 px-4 py-3 border-b border-ods-border shrink-0">
           {/* Started */}
           <div className="flex flex-[1_0_0] flex-col">
-            <span className="text-h4 text-ods-text-primary">{startedAt ? formatTime(startedAt) : '--:--:--'}</span>
+            <span className="text-h4 text-ods-text-primary">
+              {startedAt ? formatTimeWithSeconds(startedAt) : '--:--:--'}
+            </span>
             <span className="text-h6 text-ods-text-secondary">Started</span>
           </div>
 

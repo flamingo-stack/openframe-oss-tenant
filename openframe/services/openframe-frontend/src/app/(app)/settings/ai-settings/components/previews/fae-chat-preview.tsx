@@ -31,7 +31,7 @@ export function FaeChatPreview({
   providerName = 'google',
   modelDisplayName = 'Google Gemini 3.5',
 }: FaeChatPreviewProps) {
-  const messages = useMemo(() => buildFaeChatPreviewMessages(avatarUrl), [avatarUrl]);
+  const messages = useMemo(() => buildFaeChatPreviewMessages(assistantName, avatarUrl), [assistantName, avatarUrl]);
 
   // Header shows the MSP company name (from tenant info) in place of the tenant
   // domain; falls back to the sample name so the preview still reads well.

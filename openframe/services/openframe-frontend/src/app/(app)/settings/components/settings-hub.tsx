@@ -10,7 +10,6 @@ import {
   ShieldCheckIcon,
   ShieldKeyholeIcon,
   UsersGroupIcon,
-  WrenchScrewdiverIcon,
 } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
 import { Button } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
@@ -51,7 +50,7 @@ const SETTINGS_NAV_ITEMS = [
   {
     href: routes.settings.employees,
     icon: UsersGroupIcon,
-    title: 'Employees & Permissions',
+    title: 'Employees',
     description: 'Manage employee accounts, roles, and permissions',
   },
   {

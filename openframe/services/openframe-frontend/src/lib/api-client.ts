@@ -3,9 +3,6 @@
  * Handles both cookie-based and header-based authentication automatically
  */
 
-// Constants for localStorage keys (matching use-token-storage.ts)
-const ACCESS_TOKEN_KEY = 'of_access_token';
-
 interface ApiRequestOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>;
   skipAuth?: boolean;
@@ -21,14 +18,10 @@ interface ApiResponse<T = any> {
 import { forceLogout } from './force-logout';
 import { runtimeEnv } from './runtime-config';
 import { isTokenRefreshing, refreshAccessToken } from './token-refresh-manager';
+import { getAccessTokenSync, isBearerAuthMode } from './token-store';
 
 class ApiClient {
-  private isDevTicketEnabled: boolean;
   private requestQueue: Array<() => Promise<any>> = [];
-
-  constructor() {
-    this.isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-  }
 
   /**
    * Get authentication headers based on current configuration
@@ -36,15 +29,11 @@ class ApiClient {
   private getAuthHeaders(): Record<string, string> {
     const headers: Record<string, string> = {};
 
-    // If DevTicket is enabled, add token from localStorage to headers
-    if (this.isDevTicketEnabled) {
-      try {
-        const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-        if (accessToken) {
-          headers.Authorization = `Bearer ${accessToken}`;
-        }
-      } catch (error) {
-        console.error('[API Client] Failed to get access token:', error);
+    // In bearer mode (dev-ticket web or native shell), attach the stored token
+    if (isBearerAuthMode()) {
+      const accessToken = getAccessTokenSync();
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
       }
     }
 

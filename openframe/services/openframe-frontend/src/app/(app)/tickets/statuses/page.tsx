@@ -6,8 +6,6 @@ import { isSaasTenantMode } from '@/lib/app-mode';
 import { routes } from '@/lib/routes';
 import { TicketStatusesView } from './components/ticket-statuses-view';
 
-export const dynamic = 'force-dynamic';
-
 export default function TicketStatusesPage() {
   const router = useRouter();
 

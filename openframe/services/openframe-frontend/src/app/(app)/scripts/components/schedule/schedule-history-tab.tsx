@@ -11,6 +11,7 @@ import {
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
 import { useCallback, useMemo, useState } from 'react';
 import { LogDrawer } from '@/app/components/shared';
+import { formatDateTime } from '@/lib/format-date';
 import { useScriptScheduleHistory } from '../../hooks/use-script-schedule';
 import type { ScriptScheduleDetail, ScriptScheduleHistoryEntry } from '../../types/script-schedule.types';
 
@@ -75,16 +76,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
       }
     : undefined;
 
-  const drawerTimestamp = selectedEntry?.last_run
-    ? new Date(selectedEntry.last_run).toLocaleString('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'UTC',
-      })
-    : '—';
+  const drawerTimestamp = selectedEntry?.last_run ? formatDateTime(selectedEntry.last_run) : '—';
 
   const drawerInfoFields = selectedEntry
     ? [
@@ -113,18 +105,7 @@ export function ScheduleHistoryTab({ schedule, scheduleId }: ScheduleHistoryTabP
             <div className="flex flex-col">
               <span className="text-h4 text-ods-text-primary">LOG-{String(entry.id).padStart(3, '0')}</span>
               <span className="text-h6 text-ods-text-secondary">
-                {entry.last_run
-                  ? new Date(entry.last_run).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                    }) +
-                    ',' +
-                    new Date(entry.last_run).toLocaleTimeString('en-US', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })
-                  : '—'}
+                {entry.last_run ? formatDateTime(entry.last_run) : '—'}
               </span>
             </div>
           );

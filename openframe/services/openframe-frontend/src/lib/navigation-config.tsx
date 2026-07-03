@@ -4,6 +4,7 @@ import {
   BracketCurlyIcon,
   ChartDonutIcon,
   ClipboardListIcon,
+  ClockHistoryIcon,
   IdCardIcon,
   MonitorIcon,
   QuestionCircleIcon,
@@ -60,24 +61,24 @@ export const getNavigationItems = (
       path: routes.devices.list,
       isActive: pathname.startsWith('/devices'),
     },
-    {
-      id: 'scripts',
-      label: 'Scripts',
-      icon: <BracketCurlyIcon size={24} />,
-      path: routes.scripts.list(),
-      isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
-    },
-    ...(featureFlags.scriptsV2.enabled()
-      ? [
-          {
-            id: 'scripts-v2',
-            label: 'Scripts v2',
-            icon: <BracketCurlyIcon size={24} />,
-            path: routes.scriptsV2.list,
-            isActive: pathname.startsWith('/scripts-v2'),
-          },
-        ]
-      : []),
+    // Single "Scripts" entry — the flag swaps which implementation it points at
+    // (new `/scripts-v2` when enabled, legacy `/scripts` otherwise). The label
+    // stays "Scripts" in both cases; the version is never surfaced in the sidebar.
+    featureFlags.scriptsV2.enabled()
+      ? {
+          id: 'scripts-v2',
+          label: 'Scripts',
+          icon: <BracketCurlyIcon size={24} />,
+          path: routes.scriptsV2.list,
+          isActive: pathname.startsWith('/scripts-v2'),
+        }
+      : {
+          id: 'scripts',
+          label: 'Scripts',
+          icon: <BracketCurlyIcon size={24} />,
+          path: routes.scripts.list(),
+          isActive: pathname.startsWith('/scripts') && !pathname.startsWith('/scripts-v2'),
+        },
     {
       id: 'monitoring',
       label: 'Monitoring',
@@ -114,6 +115,16 @@ export const getNavigationItems = (
         isActive: pathname.startsWith('/mingo'),
       });
     }
+  }
+
+  if (featureFlags.timeTracker.enabled()) {
+    baseItems.push({
+      id: 'worktime',
+      label: 'Worktime',
+      icon: <ClockHistoryIcon size={24} />,
+      path: routes.worktime,
+      isActive: pathname.startsWith('/worktime'),
+    });
   }
 
   baseItems.push({

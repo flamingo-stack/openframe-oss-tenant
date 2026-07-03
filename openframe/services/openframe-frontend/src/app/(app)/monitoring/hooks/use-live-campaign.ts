@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { fleetApiClient } from '@/lib/fleet-api-client';
-import { runtimeEnv } from '@/lib/runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from '@/lib/token-store';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -364,13 +364,9 @@ export function useLiveCampaign(): UseLiveCampaignReturn {
 
         // 4. Open native WebSocket with SockJS framing
         let wsUrl = buildWsUrl(fleetApiClient.getSockJsUrl());
-        try {
-          if (runtimeEnv.enableDevTicketObserver() && typeof window !== 'undefined') {
-            const devToken = localStorage.getItem('of_access_token');
-            if (devToken) wsUrl += `?authorization=${encodeURIComponent(devToken)}`;
-          }
-        } catch {
-          // Ignore — non-dev-ticket mode
+        if (isBearerAuthMode()) {
+          const devToken = getAccessTokenSync();
+          if (devToken) wsUrl += `?authorization=${encodeURIComponent(devToken)}`;
         }
 
         setConnectionState('connecting');

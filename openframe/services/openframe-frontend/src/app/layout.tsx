@@ -9,7 +9,6 @@ import { NatsAppProvider } from '@/lib/nats/nats-app-provider';
 import { sidebarWidthFoucScript } from '@/lib/navigation-sidebar-state';
 import { Toaster } from '@/lib/openframe-core-ui';
 import { FeatureFlagsGate } from '../components/feature-flags-gate';
-import { GraphQlIntrospectionInitializer } from '../components/graphql-introspection-initializer';
 import { RouteGuard } from '../components/route-guard';
 import { isAuthEnabled } from '../lib/app-mode';
 import { QueryClientProvider } from '../lib/query-client-provider';
@@ -18,10 +17,8 @@ import { AppShellSkeleton } from './components/app-shell-skeleton';
 import { DeploymentInitializer } from './components/deployment-initializer';
 import { EmbedShimRegistration } from './components/embed-shim-registration';
 import { GoogleTagManager } from './components/google-tag-manager';
+import { NativeShellInitializer } from './components/native-shell-initializer';
 import { NotificationsDataProvider } from './components/notifications/notifications-data-provider';
-
-// Force dynamic rendering for all routes to prevent SSG issues with useSearchParams
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://openframe.ai'),
@@ -86,11 +83,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // Static-export (native-shell) builds have no server to populate
+  // next-runtime-env, so the Capacitor/Tauri shell injects window.__ENV before
+  // the bundle loads. The SSR/standalone web build keeps <PublicEnvScript />.
+  const isStaticExport = process.env.OPENFRAME_BUILD_TARGET === 'export';
   return (
     <html lang="en" suppressHydrationWarning className={`dark ${azeretMono.variable} ${dmSans.variable}`}>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-        <PublicEnvScript />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+        />
+        {!isStaticExport && <PublicEnvScript />}
         {/* Seeds the sidebar width before first paint so the SSR'd skeleton
             honors the persisted collapsed state instead of flashing expanded. */}
         {/* biome-ignore lint/style/useNamingConvention: React's dangerouslySetInnerHTML requires the __html key */}
@@ -100,12 +104,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GoogleTagManager />
         <EmbedShimRegistration />
         <DeploymentInitializer />
+        <NativeShellInitializer />
         <RelayProvider>
           <QueryClientProvider>
             {isAuthEnabled() && (
               <Suspense fallback={null}>
                 <DevTicketObserver />
-                <GraphQlIntrospectionInitializer />
               </Suspense>
             )}
             <NatsAppProvider>

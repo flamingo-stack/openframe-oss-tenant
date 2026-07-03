@@ -3,8 +3,6 @@
 import { HelpCenterList } from '@flamingo-stack/openframe-frontend-core/components/tickets';
 import { HELP_CENTER_BASE } from '../endpoints';
 
-export const dynamic = 'force-dynamic';
-
 /**
  * Tickets / Help Center — `<HelpCenterList>` composes its own DevSectionPage
  * chrome (PageShell + PageLayout) + create form + ticket list, and identifies

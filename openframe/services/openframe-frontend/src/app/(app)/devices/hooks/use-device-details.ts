@@ -16,6 +16,7 @@ import type {
   Battery,
   Device,
   DeviceGraphQlNode,
+  DevicePolicy,
   GraphQlResponse,
   MdmInfo,
   Software,
@@ -24,40 +25,79 @@ import type {
 import type { FleetHost } from '../types/fleet.types';
 import { deviceQueryKeys } from '../utils/query-keys';
 
+/** Collect unique end-user emails from Fleet `end_users` (primary email + other_emails). */
+function collectEndUserEmails(fleetData: FleetHost | null): string[] | undefined {
+  if (!fleetData?.end_users?.length) return undefined;
+  const emails = new Set<string>();
+  for (const user of fleetData.end_users) {
+    if (user.email) emails.add(user.email);
+    for (const other of user.other_emails || []) {
+      if (other.email) emails.add(other.email);
+    }
+  }
+  return emails.size > 0 ? Array.from(emails) : undefined;
+}
+
 /**
  * Create Device object directly from API responses
  * No normalization layer - direct mapping
  */
 function createDevice(
   node: DeviceGraphQlNode,
-  tacticalData: any | null,
   fleetData: FleetHost | null,
   meshCentralStatus: 'online' | 'offline' | null,
   meshCentralLastSeen: string | null,
+  tacticalStatus: string | null,
+  tacticalLastSeen: string | null,
 ): Device {
   // Transform Fleet software to unified Software type
   const software: Software[] =
-    fleetData?.software?.map(fs => ({
-      id: fs.id,
-      name: fs.name,
-      version: fs.version,
-      source: fs.source,
-      vendor: fs.vendor || undefined, // Normalize null to undefined
-      bundle_identifier: fs.bundle_identifier,
-      vulnerabilities: (fs.vulnerabilities || []).map(v => ({
-        cve: v.cve,
-        details_link: v.details_link,
-        created_at: v.created_at,
-      })),
-      installed_paths: fs.installed_paths,
-      last_opened_at: fs.last_opened_at,
-    })) || [];
+    fleetData?.software?.map(fs => {
+      const signatureTeamId = fs.signature_information?.find(s => s.team_identifier)?.team_identifier;
+      return {
+        id: fs.id,
+        name: fs.name,
+        version: fs.version,
+        source: fs.source,
+        vendor: fs.vendor || undefined, // Normalize null to undefined
+        bundle_identifier: fs.bundle_identifier,
+        vulnerabilities: (fs.vulnerabilities || []).map(v => ({
+          cve: v.cve,
+          details_link: v.details_link,
+          created_at: v.created_at,
+          // Fleet Premium severity fields — pass through when present.
+          cvss_score: v.cvss_score ?? undefined,
+          epss_probability: v.epss_probability ?? undefined,
+          cisa_known_exploit: v.cisa_known_exploit ?? undefined,
+          cve_published: v.cve_published ?? undefined,
+          resolved_in_version: v.resolved_in_version ?? undefined,
+        })),
+        installed_paths: fs.installed_paths,
+        last_opened_at: fs.last_opened_at,
+        signed: Boolean(signatureTeamId),
+        signature_team_id: signatureTeamId,
+        generated_cpe: fs.generated_cpe,
+        browser: fs.browser,
+        extension_id: fs.extension_id,
+      };
+    }) || [];
 
   // Transform Fleet batteries to unified Battery type
   const batteries: Battery[] =
     fleetData?.batteries?.map(fb => ({
       cycle_count: fb.cycle_count,
       health: fb.health,
+    })) || [];
+
+  // Transform Fleet per-host policies to unified DevicePolicy type
+  const policies: DevicePolicy[] =
+    fleetData?.policies?.map(p => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      critical: Boolean(p.critical),
+      platform: p.platform,
+      response: p.response ?? '',
     })) || [];
 
   // Transform Fleet users to unified User type
@@ -81,6 +121,8 @@ function createDevice(
         device_status: fleetData.mdm.device_status,
         pending_action: fleetData.mdm.pending_action,
         connected_to_fleet: fleetData.mdm.connected_to_fleet,
+        dep_profile_error: fleetData.mdm.dep_profile_error,
+        profiles_count: Array.isArray(fleetData.mdm.profiles) ? fleetData.mdm.profiles.length : undefined,
       }
     : undefined;
 
@@ -105,11 +147,9 @@ function createDevice(
   let actualPublicIp = '';
   if (fleetData?.public_ip && !isPrivateIp(fleetData.public_ip)) {
     actualPublicIp = fleetData.public_ip;
-  } else if (tacticalData?.public_ip && !isPrivateIp(tacticalData.public_ip)) {
-    actualPublicIp = tacticalData.public_ip;
   }
 
-  // Merge ALL IPs from Fleet and Tactical into unified array
+  // Merge ALL IPs from Fleet into unified array
   const localIps: string[] = [];
   const seenIps = new Set<string>();
 
@@ -131,32 +171,6 @@ function createDevice(
     seenIps.add(node.ip);
   }
 
-  // Add Tactical IPs
-  if (tacticalData?.wmi_detail?.local_ips) {
-    tacticalData.wmi_detail.local_ips.forEach((ip: string) => {
-      if (!seenIps.has(ip)) {
-        localIps.push(ip);
-        seenIps.add(ip);
-      }
-    });
-  }
-  if (tacticalData?.local_ips) {
-    tacticalData.local_ips
-      .split(',')
-      .map((ip: string) => ip.trim())
-      .filter(Boolean)
-      .forEach((ip: string) => {
-        if (!seenIps.has(ip)) {
-          localIps.push(ip);
-          seenIps.add(ip);
-        }
-      });
-  }
-  if (tacticalData?.public_ip && !seenIps.has(tacticalData.public_ip)) {
-    localIps.push(tacticalData.public_ip);
-    seenIps.add(tacticalData.public_ip);
-  }
-
   // Extract logged in user
   const loggedUser = users.find(u => u.isLoggedIn) || users[0];
 
@@ -164,8 +178,8 @@ function createDevice(
     // Core Identifiers
     id: node.id,
     machineId: node.machineId,
-    hostname: fleetData?.hostname || node.hostname || tacticalData?.hostname,
-    displayName: node.displayName || fleetData?.display_name || node.hostname || tacticalData?.description,
+    hostname: fleetData?.hostname || node.hostname,
+    displayName: node.displayName || fleetData?.display_name || node.hostname,
 
     // Hardware - CPU
     cpu_brand: fleetData?.cpu_brand,
@@ -176,29 +190,23 @@ function createDevice(
 
     // Hardware - Memory
     memory: fleetData?.memory,
-    totalRam: fleetData?.memory ? `${(fleetData.memory / 1024 ** 3).toFixed(2)} GB` : tacticalData?.total_ram,
-    total_ram: fleetData?.memory ? `${(fleetData.memory / 1024 ** 3).toFixed(2)} GB` : tacticalData?.total_ram,
+    totalRam: fleetData?.memory ? `${(fleetData.memory / 1024 ** 3).toFixed(2)} GB` : undefined,
 
     // Hardware - Identifiers
     hardware_serial: fleetData?.hardware_serial,
     hardware_vendor: fleetData?.hardware_vendor,
     hardware_model: fleetData?.hardware_model,
     hardware_version: fleetData?.hardware_version,
-    serial_number: fleetData?.hardware_serial || node.serialNumber || tacticalData?.serial_number,
-    manufacturer: fleetData?.hardware_vendor || node.manufacturer || tacticalData?.make_model?.split('\n')[0],
-    model: fleetData?.hardware_model || node.model || tacticalData?.make_model?.trim(),
-    make_model:
-      fleetData?.hardware_model ||
-      tacticalData?.make_model ||
-      [node.manufacturer, node.model].filter(Boolean).join(' '),
+    serial_number: fleetData?.hardware_serial || node.serialNumber,
+    manufacturer: fleetData?.hardware_vendor || node.manufacturer,
+    model: fleetData?.hardware_model || node.model,
+    make_model: fleetData?.hardware_model || [node.manufacturer, node.model].filter(Boolean).join(' '),
 
     // Storage
     gigs_disk_space_available: fleetData?.gigs_disk_space_available,
     percent_disk_space_available: fleetData?.percent_disk_space_available,
     gigs_total_disk_space: fleetData?.gigs_total_disk_space,
     disk_encryption_enabled: fleetData?.disk_encryption_enabled,
-    disks: tacticalData?.disks,
-    physical_disks: tacticalData?.physical_disks,
 
     // Network
     primary_ip: fleetData?.primary_ip,
@@ -209,15 +217,13 @@ function createDevice(
     macAddress: fleetData?.primary_mac || node.macAddress,
 
     // System Status
-    status: node.status || fleetData?.status || tacticalData?.status || 'UNKNOWN',
+    status: node.status || fleetData?.status || 'UNKNOWN',
     uptime: fleetData?.uptime,
-    last_seen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,
-    lastSeen: fleetData?.seen_time || node.lastSeen || tacticalData?.last_seen,
+    last_seen: fleetData?.seen_time || node.lastSeen,
+    lastSeen: fleetData?.seen_time || node.lastSeen,
     last_restarted_at: fleetData?.last_restarted_at,
     last_enrolled_at: fleetData?.last_enrolled_at,
-    boot_time: fleetData?.last_restarted_at
-      ? new Date(fleetData.last_restarted_at).getTime() / 1000
-      : tacticalData?.boot_time || 0,
+    boot_time: fleetData?.last_restarted_at ? new Date(fleetData.last_restarted_at).getTime() / 1000 : 0,
 
     // Operating System
     platform: fleetData?.platform,
@@ -225,9 +231,9 @@ function createDevice(
     os_version: fleetData?.os_version,
     build: fleetData?.build,
     code_name: fleetData?.code_name,
-    operating_system: fleetData?.platform || node.osType || tacticalData?.operating_system,
-    osType: fleetData?.platform || node.osType || tacticalData?.operating_system,
-    osVersion: fleetData?.os_version || node.osVersion || tacticalData?.version,
+    operating_system: fleetData?.platform || node.osType,
+    osType: fleetData?.platform || node.osType,
+    osVersion: fleetData?.os_version || node.osVersion,
     osBuild: fleetData?.build || node.osBuild,
 
     // Software & Versions
@@ -235,25 +241,26 @@ function createDevice(
     orbit_version: fleetData?.orbit_version,
     fleet_desktop_version: fleetData?.fleet_desktop_version,
     scripts_enabled: fleetData?.scripts_enabled,
-    agentVersion: node.agentVersion || tacticalData?.version || fleetData?.osquery_version,
-    version: node.agentVersion || tacticalData?.version || fleetData?.osquery_version,
+    agentVersion: node.agentVersion || fleetData?.osquery_version,
+    version: node.agentVersion || fleetData?.osquery_version,
 
     // Unified Arrays (NO NESTING)
     software,
     batteries,
     users,
+    policies,
 
     // MDM Info
     mdm,
 
     // Organization
     organizationId: node.organization?.organizationId,
-    organization: node.organization?.name || tacticalData?.client_name,
+    organization: node.organization?.name,
     organizationImageUrl: node.organization?.image?.imageUrl || null,
     organizationImageHash: node.organization?.image?.hash || null,
 
     // Tags
-    tags: node.tags || tacticalData?.custom_fields || [],
+    tags: node.tags || [],
 
     // Tool Connections (enriched with status + lastSeen from Tactical / Fleet / MeshCentral API)
     toolConnections: (node.toolConnections || []).map(tc => {
@@ -261,8 +268,8 @@ function createDevice(
       if (tc.toolType === 'TACTICAL_RMM') {
         return {
           ...base,
-          ...(tacticalData?.status != null && { status: String(tacticalData.status).toLowerCase() }),
-          ...(tacticalData?.last_seen != null && { lastSeen: tacticalData.last_seen }),
+          ...(tacticalStatus != null && { status: tacticalStatus }),
+          ...(tacticalLastSeen != null && { lastSeen: tacticalLastSeen }),
         };
       }
       if (tc.toolType === 'FLEET_MDM') {
@@ -285,55 +292,39 @@ function createDevice(
     installedAgents: node.installedAgents,
 
     // Misc
-    type: node.type || tacticalData?.monitoring_type,
+    type: node.type,
     registeredAt: fleetData?.last_enrolled_at || node.registeredAt,
-    updatedAt:
-      fleetData?.detail_updated_at ||
-      fleetData?.seen_time ||
-      node.updatedAt ||
-      node.lastSeen ||
-      tacticalData?.last_seen,
+    updatedAt: fleetData?.detail_updated_at || fleetData?.seen_time || node.updatedAt || node.lastSeen,
     osUuid: fleetData?.uuid || node.osUuid,
+    timezone: node.timezone,
+
+    // Fleet-derived metadata (already in the host payload)
+    software_updated_at: fleetData?.software_updated_at,
+    fleetTeamName: fleetData?.team_name || undefined,
+    fleetTeamId: fleetData?.team_id,
+    // Drop Fleet's builtin auto-labels ("All Hosts", "macOS", …) — keep meaningful (regular) ones.
+    fleetLabels: fleetData?.labels
+      ?.filter(l => l.label_type !== 'builtin')
+      .map(l => l.name)
+      .filter(Boolean),
+    failingPoliciesCount: fleetData?.issues?.failing_policies_count,
+    totalIssuesCount: fleetData?.issues?.total_issues_count,
+    geolocation: fleetData?.geolocation
+      ? { city: fleetData.geolocation.city_name, country: fleetData.geolocation.country_iso }
+      : undefined,
+    endUserEmails: collectEndUserEmails(fleetData),
 
     // Reference IDs
     fleetId: fleetData?.id,
-    tacticalAgentId: tacticalData?.agent_id,
-    agent_id: tacticalData?.agent_id || node.machineId || node.id,
-
-    // Graphics
-    graphics: tacticalData?.graphics,
+    tacticalAgentId: node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM')?.agentToolId,
+    agent_id: node.machineId || node.id,
 
     // Legacy fields
-    serialNumber: fleetData?.hardware_serial || node.serialNumber || tacticalData?.serial_number,
-    description: node.displayName || fleetData?.hostname || tacticalData?.description || node.hostname,
-    plat: fleetData?.platform || node.osType || tacticalData?.operating_system,
-    logged_in_username: loggedUser?.username || tacticalData?.logged_username,
-    logged_username: loggedUser?.username || tacticalData?.logged_username,
-
-    // Legacy tactical fields for compatibility
-    cpu_model: fleetData?.cpu_brand ? [fleetData.cpu_brand] : tacticalData?.cpu_model || [],
-    site_name: tacticalData?.site_name || '',
-    client_name: node.organization?.name || tacticalData?.client_name || '',
-    monitoring_type: node.type || tacticalData?.monitoring_type || '',
-    needs_reboot: tacticalData?.needs_reboot || false,
-    pending_actions_count: tacticalData?.pending_actions_count || 0,
-    overdue_text_alert: tacticalData?.overdue_text_alert || false,
-    overdue_email_alert: tacticalData?.overdue_email_alert || false,
-    overdue_dashboard_alert: tacticalData?.overdue_dashboard_alert || false,
-    checks: tacticalData?.checks || {
-      total: 0,
-      passing: 0,
-      failing: 0,
-      warning: 0,
-      info: 0,
-      has_failing_checks: false,
-    },
-    maintenance_mode: tacticalData?.maintenance_mode || false,
-    italic: tacticalData?.italic || false,
-    block_policy_inheritance: tacticalData?.block_policy_inheritance || false,
-    goarch: tacticalData?.goarch || '',
-    has_patches_pending: tacticalData?.has_patches_pending || false,
-    custom_fields: tacticalData?.custom_fields || [],
+    serialNumber: fleetData?.hardware_serial || node.serialNumber,
+    description: node.displayName || fleetData?.hostname || node.hostname,
+    plat: fleetData?.platform || node.osType,
+    logged_in_username: loggedUser?.username,
+    logged_username: loggedUser?.username,
   };
 }
 
@@ -358,13 +349,17 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
 
   const node = graphqlResponse.data.device;
 
-  // 2) Use toolConnections to fetch Tactical details if present
+  // 2) Fetch Tactical RMM agent — ONLY to surface live agent status/last-seen on the Agents tab.
+  // Tactical is no longer a general device-details data source; we intentionally read just these two
+  // fields. On error we leave both null so the Agents tab simply omits Tactical status/last-seen.
   const tactical = node.toolConnections?.find(tc => tc.toolType === 'TACTICAL_RMM');
-  let tacticalData: any | null = null;
+  let tacticalStatus: string | null = null;
+  let tacticalLastSeen: string | null = null;
   if (tactical?.agentToolId) {
     const tResponse = await tacticalApiClient.getAgent(tactical.agentToolId);
-    if (tResponse.ok) {
-      tacticalData = tResponse.data;
+    if (tResponse.ok && tResponse.data) {
+      if (tResponse.data.status != null) tacticalStatus = String(tResponse.data.status).toLowerCase();
+      if (tResponse.data.last_seen != null) tacticalLastSeen = tResponse.data.last_seen;
     }
   }
 
@@ -400,7 +395,7 @@ async function fetchDeviceDetails(machineId: string): Promise<Device> {
   }
 
   // 3) Create Device object directly - no normalization
-  return createDevice(node, tacticalData, fleetData, meshCentralStatus, meshCentralLastSeen);
+  return createDevice(node, fleetData, meshCentralStatus, meshCentralLastSeen, tacticalStatus, tacticalLastSeen);
 }
 
 interface UseDeviceDetailsOptions {

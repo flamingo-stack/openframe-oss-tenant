@@ -95,8 +95,8 @@ export function ScriptSchedulesTable() {
   }, [params.search]);
 
   const renderRowActions = useCallback((schedule: ScriptScheduleListItem) => {
-    const editHref = `/scripts/schedules/${schedule.id}/edit`;
-    const devicesHref = `/scripts/schedules/${schedule.id}/devices`;
+    const editHref = `/scripts/schedules/edit?id=${schedule.id}`;
+    const devicesHref = `/scripts/schedules/devices?id=${schedule.id}`;
     const newTabIcon = <ArrowRightUpIcon className="w-5 h-5 text-ods-text-secondary" />;
 
     const groups: ActionsMenuGroup[] = [
@@ -195,7 +195,7 @@ export function ScriptSchedulesTable() {
         cell: ({ row }: { row: Row<ScriptScheduleListItem> }) => (
           <div data-no-row-click className="flex items-center justify-end pointer-events-auto">
             <Button
-              onClick={openInNewTab(`/scripts/schedules/${row.original.id}`)}
+              onClick={openInNewTab(`/scripts/schedules?id=${row.original.id}`)}
               variant="outline"
               size="icon"
               leftIcon={<ArrowRightUpIcon className="w-5 h-5" />}
@@ -218,7 +218,7 @@ export function ScriptSchedulesTable() {
     enableSorting: false,
   });
 
-  const scheduleRowHref = useCallback((schedule: ScriptScheduleListItem) => `/scripts/schedules/${schedule.id}`, []);
+  const scheduleRowHref = useCallback((schedule: ScriptScheduleListItem) => `/scripts/schedules?id=${schedule.id}`, []);
 
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 

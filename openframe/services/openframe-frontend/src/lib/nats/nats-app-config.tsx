@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '@/app/(app)/tickets/constants';
 import { useAuthStore } from '@/app/(auth)/auth/stores/auth-store';
 import { apiClient } from '@/lib/api-client';
 import { runtimeEnv } from '@/lib/runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from '@/lib/token-store';
 
 function getApiBaseUrl(): string | null {
   const envBase = runtimeEnv.tenantHostUrl();
@@ -15,12 +16,7 @@ function getApiBaseUrl(): string | null {
 }
 
 function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-  } catch {
-    return null;
-  }
+  return getAccessTokenSync();
 }
 
 export interface NatsAppConfig {
@@ -38,7 +34,7 @@ function useNatsAppConfigState(): NatsAppConfig {
   const userId = useAuthStore(s => s.user?.id) ?? null;
 
   const [apiBaseUrl] = useState<string | null>(getApiBaseUrl);
-  const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
+  const isDevTicketEnabled = isBearerAuthMode();
   const [token, setToken] = useState<string | null>(isDevTicketEnabled ? getAccessToken() : null);
 
   useEffect(() => {

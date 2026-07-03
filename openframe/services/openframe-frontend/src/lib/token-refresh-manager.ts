@@ -5,9 +5,9 @@
  * delegate to this module.
  */
 
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { clearStoredTokens } from './force-logout';
 import { runtimeEnv } from './runtime-config';
+import { getRefreshToken, isBearerAuthMode, setTokens } from './token-store';
 
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
@@ -21,7 +21,7 @@ function buildRefreshUrl(tenantId?: string): string {
 }
 
 async function executeRefresh(tenantId?: string): Promise<boolean> {
-  const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
+  const bearerMode = isBearerAuthMode();
   const url = buildRefreshUrl(tenantId);
 
   const headers: Record<string, string> = {
@@ -29,13 +29,11 @@ async function executeRefresh(tenantId?: string): Promise<boolean> {
     'Content-Type': 'application/json',
   };
 
-  if (isDevTicketEnabled) {
-    try {
-      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      if (refreshToken) {
-        headers['Refresh-Token'] = refreshToken;
-      }
-    } catch {}
+  if (bearerMode) {
+    const refreshToken = await getRefreshToken();
+    if (refreshToken) {
+      headers['Refresh-Token'] = refreshToken;
+    }
   }
 
   try {
@@ -60,19 +58,14 @@ async function executeRefresh(tenantId?: string): Promise<boolean> {
       } catch {}
     }
 
-    if (isDevTicketEnabled) {
+    if (bearerMode) {
       const headerAccessToken = res.headers.get('Access-Token') || res.headers.get('access-token');
       const headerRefreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token');
 
       const newAccessToken = headerAccessToken || data?.access_token || data?.accessToken || null;
       const newRefreshToken = headerRefreshToken || data?.refresh_token || data?.refreshToken || null;
 
-      if (newAccessToken) {
-        localStorage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
-      }
-      if (newRefreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken);
-      }
+      await setTokens({ accessToken: newAccessToken, refreshToken: newRefreshToken });
     }
 
     return true;

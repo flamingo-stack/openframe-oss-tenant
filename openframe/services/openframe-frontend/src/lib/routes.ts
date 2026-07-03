@@ -25,17 +25,19 @@
 
 export const TAB_IDS = {
   customersList: ['active', 'archived'],
-  customerDetails: ['devices', 'tickets', 'logs', 'details', 'custom-ai-assistant'],
+  customerDetails: ['devices', 'tickets', 'logs', 'worktime', 'details', 'custom-ai-assistant'],
   deviceDetails: [
-    'hardware',
-    'network',
+    'overview',
+    'vulnerabilities',
+    'policies',
     'security',
-    'compliance',
     'agents',
+    'tickets',
+    'hardware',
+    'os',
+    'network',
     'users',
     'software',
-    'vulnerabilities',
-    'logs',
   ],
   scripts: ['list', 'schedules'],
   scriptsV2Details: ['details', 'history', 'execution-logs'],
@@ -83,6 +85,7 @@ export const routes = {
   dashboard: '/dashboard',
   onboarding: '/onboarding',
   helpCenter: '/help-center',
+  worktime: '/worktime',
 
   auth: {
     root: '/auth',
@@ -97,32 +100,32 @@ export const routes = {
   customers: {
     list: (o?: { tab?: CustomerListTab }) => withQuery('/customers', { tab: o?.tab }),
     details: (id: string | number, o?: { tab?: CustomerDetailTab }) =>
-      withQuery(`/customers/details/${id}`, { tab: o?.tab }),
-    editNew: '/customers/edit/new',
-    edit: (id: string | number) => `/customers/edit/${id}`,
+      withQuery('/customers/details', { id, tab: o?.tab }),
+    editNew: '/customers/edit?id=new',
+    edit: (id: string | number) => withQuery('/customers/edit', { id }),
   },
 
   devices: {
     list: '/devices',
     new: (o?: { organizationId?: string }) => withQuery('/devices/new', { organizationId: o?.organizationId }),
     details: (id: string | number, o?: { tab?: DeviceDetailTab; action?: 'runScript' }) =>
-      withQuery(`/devices/details/${id}`, { tab: o?.tab, action: o?.action }),
-    remoteShell: (id: string | number) => `/devices/details/${id}/remote-shell`,
-    remoteDesktop: (id: string | number) => `/devices/details/${id}/remote-desktop`,
-    fileManager: (id: string | number) => `/devices/details/${id}/file-manager`,
+      withQuery('/devices/details', { id, tab: o?.tab, action: o?.action }),
+    remoteShell: (id: string | number) => withQuery('/devices/details/remote-shell', { id }),
+    remoteDesktop: (id: string | number) => withQuery('/devices/details/remote-desktop', { id }),
+    fileManager: (id: string | number) => withQuery('/devices/details/file-manager', { id }),
   },
 
   scripts: {
     list: (o?: { tab?: ScriptsTab }) => withQuery('/scripts', { tab: o?.tab }),
     create: '/scripts/create',
-    details: (id: string | number) => `/scripts/details/${id}`,
-    run: (id: string | number) => `/scripts/details/${id}/run`,
-    edit: (id: string | number) => `/scripts/edit/${id}`,
+    details: (id: string | number) => withQuery('/scripts/details', { id }),
+    run: (id: string | number) => withQuery('/scripts/details/run', { id }),
+    edit: (id: string | number) => withQuery('/scripts/edit', { id }),
     schedules: {
       create: '/scripts/schedules/create',
-      details: (id: string | number) => `/scripts/schedules/${id}`,
-      edit: (id: string | number) => `/scripts/schedules/${id}/edit`,
-      devices: (id: string | number) => `/scripts/schedules/${id}/devices`,
+      details: (id: string | number) => withQuery('/scripts/schedules', { id }),
+      edit: (id: string | number) => withQuery('/scripts/schedules/edit', { id }),
+      devices: (id: string | number) => withQuery('/scripts/schedules/devices', { id }),
     },
   },
 
@@ -131,20 +134,20 @@ export const routes = {
     create: '/scripts-v2/create',
     archived: '/scripts-v2/archived',
     details: (id: string | number, o?: { tab?: ScriptsV2DetailTab }) =>
-      withQuery(`/scripts-v2/details/${id}`, { tab: o?.tab }),
-    run: (id: string | number) => `/scripts-v2/details/${id}/run`,
-    edit: (id: string | number) => `/scripts-v2/edit/${id}`,
-    execution: (id: string | number) => `/scripts-v2/executions/${id}`,
+      withQuery('/scripts-v2/details', { id, tab: o?.tab }),
+    run: (id: string | number) => withQuery('/scripts-v2/details/run', { id }),
+    edit: (id: string | number) => withQuery('/scripts-v2/edit', { id }),
+    execution: (id: string | number) => withQuery('/scripts-v2/executions', { id }),
   },
 
   monitoring: {
     root: (o?: { tab?: MonitoringTab }) => withQuery('/monitoring', { tab: o?.tab }),
-    query: (id: string | number) => `/monitoring/query/${id}`,
-    queryEditNew: '/monitoring/query/edit/new',
-    queryEdit: (id: string | number) => `/monitoring/query/edit/${id}`,
-    policy: (id: string | number) => `/monitoring/policy/${id}`,
-    policyEditNew: '/monitoring/policy/edit/new',
-    policyEdit: (id: string | number) => `/monitoring/policy/edit/${id}`,
+    query: (id: string | number) => withQuery('/monitoring/query', { id }),
+    queryEditNew: '/monitoring/query/edit?id=new',
+    queryEdit: (id: string | number) => withQuery('/monitoring/query/edit', { id }),
+    policy: (id: string | number) => withQuery('/monitoring/policy', { id }),
+    policyEditNew: '/monitoring/policy/edit?id=new',
+    policyEdit: (id: string | number) => withQuery('/monitoring/policy/edit', { id }),
   },
 
   tickets: {
@@ -164,15 +167,15 @@ export const routes = {
     list: '/knowledge-base',
     new: '/knowledge-base/new',
     archive: '/knowledge-base/archive',
-    details: (id: string | number) => `/knowledge-base/details/${id}`,
-    edit: (id: string | number) => `/knowledge-base/edit/${id}`,
-    folder: (id: string | number) => `/knowledge-base/folders/${id}`,
+    details: (id: string | number) => withQuery('/knowledge-base/details', { id }),
+    edit: (id: string | number) => withQuery('/knowledge-base/edit', { id }),
+    folder: (id: string | number) => withQuery('/knowledge-base/folders', { id }),
   },
 
   settings: {
     root: (o?: { tab?: SettingsTab }) => withQuery('/settings', { tab: o?.tab }),
     employees: '/settings/employees',
-    employeeDetails: (id: string | number) => `/settings/employees/details/${id}`,
+    employeeDetails: (id: string | number) => withQuery('/settings/employees/details', { id }),
     aiSettings: '/settings/ai-settings',
     apiKeys: '/settings/api-keys',
     sso: '/settings/sso',

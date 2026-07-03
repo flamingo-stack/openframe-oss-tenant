@@ -2,10 +2,15 @@
 
 import { useLocalStorage, useToast } from '@flamingo-stack/openframe-frontend-core/hooks';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { isSaasSharedMode } from '@/lib/app-mode';
 import { authApiClient } from '@/lib/auth-api-client';
+import { nativeLogin } from '@/lib/native-login';
+import { isNativeShell } from '@/lib/native-shell';
 import { runtimeEnv } from '@/lib/runtime-config';
+import { isBearerAuthMode } from '@/lib/token-store';
+import { AUTH_ERROR_CODE } from '../constants/auth-error-codes';
 import { useAuthStore } from '../stores/auth-store';
 import { authSessionQueryKey } from './use-auth-session';
 import { useTokenStorage } from './use-token-storage';
@@ -49,6 +54,7 @@ interface SsoRegisterRequest {
 export function useAuth() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { setTenantId } = useAuthStore();
   const { clearTokens } = useTokenStorage();
@@ -150,19 +156,19 @@ export function useAuth() {
         const variant: any = 'destructive';
 
         switch (code) {
-          case 'INVALID_ARGUMENT':
+          case AUTH_ERROR_CODE.INVALID_ARGUMENT:
             userMessage = 'Access code is required';
             break;
-          case 'INVALID_ACCESS_CODE':
+          case AUTH_ERROR_CODE.INVALID_ACCESS_CODE:
             userMessage = 'The access code you entered is invalid. Please check and try again.';
             break;
-          case 'ACCESS_CODE_ALREADY_USED':
+          case AUTH_ERROR_CODE.ACCESS_CODE_ALREADY_USED:
             userMessage = 'This access code has already been used. Please contact support for a new code.';
             break;
-          case 'ACCESS_CODE_VALIDATION_FAILED':
+          case AUTH_ERROR_CODE.ACCESS_CODE_VALIDATION_FAILED:
             userMessage = 'Unable to verify access code. Please try again in a moment.';
             break;
-          case 'TENANT_REGISTRATION_BLOCKED':
+          case AUTH_ERROR_CODE.TENANT_REGISTRATION_BLOCKED:
             title = 'Service Unavailable';
             userMessage = 'Registration is temporarily unavailable. Please try again later.';
             break;
@@ -222,6 +228,15 @@ export function useAuth() {
       if (tenantInfo?.tenantId) {
         setTenantId(tenantInfo.tenantId);
 
+        if (isNativeShell()) {
+          // System-browser login sheet; tokens land in the Keychain.
+          await nativeLogin({ tenantId: tenantInfo.tenantId, provider });
+          triggerAuthRecheck();
+          router.push('/dashboard');
+          setIsLoading(false);
+          return;
+        }
+
         const getReturnUrl = () => {
           const hostname = window.location.hostname;
           const protocol = window.location.protocol;
@@ -248,10 +263,20 @@ export function useAuth() {
     }
   };
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     const { tenantId: storeTenantId, user: currentUser } = useAuthStore.getState();
     const effectiveTenantId =
       storeTenantId || currentUser?.tenantId || currentUser?.organizationId || tenantInfo?.tenantId;
+
+    // In the native shell revoke server-side BEFORE clearing local tokens —
+    // logoutAsync needs the stored refresh token to send the Refresh-Token header.
+    if (isNativeShell()) {
+      try {
+        await authApiClient.logoutAsync(effectiveTenantId);
+      } catch {
+        // Best-effort revocation; local sign-out proceeds regardless.
+      }
+    }
 
     const { logout: storeLogout } = useAuthStore.getState();
     storeLogout();
@@ -259,9 +284,8 @@ export function useAuth() {
     // Clear React Query auth cache
     queryClient.removeQueries({ queryKey: authSessionQueryKey });
 
-    const isDevTicketEnabled = runtimeEnv.enableDevTicketObserver();
-    if (isDevTicketEnabled) {
-      clearTokens();
+    if (isBearerAuthMode()) {
+      await clearTokens();
     }
 
     setEmail('');
@@ -270,6 +294,11 @@ export function useAuth() {
     setDiscoveryAttempted(false);
     setAvailableProviders([]);
     setIsLoading(false);
+
+    if (isNativeShell()) {
+      // No browser redirect in the shell — the route guard shows the sign-in screen.
+      return;
+    }
 
     if (effectiveTenantId) {
       authApiClient.logout(effectiveTenantId);

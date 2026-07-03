@@ -7,6 +7,8 @@ import {
   NotFoundError,
   type PageActionButton,
   PageLayout,
+  type PanelRow,
+  StackedRowsPanel,
   Tag,
 } from '@flamingo-stack/openframe-frontend-core';
 import { PenEditIcon, TrashIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
@@ -95,6 +97,42 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
     },
   ];
 
+  const severityColumn = { key: 'severity', value: policyDetails.critical ? 'Critical' : 'Low', label: 'Severity' };
+  const statusColumn = { key: 'status', value: <PolicyStatusTag policy={policyDetails} />, label: 'Status' };
+  const authorColumn = { key: 'author', value: policyDetails.author_name, label: 'Author' };
+
+  // The meta fields render as one row on desktop and as two separate rows on
+  // tablet/mobile. Each is a distinct PanelRow toggled by breakpoint so every
+  // line keeps its own divider and padding (matching the Figma responsive specs).
+  const policyInfoRows: PanelRow[] = [
+    ...(policyDetails.description
+      ? [
+          {
+            id: 'description',
+            columns: [{ key: 'description', value: policyDetails.description, label: 'Description' }],
+          },
+        ]
+      : []),
+    // Desktop (lg+): Severity + Status + Author on a single row → 2 rows total.
+    {
+      id: 'meta-desktop',
+      className: 'hidden lg:flex lg:border-b-0',
+      columns: [severityColumn, statusColumn, authorColumn],
+    },
+    // Tablet & mobile (< lg): split into two rows — Severity + Status, then Author
+    // on its own third row. The empty spacer keeps Author at the standard row height.
+    {
+      id: 'meta-severity-status',
+      className: 'lg:hidden',
+      columns: [severityColumn, statusColumn],
+    },
+    {
+      id: 'meta-author',
+      className: 'lg:hidden',
+      columns: [authorColumn, { key: 'author-spacer' }],
+    },
+  ];
+
   return (
     <PageLayout
       title={policyDetails.name}
@@ -108,41 +146,7 @@ export function PolicyDetailsView({ policyId }: PolicyDetailsViewProps) {
       className="px-[var(--spacing-system-l)] pb-[var(--spacing-system-l)]"
     >
       {/* Policy Info */}
-      <div className="bg-ods-card border border-ods-border rounded-lg p-6">
-        {policyDetails.description && (
-          <div className="mb-6">
-            <p className="text-ods-text-primary font-medium">{policyDetails.description}</p>
-            <p className="text-ods-text-secondary text-sm mt-1">Description</p>
-          </div>
-        )}
-
-        <div
-          className={`grid grid-cols-2 md:grid-cols-3 gap-6 ${policyDetails.description ? 'border-t border-ods-border pt-4' : ''}`}
-        >
-          <div>
-            <span
-              className={`px-2 py-1 rounded-md text-sm font-medium border ${
-                policyDetails.critical
-                  ? 'border-[var(--ods-attention-red-error)] text-[var(--ods-attention-red-error)]'
-                  : 'border-ods-border text-ods-text-secondary'
-              }`}
-            >
-              {policyDetails.critical ? 'Yes' : 'No'}
-            </span>
-            <p className="text-ods-text-secondary text-xs mt-1">Critical</p>
-          </div>
-
-          <div>
-            <PolicyStatusTag policy={policyDetails} />
-            <p className="text-ods-text-secondary text-xs mt-1">Status</p>
-          </div>
-
-          <div>
-            <p className="text-ods-text-primary font-medium">{policyDetails.author_name}</p>
-            <p className="text-ods-text-secondary text-xs mt-1">Author</p>
-          </div>
-        </div>
-      </div>
+      <StackedRowsPanel rows={policyInfoRows} />
 
       {/* Query */}
       {policyDetails.query && (

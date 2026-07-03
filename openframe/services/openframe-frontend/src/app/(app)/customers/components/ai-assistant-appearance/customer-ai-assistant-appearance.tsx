@@ -15,11 +15,13 @@ import {
   Input,
   TabSelector,
 } from '@flamingo-stack/openframe-frontend-core/components/ui';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import { AiSettingsPreviews } from '@/app/(app)/settings/ai-settings/components/previews/ai-settings-previews';
 import {
+  clientViewQueryKeys,
   useClientView,
   useResetClientView,
   useUpdateClientView,
@@ -56,11 +58,14 @@ export interface CustomerAppearanceHandle {
 export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle, CustomerAiAssistantAppearanceProps>(
   function CustomerAiAssistantAppearance({ organizationId }, ref) {
     const router = useRouter();
+    const queryClient = useQueryClient();
     // Org-scoped override (null when the customer inherits the default).
     const { view: orgView, isLoading } = useClientView(organizationId);
     // Tenant-wide default, used for the "use default" previews.
     const { view: defaultView } = useClientView(null);
-    const { update } = useUpdateClientView(organizationId);
+    // Opt out of auto-invalidation: commit() refetches once after the avatar
+    // upload, so the preview never flickers the pre-upload image.
+    const { update } = useUpdateClientView(organizationId, { invalidateOnSuccess: false });
     const { reset } = useResetClientView(organizationId);
 
     const [useDefault, setUseDefault] = useState(true);
@@ -78,7 +83,7 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
     const effectiveView = orgView ?? defaultView ?? getDefaultClientView(organizationId);
     const fallbackDefault = defaultView ?? getDefaultClientView(null);
 
-    const { form, avatarUrl, handleAvatarChange, handleAvatarRemove } = useCustomerAppearanceForm({
+    const { form, avatarUrl, handleAvatarChange, handleAvatarRemove, commitAvatar } = useCustomerAppearanceForm({
       view: effectiveView,
     });
 
@@ -98,14 +103,21 @@ export const CustomerAiAssistantAppearance = forwardRef<CustomerAppearanceHandle
             return;
           }
           const values = form.getValues();
-          await update({
+
+          const savedView = await update({
             assistantName: values.assistantName,
             applicationTheme: values.applicationTheme,
             accentColor: values.accentColor,
           });
+          const clientViewId = savedView?.id ?? orgView?.id;
+          if (clientViewId) await commitAvatar(clientViewId);
+          // Single refetch after the avatar lands: the view and its avatar live
+          // in separate stores, so this is the one point where both are current.
+          // (Also keeps the cache fresh for an SPA revisit — no hard refresh.)
+          await queryClient.invalidateQueries({ queryKey: clientViewQueryKeys.detail(organizationId) });
         },
       }),
-      [useDefault, orgView, form, update, reset],
+      [useDefault, organizationId, orgView, form, update, reset, commitAvatar, queryClient],
     );
 
     const handleToggle = (checked: boolean) => {

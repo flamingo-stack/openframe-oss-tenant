@@ -46,8 +46,13 @@ export function useSearchParam(
   // Last value we pushed up, so we can tell our own echo from an external change.
   const lastSyncedRef = useRef(paramValue);
 
-  // Sync UP: debounced input → param.
+  // Sync UP: debounced input → param. Skip when the value already matches what's
+  // in the param (notably the initial mount, where `debouncedSearch` starts equal
+  // to `paramValue`). Writing an unchanged value still triggers a `router.replace`
+  // that, raced against an in-flight navigation (e.g. a urlSync tab switch reading
+  // a stale URL snapshot), can clobber other params — so only write real changes.
   useEffect(() => {
+    if (debouncedSearch === lastSyncedRef.current) return;
     lastSyncedRef.current = debouncedSearch;
     onChangeRef.current(debouncedSearch);
   }, [debouncedSearch]);

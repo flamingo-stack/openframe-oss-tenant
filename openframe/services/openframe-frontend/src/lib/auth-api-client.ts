@@ -4,11 +4,11 @@
  * Uses SHARED_HOST_URL when provided; otherwise uses relative URLs.
  */
 
-import { REFRESH_TOKEN_KEY } from '@/app/(auth)/auth/hooks/use-token-storage';
 import { isSaasSharedMode } from './app-mode';
 import { forceLogout } from './force-logout';
 import { runtimeEnv } from './runtime-config';
 import { refreshAccessToken } from './token-refresh-manager';
+import { getAccessTokenSync, getRefreshToken, isBearerAuthMode } from './token-store';
 
 function getDomainSuffix(): string {
   const sharedUrl = runtimeEnv.sharedHostUrl();
@@ -56,8 +56,8 @@ class AuthApiClient {
     const refreshSuccess = await refreshAccessToken();
 
     if (refreshSuccess) {
-      if (runtimeEnv.enableDevTicketObserver()) {
-        const newToken = localStorage.getItem('of_access_token');
+      if (isBearerAuthMode()) {
+        const newToken = getAccessTokenSync();
         if (newToken) {
           headers.Authorization = `Bearer ${newToken}`;
         }
@@ -262,11 +262,23 @@ class AuthApiClient {
   async logoutAsync(tenantId?: string): Promise<boolean> {
     const query = tenantId ? `?tenantId=${encodeURIComponent(tenantId)}` : '';
     const logoutUrl = buildAuthUrl(`/oauth/logout${query}`);
+    const headers: Record<string, string> = {};
+
+    // In bearer mode there is no refresh cookie — send the token so the
+    // gateway can revoke it server-side.
+    if (isBearerAuthMode()) {
+      const refreshToken = await getRefreshToken();
+      if (refreshToken) {
+        headers['Refresh-Token'] = refreshToken;
+      }
+    }
+
     try {
       await fetch(logoutUrl, {
         method: 'GET',
         credentials: 'include',
         redirect: 'manual',
+        headers,
       });
       return true;
     } catch {
@@ -285,13 +297,11 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
     ...(init.headers || ({} as any)),
   };
 
-  if (runtimeEnv.enableDevTicketObserver()) {
-    try {
-      const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      if (refreshToken) {
-        headers['Refresh-Token'] = refreshToken;
-      }
-    } catch (_error) {}
+  if (isBearerAuthMode()) {
+    const refreshToken = await getRefreshToken();
+    if (refreshToken) {
+      headers['Refresh-Token'] = refreshToken;
+    }
   }
 
   try {
@@ -309,7 +319,7 @@ async function requestRefresh<T = any>(path: string, init: RequestInit = {}): Pr
       } catch {}
     }
 
-    if (runtimeEnv.enableDevTicketObserver() && res.ok) {
+    if (isBearerAuthMode() && res.ok) {
       const accessToken = res.headers.get('Access-Token') || res.headers.get('access-token');
       const refreshToken = res.headers.get('Refresh-Token') || res.headers.get('refresh-token');
 
@@ -340,13 +350,11 @@ async function request<T = any>(path: string, init: RequestInit = {}): Promise<A
     'Content-Type': 'application/json',
     ...(init.headers || ({} as any)),
   };
-  if (runtimeEnv.enableDevTicketObserver()) {
-    try {
-      const token = localStorage.getItem('of_access_token');
-      if (token && !headers.Authorization) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-    } catch {}
+  if (isBearerAuthMode()) {
+    const token = getAccessTokenSync();
+    if (token && !headers.Authorization) {
+      headers.Authorization = `Bearer ${token}`;
+    }
   }
   try {
     const res = await fetch(url, {

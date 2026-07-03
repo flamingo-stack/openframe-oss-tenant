@@ -79,8 +79,8 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
   const handleBack = useSafeBack('/scripts/?tab=schedules');
 
-  const editDevicesHref = `/scripts/schedules/${scheduleId}/devices`;
-  const editScheduleHref = `/scripts/schedules/${scheduleId}/edit`;
+  const editDevicesHref = `/scripts/schedules/devices?id=${scheduleId}`;
+  const editScheduleHref = `/scripts/schedules/edit?id=${scheduleId}`;
 
   const actions = useMemo(
     () => [
@@ -128,7 +128,7 @@ export function ScheduleDetailView({ scheduleId }: ScheduleDetailViewProps) {
 
         {/* Tab Navigation */}
         <div className="mt-6">
-          <TabNavigation tabs={SCHEDULE_TABS} activeTab={activeTab} onTabChange={handleTabChange} showRightGradient>
+          <TabNavigation tabs={SCHEDULE_TABS} activeTab={activeTab} onTabChange={handleTabChange}>
             {tabId => (
               <div className="pt-6">
                 <TabContent

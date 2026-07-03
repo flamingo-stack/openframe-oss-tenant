@@ -42,7 +42,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { type ReactNode, useMemo } from 'react';
 import { composeOpenframeChatContentUrl } from '@/app/(app)/help-center/help-center-content-href';
-import { runtimeEnv } from '@/lib/runtime-config';
+import { getAccessTokenSync, isBearerAuthMode } from '@/lib/token-store';
 
 /**
  * Content-href seam for the openframe embedder. The type→route map is shared
@@ -57,26 +57,12 @@ import { runtimeEnv } from '@/lib/runtime-config';
 
 import { refreshAccessToken } from '@/lib/token-refresh-manager';
 
-/** localStorage key the openframe `apiClient` writes/reads. Kept in sync
- *  with [api-client.ts:7](src/lib/api-client.ts#L7) — both sides MUST
- *  use the same key so the bearer is consistent. */
-const ACCESS_TOKEN_KEY = 'of_access_token';
-
 /** Stable source identifier used for localStorage namespacing inside the
  *  lib (`mingo-chat-openframe-v1` keys). Must not change between
  *  deployments or users lose their local Guide history. Openframe is
  *  Mingo-only today, so the source value is more of a namespace label
  *  than a content discriminator. */
 const CHAT_SOURCE = 'openframe' as const;
-
-/** Read `of_access_token` without throwing (sandboxed iframes can). */
-function safeReadToken(): string | null {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Auth adapter the lib's `embedAuthedFetch` consults on every embedded-chat
@@ -87,16 +73,16 @@ function safeReadToken(): string | null {
  */
 const CHAT_AUTH_ADAPTER: EmbedAuthAdapter = {
   getHeaders: () => {
-    // Mirror `apiClient.getAuthHeaders()` EXACTLY: only attach a localStorage
-    // Bearer in dev-ticket mode. In normal cookie mode the access token lives
-    // in an http-only cookie that `oauth/refresh` rotates server-side, while
-    // the `of_access_token` localStorage copy is written ONCE at login and
-    // never refreshed (token-refresh-manager gates that write on dev-ticket).
-    // Sending that copy would ship a stale/expired Bearer that the gateway
-    // prefers over the fresh cookie. Omit it and let `credentials: 'include'`
-    // carry the cookie — same way the rest of the app authenticates.
-    if (!runtimeEnv.enableDevTicketObserver()) return {};
-    const token = safeReadToken();
+    // Mirror `apiClient.getAuthHeaders()` EXACTLY: only attach a stored Bearer
+    // in bearer mode (dev-ticket web or native shell). In normal cookie mode
+    // the access token lives in an http-only cookie that `oauth/refresh`
+    // rotates server-side; the client-side copy is only maintained in bearer
+    // mode (token-refresh-manager gates its writes the same way). Sending a
+    // copy outside bearer mode would ship a stale/expired Bearer that the
+    // gateway prefers over the fresh cookie. Omit it and let
+    // `credentials: 'include'` carry the cookie.
+    if (!isBearerAuthMode()) return {};
+    const token = getAccessTokenSync();
     return token ? { Authorization: `Bearer ${token}` } : {};
   },
   // Send openframe cookies cross-origin to the gateway; CORS +

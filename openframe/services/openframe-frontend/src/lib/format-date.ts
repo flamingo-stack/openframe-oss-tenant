@@ -2,23 +2,28 @@ type DateInput = string | number | Date;
 
 const toDate = (input: DateInput): Date => (input instanceof Date ? input : new Date(input));
 
-const dateFmt = new Intl.DateTimeFormat('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+// Shown when the input is missing or unparseable. `Intl.DateTimeFormat.format`
+// throws `RangeError: Invalid time value` on an invalid Date, so every formatter
+// here guards first — callers can pass raw API values without a per-call check.
+const INVALID_DATE_PLACEHOLDER = '—';
+
+const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'short' });
 const timeFmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' });
-const timeWithSecondsFmt = new Intl.DateTimeFormat('en-GB', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
+const timeWithSecondsFmt = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' });
 
-export const formatDate = (input: DateInput): string => dateFmt.format(toDate(input));
+const format = (input: DateInput, fmt: Intl.DateTimeFormat): string => {
+  const date = toDate(input);
+  return Number.isNaN(date.getTime()) ? INVALID_DATE_PLACEHOLDER : fmt.format(date);
+};
 
-export const formatTime = (input: DateInput): string => timeFmt.format(toDate(input));
+export const formatDate = (input: DateInput): string => format(input, dateFmt);
 
-export const formatDateTime = (input: DateInput): string => `${formatDate(input)} ${formatTime(input)}`;
+export const formatTime = (input: DateInput): string => format(input, timeFmt);
 
-/** Returns `{ date, time }` where time is in 24-hour format with seconds. */
-export const splitDateAndTimeWithSeconds = (input: DateInput): { date: string; time: string } => {
-  const d = toDate(input);
-  return { date: dateFmt.format(d), time: timeWithSecondsFmt.format(d) };
+export const formatTimeWithSeconds = (input: DateInput): string => format(input, timeWithSecondsFmt);
+
+export const formatDateTime = (input: DateInput): string => {
+  const date = toDate(input);
+  if (Number.isNaN(date.getTime())) return INVALID_DATE_PLACEHOLDER;
+  return `${dateFmt.format(date)} ${timeFmt.format(date)}`;
 };

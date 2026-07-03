@@ -24,8 +24,8 @@ export function ScriptDetailsView({ scriptId }: ScriptDetailsViewProps) {
     scriptDetails ? { type: CONTEXT_ENTITY_KIND.SCRIPT, id: scriptId, label: scriptDetails.name || scriptId } : null,
   );
 
-  const editHref = `/scripts/edit/${scriptId}`;
-  const runHref = scriptDetails?.id ? `/scripts/details/${scriptDetails.id}/run` : undefined;
+  const editHref = `/scripts/edit?id=${scriptId}`;
+  const runHref = scriptDetails?.id ? `/scripts/details/run?id=${scriptDetails.id}` : undefined;
 
   const actions = useMemo(
     () => [

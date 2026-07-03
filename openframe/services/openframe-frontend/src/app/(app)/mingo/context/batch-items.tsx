@@ -1,9 +1,13 @@
 'use client';
 
 /**
- * Batch context items — Tactical scripts and core users are fetched as ONE full
- * batch (cached via TanStack suspense), then SEARCHED and PAGED entirely on the
- * client. Their sources have no usable server-side search for this picker.
+ * Batch context items — fetched as ONE full batch (cached via TanStack suspense),
+ * then SEARCHED and PAGED entirely on the client. These sources have no usable
+ * server-side search for this picker.
+ *   • LegacyScriptItems — Tactical scripts. The `scripts-v2` flag-OFF dropdown
+ *     source; the flag-ON source is the Relay `ScriptItems` in `relay-items.tsx`.
+ *     (Dispatched by `renderMingoContextItems`.)
+ *   • UserItems — core users.
  */
 
 import type { ChatContextItem } from '@flamingo-stack/openframe-frontend-core/components/chat';
@@ -15,7 +19,7 @@ import { tacticalApiClient } from '@/lib/tactical-api-client';
 import { CONTEXT_ENTITY_KIND } from './context-types';
 import { type ContextItemsProps, matches, useClientPaging } from './items-shared';
 
-// ───────────────────────────── Script ───────────────────────────────────────
+// ──────────────────────── Script (legacy / Tactical) ─────────────────────────
 
 async function fetchAllScripts(): Promise<ChatContextItem[]> {
   const res = await tacticalApiClient.getScripts();
@@ -33,7 +37,7 @@ async function fetchAllScripts(): Promise<ChatContextItem[]> {
   }));
 }
 
-export function ScriptItems({ query, selectedKeys, onToggle, atLimit }: ContextItemsProps) {
+export function LegacyScriptItems({ query, selectedKeys, onToggle, atLimit }: ContextItemsProps) {
   const { data } = useSuspenseQuery({
     queryKey: ['mingo-context', 'scripts-all'],
     queryFn: fetchAllScripts,

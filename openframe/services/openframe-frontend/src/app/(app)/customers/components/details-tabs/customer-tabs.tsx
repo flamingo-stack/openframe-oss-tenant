@@ -3,6 +3,7 @@
 import {
   ChatsIcon,
   ClipboardListIcon,
+  ClockHistoryIcon,
   FileContentIcon,
   MonitorIcon,
   TagIcon,
@@ -15,6 +16,7 @@ import { CustomerDetailsTab } from './customer-details-tab';
 import { CustomerDevicesTab } from './customer-devices-tab';
 import { CustomerLogsTab } from './customer-logs-tab';
 import { CustomerTicketsTab } from './customer-tickets-tab';
+import { CustomerWorktimeTab } from './customer-worktime-tab';
 
 export interface CustomerTabProps {
   organization: CustomerDetails;
@@ -38,6 +40,10 @@ function LogsTab({ organization }: CustomerTabProps) {
   return <CustomerLogsTab organizationId={organization.organizationId} />;
 }
 
+function WorktimeTab({ organization }: CustomerTabProps) {
+  return <CustomerWorktimeTab organization={organization} />;
+}
+
 function DetailsTab({ organization }: CustomerTabProps) {
   return <CustomerDetailsTab organization={organization} />;
 }
@@ -52,6 +58,7 @@ const BASE_CUSTOMER_TABS: TabItem[] = [
   { id: 'devices', label: 'Devices', icon: MonitorIcon, component: DevicesTab },
   { id: 'tickets', label: 'Tickets', icon: TagIcon, component: TicketsTab },
   { id: 'logs', label: 'Logs', icon: ClipboardListIcon, component: LogsTab },
+  { id: 'worktime', label: 'Worktime', icon: ClockHistoryIcon, component: WorktimeTab },
   { id: 'details', label: 'Details', icon: FileContentIcon, component: DetailsTab },
 ];
 

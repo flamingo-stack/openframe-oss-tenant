@@ -1,18 +1,219 @@
 'use client';
 
-import {
-  InfoCard,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@flamingo-stack/openframe-frontend-core';
-import { Info as InfoIcon } from 'lucide-react';
-import React from 'react';
+import { AlertTriangleIcon, CheckCircleIcon } from '@flamingo-stack/openframe-frontend-core/components/icons-v2';
+import { cn } from '@flamingo-stack/openframe-frontend-core/utils';
 import { formatDateTime } from '@/lib/format-date';
+import type { Device } from '../../types/device.types';
 
 interface SecurityTabProps {
-  device: any;
+  device: Device | null;
+}
+
+/**
+ * Status of a single posture row. Drives the value color and the trailing icon,
+ * matching the Security design (green check = good, red/amber alert = attention).
+ */
+type SecurityStatus = 'success' | 'error' | 'warning' | 'neutral';
+
+interface SecurityRow {
+  label: string;
+  value: string;
+  /** Defaults to `neutral` (white value, no trailing icon). */
+  status?: SecurityStatus;
+}
+
+interface SecurityCard {
+  title?: string;
+  rows: SecurityRow[];
+}
+
+interface SecuritySection {
+  id: string;
+  title: string;
+  cards: SecurityCard[];
+}
+
+const VALUE_COLOR: Record<SecurityStatus, string> = {
+  success: 'text-ods-success',
+  error: 'text-ods-error',
+  warning: 'text-ods-warning',
+  neutral: 'text-ods-text-primary',
+};
+
+function StatusRow({ label, value, status = 'neutral' }: SecurityRow) {
+  const icon =
+    status === 'success' ? (
+      <CheckCircleIcon size={16} className="text-ods-success shrink-0" />
+    ) : status === 'error' ? (
+      <AlertTriangleIcon size={16} className="text-ods-error shrink-0" />
+    ) : status === 'warning' ? (
+      <AlertTriangleIcon size={16} className="text-ods-warning shrink-0" />
+    ) : null;
+
+  return (
+    <div className="flex h-6 items-center gap-[var(--spacing-system-xs)] w-full">
+      <span className="text-h4 text-ods-text-secondary whitespace-nowrap">{label}</span>
+      <div className="flex-1 h-px bg-ods-divider" />
+      <span className={cn('text-h4 truncate', VALUE_COLOR[status])} title={value}>
+        {value}
+      </span>
+      {icon}
+    </div>
+  );
+}
+
+/** Host-local replica of the design's posture card (core `InfoCard` can't color values or add status icons). */
+function SecurityStatusCard({ title, rows }: SecurityCard) {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-system-m)] bg-ods-card border border-ods-border rounded-md p-[var(--spacing-system-m)] w-full">
+      {title && (
+        <span className="text-h4 text-ods-text-primary truncate" title={title}>
+          {title}
+        </span>
+      )}
+      <div className="flex flex-col gap-[var(--spacing-system-xs)] w-full">
+        {rows.map(row => (
+          <StatusRow key={row.label} {...row} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SecuritySectionBlock({ title, cards }: Omit<SecuritySection, 'id'>) {
+  return (
+    <section className="flex flex-col gap-[var(--spacing-system-xxs)]">
+      <h3 className="text-h5 text-ods-text-secondary uppercase">{title}</h3>
+      <div className={cn('grid grid-cols-1 gap-[var(--spacing-system-l)]', cards.length > 1 && 'lg:grid-cols-3')}>
+        {cards.map((card, index) => (
+          <SecurityStatusCard key={card.title ?? index} {...card} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Build the posture sections from the data we actually have on the normalized device.
+ * Sections with no real data are omitted entirely (no "Unknown/N/A" filler), so the
+ * design's Firewall / Defender / per-drive BitLocker / SIP blocks simply don't render
+ * until the backend surfaces those osquery tables.
+ */
+function buildSections(device: Device): SecuritySection[] {
+  const sections: SecuritySection[] = [];
+  const { mdm } = device;
+
+  // Encryption — the BitLocker/FileVault analog we can populate (single boolean + key escrow).
+  const encryptionRows: SecurityRow[] = [];
+  if (device.disk_encryption_enabled !== undefined) {
+    encryptionRows.push({
+      label: 'Disk Encryption',
+      value: device.disk_encryption_enabled ? 'Encrypted' : 'Not Encrypted',
+      status: device.disk_encryption_enabled ? 'success' : 'error',
+    });
+  }
+  if (mdm) {
+    encryptionRows.push({
+      label: 'Recovery Key Escrow',
+      value: mdm.encryption_key_available ? 'Available' : 'Not Available',
+      status: mdm.encryption_key_available ? 'success' : 'error',
+    });
+  }
+  if (encryptionRows.length > 0) {
+    sections.push({
+      id: 'encryption',
+      title: 'Encryption',
+      cards: [{ title: 'Disk Encryption', rows: encryptionRows }],
+    });
+  }
+
+  // Device management posture (Fleet MDM enrollment).
+  if (mdm) {
+    const mdmRows: SecurityRow[] = [
+      { label: 'Enrollment', value: mdm.enrollment_status || 'Unknown' },
+      { label: 'Device Status', value: mdm.device_status || 'Unknown' },
+      { label: 'Pending Action', value: mdm.pending_action || 'None' },
+      {
+        label: 'Connected to Fleet',
+        value: mdm.connected_to_fleet ? 'Yes' : 'No',
+        status: mdm.connected_to_fleet ? 'success' : 'error',
+      },
+    ];
+    if (typeof mdm.profiles_count === 'number' && mdm.profiles_count > 0) {
+      mdmRows.push({ label: 'Config Profiles', value: String(mdm.profiles_count) });
+    }
+    if (mdm.dep_profile_error) {
+      mdmRows.push({ label: 'DEP Profile', value: 'Error', status: 'error' });
+    }
+    sections.push({
+      id: 'mdm',
+      title: 'Device Management',
+      cards: [{ title: mdm.name || 'MDM', rows: mdmRows }],
+    });
+  }
+
+  // Security agents — one card per agent that reports a version.
+  const agentCards: SecurityCard[] = [];
+  const openframeVersion = device.version || device.agentVersion;
+  if (openframeVersion) {
+    agentCards.push({
+      title: 'OpenFrame Agent',
+      rows: [
+        { label: 'Version', value: openframeVersion },
+        { label: 'Last Seen', value: device.last_seen ? formatDateTime(device.last_seen) : 'Unknown' },
+      ],
+    });
+  }
+  if (device.osquery_version) {
+    agentCards.push({
+      title: 'osquery',
+      rows: [
+        { label: 'Version', value: device.osquery_version },
+        { label: 'Status', value: 'Active', status: 'success' },
+      ],
+    });
+  }
+  if (device.orbit_version && device.orbit_version !== 'unknown') {
+    agentCards.push({
+      title: 'Orbit',
+      rows: [
+        { label: 'Version', value: device.orbit_version },
+        { label: 'Status', value: 'Active', status: 'success' },
+      ],
+    });
+  }
+  if (device.fleet_desktop_version) {
+    agentCards.push({ title: 'Fleet Desktop', rows: [{ label: 'Version', value: device.fleet_desktop_version }] });
+  }
+  if (agentCards.length > 0) {
+    sections.push({ id: 'agents', title: 'Security Agents', cards: agentCards });
+  }
+
+  // Posture — Fleet policy/issue summary (from the host payload `issues`).
+  const postureRows: SecurityRow[] = [];
+  if (device.failingPoliciesCount !== undefined) {
+    postureRows.push({
+      label: 'Failing Policies',
+      value: String(device.failingPoliciesCount),
+      status: device.failingPoliciesCount > 0 ? 'error' : 'success',
+    });
+  }
+  if (device.totalIssuesCount !== undefined) {
+    postureRows.push({
+      label: 'Total Issues',
+      value: String(device.totalIssuesCount),
+      status: device.totalIssuesCount > 0 ? 'warning' : 'success',
+    });
+  }
+  if (postureRows.length > 0) {
+    sections.push({
+      id: 'posture',
+      title: 'Posture',
+      cards: [{ title: 'Policy Compliance', rows: postureRows }],
+    });
+  }
+
+  return sections;
 }
 
 export function SecurityTab({ device }: SecurityTabProps) {
@@ -24,411 +225,21 @@ export function SecurityTab({ device }: SecurityTabProps) {
     );
   }
 
-  const mdm = device.mdm || {};
-  const users = device.users || [];
+  const sections = buildSections(device);
 
-  // Count root users (uid 0)
-  const rootUserCount = users.filter((u: any) => u.uid === 0).length;
+  if (sections.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-ods-text-secondary text-lg">No security data available for this device</div>
+      </div>
+    );
+  }
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div>
-        {/* Security Posture Section */}
-        <div>
-          <h3 className="text-h5 text-ods-text-secondary mb-4">SECURITY POSTURE</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'Encryption Status',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Device encryption configuration from Fleet MDM. Shows disk encryption status and encryption key
-                        availability for data protection.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Disk Encryption',
-                    value: device.disk_encryption_enabled ? 'Enabled' : 'Disabled',
-                  },
-                  {
-                    label: 'Encryption Key',
-                    value: mdm.encryption_key_available ? 'Available' : 'Not Available',
-                  },
-                ],
-              }}
-            />
-
-            <InfoCard
-              data={{
-                title: 'MDM Status',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Mobile Device Management enrollment status from Fleet. Controls remote management capabilities,
-                        security policies, and device configuration.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Enrollment',
-                    value: mdm.enrollment_status || 'Unknown',
-                  },
-                  {
-                    label: 'Device Status',
-                    value: mdm.device_status || 'Unknown',
-                  },
-                  {
-                    label: 'Pending Action',
-                    value: mdm.pending_action || 'None',
-                  },
-                  {
-                    label: 'Connected to Fleet',
-                    value: mdm.connected_to_fleet ? 'Yes' : 'No',
-                  },
-                ],
-              }}
-            />
-
-            <InfoCard
-              data={{
-                title: 'System Security',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        System security status from Tactical RMM. Indicates if security updates require reboot and
-                        whether device is in maintenance mode.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Reboot Required',
-                    value: device.needs_reboot ? 'Yes' : 'No',
-                  },
-                  {
-                    label: 'Maintenance Mode',
-                    value: device.maintenance_mode ? 'Active' : 'Inactive',
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* User Sessions Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">USER SESSIONS</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'Active Users',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        User session information from Fleet and Tactical RMM. Shows currently logged in users and counts
-                        of root/administrative accounts for security monitoring.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Current User',
-                    value: device.logged_in_username || 'None',
-                  },
-                  {
-                    label: 'Last Logged In',
-                    value: device.last_logged_in_user || 'Unknown',
-                  },
-                  {
-                    label: 'Root Users',
-                    value: rootUserCount.toString(),
-                  },
-                  {
-                    label: 'Total Users',
-                    value: users.length.toString(),
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Security Agents Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">SECURITY AGENTS</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'OpenFrame Agent',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        OpenFrame monitoring agent. Primary agent for device communication, data collection, and remote
-                        management capabilities.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Version',
-                    value: device.version || device.agentVersion || 'Unknown',
-                  },
-                  {
-                    label: 'Last Seen',
-                    value: device.last_seen ? formatDateTime(device.last_seen) : 'Unknown',
-                  },
-                ],
-              }}
-            />
-
-            <InfoCard
-              data={{
-                title: 'osquery',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        osquery security agent from Fleet. Provides SQL-powered system monitoring, security analytics,
-                        and real-time device telemetry.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Version',
-                    value: device.osquery_version || 'Unknown',
-                  },
-                  {
-                    label: 'Status',
-                    value: device.osquery_version ? 'Active' : 'Inactive',
-                  },
-                ],
-              }}
-            />
-
-            <InfoCard
-              data={{
-                title: 'Orbit Agent',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Orbit update agent from Fleet. Manages osquery updates, Fleet Desktop, and agent auto-update
-                        functionality.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Version',
-                    value: device.orbit_version || 'Unknown',
-                  },
-                  {
-                    label: 'Status',
-                    value: device.orbit_version && device.orbit_version !== 'unknown' ? 'Active' : 'Unknown',
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Network Security Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">NETWORK SECURITY</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'Network Interfaces',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Network configuration from Fleet. Shows primary network interface, external IP address, and MAC
-                        address for network security monitoring.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Primary IP',
-                    value: device.primary_ip || 'Unknown',
-                    copyable: true,
-                  },
-                  {
-                    label: 'Public IP',
-                    value: device.public_ip || 'Unknown',
-                    copyable: true,
-                  },
-                  {
-                    label: 'MAC Address',
-                    value: device.primary_mac || device.macAddress || 'Unknown',
-                    copyable: true,
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Security Alerts Section */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">ALERT CONFIGURATION</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'Alert Settings',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Alert notification configuration from Tactical RMM. Controls how administrators are notified of
-                        security events, offline devices, and system issues.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Email Alerts',
-                    value: device.overdue_email_alert ? 'Enabled' : 'Disabled',
-                  },
-                  {
-                    label: 'Text Alerts',
-                    value: device.overdue_text_alert ? 'Enabled' : 'Disabled',
-                  },
-                  {
-                    label: 'Dashboard Alerts',
-                    value: device.overdue_dashboard_alert ? 'Enabled' : 'Disabled',
-                  },
-                  {
-                    label: 'Alert Template',
-                    value: device.alert_template || 'None',
-                  },
-                ],
-              }}
-            />
-
-            <InfoCard
-              data={{
-                title: 'Offline Thresholds',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        Device offline detection thresholds. Defines how long a device can be unreachable before
-                        triggering offline or overdue alerts.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Offline Time',
-                    value: device.offline_time ? `${device.offline_time} minutes` : 'Not set',
-                  },
-                  {
-                    label: 'Overdue Time',
-                    value: device.overdue_time ? `${device.overdue_time} minutes` : 'Not set',
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-
-        {/* System Boot Information */}
-        <div className="pt-6">
-          <h3 className="text-h5 text-ods-text-secondary mb-4">SYSTEM BOOT INFORMATION</h3>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <InfoCard
-              data={{
-                title: 'Boot Times',
-                icon: (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <InfoIcon className="w-4 h-4 text-ods-text-secondary cursor-help" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-[500px] min-w-[400px]">
-                      <p>
-                        System boot and uptime information from Fleet. Tracks when the device last started, restarted,
-                        and total uptime for availability monitoring.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                ),
-                items: [
-                  {
-                    label: 'Boot Time',
-                    value: device.boot_time ? formatDateTime(device.boot_time * 1000) : 'Unknown',
-                  },
-                  {
-                    label: 'Last Restarted',
-                    value: device.last_restarted_at ? formatDateTime(device.last_restarted_at) : 'Unknown',
-                  },
-                  {
-                    label: 'Uptime',
-                    value: device.uptime ? `${Math.floor(device.uptime / 1000000000 / 3600)} hours` : 'Unknown',
-                  },
-                ],
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </TooltipProvider>
+    <div className="flex flex-col gap-[var(--spacing-system-l)]">
+      {sections.map(section => (
+        <SecuritySectionBlock key={section.id} title={section.title} cards={section.cards} />
+      ))}
+    </div>
   );
 }

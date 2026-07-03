@@ -14,10 +14,17 @@ const DISPLAY_NAME: &str = "OpenFrame Client Service";
 const DESCRIPTION: &str = "OpenFrame client service for remote management and monitoring";
 
 pub fn orbit_dir() -> std::path::PathBuf {
-    std::path::PathBuf::from(
-        std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
-    )
-    .join("Orbit")
+    #[cfg(target_os = "windows")]
+    {
+        std::path::PathBuf::from(
+            std::env::var("ProgramFiles").unwrap_or_else(|_| "C:\\Program Files".to_string()),
+        )
+        .join("Orbit")
+    }
+    #[cfg(any(target_os = "macos", target_os = "linux"))]
+    {
+        std::path::PathBuf::from("/opt/orbit")
+    }
 }
 
 /// Remove a directory with retry logic for locked files

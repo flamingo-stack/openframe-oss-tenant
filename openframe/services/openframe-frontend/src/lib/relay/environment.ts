@@ -6,19 +6,14 @@ import { forceLogout } from '../force-logout';
 import { runtimeEnv } from '../runtime-config';
 import { detectTrialExpiredFromGraphqlErrors } from '../subscription-lock-signal';
 import { isTokenRefreshing, refreshAccessToken } from '../token-refresh-manager';
-
-const ACCESS_TOKEN_KEY = 'of_access_token';
+import { getAccessTokenSync, isBearerAuthMode } from '../token-store';
 
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
-  if (runtimeEnv.enableDevTicketObserver()) {
-    try {
-      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
-    } catch {
-      // localStorage not available
+  if (isBearerAuthMode()) {
+    const accessToken = getAccessTokenSync();
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
   }
   return headers;

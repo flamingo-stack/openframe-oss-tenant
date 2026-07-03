@@ -96,7 +96,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
   const repeatEnabled = watch('repeatEnabled');
   const supportedPlatforms = watch('supportedPlatforms');
 
-  const handleBack = useSafeBack(isEditMode ? `/scripts/schedules/${scheduleId}` : '/scripts/?tab=schedules');
+  const handleBack = useSafeBack(isEditMode ? `/scripts/schedules?id=${scheduleId}` : '/scripts/?tab=schedules');
 
   const togglePlatform = useCallback(
     (platform: Platform) => {
@@ -137,7 +137,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" updated successfully.`,
             variant: 'success',
           });
-          safeBackOrReplace(router, `/scripts/schedules/${scheduleId}`);
+          safeBackOrReplace(router, `/scripts/schedules?id=${scheduleId}`);
         } else {
           const result = await createMutation.mutateAsync(payload);
           toast({
@@ -145,7 +145,7 @@ export function ScheduleCreateView({ scheduleId }: ScheduleCreateViewProps = {})
             description: `Schedule "${data.name}" created successfully.`,
             variant: 'success',
           });
-          router.replace(`/scripts/schedules/${result.id}`);
+          router.replace(`/scripts/schedules?id=${result.id}`);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : `Failed to ${isEditMode ? 'update' : 'create'} schedule`;

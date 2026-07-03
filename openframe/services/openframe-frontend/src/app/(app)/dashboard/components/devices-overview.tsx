@@ -78,7 +78,7 @@ export function DevicesOverviewSection() {
             showProgress
             progressVariant={card.progressVariant}
             percentageDisplay="plain"
-            progressSize={{ base: 24, lg: 56 }}
+            progressSize={{ base: 24, md: 56 }}
             href={`/devices?statuses=${card.status}`}
           />
         ))}

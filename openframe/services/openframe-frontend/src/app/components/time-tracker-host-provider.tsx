@@ -19,9 +19,9 @@ import type { resumeTimerMutation as ResumeTimerMutationType } from '@/__generat
 import type { startTimerMutation as StartTimerMutationType } from '@/__generated__/startTimerMutation.graphql';
 import type { stopTimerMutation as StopTimerMutationType } from '@/__generated__/stopTimerMutation.graphql';
 import { employeeDetailHref } from '@/app/(app)/settings/employees/routes';
-import { useTicketSearchOptions } from '@/app/(app)/tickets/hooks/use-ticket-options';
 import { type ManualEntryEditTarget, ManualEntryModal } from '@/app/components/manual-entry-modal';
 import { ConfirmDialog } from '@/app/components/shared/confirm-dialog';
+import { useTicketCustomerSelection } from '@/app/components/use-ticket-customer-selection';
 import { TimerState } from '@/generated/schema-enums';
 import { cancelTimerMutation } from '@/graphql/time-tracker/cancel-timer-mutation';
 import { currentTimerRelayQuery } from '@/graphql/time-tracker/current-timer-relay';
@@ -31,6 +31,8 @@ import { resumeTimerMutation } from '@/graphql/time-tracker/resume-timer-mutatio
 import { startTimerMutation } from '@/graphql/time-tracker/start-timer-mutation';
 import { stopTimerMutation } from '@/graphql/time-tracker/stop-timer-mutation';
 import {
+  CLEAR_ORGANIZATION_ID,
+  CLEAR_TICKET_ID,
   formatDurationLabel,
   makeCancelTimerUpdater,
   makeSetCurrentTimerUpdater,
@@ -39,6 +41,7 @@ import {
   mapTimerToTrackerState,
   notifyTimeEntriesChanged,
   type TimeEntryNodeShape,
+  toOrganizationGlobalId,
   toTicketGlobalId,
 } from '@/graphql/time-tracker/time-tracker-helpers';
 import { useAuthStore } from '@/stores';
@@ -55,14 +58,25 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
 
   const [timerNode, setTimerNode] = useState<TimeEntryNodeShape | null>(null);
   const [recentNodes, setRecentNodes] = useState<TimeEntryNodeShape[]>([]);
-  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
-  const [ticketSearch, setTicketSearch] = useState('');
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<ManualEntryEditTarget | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
-  const { options: ticketOptionsRaw, isLoading: ticketsLoading } = useTicketSearchOptions(ticketSearch);
+  const {
+    ticketId: selectedTicketId,
+    customerId: selectedCustomerId,
+    customerLocked,
+    ticketOptions: ticketOptionsList,
+    customerOptions: customerOptionsList,
+    ticketsLoading,
+    customersLoading,
+    setTicketSearch,
+    setCustomerSearch,
+    selectTicket,
+    selectCustomer,
+    reset: resetTicketCustomer,
+  } = useTicketCustomerSelection();
 
   const [startTimer, isStarting] = useMutation<StartTimerMutationType>(startTimerMutation);
   const [pauseTimer, isPausing] = useMutation<PauseTimerMutationType>(pauseTimerMutation);
@@ -76,25 +90,36 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (seededRef.current || !timerNode) return;
     if (timerNode.state === TimerState.RUNNING || timerNode.state === TimerState.PAUSED) {
-      if (timerNode.ticketId) setSelectedTicketId(timerNode.ticketId);
+      resetTicketCustomer({
+        ticketId: timerNode.ticketId ?? null,
+        ticketLabel: timerNode.ticketTitle ?? (timerNode.ticketNumber != null ? `#${timerNode.ticketNumber}` : null),
+        customerId: timerNode.organizationId ?? null,
+        customerLabel: timerNode.organization?.name ?? timerNode.ticket?.organizationName ?? null,
+        // Locked only when ticket-derived; a customer picked without a ticket stays editable.
+        lockCustomer: !!(timerNode.ticketId && timerNode.organizationId),
+      });
       if (timerNode.notes) setNotes(timerNode.notes);
       seededRef.current = true;
     }
-  }, [timerNode]);
+  }, [timerNode, resetTicketCustomer]);
 
   const ticketOptions = useMemo(
-    () => ticketOptionsRaw.map(option => ({ id: option.value, label: option.label })),
-    [ticketOptionsRaw],
+    () => ticketOptionsList.map(option => ({ id: option.value, label: option.label })),
+    [ticketOptionsList],
+  );
+
+  const customerOptions = useMemo(
+    () => customerOptionsList.map(option => ({ id: option.value, label: option.label, imageUrl: option.imageUrl })),
+    [customerOptionsList],
   );
 
   const recentEntries = useMemo(() => recentNodes.map(mapTimeEntryToLastEntry), [recentNodes]);
 
   const resetDraft = useCallback(() => {
-    setSelectedTicketId(null);
+    resetTicketCustomer();
     setNotes('');
-    setTicketSearch('');
     seededRef.current = false;
-  }, []);
+  }, [resetTicketCustomer]);
 
   const onError = useCallback(
     (title: string) => (err: Error) => {
@@ -105,11 +130,17 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
 
   const onStart = useCallback(() => {
     startTimer({
-      variables: { input: { ticketId: toTicketGlobalId(selectedTicketId), notes: notes || null } },
+      variables: {
+        input: {
+          ticketId: toTicketGlobalId(selectedTicketId),
+          organizationId: toOrganizationGlobalId(selectedCustomerId),
+          notes: notes || null,
+        },
+      },
       updater: makeSetCurrentTimerUpdater('startTimer'),
       onError: onError('Failed to start timer'),
     });
-  }, [startTimer, selectedTicketId, notes, onError]);
+  }, [startTimer, selectedTicketId, selectedCustomerId, notes, onError]);
 
   const onPause = useCallback(() => {
     pauseTimer({
@@ -145,7 +176,13 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
 
   const onSubmit = useCallback(() => {
     stopTimer({
-      variables: { input: { ticketId: toTicketGlobalId(selectedTicketId), notes: notes || null } },
+      variables: {
+        input: {
+          ticketId: toTicketGlobalId(selectedTicketId) ?? CLEAR_TICKET_ID,
+          organizationId: toOrganizationGlobalId(selectedCustomerId) ?? CLEAR_ORGANIZATION_ID,
+          notes,
+        },
+      },
       updater: makeStopTimerUpdater(),
       onCompleted: () => {
         resetDraft();
@@ -153,7 +190,7 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
       },
       onError: onError('Failed to save time entry'),
     });
-  }, [stopTimer, selectedTicketId, notes, resetDraft, onError, currentUserId]);
+  }, [stopTimer, selectedTicketId, selectedCustomerId, notes, resetDraft, onError, currentUserId]);
 
   const onEntriesChanged = useCallback(() => notifyTimeEntriesChanged(currentUserId ?? null), [currentUserId]);
 
@@ -178,6 +215,8 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
         ticketId: node.ticketId ?? null,
         ticketNumber: node.ticketNumber ?? null,
         ticketTitle: node.ticketTitle ?? null,
+        organizationId: node.organizationId ?? null,
+        organizationName: node.organization?.name ?? node.ticket?.organizationName ?? null,
         notes: node.notes ?? null,
       });
     },
@@ -191,9 +230,15 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
       accumulatedMs: clock.accumulatedMs,
       ticketOptions,
       selectedTicketId,
-      onSelectedTicketChange: setSelectedTicketId,
+      onSelectedTicketChange: selectTicket,
       onTicketSearch: setTicketSearch,
       ticketsLoading,
+      customerOptions,
+      selectedCustomerId,
+      onSelectedCustomerChange: selectCustomer,
+      onCustomerSearch: setCustomerSearch,
+      customersLoading,
+      customerLocked,
       notes,
       onNotesChange: setNotes,
       lastEntries: recentEntries,
@@ -213,7 +258,15 @@ function TimeTrackerHost({ children }: { children: ReactNode }) {
       clock,
       ticketOptions,
       selectedTicketId,
+      selectTicket,
+      setTicketSearch,
       ticketsLoading,
+      customerOptions,
+      selectedCustomerId,
+      selectCustomer,
+      setCustomerSearch,
+      customersLoading,
+      customerLocked,
       notes,
       recentEntries,
       onStart,

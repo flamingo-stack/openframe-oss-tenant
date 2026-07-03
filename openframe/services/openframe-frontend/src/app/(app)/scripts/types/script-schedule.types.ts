@@ -201,9 +201,11 @@ export function getRepeatLabel(schedule: ScriptScheduleDetail): string {
 }
 
 export function formatScheduleDate(isoDate: string): { date: string; time: string } {
+  // Schedules are authored and stored in UTC (see toZuluDateString), so the instant stays pinned to
+  // UTC — but the locale is left undefined so date order and 12/24h follow the user's local settings.
   const d = new Date(isoDate);
-  const date = d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
-  const time = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'UTC' });
+  const date = d.toLocaleDateString(undefined, { month: '2-digit', day: '2-digit', year: 'numeric', timeZone: 'UTC' });
+  const time = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
   return { date, time };
 }
 

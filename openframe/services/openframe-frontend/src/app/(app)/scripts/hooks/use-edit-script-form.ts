@@ -96,7 +96,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
       queryClient.invalidateQueries({ queryKey: scriptsQueryKeys.all });
       toast({ title: 'Success', description: 'Script created successfully', variant: 'success' });
       const newScriptId = data?.id;
-      router.replace(newScriptId ? `/scripts/details/${newScriptId}` : '/scripts');
+      router.replace(newScriptId ? `/scripts/details?id=${newScriptId}` : '/scripts');
     },
     onError: err => {
       toast({
@@ -115,7 +115,7 @@ export function useEditScriptForm({ scriptId, scriptDetails, isEditMode }: UseEd
         queryClient.invalidateQueries({ queryKey: scriptDetailsQueryKeys.detail(scriptId) });
       }
       toast({ title: 'Success', description: 'Script updated successfully', variant: 'success' });
-      safeBackOrReplace(router, `/scripts/details/${scriptId}`);
+      safeBackOrReplace(router, `/scripts/details?id=${scriptId}`);
     },
     onError: err => {
       toast({

@@ -52,4 +52,8 @@ export const runtimeEnv = {
   authLoginUrl(): string {
     return getEnvVar('NEXT_PUBLIC_SHARED_HOST_URL') || '';
   },
+  /** Tenant the native shell logs into — baked into the mobile bundle at build time. */
+  mobileTenantId(): string {
+    return getEnvVar('NEXT_PUBLIC_MOBILE_TENANT_ID') || '';
+  },
 };

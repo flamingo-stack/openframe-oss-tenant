@@ -19,17 +19,26 @@ import type { relayItemsKb_query$key } from '@/__generated__/relayItemsKb_query.
 import type { relayItemsKbListQuery } from '@/__generated__/relayItemsKbListQuery.graphql';
 import type { relayItemsOrgs_query$key } from '@/__generated__/relayItemsOrgs_query.graphql';
 import type { relayItemsOrgsListQuery } from '@/__generated__/relayItemsOrgsListQuery.graphql';
+import type { relayItemsScripts_query$key } from '@/__generated__/relayItemsScripts_query.graphql';
+import type { relayItemsScriptsListQuery } from '@/__generated__/relayItemsScriptsListQuery.graphql';
 import { decodeGlobalId } from '@/lib/relay-id';
 import { CONTEXT_ENTITY_KIND } from './context-types';
 import { type ContextItemsProps, MINGO_CONTEXT_PAGE_SIZE } from './items-shared';
 
 // ───────────────────────────── Device ───────────────────────────────────────
 
+// Mingo device context is restricted to live/relevant devices only: ONLINE
+// (rendered as the green "active" state) and OFFLINE. Pending (the backend
+// `ACTIVE`/`PENDING` enum), archived, deleted, decommissioned, etc. are
+// excluded so Mingo never lists or suggests actions on irrelevant devices.
+// Mirrors `DEFAULT_DASHBOARD_STATUSES` ([ONLINE, OFFLINE]); the values are
+// inlined because the Relay compiler needs a static document.
 const DEVICES_FRAGMENT = graphql`
   fragment relayItemsDevices_query on Query
   @refetchable(queryName: "relayItemsDevicesPaginationQuery")
   @argumentDefinitions(search: { type: "String" }, first: { type: "Int", defaultValue: 10 }, after: { type: "String" }) {
-    devices(search: $search, first: $first, after: $after) @connection(key: "relayItemsDevices_devices") {
+    devices(filter: { statuses: [ONLINE, OFFLINE] }, search: $search, first: $first, after: $after)
+      @connection(key: "relayItemsDevices_devices") {
       edges { node { id machineId hostname displayName status } }
     }
   }
@@ -198,6 +207,74 @@ export function KnowledgeBaseItems({ query, selectedKeys, onToggle, atLimit }: C
       onLoadMore={() => loadNext(MINGO_CONTEXT_PAGE_SIZE)}
       loadingMore={isLoadingNext}
       emptyLabel="No knowledge articles"
+    />
+  );
+}
+
+// ───────────────────────────── Script ───────────────────────────────────────
+
+// Mingo script context lists ACTIVE scripts only — ARCHIVED / DELETED are
+// excluded so Mingo never suggests running a retired script. Native OpenFrame
+// GraphQL `scripts(...)` connection (the v2 source), with server-side search.
+// `[ACTIVE]` is inlined because the Relay compiler needs a static document.
+const SCRIPTS_FRAGMENT = graphql`
+  fragment relayItemsScripts_query on Query
+  @refetchable(queryName: "relayItemsScriptsPaginationQuery")
+  @argumentDefinitions(search: { type: "String" }, first: { type: "Int", defaultValue: 10 }, after: { type: "String" }) {
+    scripts(filter: { statuses: [ACTIVE] }, search: $search, first: $first, after: $after)
+      @connection(key: "relayItemsScripts_scripts") {
+      edges { node { id name description } }
+    }
+  }
+`;
+
+const SCRIPTS_LIST_QUERY = graphql`
+  query relayItemsScriptsListQuery($search: String, $first: Int) {
+    ...relayItemsScripts_query @arguments(search: $search, first: $first)
+  }
+`;
+
+export function ScriptItems({ query, selectedKeys, onToggle, atLimit }: ContextItemsProps) {
+  const root = useLazyLoadQuery<relayItemsScriptsListQuery>(SCRIPTS_LIST_QUERY, {
+    search: query || null,
+    first: MINGO_CONTEXT_PAGE_SIZE,
+  });
+  const { data, loadNext, hasNext, isLoadingNext } = usePaginationFragment(
+    SCRIPTS_FRAGMENT,
+    root as relayItemsScripts_query$key,
+  );
+  const items = useMemo(
+    () =>
+      (data.scripts?.edges ?? []).flatMap(e => {
+        // Raw db id, decoded from the global `id` (`base64("Script:<rawId>")`);
+        // that's what the backend's SCRIPT context resolver + `@script:<id>` marker
+        // expect. The chip re-encodes it to a global id for its `script(id:)` fetch
+        // (see relay-mention-chips). Drop any edge we can't decode to a raw id — a
+        // global id stored here would misroute the chip to the legacy Tactical
+        // resolver (its id-shape dispatch treats non-24-hex as a Tactical id).
+        const rawId = e?.node ? decodeGlobalId(e.node.id)?.rawId : null;
+        if (!e?.node || !rawId) return [];
+        return [
+          {
+            type: CONTEXT_ENTITY_KIND.SCRIPT,
+            id: rawId,
+            label: e.node.name || rawId,
+            description: e.node.description ?? undefined,
+          },
+        ];
+      }),
+    [data],
+  );
+  return (
+    <ContextItemsList
+      items={items}
+      selectedKeys={selectedKeys}
+      onToggle={onToggle}
+      atLimit={atLimit}
+      hasMore={hasNext}
+      onLoadMore={() => loadNext(MINGO_CONTEXT_PAGE_SIZE)}
+      loadingMore={isLoadingNext}
+      emptyLabel="No scripts"
     />
   );
 }

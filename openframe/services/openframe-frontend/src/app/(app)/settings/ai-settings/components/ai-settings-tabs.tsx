@@ -43,12 +43,7 @@ export function AiSettingsTabs({ activeTab, onTabChange, children }: AiSettingsT
   const tabs = getVisibleAiSettingsTabs();
 
   return (
-    <TabNavigation
-      tabs={tabs}
-      activeTab={activeTab}
-      onTabChange={tabId => onTabChange(tabId as AiSettingsTabId)}
-      showRightGradient
-    >
+    <TabNavigation tabs={tabs} activeTab={activeTab} onTabChange={tabId => onTabChange(tabId as AiSettingsTabId)}>
       {activeId => <div className="pt-[var(--spacing-system-l)]">{children(activeId as AiSettingsTabId)}</div>}
     </TabNavigation>
   );

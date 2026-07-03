@@ -1,9 +1,9 @@
 import type { TimeTrackerEntry, TimeTrackerStatus } from '@flamingo-stack/openframe-frontend-core/components/features';
-import { addDays, format } from 'date-fns';
+import { endOfDay, startOfDay } from 'date-fns';
 import { ConnectionHandler, type RecordSourceSelectorProxy } from 'relay-runtime';
 import { TimerState } from '@/generated/schema-enums';
 import { formatDate } from '@/lib/format-date';
-import { ensureGlobalIdForType } from '@/lib/relay-id';
+import { ensureGlobalIdForType, toGlobalId } from '@/lib/relay-id';
 
 export const MY_TIME_ENTRIES_CONNECTION_KEY = 'MyTimeEntries_myTimeEntries';
 const TIME_ENTRY_EDGE_TYPENAME = 'TimeEntryEdge';
@@ -20,6 +20,9 @@ export interface TimeEntryNodeShape {
   readonly ticketId?: string | null;
   readonly ticketNumber?: number | null;
   readonly ticketTitle?: string | null;
+  readonly ticket?: { readonly organizationId?: string | null; readonly organizationName?: string | null } | null;
+  readonly organizationId?: string | null;
+  readonly organization?: { readonly name?: string | null } | null;
   readonly notes?: string | null;
 }
 
@@ -64,6 +67,25 @@ export function instantToCalendarDay(value: unknown): Date {
 }
 
 /**
+ * Move an instant to another calendar day keeping its UTC time-of-day. Editing an entry
+ * through the date-only picker must not collapse a timer entry's real start time to midnight.
+ */
+export function moveInstantToCalendarDay(value: unknown, day: Date): string {
+  const inst = new Date(parseInstant(value));
+  return new Date(
+    Date.UTC(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate(),
+      inst.getUTCHours(),
+      inst.getUTCMinutes(),
+      inst.getUTCSeconds(),
+      inst.getUTCMilliseconds(),
+    ),
+  ).toISOString();
+}
+
+/**
  * Maps the backend timer to the core lib's display contract. ALL timer math lives here.
  *
  * The backend keeps `durationSeconds` at 0 for the whole active session (it's only
@@ -95,18 +117,18 @@ export function formatDurationLabel(seconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(secs)}`;
 }
 
-export interface DateRangeInputValue {
-  startDate: string;
-  endDate: string;
+export interface InstantRangeValue {
+  startedFrom: string;
+  startedTo: string;
 }
 
 /**
- * Build the GraphQL `DateRangeInput` from an inclusive [from, to] day range.
- * The backend range is half-open [startDate, endDate) on the `Date` scalar
- * (YYYY-MM-DD), so `endDate` is the day after `to` to keep `to` itself included.
+ * Build the `TimeEntryFilterInput` instant bounds from an inclusive [from, to] day range.
+ * `startedFrom` is the local start of `from`; `startedTo` is the local end of `to`, so the
+ * whole `to` day is included regardless of an entry's time of day.
  */
-export function toDateRangeInput(from: Date, to: Date): DateRangeInputValue {
-  return { startDate: format(from, 'yyyy-MM-dd'), endDate: format(addDays(to, 1), 'yyyy-MM-dd') };
+export function toInstantRange(from: Date, to: Date): InstantRangeValue {
+  return { startedFrom: startOfDay(from).toISOString(), startedTo: endOfDay(to).toISOString() };
 }
 
 /**
@@ -117,6 +139,24 @@ export function toDateRangeInput(from: Date, to: Date): DateRangeInputValue {
 export function toTicketGlobalId(ticketId: string | null | undefined): string | null {
   return ticketId ? ensureGlobalIdForType('Ticket', ticketId) : null;
 }
+
+/**
+ * Normalize an organization id to a Relay `Organization` global id for time-tracker
+ * mutations. Customer options carry the business `organizationId`, but saas-api decodes
+ * the mutation input as a global id (like `ticketId`/`userId`). Idempotent; null-safe.
+ */
+export function toOrganizationGlobalId(organizationId: string | null | undefined): string | null {
+  return organizationId ? ensureGlobalIdForType('Organization', organizationId) : null;
+}
+
+/**
+ * updateTimeEntry/stopTimer inputs are partial updates: null (or absent) keeps the stored
+ * value; only a BLANK raw id clears it. The backend decodes every non-null id before the
+ * blank check, so "clear" must be sent as the global-id encoding of a blank raw id
+ * (`Type:""`) — a plain `''` would fail global-id decoding.
+ */
+export const CLEAR_TICKET_ID = toGlobalId('Ticket', '');
+export const CLEAR_ORGANIZATION_ID = toGlobalId('Organization', '');
 
 /** Parse an `HH:MM:SS` label to seconds; null when malformed (used by the manual-entry form). */
 export function parseDurationLabel(label: string): number | null {
