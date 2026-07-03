@@ -1,10 +1,10 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useRequiredIdParam } from '@/app/hooks/use-required-id-param';
 import { EditQueryPage } from '../components/edit-query-page';
 
 export default function EditQueryPageWrapper() {
-  const paramId = useSearchParams().get('id');
-  const id = paramId === 'new' ? null : paramId;
+  const id = useRequiredIdParam('/monitoring?tab=queries', '/monitoring/query/new');
+  if (!id) return null;
   return <EditQueryPage queryId={id} />;
 }

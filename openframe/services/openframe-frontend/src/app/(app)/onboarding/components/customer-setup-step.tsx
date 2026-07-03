@@ -17,7 +17,7 @@ const emptyAddress = { street1: '', street2: '', city: '', state: '', postalCode
  * Inner body of the "Customers Setup" onboarding step. Reuses the customer-page form
  * building blocks ({@link ../../customers/components/new-customer-page}) — the
  * `useCreateCustomer` mutation, `Input` and `ImageUploader` — for a quick first-client
- * form. The full form lives at `/customers/edit?id=new`.
+ * form. The full form lives at `/customers/new`.
  */
 export function CustomerSetupStep() {
   const { toast } = useToast();
@@ -151,7 +151,7 @@ export function CustomerSetupStep() {
       {/* Full form link (left) / mandatory hint + save (right) */}
       <div className="flex w-full flex-col gap-[var(--spacing-system-m)] md:flex-row md:items-center">
         <Link
-          href="/customers/edit?id=new"
+          href="/customers/new"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center gap-[var(--spacing-system-xs)] text-ods-text-secondary transition-colors hover:text-ods-text-primary"

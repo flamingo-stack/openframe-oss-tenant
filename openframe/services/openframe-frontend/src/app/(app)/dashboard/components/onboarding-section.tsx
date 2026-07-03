@@ -23,7 +23,7 @@ export function OnboardingSection() {
   const { completionStatus, isLoading } = useOnboardingCompletion();
 
   const handleOrganizationAction = React.useCallback(async () => {
-    router.push('/customers/edit?id=new');
+    router.push('/customers/new');
   }, [router]);
 
   const handleDeviceAction = React.useCallback(async () => {

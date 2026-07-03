@@ -8,9 +8,11 @@ export default function QueryPage() {
   const router = useRouter();
   const paramId = useSearchParams().get('id');
 
+  // Pre-alignment links created queries via `?id=new` on this details route;
+  // kept as a redirect so old bookmarks land on the create form.
   useEffect(() => {
     if (paramId === 'new') {
-      router.replace('/monitoring/query/edit?id=new');
+      router.replace('/monitoring/query/new');
     }
   }, [paramId, router]);
 

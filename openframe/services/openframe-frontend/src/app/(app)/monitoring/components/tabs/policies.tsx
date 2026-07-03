@@ -142,7 +142,7 @@ export function Policies() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + PAGE_SIZE), []);
 
   const handleAddPolicy = useCallback(() => {
-    router.push('/monitoring/policy/edit?id=new');
+    router.push('/monitoring/policy/new');
   }, [router]);
 
   const actions = useMemo(

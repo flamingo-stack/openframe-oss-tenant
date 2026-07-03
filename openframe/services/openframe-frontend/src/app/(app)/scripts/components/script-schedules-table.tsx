@@ -223,7 +223,7 @@ export function ScriptSchedulesTable() {
   const handleLoadMore = useCallback(() => setVisibleCount(prev => prev + pageSize), []);
 
   const handleAddSchedule = useCallback(() => {
-    router.push('/scripts/schedules/create');
+    router.push('/scripts/schedules/new');
   }, [router]);
 
   // Show the empty state instead of the search bar + table only when there is

@@ -127,7 +127,7 @@ function ScriptExecutionDetailsContent({ executionId }: ScriptExecutionDetailsVi
     <ScriptPageChrome
       title="Script Execution Details"
       subtitle={execution.executionId}
-      backFallback={execution.scriptId ? `/scripts-v2/details/${execution.scriptId}?tab=executions` : '/scripts-v2'}
+      backFallback={execution.scriptId ? `/scripts-v2/details?id=${execution.scriptId}&tab=executions` : '/scripts-v2'}
       actions={actions}
     >
       <div className="bg-ods-card border border-ods-border rounded-[8px] overflow-hidden">

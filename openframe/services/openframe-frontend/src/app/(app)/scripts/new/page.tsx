@@ -2,6 +2,6 @@
 
 import { EditScriptPage } from '../components/script/edit-script-page';
 
-export default function CreateScriptPageWrapper() {
+export default function NewScriptPageWrapper() {
   return <EditScriptPage scriptId={null} />;
 }
