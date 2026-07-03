@@ -28,7 +28,7 @@ export interface DeviceMenuItemContext {
   iconSize?: string;
   /** Controls Remote Shell rendering:
    *   - `true`  → Windows submenu (CMD / PowerShell)
-   *   - `false` → plain link with `?shellType=bash`
+   *   - `false` → plain link with `&shellType=bash`
    *   - `undefined` → plain link without `shellType` param (Tickets style) */
   isWindows?: boolean;
   /** Adds an "open in new tab" arrow icon-action to each item. */
@@ -85,7 +85,7 @@ function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
       type: 'submenu',
       disabled,
       submenu: WINDOWS_SHELLS.map(s => {
-        const href = `${baseHref}?shellType=${s.id}`;
+        const href = `${baseHref}&shellType=${s.id}`;
         return {
           id: s.id,
           label: s.label,
@@ -98,7 +98,7 @@ function buildRemoteShellItem(ctx: DeviceMenuItemContext): ActionsMenuItem {
     };
   }
 
-  const href = ctx.isWindows === false ? `${baseHref}?shellType=bash` : baseHref;
+  const href = ctx.isWindows === false ? `${baseHref}&shellType=bash` : baseHref;
   return {
     id: 'remote-shell',
     label: 'Remote Shell',
