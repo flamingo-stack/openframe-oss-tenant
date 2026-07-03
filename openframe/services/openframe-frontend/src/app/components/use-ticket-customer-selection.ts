@@ -36,9 +36,8 @@ function withSeed<T extends AutocompleteOption>(options: T[], seed: T | null): T
  * manual-entry modal. Rules:
  * - Customer selected first → tickets are filtered to that customer; changing the customer
  *   drops a now-mismatched ticket.
- * - Ticket selected first → the customer is prefilled from the ticket's organization and
- *   locked; clearing that ticket releases the derived customer.
- * The customer is UI-only (not persisted) — the backend stores only the ticket + notes.
+ * - Ticket selected → the customer is pinned to the ticket's organization and locked (even
+ *   when the customer was picked first); clearing the ticket releases the derived customer.
  */
 export function useTicketCustomerSelection() {
   const [ticketId, setTicketId] = useState<string | null>(null);
@@ -62,7 +61,6 @@ export function useTicketCustomerSelection() {
   const selectTicket = useCallback(
     (id: string | null) => {
       setTicketId(id);
-      const derivable = !customerFixed && (!customerId || customerLocked);
       if (!id) {
         setTicketSeed(null);
         if (customerLocked && !customerFixed) {
@@ -74,12 +72,12 @@ export function useTicketCustomerSelection() {
       }
       const option = ticketOptions.find(candidate => candidate.value === id) ?? null;
       setTicketSeed(option);
-      if (!derivable) return;
+      if (customerFixed) return;
       if (option?.organizationId) {
         setCustomerId(option.organizationId);
         setCustomerSeed(customerOptionFromTicket(option));
         setCustomerLocked(true);
-      } else {
+      } else if (!customerId || customerLocked) {
         setCustomerId(null);
         setCustomerSeed(null);
         setCustomerLocked(false);
