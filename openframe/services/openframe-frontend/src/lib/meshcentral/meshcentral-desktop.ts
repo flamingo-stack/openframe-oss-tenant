@@ -22,6 +22,16 @@ export type DesktopInputHandlers = {
   setClipboardInterceptor?(interceptor: ((type: 'copy' | 'cut' | 'paste', sendKeys: () => void) => void) | null): void;
 };
 
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable
+  );
+}
+
 export class MeshDesktop implements DesktopInputHandlers {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
@@ -138,6 +148,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     };
     const onKeyDown = (e: KeyboardEvent) => {
       if (this.viewOnly) return;
+      if (isTypingTarget(e.target)) return;
 
       const keyCode = this.convertKeyCode(e) ?? this.mapKeyToVirtualKey(e) ?? (e as any).keyCode;
       if (keyCode == null) return;
@@ -242,6 +253,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (this.viewOnly) return;
+      if (isTypingTarget(e.target)) return;
 
       // If Meta was buffered and never sent, flush then release
       if ((e.code === 'MetaLeft' || e.code === 'MetaRight') && this.bufferedMetaKey) {
@@ -291,6 +303,10 @@ export class MeshDesktop implements DesktopInputHandlers {
       for (const k of keys) this.sendKeyEntryUp(k);
     };
 
+    const onFocusIn = (e: FocusEvent) => {
+      if (isTypingTarget(e.target)) onWindowBlur();
+    };
+
     canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mousedown', onMouseDown);
     canvas.addEventListener('mouseup', onMouseUp);
@@ -300,6 +316,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     window.addEventListener('keypress', onKeyPress);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', onWindowBlur);
+    window.addEventListener('focusin', onFocusIn);
 
     this.listeners.push(() => canvas.removeEventListener('mousemove', onMouseMove));
     this.listeners.push(() => canvas.removeEventListener('mousedown', onMouseDown));
@@ -310,6 +327,7 @@ export class MeshDesktop implements DesktopInputHandlers {
     this.listeners.push(() => window.removeEventListener('keypress', onKeyPress));
     this.listeners.push(() => window.removeEventListener('keyup', onKeyUp));
     this.listeners.push(() => window.removeEventListener('blur', onWindowBlur));
+    this.listeners.push(() => window.removeEventListener('focusin', onFocusIn));
   }
 
   detach() {
