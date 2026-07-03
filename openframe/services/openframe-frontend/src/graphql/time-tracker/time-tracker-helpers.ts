@@ -67,6 +67,25 @@ export function instantToCalendarDay(value: unknown): Date {
 }
 
 /**
+ * Move an instant to another calendar day keeping its UTC time-of-day. Editing an entry
+ * through the date-only picker must not collapse a timer entry's real start time to midnight.
+ */
+export function moveInstantToCalendarDay(value: unknown, day: Date): string {
+  const inst = new Date(parseInstant(value));
+  return new Date(
+    Date.UTC(
+      day.getFullYear(),
+      day.getMonth(),
+      day.getDate(),
+      inst.getUTCHours(),
+      inst.getUTCMinutes(),
+      inst.getUTCSeconds(),
+      inst.getUTCMilliseconds(),
+    ),
+  ).toISOString();
+}
+
+/**
  * Maps the backend timer to the core lib's display contract. ALL timer math lives here.
  *
  * The backend keeps `durationSeconds` at 0 for the whole active session (it's only

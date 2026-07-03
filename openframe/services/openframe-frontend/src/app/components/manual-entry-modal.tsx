@@ -28,6 +28,7 @@ import {
   formatDurationLabel,
   instantToCalendarDay,
   makeCreateTimeEntryUpdater,
+  moveInstantToCalendarDay,
   parseDurationLabel,
   toOrganizationGlobalId,
   toTicketGlobalId,
@@ -234,7 +235,9 @@ export function ManualEntryModal({
     const ticketId = toTicketGlobalId(ticketCustomer.ticketId);
     const organizationId = toOrganizationGlobalId(ticketCustomer.customerId);
     const notesValue = notes || null;
-    const startedAt = calendarDayToInstant(values.startedAt);
+    const startedAt = entry
+      ? moveInstantToCalendarDay(entry.startedAt, values.startedAt)
+      : calendarDayToInstant(values.startedAt);
 
     if (entry) {
       updateTimeEntry({

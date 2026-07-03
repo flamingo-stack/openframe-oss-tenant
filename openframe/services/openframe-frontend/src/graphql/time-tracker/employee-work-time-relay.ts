@@ -22,8 +22,13 @@ export const employeeWorkTimeRelayFragment = graphql`
       first: { type: "Int", defaultValue: 20 }
       after: { type: "String" }
     ) {
-    employeeTimeEntries(filter: $filter, search: $search, first: $first, after: $after)
-      @connection(key: "EmployeeWorkTime_employeeTimeEntries", filters: ["filter", "search"]) {
+    employeeTimeEntries(
+      filter: $filter
+      search: $search
+      sort: { field: "startedAt", direction: DESC }
+      first: $first
+      after: $after
+    ) @connection(key: "EmployeeWorkTime_employeeTimeEntries", filters: ["filter", "search"]) {
       filteredCount
       edges {
         cursor
